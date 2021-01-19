@@ -3865,11 +3865,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-                    else if (sndState != null && sndState.checkTimeout()) {
-                        segmentLocalNodeOnSendFail(failedNodes);
-
-                        return; // Nothing to do here.
-                    }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
