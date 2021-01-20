@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,46 +83,12 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
 
         blockRecoveryMessages();
 
-        Ignite failed = G.allGrids().get(new Random().nextInt(nodes));
+        CellularCluster cluster = resolveCluster(nodes, startFrom);
 
-        Integer cellKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
-
-        List<Ignite> brokenCellNodes = backupNodes(cellKey, PART_CACHE_NAME);
-        List<Ignite> aliveCellNodes = new ArrayList<>(G.allGrids());
-
-        aliveCellNodes.remove(failed);
-        aliveCellNodes.removeAll(brokenCellNodes);
-
-        assertTrue(Collections.disjoint(brokenCellNodes, aliveCellNodes));
-        assertEquals(nodes / 2 - 1, brokenCellNodes.size());
-        assertEquals(nodes / 2, aliveCellNodes.size());
-
-        Ignite orig;
-
-        switch (startFrom) {
-            case FAILED:
-                orig = failed;
-
-                break;
-
-            case BROKEN_CELL:
-                orig = brokenCellNodes.get(0);
-
-                break;
-
-            case ALIVE_CELL:
-                orig = aliveCellNodes.get(0);
-
-                break;
-
-            case CLIENT:
-                orig = startClientGrid();
-
-                break;
-
-            default:
-                throw new UnsupportedOperationException();
-        }
+        Ignite orig= cluster.orig;
+        Ignite failed = cluster.failed;
+        List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
+        List<Ignite> aliveCellNodes = cluster.aliveCellNodes;
 
         int recFutsCnt = 7;
 

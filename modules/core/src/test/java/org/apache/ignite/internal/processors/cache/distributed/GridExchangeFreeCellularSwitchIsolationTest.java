@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +35,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
@@ -73,6 +72,116 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
      *
      */
     @Test
+    public void testMutliKeyTxRecoveryHappenBeforeTheSwitchOnCellularSwitch() throws Exception {
+        int nodes = 6;
+
+        startGridsMultiThreaded(nodes);
+
+        blockRecoveryMessages();
+
+        CellularCluster cluster = resolveCluster(nodes, startFrom);
+
+        Ignite orig= cluster.orig;
+        Ignite failed = cluster.failed;
+        List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
+        List<Ignite> aliveCellNodes = cluster.aliveCellNodes;
+
+        CountDownLatch prepLatch = new CountDownLatch(1);
+        CountDownLatch commitLatch = new CountDownLatch(1);
+
+        AtomicInteger key = new AtomicInteger();
+
+        // Puts 2 entries, each on it's own cell.
+        IgniteInternalFuture<?> putFut = multithreadedAsync(() -> {
+            try {
+                Transaction tx = orig.transactions().txStart();
+
+                IgniteCache<Integer, Integer> cache = orig.getOrCreateCache(PART_CACHE_NAME);
+
+                cache.put(primaryKey(failed.getOrCreateCache(PART_CACHE_NAME)), 42);
+
+                key.set(primaryKey(aliveCellNodes.get(0).getOrCreateCache(PART_CACHE_NAME)));
+
+                cache.put(key.get(), key.get());
+
+                ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+                prepLatch.countDown();
+
+                commitLatch.await();
+
+                if (orig != failed)
+                    ((TransactionProxyImpl<?, ?>)tx).commit();
+            }
+            catch (Exception e) {
+                fail("Should not happen [exception=" + e + "]");
+            }
+        }, 1);
+
+        prepLatch.await();
+
+        // Should be null white tx is uncommitted/unrecovered.
+        assertNull(aliveCellNodes.get(0).getOrCreateCache(PART_CACHE_NAME).get(key.get()));
+
+        failed.close(); // Stopping node.
+
+        awaitForSwitchOnNodeLeft(failed);
+
+        U.sleep(5_000); // Wait enough for the switch (which should not happen before the recovery).
+
+        checkTransactionsCount( // Making sure txs still unrecovered.
+            null, 0,
+            brokenCellNodes, 1,
+            aliveCellNodes, 1,
+            null /*any*/);
+
+        CountDownLatch getLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> getFut = multithreadedAsync(() -> {
+            try {
+                IgniteCache<Integer, Integer> cache = aliveCellNodes.get(0).getOrCreateCache(PART_CACHE_NAME);
+
+                // Should be available for reading only after recovery happen (should be not null).
+                assertEquals((Integer)key.get(), cache.get(key.get()));
+
+                getLatch.countDown();
+            }
+            catch (Exception e) {
+                fail("Should not happen [exception=" + e + "]");
+            }
+        }, 1);
+
+        // Get should not happen while tx is not recovered.
+        assertFalse(getLatch.await(5, TimeUnit.SECONDS));
+
+        // Allowing recovery.
+        for (Ignite ignite : G.allGrids()) {
+            TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+            spi.stopBlock(true, blockedMsg -> true);
+        }
+
+        // Allowing commit.
+        commitLatch.countDown();
+
+        putFut.get();
+
+        // Making sure get finished with recovered value.
+        getFut.get();
+
+        // Final check that any transactions are absent.
+        checkTransactionsCount(
+            null, 0,
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            null /*any*/);
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testOnlyAffectedNodesWaitForRecovery() throws Exception {
         int nodes = 6;
 
@@ -88,53 +197,21 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         blockRecoveryMessages();
 
-        Ignite failed = G.allGrids().get(new Random().nextInt(nodes));
+        CellularCluster cluster = resolveCluster(nodes, startFrom);
 
-        Integer cellKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
-
-        List<Ignite> brokenCellNodes = backupNodes(cellKey, PART_CACHE_NAME);
-        List<Ignite> aliveCellNodes = new ArrayList<>(G.allGrids());
-
-        aliveCellNodes.remove(failed);
-        aliveCellNodes.removeAll(brokenCellNodes);
-
-        assertTrue(Collections.disjoint(brokenCellNodes, aliveCellNodes));
-        assertEquals(nodes / 2 - 1, brokenCellNodes.size()); // Cell 1.
-        assertEquals(nodes / 2, aliveCellNodes.size()); // Cell 2.
-
-        Ignite orig;
+        Ignite orig = cluster.orig;
+        Ignite failed = cluster.failed;
+        List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
+        List<Ignite> aliveCellNodes = cluster.aliveCellNodes;
 
         List<Integer> partKeys = new ArrayList<>();
         List<Integer> replKeys = new ArrayList<>();
 
         for (Ignite node : G.allGrids()) {
-            partKeys.add(primaryKey(node.getOrCreateCache(PART_CACHE_NAME)));
-            replKeys.add(primaryKey(node.getOrCreateCache(REPL_CACHE_NAME)));
-        }
-
-        switch (startFrom) {
-            case FAILED:
-                orig = failed;
-
-                break;
-
-            case BROKEN_CELL:
-                orig = brokenCellNodes.get(0);
-
-                break;
-
-            case ALIVE_CELL:
-                orig = aliveCellNodes.get(0);
-
-                break;
-
-            case CLIENT:
-                orig = startClientGrid();
-
-                break;
-
-            default:
-                throw new UnsupportedOperationException();
+            if (!node.configuration().isClientMode()) {
+                partKeys.add(primaryKey(node.getOrCreateCache(PART_CACHE_NAME)));
+                replKeys.add(primaryKey(node.getOrCreateCache(REPL_CACHE_NAME)));
+            }
         }
 
         CountDownLatch partPreparedLatch = new CountDownLatch(nodes);
