@@ -85,7 +85,7 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
 
         CellularCluster cluster = resolveCluster(nodes, startFrom);
 
-        Ignite orig= cluster.orig;
+        Ignite orig = cluster.orig;
         Ignite failed = cluster.failed;
         List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
         List<Ignite> aliveCellNodes = cluster.aliveCellNodes;

@@ -347,7 +347,7 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
     /**
      *
      */
-    protected static class CellularCluster{
+    protected static class CellularCluster {
         /** Originating node. */
         public Ignite orig;
 
