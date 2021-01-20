@@ -26,12 +26,13 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>apache-ignite</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-cli</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -232,16 +233,6 @@
                 <artifactId>maven-deploy-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/builtin_modules.conf</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
