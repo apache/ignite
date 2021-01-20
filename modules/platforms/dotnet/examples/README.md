@@ -31,7 +31,7 @@ Thin Client examples require one or mode Ignite server node, run this in a separ
 
 ## Visual Studio
 
-* Open `IgniteExamples.sln`
+* Open `Apache.Ignite.Examples.sln`
 * Select an example on the Run toolbar and run
 
 ![Visual Studio Screenshot](images/vs.png)
@@ -46,7 +46,7 @@ Thin Client examples require one or mode Ignite server node, run this in a separ
 
 ## Rider
 
-* Open `IgniteExamples.sln`
+* Open `Apache.Ignite.Examples.sln`
 * Select an example on the Run toolbar and run
 
 ![Rider Toolbar Screenshot](images/rider.png)
