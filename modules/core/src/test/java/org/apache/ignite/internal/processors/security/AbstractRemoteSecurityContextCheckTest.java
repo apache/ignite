@@ -271,7 +271,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
             if (!expSecSubjId.equals(actualSubjId)) {
                 error("Actual subjectId does not equal expected subjectId " + "[expected=" + expSecSubjId +
-                    ", actual=" + actualSubjId + "].");
+                    ", actual=" + actualSubjId + ", operation=" + opName + "].");
 
                 return;
             }
@@ -298,9 +298,14 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
         /** */
         public Verifier initiator(IgniteEx initiator) {
+            return initiator(secSubjectId(initiator));
+        }
+
+        /** */
+        public Verifier initiator(UUID initiatorId) {
             clear();
 
-            expSecSubjId = secSubjectId(initiator);
+            expSecSubjId = initiatorId;
 
             return this;
         }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.compute.closure;
 
+import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -24,7 +25,9 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.Ignition.localIgnite;
@@ -65,7 +68,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
     }
 
     /** */
-    private IgniteCompute compute(UUID id) {
+    protected IgniteCompute compute(UUID id) {
         Ignite loc = localIgnite();
 
         return loc.compute(loc.cluster().forNodeId(id));
@@ -74,13 +77,17 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
     /**
      * @return Stream of check cases.
      */
-    private Stream<IgniteRunnable> operations() {
+    protected Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) operationCheck()),
             () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) operationCheck()).get(),
             () -> {
                 for (UUID id : nodesToCheckIds())
                     compute(id).call(operationCheck());
+            },
+            () -> {
+                for (UUID id : nodesToCheckIds())
+                    compute(id).call(Collections.singleton(operationCheck()), new NoOpReducer());
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
@@ -101,7 +108,24 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
             () -> {
                 for (UUID id : nodesToCheckIds())
                     compute(id).applyAsync(operationCheck(), new Object()).get();
+            },
+            () -> {
+                for (UUID id : nodesToCheckIds())
+                    compute(id).broadcast(operationCheck(), new NoOpReducer());
             }
         );
+    }
+
+    /** */
+    private static class NoOpReducer implements IgniteReducer<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable Object o) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object reduce() {
+            return null;
+        }
     }
 }
