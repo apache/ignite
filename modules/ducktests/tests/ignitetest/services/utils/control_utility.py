@@ -191,8 +191,6 @@ class ControlUtility:
                 if (snapshot_name == name) and (0 < start_time < end_time) and (err_msg == ''):
                     return
 
-            time.sleep(1)
-
         raise TimeoutError(f'LastSnapshotName={name}, '
                            f'LastSnapshotStartTime={start_time}, '
                            f'LastSnapshotEndTime={end_time}, '
