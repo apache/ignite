@@ -19,7 +19,9 @@ This module contains classes and utilities for SslContextFactory.
 import os
 
 DEFAULT_PASSWORD = "123456"
-DEFAULT_KEYSTORE = "server.jks"
+DEFAULT_SERVER_KEYSTORE = "server.jks"
+DEFAULT_CLIENT_KEYSTORE = "client.jks"
+DEFAULT_ADMIN_KEYSTORE = "admin.jks"
 DEFAULT_TRUSTSTORE = "truststore.jks"
 
 
@@ -29,7 +31,7 @@ class SslContextFactory:
     """
     # pylint: disable=R0913
     def __init__(self, root_dir,
-                 key_store_jks: str = DEFAULT_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
+                 key_store_jks: str = DEFAULT_SERVER_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
 
         certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")

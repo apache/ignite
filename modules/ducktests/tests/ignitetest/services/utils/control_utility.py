@@ -25,7 +25,7 @@ from typing import NamedTuple
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, \
-    DEFAULT_KEYSTORE
+    DEFAULT_ADMIN_KEYSTORE
 
 
 class ControlUtility:
@@ -42,7 +42,7 @@ class ControlUtility:
         self.logger = cluster.context.logger
 
         if cluster.context.globals.get("use_ssl", False) and key_store_jks is None:
-            self.key_store_path = self.jks_path(DEFAULT_KEYSTORE)
+            self.key_store_path = self.jks_path(DEFAULT_ADMIN_KEYSTORE)
             self.key_store_password = DEFAULT_PASSWORD
             self.trust_store_path = self.jks_path(DEFAULT_TRUSTSTORE)
             self.trust_store_password = DEFAULT_PASSWORD

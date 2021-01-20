@@ -33,8 +33,6 @@ from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
-from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 
 
 # pylint: disable=too-many-public-methods
@@ -87,14 +85,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.start_async(clean=clean)
         self.await_started()
 
+    @abstractmethod
     def update_config_with_globals(self):
         """
         Update configuration with global parameters.
         """
-        if self.globals.get("use_ssl", False) and (self.config.ssl_context_factory is None):
-            self.config = self.config._replace(ssl_context_factory=SslContextFactory(self.install_root))
-            self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory))
 
     def await_started(self):
         """
