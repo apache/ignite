@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
 import org.junit.Test;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
 
@@ -66,11 +61,6 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
 
         execute(grid(0), "alter table Person add column age int");
         execute(grid(0),"drop table Person");
-
-        execute(client, "CREATE TABLE IF NOT EXISTS Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
-
-        execute(client, "alter table Person add column age int");
-        execute(client,"drop table Person");
     }
 
     /** */
@@ -79,61 +69,24 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
         QueryEntity projEntity = new QueryEntity();
         projEntity.setKeyType(Integer.class.getName());
         projEntity.setKeyFieldName("id");
-        projEntity.setValueType(Developer.class.getName());
+        projEntity.setValueType(Integer.class.getName());
         projEntity.addQueryField("id", Integer.class.getName(), null);
-        projEntity.addQueryField("name", String.class.getName(), null);
         projEntity.addQueryField("depId", Integer.class.getName(), null);
-        projEntity.addQueryField("city", String.class.getName(), null);
-        projEntity.addQueryField("age", Integer.class.getName(), null);
 
-        QueryIndex simpleIdx = new QueryIndex("depId", true);
-        simpleIdx.setName("DEPID_IDX");
-
-        projEntity.setIndexes(asList(simpleIdx));
         projEntity.setTableName("Developer");
 
-        CacheConfiguration<Integer, Developer> projCfg =
-            new CacheConfiguration<Integer, Developer>(projEntity.getTableName())
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setBackups(1)
+        CacheConfiguration<Integer, Integer> projCfg =
+            new CacheConfiguration<Integer, Integer>(projEntity.getTableName())
                 .setQueryEntities(singletonList(projEntity))
                 .setSqlSchema("PUBLIC");
 
-        IgniteCache<Integer, Developer> devCache = grid(0).createCache(projCfg);
+        IgniteCache<Integer, Integer> devCache = grid(0).createCache(projCfg);
 
         assertFalse(grid(0).configuration().isClientMode());
 
-        devCache.put(1, new Developer("Mozart", 3, "Vienna", 33));
+        devCache.put(1, 2);
 
         assertEquals(1, execute(client,"SELECT * FROM Developer").size());;
-    }
-
-    /** */
-    private static class Developer {
-        /** */
-        String name;
-
-        /** */
-        int depId;
-
-        /** */
-        String city;
-
-        /** */
-        int age;
-
-        /** */
-        public Developer(String name, int depId, String city, int age) {
-            this.name = name;
-            this.depId = depId;
-            this.city = city;
-            this.age = age;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Project{" + "name='" + name + '\'' + ", ver=" + depId + '}';
-        }
     }
 
     /**
