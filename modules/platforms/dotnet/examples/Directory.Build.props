@@ -3,16 +3,17 @@
         <IgniteBinaryDistro>true</IgniteBinaryDistro>
     </PropertyGroup>
 
+    <!-- Dev mode is enabled when sources are present and were built. -->
     <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Ignition.cs') And Exists('$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\bin')">
-        <IgniteSourceDistro>true</IgniteSourceDistro>
+        <IgniteDevMode>true</IgniteDevMode>
     </PropertyGroup>
 
-    <ItemGroup Condition="$(IgniteSourceDistro) == 'true'">
+    <ItemGroup Condition="$(IgniteDevMode) == 'true'">
         <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
         <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(IgniteBinaryDistro) == 'true' And $(IgniteSourceDistro) == ''">
+    <ItemGroup Condition="$(IgniteBinaryDistro) == 'true' And $(IgniteDevMode) == ''">
         <Reference Include="Apache.Ignite.Core">
             <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll</HintPath>
         </Reference>

@@ -6,7 +6,7 @@
     <NoWarn>CS0649</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteSourceDistro) == ''">
+  <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteDevMode) == ''">
     <PackageReference Include="Apache.Ignite" Version="2.*" />
     <PackageReference Include="Apache.Ignite.Linq" Version="2.*" />
   </ItemGroup>
