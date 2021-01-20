@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -64,6 +65,7 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-14019")
     @Test
     public void createCacheOnSrvCallOnCli() {
         QueryEntity projEntity = new QueryEntity();
