@@ -81,9 +81,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
         if (tbl == null) {
-            if (desc.cacheContext() == null)
-                return statistic;
-
             IgniteH2Indexing idx = (IgniteH2Indexing) desc.cacheContext().kernalContext().query().getIndexing();
 
             final String tblName = desc.typeDescription().tableName();
