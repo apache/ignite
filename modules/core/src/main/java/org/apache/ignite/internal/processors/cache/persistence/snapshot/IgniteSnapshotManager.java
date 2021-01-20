@@ -467,7 +467,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
-        // No-op.
+        restoreCacheGrpProcess.start();
     }
 
     /** {@inheritDoc} */
@@ -1129,11 +1129,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    protected IgniteInternalFuture<SnapshotRestorePerformResponse> restoreCacheGroupsLocal(
-        String snpName,
-        Collection<String> grpNames,
-        RestoreOperationContext opCtx
-    ) throws IgniteCheckedException {
+    protected void registerSnapshotMetadata(String snpName) throws IgniteCheckedException {
         String nodeFolderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
         File workDIr = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
@@ -1143,8 +1139,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         File snapshotMetadataDir = new File(workDIr, subPath);
 
+        // todo remove if executed from single node
         if (!snapshotMetadataDir.exists())
-            return new GridFinishedFuture<>();
+            return;
 
         // restore metadata
         CacheObjectBinaryProcessorImpl procImpl = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
@@ -1164,82 +1161,157 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        GridFutureAdapter<SnapshotRestorePerformResponse> updateMetaFut = new GridFutureAdapter<>();
-
         // todo should register only from one node and validate result
-        if (!F.isEmpty(metas)) {
-            cctx.kernalContext().getSystemExecutorService().submit(() -> {
-                try {
-                    for (BinaryMetadata meta : metas)
-                        procImpl.addMeta(meta.typeId(), meta.wrap(procImpl.binaryContext()), false);
-
-                    updateMetaFut.onDone();
-                }
-                catch (Exception e) {
-                    updateMetaFut.onDone(e);
-                }
-            });
-        }
-        else
-            updateMetaFut.onDone();
-
-        for (String grpName : grpNames) {
-            File cacheDir = resolveCacheDir(grpName);
-
-            assert F.isEmpty(cacheDir.list()) : cacheDir;
-
-            File snapshotCacheDir = resolveSnapshotCacheDir(snpName, cctx.kernalContext().config(), grpName);
-
-            if (!snapshotCacheDir.exists()) {
-                log.info("Skipping restore of cache group [snapshot=" + snpName + ", cache=" + grpName + "]");
-
-                continue;
-            }
-
-            if (!cacheDir.exists()) {
-                cacheDir.mkdir();
-
-                opCtx.cacheGroupFile(grpName, cacheDir);
-            }
-
-            try {
-                for (File snpFile : snapshotCacheDir.listFiles()) {
-                    File target = new File(cacheDir, snpFile.getName());
-
-                    log.info("Restore file from snapshot [snapshot=" + snpName + ", src=" + snpFile + ", target=" + target + "]");
-
-                    Files.copy(snpFile.toPath(), target.toPath());
-
-                    opCtx.cacheGroupFile(grpName, target);
-                }
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Unable to restore file [snapshot=" + snpName + ", grp=" + grpName + ']', e);
-            }
-        }
-
-        return updateMetaFut;
+        for (BinaryMetadata meta : metas)
+            procImpl.addMeta(meta.typeId(), meta.wrap(procImpl.binaryContext()), false);
     }
 
-    protected void rollbackRestoreOperation(Collection<String> grps, RestoreOperationContext opCtx) {
-        for (String grpName : grps) {
-            List<File> files = opCtx.cacheGroupFiles(grpName);
+    protected void restoreCacheGroupFiles(String snpName, String grpName, List<File> newFiles) throws IgniteCheckedException {
+        File cacheDir = resolveCacheDir(grpName);
 
-            List<File> dirs = new ArrayList<>();
+        assert F.isEmpty(cacheDir.list()) : cacheDir;
 
-            for (File file : files) {
-                if (!file.exists())
-                    continue;
+        File snapshotCacheDir = resolveSnapshotCacheDir(snpName, cctx.kernalContext().config(), grpName);
 
-                if (file.isDirectory())
-                    dirs.add(file);
+        if (!snapshotCacheDir.exists()) {
+            log.info("Skipping restore of cache group [snapshot=" + snpName + ", cache=" + grpName + "]");
 
-                file.delete();
-            }
-
-            for (File dir : dirs)
-                dir.delete();
+            return;
         }
+
+        if (!cacheDir.exists()) {
+            cacheDir.mkdir();
+
+            newFiles.add(cacheDir);
+        }
+        else
+            if (cacheDir.list().length != 0)
+                throw new IgniteCheckedException("Unable to restore cache group, directory is not empty [group=" + grpName + ", dir=" + cacheDir + ']');
+
+        try {
+            for (File snpFile : snapshotCacheDir.listFiles()) {
+                File target = new File(cacheDir, snpFile.getName());
+
+                log.info("Restore file from snapshot [snapshot=" + snpName + ", src=" + snpFile + ", target=" + target + "]");
+
+                newFiles.add(target);
+
+                Files.copy(snpFile.toPath(), target.toPath());
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Unable to restore file [snapshot=" + snpName + ", grp=" + grpName + ']', e);
+        }
+    }
+
+
+//    protected IgniteInternalFuture<SnapshotRestorePerformResponse> restoreCacheGroupsLocal(
+//        String snpName,
+//        Collection<String> grpNames,
+//        RestoreGroupContext opCtx
+//    ) throws IgniteCheckedException {
+//        String nodeFolderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+//
+//        File workDIr = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
+//
+//        String subPath = snpName + File.separator + DFLT_STORE_DIR + File.separator + "binary_meta" + File.separator +
+//            nodeFolderName;
+//
+//        File snapshotMetadataDir = new File(workDIr, subPath);
+//
+//        if (!snapshotMetadataDir.exists())
+//            return new GridFinishedFuture<>();
+//
+//        // restore metadata
+//        CacheObjectBinaryProcessorImpl procImpl = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
+//
+//        List<BinaryMetadata> metas = new ArrayList<>();
+//
+//        Marshaller marshaller = cctx.kernalContext().config().getMarshaller();
+//        ClassLoader clsLdr = U.resolveClassLoader(cctx.kernalContext().config());
+//
+//        for (File file : snapshotMetadataDir.listFiles()) {
+//            try (FileInputStream in = new FileInputStream(file)) {
+//                metas.add(U.unmarshal(marshaller, in, clsLdr));
+//            }
+//            catch (Exception e) {
+//                throw new IgniteCheckedException("Failed to add metadata from file: " + file.getName() +
+//                    "; exception was thrown: " + e.getMessage());
+//            }
+//        }
+//
+//        GridFutureAdapter<SnapshotRestorePerformResponse> updateMetaFut = new GridFutureAdapter<>();
+//
+//        // todo should register only from one node and validate result
+//        if (!F.isEmpty(metas)) {
+//            cctx.kernalContext().getSystemExecutorService().submit(() -> {
+//                try {
+//                    for (BinaryMetadata meta : metas)
+//                        procImpl.addMeta(meta.typeId(), meta.wrap(procImpl.binaryContext()), false);
+//
+//                    updateMetaFut.onDone();
+//                }
+//                catch (Exception e) {
+//                    updateMetaFut.onDone(e);
+//                }
+//            });
+//        }
+//        else
+//            updateMetaFut.onDone();
+//
+//        for (String grpName : grpNames) {
+//            File cacheDir = resolveCacheDir(grpName);
+//
+//            assert F.isEmpty(cacheDir.list()) : cacheDir;
+//
+//            File snapshotCacheDir = resolveSnapshotCacheDir(snpName, cctx.kernalContext().config(), grpName);
+//
+//            if (!snapshotCacheDir.exists()) {
+//                log.info("Skipping restore of cache group [snapshot=" + snpName + ", cache=" + grpName + "]");
+//
+//                continue;
+//            }
+//
+//            if (!cacheDir.exists()) {
+//                cacheDir.mkdir();
+//
+//                opCtx.cacheGroupFile(grpName, cacheDir);
+//            }
+//
+//            try {
+//                for (File snpFile : snapshotCacheDir.listFiles()) {
+//                    File target = new File(cacheDir, snpFile.getName());
+//
+//                    log.info("Restore file from snapshot [snapshot=" + snpName + ", src=" + snpFile + ", target=" + target + "]");
+//
+//                    Files.copy(snpFile.toPath(), target.toPath());
+//
+//                    opCtx.cacheGroupFile(grpName, target);
+//                }
+//            }
+//            catch (IOException e) {
+//                throw new IgniteCheckedException("Unable to restore file [snapshot=" + snpName + ", grp=" + grpName + ']', e);
+//            }
+//        }
+//
+//        return updateMetaFut;
+//    }
+
+    protected void rollbackRestoreOperation(Collection<File> files) {
+        List<File> dirs = new ArrayList<>();
+
+        for (File file : files) {
+            if (!file.exists())
+                continue;
+
+            if (file.isDirectory())
+                dirs.add(file);
+
+            file.delete();
+        }
+
+        for (File dir : dirs)
+            dir.delete();
     }
 
     private File resolveCacheDir(String cacheOrGrpName) throws IgniteCheckedException {
@@ -2194,21 +2266,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    static class RestoreOperationContext {
-        private final Map<String, List<File>> files = new HashMap<>();
-
-        private final List<Integer> metadataTypes = new ArrayList<>();
-
-        public void cacheGroupFile(String grpName, File newFile) {
-            files.computeIfAbsent(grpName, v -> new ArrayList<>()).add(newFile);
-        }
-
-        public void metadataType(int typeId) {
-            metadataTypes.add(typeId);
-        }
-
-        public List<File> cacheGroupFiles(String grpName) {
-            return files.get(grpName);
-        }
-    }
+//    static class RestoreGroupContext {
+//        private final List<File> files = new ArrayList<>();
+//
+//        public void addFile(File file) {
+//            files.add(file);
+//        }
+//
+//        public List<File> files() {
+//            return files;
+//        }
+//
+////        private final List<Integer> metadataTypes = new ArrayList<>();
+////
+////        public void cacheGroupFile(String grpName, File newFile) {
+////            files.computeIfAbsent(grpName, v -> new ArrayList<>()).add(newFile);
+////        }
+////
+////        public void metadataType(int typeId) {
+////            metadataTypes.add(typeId);
+////        }
+////
+////        public List<File> cacheGroupFiles(String grpName) {
+////            return files.get(grpName);
+////        }
+//    }
 }
