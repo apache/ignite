@@ -119,6 +119,21 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
+        /// Gets the example descriptor.
+        /// </summary>
+        private static Example GetExample(string projFile)
+        {
+            var name = Path.GetFileNameWithoutExtension(projFile);
+            var path = Path.GetDirectoryName(projFile);
+            var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
+
+            var sourceFile = Path.Combine(path, "Program.cs");
+            var sourceCode = File.ReadAllText(sourceFile);
+
+            return new Example(name, projFile, asmFile, sourceCode);
+        }
+
+        /// <summary>
         /// Gets all examples.
         /// </summary>
         private static IEnumerable<Example> GetExamples()
@@ -129,18 +144,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Assert.IsTrue(projFiles.Any());
 
-            return projFiles
-                .Select(projFile =>
-                {
-                    var name = Path.GetFileNameWithoutExtension(projFile);
-                    var path = Path.GetDirectoryName(projFile);
-                    var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
-
-                    var sourceFile = Path.Combine(path, "Program.cs");
-                    var sourceCode = File.ReadAllText(sourceFile);
-
-                    return new Example(name, projFile, asmFile, sourceCode);
-                });
+            return projFiles.Select(projFile => GetExample(projFile));
         }
     }
 }

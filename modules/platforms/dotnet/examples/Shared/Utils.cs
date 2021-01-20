@@ -29,6 +29,7 @@ namespace IgniteExamples.Shared
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Deployment;
     using IgniteExamples.Shared.Models;
+    using IgniteExamples.Shared.Services;
 
     public static class Utils
     {
@@ -163,6 +164,14 @@ namespace IgniteExamples.Shared
                 new Address("1407 Pearlman Avenue, Boston, MA", 12110),
                 new[] {"Development", "QA"},
                 2);
+        }
+
+        /// <summary>
+        /// Deploys default services.
+        /// </summary>
+        public static void DeployDefaultServices(IIgnite ignite)
+        {
+            ignite.GetServices().DeployNodeSingleton("default-map-service", new MapService<int, string>());
         }
     }
 }

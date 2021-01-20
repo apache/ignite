@@ -1,6 +1,8 @@
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    using System.IO;
     using System.Linq;
+    using System.Reflection;
     using NUnit.Framework;
 
     /// <summary>
@@ -18,7 +20,22 @@ namespace Apache.Ignite.Core.Tests.Examples
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            // Init default services.
+            var sharedProj = Directory.GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
+                .Single(x => x.EndsWith("Shared.csproj"));
+
+            var asmFile = Path.Combine(Path.GetDirectoryName(sharedProj), "bin", "Debug", "netcoreapp2.1", "Shared.dll");
+            var asm = Assembly.LoadFrom(asmFile);
+            var utils = asm.GetType("IgniteExamples.Shared.Utils");
+
+            utils.InvokeMember(
+                "DeployDefaultServices",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod,
+                null,
+                null,
+                new object[] {ignite});
         }
 
         /// <summary>

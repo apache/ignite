@@ -3,7 +3,6 @@
     using System;
     using Apache.Ignite.Core;
     using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Services;
 
     public static class Program
     {
@@ -11,7 +10,7 @@
         {
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
-                ignite.GetServices().DeployNodeSingleton("default-map-service", new MapService<int, string>());
+                Utils.DeployDefaultServices(ignite);
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Server node started, press any key to exit ...");
