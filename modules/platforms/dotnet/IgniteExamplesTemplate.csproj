@@ -10,9 +10,10 @@
         <PackageTags>dotnet-new;templates;TODO</PackageTags>
         <TargetFramework>netcoreapp2.1</TargetFramework>
         <PackageProjectUrl>https://ignite.apache.org</PackageProjectUrl>
-        <PackageIconUrl>https://raw.githubusercontent.com/apache/ignite/ignite-2.9.1/modules/platforms/dotnet/logo_ignite_128x128.png</PackageIconUrl>
+        <PackageIcon>logo_ignite_128x128.png</PackageIcon>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <NoWarn>NU5119,NU5128</NoWarn>
 
         <IncludeContentInPack>true</IncludeContentInPack>
         <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -22,6 +23,7 @@
     <ItemGroup>
         <Content Include="examples\**\*" Exclude="examples\**\bin\**;examples\**\obj\**" />
         <Compile Remove="**\*" />
+        <None Include="logo_ignite_128x128.png" Pack="true" PackagePath="" />
     </ItemGroup>
 
 </Project>
