@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramewo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework.Tests", "Apache.Ignite.EntityFramework.Tests\Apache.Ignite.EntityFramework.Tests.csproj", "{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.TestDll2", "Apache.Ignite.Core.Tests.TestDll2\Apache.Ignite.Core.Tests.TestDll2.csproj", "{F4A69E2D-908E-4F0F-A794-84D508D60E5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

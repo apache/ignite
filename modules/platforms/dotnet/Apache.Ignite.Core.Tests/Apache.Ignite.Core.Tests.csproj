@@ -407,6 +407,10 @@
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll2\Apache.Ignite.Core.Tests.TestDll2.csproj">
+      <Project>{f4a69e2d-908e-4f0f-a794-84d508d60e5f}</Project>
+      <Name>Apache.Ignite.Core.Tests.TestDll2</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
