@@ -6,9 +6,13 @@
         <PackageId>Apache.Ignite.Examples</PackageId>
         <Title>Apache Ignite Examples</Title>
         <Authors>Apache Ignite</Authors>
-        <Description>TODO</Description>
+        <Description>Apache Ignite.NET example projects. This package is a convenient way to download and explore the examples. Documentation: https://ignite.apache.org/docs/latest/quick-start/dotnet</Description>
         <PackageTags>dotnet-new;templates;TODO</PackageTags>
         <TargetFramework>netcoreapp2.1</TargetFramework>
+        <PackageProjectUrl>https://ignite.apache.org</PackageProjectUrl>
+        <PackageIconUrl>https://raw.githubusercontent.com/apache/ignite/ignite-2.9.1/modules/platforms/dotnet/logo_ignite_128x128.png</PackageIconUrl>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 
         <IncludeContentInPack>true</IncludeContentInPack>
         <IncludeBuildOutput>false</IncludeBuildOutput>
