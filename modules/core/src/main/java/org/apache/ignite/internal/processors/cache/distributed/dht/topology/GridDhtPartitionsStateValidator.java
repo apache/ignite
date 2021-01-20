@@ -26,7 +26,6 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -53,13 +52,6 @@ public class GridDhtPartitionsStateValidator {
 
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
-
-    /**
-     * Collection of partitions that did not pass validation.
-     * This collection is supported and updated by coordinator node only.
-     * Represents the following mapping: group id -> set of partitions.
-     */
-    private Map<Integer, Set<Integer>> invalidParts = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -126,8 +118,6 @@ public class GridDhtPartitionsStateValidator {
         if (error.length() > 0) {
             Set<Integer> parts = new HashSet<>(resUpdCnt.keySet());
             parts.addAll(resSize.keySet());
-
-            invalidParts.putIfAbsent(top.groupId(), parts);
 
             throw new IgniteCheckedException(error.toString());
         }
