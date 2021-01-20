@@ -271,8 +271,11 @@ Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Benchmark*" | % {
     $projDir = split-path -parent $_.FullName
     $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
-    echo "Copying files to bin from '$dir'"
-    Copy-Item -Force -Recurse $dir bin
+
+    if ([IO.Directory]::Exists($dir)) {
+        echo "Copying files to bin from '$dir'"
+        Copy-Item -Force -Recurse $dir bin
+    }
 }
 
 
