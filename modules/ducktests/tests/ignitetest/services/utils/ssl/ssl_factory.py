@@ -30,7 +30,7 @@ class SslContextFactory:
     Ignite SslContextFactory.
     """
     # pylint: disable=R0913
-    def __init__(self, root_dir,
+    def __init__(self, root_dir: str = "/opt",
                  key_store_jks: str = DEFAULT_SERVER_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
 

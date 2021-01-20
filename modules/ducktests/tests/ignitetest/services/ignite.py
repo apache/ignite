@@ -65,9 +65,17 @@ class IgniteService(IgniteAwareService):
 
     def update_config_with_globals(self):
         if self.globals.get("use_ssl", False) and (self.config.ssl_context_factory is None):
-            self.config = self.config._replace(ssl_context_factory=SslContextFactory(DEFAULT_SERVER_KEYSTORE))
+            server_dict = self.globals.get("server", None)
+            root_dir = self.globals.get("install_root", "/opt")
+
+            if server_dict:
+                ssl_context_factory = SslContextFactory(root_dir, **server_dict)
+            else:
+                ssl_context_factory = SslContextFactory(root_dir, DEFAULT_SERVER_KEYSTORE)
+
+            self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
             self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory))
+                ssl_enabled=True, ssl_context_factory=ssl_context_factory))
 
 
 def node_failed_event_pattern(failed_node_id=None):

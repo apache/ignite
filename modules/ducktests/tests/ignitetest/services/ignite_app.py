@@ -16,7 +16,6 @@
 """
 This module contains the base class to build Ignite aware application written on java.
 """
-
 import re
 
 # pylint: disable=W0622
@@ -112,6 +111,13 @@ class IgniteApplicationService(IgniteAwareService):
 
     def update_config_with_globals(self):
         if self.globals.get("use_ssl", False) and (self.config.ssl_context_factory is None):
-            self.config = self.config._replace(ssl_context_factory=SslContextFactory(DEFAULT_CLIENT_KEYSTORE))
+            client_dict = self.globals.get("client", None)
+            root_dir = self.globals.get("install_root", "/opt")
+            if client_dict:
+                ssl_context_factory = SslContextFactory(root_dir, **client_dict)
+            else:
+                ssl_context_factory = SslContextFactory(root_dir, DEFAULT_CLIENT_KEYSTORE)
+
+            self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
             self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory))
+                ssl_enabled=True, ssl_context_factory=ssl_context_factory))
