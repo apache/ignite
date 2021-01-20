@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.internal;
+package org.apache.ignite.internal.cdc;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;

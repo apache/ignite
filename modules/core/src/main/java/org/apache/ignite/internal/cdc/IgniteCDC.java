@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.internal;
+package org.apache.ignite.internal.cdc;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,7 +95,7 @@ public class IgniteCDC implements Runnable {
     private File marshaller;
 
     /** CDC state. */
-    private CDCState state;
+    private CDCConsumerState state;
 
     /** Save state to start from. */
     private WALPointer initState;
@@ -165,7 +165,7 @@ public class IgniteCDC implements Runnable {
                 log.info("--------------------------------");
             }
 
-            state = new CDCState(cdcDir.resolve(STATE_DIR), consumer.id());
+            state = new CDCConsumerState(cdcDir.resolve(STATE_DIR), consumer.id());
 
             initState = state.load();
 

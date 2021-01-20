@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.internal;
+package org.apache.ignite.internal.cdc;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
 /**
  * CDC state holder.
  */
-public class CDCState {
+public class CDCConsumerState {
     /** State file. */
     private final Path state;
 
@@ -47,7 +47,7 @@ public class CDCState {
      * @param stateDir State directory.
      * @param consumerId Consumer ID.
      */
-    public CDCState(Path stateDir, String consumerId) {
+    public CDCConsumerState(Path stateDir, String consumerId) {
         String fileName = "state-" + U.maskForFileName(consumerId) + FILE_SUFFIX;
 
         state = stateDir.resolve(fileName);
