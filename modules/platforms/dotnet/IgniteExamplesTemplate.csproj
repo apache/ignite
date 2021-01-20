@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageType>Template</PackageType>
+        <PackageVersion>1.0</PackageVersion>
+        <PackageId>Apache.Ignite.Examples</PackageId>
+        <Title>Apache Ignite Examples</Title>
+        <Authors>Apache Ignite</Authors>
+        <Description>TODO</Description>
+        <PackageTags>dotnet-new;templates;TODO</PackageTags>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
+
+        <IncludeContentInPack>true</IncludeContentInPack>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <ContentTargetFolders>content</ContentTargetFolders>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="examples\**\*" Exclude="examples\**\bin\**;examples\**\obj\**" />
+        <Compile Remove="**\*" />
+    </ItemGroup>
+
+</Project>
