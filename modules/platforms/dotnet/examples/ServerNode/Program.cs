@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.ServerNode
+namespace Apache.Ignite.Examples.ServerNode
 {
     using System;
     using Apache.Ignite.Core;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     public static class Program
     {

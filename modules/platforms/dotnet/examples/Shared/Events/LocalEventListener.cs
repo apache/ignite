@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Events
+namespace Apache.Ignite.Examples.Shared.Events
 {
     using System;
     using System.Threading;

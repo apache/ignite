@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.MultiTieredCache
+namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
 {
     using System;
     using System.IO;
@@ -24,7 +24,7 @@ namespace IgniteExamples.Thick.Cache.MultiTieredCache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// This example demonstrates on how to configure a multi-tiered Ignite cache that will store data in different

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Sql.LinqThin
+namespace Apache.Ignite.Examples.Thin.Sql.LinqThin
 {
     using System;
     using System.Linq;
@@ -25,9 +25,9 @@ namespace IgniteExamples.Thin.Sql.LinqThin
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
     using Apache.Ignite.Linq;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates strongly-typed SQL queries with Ignite LINQ provider in thin client.

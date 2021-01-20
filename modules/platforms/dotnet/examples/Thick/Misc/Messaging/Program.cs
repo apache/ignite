@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Misc.Messaging
+namespace Apache.Ignite.Examples.Thick.Misc.Messaging
 {
     using System;
     using System.Threading;
     using Apache.Ignite.Core;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Messaging;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Messaging;
 
     /// <summary>
     /// This example demonstrates Ignite messaging.

@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Compute.Func
+namespace Apache.Ignite.Examples.Thick.Compute.Func
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Compute;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Compute;
 
     /// <summary>
     /// This example demonstrates compute func execution.

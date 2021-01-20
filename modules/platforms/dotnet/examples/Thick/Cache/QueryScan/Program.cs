@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.QueryScan
+namespace Apache.Ignite.Examples.Thick.Cache.QueryScan
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Cache;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates a Scan query with a remote filter.

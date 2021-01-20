@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Cache
+namespace Apache.Ignite.Examples.Shared.Cache
 {
     using System;
     using Apache.Ignite.Core.Cache;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// Filter for scan query example.

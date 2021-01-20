@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Cache
+namespace Apache.Ignite.Examples.Shared.Cache
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// Example cache store implementation.

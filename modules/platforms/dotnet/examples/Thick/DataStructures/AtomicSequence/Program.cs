@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.DataStructures.AtomicSequence
+namespace Apache.Ignite.Examples.Thick.DataStructures.AtomicSequence
 {
     using System;
     using System.Threading;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.DataStructures;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.DataStructures;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.DataStructures;
 
     /// <summary>
     /// The example demonstrates the usage of the distributed atomic sequence data structure, which has functionality

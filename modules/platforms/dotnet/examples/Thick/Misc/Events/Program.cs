@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Misc.Events
+namespace Apache.Ignite.Examples.Thick.Misc.Events
 {
     using System;
     using System.Linq;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Events;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Compute;
-    using IgniteExamples.Shared.Models;
-    using LocalEventListener = IgniteExamples.Shared.Events.LocalEventListener;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Compute;
+    using Apache.Ignite.Examples.Shared.Models;
+    using LocalEventListener = Apache.Ignite.Examples.Shared.Events.LocalEventListener;
 
     /// <summary>
     /// This example demonstrates Ignite events.

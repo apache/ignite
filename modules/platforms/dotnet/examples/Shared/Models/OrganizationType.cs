@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Models
+namespace Apache.Ignite.Examples.Shared.Models
 {
     /// <summary>
     /// Organization type.

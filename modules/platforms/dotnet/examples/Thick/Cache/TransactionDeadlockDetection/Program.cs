@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.TransactionDeadlockDetection
+namespace Apache.Ignite.Examples.Thick.Cache.TransactionDeadlockDetection
 {
     using System;
     using System.Collections.Generic;
@@ -26,7 +26,7 @@ namespace IgniteExamples.Thick.Cache.TransactionDeadlockDetection
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// This example demonstrates the transaction deadlock detection mechanism.

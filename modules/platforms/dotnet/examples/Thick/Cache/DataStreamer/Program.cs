@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.DataStreamer
+namespace Apache.Ignite.Examples.Thick.Cache.DataStreamer
 {
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Datastream;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// Demonstrates how cache can be populated with data utilizing <see cref="IDataStreamer{TK,TV}"/>.

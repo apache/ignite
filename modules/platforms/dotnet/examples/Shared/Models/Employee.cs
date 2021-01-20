@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-using System.Collections.Generic;
-using System.Linq;
-using Apache.Ignite.Core.Cache.Configuration;
-
-namespace IgniteExamples.Shared.Models
+namespace Apache.Ignite.Examples.Shared.Models
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
+
     /// <summary>
     /// Employee.
     /// </summary>

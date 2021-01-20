@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.DataStructures.AtomicReference
+namespace Apache.Ignite.Examples.Thick.DataStructures.AtomicReference
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.DataStructures;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.DataStructures;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.DataStructures;
 
     /// <summary>
     /// This example demonstrates the usage of the distributed atomic reference data structure.

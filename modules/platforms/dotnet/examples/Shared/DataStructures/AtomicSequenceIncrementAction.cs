@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.DataStructures
+namespace Apache.Ignite.Examples.Shared.DataStructures
 {
     using System;
     using Apache.Ignite.Core;

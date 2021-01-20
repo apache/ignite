@@ -16,7 +16,7 @@
  */
 
 #pragma warning disable 649 // Readonly field is never assigned
-namespace IgniteExamples.Shared.Services
+namespace Apache.Ignite.Examples.Shared.Services
 {
     using System;
     using Apache.Ignite.Core;

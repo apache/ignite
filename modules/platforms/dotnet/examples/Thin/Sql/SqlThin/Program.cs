@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Sql.SqlThin
+namespace Apache.Ignite.Examples.Thin.Sql.SqlThin
 {
     using System;
     using Apache.Ignite.Core;
@@ -23,8 +23,8 @@ namespace IgniteExamples.Thin.Sql.SqlThin
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates SQL queries with thin client.

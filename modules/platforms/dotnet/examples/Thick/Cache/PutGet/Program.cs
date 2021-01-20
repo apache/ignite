@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.PutGet
+namespace Apache.Ignite.Examples.Thick.Cache.PutGet
 {
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// Put/Get example.

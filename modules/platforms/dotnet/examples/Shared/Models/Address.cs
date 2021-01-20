@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Binary;
-using Apache.Ignite.Core.Cache.Configuration;
-
-namespace IgniteExamples.Shared.Models
+namespace Apache.Ignite.Examples.Shared.Models
 {
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
+
     /// <summary>
     /// Address.
     /// </summary>

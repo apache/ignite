@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Sql.Linq
+namespace Apache.Ignite.Examples.Thick.Sql.Linq
 {
     using System;
     using System.Linq;
@@ -24,9 +24,9 @@ namespace IgniteExamples.Thick.Sql.Linq
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
     using Apache.Ignite.Linq;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates strongly-typed SQL queries with Ignite LINQ provider.

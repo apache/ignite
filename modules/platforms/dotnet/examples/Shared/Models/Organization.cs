@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Cache.Configuration;
-
-namespace IgniteExamples.Shared.Models
+namespace Apache.Ignite.Examples.Shared.Models
 {
+    using System;
+    using Apache.Ignite.Core.Cache.Configuration;
+
     /// <summary>
     /// Organization.
     /// </summary>

@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Sql.Dml
+namespace Apache.Ignite.Examples.Thick.Sql.Dml
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example showcases DML capabilities of the Ignite SQL engine.

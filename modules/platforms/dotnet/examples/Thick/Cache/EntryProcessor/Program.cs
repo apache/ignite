@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.EntryProcessor
+namespace Apache.Ignite.Examples.Thick.Cache.EntryProcessor
 {
     using System;
     using System.Linq;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Cache;
 
     /// <summary>
     /// This example demonstrates the affinity collocation of a closure with data

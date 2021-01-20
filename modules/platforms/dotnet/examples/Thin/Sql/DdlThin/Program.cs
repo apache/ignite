@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Sql.DdlThin
+namespace Apache.Ignite.Examples.Thin.Sql.DdlThin
 {
     using System;
     using Apache.Ignite.Core;
@@ -23,7 +23,7 @@ namespace IgniteExamples.Thin.Sql.DdlThin
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// This example showcases DDL capabilities of the Ignite SQL engine with thin client.

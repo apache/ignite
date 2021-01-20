@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Cache.QueryContinuousThin
+namespace Apache.Ignite.Examples.Thin.Cache.QueryContinuousThin
 {
     using System;
     using System.Collections.Generic;
@@ -24,8 +24,8 @@ namespace IgniteExamples.Thin.Cache.QueryContinuousThin
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Cache;
 
     /// <summary>
     /// This example demonstrates how continuous query provides a way to subscribe to cache updates.

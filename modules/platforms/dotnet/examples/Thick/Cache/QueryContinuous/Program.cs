@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.QueryContinuous
+namespace Apache.Ignite.Examples.Thick.Cache.QueryContinuous
 {
     using System;
     using System.Collections.Generic;
@@ -23,8 +23,8 @@ namespace IgniteExamples.Thick.Cache.QueryContinuous
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Cache;
 
     /// <summary>
     /// Continuous Query example.

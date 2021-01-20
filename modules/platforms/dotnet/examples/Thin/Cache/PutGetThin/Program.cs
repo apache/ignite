@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Cache.PutGetThin
+namespace Apache.Ignite.Examples.Thin.Cache.PutGetThin
 {
     using System;
     using System.Collections.Generic;
@@ -24,8 +24,8 @@ namespace IgniteExamples.Thin.Cache.PutGetThin
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     public static class Program
     {

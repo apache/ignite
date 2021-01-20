@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Compute.Task
+namespace Apache.Ignite.Examples.Thick.Compute.Task
 {
     using System;
     using System.Linq;
     using Apache.Ignite.Core;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Compute;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Compute;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates compute task execution.

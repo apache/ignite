@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Compute
+namespace Apache.Ignite.Examples.Shared.Compute
 {
     using System;
     using System.Collections;
     using Apache.Ignite.Core.Compute;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// Average salary job.

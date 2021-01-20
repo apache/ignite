@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Messaging
+namespace Apache.Ignite.Examples.Shared.Messaging
 {
     /// <summary>
     /// Message topics.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.Transaction
+namespace Apache.Ignite.Examples.Thick.Cache.Transaction
 {
     using System;
     using System.Transactions;
@@ -23,8 +23,8 @@ namespace IgniteExamples.Thick.Cache.Transaction
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates transactional data updates.

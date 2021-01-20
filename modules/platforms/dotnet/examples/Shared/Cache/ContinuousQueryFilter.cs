@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Shared.Cache
+namespace Apache.Ignite.Examples.Shared.Cache
 {
     using Apache.Ignite.Core.Cache.Event;
 

@@ -16,13 +16,13 @@
  */
 
 #pragma warning disable 649 // Readonly field is never assigned
-namespace IgniteExamples.Thick.Misc.Lifecycle
+namespace Apache.Ignite.Examples.Thick.Misc.Lifecycle
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Resource;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleHandler"/> implementation

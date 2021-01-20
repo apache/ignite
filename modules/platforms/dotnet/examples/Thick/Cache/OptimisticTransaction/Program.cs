@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.OptimisticTransaction
+namespace Apache.Ignite.Examples.Thick.Cache.OptimisticTransaction
 {
     using System;
     using System.Threading;
@@ -24,7 +24,7 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// This example demonstrates optimistic transaction concurrency control.

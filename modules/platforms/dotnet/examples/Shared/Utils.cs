@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Client;
-using Apache.Ignite.Core.Discovery.Tcp;
-using Apache.Ignite.Core.Discovery.Tcp.Multicast;
-using Apache.Ignite.Core.Log;
-
-namespace IgniteExamples.Shared
+namespace Apache.Ignite.Examples.Shared
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Deployment;
-    using IgniteExamples.Shared.Models;
-    using IgniteExamples.Shared.Services;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Examples.Shared.Models;
+    using Apache.Ignite.Examples.Shared.Services;
 
     public static class Utils
     {

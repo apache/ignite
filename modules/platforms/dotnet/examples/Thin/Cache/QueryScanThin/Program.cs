@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Cache.QueryScanThin
+namespace Apache.Ignite.Examples.Thin.Cache.QueryScanThin
 {
     using System;
     using Apache.Ignite.Core;
@@ -23,9 +23,9 @@ namespace IgniteExamples.Thin.Cache.QueryScanThin
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Cache;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates a Scan query with a remote filter.

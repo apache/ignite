@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Compute.PeerAssemblyLoading
+namespace Apache.Ignite.Examples.Thick.Compute.PeerAssemblyLoading
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Deployment;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// Example demonstrating compute execution with peer assembly loading.

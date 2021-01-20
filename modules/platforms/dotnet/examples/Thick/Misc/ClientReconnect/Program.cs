@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Misc.ClientReconnect
+namespace Apache.Ignite.Examples.Thick.Misc.ClientReconnect
 {
     using System;
     using System.Threading;
@@ -24,7 +24,7 @@ namespace IgniteExamples.Thick.Misc.ClientReconnect
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
-    using IgniteExamples.Shared;
+    using Apache.Ignite.Examples.Shared;
 
     /// <summary>
     /// This example demonstrates the usage of client's automatic reconnection feature.

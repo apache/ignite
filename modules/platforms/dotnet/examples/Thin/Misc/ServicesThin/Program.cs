@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Misc.ServicesThin
+namespace Apache.Ignite.Examples.Thin.Misc.ServicesThin
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Client;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Services;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Services;
 
     /// <summary>
     /// This example demonstrates Ignite thin client service invocation.

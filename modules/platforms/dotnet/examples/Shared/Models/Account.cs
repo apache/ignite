@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using System;
-
-namespace IgniteExamples.Shared.Models
+namespace Apache.Ignite.Examples.Shared.Models
 {
+    using System;
+
     /// <summary>
     /// Account object. Used in transaction example.
     /// </summary>

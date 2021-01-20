@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.Store
+namespace Apache.Ignite.Examples.Thick.Cache.Store
 {
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Cache;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates a custom cache store usage.
