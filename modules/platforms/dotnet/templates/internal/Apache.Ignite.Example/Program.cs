@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.ExampleProject
+namespace Apache.Ignite.Examples.Thick.ExampleProject
 {
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// TODO

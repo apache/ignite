@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.ExampleProjectThin
+namespace Apache.Ignite.Examples.Thin.ExampleProjectThin
 {
     using System;
     using System.Collections.Generic;
@@ -24,8 +24,8 @@ namespace IgniteExamples.Thin.ExampleProjectThin
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
-    using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using Apache.Ignite.Examples.Shared;
+    using Apache.Ignite.Examples.Shared.Models;
 
     /// <summary>
     /// TODO
