@@ -17,16 +17,13 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -57,14 +54,9 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     private static final String NAME_DEPID_CITY_IDX = "NAME_DEPID_CITY_IDX";
 
-    /** */
-    private static IgniteEx client;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite grid = startGridsMultiThreaded(2);
-
-        client = startClientGrid();
 
         QueryEntity projEntity = new QueryEntity();
         projEntity.setKeyType(Integer.class.getName());
@@ -97,7 +89,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
         CacheConfiguration<Integer, Developer> projCfg = cache(projEntity);
 
-        IgniteCache<Integer, Developer> devCache = client.createCache(projCfg);
+        IgniteCache<Integer, Developer> devCache = grid.createCache(projCfg);
 
         devCache.put(1, new Developer("Mozart", 3, "Vienna", 33));
         devCache.put(2, new Developer("Beethoven", 2, "Vienna", 44));
@@ -810,7 +802,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByNameCityAsc() {
-        assertCliQuery("SELECT * FROM Developer ORDER BY name, city")
+        assertQuery("SELECT * FROM Developer ORDER BY name, city")
             .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .matches(containsSubPlan("IgniteSort"))
@@ -839,24 +831,6 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(16, "Zimmer", 15, "", -1)
             .ordered()
             .check();
-    }
-
-    /** */
-    @Test
-    public void testOrderByNameCityAscCli() {
-/*        assertCliQuery("SELECT * FROM Developer ORDER BY name, city")
-            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
-            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
-            .matches(containsSubPlan("IgniteSort"))
-            .ordered()
-            .check();*/
-
-        QueryEngine eng = Commons.lookupComponent(client.context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> explainCursors =
-            eng.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + "SELECT * FROM Developer");
-
-        System.err.println(explainCursors.get(0).getAll());
     }
 
     /** */
@@ -930,15 +904,6 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
-            }
-        };
-    }
-
-    /** */
-    private QueryChecker assertCliQuery(String qry) {
-        return new QueryChecker(qry) {
-            @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(client.context(), QueryEngine.class);
             }
         };
     }
