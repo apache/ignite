@@ -1290,7 +1290,7 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Refreshes table stats if they are outdated.
+     * Refreshes table stats if they are possibly outdated, must be called only in client mode.
      */
     private void refreshStatsIfNeededEx() {
         boolean client = cacheInfo.cacheContext().kernalContext().clientNode();
