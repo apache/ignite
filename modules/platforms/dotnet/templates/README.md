@@ -1,17 +1,25 @@
 # Apache Ignite Project Templates
 
-Templates for `dotnet new` command.
+Templates for the `dotnet new` command.
 
-## ExampleProject
+## Public
 
-Template for Server and Thick Client modes.
+`public` templates are published to NuGet for the end users
 
-* Install: `dotnet new --install ExampleProject`
+## Internal
+
+`internal` templates are only used locally and not published
+
+### Apache.Ignite.Example
+
+Template for Server and Thick Client examples.
+
+* Install: `dotnet new --install internal/Apache.Ignite.Example`
 * Use: `dotnet new ignite-example`
 
-## ExampleProjectThin
+### Apache.Ignite.ExampleThin
 
-Template for Thin Client mode.
+Template for Thin Client examples.
 
-* Install: `dotnet new --install ExampleProjectThin`
+* Install: `dotnet new --install internal/Apache.Ignite.ExampleThin`
 * Use: `dotnet new ignite-example-thin`
