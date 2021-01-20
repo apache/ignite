@@ -1,13 +1,9 @@
 <Project>
-    <PropertyGroup Condition="Exists('..\bin\Apache.Ignite.Core.dll')">
-        <DefineConstants>$(DefineConstants);COMMERCIAL_LOCKING;ENCRYPT_DB</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="Exists('..\bin\Apache.Ignite.Core.dll')">
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll')">
         <IgniteBinaryDistro>true</IgniteBinaryDistro>
     </PropertyGroup>
 
-    <PropertyGroup Condition="Exists('..\Apache.Ignite.Core\Ignition.cs')">
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Ignition.cs') And Exists('$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\bin')">
         <IgniteSourceDistro>true</IgniteSourceDistro>
     </PropertyGroup>
 
