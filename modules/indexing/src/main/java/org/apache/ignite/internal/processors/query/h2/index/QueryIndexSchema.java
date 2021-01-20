@@ -166,12 +166,19 @@ public class QueryIndexSchema implements SortedIndexSchema {
     /**
      * @return H2 table.
      */
-    GridH2Table getTable() {
+    public GridH2Table getTable() {
         return table;
     }
 
-    /** */
-    private Object key(CacheDataRow row) {
+    /**
+     * @return H2 index columns.
+     */
+    public IndexColumn[] getColumns() {
+        return h2IdxColumns;
+    }
+
+    /** @return Cache key for specified cache row. */
+    public Object key(CacheDataRow row) {
         KeyCacheObject key = row.key();
 
         Object o = getBinaryObject(key);

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -143,6 +143,10 @@ public class H2Utils {
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
+
+    /** Spatial index factory class name. */
+    private static final String SPATIAL_IDX_FACTORY_CLS =
+        "org.apache.ignite.internal.processors.query.h2.opt.GeoSpatialUtils";
 
     /** Quotation character. */
     private static final char ESC_CH = '\"';
@@ -332,20 +336,11 @@ public class H2Utils {
     @SuppressWarnings("ConstantConditions")
     public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
         try {
-            Class<?> cls = Class.forName(SPATIAL_IDX_CLS);
+            Class<?> fctCls = Class.forName(SPATIAL_IDX_FACTORY_CLS);
 
-            Constructor<?> ctor = cls.getConstructor(
-                GridH2Table.class,
-                String.class,
-                Integer.TYPE,
-                IndexColumn[].class);
+            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, IndexColumn[].class);
 
-            if (!ctor.isAccessible())
-                ctor.setAccessible(true);
-
-            final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
-
-            return (GridH2IndexBase)ctor.newInstance(tbl, idxName, segments, cols);
+            return (GridH2IndexBase) fctMethod.invoke(null, tbl, idxName, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
