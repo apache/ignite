@@ -6,6 +6,13 @@ Templates for the `dotnet new` command.
 
 `public` templates are published to NuGet for the end users
 
+### Apache.Ignite.Examples
+
+Template for the entire `../examples/Apache.Ignite.Examples.sln` solution - an easy way to deliver examples to the end user.
+* Built as part of `build.ps1`
+* Published to NuGet during the release
+* Use: `dotnet new ignite-examples`
+
 ## Internal
 
 `internal` templates are only used locally and not published
