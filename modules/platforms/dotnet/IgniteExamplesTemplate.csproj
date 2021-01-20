@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <PackageType>Template</PackageType>
-        <PackageVersion>1.0</PackageVersion>
+        <PackageVersion>$version$</PackageVersion>
         <PackageId>Apache.Ignite.Examples</PackageId>
         <Title>Apache Ignite Examples</Title>
         <Authors>Apache Ignite</Authors>
