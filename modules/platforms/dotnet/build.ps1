@@ -174,20 +174,21 @@ cd $PSScriptRoot
 
 
 # 2) Build .NET
+if ((!$skipDotNet) -and (!$skipNuGet)) {
+    # Detect NuGet
+    $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
-# Detect NuGet
-$ng = if ($nugetPath) { $nugetPath } else { "nuget" }
+    if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
+        $ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }
 
-if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
-	$ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }
+        if (-not (Test-Path $ng)) {
+            echo "Downloading NuGet..."
+            (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", "$PSScriptRoot/nuget.exe")
+        }
+    }
 
-	if (-not (Test-Path $ng)) {
-		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", "$PSScriptRoot/nuget.exe")
-	}
+    echo "Using NuGet from: $ng"
 }
-
-echo "Using NuGet from: $ng"
 
 if (!$skipDotNet) {
     $msBuild = "msbuild"
