@@ -5,5 +5,9 @@
   "identity": "Apache.Ignite.Examples",
   "name": "Apache Ignite Examples",
   "shortName": "ignite-examples",
-  "preferNameDirectory":"true"
+  "preferNameDirectory":true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
 }
