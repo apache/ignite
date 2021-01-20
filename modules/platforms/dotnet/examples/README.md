@@ -18,7 +18,7 @@ Windows, Linux, and macOS are supported.
 * Ignite website: https://ignite.apache.org/download.cgi
 * git: `git clone https://github.com/apache/ignite --depth=1`, `cd ignite/modules/platforms/dotnet/examples`
 
-# Run
+# Run Examples
 
 ## Command Line
 
