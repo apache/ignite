@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F4A69E2D-908E-4F0F-A794-84D508D60E5F}</ProjectGuid>
+    <ProjectGuid>{4D8DDA6D-4616-4DF1-A2DA-22FB3A5EC817}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Apache.Ignite.Core.Tests.TestDll2</RootNamespace>
@@ -40,6 +40,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Account.cs" />
     <Compile Include="Address.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
