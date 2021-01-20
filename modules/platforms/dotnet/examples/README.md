@@ -11,10 +11,11 @@
 
 Windows, Linux, and macOS are supported.
 
-# Download
+# Download Examples
 
-TODO: Download with the binary packge, or download from GitHub
-TODO: Link to here from the docs? How are users supposed to find the examples?
+* Ignite website: https://ignite.apache.org/download.cgi
+* git: `git clone https://github.com/apache/ignite --depth=1`, `cd ignite/modules/platforms/dotnet/examples`
+* NuGet: TODO - template? How to update the template to a new version? Separate task?
 
 # Run
 
