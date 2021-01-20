@@ -270,11 +270,13 @@ Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*DotNetCore*" `
                      | where Name -NotLike "*Benchmark*" | % {
     $projDir = split-path -parent $_.FullName
-    $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
+    $dir = [IO.Path]::Combine($projDir, "bin", $configuration)
 
     if ([IO.Directory]::Exists($dir)) {
         echo "Copying files to bin from '$dir'"
-        Copy-Item -Force -Recurse $dir bin
+
+        $dirAll = [IO.Path]::Combine($dir, "*")
+        Copy-Item -Force -Recurse $dirAll bin
     }
 }
 
