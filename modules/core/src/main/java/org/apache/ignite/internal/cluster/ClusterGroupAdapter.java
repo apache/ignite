@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -218,6 +219,15 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     public final IgniteCompute compute() {
         if (compute == null) {
             assert ctx != null;
+
+            UUID subjId = this.subjId;
+
+            if (subjId == null && ctx.security().enabled()) {
+                SecuritySubject secSubj = ctx.security().securityContext().subject();
+
+                if (secSubj != null)
+                    subjId = secSubj.id();
+            }
 
             compute = new IgniteComputeImpl(ctx, this, subjId);
         }
