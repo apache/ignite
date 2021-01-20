@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <RootNamespace>IgniteExamples.Thin.Misc.ServicesThin</RootNamespace>
+    <RootNamespace>Apache.Ignite.Examples.Thin.Misc.ServicesThin</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

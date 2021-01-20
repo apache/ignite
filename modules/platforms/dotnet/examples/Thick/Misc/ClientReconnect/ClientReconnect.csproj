@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp2.1</TargetFramework>
-        <RootNamespace>IgniteExamples.Thick.Misc.ClientReconnect</RootNamespace>
+        <RootNamespace>Apache.Ignite.Examples.Thick.Misc.ClientReconnect</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

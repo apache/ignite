@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp2.1</TargetFramework>
-        <RootNamespace>IgniteExamples.Thick.Sql.Sql</RootNamespace>
+        <RootNamespace>Apache.Ignite.Examples.Thick.Sql.Sql</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

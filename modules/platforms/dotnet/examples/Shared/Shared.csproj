@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <RootNamespace>IgniteExamples.Shared</RootNamespace>
+    <RootNamespace>Apache.Ignite.Examples.Shared</RootNamespace>
     <NoWarn>CS0649</NoWarn>
   </PropertyGroup>
 

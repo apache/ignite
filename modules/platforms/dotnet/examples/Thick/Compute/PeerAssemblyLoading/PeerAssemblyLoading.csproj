@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp2.1</TargetFramework>
-        <RootNamespace>IgniteExamples.Thick.Compute.PeerAssemblyLoading</RootNamespace>
+        <RootNamespace>Apache.Ignite.Examples.Thick.Compute.PeerAssemblyLoading</RootNamespace>
         <AssemblyVersion>1.0.*</AssemblyVersion>
         <Deterministic>false</Deterministic>
         <NoWarn>CS7035</NoWarn>
