@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cdc.internal.DataChangeConsumer;
 import org.apache.ignite.cdc.internal.IgniteCDC;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,11 +38,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -102,11 +98,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     /** Simplest CDC test. */
     @Test
     public void testReadAllKeys() throws Exception {
-        StoreKeysConsumer consumer = new StoreKeysConsumer();
+        TestDataChangeListener lsnr = new TestDataChangeListener();
 
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-        IgniteCDC cdc = new IgniteCDC(cfg, consumer);
+        IgniteCDC cdc = new IgniteCDC(cfg, new DataChangeConsumer<>(lsnr));
 
         IgniteInternalFuture<?> fut;
 
@@ -120,26 +116,26 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         addData(cache, 0, KEYS_CNT);
 
-        assertTrue(waitForSize(KEYS_CNT, consumer));
+        assertTrue(waitForSize(KEYS_CNT, lsnr));
 
         fut.cancel();
 
-        Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
+        Set<Integer> keys = lsnr.keys(cacheId(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < KEYS_CNT; i++)
             assertTrue(keys.contains(i));
 
-        assertTrue(consumer.stoped);
+        assertTrue(lsnr.stoped);
     }
 
     /** Simplest CDC test. */
     @Test
     public void testRestoreStateAfterStop() throws Exception {
-        StoreKeysConsumer consumer = new StoreKeysConsumer();
+        TestDataChangeListener lsnr = new TestDataChangeListener();
 
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-        IgniteCDC cdc = new IgniteCDC(cfg, consumer);
+        IgniteCDC cdc = new IgniteCDC(cfg, new DataChangeConsumer<>(lsnr));
 
         IgniteInternalFuture<?> runFut = runAsync(cdc);
 
@@ -153,11 +149,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
-                assertTrue(waitForSize(2, consumer));
+                assertTrue(waitForSize(2, lsnr));
 
                 runFut.cancel();
 
-                assertTrue(consumer.stoped);
+                assertTrue(lsnr.stoped);
 
                 cdc.run();
             }
@@ -168,16 +164,16 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         addData(cache, KEYS_CNT, KEYS_CNT * 2);
 
-        assertTrue(waitForSize(KEYS_CNT * 2, consumer));
+        assertTrue(waitForSize(KEYS_CNT * 2, lsnr));
 
         restartFut.cancel();
 
-        Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
+        Set<Integer> keys = lsnr.keys(cacheId(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
 
-        assertTrue(consumer.stoped);
+        assertTrue(lsnr.stoped);
     }
 
     @Test
@@ -191,8 +187,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> addDataFut = runAsync(() -> addData(cache, 0, KEYS_CNT));
 
-        StoreKeysConsumer consumer1 = new StoreKeysConsumer();
-        StoreKeysConsumer consumer2 = new StoreKeysConsumer();
+        TestDataChangeListener lsnr1 = new TestDataChangeListener();
+        TestDataChangeListener lsnr2 = new TestDataChangeListener();
 
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
@@ -201,12 +197,12 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             System.setProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID, Objects.toString(ign1.localNode().consistentId()));
             System.setProperty(IgniteCDC.IGNITE_CDC_NODE_IDX, "0");
 
-            IgniteCDC cdc1 = new IgniteCDC(cfg1, consumer1);
+            IgniteCDC cdc1 = new IgniteCDC(cfg1, new DataChangeConsumer<>(lsnr1));
 
             System.setProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID, Objects.toString(ign2.localNode().consistentId()));
             System.setProperty(IgniteCDC.IGNITE_CDC_NODE_IDX, "1");
 
-            IgniteCDC cdc2 = new IgniteCDC(cfg2, consumer2);
+            IgniteCDC cdc2 = new IgniteCDC(cfg2, new DataChangeConsumer<>(lsnr2));
 
             IgniteInternalFuture<?> fut1 = runAsync(cdc1);
 
@@ -218,16 +214,16 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             addDataFut.get(getTestTimeout());
 
-            assertTrue(waitForSize(KEYS_CNT * 2, consumer1, consumer2));
+            assertTrue(waitForSize(KEYS_CNT * 2, lsnr1, lsnr2));
 
-            assertFalse(consumer1.stoped);
-            assertFalse(consumer2.stoped);
+            assertFalse(lsnr1.stoped);
+            assertFalse(lsnr2.stoped);
 
             fut1.cancel();
             fut2.cancel();
 
-            assertTrue(consumer1.stoped);
-            assertTrue(consumer2.stoped);
+            assertTrue(lsnr1.stoped);
+            assertTrue(lsnr2.stoped);
         }
         finally {
             System.clearProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID);
@@ -239,11 +235,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     public void testOneOfConcurrentRunsFail() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        StoreKeysConsumer consumer1 = new StoreKeysConsumer();
-        StoreKeysConsumer consumer2 = new StoreKeysConsumer();
+        TestDataChangeListener lsnr1 = new TestDataChangeListener();
+        TestDataChangeListener lsnr2 = new TestDataChangeListener();
 
-        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), consumer1));
-        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), consumer2));
+        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), new DataChangeConsumer<>(lsnr1)));
+        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), new DataChangeConsumer<>(lsnr2)));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -254,7 +250,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             fut2.cancel();
 
-            assertTrue(consumer2.stoped);
+            assertTrue(lsnr2.stoped);
         }
         else {
             assertNotNull(fut2.error());
@@ -263,7 +259,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             fut1.cancel();
 
-            assertTrue(consumer1.stoped);
+            assertTrue(lsnr1.stoped);
         }
     }
 
@@ -279,27 +275,27 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         addData(cache, 0, KEYS_CNT);
 
-        for (int i=0; i<3; i++) {
-            StoreKeysConsumer consumer = new StoreKeysConsumer() {
+        for (int i = 0; i < 3; i++) {
+            TestDataChangeListener lsnr = new TestDataChangeListener() {
                 @Override protected boolean commit() {
                     return false;
                 }
             };
 
-            IgniteCDC cdc = new IgniteCDC(cfg, consumer);
+            IgniteCDC cdc = new IgniteCDC(cfg, new DataChangeConsumer<>(lsnr));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
-            assertTrue(waitForSize(KEYS_CNT, consumer));
+            assertTrue(waitForSize(KEYS_CNT, lsnr));
 
             fut.cancel();
 
-            assertTrue(consumer.stoped);
+            assertTrue(lsnr.stoped);
         }
 
         final int[] expSz = {KEYS_CNT};
 
-        StoreKeysConsumer consumer = new StoreKeysConsumer() {
+        TestDataChangeListener lsnr = new TestDataChangeListener() {
             @Override public String id() {
                 return "half-consumer";
             }
@@ -308,7 +304,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                 // Commiting on the half of the data.
                 int sz = keys(cacheId(DEFAULT_CACHE_NAME)).size();
 
-                if (sz >= KEYS_CNT/2) {
+                if (sz >= KEYS_CNT / 2) {
                     expSz[0] = KEYS_CNT - sz;
 
                     return true;
@@ -318,29 +314,29 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteCDC cdc = new IgniteCDC(cfg, consumer);
+        IgniteCDC cdc = new IgniteCDC(cfg, new DataChangeConsumer<>(lsnr));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, consumer);
+        waitForSize(KEYS_CNT, lsnr);
 
         fut.cancel();
 
-        assertTrue(consumer.stoped);
+        assertTrue(lsnr.stoped);
 
         fut = runAsync(cdc);
 
-        waitForSize(expSz[0], consumer);
+        waitForSize(expSz[0], lsnr);
 
         fut.cancel();
 
-        assertTrue(consumer.stoped);
+        assertTrue(lsnr.stoped);
     }
 
     /** */
-    private boolean waitForSize(int expSz, StoreKeysConsumer... consumers) throws IgniteInterruptedCheckedException {
+    private boolean waitForSize(int expSz, TestDataChangeListener... lsnrs) throws IgniteInterruptedCheckedException {
         return waitForCondition(() ->
-            Arrays.stream(consumers).mapToInt(c -> F.size(c.keys(cacheId(DEFAULT_CACHE_NAME)))).sum() >= expSz,
+            Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(cacheId(DEFAULT_CACHE_NAME)))).sum() >= expSz,
             getTestTimeout());
     }
 
@@ -361,26 +357,10 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class StoreKeysConsumer extends ProcessDataConsumer<Integer, byte[]> {
+    private static class TestDataChangeListener implements DataChangeListener<Integer, Integer> {
         /** Keys */
-        private final ConcurrentMap<Integer, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Long, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
-        /** {@inheritDoc} */
-        @Override protected void onData(int cacheId, Integer key, byte[] val) {
-            cacheKeys.computeIfAbsent(cacheId, k -> new GridConcurrentHashSet<>()).add(key);
-        }
-
-        /** @return Read keys. */
-        public Set<Integer> keys(int cacheId) {
-            if (cacheKeys == null)
-                return null;
-
-            return cacheKeys.get(cacheId);
-        }
-    }
-
-    /** */
-    private abstract static class ProcessDataConsumer<K, V> implements CDCConsumer {
         /** */
         public boolean stoped;
 
@@ -390,32 +370,13 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends WALRecord> boolean onRecord(T rec) {
-            if (rec.type() != WALRecord.RecordType.DATA_RECORD)
-                return false;
-
-            DataRecord dataRecord = (DataRecord)rec;
-
-            for (DataEntry entry : dataRecord.writeEntries()) {
-                if (entry instanceof UnwrappedDataEntry) {
-                    UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
-
-                    onData(entry.cacheId(), (K)unwrapDataEntry.unwrappedKey(), (V)unwrapDataEntry.unwrappedValue());
-                }
-                else if (entry instanceof MarshalledDataEntry) {
-                    fail("Unexpected data entry type.");
-                }
-                else {
-                    fail("Unexpected data entry type.");
-                }
-            }
-
-            return commit();
+        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+            stoped = false;
         }
 
         /** {@inheritDoc} */
-        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
-            stoped = false;
+        @Override public boolean keepBinary() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -423,12 +384,26 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             stoped = true;
         }
 
+        /** {@inheritDoc} */
+        @Override public boolean onChange(Iterable<EntryEvent<Integer, Integer>> events) {
+            for (EntryEvent<Integer, Integer> evt : events) {
+                cacheKeys.computeIfAbsent(evt.cacheId(), k -> new GridConcurrentHashSet<>()).add(evt.key());
+            }
+
+            return commit();
+        }
+
         /** */
         protected boolean commit() {
             return true;
         }
 
-        /** */
-        protected abstract void onData(int cacheId, K key, V val);
+        /** @return Read keys. */
+        public Set<Integer> keys(long cacheId) {
+            if (cacheKeys == null)
+                return null;
+
+            return cacheKeys.get(cacheId);
+        }
     }
 }

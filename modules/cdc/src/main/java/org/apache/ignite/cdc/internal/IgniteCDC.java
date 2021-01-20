@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CDCConsumer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -76,6 +75,9 @@ public class IgniteCDC implements Runnable {
 
     /** Events consumers. */
     private final CDCConsumer consumer;
+
+    /** Keep binary flag. */
+    private boolean keepBinary;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -148,7 +150,7 @@ public class IgniteCDC implements Runnable {
 
         cdcDir = initCdcDir(workDir(cfg));
 
-        try(CDCFileLockHolder lock =
+        try (CDCFileLockHolder lock =
                 new CDCFileLockHolder(cdcDir.toString(), consumer::id, log)) {
             log.info("Trying to acquire file lock[lock=" + lock.lockPath() + ']');
 
@@ -171,6 +173,8 @@ public class IgniteCDC implements Runnable {
                 log.info("Loaded initial state[state=" + initState + ']');
 
             consumer.start(cfg, log);
+
+            keepBinary = consumer.keepBinary();
 
             try {
                 Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
@@ -203,7 +207,7 @@ public class IgniteCDC implements Runnable {
             .log(log)
             .binaryMetadataFileStoreDir(binaryMeta)
             .marshallerMappingFileStoreDir(marshaller)
-            .keepBinary(true)
+            .keepBinary(keepBinary)
             .filesOrDirs(segment.toFile());
 
         if (initState != null) {

@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer.POINTER_SIZE;
 
 /**
- *
+ * CDC state holder.
  */
 public class CDCState {
     /** State file. */
@@ -50,8 +50,8 @@ public class CDCState {
     public CDCState(Path stateDir, String consumerId) {
         String fileName = "state-" + U.maskForFileName(consumerId) + FILE_SUFFIX;
 
-        this.state = stateDir.resolve(fileName);
-        this.tmp = stateDir.resolve(fileName + TMP_SUFFIX);
+        state = stateDir.resolve(fileName);
+        tmp = stateDir.resolve(fileName + TMP_SUFFIX);
     }
 
     /**

@@ -38,5 +38,5 @@
         </property>
     </bean>
 
-    <bean class="org.apache.ignite.cdc.LogAllCDCConsumer" />
+    <bean class="org.apache.ignite.cdc.internal.DataChangeConsumer" />
 </beans>

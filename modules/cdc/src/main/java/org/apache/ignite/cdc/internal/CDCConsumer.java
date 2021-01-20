@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.internal;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,6 +34,11 @@ public interface CDCConsumer {
      * @param configuration Ignite configuration.
      */
     void start(IgniteConfiguration configuration, IgniteLogger log);
+
+    /**
+     * @return {@code True} if entry key and value should be keeped in binary format.
+     */
+    boolean keepBinary();
 
     /**
      * Handles record from the WAL.

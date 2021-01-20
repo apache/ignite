@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CDCConsumer;
+import org.apache.ignite.cdc.DataChangeListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -115,17 +115,21 @@ public class CommandLineStartup {
      * @throws IgniteCheckedException
      */
     private static CDCConsumer consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
-        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
+        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, DataChangeListener.class);
 
-        if (consumersMap.size() != 1)
-            exit("Exact 1 CDC consumer should be defined", false, 1);
+        if (consumersMap != null && consumersMap.size() == 1) {
+            return new DataChangeConsumer<>((DataChangeListener<?, ?>)consumersMap.values().iterator().next());
+        } else if (consumersMap != null && consumersMap.size() > 1)
+            exit("Exact 1 consumer should be defined", false, 1);
+
+        consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
+
+        if (consumersMap == null || consumersMap.size() != 1)
+            exit("Exact 1 consumer should be defined", false, 1);
 
         Object cdcConsumer = consumersMap.values().iterator().next();
 
-        if (cdcConsumer instanceof CDCConsumer)
-            return (CDCConsumer)cdcConsumer;
-
-        throw new IllegalArgumentException("Expected CDCConsumer but found " + cdcConsumer.getClass());
+        return (CDCConsumer)cdcConsumer;
     }
 
     /**
