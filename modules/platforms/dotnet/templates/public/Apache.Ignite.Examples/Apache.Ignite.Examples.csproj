@@ -21,7 +21,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="examples\**\*" Exclude="examples\**\bin\**;examples\**\obj\**" />
+        <Content Include="..\..\..\examples\**\*" Exclude="..\..\..\examples\**\bin\**;..\..\..\examples\**\obj\**;..\..\..\examples\.idea">
+            <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
+        </Content>
         <Compile Remove="**\*" />
         <None Include="..\..\..\logo_ignite_128x128.png" Pack="true" PackagePath="" />
     </ItemGroup>
