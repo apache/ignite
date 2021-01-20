@@ -306,6 +306,12 @@ if (!$skipNuGet) {
 
 # 4) Build Examples
 if ((!$skipDotNetCore) -and (!$skipExamples)) {
-    Exec "dotnet build .\examples\IgniteExamples.sln"
+    Exec "dotnet build .\examples\Apache.Ignite.Examples.sln"
+
+    if (!$skipNuGet) {
+        Exec "dotnet pack .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj --output $nupkgDir"
+
+        echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
+    }
 }
 
