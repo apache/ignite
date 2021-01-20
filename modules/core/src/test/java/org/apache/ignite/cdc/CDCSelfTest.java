@@ -387,6 +387,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onChange(Iterable<EntryEvent<Integer, Integer>> events) {
             for (EntryEvent<Integer, Integer> evt : events) {
+                if(evt.operation() != EntryEventType.UPDATE || !evt.primary())
+                    continue;
+
                 cacheKeys.computeIfAbsent(evt.cacheId(), k -> new GridConcurrentHashSet<>()).add(evt.key());
             }
 
