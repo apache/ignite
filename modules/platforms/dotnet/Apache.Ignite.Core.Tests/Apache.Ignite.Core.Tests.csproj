@@ -360,10 +360,6 @@
     <Compile Include="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="DeploymentTest.cs" />
     <Compile Include="EventsTest.cs" />
-    <Compile Include="Examples\Example.cs" />
-    <Compile Include="Examples\ExamplesTest.cs" />
-    <Compile Include="Examples\PathUtil.cs" />
-    <Compile Include="Examples\ProjectFilesTest.cs" />
     <Compile Include="ExceptionsTest.cs" />
     <Compile Include="ExecutableTest.cs" />
     <Compile Include="FutureTest.cs" />
