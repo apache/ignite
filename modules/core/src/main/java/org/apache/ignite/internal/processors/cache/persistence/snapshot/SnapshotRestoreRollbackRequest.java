@@ -18,11 +18,26 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.UUID;
 
-/**
- * Snapshot restore rollback operation single node response.
- */
-public class SnapshotRestoreRollbackResponse implements Serializable {
+public class SnapshotRestoreRollbackRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    private final Throwable reason;
+
+    private final UUID reqId;
+
+    public SnapshotRestoreRollbackRequest(UUID reqId, Throwable reason) {
+        this.reqId = reqId;
+        this.reason = reason;
+    }
+
+    public UUID requestId() {
+        return reqId;
+    }
+
+    public Throwable reason() {
+        return reason;
+    }
 }

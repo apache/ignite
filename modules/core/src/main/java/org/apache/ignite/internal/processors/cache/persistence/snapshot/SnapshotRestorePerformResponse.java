@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 
 /**
- * Snapshot restore operation single node response.
+ * Snapshot restore perform operation single node response.
  */
 public class SnapshotRestorePerformResponse implements Serializable {
     /** Serial version uid. */

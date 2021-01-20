@@ -26,7 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-public class SnapshotRestoreRequest implements Serializable {
+public class SnapshotRestorePrepareRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -41,12 +41,13 @@ public class SnapshotRestoreRequest implements Serializable {
     private final Set<UUID> reqNodes;
 
     /** Request ID. */
-    private final UUID reqId = UUID.randomUUID();
+    private final UUID reqId;
 
-    public SnapshotRestoreRequest(String snpName, Collection<String> grps, Set<UUID> reqNodes) {
+    public SnapshotRestorePrepareRequest(UUID reqId, String snpName, Collection<String> grps, Set<UUID> reqNodes) {
         this.snpName = snpName;
         this.grps = grps;
         this.reqNodes = reqNodes;
+        this.reqId = reqId;
     }
 
     public UUID requestId() {
@@ -73,7 +74,7 @@ public class SnapshotRestoreRequest implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        return Objects.equals(reqId, ((SnapshotRestoreRequest)o).reqId);
+        return Objects.equals(reqId, ((SnapshotRestorePrepareRequest)o).reqId);
     }
 
     /** {@inheritDoc} */
@@ -83,6 +84,6 @@ public class SnapshotRestoreRequest implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRestoreRequest.class, this);
+        return S.toString(SnapshotRestorePrepareRequest.class, this);
     }
 }

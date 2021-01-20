@@ -23,7 +23,7 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 
 /**
- * Snapshot restore operation single node validation response.
+ * Snapshot restore prepare operation single node validation response.
  */
 public class SnapshotRestorePrepareResponse implements Serializable {
     /** Serial version uid. */
