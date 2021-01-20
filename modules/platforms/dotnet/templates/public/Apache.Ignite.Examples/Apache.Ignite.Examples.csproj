@@ -23,7 +23,7 @@
     <ItemGroup>
         <Content Include="examples\**\*" Exclude="examples\**\bin\**;examples\**\obj\**" />
         <Compile Remove="**\*" />
-        <None Include="logo_ignite_128x128.png" Pack="true" PackagePath="" />
+        <None Include="..\..\..\logo_ignite_128x128.png" Pack="true" PackagePath="" />
     </ItemGroup>
 
 </Project>
