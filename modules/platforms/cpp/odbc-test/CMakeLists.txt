@@ -62,7 +62,7 @@ set(SOURCES src/teamcity/teamcity_boost.cpp
         src/errors_test.cpp
         src/odbc_test_suite.cpp
         src/types_test.cpp
-        src/transaction_test.cpp
+#        src/transaction_test.cpp
         src/authentication_test.cpp
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
