@@ -67,7 +67,7 @@
                         Enables Kubernetes IP finder and setting custom namespace and service names.
                     -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder">
-                        <property name="namespace" value="ignite"/>
+                        <property name="namespace" value="atul-02"/>
                     </bean>
                 </property>
             </bean>
