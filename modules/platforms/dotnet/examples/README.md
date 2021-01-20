@@ -14,6 +14,7 @@ Windows, Linux, and macOS are supported.
 # Download Examples
 
 * NuGet: `dotnet new ignite-examples`
+  * .NET Core SDK 2.x requires explicit template installation before use: `dotnet new -i ignite-examples`. Newer SDKs will install templates automatically.
 * Ignite website: https://ignite.apache.org/download.cgi
 * git: `git clone https://github.com/apache/ignite --depth=1`, `cd ignite/modules/platforms/dotnet/examples`
 
