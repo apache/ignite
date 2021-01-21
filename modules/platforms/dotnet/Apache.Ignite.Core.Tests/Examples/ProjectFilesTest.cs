@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System;
     using System.IO;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
     using NUnit.Framework;
@@ -41,6 +42,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         private static readonly string LaunchJsonText = File.ReadAllText(ExamplePaths.LaunchJsonFile);
 
+        /** */
         private static readonly string[] ThickOnlyExamples = {
             "NearCache", "DataStreamer", "MultiTieredCache", "QueryFullText", "Store", "EntryProcessor",
              "TransactionDeadlockDetection", "Func", "PeerAssemblyLoading", "Task", "AtomicLong",
@@ -93,6 +95,11 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var tasksText = File.ReadAllText(ExamplePaths.TasksJsonFile);
             StringAssert.Contains(Path.GetFileName(ExamplePaths.SlnFile), tasksText);
+
+            var configsCount = Regex.Matches(LaunchJsonText, "\"name\":").Count;
+            var expectedCount = Example.AllExamples.Length + 1; // +1 for ServerNode project
+
+            Assert.AreEqual(expectedCount, configsCount);
         }
 
         /// <summary>
