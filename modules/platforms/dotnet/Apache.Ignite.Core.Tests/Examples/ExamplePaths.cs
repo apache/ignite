@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             Path.Combine(Impl.Common.IgniteHome.Resolve(), "modules", "platforms", "dotnet", "examples");
 
         /** */
-        public static readonly string SlnFile = Path.Combine(SourcesPath, "IgniteExamples.sln");
+        public static readonly string SlnFile = Path.Combine(SourcesPath, "Apache.Ignite.Examples.sln");
 
         /** */
         public static readonly string LaunchJsonFile = Path.Combine(SourcesPath, ".vscode", "launch.json");

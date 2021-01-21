@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 .Replace(Path.DirectorySeparatorChar, '.')
                 .Replace("." + Path.GetFileName(example.ProjectFile), string.Empty);
 
-            StringAssert.Contains($"<RootNamespace>IgniteExamples{expectedRootNamespace}</RootNamespace>", text);
+            StringAssert.Contains($"<RootNamespace>Apache.Ignite.Examples{expectedRootNamespace}</RootNamespace>", text);
 
             if (!example.IsThin && !ThickOnlyExamples.Contains(example.Name))
             {
