@@ -58,8 +58,8 @@ public class SegmentAware {
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
         segmentCompressStorage = new SegmentCompressStorage(log, compactionEnabled);
 
-        archiveSizeStorage = new SegmentArchiveSizeStorage();
-        truncateStorage = new SegmentTruncateStorage();
+        archiveSizeStorage = new SegmentArchiveSizeStorage(log);
+        truncateStorage = new SegmentTruncateStorage(log);
 
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
         segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
@@ -375,5 +375,14 @@ public class SegmentAware {
      */
     public long awaitAvailableTruncateArchive() throws IgniteInterruptedCheckedException {
         return truncateStorage.awaitAvailableTruncate();
+    }
+
+    /**
+     * Getting the total WAL archive size.
+     *
+     * @return Size in bytes.
+     */
+    public long totalSize() {
+        return archiveSizeStorage.totalSize();
     }
 }

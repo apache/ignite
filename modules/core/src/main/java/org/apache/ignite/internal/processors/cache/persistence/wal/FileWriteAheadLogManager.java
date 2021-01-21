@@ -1009,6 +1009,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             reserved = false;
         }
 
+        if (reserved && log.isDebugEnabled()) {
+            log.debug("Reserved WAL pointer: " + start);
+
+            log.warning("Reserved WAL stack", new Exception());
+        }
+
         return reserved;
     }
 
@@ -1020,6 +1026,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return;
 
         segmentAware.release(start.index());
+
+        if (log.isDebugEnabled())
+            log.debug("Released WAL pointer: " + start);
     }
 
     /**
@@ -3159,6 +3168,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         public FileCleaner(IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-cleaner%" + cctx.igniteInstanceName(), log);
 
+            if (log.isDebugEnabled()) {
+                log.debug("Initialization WAL cleaner [max=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize())
+                    + ", cleanThreshold=" + U.humanReadableByteCount(allowedThresholdWalArchiveSize) + ']');
+            }
+
             assert !walArchiveUnlimited();
         }
 
@@ -3166,10 +3180,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             Throwable err = null;
 
+            if (log.isDebugEnabled())
+                log.debug("Start WAL cleaner");
+
             try {
                 while (!isCancelled()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Next iteration WAL cleaner");
+
                     segmentAware.awaitExceedMaxArchiveSize(allowedThresholdWalArchiveSize);
-                    segmentAware.awaitAvailableTruncateArchive();
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Finish await exceed max archive size for WAL clean: " +
+                            U.humanReadableByteCount(segmentAware.totalSize()));
+                    }
+
+                    long availableTruncateArchive = segmentAware.awaitAvailableTruncateArchive();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Finish await available truncate for WAL clean: " + availableTruncateArchive);
 
                     FileDescriptor[] walArchiveFiles = walArchiveFiles();
 

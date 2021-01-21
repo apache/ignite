@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Store the last truncated segment and allows to get the number of segments available for truncation.
@@ -26,6 +28,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
  * conditions in the calculation of the number of segments available for truncation.
  */
 class SegmentTruncateStorage {
+    /** Logger. */
+    @Nullable private final IgniteLogger log;
+
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
 
@@ -42,12 +47,31 @@ class SegmentTruncateStorage {
     private long lastArchivedIdx = -1;
 
     /**
+     * Constructor.
+     *
+     * @param log Logger.
+     */
+    public SegmentTruncateStorage(@Nullable IgniteLogger log) {
+        this.log = log;
+    }
+
+    /**
+     * Constructor.
+     */
+    public SegmentTruncateStorage() {
+        this(null);
+    }
+
+    /**
      * Update last truncated segment.
      *
      * @param absIdx Absolut segment index.
      */
     synchronized void lastTruncatedIdx(long absIdx) {
         lastTruncatedIdx = absIdx;
+
+        if (log != null && log.isDebugEnabled())
+            log.debug("Last truncated WAL segment: " + absIdx);
 
         notifyAll();
     }
@@ -61,6 +85,9 @@ class SegmentTruncateStorage {
     synchronized void minReservedIdx(long absIdx) {
         minReservedIdx = absIdx;
 
+        if (log != null && log.isDebugEnabled())
+            log.debug("Min reserved WAL segment: " + absIdx);
+
         notifyAll();
     }
 
@@ -72,6 +99,9 @@ class SegmentTruncateStorage {
      */
     synchronized void lastCheckpointIdx(long absIdx) {
         lastCpIdx = absIdx;
+
+        if (log != null && log.isDebugEnabled())
+            log.debug("Last checkpoint WAL segment: " + lastCpIdx);
 
         notifyAll();
     }
@@ -106,8 +136,12 @@ class SegmentTruncateStorage {
      */
     synchronized long awaitAvailableTruncate() throws IgniteInterruptedCheckedException {
         try {
-            while (availableTruncateCnt() == 0 && !interrupted)
+            while (availableTruncateCnt() == 0 && !interrupted) {
+                if (log != null && log.isDebugEnabled())
+                    log.debug("Available truncate WAL segments: " + availableTruncateCnt());
+
                 wait();
+            }
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedCheckedException(e);

@@ -17,13 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Storage WAL archive size.
  * Allows to track the exceeding of the maximum archive size.
  */
 class SegmentArchiveSizeStorage {
+    /** Logger. */
+    @Nullable private final IgniteLogger log;
+
     /** Current WAL archive size in bytes. */
     private long curr;
 
@@ -34,12 +40,31 @@ class SegmentArchiveSizeStorage {
     private volatile boolean interrupted;
 
     /**
+     * Constructor.
+     *
+     * @param log Logger.
+     */
+    SegmentArchiveSizeStorage(@Nullable IgniteLogger log) {
+        this.log = log;
+    }
+
+    /**
+     * Constructor.
+     */
+    public SegmentArchiveSizeStorage() {
+        this(null);
+    }
+
+    /**
      * Adding current WAL archive size in bytes.
      *
      * @param size Size in bytes.
      */
     synchronized void addCurrentSize(long size) {
         curr += size;
+
+        if (log != null && log.isDebugEnabled())
+            log.debug("Add current WAL archive size: " + U.humanReadableByteCount(size));
 
         if (size > 0)
             notifyAll();
@@ -54,6 +79,9 @@ class SegmentArchiveSizeStorage {
     synchronized void addReservedSize(long size) {
         reserved += size;
 
+        if (log != null && log.isDebugEnabled())
+            log.debug("Add reserved WAL archive size: " + U.humanReadableByteCount(size));
+
         if (size > 0)
             notifyAll();
     }
@@ -64,6 +92,9 @@ class SegmentArchiveSizeStorage {
     synchronized void resetSizes() {
         curr = 0;
         reserved = 0;
+
+        if (log != null && log.isDebugEnabled())
+            log.debug("Reset WAL sizes");
     }
 
     /**
@@ -75,8 +106,14 @@ class SegmentArchiveSizeStorage {
      */
     synchronized void awaitExceedMaxSize(long max) throws IgniteInterruptedCheckedException {
         try {
-            while (max - (curr + reserved) > 0 && !interrupted)
+            while (max - (curr + reserved) > 0 && !interrupted) {
+                if (log != null && log.isDebugEnabled()) {
+                    log.debug("Not exceed WAL archive size [max=" + U.humanReadableByteCount(max) +
+                        ", total=" + U.humanReadableByteCount(totalSize()) + ']');
+                }
+
                 wait();
+            }
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedCheckedException(e);
@@ -92,6 +129,9 @@ class SegmentArchiveSizeStorage {
     synchronized void interrupt() {
         interrupted = true;
 
+        if (log != null && log.isDebugEnabled())
+            log.debug("Interrupt WAL sizes");
+
         notifyAll();
     }
 
@@ -100,5 +140,17 @@ class SegmentArchiveSizeStorage {
      */
     void reset() {
         interrupted = false;
+
+        if (log != null && log.isDebugEnabled())
+            log.debug("Continue WAL sizes");
+    }
+
+    /**
+     * Getting the total WAL archive size.
+     *
+     * @return Size in bytes.
+     */
+    long totalSize() {
+        return curr + reserved;
     }
 }
