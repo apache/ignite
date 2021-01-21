@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -223,10 +224,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             UUID subjId = this.subjId;
 
             if (subjId == null && ctx.security().enabled()) {
-                SecuritySubject secSubj = ctx.security().securityContext().subject();
+                SecurityContext secCts = ctx.security().securityContext();
+                SecuritySubject subj = secCts != null ? secCts.subject() : null;
 
-                if (secSubj != null)
-                    subjId = secSubj.id();
+                if (subj != null)
+                    subjId = subj.id();
             }
 
             compute = new IgniteComputeImpl(ctx, this, subjId);

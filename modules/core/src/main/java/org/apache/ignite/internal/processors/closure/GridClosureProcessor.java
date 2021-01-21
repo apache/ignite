@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -200,10 +202,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /** */
     private void setupTaskContextSubjectId() {
         if (ctx.security().enabled()) {
-            SecuritySubject subj = ctx.security().securityContext().subject();
+            SecurityContext secCts = ctx.security().securityContext();
+            SecuritySubject subj = secCts != null ? secCts.subject() : null;
+            UUID id = subj != null ? subj.id() : null;
 
             if (subj != null)
-                ctx.task().setThreadContext(TC_SUBJ_ID, subj.id());
+                ctx.task().setThreadContext(TC_SUBJ_ID, id);
         }
     }
 
@@ -253,9 +257,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             if (F.isEmpty(nodes))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T2.class, U.emptyTopologyException());
 
-            SecuritySubject subj = ctx.security().securityContext().subject();
+            if (ctx.security().enabled()) {
+                SecurityContext secCts = ctx.security().securityContext();
+                SecuritySubject subj = secCts != null ? secCts.subject() : null;
+                UUID id = subj != null ? subj.id() : null;
 
-            ctx.task().setThreadContext(TC_SUBJ_ID, subj != null ? subj.id() : null);
+                ctx.task().setThreadContext(TC_SUBJ_ID, id);
+            }
+
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
             return ctx.task().execute(new T2(mode, job), null, sys, execName);
