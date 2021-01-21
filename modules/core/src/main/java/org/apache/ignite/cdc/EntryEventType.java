@@ -24,15 +24,9 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 public enum EntryEventType {
-    /** Create operation. */
-    CREATE,
-
     /** Update operation. */
     UPDATE,
 
     /** Delete operation. */
-    DELETE,
-
-    /** Transform operation. */
-    TRANSFORM
+    DELETE
 }

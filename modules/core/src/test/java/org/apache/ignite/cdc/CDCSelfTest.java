@@ -29,6 +29,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cdc.DataChangeConsumer;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -40,11 +42,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cdc.EntryEventType.DELETE;
+import static org.apache.ignite.cdc.EntryEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -53,6 +58,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 @RunWith(Parameterized.class)
 public class CDCSelfTest extends GridCommonAbstractTest {
+    /** */
+    public static final String TX_CACHE_NAME = "tx-cache";
+
     /** */
     @Parameterized.Parameter
     public boolean specificConsistentId;
@@ -83,6 +91,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)));
 
+        cfg.setCacheConfiguration(new CacheConfiguration<>(TX_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
         return cfg;
     }
 
@@ -112,18 +123,31 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
-        addData(cache, 0, KEYS_CNT);
+        addData(cache, 0, KEYS_CNT*2);
+        addData(txCache, 0, KEYS_CNT*2);
 
-        assertTrue(waitForSize(KEYS_CNT, lsnr));
+        assertTrue(waitForSize(KEYS_CNT*2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT*2, TX_CACHE_NAME, UPDATE, lsnr));
 
         fut.cancel();
 
-        Set<Integer> keys = lsnr.keys(cacheId(DEFAULT_CACHE_NAME));
+        Set<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
-        for (int i = 0; i < KEYS_CNT; i++)
+        for (int i = 0; i < KEYS_CNT*2; i++)
             assertTrue(keys.contains(i));
+
+        assertTrue(lsnr.stoped);
+
+        removeData(cache, 0, KEYS_CNT);
+
+        IgniteInternalFuture<?> rmvFut = runAsync(cdc);
+
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr));
+
+        rmvFut.cancel();
 
         assertTrue(lsnr.stoped);
     }
@@ -143,13 +167,16 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT);
+        addData(txCache, 0, KEYS_CNT);
 
         IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
-                assertTrue(waitForSize(2, lsnr));
+                assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+                assertTrue(waitForSize(2, TX_CACHE_NAME, UPDATE, lsnr));
 
                 runFut.cancel();
 
@@ -163,12 +190,14 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         });
 
         addData(cache, KEYS_CNT, KEYS_CNT * 2);
+        addData(txCache, KEYS_CNT, KEYS_CNT * 2);
 
-        assertTrue(waitForSize(KEYS_CNT * 2, lsnr));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, lsnr));
 
         restartFut.cancel();
 
-        Set<Integer> keys = lsnr.keys(cacheId(DEFAULT_CACHE_NAME));
+        Set<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
@@ -183,7 +212,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign1.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign1.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> cache = ign1.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> addDataFut = runAsync(() -> addData(cache, 0, KEYS_CNT));
 
@@ -214,13 +243,26 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             addDataFut.get(getTestTimeout());
 
-            assertTrue(waitForSize(KEYS_CNT * 2, lsnr1, lsnr2));
+            assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr1, lsnr2));
 
             assertFalse(lsnr1.stoped);
             assertFalse(lsnr2.stoped);
 
             fut1.cancel();
             fut2.cancel();
+
+            assertTrue(lsnr1.stoped);
+            assertTrue(lsnr2.stoped);
+
+            removeData(cache, 0, KEYS_CNT*2);
+
+            IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
+            IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
+
+            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr1, lsnr2));
+
+            rmvFut1.cancel();
+            rmvFut2.cancel();
 
             assertTrue(lsnr1.stoped);
             assertTrue(lsnr2.stoped);
@@ -271,7 +313,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT);
 
@@ -286,7 +328,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
-            assertTrue(waitForSize(KEYS_CNT, lsnr));
+            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr));
 
             fut.cancel();
 
@@ -302,7 +344,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             @Override protected boolean commit() {
                 // Commiting on the half of the data.
-                int sz = keys(cacheId(DEFAULT_CACHE_NAME)).size();
+                int sz = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME)).size();
 
                 if (sz >= KEYS_CNT / 2) {
                     expSz[0] = KEYS_CNT - sz;
@@ -318,15 +360,18 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, lsnr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr);
 
         fut.cancel();
 
         assertTrue(lsnr.stoped);
 
+        removeData(cache, 0, KEYS_CNT);
+
         fut = runAsync(cdc);
 
-        waitForSize(expSz[0], lsnr);
+        waitForSize(expSz[0], DEFAULT_CACHE_NAME, UPDATE, lsnr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr);
 
         fut.cancel();
 
@@ -334,9 +379,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private boolean waitForSize(int expSz, TestDataChangeListener... lsnrs) throws IgniteInterruptedCheckedException {
+    private boolean waitForSize(int expSz, String cacheName, EntryEventType evtType, TestDataChangeListener... lsnrs) throws IgniteInterruptedCheckedException {
         return waitForCondition(() ->
-            Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(cacheId(DEFAULT_CACHE_NAME)))).sum() >= expSz,
+            Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(evtType, cacheId(cacheName)))).sum() >= expSz,
             getTestTimeout());
     }
 
@@ -351,6 +396,12 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    private void removeData(IgniteCache<Integer, byte[]> cache, int from, int to) {
+        for (int i = from; i < to; i++)
+            cache.remove(i);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
@@ -359,7 +410,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestDataChangeListener implements DataChangeListener<Integer, Integer> {
         /** Keys */
-        private final ConcurrentMap<Long, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
+        private final ConcurrentMap<IgniteBiTuple<EntryEventType, Long>, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
         /** */
         public boolean stoped;
@@ -387,10 +438,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onChange(Iterable<EntryEvent<Integer, Integer>> events) {
             for (EntryEvent<Integer, Integer> evt : events) {
-                if(evt.operation() != EntryEventType.UPDATE || !evt.primary())
+                if(!evt.primary())
                     continue;
 
-                cacheKeys.computeIfAbsent(evt.cacheId(), k -> new GridConcurrentHashSet<>()).add(evt.key());
+                cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
+                    k -> new GridConcurrentHashSet<>()).add(evt.key());
             }
 
             return commit();
@@ -402,11 +454,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** @return Read keys. */
-        public Set<Integer> keys(long cacheId) {
+        public Set<Integer> keys(EntryEventType op, long cacheId) {
             if (cacheKeys == null)
                 return null;
 
-            return cacheKeys.get(cacheId);
+            return cacheKeys.get(F.t(op, cacheId));
         }
     }
 }

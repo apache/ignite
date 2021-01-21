@@ -254,7 +254,7 @@ public class IgniteCDC implements Runnable {
                         // WAL segment is a hard link to a segment file in a specifal CDC folder.
                         // So we can safely delete it after success processing.
                         for (Path prevSegment : prevSegments)
-                            Files.delete(prevSegment);
+                            Files.deleteIfExists(prevSegment);
 
                         prevSegments.clear();
                     }

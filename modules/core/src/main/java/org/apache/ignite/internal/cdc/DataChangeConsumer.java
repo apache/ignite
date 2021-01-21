@@ -99,17 +99,15 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
 
                         @Override public EntryEventType operation() {
                             switch (e.op()) {
+                                // Combine two types of the events because `CREATE` only generated for first `put`
+                                // of the key for `TRANSACTIONAL` caches.
+                                // For `ATOMIC` caches every `put` generate `UPDATE` event.
                                 case CREATE:
-                                    return EntryEventType.CREATE;
-
                                 case UPDATE:
                                     return EntryEventType.UPDATE;
 
                                 case DELETE:
                                     return EntryEventType.DELETE;
-
-                                case TRANSFORM:
-                                    return EntryEventType.TRANSFORM;
 
                                 default:
                                     throw new IllegalStateException("Unexpected operation type[" + e.op());
