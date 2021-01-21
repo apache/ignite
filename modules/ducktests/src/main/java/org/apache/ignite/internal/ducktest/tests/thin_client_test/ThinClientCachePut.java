@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.ThinClientApplication;
@@ -33,6 +35,9 @@ public class ThinClientCachePut extends ThinClientApplication {
     @Override
     protected void run(JsonNode jsonNode) throws Exception {
         String cacheName = jsonNode.get("cache_name").asText();
+        String cacheMode = jsonNode.get("cache_mode").asText();
+        String cacheAtomcityMode = jsonNode.get("cache_atomicity_mode").asText();
+        int backups = jsonNode.get("backups").asInt();
         int entry_num = jsonNode.get("entry_num").asInt();
 
         markInitialized();
@@ -43,9 +48,44 @@ public class ThinClientCachePut extends ThinClientApplication {
         ClientCacheConfiguration cfg = new ClientCacheConfiguration();
         cfg.setName(cacheName);
 
+        System.out.println(">>> Cache requested [cacheName=" + cacheName + ']');
+        System.out.println(">>>                 [cacheMode=" + cacheMode + ']');
+        System.out.println(">>>                 [cacheAtomcityMode=" + cacheAtomcityMode + ']');
+        System.out.println(">>>                 [backups=" + backups + ']');
+
+        if (cacheMode.equals(CacheMode.REPLICATED.toString())) { cfg.setCacheMode(CacheMode.REPLICATED);}
+        else if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setBackups(backups);
+        }
+        else {
+            System.out.println(">>> CacheMode is not correct:" + cacheMode);
+        }
+
+        if (cacheAtomcityMode.equals(CacheAtomicityMode.ATOMIC.toString())) { cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);}
+        else if (cacheAtomcityMode.equals(CacheAtomicityMode.TRANSACTIONAL.toString())) { cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);}
+        else {
+            System.out.println(">>> CacheAtomicityMode is not correct:" + cacheAtomcityMode);
+        }
+
+        System.out.println(">>> Cache configured [cacheName=" + cfg.getName() + ']');
+        System.out.println(">>>                  [cacheMode=" + cfg.getCacheMode() + ']');
+        System.out.println(">>>                  [cacheAtomcityMode=" + cfg.getAtomicityMode() + ']');
+        System.out.println(">>>                  [backups=" + cfg.getBackups() + ']');
+
         ClientCache<Long, Long> cache = client.getOrCreateCache(cfg);
 
         System.out.println(">>> Cache created [cacheName=" + cache.getName() + ']');
+        System.out.println(">>>               [cacheMode=" + cache.getConfiguration().getCacheMode() + ']');
+        System.out.println(">>>               [cacheAtomcityMode=" + cache.getConfiguration().getAtomicityMode() + ']');
+        System.out.println(">>>               [backups=" + cache.getConfiguration().getBackups() + ']');
+
+        assert (cacheMode.equals(cache.getConfiguration().getCacheMode().toString()));
+        assert (cacheAtomcityMode.equals(cache.getConfiguration().getAtomicityMode().toString()));
+
+        if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
+            assert (backups == cache.getConfiguration().getBackups());
+        }
 
         fillCache(cache, entry_num);
 
@@ -56,28 +96,7 @@ public class ThinClientCachePut extends ThinClientApplication {
 
         markFinished();
     }
-//    protected void run(JsonNode jsonNode) throws Exception {
-//        String cacheName = jsonNode.get("cache_name").asText();
-//        int entry_num = jsonNode.get("entry_num").asInt();
-//
-//        markInitialized();
-//
-//        System.out.println();
-//        System.out.println(">>> Cache test started.");
-//
-//        ClientCache<Long, Long> cache = client.getOrCreateCache(cacheName);
-//
-//        System.out.println(">>> Cache created [cacheName=" + cache.getName() + ']');
-//
-//        fillCache(cache, entry_num);
-//
-//        checkCacheData(cache, entry_num);
-//
-//        // Delete cache with its content completely.
-//        client.destroyCache(cacheName);
-//
-//        markFinished();
-//    }
+
     /**
      * Fills cache.
      */

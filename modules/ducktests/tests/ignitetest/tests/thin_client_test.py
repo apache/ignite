@@ -30,9 +30,6 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 from ignitetest.services.thin_client_app import ThinClientService
 
-# from org.apache.ignite.internal.ducktest.utils import ThinClient
-
-
 class ThinClientTest(IgniteTest):
     """
     cluster - cluster size
@@ -52,27 +49,58 @@ class ThinClientTest(IgniteTest):
     @cluster(num_nodes=3)
     @ignite_versions(str(DEV_BRANCH))
     @parametrize(num_nodes=3, static_clients_num=1)
-    def test_ignite_start_fill_cache_stop(self, ignite_version, num_nodes, static_clients_num):
+    def test_replicated_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "REPLICATED", "ATOMIC", backups)
+
+    @cluster(num_nodes=3)
+    @ignite_versions(str(DEV_BRANCH))
+    @parametrize(num_nodes=3, static_clients_num=1)
+    def test_replicated_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "REPLICATED", "TRANSACTIONAL", backups)
+
+    @cluster(num_nodes=3)
+    @ignite_versions(str(DEV_BRANCH))
+    @parametrize(num_nodes=3, static_clients_num=1)
+    def test_partitioned_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "PARTITIONED", "ATOMIC", backups)
+
+    @cluster(num_nodes=3)
+    @ignite_versions(str(DEV_BRANCH))
+    @parametrize(num_nodes=3, static_clients_num=1)
+    def test_partitioned_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "PARTITIONED", "TRANSACTIONAL", backups)
+
+    def start_fill_cache_stop(self, ignite_version, num_nodes, static_clients_num, cache_mode, cache_atomicity_mode,
+                              backups):
         """
-        Test that thin client can connect and use cache
+        Test that thin client can connect, create, configure  and use cache
         """
 
         servers_count = num_nodes - static_clients_num
 
-        server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[
-            CacheConfiguration(name=self.CACHE_NAME, backups=1, atomicity_mode='TRANSACTIONAL')])
+        server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[])
 
-        ignite = IgniteService(self.test_context, server_configuration, servers_count,startup_timeout_sec=180)
+        ignite = IgniteService(self.test_context, server_configuration, servers_count, startup_timeout_sec=180)
 
         server_address = ignite.nodes[0].account.hostname
         server_port = 10800
 
         static_clients = ThinClientService(self.test_context, server_configuration,
-                                                  java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                                  num_nodes=static_clients_num,
-                                                  params={"cache_name": self.CACHE_NAME, "entry_num": self.ENTRY_NUM,
-                                                          "server_address": server_address, "port": server_port},
-                                                  startup_timeout_sec=180)
+                                           java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                                           num_nodes=static_clients_num,
+                                           params={"cache_name": self.CACHE_NAME, "entry_num": self.ENTRY_NUM,
+                                                   "server_address": server_address, "port": server_port,
+                                                   "cache_mode": cache_mode, "cache_atomicity_mode": cache_atomicity_mode,
+                                                   "backups": backups},
+                                           startup_timeout_sec=180)
 
         ignite.start()
         static_clients.start()
