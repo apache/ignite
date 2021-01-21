@@ -28,7 +28,7 @@ from ignitetest.utils.version import IgniteVersion
 
 class IgnoreIf(Ignore):
     """
-    Ignore test if version or global parameters doesn't corresponds to condition.
+    Ignore test if version or global parameters correspond to condition.
     """
     def __init__(self, condition, variable_name):
         super().__init__()
@@ -194,7 +194,7 @@ def ignite_versions(*args, version_prefix="ignite_version"):
 
 def ignore_if(condition, *, variable_name='ignite_version'):
     """
-    Mark decorated test method as IGNORE if version doesn't corresponds to condition.
+    Mark decorated test method as IGNORE if version or global parameters correspond to condition.
 
     :param condition: function(IgniteVersion, Globals) -> bool
     :param variable_name: version variable name
