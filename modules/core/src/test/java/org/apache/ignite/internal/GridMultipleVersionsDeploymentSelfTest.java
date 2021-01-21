@@ -213,6 +213,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             // We have to use timer here. DO NOT CHANGE 2 seconds here.
             Thread.sleep(2000);
 
+            g1.compute().undeployTask("GridDeploymentTestTask");
+
             // Deploy new one - this should move first task to the obsolete list.
             g1.compute().localDeployTask(taskCls2, ldr2);
 

@@ -92,8 +92,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             LocalDeploymentSpi spi1 = spis.get(ignite1.name());
             LocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
-            assert spi1.findResource(task1.getName()) != null;
-            assert spi2.findResource(task1.getName()) != null;
+            assert spi1.findResource(task1.getName(), tstClsLdr) != null;
+            assert spi2.findResource(task1.getName(), tstClsLdr) != null;
 
             assert ignite1.compute().localTasks().containsKey(task1.getName());
             assert ignite2.compute().localTasks().containsKey(task1.getName());
@@ -103,8 +103,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             // Wait for undeploy.
             Thread.sleep(1000);
 
-            assert spi1.findResource(task1.getName()) == null;
-            assert spi2.findResource(task1.getName()) == null;
+            assert spi1.findResource(task1.getName(), tstClsLdr) == null;
+            assert spi2.findResource(task1.getName(), tstClsLdr) == null;
 
             assert !ignite1.compute().localTasks().containsKey(task1.getName());
             assert !ignite2.compute().localTasks().containsKey(task1.getName());
@@ -139,20 +139,20 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             LocalDeploymentSpi spi1 = spis.get(ignite1.name());
             LocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
-            assert spi1.findResource(task1.getName()) != null;
+            assert spi1.findResource(task1.getName(), ldr) != null;
 
             assert ignite1.compute().localTasks().containsKey(task1.getName());
 
             // P2P deployment will not deploy task into the SPI.
-            assert spi2.findResource(task1.getName()) == null;
+            assert spi2.findResource(task1.getName(), ldr) == null;
 
             ignite1.compute().undeployTask(task1.getName());
 
             // Wait for undeploy.
             Thread.sleep(1000);
 
-            assert spi1.findResource(task1.getName()) == null;
-            assert spi2.findResource(task1.getName()) == null;
+            assert spi1.findResource(task1.getName(), ldr) == null;
+            assert spi2.findResource(task1.getName(), ldr) == null;
 
             assert !ignite1.compute().localTasks().containsKey(task1.getName());
             assert !ignite2.compute().localTasks().containsKey(task1.getName());
