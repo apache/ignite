@@ -3325,8 +3325,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMetricsUpdateMessage();
 
-            checkMetricsReceiving();
-
             checkPendingCustomMessages();
 
             checkFailedNodesList();
@@ -3617,7 +3615,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         }
                                     }
 
-                                    updateLastSentMessageTime();
+                                    ringMessageSent(-1);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Initialized connection with next node: " + next.id());
@@ -3731,7 +3729,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                    updateLastSentMessageTime();
+                                    ringMessageSent(res);
 
                                     spi.stats.onMessageSent(pendingMsg, U.nanosToMillis(tsNanos0 - tsNanos));
 
@@ -3780,7 +3778,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                updateLastSentMessageTime();
+                                ringMessageSent(res);
 
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been acked: " + msg.id());
@@ -6548,8 +6546,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** Fixates time of last sent message. */
-    private void updateLastSentMessageTime() {
+    private void ringMessageSent(int res) {
         lastRingMsgSentTime = System.nanoTime();
+
+        if (res == RES_OK_NOT_IN_RING && spiState == CONNECTED) {
+            U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
+
+            notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+        }
     }
 
     /** Thread that executes {@link TcpServer}'s code. */
@@ -7066,6 +7070,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
                             U.resolveClassLoader(spi.ignite().configuration()));
 
+                        int res = RES_OK;
+
                         msg.senderNodeId(nodeId);
 
                         DebugLogger debugLog = messageLogger(msg);
@@ -7079,9 +7085,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             debugLog(msg, "Message has been received: " + msg);
 
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
-                            ringMessageReceived();
-
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, ringMessageReceived(nodeId), sockTimeout);
 
                             continue;
                         }
@@ -7268,7 +7272,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
                         else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
-                            ringMessageReceived();
+                            res = ringMessageReceived(nodeId);
 
                             if (log.isInfoEnabled())
                                 log.info("Latency check message has been read: " + msg.id());
@@ -7281,7 +7285,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
                             metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
                         else {
-                            ringMessageReceived();
+                            res = ringMessageReceived(nodeId);
 
                             msgWorker.addMessage(msg, false, true);
                         }
@@ -7295,7 +7299,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             clientMsgWrk.addMessage(ack);
                         }
                         else
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                         if (metricsUpdateMsg != null)
                             processClientMetricsUpdateMessage(metricsUpdateMsg);
@@ -7377,9 +7381,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Update last ring message received timestamp.
+         *
+         * @param sndId ID of the sending node.
+         * @return Response.
          */
-        private void ringMessageReceived() {
+        private int ringMessageReceived(UUID sndId) {
             lastRingMsgReceivedTime = System.nanoTime();
+
+            if (sndId == null)
+                return RES_OK;
+
+            synchronized (mux) {
+                return ring.node(sndId) == null && spiState == CONNECTED ? RES_OK_NOT_IN_RING : RES_OK;
+            }
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
