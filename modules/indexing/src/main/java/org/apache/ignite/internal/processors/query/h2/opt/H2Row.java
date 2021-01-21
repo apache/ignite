@@ -135,7 +135,7 @@ public abstract class H2Row implements Row, MvccVersionAware {
     }
 
     /**
-     * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
+     * @return {@code True} for rows used for index search.
      */
     public abstract boolean indexSearchRow();
 }
