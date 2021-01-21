@@ -28,7 +28,7 @@ JVM_PARAMS_GC_G1 = "-XX:+UseG1GC -XX:MaxGCPauseMillis=100 " \
                    "-XX:ConcGCThreads=$(((`nproc`/3)>1?(`nproc`/3):1)) " \
                    "-XX:ParallelGCThreads=$(((`nproc`*3/4)>1?(`nproc`*3/4):1)) "
 
-JVM_PARAMS_GENERIC = "-server -da -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX:+AlwaysPreTouch " \
+JVM_PARAMS_GENERIC = "-server -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX:+AlwaysPreTouch " \
                      "-XX:+ParallelRefProcEnabled -XX:+DoEscapeAnalysis " \
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
