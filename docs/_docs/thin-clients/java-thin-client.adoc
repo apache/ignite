@@ -94,7 +94,13 @@ The following code sample illustrates how to use it.
 include::{sourceCodeFile}[tag=client-address-finder,indent=0]
 ----
 
-Currently Ignite provides the only implementation of this interface. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+The code snippet shows how an example implementation might look like if you want clients to retrieve server addresses dynamically.
+
+* The `ClientAddressFinder` is a functional interface that provides the only method `getAddresses()`.
+* The `fetchServerAddress()` is a custom function that dynamically provides server addresses.
+* Configure client with `ClientConfiguration.setAddressFinder(finder)`.
+
+Also, you can check a real example of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
 
 == Using Key-Value API
 
