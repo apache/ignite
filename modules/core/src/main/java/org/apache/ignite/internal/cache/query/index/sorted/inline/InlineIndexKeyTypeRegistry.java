@@ -35,6 +35,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.DoubleInl
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.FloatInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.IntegerInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LegacyDateInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LocalDateInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LocalDateTimeInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LocalTimeInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LongInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ObjectHashInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ShortInlineIndexKeyType;
@@ -63,6 +66,9 @@ public class InlineIndexKeyTypeRegistry {
         classMapping.put(Date.class, new DateInlineIndexKeyType());
         classMapping.put(Timestamp.class, new TimestampInlineIndexKeyType());
         classMapping.put(java.util.Date.class, new LegacyDateInlineIndexKeyType());
+        classMapping.put(java.time.LocalDate.class, new LocalDateInlineIndexKeyType());
+        classMapping.put(java.time.LocalTime.class, new LocalTimeInlineIndexKeyType());
+        classMapping.put(java.time.LocalDateTime.class, new LocalDateTimeInlineIndexKeyType());
         classMapping.put(Double.class, new DoubleInlineIndexKeyType());
         classMapping.put(Float.class, new FloatInlineIndexKeyType());
         classMapping.put(Integer.class, new IntegerInlineIndexKeyType());

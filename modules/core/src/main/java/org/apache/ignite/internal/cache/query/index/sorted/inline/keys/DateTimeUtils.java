@@ -41,9 +41,13 @@ public class DateTimeUtils {
      */
     public static final long NANOS_PER_DAY = MILLIS_PER_DAY * 1_000_000;
 
-    private static final int SHIFT_YEAR = 9;
+    public static final int SHIFT_YEAR = 9;
 
-    private static final int SHIFT_MONTH = 5;
+    public static final int SHIFT_MONTH = 5;
+
+    public static final long MIN_DATE_VALUE = (-999_999_999L << SHIFT_YEAR) + (1 << SHIFT_MONTH) + 1;
+
+    public static final long MAX_DATE_VALUE = (999_999_999L << SHIFT_YEAR) + (12 << SHIFT_MONTH) + 31;
 
     /**
      * Date value for 1970-01-01.

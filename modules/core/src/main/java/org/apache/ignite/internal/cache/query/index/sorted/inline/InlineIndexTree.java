@@ -192,6 +192,11 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
 
                 int cmp = COMPARE_UNSUPPORTED;
 
+                if (!row.getKey(i).getClass().isAssignableFrom(keyDef.getIdxClass())) {
+                    lastIdxUsed = i;
+                    break;
+                }
+
                 InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType());
 
                 // By default do not compare different types.

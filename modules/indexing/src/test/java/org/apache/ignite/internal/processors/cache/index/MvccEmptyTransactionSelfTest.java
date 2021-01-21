@@ -27,11 +27,13 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for empty transaction while is then enlisted with real value.
  */
+@Ignore("MVCC is deprecated.")
 public class MvccEmptyTransactionSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
