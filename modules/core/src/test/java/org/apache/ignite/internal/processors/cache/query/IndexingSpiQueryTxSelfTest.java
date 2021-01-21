@@ -24,6 +24,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.index.IgniteIndexing;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -134,32 +135,11 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Indexing SPI implementation for test
      */
-    private static class MyBrokenIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
-        /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
-            @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
-            return null;
-        }
-
+    private static class MyBrokenIndexingSpi extends IgniteIndexing {
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
             boolean prevRowAvailable) throws IgniteSpiException {
             throw new IgniteSpiException("Test exception");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
-            // No-op.
         }
     }
 }
