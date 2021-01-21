@@ -374,7 +374,7 @@ public class JavaThinClient {
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
-            // Put, get or remove data from the cache...
+            // Put, get, or remove data from the cache...
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }

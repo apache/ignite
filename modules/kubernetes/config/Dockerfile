@@ -27,10 +27,10 @@ ARG IGNITE_VERSION="2.0.0"
 # Set IGNITE_HOME variable.
 ENV IGNITE_HOME /opt/ignite/apache-ignite-${IGNITE_VERSION}-bin
 
-# Setting a path to an Apache Ignite configuration file. Used by run.sh script below.
+# Set a path to the Apache Ignite configuration file. Use the run.sh script below:
 ENV CONFIG_URI ${IGNITE_HOME}/config/$IGNITE_CFG_XML
 
-# Make sure kubernetes lib is copied to 'libs' folder.
+# Make sure the Kubernetes lib is copied to the 'libs' folder.
 ENV OPTION_LIBS ignite-kubernetes
 
 # Disabling quiet mode.
@@ -53,13 +53,12 @@ RUN rm apache-ignite-${IGNITE_VERSION}-bin.zip
 COPY ./run.sh $IGNITE_HOME/
 RUN chmod +x $IGNITE_HOME/run.sh
 
-# Copying the configuration.
+# Copy the configuration.
 COPY ./$IGNITE_CFG_XML $IGNITE_HOME/config
 
-# Starting an Apache Ignite node.
+# Start an Apache Ignite node.
 CMD $IGNITE_HOME/run.sh
 
 # Exposing the ports.
 EXPOSE 11211 47100 47500 49112
-
 
