@@ -50,5 +50,12 @@ public interface IgniteSnapshot {
      */
     public IgniteFuture<Void> cancelSnapshot(String name);
 
+    /**
+     * Restore cache group(s) from the snapshot.
+     *
+     * @param snapshotName Snapshot name.
+     * @param cacheGroupNames Cache groups to be restored.
+     * @return Future which will be completed when restore operation finished.
+     */
     public IgniteFuture<Void> restoreCacheGroups(String snapshotName, Collection<String> cacheGroupNames);
 }

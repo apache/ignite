@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+/**
+ * Request to prepare snapshot restore.
+ */
 public class SnapshotRestorePrepareRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -33,16 +35,23 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /** Snapshot name. */
     private final String snpName;
 
-    /** The list of cache groups to restore from the snapshot. */
+    /** List of cache group names to restore from the snapshot. */
     @GridToStringInclude
     private final Collection<String> grps;
 
+    /** List of baseline node IDs that must be alive to complete the operation. */
     @GridToStringInclude
     private final Set<UUID> reqNodes;
 
     /** Request ID. */
     private final UUID reqId;
 
+    /**
+     * @param reqId Request ID.
+     * @param snpName Snapshot name.
+     * @param grps List of cache group names to restore from the snapshot.
+     * @param reqNodes List of baseline node IDs that must be alive to complete the operation.
+     */
     public SnapshotRestorePrepareRequest(UUID reqId, String snpName, Collection<String> grps, Set<UUID> reqNodes) {
         this.snpName = snpName;
         this.grps = grps;
@@ -50,36 +59,32 @@ public class SnapshotRestorePrepareRequest implements Serializable {
         this.reqId = reqId;
     }
 
+    /**
+     * @return Request ID.
+     */
     public UUID requestId() {
         return reqId;
     }
 
+    /**
+     * @return List of cache group names to restore from the snapshot.
+     */
     public Collection<String> groups() {
         return grps;
     }
 
+    /**
+     * @return Snapshot name.
+     */
     public String snapshotName() {
         return snpName;
     }
 
+    /**
+     * @return List of baseline node IDs that must be alive to complete the operation.
+     */
     public Set<UUID> requiredNodes() {
         return Collections.unmodifiableSet(reqNodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        return Objects.equals(reqId, ((SnapshotRestorePrepareRequest)o).reqId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(reqId);
     }
 
     /** {@inheritDoc} */

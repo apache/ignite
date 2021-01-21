@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Set;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 
 /**
  * Snapshot restore prepare operation single node validation response.
@@ -46,58 +44,5 @@ public class SnapshotRestorePrepareResponse implements Serializable {
     /** todo */
     public List<CacheGroupSnapshotDetails> groups() {
         return groups;
-    }
-
-    /** */
-    static class CacheGroupSnapshotDetails implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Cache group name. */
-        private String grpName;
-
-        /** Local partition IDs. */
-        private Set<Integer> parts;
-
-        /** Group cache configurations. */
-        private List<StoredCacheData> cfgs;
-
-        private boolean shared;
-
-        /**
-         * @param cfgs Group cache configurations.
-         * @param parts Local partition IDs.
-         */
-        public CacheGroupSnapshotDetails(String grpName, boolean shared, List<StoredCacheData> cfgs, Set<Integer> parts) {
-            this.grpName = grpName;
-            this.shared = shared;
-            this.cfgs = cfgs;
-            this.parts = parts;
-        }
-
-        /**
-         * @return Group cache configurations.
-         */
-        public List<StoredCacheData> configs() {
-            return cfgs;
-        }
-
-        /**
-         * @return Local partition IDs.
-         */
-        public Set<Integer> parts() {
-            return parts;
-        }
-
-        /**
-         * @return Cache group name.
-         */
-        public String groupName() {
-            return grpName;
-        }
-
-        public boolean shared() {
-            return shared;
-        }
     }
 }

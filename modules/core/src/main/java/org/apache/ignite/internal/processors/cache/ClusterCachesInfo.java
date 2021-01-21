@@ -1011,11 +1011,13 @@ public class ClusterCachesInfo {
         if (err == null && !req.restoredCache()) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
-            String conflictingName;
+            String conflictingName = cacheName;
 
-            if (snapshotMgr.isCacheRestoring(conflictingName = cacheName) ||
-                ((conflictingName = ccfg.getGroupName()) != null && snapshotMgr.isCacheRestoring(conflictingName)))
-                err = new IgniteCheckedException("Cache start failed. A cache named \"" + conflictingName + "\" is currently being restored from a snapshot.");
+            if (snapshotMgr.isCacheRestoring(conflictingName) ||
+                ((conflictingName = ccfg.getGroupName()) != null && snapshotMgr.isCacheRestoring(conflictingName))) {
+                err = new IgniteCheckedException("Cache start failed. A cache named \"" + conflictingName +
+                    "\" is currently being restored from a snapshot.");
+            }
         }
 
         if (err != null) {

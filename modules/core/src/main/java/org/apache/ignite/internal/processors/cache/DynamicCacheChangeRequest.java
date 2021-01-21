@@ -107,6 +107,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
+    /** Flag indicating that the cache was started after restoring from a snapshot. */
     private boolean restoredCache;
 
     /**
@@ -482,10 +483,16 @@ public class DynamicCacheChangeRequest implements Serializable {
         return masterKeyDigest;
     }
 
+    /**
+     * @param restoredCache Flag indicating that the cache was started after restoring from a snapshot.
+     */
     public void restoredCache(boolean restoredCache) {
         this.restoredCache = restoredCache;
     }
 
+    /**
+     * @return Flag indicating that the cache was started after restoring from a snapshot.
+     */
     public boolean restoredCache() {
         return restoredCache;
     }

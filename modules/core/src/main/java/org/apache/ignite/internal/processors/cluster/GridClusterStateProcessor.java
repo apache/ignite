@@ -1072,12 +1072,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             );
         }
 
-//        if (state == INACTIVE && ctx.cache().context().snapshotMgr().isSnapshotRestoring()) {
-//            return new GridFinishedFuture<>(
-//                new IllegalStateException("The cluster cannot be deactivated until the snapshot restore operation is complete.")
-//            );
-//        }
-
         BaselineTopology blt = (compatibilityMode && !forceChangeBaselineTopology) ?
             null :
             calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);

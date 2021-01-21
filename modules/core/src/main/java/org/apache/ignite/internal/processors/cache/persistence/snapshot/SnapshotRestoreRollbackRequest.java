@@ -19,25 +19,46 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
+/**
+ * Request to rollback snapshot restore.
+ */
 public class SnapshotRestoreRollbackRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** The reason to rollback operation. */
     private final Throwable reason;
 
+    /** Request ID. */
     private final UUID reqId;
 
+    /**
+     * @param reqId Request ID.
+     * @param reason The reason to rollback operation.
+     */
     public SnapshotRestoreRollbackRequest(UUID reqId, Throwable reason) {
         this.reqId = reqId;
         this.reason = reason;
     }
 
+    /**
+     * @return Request ID.
+     */
     public UUID requestId() {
         return reqId;
     }
 
+    /**
+     * @return The reason to rollback operation.
+     */
     public Throwable reason() {
         return reason;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotRestoreRollbackRequest.class, this);
     }
 }
