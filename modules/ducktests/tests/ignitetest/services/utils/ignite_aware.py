@@ -401,6 +401,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 
     def _update_ssl_config(self, dict_name: str, defailt_jks: str):
+        """
+        Update ssl configuration.
+        """
         _dict = self.globals.get(dict_name)
 
         if _dict is not None:
