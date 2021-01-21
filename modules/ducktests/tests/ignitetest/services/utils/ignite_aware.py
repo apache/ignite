@@ -401,7 +401,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 
-    def _update_ssl_config(self, dict_name: str, defailt_jks: str):
+    def _update_ssl_config_with_globals(self, dict_name: str, default_jks: str):
         """
         Update ssl configuration.
         """
@@ -410,7 +410,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         if _dict is not None:
             ssl_context_factory = SslContextFactory(self.install_root, **_dict)
         else:
-            ssl_context_factory = SslContextFactory(self.install_root, defailt_jks)
+            ssl_context_factory = SslContextFactory(self.install_root, default_jks)
 
         self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
         self.config = self.config._replace(connector_configuration=ConnectorConfiguration(

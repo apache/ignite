@@ -110,4 +110,4 @@ class IgniteApplicationService(IgniteAwareService):
 
     def update_config_with_globals(self):
         if self.globals.get("use_ssl", False):
-            self._update_ssl_config("client", DEFAULT_CLIENT_KEYSTORE)
+            self._update_ssl_config_with_globals("client", DEFAULT_CLIENT_KEYSTORE)

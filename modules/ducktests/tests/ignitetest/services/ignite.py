@@ -64,7 +64,7 @@ class IgniteService(IgniteAwareService):
 
     def update_config_with_globals(self):
         if self.globals.get("use_ssl", False):
-            self._update_ssl_config("server", DEFAULT_SERVER_KEYSTORE)
+            self._update_ssl_config_with_globals("server", DEFAULT_SERVER_KEYSTORE)
 
 
 def node_failed_event_pattern(failed_node_id=None):
