@@ -21,17 +21,22 @@ from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_s
 
 
 class CheckJVMSettings:
+    """
+    Checks behavior of various tools.
+    """
 
+    # pylint: disable=R0201
     def check_types(self):
         """
         Checks collection types of JVM settings.
         """
-        assert type(create_jvm_settings()) is str
+        assert isinstance(create_jvm_settings(), str)
 
-        assert type(create_jvm_settings(as_map=True)) is dict
+        assert isinstance(create_jvm_settings(as_map=True), dict)
 
-        assert type(create_jvm_settings(as_list=True)) is list
+        assert isinstance(create_jvm_settings(as_list=True), list)
 
+    # pylint: disable=R0201
     def check_str(self):
         """
         Checks string representation of JVM settings.
@@ -61,6 +66,7 @@ class CheckJVMSettings:
         assert "-XX:ParallelGCThreads=1024" in jvm_settings
         assert "-XX:ParallelGCThreads=512" not in jvm_settings
 
+    # pylint: disable=R0201
     def check_map(self):
         """
         Checks dictionary representation of JVM settings.
@@ -82,6 +88,7 @@ class CheckJVMSettings:
 
         assert jvm_settings["-XX:ParallelGCThreads"] == "1024"
 
+    # pylint: disable=R0201
     def check_list(self):
         """
         Checks list representation of JVM settings.

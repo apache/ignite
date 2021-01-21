@@ -3619,6 +3619,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     updateLastSentMessageTime();
 
+                                    log.error("TEST | new next on " + locNode.internalOrder() + ", next = " + next.internalOrder());
+
                                     if (log.isDebugEnabled())
                                         log.debug("Initialized connection with next node: " + next.id());
 
@@ -4915,6 +4917,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
+            log.error("TEST | processNodeAddedMessage on " + locNode.internalOrder() + ". new node " + msg.node().internalOrder());
+
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -5872,6 +5876,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
+            log.error("TEST | processStatusCheckMessage on " + locNode.internalOrder());
+
             UUID locNodeId = getLocalNodeId();
 
             if (msg.failedNodeId() != null) {
@@ -6005,6 +6011,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     else if (msg.status() == STATUS_RECON) {
                         U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
+
+                        log.error("TEST | node segmented: " + locNode.internalOrder());
 
                         notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
 
