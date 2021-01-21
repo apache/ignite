@@ -729,7 +729,7 @@ public class GridH2Table extends TableBase {
                 }
             };
 
-            idxMgr.removeIndex(cacheContext(), deleteDef, false);
+            idxMgr.removeIndex(cacheContext(), deleteDef, !rmIndex);
 
             // Call it too, if H2 index stores some state.
             h2idx.destroy(rmIndex);
