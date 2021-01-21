@@ -137,6 +137,7 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.GroupBy.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
@@ -339,6 +340,7 @@
     <Compile Include="Compute\AbstractTaskTest.cs" />
     <Compile Include="Compute\ClosureTaskTest.cs" />
     <Compile Include="Compute\ComputeApiTest.cs" />
+    <Compile Include="Compute\ComputeApiTypeAutoRegisterTest.cs" />
     <Compile Include="Compute\ComputeMultithreadedTest.cs" />
     <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
@@ -400,7 +402,7 @@
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
-    <Compile Include="Services\ServiceTypeAutoResolveTest.cs" />
+    <Compile Include="Services\ServicesTypeAutoResolveTest.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="TestUtilsJni.cs" />

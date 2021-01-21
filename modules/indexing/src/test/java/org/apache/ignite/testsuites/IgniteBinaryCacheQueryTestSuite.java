@@ -277,6 +277,7 @@ import org.apache.ignite.internal.sql.SqlParserTransactionalKeywordsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
+import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
 import org.apache.ignite.util.KillCommandsMXBeanTest;
 import org.apache.ignite.util.KillCommandsSQLTest;
@@ -297,6 +298,7 @@ import org.junit.runners.Suite;
 
     PartitionedSqlTest.class,
     ReplicatedSqlTest.class,
+    ReplicatedSqlCustomPartitionsTest.class,
 
     SqlParserCreateIndexSelfTest.class,
     SqlParserDropIndexSelfTest.class,

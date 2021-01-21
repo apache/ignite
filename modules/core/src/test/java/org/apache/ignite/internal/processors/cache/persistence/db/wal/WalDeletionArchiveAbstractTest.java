@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -37,11 +40,16 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.internal.util.IgniteUtils.GB;
+import static org.apache.ignite.internal.util.IgniteUtils.KB;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -276,6 +284,57 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     }
 
     /**
+     * Checks that the deletion of WAL segments occurs with the maximum number of segments.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, value = "1000")
+    public void testSingleCleanWalArchive() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setCacheConfiguration(cacheConfiguration())
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setCheckpointFrequency(Long.MAX_VALUE)
+                    .setMaxWalArchiveSize(5 * MB)
+                    .setWalSegmentSize((int)MB)
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setMaxSize(GB)
+                            .setCheckpointPageBufferSize(GB)
+                    )
+            );
+
+        ListeningTestLogger listeningLog = new ListeningTestLogger(cfg.getGridLogger());
+        cfg.setGridLogger(listeningLog);
+
+        IgniteEx n = startGrid(cfg);
+
+        n.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        for (int i = 0; walArchiveSize(n) < 20L * cfg.getDataStorageConfiguration().getWalSegmentSize(); )
+            n.cache(DEFAULT_CACHE_NAME).put(i++, new byte[(int)(512 * KB)]);
+
+        assertEquals(-1, wal(n).lastTruncatedSegment());
+        assertEquals(0, gridDatabase(n).lastCheckpointMarkWalPointer().index());
+
+        Collection<String> logStrs = new ConcurrentLinkedQueue<>();
+        listeningLog.registerListener(logStr -> {
+            if (logStr.contains("Finish clean WAL archive"))
+                logStrs.add(logStr);
+        });
+
+        forceCheckpoint();
+
+        long maxWalArchiveSize = cfg.getDataStorageConfiguration().getMaxWalArchiveSize();
+        assertTrue(waitForCondition(() -> walArchiveSize(n) < maxWalArchiveSize, getTestTimeout()));
+
+        assertEquals(logStrs.toString(), 1, logStrs.size());
+    }
+
+    /**
      * Extract GridCacheDatabaseSharedManager.
      */
     private GridCacheDatabaseSharedManager gridDatabase(Ignite ignite) {
@@ -287,5 +346,15 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      */
     private FileWriteAheadLogManager wal(Ignite ignite) {
         return (FileWriteAheadLogManager)((IgniteEx)ignite).context().cache().context().wal();
+    }
+
+    /**
+     * Calculate current WAL archive size.
+     *
+     * @param n Node.
+     * @return Total WAL archive size.
+     */
+    private long walArchiveSize(Ignite n) {
+        return Arrays.stream(wal(n).walArchiveFiles()).mapToLong(fd -> fd.file().length()).sum();
     }
 }

@@ -1069,7 +1069,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if (encryptionDisabled || encMgr.groupKey(grpId) == null)
+        if (encryptionDisabled || encMgr.getActiveKey(grpId) == null)
             return pageSize();
 
         return encPageSize;
