@@ -28,14 +28,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Class for testing cases when WAL archive configuration was changed and the node was able to start.
  */
+@WithSystemProperty(key = IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, value = "0.0")
 public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -61,7 +65,7 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
                 new DataStorageConfiguration()
                     .setWalSegments(10)
                     .setWalSegmentSize((int)U.MB)
-                    .setMaxWalArchiveSize(20 * U.MB)
+                    .setMaxWalArchiveSize(10 * U.MB)
                     .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration()
                             .setPersistenceEnabled(true)
@@ -80,8 +84,116 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
         return n;
     }
 
+    /**
+     * Verify that when switching WAL archive off -> on and increasing the
+     * number of WAL segments on restarting the node, the recovery will be consistent.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test0() throws Exception {
+    public void testIncreaseWalSegmentsWithoutTruncate() throws Exception {
+        checkRecoveryWithoutWalTruncate(12);
+    }
+
+    /**
+     * Verify that when switching WAL archive off -> on and decreasing the
+     * number of WAL segments on restarting the node, the recovery will be consistent.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDecreaseWalSegmentsWithoutTruncate() throws Exception {
+        checkRecoveryWithoutWalTruncate(4);
+    }
+
+    /**
+     * Checking that when switching WAL archive off -> on,
+     * reducing WAL segments at the start of the node
+     * and truncation some WAL segments, the recovery will be consistent.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDecreaseWalSegmentsWitTruncate0() throws Exception {
+        checkRecoveryWithWalTruncate(5);
+    }
+
+    /**
+     * Checking that when switching WAL archive off -> on,
+     * reducing WAL segments at the start of the node
+     * and truncation some WAL segments, the recovery will be consistent.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDecreaseWalSegmentsWitTruncate1() throws Exception {
+        checkRecoveryWithWalTruncate(6);
+    }
+
+    /**
+     * Checking that when switching WAL archive off -> on
+     * and truncation some WAL segments, the recovery will be consistent.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNotChangeWalSegmentsWitTruncate() throws Exception {
+        checkRecoveryWithWalTruncate(10);
+    }
+
+    /**
+     * Checking the consistency of recovery from a WAL when switching
+     * WAL archive off -> on and changing the number of segments on node restart.
+     * With truncate WAL segments.
+     *
+     * @param segments Segment count on node restart.
+     * @throws Exception If failed.
+     */
+    private void checkRecoveryWithWalTruncate(int segments) throws Exception {
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().setWalArchivePath(DFLT_WAL_PATH);
+        });
+
+        AtomicInteger key = new AtomicInteger();
+
+        dbMgr(n).checkpointReadLock();
+
+        try {
+            fill(n, 6, key);
+
+            // Protection against deleting WAL segments.
+            assertTrue(walMgr(n).reserve(new WALPointer(5, 0, 0)));
+        }
+        finally {
+            dbMgr(n).checkpointReadUnlock();
+        }
+
+        forceCheckpoint();
+        assertTrue(waitForCondition(() -> walMgr(n).lastTruncatedSegment() == 4, getTestTimeout()));
+
+        // Guaranteed recovery from WAL segments.
+        dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+
+        fill(n, 2, key);
+
+        stopAllGrids();
+
+        IgniteEx n0 = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().setWalSegments(segments);
+        });
+
+        assertEquals(key.get(), n0.cache(DEFAULT_CACHE_NAME).size());
+    }
+
+    /**
+     * Checking the consistency of recovery from a WAL when switching
+     * WAL archive off -> on and changing the number of segments on node restart.
+     * Without truncate WAL segments.
+     *
+     * @param segments Segment count on node restart.
+     * @throws Exception If failed.
+     */
+    private void checkRecoveryWithoutWalTruncate(int segments) throws Exception {
         IgniteEx n = startGrid(0, cfg -> {
             cfg.getDataStorageConfiguration().setWalArchivePath(DFLT_WAL_PATH);
         });
@@ -91,29 +203,18 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
 
         AtomicInteger key = new AtomicInteger();
 
-        dbMgr(n).checkpointReadLock();
-
-        try {
-            fill(n, 3, key);
-        }
-        finally {
-            dbMgr(n).checkpointReadUnlock();
-        }
-
-        forceCheckpoint(n);
+        fill(n, 3, key);
+        forceCheckpoint();
 
         // Guaranteed recovery from WAL segments.
         dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
         fill(n, 3, key);
 
-        assertTrue(walMgr(n).currentSegment() >= 6);
+        stopAllGrids();
 
-        stopGrid(0);
-
-        // Restarting the node with configuration change.
         n = startGrid(0, cfg -> {
-            cfg.getDataStorageConfiguration().setWalSegments(4);
+            cfg.getDataStorageConfiguration().setWalSegments(segments);
         });
 
         assertEquals(key.get(), n.cache(DEFAULT_CACHE_NAME).size());
