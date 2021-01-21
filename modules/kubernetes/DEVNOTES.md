@@ -31,10 +31,10 @@ Create a folder for all the files to be placed in the Docker image and copy the 
     - Apache Ignite binary in a zip form built at the step above.
     - Dockerfile from `ignite-kubernetes/config/Dockerfile`.
     - Ignite configuration with enabled Kubernetes IP finder from `ignite-kubernetes/config/example-kube.xml`.
-    - The executable file that will start an Ignite node process from `ignite-kubernetes/config/run.sh`
+    - The executable file that starts the Ignite node process from `ignite-kubernetes/config/run.sh`
 
-Go to the folder and execute a command below to prepare the image:
-    docker build -t ignite-kube:v1 .
+To prepare the image, navigate to the folder and execute the following command:
+    docker build -t ignite-kube:v1 --build-arg IGNITE_VERSION=2.10.0-SNAPSHOT .
 
 Creating containerized Ignite pods and Ignite lookup service
 ============================================================
