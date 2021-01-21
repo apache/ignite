@@ -55,6 +55,9 @@ class ControlUtility:
             self.trust_store_path = self.jks_path(trust_store_jks)
             self.trust_store_password = trust_store_password
 
+        self.logger.warn("ControlUtility>>>")
+        self.logger.warn(self)
+
     def jks_path(self, jks_name: str):
         """
         :return Path to jks file.
