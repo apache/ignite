@@ -476,7 +476,10 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         if (subjId == null)
             subjId = ses.subjectId();
 
-        try (OperationSecurityContext c = subjId != null ? ctx.security().withContext(subjId) : null) {
+        try (OperationSecurityContext c = subjId != null && ctx.security().enabled() ?
+            ctx.security().withContext(subjId) :
+            null
+        ) {
             // Use either user task or deployed one.
             if (task == null) {
                 assert taskCls != null;
@@ -1152,7 +1155,17 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
                     @Nullable @Override public R call() {
-                        return task.reduce(results);
+                        UUID subjId = ctx.task().getThreadContext(TC_SUBJ_ID);
+
+                        if (subjId == null)
+                            subjId = ses.subjectId();
+
+                        try (OperationSecurityContext c = subjId != null && ctx.security().enabled() ?
+                            ctx.security().withContext(subjId) :
+                            null
+                        ) {
+                            return task.reduce(results);
+                        }
                     }
                 });
             }

@@ -595,7 +595,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(true);
 
-                                return job.execute();
+                                try (OperationSecurityContext c = secCtx != null && ctx.security().enabled() ?
+                                    ctx.security().withContext(secCtx) :
+                                    null
+                                ) {
+                                    return job.execute();
+                                }
                             }
                             finally {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())

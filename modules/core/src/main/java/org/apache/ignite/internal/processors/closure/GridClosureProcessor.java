@@ -207,7 +207,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
     }
 
-
     /**
      * @param mode Distribution mode.
      * @param job Closure to execute.

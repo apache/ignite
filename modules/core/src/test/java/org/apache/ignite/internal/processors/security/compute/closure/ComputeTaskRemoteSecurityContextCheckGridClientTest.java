@@ -153,7 +153,7 @@ public class ComputeTaskRemoteSecurityContextCheckGridClientTest extends Abstrac
     static class ComputeTaskClosure implements ComputeTask<T2<Collection<UUID>, Collection<UUID>>, Integer> {
         /** Local ignite. */
         @IgniteInstanceResource
-        protected transient Ignite loc;
+        protected transient IgniteEx loc;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -201,11 +201,19 @@ public class ComputeTaskRemoteSecurityContextCheckGridClientTest extends Abstrac
             if (res.getException() != null)
                 throw res.getException();
 
+            Object login = loc.context().security().securityContext().subject().login();
+
+            assertEquals(CLIENT_LOGIN, login);
+
             return ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
         @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
+            Object login = loc.context().security().securityContext().subject().login();
+
+            assertEquals(CLIENT_LOGIN, login);
+
             return null;
         }
     }
