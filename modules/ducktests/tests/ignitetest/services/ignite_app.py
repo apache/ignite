@@ -23,8 +23,7 @@ from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory, DEFAULT_CLIENT_KEYSTORE
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_CLIENT_KEYSTORE
 
 
 class IgniteApplicationService(IgniteAwareService):
@@ -110,14 +109,5 @@ class IgniteApplicationService(IgniteAwareService):
         return res
 
     def update_config_with_globals(self):
-        if self.globals.get("use_ssl", False) and (self.config.ssl_context_factory is None):
-            client_dict = self.globals.get("client", None)
-            root_dir = self.globals.get("install_root", "/opt")
-            if client_dict:
-                ssl_context_factory = SslContextFactory(root_dir, **client_dict)
-            else:
-                ssl_context_factory = SslContextFactory(root_dir, DEFAULT_CLIENT_KEYSTORE)
-
-            self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
-            self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context_factory=ssl_context_factory))
+        if self.globals.get("use_ssl", False):
+            self._update_ssl_config("client", DEFAULT_CLIENT_KEYSTORE)

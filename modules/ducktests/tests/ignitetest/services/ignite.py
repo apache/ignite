@@ -24,8 +24,7 @@ from datetime import datetime
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory, DEFAULT_SERVER_KEYSTORE
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_SERVER_KEYSTORE
 
 
 class IgniteService(IgniteAwareService):
@@ -64,18 +63,8 @@ class IgniteService(IgniteAwareService):
             return []
 
     def update_config_with_globals(self):
-        if self.globals.get("use_ssl", False) and (self.config.ssl_context_factory is None):
-            server_dict = self.globals.get("server", None)
-            root_dir = self.globals.get("install_root", "/opt")
-
-            if server_dict:
-                ssl_context_factory = SslContextFactory(root_dir, **server_dict)
-            else:
-                ssl_context_factory = SslContextFactory(root_dir, DEFAULT_SERVER_KEYSTORE)
-
-            self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
-            self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context_factory=ssl_context_factory))
+        if self.globals.get("use_ssl", False):
+            self._update_ssl_config("server", DEFAULT_SERVER_KEYSTORE)
 
 
 def node_failed_event_pattern(failed_node_id=None):

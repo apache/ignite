@@ -24,8 +24,7 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, \
-    DEFAULT_ADMIN_KEYSTORE
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
 
 
 class ControlUtility:

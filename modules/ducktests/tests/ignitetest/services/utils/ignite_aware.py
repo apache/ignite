@@ -36,6 +36,10 @@ from ignitetest.services.utils.log_utils import monitor_log
 
 
 # pylint: disable=too-many-public-methods
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
+
+
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -395,3 +399,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
+
+    def _update_ssl_config(self, dict_name: str, defailt_jks: str):
+        _dict = self.globals.get(dict_name)
+
+        if _dict is not None:
+            ssl_context_factory = SslContextFactory(self.install_root, **_dict)
+        else:
+            ssl_context_factory = SslContextFactory(self.install_root, defailt_jks)
+
+        self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
+        self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
+            ssl_enabled=True, ssl_context_factory=ssl_context_factory))
