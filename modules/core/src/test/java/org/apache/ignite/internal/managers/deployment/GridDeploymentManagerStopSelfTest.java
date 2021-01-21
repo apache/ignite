@@ -99,9 +99,6 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public DeploymentResource findResource(String rsrcName, ClassLoader ldr) { return null; }
-
-        /** {@inheritDoc} */
         @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException { return false; }
 
         /** {@inheritDoc} */
