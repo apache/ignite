@@ -60,14 +60,22 @@ class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
     """
-    def __init__(self, path_aware, config, project, jvm_opts):
+    # pylint: disable=R0913
+    def __init__(self, path_aware, config, project, jvm_opts=None, full_jvm_opts=None):
         self.project = project
         self.path_aware = path_aware
         self.envs = {}
-        self.jvm_opts = create_jvm_settings(opts=jvm_opts,
-                                            gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
-                                            oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"),
-                                            as_list=True)
+
+        if full_jvm_opts:
+            self.jvm_opts = full_jvm_opts
+
+            if jvm_opts:
+                self._add_jvm_opts(jvm_opts)
+        else:
+            self.jvm_opts = create_jvm_settings(opts=jvm_opts,
+                                                gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
+                                                oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"),
+                                                as_list=True)
         self.config = config
         self.version = config.version
 
