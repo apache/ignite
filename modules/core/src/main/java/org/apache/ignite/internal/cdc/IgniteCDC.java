@@ -19,14 +19,19 @@ package org.apache.ignite.internal.cdc;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -41,6 +46,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -82,9 +89,6 @@ public class IgniteCDC implements Runnable {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Watch utils. */
-    private final WatchUtils wu;
-
     /** CDC directory. */
     private Path cdcDir;
 
@@ -115,7 +119,6 @@ public class IgniteCDC implements Runnable {
         this.cfg = cfg;
         this.factory = new IgniteWalIteratorFactory(log);
         this.consumer = consumer;
-        this.wu = new WatchUtils(log);
 
         if (!CU.isPersistenceEnabled(cfg))
             throw new IllegalArgumentException("Persistence disabled. IgniteCDC can't run!");
@@ -181,7 +184,7 @@ public class IgniteCDC implements Runnable {
 
                 Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentNumber);
 
-                wu.waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
+                waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
                     try {
                         readSegment(segment);
 
@@ -203,6 +206,8 @@ public class IgniteCDC implements Runnable {
 
     /** Reads all available from segment. */
     private void readSegment(Path segment) throws IgniteCheckedException, IOException {
+        log.info("Processing WAL segment[segment=" + segment + ']');
+
         IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .log(log)
             .binaryMetadataFileStoreDir(binaryMeta)
@@ -300,7 +305,7 @@ public class IgniteCDC implements Runnable {
         else
             cdcParent = Paths.get(workDir).resolve(DFLT_CDC_PATH);
 
-        log.info("Archive root[dir=" + cdcParent + ']');
+        log.info("CDC root[dir=" + cdcParent + ']');
 
         final Path[] cdcDir = new Path[1];
 
@@ -308,9 +313,18 @@ public class IgniteCDC implements Runnable {
 
         log.info("ConsistendId pattern[dir=" + nodePattern + ']');
 
-        wu.waitFor(cdcParent,
-            dir -> dir.getName(dir.getNameCount() - 1).toString().matches(nodePattern),
-            dir -> cdcDir[0] = dir);
+        waitFor(cdcParent,
+            dir -> {
+                System.out.println(dir);
+                return dir.getName(dir.getNameCount() - 1).toString().matches(nodePattern);
+            },
+            Path::compareTo,
+            dir -> {
+                cdcDir[0] = dir;
+
+                return false;
+            }
+        );
 
         return cdcDir[0];
     }
@@ -392,5 +406,77 @@ public class IgniteCDC implements Runnable {
         }
 
         return PdsConsistentIdProcessor.genNewStyleSubfolderName(idx, UUID.fromString(consistendId));
+    }
+
+    /**
+     * Waits for creation of the path and notifies callback of it.
+     *
+     * @param watchDir Dir to watch
+     * @param filter Filter of events.
+     * @param existingSorter Sorter of existing files.
+     * @param callback Callback to be notified.
+     */
+    public void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> existingSorter,
+        Predicate<Path> callback) throws InterruptedException {
+        // If watch dir not exists waiting for it creation.
+        if (!Files.exists(watchDir))
+            waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false);
+
+        try {
+            try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
+                watchDir.register(watcher, ENTRY_CREATE);
+
+                try (Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
+                    final boolean[] status = {true};
+
+                    children.filter(filter).sorted().peek(p -> {
+                        if (status[0])
+                            status[0] = callback.test(p);
+                    }).count();
+
+                    if (!status[0])
+                        return;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Waiting for creation of child directory. Watching directory[dir=" + watchDir + ']');
+
+                boolean needNext = true;
+
+                while (needNext) {
+                    WatchKey key = watcher.take();
+
+                    for (WatchEvent<?> evt: key.pollEvents()) {
+                        WatchEvent.Kind<?> kind = evt.kind();
+
+                        if (kind == OVERFLOW)
+                            continue;
+
+                        Path evtPath = Paths.get(watchDir.toString(), evt.context().toString()).toAbsolutePath();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Event received[evt=" + evtPath.toAbsolutePath() + ",kind=" + kind + ']');
+
+                        if (filter.test(evtPath)) {
+                            needNext = callback.test(evtPath);
+
+                            if (!needNext)
+                                break;
+                        }
+                    }
+
+                    if (!needNext)
+                        break;
+
+                    boolean reset = key.reset();
+
+                    if (!reset)
+                        throw new IllegalStateException("Key no longer valid.");
+                }
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 }
