@@ -23,7 +23,6 @@ import re
 from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
-from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.thin_client_aware import ThinClientAwareService
 
 

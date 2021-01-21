@@ -82,6 +82,7 @@ class ThinClientAwareService(BackgroundThreadService, IgnitePathAware, metaclass
 
     def start(self, clean=True):
         self.start_async(clean=clean)
+        self.wait(self.startup_timeout_sec)
 
     def start_node(self, node):
         self.init_persistent(node)
@@ -103,8 +104,15 @@ class ThinClientAwareService(BackgroundThreadService, IgnitePathAware, metaclass
     def stop(self):
         if not self.killed:
             self.stop_async()
+            self.await_stopped()
         else:
             self.logger.debug("Skipping node stop since it already killed.")
+
+    def await_stopped(self):
+        """
+        Awaits stop finished.
+        """
+        self.logger.info("Waiting for IgniteAware(s) to stop ...")
 
         for node in self.nodes:
             stopped = self.wait_node(node, timeout_sec=self.shutdown_timeout_sec)

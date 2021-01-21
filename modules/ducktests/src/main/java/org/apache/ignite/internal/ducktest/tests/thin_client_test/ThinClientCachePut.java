@@ -19,13 +19,14 @@ package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.internal.ducktest.utils.ThinkClientApplication;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.internal.ducktest.utils.ThinClientApplication;
 
 
 /**
  * Thin client. Cache test: put, get, value check
  */
-public class ThinClientCachePut extends ThinkClientApplication {
+public class ThinClientCachePut extends ThinClientApplication {
     /**
      * {@inheritDoc}
      */
@@ -39,7 +40,10 @@ public class ThinClientCachePut extends ThinkClientApplication {
         System.out.println();
         System.out.println(">>> Cache test started.");
 
-        ClientCache<Long, Long> cache = client.getOrCreateCache(cacheName);
+        ClientCacheConfiguration cfg = new ClientCacheConfiguration();
+        cfg.setName(cacheName);
+
+        ClientCache<Long, Long> cache = client.getOrCreateCache(cfg);
 
         System.out.println(">>> Cache created [cacheName=" + cache.getName() + ']');
 
@@ -52,7 +56,28 @@ public class ThinClientCachePut extends ThinkClientApplication {
 
         markFinished();
     }
-
+//    protected void run(JsonNode jsonNode) throws Exception {
+//        String cacheName = jsonNode.get("cache_name").asText();
+//        int entry_num = jsonNode.get("entry_num").asInt();
+//
+//        markInitialized();
+//
+//        System.out.println();
+//        System.out.println(">>> Cache test started.");
+//
+//        ClientCache<Long, Long> cache = client.getOrCreateCache(cacheName);
+//
+//        System.out.println(">>> Cache created [cacheName=" + cache.getName() + ']');
+//
+//        fillCache(cache, entry_num);
+//
+//        checkCacheData(cache, entry_num);
+//
+//        // Delete cache with its content completely.
+//        client.destroyCache(cacheName);
+//
+//        markFinished();
+//    }
     /**
      * Fills cache.
      */
@@ -73,6 +98,8 @@ public class ThinClientCachePut extends ThinkClientApplication {
     public static void checkCacheData(ClientCache<Long, Long> cache, int entry_num) {
         System.out.println();
         System.out.println(">>> Check cache data [cacheName=" + cache.getName() + ']');
+        System.out.println(">>> Check cache data [entry_num=" + entry_num + ']');
+        System.out.println(">>> Check cache data [cache.size=" + cache.size() + ']');
 
         assert (entry_num == cache.size());
 

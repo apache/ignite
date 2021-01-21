@@ -31,9 +31,9 @@ import java.lang.management.ThreadInfo;
 /**
  *
  */
-public abstract class ThinkClientApplication {
+public abstract class ThinClientApplication {
     /** Logger. */
-    protected static final Logger log = LogManager.getLogger(ThinkClientApplication.class.getName());
+    protected static final Logger log = LogManager.getLogger(ThinClientApplication.class.getName());
 
     /** App inited. */
     private static final String APP_INITED = "IGNITE_APPLICATION_INITIALIZED";
@@ -71,7 +71,7 @@ public abstract class ThinkClientApplication {
     /**
      * Default constructor.
      */
-    protected ThinkClientApplication() {
+    protected ThinClientApplication() {
         Signal.handle(new Signal("TERM"), signal -> {
             log.info("SIGTERM recorded.");
 
@@ -237,6 +237,8 @@ public abstract class ThinkClientApplication {
             log.info("Application params: " + jsonNode);
 
             assert cfgPath != null;
+
+            log.info("About to run appliction");
 
             run(jsonNode);
 

@@ -5,10 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -43,13 +39,13 @@ public class ThinClientService {
         String host = jsonNode.get("server_address").asText();
         String port = jsonNode.get("port").asText();
 
-        ThinkClientApplication app =
-                (ThinkClientApplication)clazz.getConstructor().newInstance();
+        ThinClientApplication app =
+                (ThinClientApplication)clazz.getConstructor().newInstance();
 
         app.cfgPath = cfgPath;
 
         if (startIgnite) {
-            log.info("Starting Ignite node...");
+            log.info("Starting Thin Client...");
 
             ClientConfiguration cfg = new ClientConfiguration().setAddresses(host + ":" + port);
 
@@ -59,7 +55,7 @@ public class ThinClientService {
                 app.start(jsonNode);
             }
             finally {
-                log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
+                log.info("Thin Client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
         else
