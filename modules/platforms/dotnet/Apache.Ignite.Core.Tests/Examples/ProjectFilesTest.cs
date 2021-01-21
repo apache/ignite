@@ -86,6 +86,16 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
+        /// Checks VS Code files.
+        /// </summary>
+        [Test]
+        public void TestVsCodeFiles()
+        {
+            var tasksText = File.ReadAllText(ExamplePaths.TasksJsonFile);
+            StringAssert.Contains(Path.GetFileName(ExamplePaths.SlnFile), tasksText);
+        }
+
+        /// <summary>
         /// Updates launch.json with all examples.
         /// <para />
         /// Run this test to update the file when necessary.

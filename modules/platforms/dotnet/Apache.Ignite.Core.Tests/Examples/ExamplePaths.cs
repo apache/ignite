@@ -33,5 +33,8 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         /** */
         public static readonly string LaunchJsonFile = Path.Combine(SourcesPath, ".vscode", "launch.json");
+
+        /** */
+        public static readonly string TasksJsonFile = Path.Combine(SourcesPath, ".vscode", "tasks.json");
     }
 }
