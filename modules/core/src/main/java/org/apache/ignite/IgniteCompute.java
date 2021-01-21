@@ -371,6 +371,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * If task for given name has not been deployed yet, then {@code taskName} will be
      * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
+     * <p>
+     * If there are more one class deployed with the same name this method will execute the lasts one deployed of them.
+     * This method has no guarantees if it invokes where classes with the same names deployed from different threads.
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
