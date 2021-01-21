@@ -20,7 +20,7 @@ Apache Ignite memory management mechanism can only create or reuse pages for use
 
 In most use cases, it does not cause any problem as once created page can be reused multiple times. However, in certain cases, it is possible that cache contains very little data but occupies large chunks of disk space because a significant volume of data was removed from the cache.
 
-Defragmentation enables user to shrink data files and claim back disk space.
+Defragmentation enables a user to shrink data files and claim back disk space.
 
 [NOTE]
 ====
@@ -29,11 +29,11 @@ Defragmentation can only be used with historical rebalance enabled. If historica
 
 == Performing Defragmentation
 
-Defragmentation is costly operation in terms of disk IO. To avoid slowing down user operations, note that defragmentation cannot be executed on a regular node joined to the cluster. To perform defragmentation, you need to request it first on a particular node or set of nodes and then restart them.
+Defragmentation is a costly operation in terms of disk IO. To avoid slowing down user operations, note that defragmentation cannot be executed on a regular node joined to the cluster. To perform defragmentation, you need to request it first on a particular node or set of nodes and then restart them.
 
 === Starting Defragmentation
 
-To request defragmentation use the following command:
+To request defragmentation, use the following command:
 [source,shell]
 ----
 control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
@@ -60,6 +60,6 @@ To reduce disk space requirements during defragmentation, caches are defragmente
 ====
 
 == Conclusion
-In most situations defragmentation isn't needed as existing memory management mechanism effectively reuses memory left after data deletion. But in rare cases it may be necessary to employ it to free up disk space.
+In most situations, defragmentation is not necessary as existing memory management mechanism effectively reuses memory left after data deletion. But in rare cases, it may be necessary to employ it to free up disk space up.
 
-Its usage requires taking nodes out of normal operations so it careful planning is needed.
+Persistence defragmentation requires taking nodes out of their normal operations, so a careful planning is recommended.
