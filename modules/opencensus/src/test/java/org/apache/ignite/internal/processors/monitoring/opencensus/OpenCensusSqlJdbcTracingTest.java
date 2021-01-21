@@ -35,6 +35,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_BATCH_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CMD_QRY_EXECUTE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CURSOR_CLOSE;
@@ -76,7 +77,10 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
         SpanId rootSpan = executeAndCheckRootSpan("SELECT orgVal FROM " + orgTable, TEST_SCHEMA, false, false, true);
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
-        checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
+
+        SpanId curOpenSpanId = checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
+        assertTrue(Long.parseLong(getAttribute(curOpenSpanId, SQL_QRY_ID)) > 0);
+
         checkChildSpan(SQL_ITER_OPEN, rootSpan);
 
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
