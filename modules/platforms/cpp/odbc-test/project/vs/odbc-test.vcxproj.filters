@@ -148,9 +148,9 @@
     <ClCompile Include="..\..\src\queries_ssl_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\transaction_test.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
+<!--     <ClCompile Include="..\..\src\transaction_test.cpp"> -->
+<!--       <Filter>Code</Filter> -->
+<!--     </ClCompile> -->
     <ClCompile Include="..\..\..\odbc\src\config\connection_string_parser.cpp">
       <Filter>Externals</Filter>
     </ClCompile>

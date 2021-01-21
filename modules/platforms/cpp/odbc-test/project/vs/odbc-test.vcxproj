@@ -212,7 +212,7 @@
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\test_server.cpp" />
     <ClCompile Include="..\..\src\test_utils.cpp" />
-    <ClCompile Include="..\..\src\transaction_test.cpp" />
+<!--     <ClCompile Include="..\..\src\transaction_test.cpp" /> -->
     <ClCompile Include="..\..\src\types_test.cpp" />
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
