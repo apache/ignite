@@ -98,15 +98,15 @@ class CheckJVMSettings:
         assert "-Xms" + DEFAULT_HEAP in jvm_settings
         assert "-Xmx" + DEFAULT_HEAP in jvm_settings
 
-        jvm_settings = merge_jvm_settings(jvm_settings, additionals="-Xms981M -Xmx981M", asl_list=True)
+        jvm_settings = merge_jvm_settings(jvm_settings, additionals="-Xms981M -Xmx981M", as_list=True)
 
         assert "-Xms981M" in jvm_settings
         assert "-Xmx981M" in jvm_settings
         assert "-Xms" + DEFAULT_HEAP not in jvm_settings
         assert "-Xmx" + DEFAULT_HEAP not in jvm_settings
 
-        jvm_settings = merge_jvm_settings(jvm_settings, additionals="-XX:ParallelGCThreads=1024", asl_list=True)
-        jvm_settings = merge_jvm_settings(jvm_settings, additionals="-xx:ParallelGCThreads=512", asl_list=True)
+        jvm_settings = merge_jvm_settings(jvm_settings, additionals="-XX:ParallelGCThreads=1024", as_list=True)
+        jvm_settings = merge_jvm_settings(jvm_settings, additionals="-xx:ParallelGCThreads=512", as_list=True)
 
         assert "-XX:ParallelGCThreads=1024" in jvm_settings
         assert "-XX:ParallelGCThreads=512" not in jvm_settings
