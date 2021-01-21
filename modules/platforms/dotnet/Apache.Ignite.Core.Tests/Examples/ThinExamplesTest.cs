@@ -45,7 +45,9 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             var asmFile = Path.Combine(Path.GetDirectoryName(sharedProj), "bin", "Debug", "netcoreapp2.1", "Shared.dll");
             var asm = Assembly.LoadFrom(asmFile);
-            var utils = asm.GetType("IgniteExamples.Shared.Utils");
+            var utils = asm.GetType("Apache.Ignite.Examples.Shared.Utils");
+
+            Assert.IsNotNull(utils);
 
             utils.InvokeMember(
                 "DeployDefaultServices",
