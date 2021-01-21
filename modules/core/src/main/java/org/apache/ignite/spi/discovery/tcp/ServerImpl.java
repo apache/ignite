@@ -7106,7 +7106,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoverySpiState state = spiStateCopy();
 
                             if (state == CONNECTED) {
-                                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                                spi.writeToSocket(msg, sock, res, sockTimeout);
 
                                 if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone())
                                     new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
@@ -7120,7 +7120,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // If message is received from previous node and node is connecting forward to next node.
                                 if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
-                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                                    spi.writeToSocket(msg, sock, res, sockTimeout);
 
                                     msgWorker.addMessage(msg);
 
@@ -7134,7 +7134,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7163,7 +7163,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             synchronized (mux) {
                                 if (spiState == CONNECTING) {
@@ -7191,7 +7191,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7234,7 +7234,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             boolean ignored = false;
 
