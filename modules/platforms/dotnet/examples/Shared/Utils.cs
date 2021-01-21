@@ -30,14 +30,23 @@ namespace Apache.Ignite.Examples.Shared
     using Apache.Ignite.Examples.Shared.Models;
     using Apache.Ignite.Examples.Shared.Services;
 
+    /// <summary>
+    /// Common configuration and sample data.
+    /// </summary>
     public static class Utils
     {
+        /// <summary>
+        /// Initializes the <see cref="Utils"/> class.
+        /// </summary>
         static Utils()
         {
             // Only necessary during Ignite development.
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
         }
 
+        /// <summary>
+        /// Gets the server node configuration.
+        /// </summary>
         public static IgniteConfiguration GetServerNodeConfiguration()
         {
             // None of the options below are mandatory for the examples to work.
@@ -69,6 +78,9 @@ namespace Apache.Ignite.Examples.Shared
             };
         }
 
+        /// <summary>
+        /// Gets the thick client node configuration.
+        /// </summary>
         public static IgniteConfiguration GetClientNodeConfiguration()
         {
             return new IgniteConfiguration(GetServerNodeConfiguration())
@@ -77,6 +89,9 @@ namespace Apache.Ignite.Examples.Shared
             };
         }
 
+        /// <summary>
+        /// Gets the thin client node configuration.
+        /// </summary>
         public static IgniteClientConfiguration GetThinClientConfiguration()
         {
             return new IgniteClientConfiguration
