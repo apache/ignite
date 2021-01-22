@@ -1707,17 +1707,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
-            startGrid(2);
+            Ignite ignite2 = startGrid(2);
 
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
-
-            Ignite ignite2 = startGrid(3);
-
-            assertEquals(3, ignite2.cluster().nodes().size());
+            assertEquals(2, ignite2.cluster().nodes().size());
 
             waitNodeStop(ignite0.name());
 
-            tryCreateCache(3);
+            tryCreateCache(2);
         }
         finally {
             stopAllGrids();
@@ -2629,8 +2625,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 (msg instanceof TcpDiscoveryNodeAddedMessage) &&
                 failMsg.compareAndSet(false, true)) {
                 log.info("IO error on message send [locNode=" + locNode + ", msg=" + msg + ']');
-
-                log.error("TEST | failing node: " + (locNode.internalOrder() + 1));
 
                 sock.close();
 
