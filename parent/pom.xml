@@ -71,6 +71,7 @@
         <slf4j.version>1.7.30</slf4j.version>
         <spoon.framework.version>8.3.0</spoon.framework.version>
         <typesafe.version>1.4.1</typesafe.version>
+        <hamcrest.version>2.2</hamcrest.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -232,6 +233,12 @@
                 <groupId>fr.inria.gforge.spoon</groupId>
                 <artifactId>spoon-core</artifactId>
                 <version>${spoon.framework.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-library</artifactId>
+                <version>${hamcrest.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -18,15 +18,13 @@
 package org.apache.ignite.configuration;
 
 import java.io.Reader;
-import java.io.Serializable;
-import java.util.function.Consumer;
 
 import org.apache.ignite.configuration.extended.InitLocal;
 import org.apache.ignite.configuration.extended.LocalConfigurationImpl;
 import org.apache.ignite.configuration.extended.Selectors;
-import org.apache.ignite.configuration.presentation.FormatConverter;
-import org.apache.ignite.configuration.presentation.json.JsonConverter;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.rest.presentation.FormatConverter;
+import org.apache.ignite.rest.presentation.json.JsonConverter;
 
 /**
  * Module is responsible for preparing configuration when module is started.
@@ -37,7 +35,7 @@ import org.apache.ignite.configuration.storage.ConfigurationStorage;
 public class ConfigurationModule {
     static {
         try {
-            Selectors.LOCAL_BASELINE_AUTO_ADJUST_ENABLED.select(null);
+            Selectors.LOCAL_BASELINE.select(null);
         }
         catch (Throwable ignored) {
             // No-op.
@@ -45,38 +43,32 @@ public class ConfigurationModule {
     }
 
     /** */
-    private final ConfigurationStorage storage = new ConfigurationStorage() {
-        /** {@inheritDoc} */
-        @Override public <T extends Serializable> void save(String propertyName, T object) {
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T extends Serializable> T get(String propertyName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T extends Serializable> void listen(String key, Consumer<T> listener) {
-
-        }
-    };
-
-    /** */
     private Configurator<LocalConfigurationImpl> localConfigurator;
 
     /** */
-    public void bootstrap(Reader confReader) {
+    private final ConfigurationRegistry confRegistry = new ConfigurationRegistry();
+
+    /** */
+    public void bootstrap(Reader confReader, ConfigurationStorage storage) {
         FormatConverter converter = new JsonConverter();
 
         Configurator<LocalConfigurationImpl> configurator =
             Configurator.create(storage, LocalConfigurationImpl::new, converter.convertFrom(confReader, "local", InitLocal.class));
 
         localConfigurator = configurator;
+
+        String key = configurator.getRoot().key();
+
+        confRegistry.registerConfigurator(configurator);
     }
 
     /** */
     public Configurator<LocalConfigurationImpl> localConfigurator() {
         return localConfigurator;
+    }
+
+    /** */
+    public ConfigurationRegistry configurationRegistry() {
+        return confRegistry;
     }
 }

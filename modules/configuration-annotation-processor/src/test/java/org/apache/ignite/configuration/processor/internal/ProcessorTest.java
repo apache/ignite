@@ -16,14 +16,15 @@
  */
 package org.apache.ignite.configuration.processor.internal;
 
-import com.google.testing.compile.CompilationSubject;
+import com.google.testing.compile.Compilation;
 import com.squareup.javapoet.ClassName;
 import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.processor.internal.HasFieldMatcher.hasFields;
 import static org.apache.ignite.configuration.processor.internal.HasMethodMatcher.hasMethods;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -41,7 +42,9 @@ public class ProcessorTest extends AbstractProcessorTest {
 
         final BatchCompilation batch = batchCompile(testConfigurationSchema);
 
-        CompilationSubject.assertThat(batch.getCompilationStatus()).succeeded();
+        final Compilation status = batch.getCompilationStatus();
+
+        assertNotEquals(Compilation.Status.FAILURE, status);
 
         assertEquals(7, batch.generated().size());
 

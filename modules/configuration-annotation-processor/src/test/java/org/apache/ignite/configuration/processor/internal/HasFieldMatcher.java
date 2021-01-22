@@ -54,7 +54,7 @@ public class HasFieldMatcher extends BaseMatcher<ParsedClass> {
 
         List<HasFieldMatcher> matcherList = new ArrayList<>();
 
-        for (int i = 0; i < arguments.length; i+=2)
+        for (int i = 0; i < arguments.length; i += 2)
             matcherList.add(new HasFieldMatcher(arguments[i], arguments[i + 1]));
 
         return new BaseMatcher<ParsedClass>() {

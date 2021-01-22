@@ -20,6 +20,7 @@ package org.apache.ignite.configuration.sample;
 import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
+
 /**
  * Test cache configuration schema.
  */

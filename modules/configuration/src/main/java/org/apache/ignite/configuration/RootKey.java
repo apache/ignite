@@ -15,22 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.extended;
-
-
-import javax.validation.constraints.Min;
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.Value;
+package org.apache.ignite.configuration;
 
 /** */
-@Config(value = "auto_adjust")
-public class AutoAdjustConfigurationSchema {
+public interface RootKey<T extends ConfigurationTree<?, ?>> {
     /** */
-    @Value
-    private boolean enabled;
-
-    /** */
-    @Value
-    @Min(value = 0, message = "Minimum value is 0")
-    private int timeout;
+    public String key();
 }

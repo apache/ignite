@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.presentation;
+package org.apache.ignite.configuration.sample;
 
-import java.io.Reader;
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.Value;
 
-/** */
-public interface FormatConverter {
-    /** */
-    String convertTo(Object obj);
+/**
+ * Test discovery configuration schema.
+ */
+@Config
+public class DiscoveryConfigurationSchema {
+    /** Node failure detection timeout. */
+    @Value
+    private int failureDetectionTimeout;
 
-    /** */
-    String convertTo(String rootName, Object obj);
-
-    /** */
-    <T> T convertFrom(String source, String rootName, Class<T> clazz);
-
-    /** */
-    <T> T convertFrom(Reader source, String rootName, Class<T> clazz);
+    /** Node join timeout. */
+    @Value
+    private int joinTimeout;
 }

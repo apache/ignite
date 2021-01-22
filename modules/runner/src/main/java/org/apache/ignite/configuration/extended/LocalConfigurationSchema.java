@@ -27,10 +27,6 @@ import org.apache.ignite.configuration.annotation.ConfigValue;
 public class LocalConfigurationSchema {
     /** */
     @ConfigValue
-    private RestConfigurationSchema rest;
-
-    /** */
-    @ConfigValue
     private BaselineConfigurationSchema baseline;
 
     /** */

@@ -19,19 +19,15 @@ package org.apache.ignite.configuration.sample;
 
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.NamedConfigValue;
 
 /**
- * Test cluster wide configuration schema.
+ * Test network configuration schema.
  */
-@Config(value = "cluster", root = true)
-public class ClusterWideConfigurationSchema {
-    /** Cache. */
-    @NamedConfigValue
-    CacheConfigurationSchema cacheConfig;
-
-    /** Baseline. */
+@Config(value = "network", root = true)
+public class NetworkConfigurationSchema {
+    /** Discovery. */
     @ConfigValue
-    private BaselineConfigurationSchema baseline;
+    private DiscoveryConfigurationSchema discovery;
+
 
 }

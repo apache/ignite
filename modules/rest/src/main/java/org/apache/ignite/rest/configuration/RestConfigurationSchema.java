@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.sample;
+package org.apache.ignite.rest.configuration;
 
 import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import org.apache.ignite.configuration.annotation.Value;
 
-/**
- * Test cluster wide configuration schema.
- */
-@Config(value = "cluster", root = true)
-public class ClusterWideConfigurationSchema {
-    /** Cache. */
-    @NamedConfigValue
-    CacheConfigurationSchema cacheConfig;
+@Config(value = "rest", root = true)
+public class RestConfigurationSchema {
+    /** */
+    @Value
+    private int port;
 
-    /** Baseline. */
-    @ConfigValue
-    private BaselineConfigurationSchema baseline;
-
+    /** */
+    @Value
+    private int portRange;
 }

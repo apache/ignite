@@ -55,6 +55,7 @@ import javax.lang.model.util.Elements;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.Configurator;
+import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
@@ -273,6 +274,9 @@ public class Processor extends AbstractProcessor {
             // Create VIEW, INIT and CHANGE classes
             createPojoBindings(packageName, fields, schemaClassName, configurationClassBuilder, configurationInterfaceBuilder);
 
+            if (isRoot)
+                createRootKeyField(configInterface, configurationClassBuilder, configDesc);
+
             // Create constructors for configuration class
             createConstructors(configClass, configName, configurationClassBuilder, CONFIGURATOR_TYPE, constructorBodyBuilder, copyConstructorBodyBuilder);
 
@@ -311,6 +315,32 @@ public class Processor extends AbstractProcessor {
         createSelectorsClass(packageForUtil, flattenConfig);
 
         return true;
+    }
+
+    /** */
+    private void createRootKeyField(ClassName configInterface,
+        TypeSpec.Builder configurationClassBuilder,
+        ConfigurationDescription configDesc) {
+
+        ParameterizedTypeName fieldTypeName = ParameterizedTypeName.get(ClassName.get(RootKey.class), configInterface);
+
+        TypeSpec anonymousClass = TypeSpec.anonymousClassBuilder("")
+            .addSuperinterface(fieldTypeName)
+            .addMethod(MethodSpec
+                .methodBuilder("key")
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC)
+                .returns(TypeName.get(String.class))
+                .addStatement("return $S", configDesc.getName())
+                .build()).build();
+
+        FieldSpec keyField = FieldSpec.builder(
+            fieldTypeName, "KEY", PUBLIC, STATIC
+            )
+            .initializer("$L", anonymousClass)
+            .build();
+
+        configurationClassBuilder.addField(keyField);
     }
 
     /**
@@ -589,7 +619,6 @@ public class Processor extends AbstractProcessor {
 
                 if (current.getParent() != null) {
                     String newMethodCall = "." + current.getOriginalName() + "()";
-
                     // if config is named, then create a call with name parameter
                     if (isNamed)
                         newMethodCall += ".get(name" + (namedCount - 1) + ")";
@@ -617,7 +646,6 @@ public class Processor extends AbstractProcessor {
                         .addStatement("return (root) -> root$L", methodCall.toString())
                         .build()
                 );
-
 
                 // Build a list of parameters for statement
                 List<Object> params = new ArrayList<>();

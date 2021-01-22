@@ -18,6 +18,8 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -116,6 +118,21 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
         Selector<T, TARGET, VIEW, INIT, CHANGE> selector
     ) {
         return selector.select(root).value();
+    }
+
+    /**
+     * 
+     */
+    public Class<?> getChangeType() {
+        Type sClass = root.getClass().getGenericSuperclass();
+
+        assert sClass instanceof ParameterizedType;
+
+        ParameterizedType pt = (ParameterizedType)sClass;
+
+        assert pt.getActualTypeArguments().length == 3;
+
+        return (Class<?>) pt.getActualTypeArguments()[2];
     }
 
     /**

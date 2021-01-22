@@ -17,17 +17,19 @@
 
 package org.apache.ignite.configuration.extended;
 
+import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 
 /** */
-@Config
-public class RestConfigurationSchema {
+@Config(value = "auto_adjust")
+public class AutoAdjustConfigurationSchema {
     /** */
     @Value
-    private int port;
+    private boolean enabled;
 
     /** */
     @Value
-    private int portRange;
+    @Min(value = 0, message = "Minimum value is 0")
+    private int timeout;
 }

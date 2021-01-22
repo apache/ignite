@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.presentation.json;
+package org.apache.ignite.rest.presentation.json;
 
 import java.io.Reader;
 
 import com.google.gson.Gson;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.configuration.presentation.FormatConverter;
+import java.util.Optional;
+import org.apache.ignite.rest.presentation.FormatConverter;
 
 /** */
 public class JsonConverter implements FormatConverter {
@@ -44,7 +45,17 @@ public class JsonConverter implements FormatConverter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T convertFrom(String source, String rootName, Class<T> clazz) {
+    @Override public String rootName(String source) {
+        Map<String, Object> map = gson.fromJson(source, Map.class);
+
+        // Peek only first root for simplicite. See comment in ConfigurationPresentation#update for more context.
+        Optional<String> firstOpt = map.keySet().stream().findFirst();
+
+        return firstOpt.isPresent() ? firstOpt.get() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object convertFrom(String source, String rootName, Class<?> clazz) {
         Map map = gson.fromJson(source, Map.class);
 
         String root = gson.toJson(map.get(rootName));

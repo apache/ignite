@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.sample;
+package org.apache.ignite.rest.presentation;
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import java.io.Reader;
 
-/**
- * Test cluster wide configuration schema.
- */
-@Config(value = "cluster", root = true)
-public class ClusterWideConfigurationSchema {
-    /** Cache. */
-    @NamedConfigValue
-    CacheConfigurationSchema cacheConfig;
+/** */
+public interface FormatConverter {
+    /** */
+    String convertTo(Object obj);
 
-    /** Baseline. */
-    @ConfigValue
-    private BaselineConfigurationSchema baseline;
+    /** */
+    String convertTo(String rootName, Object obj);
 
+    /** */
+    String rootName(String source);
+
+    /** */
+    Object convertFrom(String source, String rootName, Class<?> clazz);
+
+    /** */
+    <T> T convertFrom(Reader source, String rootName, Class<T> clazz);
 }

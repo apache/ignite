@@ -1,0 +1,19 @@
+{
+  "local": {
+    "baseline": {
+      "autoAdjust": {
+        "timeout":10000,
+        "enabled":true
+      }
+    },
+    "dataStorage": {
+      "pageSize":4096,
+      "storagePath":"db/data",
+      "walPath":"db/wal"
+    }
+  },
+  "rest": {
+    "port":10300,
+    "portRange":100
+  }
+}
