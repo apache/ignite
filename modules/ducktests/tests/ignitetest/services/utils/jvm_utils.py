@@ -33,13 +33,12 @@ JVM_PARAMS_GENERIC = "-server -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX:+Al
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
 
+# pylint: disable=R0913
 def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC,
-                        gc_dump_path=None, oom_path=None, **kwargs):
+                        opts=None, gc_dump_path=None, oom_path=None):
     """
     Provides settings string for JVM process.
-    param as_list: Represent JVM params as list.
-    param as_map: Represent JVM params as dict.
-    param opts: JVM options to merge. Adds new or rewrites default values. Can be dict, list or string.
+    param opts: JVM options to merge. Adds new or rewrites default values. Can be list or string.
     """
     gc_dump = ""
     if gc_dump_path:
@@ -52,24 +51,17 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_CMS, g
 
     as_string = f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
 
-    to_merge = kwargs.get("opts")
+    if opts:
+        return merge_jvm_settings(as_string, opts)
 
-    if to_merge or kwargs.get("as_map"):
-        return merge_jvm_settings(as_string, to_merge if to_merge else {}, **kwargs)
-
-    if kwargs.get("as_list"):
-        return as_string.split()
-
-    return as_string
+    return as_string.split()
 
 
-def merge_jvm_settings(src_settings, additionals, **kwargs):
+def merge_jvm_settings(src_settings, additionals):
     """
     Merges two JVM settings.
-    :param src_settings: base settings. Can be dict, list or string.
-    :param additionals: params to add to or overwrite in src_settings. Can be dict, list or string.
-    param as_list: If True, represents result as list.
-    param as_map: If True, represents result as dict.
+    :param src_settings: base settings. Can be list or string.
+    :param additionals: params to add to or overwrite in src_settings. Can be list or string.
     :return merged JVM settings. By default as string.
     """
     mapped = _to_map(src_settings)
@@ -78,9 +70,6 @@ def merge_jvm_settings(src_settings, additionals, **kwargs):
 
     _remove_duplicates(mapped)
 
-    if kwargs.get("as_map"):
-        return mapped
-
     listed = []
     for param, value in mapped.items():
         if value:
@@ -88,27 +77,23 @@ def merge_jvm_settings(src_settings, additionals, **kwargs):
         else:
             listed.append(param)
 
-    if kwargs.get("as_list"):
-        return listed
-
-    return ' '.join(listed)
+    return listed
 
 
 def _to_map(params):
     """"""
-    if isinstance(params, dict):
-        return params
+    assert isinstance(params, str) or isinstance(params, list), "JVM params an be string or list only."
 
     if isinstance(params, str):
         params = params.split()
 
-    as_map = {}
+    mapped = {}
 
     for elem in params:
         param_val = elem.split(sep="=", maxsplit=1)
-        as_map[param_val[0]] = param_val[1] if len(param_val) > 1 else None
+        mapped[param_val[0]] = param_val[1] if len(param_val) > 1 else None
 
-    return as_map
+    return mapped
 
 
 def _remove_duplicates(params: dict):

@@ -74,8 +74,7 @@ class IgniteSpec(metaclass=ABCMeta):
         else:
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
                                                 gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
-                                                oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"),
-                                                as_list=True)
+                                                oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
         self.config = config
         self.version = config.version
 
@@ -124,7 +123,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     def _add_jvm_opts(self, opts):
         """Properly adds JVM options to current"""
-        self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts, as_list=True)
+        self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts)
 
 
 class IgniteNodeSpec(IgniteSpec):
