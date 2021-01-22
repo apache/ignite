@@ -23,6 +23,32 @@
 
 namespace ignite_test
 {
+    std::string GetTestConfigDir()
+    {
+        using namespace ignite;
+
+        std::string cfgPath = common::GetEnv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
+
+        if (!cfgPath.empty())
+            return cfgPath;
+
+        std::string home = jni::ResolveIgniteHome();
+
+        if (home.empty())
+            return home;
+
+        std::stringstream path;
+
+        path << home << common::Fs
+             << "modules" << common::Fs
+             << "platforms" << common::Fs
+             << "cpp" << common::Fs
+             << "core-test" << common::Fs
+             << "config";
+
+        return path.str();
+    }
+
     void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
     {
         using namespace ignite;
@@ -51,12 +77,16 @@ namespace ignite_test
         cfg.jvmInitMem = 1024;
         cfg.jvmMaxMem = 4096;
 #endif
+        std::string cfgDir = GetTestConfigDir();
 
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
+        if (cfgDir.empty())
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to resolve test config directory");
 
-        assert(cfgPath != 0);
+        std::stringstream path;
 
-        cfg.springCfgPath = std::string(cfgPath).append("/").append(cfgFile);
+        path << cfgDir << common::Fs << cfgFile;
+
+        cfg.springCfgPath = path.str();
     }
 
     ignite::Ignite StartNode(const char* cfgFile)

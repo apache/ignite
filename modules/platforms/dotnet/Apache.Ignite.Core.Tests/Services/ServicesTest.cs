@@ -27,9 +27,11 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
+    using org.apache.ignite.platform.model;
 
     /// <summary>
     /// Services tests.
@@ -297,6 +299,12 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check err method
             Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
+ 
+            Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
+            Assert.AreEqual(3, svc.TestOverload(1, 2));
+            Assert.AreEqual(5, svc.TestOverload(3, 2));
+
+            Assert.AreEqual(43, svc.TestOverload(2, ServicesTypeAutoResolveTest.Param));
 
             // Check local scenario (proxy should not be created for local instance)
             Assert.IsTrue(ReferenceEquals(Grid2.GetServices().GetService<ITestIgniteService>(SvcName),
@@ -357,6 +365,12 @@ namespace Apache.Ignite.Core.Tests.Services
             // Exception in service.
             ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
             Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
+ 
+            Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
+            Assert.AreEqual(3, svc.TestOverload(1, 2));
+            Assert.AreEqual(5, svc.TestOverload(3, 2));
+
+            Assert.AreEqual(43, svc.TestOverload(2, ServicesTypeAutoResolveTest.Param));
         }
 
         /// <summary>
@@ -956,6 +970,45 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
                 .Select(x => x.GetField<int>("Field")));
 
+            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(dt2, svc.testDate(dt1));
+
+            svc.testDateArray(new DateTime?[] {dt1, dt2});
+
+            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
+
+            cache.Put(1, dt1);
+            cache.Put(2, dt2);
+
+            svc.testUTCDateFromCache();
+
+            Assert.AreEqual(dt1, cache.Get(3));
+            Assert.AreEqual(dt2, cache.Get(4));
+
+#if NETCOREAPP
+            //This Date in Europe/Moscow have offset +4.
+            DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            //This Date in Europe/Moscow have offset +3.
+            DateTime dt4 = new DateTime(1982, 3, 31, 22, 0, 0, 0, DateTimeKind.Local);
+
+            cache.Put(5, dt3);
+            cache.Put(6, dt4);
+
+            Assert.AreEqual(dt3.ToUniversalTime(), cache.Get(5).ToUniversalTime());
+            Assert.AreEqual(dt4.ToUniversalTime(), cache.Get(6).ToUniversalTime());
+
+            svc.testLocalDateFromCache();
+
+            Assert.AreEqual(dt3, cache.Get(7).ToLocalTime());
+            Assert.AreEqual(dt4, cache.Get(8).ToLocalTime());
+
+            var now = DateTime.Now;
+            cache.Put(9, now);
+            Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
+#endif
+
             Services.Cancel(javaSvcName);
         }
 
@@ -1038,6 +1091,21 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
+
+            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(dt2, svc.testDate(dt1));
+
+            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
+
+            cache.Put(1, dt1);
+            cache.Put(2, dt2);
+
+            svc.testUTCDateFromCache();
+
+            Assert.AreEqual(dt1, cache.Get(3));
+            Assert.AreEqual(dt2, cache.Get(4));
         }
 
         /// <summary>
@@ -1123,7 +1191,11 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
+                    ForceTimestamp = true
+#if NETCOREAPP
+                    , TimestampConverter = new TimestampConverter()
+#endif
                 }
             };
         }
@@ -1269,6 +1341,15 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object ErrMethod(object arg);
+
+            /** */
+            int TestOverload(int count, Employee[] emps);
+
+            /** */
+            int TestOverload(int first, int second);
+
+            /** */
+            int TestOverload(int count, Parameter[] param);
         }
 
         /// <summary>
@@ -1341,6 +1422,54 @@ namespace Apache.Ignite.Core.Tests.Services
             public object ErrMethod(object arg)
             {
                 throw new ArgumentNullException("arg", "ExpectedException");
+            }
+
+            /** */
+            public int TestOverload(int count, Employee[] emps)
+            {
+                Assert.IsNotNull(emps);
+                Assert.AreEqual(count, emps.Length);
+
+                Assert.AreEqual("Sarah Connor", emps[0].Fio);
+                Assert.AreEqual(1, emps[0].Salary);
+
+                Assert.AreEqual("John Connor", emps[1].Fio);
+                Assert.AreEqual(2, emps[1].Salary);
+
+                return 42;
+            }
+
+            /** */
+            public int TestOverload(int first, int second)
+            {
+                return first + second;
+            }
+
+            /** */
+            public int TestOverload(int count, Parameter[] param)
+            {
+                Assert.IsNotNull(param);
+                Assert.AreEqual(count, param.Length);
+
+                Assert.AreEqual(1, param[0].Id);
+                Assert.AreEqual(2, param[0].Values.Length);
+
+                Assert.AreEqual(1, param[0].Values[0].Id);
+                Assert.AreEqual(42, param[0].Values[0].Val);
+
+                Assert.AreEqual(2, param[0].Values[1].Id);
+                Assert.AreEqual(43, param[0].Values[1].Val);
+
+                Assert.AreEqual(2, param[1].Id);
+                Assert.AreEqual(2, param[1].Values.Length);
+
+                Assert.AreEqual(3, param[1].Values[0].Id);
+                Assert.AreEqual(44, param[1].Values[0].Val);
+
+                Assert.AreEqual(4, param[1].Values[1].Id);
+                Assert.AreEqual(45, param[1].Values[1].Val);
+
+                return 43;
             }
 
             /** <inheritdoc /> */
@@ -1506,5 +1635,28 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public int Field { get; set; }
         }
+        
+#if NETCOREAPP
+        /// <summary>
+        /// Adds support of the local dates to the Ignite timestamp serialization.
+        /// </summary>
+        class TimestampConverter : ITimestampConverter
+        {
+            /** <inheritdoc /> */
+            public void ToJavaTicks(DateTime date, out long high, out int low)
+            {
+                if (date.Kind == DateTimeKind.Local)
+                    date = date.ToUniversalTime();
+
+                BinaryUtils.ToJavaDate(date, out high, out low);
+            }
+
+            /** <inheritdoc /> */
+            public DateTime FromJavaTicks(long high, int low)
+            {
+                return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+            }
+        }
+#endif
     }
 }

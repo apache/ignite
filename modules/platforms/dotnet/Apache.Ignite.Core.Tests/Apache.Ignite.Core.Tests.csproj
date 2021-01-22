@@ -111,6 +111,7 @@
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Binary\Serializable\DynamicFieldSetTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityBackupFilterTest.cs" />
     <Compile Include="Cache\CacheCreateTest.cs" />
     <Compile Include="Cache\CacheNodeFilterTest.cs" />
     <Compile Include="Cache\CacheQueryMetricsTest.cs" />
@@ -136,6 +137,7 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.GroupBy.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
@@ -338,6 +340,7 @@
     <Compile Include="Compute\AbstractTaskTest.cs" />
     <Compile Include="Compute\ClosureTaskTest.cs" />
     <Compile Include="Compute\ComputeApiTest.cs" />
+    <Compile Include="Compute\ComputeApiTypeAutoRegisterTest.cs" />
     <Compile Include="Compute\ComputeMultithreadedTest.cs" />
     <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
@@ -357,10 +360,6 @@
     <Compile Include="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="DeploymentTest.cs" />
     <Compile Include="EventsTest.cs" />
-    <Compile Include="Examples\Example.cs" />
-    <Compile Include="Examples\ExamplesTest.cs" />
-    <Compile Include="Examples\PathUtil.cs" />
-    <Compile Include="Examples\ProjectFilesTest.cs" />
     <Compile Include="ExceptionsTest.cs" />
     <Compile Include="ExecutableTest.cs" />
     <Compile Include="FutureTest.cs" />
@@ -399,7 +398,7 @@
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
-    <Compile Include="Services\ServiceTypeAutoResolveTest.cs" />
+    <Compile Include="Services\ServicesTypeAutoResolveTest.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="TestUtilsJni.cs" />
@@ -408,6 +407,11 @@
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll2\Apache.Ignite.Core.Tests.TestDll2.csproj">
+      <Project>{f4a69e2d-908e-4f0f-a794-84d508d60e5f}</Project>
+      <Name>Apache.Ignite.Core.Tests.TestDll2</Name>
+      <Aliases>TestDll2</Aliases>
+    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
@@ -427,15 +431,6 @@
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj">
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>
       <Name>Apache.Ignite</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
-      <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
-      <Name>Apache.Ignite.ExamplesDll</Name>
-      <Aliases>ExamplesDll</Aliases>
-    </ProjectReference>
-    <ProjectReference Include="..\examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
-      <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>
-      <Name>Apache.Ignite.Examples</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj">
       <Project>{F4A69E2D-908E-4F0F-A794-84D508D60E5F}</Project>

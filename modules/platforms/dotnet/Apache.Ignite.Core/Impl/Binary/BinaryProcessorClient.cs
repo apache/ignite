@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Client;
 
@@ -28,12 +30,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinaryProcessorClient : IBinaryProcessor
     {
-        /** Java platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
-        private const byte JavaPlatformId = 0;
-
-        /** Type registry platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
-        private const byte DotNetPlatformId = 1;
-
         /** Socket. */
         private readonly ClientFailoverSocket _socket;
 
@@ -80,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
             {
-                ctx.Stream.WriteByte(DotNetPlatformId);
+                ctx.Stream.WriteByte(BinaryProcessor.DotNetPlatformId);
                 ctx.Stream.WriteInt(id);
                 ctx.Writer.WriteString(typeName);
             }, ctx => ctx.Stream.ReadBool());
@@ -89,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
                 {
-                    ctx.Stream.WriteByte(JavaPlatformId);
+                    ctx.Stream.WriteByte(BinaryProcessor.JavaPlatformId);
                     ctx.Stream.WriteInt(id);
                     ctx.Writer.WriteString(typeName);
                 }, ctx => ctx.Stream.ReadBool());
@@ -105,14 +101,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public string GetTypeName(int id)
+        public string GetTypeName(int id, byte platformId, Func<Exception, string> errorFunc = null)
         {
             return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {
-                    ctx.Stream.WriteByte(DotNetPlatformId);
+                    ctx.Stream.WriteByte(platformId);
                     ctx.Stream.WriteInt(id);
                 },
-                ctx => ctx.Reader.ReadString());
+                ctx => ctx.Reader.ReadString(),
+                errorFunc == null
+                    ? (Func<ClientStatusCode, string, string>) null
+                    : (statusCode, msg) => errorFunc(new BinaryObjectException(msg)));
         }
     }
 }
