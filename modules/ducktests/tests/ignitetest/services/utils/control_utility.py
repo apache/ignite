@@ -36,7 +36,8 @@ class ControlUtility:
     # pylint: disable=R0913
     def __init__(self, cluster,
                  key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
-                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
+                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
+                 admin_login: str = None, admin_password: str = DEFAULT_PASSWORD):
         self._cluster = cluster
         self.logger = cluster.context.logger
 
@@ -53,6 +54,14 @@ class ControlUtility:
             self.key_store_password = key_store_password
             self.trust_store_path = self.jks_path(trust_store_jks)
             self.trust_store_password = trust_store_password
+
+        if admin_login is None:
+            if cluster.context.globals.get("admin_login"):
+                self.admin_login = cluster.globals.get("admin_login")
+        if admin_password is DEFAULT_PASSWORD:
+            if cluster.context.globals.get("admin_password"):
+                self.admin_password = cluster.globals.get("admin_password")
+
 
     def jks_path(self, jks_name: str):
         """
@@ -293,8 +302,10 @@ class ControlUtility:
         if hasattr(self, 'key_store_path'):
             ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_password} " \
                   f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_password}"
-
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl}")
+        auth = ""
+        if hasattr(self, 'admin_login'):
+            auth = f" --user {self.admin_login} --password {self.admin_password} "
+        return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
     @staticmethod
     def __parse_output(raw_output):
