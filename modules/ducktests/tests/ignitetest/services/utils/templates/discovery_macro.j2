@@ -39,6 +39,7 @@
     <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
         <property name="zkConnectionString" value="{{ spi.connection_string }}"/>
         <property name="zkRootPath" value="{{ spi.root_path }}"/>
+        <property name="sessionTimeout" value="{{ spi.session_timeout }}"/>
     </bean>
 {% endmacro %}
 
