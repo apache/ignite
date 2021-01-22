@@ -646,4 +646,50 @@ control.bat --change-tag _<new-tag>_
 ----
 --
 
+== Indexes Management
+
+The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
+
+To get the list of all indexes that match specified filters, use the command:
+
+[source, shell]
+----
+--cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--node-id nodeId`| Node ID for the job execution. If the ID is not specified, a node is chosen by the grid.
+| `--group-name regExp`| Regular expression enabling filtering by cache group name.
+| `--cache-name regExp`| Regular expression enabling filtering by cache name.
+| `--index-name regExp`| Regular expression enabling filtering by index name.
+|===
+
+To get the list of all caches that have index rebuild in progress, use the command below:
+
+[source, shell]
+----
+--cache indexes_rebuild_status [--node-id nodeId]
+----
+
+To trigger the rebuild process of all indexes for the specified caches or the cache groups, use the command:
+
+[source, shell]
+----
+--cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--node-id`| Node ID for the indexes rebuild.
+| `--cache-names`| Comma-separated list of cache names for which indexes should be rebuilt.
+| `--group-names`| Comma-separated list of cache group names for which indexes should be rebuilt.
+|===
+
 
