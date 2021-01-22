@@ -28,7 +28,9 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -47,7 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -115,10 +117,11 @@ public class IgniteCDC implements Runnable {
      * @param consumer Event consumer.
      */
     public IgniteCDC(IgniteConfiguration cfg, CDCConsumer consumer) {
-        this.log = logger(cfg, workDir(cfg));
         this.cfg = cfg;
-        this.factory = new IgniteWalIteratorFactory(log);
         this.consumer = consumer;
+
+        log = logger(cfg, workDir(cfg));
+        factory = new IgniteWalIteratorFactory(log);
 
         if (!CU.isPersistenceEnabled(cfg))
             throw new IllegalArgumentException("Persistence disabled. IgniteCDC can't run!");
@@ -126,7 +129,7 @@ public class IgniteCDC implements Runnable {
         nodeDir = consistentId(cfg);
 
         if (nodeDir == null) {
-            log.warning("Can't determine nodeDir. It is recommended to set consistent ID for production " +
+            log.warning("Can't determine nodeDir. It is recommended to set Consistent ID for production " +
                 "clusters (use IgniteConfiguration.setConsistentId or " + IGNITE_CDC_CONSISTENT_ID + ", " +
                 IGNITE_CDC_NODE_IDX + " property)");
         }
@@ -144,14 +147,14 @@ public class IgniteCDC implements Runnable {
         }
     }
 
-    /** */
+    /** Runs CDC application with possible exception. */
     public void runX() throws Exception {
         if (log.isInfoEnabled()) {
             log.info("Starting Ignite CDC Application.");
             log.info("Consumer    -\t" + consumer.toString());
         }
 
-        cdcDir = initCdcDir(workDir(cfg));
+        cdcDir = findCDCDir(workDir(cfg));
 
         try (CDCFileLockHolder lock =
                 new CDCFileLockHolder(cdcDir.toString(), consumer::id, log)) {
@@ -193,7 +196,7 @@ public class IgniteCDC implements Runnable {
                     catch (IgniteCheckedException | IOException e) {
                         throw new IgniteException(e);
                     }
-                });
+                }, log);
             }
             finally {
                 consumer.stop();
@@ -201,6 +204,23 @@ public class IgniteCDC implements Runnable {
                 if (log.isInfoEnabled())
                     log.info("Ignite CDC Application stoped.");
             }
+        }
+    }
+
+    /** Founds required directories. */
+    private void init() throws IgniteCheckedException, IOException {
+        String workDir = workDir(cfg);
+        String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
+
+        Files.createDirectories(cdcDir.resolve(STATE_DIR));
+
+        binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
+
+        marshaller = U.resolveWorkDirectory(workDir, DFLT_MARSHALLER_PATH, false);
+
+        if (log.isDebugEnabled()) {
+            log.debug("Using BinaryMeta directory[dir=" + binaryMeta + ']');
+            log.debug("Using Marshaller directory[dir=" + marshaller + ']');
         }
     }
 
@@ -270,42 +290,24 @@ public class IgniteCDC implements Runnable {
         prevSegments.add(segment);
     }
 
-    /** Founds required directories. */
-    private void init() throws IgniteCheckedException, IOException {
-        String workDir = workDir(cfg);
-
-        String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
-
-        log.info("Found WAL archive[dir=" + cdcDir + ']');
-
-        Files.createDirectories(cdcDir.resolve(STATE_DIR));
-
-        binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
-
-        marshaller = U.resolveWorkDirectory(workDir, DFLT_MARSHALLER_PATH, false);
-
-        log.info("Using BinaryMeta directory[dir=" + binaryMeta + ']');
-        log.info("Using Marshaller directory[dir=" + marshaller + ']');
-    }
-
     /**
      * @param workDir Working directory.
      * @return WAL archive directory.
      */
-    private Path initCdcDir(String workDir) throws InterruptedException {
-        Path cdcParent;
+    private Path findCDCDir(String workDir) throws InterruptedException {
+        Path parent;
 
         if (cfg.getDataStorageConfiguration() != null &&
             !F.isEmpty(cfg.getDataStorageConfiguration().getCdcPath())) {
-            cdcParent = Paths.get(cfg.getDataStorageConfiguration().getCdcPath());
+            parent = Paths.get(cfg.getDataStorageConfiguration().getCdcPath());
 
-            if (!cdcParent.isAbsolute())
-                cdcParent = Paths.get(workDir, cfg.getDataStorageConfiguration().getCdcPath());
+            if (!parent.isAbsolute())
+                parent = Paths.get(workDir, cfg.getDataStorageConfiguration().getCdcPath());
         }
         else
-            cdcParent = Paths.get(workDir).resolve(DFLT_CDC_PATH);
+            parent = Paths.get(workDir).resolve(DFLT_CDC_PATH);
 
-        log.info("CDC root[dir=" + cdcParent + ']');
+        log.info("CDC root[dir=" + parent + ']');
 
         final Path[] cdcDir = new Path[1];
 
@@ -313,17 +315,14 @@ public class IgniteCDC implements Runnable {
 
         log.info("ConsistendId pattern[dir=" + nodePattern + ']');
 
-        waitFor(cdcParent,
-            dir -> {
-                System.out.println(dir);
-                return dir.getName(dir.getNameCount() - 1).toString().matches(nodePattern);
-            },
+        waitFor(parent,
+            dir -> dir.getName(dir.getNameCount() - 1).toString().matches(nodePattern),
             Path::compareTo,
             dir -> {
                 cdcDir[0] = dir;
 
                 return false;
-            }
+            }, log
         );
 
         return cdcDir[0];
@@ -338,7 +337,11 @@ public class IgniteCDC implements Runnable {
         try {
             UUID appLogId = UUID.randomUUID();
 
-            return IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), appLogId, workDir);
+            IgniteLogger log = IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), appLogId, workDir);
+
+            log.info("App Log ID     -\t" + appLogId);
+
+            return log;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -409,30 +412,38 @@ public class IgniteCDC implements Runnable {
     }
 
     /**
-     * Waits for creation of the path and notifies callback of it.
+     * Waits for the files or directories to be created insied {@code watchDir}
+     * and if new file pass the {@code filter} then {@code callback} notified with the newly create file.
+     * {@code callback} will allso be notified about already existing files that passes the filter.
      *
-     * @param watchDir Dir to watch
+     * @param watchDir Directory to watch.
      * @param filter Filter of events.
      * @param existingSorter Sorter of existing files.
      * @param callback Callback to be notified.
      */
-    public void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> existingSorter,
-        Predicate<Path> callback) throws InterruptedException {
+    public static void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> existingSorter,
+        Predicate<Path> callback, IgniteLogger log) throws InterruptedException {
         // If watch dir not exists waiting for it creation.
         if (!Files.exists(watchDir))
-            waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false);
+            waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false, log);
 
         try {
             try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
-                watchDir.register(watcher, ENTRY_CREATE);
+                watchDir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+
+                Set<Path> seen = new HashSet<>();
 
                 try (Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
                     final boolean[] status = {true};
 
-                    children.filter(filter).sorted().peek(p -> {
-                        if (status[0])
-                            status[0] = callback.test(p);
-                    }).count();
+                    children
+                        .filter(filter)
+                        .sorted()
+                        .peek(seen::add)
+                        .peek(p -> {
+                            if (status[0])
+                                status[0] = callback.test(p);
+                        }).count();
 
                     if (!status[0])
                         return;
@@ -449,15 +460,20 @@ public class IgniteCDC implements Runnable {
                     for (WatchEvent<?> evt: key.pollEvents()) {
                         WatchEvent.Kind<?> kind = evt.kind();
 
-                        if (kind == OVERFLOW)
-                            continue;
-
                         Path evtPath = Paths.get(watchDir.toString(), evt.context().toString()).toAbsolutePath();
 
-                        if (log.isDebugEnabled())
-                            log.debug("Event received[evt=" + evtPath.toAbsolutePath() + ",kind=" + kind + ']');
+                        if (kind == ENTRY_DELETE)
+                            seen.remove(evtPath);
+                        else if (kind == ENTRY_CREATE) {
+                            if (seen.contains(evtPath))
+                                continue;
 
-                        if (filter.test(evtPath)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Event received[evt=" + evtPath.toAbsolutePath() + ",kind=" + kind + ']');
+
+                            if (!filter.test(evtPath))
+                                continue;
+
                             needNext = callback.test(evtPath);
 
                             if (!needNext)

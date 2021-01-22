@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cdc.CDCSelfTest;
+import org.apache.ignite.cdc.WatchSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.HistoricalRebalanceHeuristicsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheStartStopWithFreqCheckpointTest;
@@ -204,6 +205,7 @@ public class IgnitePdsTestSuite2 {
 
         // CDC tests.
         GridTestUtils.addTestIfNeeded(suite, CDCSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, WatchSelfTest.class, ignoredTests);
 
         // new style folders with generated consistent ID test
         GridTestUtils.addTestIfNeeded(suite, IgniteUidAsConsistentIdMigrationTest.class, ignoredTests);

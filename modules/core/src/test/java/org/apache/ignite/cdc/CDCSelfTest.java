@@ -123,8 +123,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
-        IgniteCache<Integer, byte[]> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT*2);
         addData(txCache, 0, KEYS_CNT*2);
@@ -167,8 +167,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
-        IgniteCache<Integer, byte[]> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT);
         addData(txCache, 0, KEYS_CNT);
@@ -212,7 +212,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign1.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign1.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, User> cache = ign1.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> addDataFut = runAsync(() -> addData(cache, 0, KEYS_CNT));
 
@@ -313,7 +313,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, byte[]> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT);
 
@@ -386,18 +386,18 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void addData(IgniteCache<Integer, byte[]> cache, int from, int to) {
+    private void addData(IgniteCache<Integer, User> cache, int from, int to) {
         for (int i = from; i < to; i++) {
             byte[] bytes = new byte[1024];
 
             ThreadLocalRandom.current().nextBytes(bytes);
 
-            cache.put(i, bytes);
+            cache.put(i, new User("John Connor " + i, 42 + i, bytes));
         }
     }
 
     /** */
-    private void removeData(IgniteCache<Integer, byte[]> cache, int from, int to) {
+    private void removeData(IgniteCache<Integer, ?> cache, int from, int to) {
         for (int i = from; i < to; i++)
             cache.remove(i);
     }
@@ -408,7 +408,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestDataChangeListener implements DataChangeListener<Integer, Integer> {
+    private static class TestDataChangeListener implements DataChangeListener<Integer, User> {
         /** Keys */
         private final ConcurrentMap<IgniteBiTuple<EntryEventType, Long>, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
@@ -436,13 +436,18 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterable<EntryEvent<Integer, Integer>> events) {
-            for (EntryEvent<Integer, Integer> evt : events) {
+        @Override public boolean onChange(Iterable<EntryEvent<Integer, User>> events) {
+            for (EntryEvent<Integer, User> evt : events) {
                 if(!evt.primary())
                     continue;
 
                 cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
                     k -> new GridConcurrentHashSet<>()).add(evt.key());
+
+                if (evt.operation() == UPDATE) {
+                    assertTrue(evt.value().getName().startsWith("John Connor"));
+                    assertTrue(evt.value().getAge() >= 42);
+                }
             }
 
             return commit();
@@ -459,6 +464,40 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                 return null;
 
             return cacheKeys.get(F.t(op, cacheId));
+        }
+    }
+
+    /** */
+    public static class User {
+        /** */
+        private final String name;
+
+        /** */
+        private final int age;
+
+        /** */
+        private final byte[] payload;
+
+        /** */
+        public User(String name, int age, byte[] payload) {
+            this.name = name;
+            this.age = age;
+            this.payload = payload;
+        }
+
+        /** */
+        public String getName() {
+            return name;
+        }
+
+        /** */
+        public int getAge() {
+            return age;
+        }
+
+        /** */
+        public byte[] getPayload() {
+            return payload;
         }
     }
 }
