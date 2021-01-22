@@ -309,7 +309,7 @@ if ((!$skipDotNetCore) -and (!$skipExamples)) {
     Exec "dotnet build .\examples\Apache.Ignite.Examples.sln"
 
     if (!$skipNuGet) {
-        # Copy csproj to current dir teporarily: dotnet-new templates can't be packed with parent dir content.
+        # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
         Copy-Item .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj $pwd
 
         Exec "dotnet pack Apache.Ignite.Examples.csproj --output $nupkgDir -p:PackageVersion=$ver"
