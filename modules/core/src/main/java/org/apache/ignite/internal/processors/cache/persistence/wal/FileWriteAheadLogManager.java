@@ -127,9 +127,12 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
@@ -462,8 +465,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             metrics = dbMgr.persistentStoreMetricsImpl();
 
-            checkOrPrepareFiles();
-
             if (metrics != null) {
                 metrics.setWalSizeProvider(new CO<Long>() {
                     /** {@inheritDoc} */
@@ -492,10 +493,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (isArchiverEnabled())
-                archiver = new FileArchiver(segmentAware, log);
+                archiver = new FileArchiver(log);
 
             if (!walArchiveUnlimited())
                 cleaner = new FileCleaner(log);
+
+            prepareAndCheckWalFiles();
+
+            if (compressor != null)
+                compressor.initAlreadyCompressedSegments();
+
+            if (archiver != null)
+                archiver.init(segmentAware);
 
             segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
@@ -1502,11 +1511,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Deletes temp files creates and prepares new; Creates the first segment if necessary.
+     * Prepare and check WAL files.
      *
      * @throws StorageException If failed.
      */
-    private void checkOrPrepareFiles() throws StorageException {
+    private void prepareAndCheckWalFiles() throws StorageException {
         Collection<File> tmpFiles = new HashSet<>();
 
         for (File walDir : F.asList(walWorkDir, walArchiveDir)) {
@@ -1521,21 +1530,95 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
         }
 
-        File[] allFiles = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+        FileDescriptor[] walWorkFiles = scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER));
 
-        if (isArchiverEnabled() && !F.isEmpty(allFiles) && allFiles.length > dsCfg.getWalSegments()) {
-            throw new StorageException("Failed to initialize wal (work directory contains incorrect " +
-                "number of segments) [cur=" + allFiles.length + ", expected=" + dsCfg.getWalSegments() + ']');
-        }
+        if (F.isEmpty(walWorkFiles))
+            createFile(new File(walWorkDir, fileName(0)));
 
-        // Allocate the first segment synchronously. All other segments will be allocated by archiver in background.
-        if (F.isEmpty(allFiles)) {
-            File first = new File(walWorkDir, fileName(0));
+        if (isArchiverEnabled()) {
+            if (!F.isEmpty(walWorkFiles) &&
+                (walWorkFiles.length > dsCfg.getWalSegments() || walWorkFiles[0].idx() != 0)) {
+                List<FileDescriptor> toMove = new ArrayList<>(F.asList(walWorkFiles));
+                FileDescriptor toRen = toMove.remove(toMove.size() - 1);
 
-            createFile(first);
-        }
-        else if (isArchiverEnabled())
+                toMove.addAll(F.asList(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER))));
+
+                log.warning("Incorrect content of WAL working directory for archiving, to correct this, " +
+                    "segments will be moved to WAL archive directory and last segment will be renamed " +
+                    "and formatted to correct size, this may take a long time [toMove=[" +
+                    toMove.stream().map(fd -> fd.file().getName()).collect(joining(",")) +
+                    "], toRename=[" + toRen.file().getName() + " -> " +
+                    FileDescriptor.fileName(toRen.idx() % dsCfg.getWalSegments()) + ']');
+
+                for (FileDescriptor fd : toMove) {
+                    File tmpDst = new File(walArchiveDir, fd.file().getName() + TMP_SUFFIX);
+                    File dst = new File(walArchiveDir, fd.file().getName());
+
+                    try {
+                        Files.copy(fd.file().toPath(), tmpDst.toPath());
+
+                        Files.move(tmpDst.toPath(), dst.toPath());
+
+                        Files.delete(fd.file().toPath());
+
+                        if (log.isInfoEnabled()) {
+                            log.info("WAL segment moved [src=" + fd.file().getAbsolutePath() +
+                                ", dst=" + dst.getAbsolutePath() + ']');
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new StorageException("Failed to move WAL segment [src=" + fd.file().getAbsolutePath() +
+                            ", dst=" + dst.getAbsolutePath() + ']', e);
+                    }
+                }
+
+                if (toRen.idx() != toRen.idx() % dsCfg.getWalSegments() ||
+                    (toRen.file().length() < dsCfg.getWalSegmentSize() && (mode == WALMode.FSYNC || mmap))) {
+                    File tmpDst = new File(walWorkDir, fileName(toRen.idx() % dsCfg.getWalSegments()) + TMP_SUFFIX);
+                    File dst = new File(walWorkDir, fileName(toRen.idx() % dsCfg.getWalSegments()));
+
+                    try {
+                        Files.copy(toRen.file().toPath(), tmpDst.toPath());
+
+                        if (tmpDst.length() < dsCfg.getWalSegmentSize() && (mode == WALMode.FSYNC || mmap)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Start formatting WAL segment [filePath=" + tmpDst.getAbsolutePath() +
+                                    ", fileSize=" + U.humanReadableByteCount(tmpDst.length()) +
+                                    ", toSize=" + U.humanReadableByteCount(dsCfg.getWalSegmentSize()) + ']');
+                            }
+
+                            try (FileIO fileIO = ioFactory.create(tmpDst, CREATE, READ, WRITE)) {
+                                int left = (int)(tmpDst.length() - dsCfg.getWalSegmentSize());
+
+                                while ((left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left))) > 0)
+                                    ;
+
+                                fileIO.force();
+                            }
+                        }
+
+                        if (toRen.file().getName().equals(dst.getName()))
+                            Files.move(tmpDst.toPath(), dst.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
+                        else {
+                            Files.move(tmpDst.toPath(), dst.toPath());
+
+                            Files.delete(toRen.file().toPath());
+                        }
+
+                        if (log.isInfoEnabled()) {
+                            log.info("WAL segment renamed and formatted [src=" + toRen.file().getAbsolutePath() +
+                                ", dst=" + dst.getAbsolutePath() + ']');
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new StorageException("Failed to rename or format WAL segment [src=" +
+                            toRen.file().getAbsolutePath() + ", dst=" + dst.getAbsolutePath() + ']', e);
+                    }
+                }
+            }
+
             checkFiles(0, false, null, null);
+        }
     }
 
     /**
@@ -1724,14 +1807,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * Constructor.
          *
-         * @param segmentAware Segment aware.
          * @param log Logger.
          */
-        private FileArchiver(SegmentAware segmentAware, IgniteLogger log) throws IgniteCheckedException {
+        private FileArchiver(IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
                 cctx.kernalContext().workersRegistry());
-
-            init(segmentAware);
         }
 
         /**
@@ -2048,7 +2128,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Background creation of all segments except first. First segment was created in main thread by {@link
-         * FileWriteAheadLogManager#checkOrPrepareFiles()}
+         * FileWriteAheadLogManager#prepareAndCheckWalFiles()}
          */
         private void allocateRemainingFiles() throws StorageException {
             checkFiles(
@@ -2092,8 +2172,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         FileCompressor(IgniteLogger log) {
             super(0, log);
-
-            initAlreadyCompressedSegments();
         }
 
         /** */
