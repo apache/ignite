@@ -64,7 +64,7 @@ public class BaselineTopologyUpdater {
     private final boolean isPersistenceEnabled;
 
     /**
-     * {@code true} if {@link ChangeTopologyWatcher} makes sense for local node or {@code false} otherwise(eg. local
+     * {@code true} if {@link BaselineTopologyUpdater} makes sense for local node or {@code false} otherwise(eg. local
      * node is client).
      */
     private final boolean isSupportedByLocalNode;

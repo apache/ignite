@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -535,13 +536,15 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         startGrid(1);
 
+        startClientGrid(2);
+
         awaitPartitionMapExchange();
 
-        assertEquals(2, ignite0.cluster().nodes().size());
+        assertEquals(3, ignite0.cluster().nodes().size());
 
         assertEquals(1, ignite0.cluster().currentBaselineTopology().size());
 
