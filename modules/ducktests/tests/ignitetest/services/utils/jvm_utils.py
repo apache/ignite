@@ -82,7 +82,7 @@ def merge_jvm_settings(src_settings, additionals):
 
 def _to_map(params):
     """"""
-    assert isinstance(params, str) or isinstance(params, list), "JVM params an be string or list only."
+    assert isinstance(params, (str, list)), "JVM params an be string or list only."
 
     if isinstance(params, str):
         params = params.split()
