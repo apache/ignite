@@ -1130,13 +1130,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean checkCompatibility,
         boolean failIfAbsent
     ) throws IgniteCheckedException {
-        File snpMetaDir = new File(snapshotLocalDir(snpName),
-            DFLT_BINARY_METADATA_PATH + File.separator + pdsSettings.folderName());
+        File binDir = binaryWorkDir(snapshotLocalDir(snpName).getAbsolutePath(), pdsSettings.folderName());
 
-        if (!snpMetaDir.exists()) {
+        if (!binDir.exists()) {
             if (failIfAbsent) {
                 throw new IgniteCheckedException("Unable to update cluster metadata from snapshot, " +
-                    "directory doesn't exists [snpName=" + snpName + ", dir=" + snpMetaDir + ']');
+                    "directory doesn't exists [snpName=" + snpName + ", dir=" + binDir + ']');
             }
 
             return;
@@ -1146,7 +1145,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         ClassLoader clsLdr = U.resolveClassLoader(cctx.kernalContext().config());
         CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
 
-        for (File file : snpMetaDir.listFiles()) {
+        for (File file : binDir.listFiles()) {
             try (FileInputStream in = new FileInputStream(file)) {
                 BinaryMetadata newMeta = U.unmarshal(marshaller, in, clsLdr);
 
@@ -1176,12 +1175,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @throws IgniteCheckedException If failed.
      */
     protected void restoreCacheGroupFiles(String snpName, String grpName, List<File> newFiles) throws IgniteCheckedException {
-        File snapshotCacheDir = resolveCacheDir(snapshotLocalDir(snpName), grpName);
+        File snapshotCacheDir = resolveSnapshotCacheDir(snpName, grpName);
 
         if (!snapshotCacheDir.exists())
             return;
 
-        File cacheDir = resolveCacheDir(new File(cctx.kernalContext().config().getWorkDirectory()), grpName);
+        File cacheDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(), DFLT_STORE_DIR +
+            File.separator + pdsSettings.folderName() + File.separator + snapshotCacheDir.getName(), false);
 
         if (!cacheDir.exists()) {
             cacheDir.mkdir();
@@ -1239,11 +1239,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param workDir Work directory.
+     * @param snpName Snapshot name.
      * @param cacheName Cache (group) name.
      * @return Local path to the cache directory.
      */
-    private File resolveCacheDir(File workDir, String cacheName) {
+    private File resolveSnapshotCacheDir(String snpName, String cacheName) {
+        File workDir = snapshotLocalDir(snpName);
+
         String dbPath = DFLT_STORE_DIR + File.separator + pdsSettings.folderName() + File.separator;
 
         File cacheDir = new File(workDir, dbPath + CACHE_DIR_PREFIX + cacheName);
@@ -1265,7 +1267,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String grpName
     ) throws IgniteCheckedException {
         IgniteConfiguration nodeCfg = cctx.kernalContext().config();
-        File cacheDir = resolveCacheDir(snapshotLocalDir(snpName), grpName);
+        File cacheDir = resolveSnapshotCacheDir(snpName, grpName);
 
         if (!cacheDir.exists())
             return null;

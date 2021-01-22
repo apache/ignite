@@ -37,6 +37,7 @@ class CacheGroupSnapshotDetails implements Serializable {
     private List<StoredCacheData> cfgs;
 
     /**
+     * @param grpName Cache group name.
      * @param cfgs Group cache configurations.
      * @param parts Local partition IDs.
      */

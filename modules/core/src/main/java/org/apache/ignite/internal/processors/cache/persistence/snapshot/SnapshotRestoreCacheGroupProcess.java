@@ -291,13 +291,13 @@ public class SnapshotRestoreCacheGroupProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
-        stopped = false;
-
         if (inProgress(null))
             return errResponse(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
         if (!ctx.state().clusterState().state().active())
             return errResponse(new IllegalStateException(OP_REJECT_MSG + "The cluster should be active."));
+
+        stopped = false;
 
         // Skip creating future on initiator.
         if (fut.isDone())
@@ -339,6 +339,9 @@ public class SnapshotRestoreCacheGroupProcess {
     private @Nullable SnapshotRestorePrepareResponse prepare0(
         SnapshotRestorePrepareRequest req
     ) throws IgniteCheckedException {
+        if (log.isInfoEnabled())
+            log.info("Preparing to restore cache groups [groups=" + F.concat(req.groups(), ", ") + ']');
+
         List<CacheGroupSnapshotDetails> grpCfgs = new ArrayList<>();
 
         IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
