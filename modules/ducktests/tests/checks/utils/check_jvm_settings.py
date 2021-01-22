@@ -17,6 +17,8 @@
 Checks JVM settings.
 """
 
+import pytest
+
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings, DEFAULT_HEAP
 
 
@@ -47,3 +49,30 @@ class CheckJVMSettings:
 
         assert "-XX:ParallelGCThreads=1024" in jvm_settings
         assert "-XX:ParallelGCThreads=512" not in jvm_settings
+
+    @pytest.mark.parametrize(
+        'settings,additionals,expected',
+        [
+            [['-Xmx10G, -Xms1G'], ['-Xmx5G', '-Xms512m'], {'-Xmx5G': 1, '-Xms512m': 1}],
+            [['-Xmx5G', '-Xms512m'], ['-Xmx10G', '-Xms1G'], {'-Xmx10G': 1, '-Xms1G': 1}],
+            [['-Xmx10G, -Xms1G'], ['-Xmx5G', '-Xms512m'], {'-Xmx5G': 1, '-Xms512m': 1}],
+            [
+                ['-Xmx5G', '-Xms512m', '-XX:ParallelGCThreads=1024'],
+                ['-Xmx10G', '-Xms1G', '-XX:ParallelGCThreads=512'],
+                {'-Xmx10G': 1, '-Xms1G': 1, '-XX:ParallelGCThreads=512': 1}
+            ],
+            [['-Xmx5G', '-Xms512m', '-ea'], ['-Xmx10G', '-Xms1G', '-ea'], {'-Xmx10G': 1, '-Xms1G': 1, '-ea': 1}],
+        ]
+    )
+    def check_merge_jvm_settings(self, settings, additionals, expected):
+        """
+        Tests different variants of merge jvm settings.
+        """
+        res = {}
+        for param in merge_jvm_settings(settings, additionals=additionals):
+            if param in res:
+                res[param] += 1
+            else:
+                res[param] = 1
+
+        assert res == expected
