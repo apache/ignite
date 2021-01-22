@@ -33,6 +33,12 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands;
+import org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands;
+import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
+import org.apache.ignite.internal.commandline.property.PropertySubCommandsList;
+import org.apache.ignite.internal.commandline.query.KillSubcommand;
+import org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
@@ -49,6 +55,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
@@ -90,6 +97,59 @@ public class CommandHandlerParsingTest {
 
     /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();
+
+    private static List<String> appendRequiredArgs(List<String> args1, CommandList cmd, List<String> args2) {
+        ArrayList<String> result = new ArrayList<>(args1.size() + 3 + args2.size());
+        result.addAll(args1);
+        result.add(cmd.text());
+        switch (cmd) {
+            case CACHE:
+                result.add(CacheSubcommands.LIST.name());
+                result.add(".");
+                break;
+            case CLUSTER_CHANGE_TAG:
+                result.add("newTagValue");
+                break;
+            case METRIC:
+                result.add("metric_name");
+                break;
+            case DEFRAGMENTATION:
+                result.add(DefragmentationSubcommands.CANCEL.name());
+                break;
+            case SET_STATE:
+                result.add(ClusterState.INACTIVE.name());
+                break;
+            case PROPERTY:
+                result.add(PropertySubCommandsList.LIST.name());
+                break;
+            case SNAPSHOT:
+                result.add(SnapshotSubcommand.CREATE.name());
+                result.add("snapshot_name");
+                break;
+            case ENCRYPTION:
+                result.add(EncryptionSubcommands.GET_MASTER_KEY_NAME.name());
+                break;
+            case WARM_UP:
+                result.add(WarmUpCommand.WarmUpCommandArg.STOP.argName());
+                break;
+            case METADATA:
+                result.add(MetadataSubCommandsList.LIST.name());
+                break;
+            case SYSTEM_VIEW:
+                result.add("some_name");
+                break;
+            case KILL:
+                result.add(KillSubcommand.SQL.name());
+                result.add("6fa749ee-7cf8-4635-be10-36a1c75267a7_54321");
+                break;
+            case WAL:
+                result.add(WalCommands.WAL_PRINT);
+                result.add("id1");
+                break;
+        }
+        result.addAll(args2);
+        return result;
+    }
 
     /**
      * validate_indexes command arguments parsing and validation
@@ -270,14 +330,15 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
-
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
-            ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
-                "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
-                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
+            ConnectionAndSslParameters args = parseArgs(appendRequiredArgs(
+                    asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword",
+                            "--keystore-type", "testKeystoreType", "--truststore", "testTruststore",
+                            "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
+                            "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol"),
+                    cmd,
+                    emptyList()));
 
             assertEquals("testSSLProtocol", args.sslProtocol());
             assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
@@ -298,13 +359,13 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
-
             assertParseArgsThrows("Expected user name", "--user");
             assertParseArgsThrows("Expected password", "--password");
 
-            ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
+            ConnectionAndSslParameters args = parseArgs(appendRequiredArgs(
+                    asList("--user", "testUser", "--password", "testPass"),
+                    cmd,
+                    emptyList()));
 
             assertEquals("testUser", args.userName());
             assertEquals("testPass", args.password());
@@ -492,17 +553,16 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
-
-            ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
+            ConnectionAndSslParameters args = parseArgs(appendRequiredArgs(emptyList(), cmd, emptyList()));
 
             assertEquals(cmd.command(), args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = parseArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
-                "--ping-timeout", "40000", cmd.text()));
+            args = parseArgs(appendRequiredArgs(
+                    asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000", "--ping-timeout", "40000"),
+                    cmd,
+                    emptyList()));
 
             assertEquals(cmd.command(), args.command());
             assertEquals("test-host", args.host());
@@ -809,11 +869,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseVerboseOption() {
         for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
-
-            assertFalse(cmd.toString(), parseArgs(singletonList(cmd.text())).verbose());
-            assertTrue(cmd.toString(), parseArgs(asList(cmd.text(), CMD_VERBOSE)).verbose());
+            assertFalse(cmd.toString(), parseArgs(appendRequiredArgs(emptyList(), cmd, emptyList())).verbose());
+            assertTrue(cmd.toString(), parseArgs(appendRequiredArgs(emptyList(), cmd, asList(CMD_VERBOSE))).verbose());
         }
     }
 
@@ -1014,26 +1071,5 @@ public class CommandHandlerParsingTest {
      */
     private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> cls, String... args) {
         assertThrows(null, () -> parseArgs(asList(args)), cls, failMsg);
-    }
-
-    /**
-     * Return {@code True} if cmd there are required arguments.
-     *
-     * @return {@code True} if cmd there are required arguments.
-     */
-    private boolean requireArgs(@Nullable CommandList cmd) {
-        return cmd == CommandList.CACHE ||
-            cmd == CommandList.WAL ||
-            cmd == CommandList.SET_STATE ||
-            cmd == CommandList.ENCRYPTION ||
-            cmd == CommandList.KILL ||
-            cmd == CommandList.SNAPSHOT ||
-            cmd == CommandList.CLUSTER_CHANGE_TAG ||
-            cmd == CommandList.METADATA ||
-            cmd == CommandList.WARM_UP ||
-            cmd == CommandList.PROPERTY ||
-            cmd == CommandList.SYSTEM_VIEW ||
-            cmd == CommandList.METRIC ||
-            cmd == CommandList.DEFRAGMENTATION;
     }
 }

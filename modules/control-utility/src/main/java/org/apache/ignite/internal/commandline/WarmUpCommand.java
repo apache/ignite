@@ -98,7 +98,7 @@ public class WarmUpCommand extends AbstractCommand<Void> {
     /**
      * Warm-up command arguments name.
      */
-    private enum WarmUpCommandArg implements CommandArg {
+    enum WarmUpCommandArg implements CommandArg {
         /** Stop warm-up argument. */
         STOP("--stop");
 
