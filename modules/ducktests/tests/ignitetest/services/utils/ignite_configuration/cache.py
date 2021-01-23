@@ -27,4 +27,3 @@ class CacheConfiguration(NamedTuple):
     cache_mode: str = 'PARTITIONED'
     atomicity_mode: str = 'ATOMIC'
     backups: int = 0
-    indexed_types: list = []

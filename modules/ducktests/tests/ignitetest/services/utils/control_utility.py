@@ -150,7 +150,7 @@ class ControlUtility:
     def idle_verify_dump(self, node=None):
         """
         Idle verify dump.
-        :param node: Node where will be dump file.
+        :param node: Node where the dump file will be located.
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
@@ -158,19 +158,26 @@ class ControlUtility:
 
         return re.search(r'/.*.txt', data).group(0)
 
-    def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, timeout_sec: int = 60):
+    def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """
         Create snapshot.
         :param snapshot_name: Name of Snapshot.
-        :param sync_mode: If False the ControlUtilit not wait for the snapshot to complete.
         :param timeout_sec: Timeout to await snapshot to complete.
         """
         res = self.__run(f"--snapshot create {snapshot_name}")
 
         assert "Command [SNAPSHOT] finished with code: 0" in res
 
-        if sync_mode:
-            self.await_snapshot(snapshot_name, timeout_sec)
+        self.await_snapshot(snapshot_name, timeout_sec)
+
+    def snapshot_init(self, snapshot_name: str):
+        """
+        Initialize the snapshot operation.
+        :param snapshot_name: Name of Snapshot.
+        """
+        res = self.__run(f"--snapshot create {snapshot_name}")
+
+        assert "Command [SNAPSHOT] finished with code: 0" in res
 
     def await_snapshot(self, snapshot_name: str, timeout_sec=60):
         """
@@ -183,18 +190,21 @@ class ControlUtility:
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
                 mbean = JmxClient(node).find_mbean('.*name=snapshot')
+
+                name = next(mbean.LastSnapshotName)
+
+                if not (snapshot_name == name):
+                    continue
+
                 start_time = int(next(mbean.LastSnapshotStartTime))
                 end_time = int(next(mbean.LastSnapshotEndTime))
                 err_msg = next(mbean.LastSnapshotErrorMessage)
-                name = next(mbean.LastSnapshotName)
 
-                if (snapshot_name == name) and (0 < start_time < end_time) and (err_msg == ''):
+                if (0 < start_time < end_time) and (err_msg == ''):
                     return
 
-        raise TimeoutError(f'LastSnapshotName={name}, '
-                           f'LastSnapshotStartTime={start_time}, '
-                           f'LastSnapshotEndTime={end_time}, '
-                           f'LastSnapshotErrorMessage={err_msg}')
+        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
+                           f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
     @staticmethod
     def __tx_command(**kwargs):
