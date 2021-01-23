@@ -67,15 +67,12 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         ignite.getOrCreateCache(cacheCfg);
 
-        byte[] buf = new byte[dataSize];
-
         try (IgniteDataStreamer<Long, TestData> dataStreamer = ignite.dataStreamer(cacheName)) {
-//            dataStreamer.autoFlushFrequency(1000);
-//
-            for (long i = start; i < start + interval; i++) {
-                rnd.nextBytes(buf);
+            dataStreamer.autoFlushFrequency(1000);
 
-                dataStreamer.addData(i, new TestData(i,"data_" + i, buf));
+            for (long i = start; i < start + interval; i++) {
+
+                dataStreamer.addData(i, new TestData(i,"data_" + i));
             }
         }
 
@@ -88,16 +85,13 @@ public class DataLoaderApplication extends IgniteAwareApplication {
     private static class TestData {
         /** */
         long id;
+
         /** */
         String name;
-
         /** */
-        byte[] data;
-
-        public TestData(long id, String name, byte[] data) {
+        public TestData(long id, String name) {
             this.id = id;
             this.name = name;
-            this.data = data;
         }
     }
 }
