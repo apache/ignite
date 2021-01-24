@@ -49,13 +49,19 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         public static string GetAssemblyPath(string projFile)
         {
-            var targetFw = Regex.Match(File.ReadAllText(projFile), "<TargetFramework>(.*?)</TargetFramework>")
-                .Groups[1].Value;
-            
+            var targetFw = GetTargetFramework(projFile);
             var name = Path.GetFileNameWithoutExtension(projFile);
             var path = Path.GetDirectoryName(projFile);
             
             return Path.Combine(path, "bin", "Debug", targetFw, $"{name}.dll");
+        }
+
+        /// <summary>
+        /// Gets the target framework for the given project.
+        /// </summary>
+        public static string GetTargetFramework(string projFile)
+        {
+            return Regex.Match(File.ReadAllText(projFile), "<TargetFramework>(.*?)</TargetFramework>").Groups[1].Value;
         }
     }
 }
