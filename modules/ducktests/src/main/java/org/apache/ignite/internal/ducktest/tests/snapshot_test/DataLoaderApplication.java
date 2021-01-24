@@ -67,7 +67,7 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         ignite.getOrCreateCache(cacheCfg);
 
-//        byte[] buf = new byte[dataSize];
+        byte[] data = new byte[dataSize];
 
         try (IgniteDataStreamer<Long, TestData> dataStreamer = ignite.dataStreamer(cacheName)) {
             dataStreamer.autoFlushFrequency(1000);
@@ -76,7 +76,7 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 //                rnd.nextBytes(buf);
 
 //                dataStreamer.addData(i, new TestData(new String(buf)));
-                dataStreamer.addData(i, new TestData("TestData_"+i));
+                dataStreamer.addData(i, new TestData("TestData_"+i, data));
             }
         }
 
@@ -87,30 +87,15 @@ public class DataLoaderApplication extends IgniteAwareApplication {
      * Test class for indexed types.
      */
     public static class TestData {
-//        /** */
-//        long id;
-
         /** */
         String name;
 
         /** */
-        public TestData(String name) {
+        byte[] data;
+
+        public TestData(String name, byte[] data) {
             this.name = name;
+            this.data = data;
         }
-
-        //        /** */
-//        byte[] data;
-
-//        /** */
-//        public TestData(long id, String name) {
-//            this.id = id;
-//            this.name = name;
-//        }
-
-//        public TestData(long id, String name, byte[] data) {
-//            this.id = id;
-//            this.name = name;
-//            this.data = data;
-//        }
     }
 }
