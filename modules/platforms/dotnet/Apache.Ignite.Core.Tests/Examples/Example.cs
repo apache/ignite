@@ -125,6 +125,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var name = Path.GetFileNameWithoutExtension(projFile);
             var path = Path.GetDirectoryName(projFile);
+            
+            // TODO: Get target fw from the project file
             var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
 
             var sourceFile = Path.Combine(path, "Program.cs");
