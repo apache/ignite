@@ -51,8 +51,8 @@ public class DataLoaderApplication extends IgniteAwareApplication {
         markInitialized();
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-        fields.put("id", "java.lang.Long");
-        fields.put("name", "java.lang.String");
+        fields.put("id", Long.class.getName());
+        fields.put("name", String.class.getName());
 
         QueryEntity queryEntity = new QueryEntity()
             .setKeyFieldName("id")
@@ -63,16 +63,20 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         CacheConfiguration<Long, TestData> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.REPLICATED);
-        cacheCfg.setQueryEntities(Collections.singleton(queryEntity));
+        cacheCfg.setQueryEntities(Collections.singletonList(queryEntity));
 
         ignite.getOrCreateCache(cacheCfg);
+
+//        byte[] buf = new byte[dataSize];
 
         try (IgniteDataStreamer<Long, TestData> dataStreamer = ignite.dataStreamer(cacheName)) {
             dataStreamer.autoFlushFrequency(1000);
 
             for (long i = start; i < start + interval; i++) {
+//                rnd.nextBytes(buf);
 
-                dataStreamer.addData(i, new TestData(i,"data_" + i));
+//                dataStreamer.addData(i, new TestData(new String(buf)));
+                dataStreamer.addData(i, new TestData("TestData_"+i));
             }
         }
 
@@ -82,16 +86,31 @@ public class DataLoaderApplication extends IgniteAwareApplication {
     /**
      * Test class for indexed types.
      */
-    private static class TestData {
-        /** */
-        long id;
+    public static class TestData {
+//        /** */
+//        long id;
 
         /** */
         String name;
+
         /** */
-        public TestData(long id, String name) {
-            this.id = id;
+        public TestData(String name) {
             this.name = name;
         }
+
+        //        /** */
+//        byte[] data;
+
+//        /** */
+//        public TestData(long id, String name) {
+//            this.id = id;
+//            this.name = name;
+//        }
+
+//        public TestData(long id, String name, byte[] data) {
+//            this.id = id;
+//            this.name = name;
+//            this.data = data;
+//        }
     }
 }
