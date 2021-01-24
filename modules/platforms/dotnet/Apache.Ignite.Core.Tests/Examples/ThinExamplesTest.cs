@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             var sharedProj = Directory.GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
                 .Single(x => x.EndsWith("Shared.csproj"));
 
-            var asmFile = Path.Combine(Path.GetDirectoryName(sharedProj), "bin", "Debug", "netcoreapp2.1", "Shared.dll");
+            var asmFile = ExamplePaths.GetAssemblyPath(sharedProj);
             var asm = Assembly.LoadFrom(asmFile);
             var utils = asm.GetType("Apache.Ignite.Examples.Shared.Utils");
 
