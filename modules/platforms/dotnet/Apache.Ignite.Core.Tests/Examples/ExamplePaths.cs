@@ -26,11 +26,17 @@ namespace Apache.Ignite.Core.Tests.Examples
     public static class ExamplePaths
     {
         /** */
+        public const string SharedProjFileName = "Shared.csproj";
+        
+        /** */
         public static readonly string SourcesPath =
             Path.Combine(Impl.Common.IgniteHome.Resolve(), "modules", "platforms", "dotnet", "examples");
 
         /** */
         public static readonly string SlnFile = Path.Combine(SourcesPath, "Apache.Ignite.Examples.sln");
+
+        /** */
+        public static readonly string SharedProjFile = Path.Combine(SourcesPath, "Shared", SharedProjFileName);
 
         /** */
         public static readonly string LaunchJsonFile = Path.Combine(SourcesPath, ".vscode", "launch.json");

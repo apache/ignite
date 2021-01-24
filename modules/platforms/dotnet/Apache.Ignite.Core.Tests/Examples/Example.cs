@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var projFiles = Directory
                 .GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.EndsWith("Shared.csproj")).ToArray();
+                .Where(x => !x.EndsWith(ExamplePaths.SharedProjFileName)).ToArray();
 
             Assert.IsTrue(projFiles.Any());
 
