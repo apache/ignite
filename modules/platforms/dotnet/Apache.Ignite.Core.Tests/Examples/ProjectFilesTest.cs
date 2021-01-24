@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             public string PreLaunchTask { get; set; } = "build";
 
             /** */
-            public string Program { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll";
+            public string Program { get; set; } = string.Empty;
 
             /** */
             public string[] Args { get; set; } = Array.Empty<string>();
