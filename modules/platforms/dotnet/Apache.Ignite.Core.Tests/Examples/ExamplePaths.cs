@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System.IO;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// Example paths.
@@ -36,5 +37,19 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         /** */
         public static readonly string TasksJsonFile = Path.Combine(SourcesPath, ".vscode", "tasks.json");
+
+        /// <summary>
+        /// Gets the assembly file path.
+        /// </summary>
+        public static string GetAssemblyPath(string projFile)
+        {
+            var targetFw = Regex.Match(File.ReadAllText(projFile), "<TargetFramework>(.*?)</TargetFramework>")
+                .Groups[1].Value;
+            
+            var name = Path.GetFileNameWithoutExtension(projFile);
+            var path = Path.GetDirectoryName(projFile);
+            
+            return Path.Combine(path, "bin", "Debug", targetFw, $"{name}.dll");
+        }
     }
 }
