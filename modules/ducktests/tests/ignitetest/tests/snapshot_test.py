@@ -73,7 +73,7 @@ class SnapshotTest(IgniteTest):
             shutdown_timeout_sec=300,
             params={
                 "cacheName": self.CACHE_NAME,
-                "interval": 5000_000,
+                "interval": 2000_000,
                 "dataSizeKB": 1
             },
         )
