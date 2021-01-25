@@ -22,7 +22,6 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions
@@ -52,8 +51,7 @@ class SnapshotTest(IgniteTest):
 
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1,
-                                startup_timeout_sec=180)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
@@ -69,11 +67,10 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
-            startup_timeout_sec=180,
             shutdown_timeout_sec=300,
             params={
                 "cacheName": self.CACHE_NAME,
-                "interval": 1000_000,
+                "interval": 500_000,
                 "dataSizeKB": 1
             },
         )

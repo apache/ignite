@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.snapshot_test;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
@@ -30,7 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Loading random uuids to cache.
+ * Loading data to cache.
  */
 public class DataLoaderApplication extends IgniteAwareApplication {
     /** */
@@ -50,16 +48,12 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-        fields.put("id", Long.class.getName());
-        fields.put("name", String.class.getName());
-
         QueryEntity queryEntity = new QueryEntity()
             .setKeyFieldName("id")
             .setKeyType(Long.class.getName())
             .setValueType(TestData.class.getName())
-            .setFields(fields)
-            .setIndexes(Arrays.asList(new QueryIndex("id"), new QueryIndex("name")));
+            .addQueryField("id", Long.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex("id")));
 
         CacheConfiguration<Long, TestData> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.REPLICATED);
@@ -73,29 +67,11 @@ public class DataLoaderApplication extends IgniteAwareApplication {
             dataStreamer.autoFlushFrequency(1000);
 
             for (long i = start; i < start + interval; i++) {
-//                rnd.nextBytes(buf);
-
-//                dataStreamer.addData(i, new TestData(new String(buf)));
-                dataStreamer.addData(i, new TestData("TestData_"+i, data));
+                dataStreamer.addData(i, new TestData(data));
             }
         }
 
         markFinished();
     }
 
-    /**
-     * Test class for indexed types.
-     */
-    public static class TestData {
-        /** */
-        String name;
-
-        /** */
-        byte[] data;
-
-        public TestData(String name, byte[] data) {
-            this.name = name;
-            this.data = data;
-        }
-    }
 }

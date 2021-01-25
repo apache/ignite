@@ -150,7 +150,7 @@ class ControlUtility:
     def idle_verify_dump(self, node=None):
         """
         Idle verify dump.
-        :param node: Node where the dump file will be located.
+        :param node: Node on which the command will be executed and the dump file will be located.
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
@@ -193,7 +193,7 @@ class ControlUtility:
 
                 name = next(mbean.LastSnapshotName)
 
-                if not (snapshot_name == name):
+                if snapshot_name != name:
                     continue
 
                 start_time = int(next(mbean.LastSnapshotStartTime))
