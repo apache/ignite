@@ -69,7 +69,7 @@ class IgniteApplicationService(IgniteAwareService):
         except Exception:
             raise Exception("Java application execution failed.") from None
 
-    def clean_node(self, node):
+    def clean_node(self, node, **kwargs):
         if self.alive(node):
             self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
                              (self.__class__.__name__, node.account))
