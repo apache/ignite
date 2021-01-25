@@ -25,8 +25,8 @@ function makeRoot() {
         error "makeRoot: Need ALIAS, DNAME, PSWD"
     fi
 
-    rm "${ALIAS}.jks"
-    rm "${ALIAS}.pem"
+    rm -f "${ALIAS}.jks"
+    rm -f "${ALIAS}.pem"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -ext bc:c -storepass "${PSWD}" \
      -keypass "${PSWD}" -noprompt -v
@@ -46,8 +46,8 @@ function makeCA() {
         error "makeCA: Need CA, ALIAS, DNAME, PSWD"
     fi
 
-    rm "${ALIAS}.jks"
-    rm "${ALIAS}.pem"
+    rm -f "${ALIAS}.jks"
+    rm -f "${ALIAS}.pem"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -ext bc:c -storepass "${PSWD}" \
      -keypass "${PSWD}" -noprompt -v
@@ -73,9 +73,9 @@ function mkCert() {
         error "mkCert: Need CA, ALIAS, DNAME, PSWD"
     fi
 
-    rm "${ALIAS}.jks"
-    rm "${ALIAS}.pem"
-    rm "${ALIAS}.csr"
+    rm -f "${ALIAS}.jks"
+    rm -f "${ALIAS}.pem"
+    rm -f "${ALIAS}.csr"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -keyalg RSA -keysize 2048 \
      -keypass "${PSWD}" -storepass "${PSWD}" -noprompt -v || error
@@ -88,12 +88,12 @@ function mkCert() {
     keytool -keystore "${ALIAS}.jks" -importcert -alias "${ALIAS}" -storepass "${PSWD}" -file "${ALIAS}.pem" \
      -noprompt -v || error
 
-    rm "${ALIAS}.csr"
-    rm "${ALIAS}.pem"
+    rm -f "${ALIAS}.csr"
+    rm -f "${ALIAS}.pem"
 }
 
 function makeTruststore() {
-    rm truststore.jks
+    rm -f truststore.jks
 
     # shellcheck disable=SC2068
     for cert in $@ ; do

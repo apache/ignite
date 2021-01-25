@@ -44,9 +44,11 @@ class ControlUtility:
         if cluster.context.globals.get("use_ssl", False):
             admin_dict = cluster.globals.get("admin", dict())
 
-            self.key_store_path = self.jks_path(admin_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE))
+            self.key_store_path = admin_dict.get("key_store_path",
+                                                 self.jks_path(admin_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
             self.key_store_password = admin_dict.get('key_store_password', DEFAULT_PASSWORD)
-            self.trust_store_path = self.jks_path(admin_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE))
+            self.trust_store_path = admin_dict.get("trust_store_path",
+                                                   self.jks_path(admin_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
             self.trust_store_password = admin_dict.get('trust_store_password', DEFAULT_PASSWORD)
 
         elif key_store_jks is not None:
