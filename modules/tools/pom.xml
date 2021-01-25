@@ -56,6 +56,10 @@
         </profile>
 
         <profile>
+            <!--
+            This profile is used to provide a check that all tests are defined in at least one suite.
+            Here we provide a custom surefire test provider to collect info about tests and suites.
+            -->
             <id>check-test-suites</id>
 
             <build>

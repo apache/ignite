@@ -24,6 +24,7 @@ import org.apache.ignite.ml.preprocessing.encoding.FrequencyEncoderPreprocessorT
 import org.apache.ignite.ml.preprocessing.encoding.LabelEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.OneHotEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.StringEncoderPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.encoding.TargetEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainerTest;
 import org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerPreprocessorTest;
@@ -52,6 +53,7 @@ import org.junit.runners.Suite;
     OneHotEncoderPreprocessorTest.class,
     FrequencyEncoderPreprocessorTest.class,
     StringEncoderPreprocessorTest.class,
+    TargetEncoderPreprocessorTest.class,
     LabelEncoderPreprocessorTest.class,
     NormalizationTrainerTest.class,
     NormalizationPreprocessorTest.class,

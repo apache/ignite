@@ -30,21 +30,31 @@ import org.junit.runners.Suite;
 
 /**
  * Checks that all test classes are part of any suite.
+ *
+ * There are 2 inputs for this check:
+ * 1. All test classes for current maven module found by surefire plugin.
+ * 2. Orphaned tests by previous maven modules.
+ *
+ * This check never fails. It found orphaned tests for current maven module, aggregate them with tests from
+ * previous modules, then persist aggregated list to a file {@link OrphanedTestCollection}.
+ * After checking all modules the final list of orphaned tests is checked by {@link AssertOnOrphanedTests} job.
  */
 public class CheckAllTestsInSuites {
-    /** List of test classes. Input of the test. */
+    /**
+     * List of test classes that is an input for this check. {@link IgniteTestsProvider} prepares it.
+     */
     static Iterable<Class<?>> testClasses;
 
     /** */
     @Test
     public void check() {
-        Set<Class<?>> suitedTestClasses = new HashSet<>();
-        Set<Class<?>> allTestClasses = new HashSet<>();
-        Set<Class<?>> suites = new HashSet<>();
+        Set<String> suitedTestClasses = new HashSet<>();
+        Set<String> allTestClasses = new HashSet<>();
+        Set<String> suites = new HashSet<>();
 
         // Workaround to handle cases when a class has descenders and it's OK to skip the base class.
         // Also it works for DynamicSuite that can use a base class to create new test classes with reflection.
-        Set<Class<?>> superClasses = new HashSet<>();
+        Set<String> superClasses = new HashSet<>();
 
         for (Class<?> clazz : testClasses) {
             if (Modifier.isAbstract(clazz.getModifiers()))
@@ -56,8 +66,8 @@ public class CheckAllTestsInSuites {
             Description desc = Request.aClass(clazz).getRunner().getDescription();
 
             if (isTestClass(desc)) {
-                allTestClasses.add(clazz);
-                superClasses.add(clazz.getSuperclass());
+                allTestClasses.add(clazz.getName());
+                superClasses.add(clazz.getSuperclass().getName());
             }
             else
                 processSuite(desc, suitedTestClasses, suites, superClasses);
@@ -66,32 +76,35 @@ public class CheckAllTestsInSuites {
         allTestClasses.removeAll(suitedTestClasses);
         allTestClasses.removeAll(superClasses);
 
-        if (!allTestClasses.isEmpty()) {
-            StringBuilder builder = new StringBuilder("All test classes must be include in any test suite.")
-                .append("\nList of non-suited classes (")
-                .append(allTestClasses.size())
-                .append(" items):\n");
+        OrphanedTestCollection orphaned = new OrphanedTestCollection();
 
-            for (Class<?> c: allTestClasses)
-                builder.append("\t").append(c.getName()).append("\n");
+        try {
+            Set<String> orphanedTests = orphaned.getOrphanedTests();
 
-            throw new AssertionError(builder.toString());
+            orphanedTests.removeAll(suitedTestClasses);
+
+            orphanedTests.addAll(allTestClasses);
+
+            orphaned.persistOrphanedTests(orphanedTests);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to check orphaned tests.", e);
         }
     }
 
     /**
-     * Recursively hadnle suites - mark all test classes as suited.
+     * Recursively handle suites - mark all test classes as suited.
      */
-    private void processSuite(Description suite, Set<Class<?>> suitedClasses,
-                              Set<Class<?>> suites, Set<Class<?>> superClasses) {
-        suites.add(suite.getTestClass());
+    private void processSuite(Description suite, Set<String> suitedClasses,
+                              Set<String> suites, Set<String> superClasses) {
+        suites.add(suite.getTestClass().getName());
 
         for (Description desc: suite.getChildren()) {
             if (!isTestClass(desc))
                 processSuite(desc, suitedClasses, suites, superClasses);
             else {
-                suitedClasses.add(desc.getTestClass());
-                superClasses.add(desc.getTestClass().getSuperclass());
+                suitedClasses.add(desc.getTestClass().getName());
+                superClasses.add(desc.getTestClass().getSuperclass().getName());
             }
         }
     }
