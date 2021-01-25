@@ -4419,7 +4419,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 key.partition(),
                 updCntr,
-                mvccVer
+                mvccVer)));
         }
         else
             return null;
@@ -6945,7 +6945,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entryHist, AffinityTopologyVersion topVer)
+    @Override public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entryHist)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !entryHist.isEmpty();
 
@@ -6971,14 +6971,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (entryHist.size() == 1) {
                         GridCacheMvccEntryInfo info = entryHist.get(0);
 
-                        rec = new MvccDataRecord(toMvccDataEntry(info, null, topVer));
+                        rec = new MvccDataRecord(toMvccDataEntry(info, null));
                     }
                     else {
                         // Batched WAL update.
                         List<DataEntry> dataEntries = new ArrayList<>(entryHist.size());
 
                         for (GridCacheMvccEntryInfo info : entryHist)
-                            dataEntries.add(toMvccDataEntry(info, null, topVer));
+                            dataEntries.add(toMvccDataEntry(info, null));
 
                         rec = new MvccDataRecord(dataEntries);
                     }
@@ -7005,11 +7005,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Converts mvcc entry info to WAL record entry.
      * @param info Mvcc entry info.
      * @param tx Transaction.
-     * @param topVer Topology version.
      * @return Mvcc data entry.
      */
-    private @NotNull MvccDataEntry toMvccDataEntry(@NotNull GridCacheMvccEntryInfo info, @Nullable IgniteInternalTx tx,
-        AffinityTopologyVersion topVer) {
+    private @NotNull MvccDataEntry toMvccDataEntry(@NotNull GridCacheMvccEntryInfo info, @Nullable IgniteInternalTx tx) {
         return new MvccDataEntry(
             cctx.cacheId(),
             key,

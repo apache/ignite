@@ -1253,12 +1253,11 @@ public interface GridCacheEntryEx {
      * Apply entry history if not exists.
      *
      * @param entries Entries.
-     * @param topVer Topology version.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException, If failed.
      * @throws GridCacheEntryRemovedException, If entry has been removed.
      */
-    public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entries, AffinityTopologyVersion topVer)
+    public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entries)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
