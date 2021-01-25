@@ -20,43 +20,106 @@ package org.apache.ignite.cli;
 import java.io.File;
 import java.nio.file.Path;
 
+/**
+ * The main resolver of Ignite paths for the current installation (like bin, work and etc. dirs).
+ * Current Ignite distributive has the following dirs structure:
+ * <ul>
+ *     <li>bin</li>
+ *     <ul>
+ *         <li>${version}</li>
+ *         <ul>
+ *             <li>cli</li>
+ *             <li>libs</li>
+ *         </ul>
+ *     </ul>
+ *     <li>work</li>
+ *     <ul>
+ *         <li>config</li>
+ *         <ul>
+ *             <li>default-config.xml</li>
+ *         </ul>
+ *         <li>cli</li>
+ *         <ul>
+ *             <li>pids</li>
+ *         </ul>
+ *         <li>modules.json</li>
+ *     </ul>
+ * </ul>
+ */
 public class IgnitePaths {
-
+    /**
+     * Path to Ignite bin directory.
+     * Bin directory contains jar artifacts for Ignite server and CLI modules.
+     */
     public final Path binDir;
-    public final Path workDir;
-    private final String version;
 
-    public IgnitePaths(Path binDir, Path workDir, String version) {
+    /** Work directory for Ignite server and CLI operation. */
+    public final Path workDir;
+
+    /**
+     * Ignite CLI version.
+     * Also, the same version will be used for addressing any binaries inside bin dir
+     */
+    private final String ver;
+
+    /**
+     * Creates resolved ignite paths instance from Ignite CLI version and base dirs paths.
+     *
+     * @param binDir Bin directory.
+     * @param workDir Work directory.
+     * @param ver Ignite CLI version.
+     */
+    public IgnitePaths(Path binDir, Path workDir, String ver) {
         this.binDir = binDir;
         this.workDir = workDir;
-        this.version = version;
+        this.ver = ver;
     }
 
-
+    /**
+     * Path where CLI module artifacts will be placed.
+     */
     public Path cliLibsDir() {
-        return binDir.resolve(version).resolve("cli");
+        return binDir.resolve(ver).resolve("cli");
     }
 
+    /**
+     * Path where Ignite server module artifacts will be placed.
+     */
     public Path libsDir() {
-        return binDir.resolve(version).resolve("libs");
+        return binDir.resolve(ver).resolve("libs");
     }
 
+    /**
+     * Path where Ignite node pid files will be created.
+     */
     public Path cliPidsDir() {
         return workDir.resolve("cli").resolve("pids");
     }
 
+    /**
+     * Path to file with registry data for {@link org.apache.ignite.cli.builtins.module.ModuleRegistry}
+     */
     public Path installedModulesFile() {
         return workDir.resolve("modules.json");
     }
-    
+
+    /**
+     * Path to directory with Ignite nodes configs.
+     */
     public Path serverConfigDir() {
         return workDir.resolve("config");
     }
 
+    /**
+     * Path to default Ignite node config.
+     */
     public Path serverDefaultConfigFile() {
         return serverConfigDir().resolve("default-config.xml");
     }
 
+    /**
+     * Init or recovers Ignite distributive directories structure.
+     */
     public void initOrRecover() {
         File igniteWork = workDir.toFile();
         if (!(igniteWork.exists() || igniteWork.mkdirs()))
@@ -70,11 +133,16 @@ public class IgnitePaths {
         if (!(igniteBinCli.exists() || igniteBinCli.mkdirs()))
             throw new IgniteCLIException("Can't create a directory for cli modules: " + cliLibsDir());
 
-        File serverConfig = serverConfigDir().toFile();
-        if (!(serverConfig.exists() || serverConfig.mkdirs()))
+        File srvCfg = serverConfigDir().toFile();
+        if (!(srvCfg.exists() || srvCfg.mkdirs()))
             throw new IgniteCLIException("Can't create a directory for server configs: " + serverConfigDir());
     }
 
+    /**
+     * Validates that all Ignite distributive directories is exists.
+     *
+     * @return true if check passes, false otherwise.
+     */
     public boolean validateDirs() {
         return workDir.toFile().exists() &&
                 libsDir().toFile().exists() &&

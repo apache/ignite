@@ -23,19 +23,26 @@ import org.apache.ignite.cli.common.IgniteCommand;
 import org.apache.ignite.cli.builtins.init.InitIgniteCommand;
 import picocli.CommandLine;
 
+/**
+ * Command for init Ignite distributive to start new nodes on the current machine.
+ *
+ * @see IgniteCommand
+ */
 @CommandLine.Command(name = "init", description = "Installs Ignite core modules locally.")
 public class InitIgniteCommandSpec extends CommandSpec implements IgniteCommand {
-
+    /** Init command implementation. */
     @Inject
-    InitIgniteCommand command;
+    private InitIgniteCommand cmd;
 
+    /** Option for custom maven repository to download Ignite core. */
     @CommandLine.Option(
         names = "--repo",
         description = "Additional Maven repository URL"
     )
-    public URL[] urls;
+    private URL[] urls;
 
+    /** {@inheritDoc} */
     @Override public void run() {
-        command.init(urls, spec.commandLine().getOut(), spec.commandLine().getColorScheme());
+        cmd.init(urls, spec.commandLine().getOut(), spec.commandLine().getColorScheme());
     }
 }

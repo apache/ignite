@@ -55,53 +55,75 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Resolver of maven artifacts with Ivy.
  */
 @Singleton
 public class MavenArtifactResolver {
-
-    private final SystemPathResolver pathResolver;
-    private PrintWriter out;
-
+    /** Pattern for naming artifact files. **/
     private static final String FILE_ARTIFACT_PATTERN = "[artifact](-[classifier]).[revision].[ext]";
 
+    /** Resolver of system paths. **/
+    private final SystemPathResolver pathRslvr;
+
+    /** Console writer for output user messages. **/
+    private PrintWriter out;
+
+    /**
+     * Creates resolver
+     *
+     * @param pathRslvr Resolver of system paths like home directory and etc.
+     */
     @Inject
-    public MavenArtifactResolver(SystemPathResolver pathResolver) {
-        this.pathResolver = pathResolver;
+    public MavenArtifactResolver(SystemPathResolver pathRslvr) {
+        this.pathRslvr = pathRslvr;
     }
 
+    /**
+     * Sets writer for user messages.
+     *
+     * @param out PrintWriter
+     */
     public void setOut(PrintWriter out) {
         this.out = out;
     }
 
+    /**
+     * Downloads and copies artifact and its dependencies to {mavenRoot}.
+     *
+     * @param mavenRoot Path where artifacts will be copied to.
+     * @param grpId Maven group id of the artifact.
+     * @param artifactId Maven artifact id of the artifact.
+     * @param ver Manve version of the artifact.
+     * @param customRepositories Urls with custom maven repositories to resolve artifact.
+     * @return Result of resolving with files' paths of resolved artifact + dependencies.
+     * @throws IOException if connection issues occurred during resolving
+     *                     or if r/w issues occurred during the retrieving of artifacts
+     */
     public ResolveResult resolve(
         Path mavenRoot,
         String grpId,
         String artifactId,
-        String version,
+        String ver,
         List<URL> customRepositories
     ) throws IOException {
         Ivy ivy = ivyInstance(customRepositories); // needed for init right output logger before any operations
 
-        out.println("Installing " + String.join(":", grpId, artifactId, version) + "...");
+        out.println("Installing " + String.join(":", grpId, artifactId, ver) + "...");
 
         try (IgniteProgressBar bar = new IgniteProgressBar(out, 100)) {
             ivy.getEventManager().addIvyListener(event -> {
                 if (event instanceof EndResolveEvent) {
-                    int count = ((EndResolveEvent)event).getReport().getArtifacts().size();
+                    int cnt = ((EndResolveEvent)event).getReport().getArtifacts().size();
 
-                    bar.setMax(count * 3);
+                    bar.setMax(cnt * 3);
                 }
                 else if (event instanceof EndArtifactDownloadEvent ||
-                         event instanceof EndResolveDependencyEvent ||
-                         event instanceof EndRetrieveArtifactEvent) {
+                    event instanceof EndResolveDependencyEvent ||
+                    event instanceof EndRetrieveArtifactEvent)
                     bar.step();
-                }
             });
 
-            //out.print("Resolve artifact " + grpId + ":" + artifactId + ":" + version);
-
-            ModuleDescriptor md = rootModuleDescriptor(grpId, artifactId, version);
+            ModuleDescriptor md = rootModuleDescriptor(grpId, artifactId, ver);
 
             // Step 1: you always need to resolve before you can retrieve
             //
@@ -124,11 +146,12 @@ public class MavenArtifactResolver {
                 ModuleDescriptor m = rr.getModuleDescriptor();
 
                 RetrieveReport retrieveReport = ivy.retrieve(
-                        m.getModuleRevisionId(),
-                        new RetrieveOptions()
-                                // this is from the envelop module
-                                .setConfs(new String[]{"default"})
-                                .setDestArtifactPattern(mavenRoot.resolve("[artifact](-[classifier]).[revision].[ext]").toFile().getAbsolutePath())
+                    m.getModuleRevisionId(),
+                    new RetrieveOptions()
+                        // this is from the envelop module
+                        .setConfs(new String[] {"default"})
+                        .setDestArtifactPattern(
+                            mavenRoot.resolve("[artifact](-[classifier]).[revision].[ext]").toFile().getAbsolutePath())
                 );
 
                 return new ResolveResult(
@@ -136,95 +159,116 @@ public class MavenArtifactResolver {
                 );
             }
             catch (ParseException e) {
-                // TOOD
                 throw new IOException(e);
             }
         }
     }
 
     /**
-     * Get artifact file name by artifactId and version
-     *
+     * Gets artifact file name by artifactId and version
+     * <p>
      * Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging
-     * @param artfactId
-     * @param version
-     * @return
+     *
+     * @param artfactId Maven artifact id.
+     * @param ver Maven version
+     * @return File name
      */
     public static String fileNameByArtifactPattern(
         String artfactId,
-        String version) {
-       return FILE_ARTIFACT_PATTERN
-           .replace("[artifact]", artfactId)
-           .replace("(-[classifier])", "")
-           .replace("[revision]", version)
-           .replace("[ext]", "jar");
+        String ver) {
+        return FILE_ARTIFACT_PATTERN
+            .replace("[artifact]", artfactId)
+            .replace("(-[classifier])", "")
+            .replace("[revision]", ver)
+            .replace("[ext]", "jar");
     }
 
+    /**
+     * Prepares Ivy instance for artifact resolving.
+     *
+     * @param repositories Additional maven repositories
+     * @return Ivy instance
+     */
     private Ivy ivyInstance(List<URL> repositories) {
-        File tmpDir = null;
+        File tmpDir;
+
         try {
             tmpDir = Files.createTempDirectory("ignite-installer-cache").toFile();
         }
         catch (IOException e) {
             throw new IgniteCLIException("Can't create temp directory for ivy");
         }
+
         tmpDir.deleteOnExit();
 
-        EventManager eventManager = new EventManager();
-//        eventManager.addIvyListener(event -> {
-//            out.print(".");
-//            out.flush();
-//        });
+        EventManager evtMgr = new EventManager();
 
         IvySettings ivySettings = new IvySettings();
         ivySettings.setDefaultCache(tmpDir);
         ivySettings.setDefaultCacheArtifactPattern(FILE_ARTIFACT_PATTERN);
 
-        ChainResolver chainResolver = new ChainResolver();
-        chainResolver.setName("chainResolver");
-        chainResolver.setEventManager(eventManager);
+        ChainResolver chainRslvr = new ChainResolver();
+        chainRslvr.setName("chainResolver");
+        chainRslvr.setEventManager(evtMgr);
 
-        for (URL repoUrl: repositories) {
+        for (URL repoUrl : repositories) {
             IBiblioResolver br = new IBiblioResolver();
-            br.setEventManager(eventManager);
+            br.setEventManager(evtMgr);
             br.setM2compatible(true);
             br.setUsepoms(true);
             br.setRoot(repoUrl.toString());
             br.setName(repoUrl.getPath());
-            chainResolver.add(br);
+
+            chainRslvr.add(br);
         }
+
         // use the biblio resolver, if you consider resolving
         // POM declared dependencies
         IBiblioResolver br = new IBiblioResolver();
-        br.setEventManager(eventManager);
+        br.setEventManager(evtMgr);
         br.setM2compatible(true);
         br.setUsepoms(true);
         br.setName("central");
 
-        chainResolver.add(br);
+        chainRslvr.add(br);
 
-        IBiblioResolver localBr = new IBiblioResolver();
-        localBr.setEventManager(eventManager);
-        localBr.setM2compatible(true);
-        localBr.setUsepoms(true);
-        localBr.setRoot("file://" + pathResolver.osHomeDirectoryPath().resolve(".m2").resolve("repository/"));
-        localBr.setName("local");
-        chainResolver.add(localBr);
+        IBiblioResolver locBr = new IBiblioResolver();
+        locBr.setEventManager(evtMgr);
+        locBr.setM2compatible(true);
+        locBr.setUsepoms(true);
+        locBr.setRoot("file://" + pathRslvr.osHomeDirectoryPath().resolve(".m2").resolve("repository/"));
+        locBr.setName("local");
 
-        ivySettings.addResolver(chainResolver);
-        ivySettings.setDefaultResolver(chainResolver.getName());
+        chainRslvr.add(locBr);
+
+        ivySettings.addResolver(chainRslvr);
+        ivySettings.setDefaultResolver(chainRslvr.getName());
 
         Ivy ivy = new Ivy();
+
         ivy.getLoggerEngine().setDefaultLogger(new IvyLogger());
+
         // needed for setting the message logger before logging info from loading settings
         IvyContext.getContext().setIvy(ivy);
+
         ivy.setSettings(ivySettings);
+
         ivy.bind();
 
         return ivy;
     }
 
-    private ModuleDescriptor rootModuleDescriptor(String grpId, String artifactId, String version) {
+    /**
+     * Prepares Ivy module descriptor with target maven artifact as a dependency.
+     * Then descriptor can be used for further resolving the artifact dependencies.
+     * Existence of this descriptor is Ivy's requirement.
+     *
+     * @param grpId Maven group id.
+     * @param artifactId Maven artifact id.
+     * @param ver Maven artifact version.
+     * @return Prepared for resolving module descriptor.
+     */
+    private ModuleDescriptor rootModuleDescriptor(String grpId, String artifactId, String ver) {
         // 1st create an ivy module (this always(!) has a "default" configuration already)
         DefaultModuleDescriptor md = DefaultModuleDescriptor.newDefaultInstance(
             // give it some related name (so it can be cached)
@@ -239,8 +283,9 @@ public class MavenArtifactResolver {
         ModuleRevisionId ri = ModuleRevisionId.newInstance(
             grpId,
             artifactId,
-            version
+            ver
         );
+
         // don't go transitive here, if you want the single artifact
         DefaultDependencyDescriptor dd = new DefaultDependencyDescriptor(md, ri, false, true, true);
 
@@ -252,42 +297,53 @@ public class MavenArtifactResolver {
         dd.addDependencyConfiguration("default", "compile");
 
         md.addDependency(dd);
+
         return md;
     }
 
-
+    /**
+     * Ivy logger for routing all ivy logs to general logging system of CLI.
+     */
     private static class IvyLogger extends AbstractMessageLogger {
+        /** Common loogger */
+        private final Logger log = LoggerFactory.getLogger(IvyLogger.class);
 
-        private final Logger logger = LoggerFactory.getLogger(IvyLogger.class);
-
+        /** {@inheritDoc} */
         @Override protected void doProgress() {
             // no-op
         }
 
+        /** {@inheritDoc} */
         @Override protected void doEndProgress(String msg) {
             // no-op
         }
 
+        /** {@inheritDoc} */
         @Override public void log(String msg, int level) {
             switch (level) {
                 case Message.MSG_ERR:
-                    logger.error(msg);
+                    log.error(msg);
                     break;
+
                 case Message.MSG_WARN:
-                    logger.warn(msg);
+                    log.warn(msg);
                     break;
+
                 case Message.MSG_INFO:
-                    logger.info(msg);
+                    log.info(msg);
                     break;
+
                 case Message.MSG_VERBOSE:
-                    logger.debug(msg);
+                    log.debug(msg);
                     break;
+
                 case Message.MSG_DEBUG:
-                    logger.trace(msg);
+                    log.trace(msg);
                     break;
             }
         }
 
+        /** {@inheritDoc} */
         @Override public void rawlog(String msg, int level) {
             log(msg, level);
         }

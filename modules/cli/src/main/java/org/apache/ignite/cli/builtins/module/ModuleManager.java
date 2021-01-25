@@ -38,63 +38,113 @@ import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.IgnitePaths;
 import picocli.CommandLine.Help.ColorScheme;
 
+/**
+ * Ignite distributive module manager.
+ * The main responsibilities:
+ * <ul>
+ *     <li>Add/remove standard Ignite server modules</li>
+ *     <li>Add/remove any external server modules from maven repositories.</li>
+ *     <li>Add/remove Ignite CLI modules.</li>
+ * </ul>
+ */
 @Singleton
 public class ModuleManager {
-
-    private final MavenArtifactResolver mavenArtifactResolver;
-    private final CliVersionInfo cliVersionInfo;
-    private final ModuleStorage moduleStorage;
-    private final List<StandardModuleDefinition> modules;
-
+    /** Prefix to identify internal modules in builtin modules list. */
     public static final String INTERNAL_MODULE_PREFIX = "_";
+
+    /** Jar manifest key to identify the CLI module jar. */
     public static final String CLI_MODULE_MANIFEST_HEADER = "Apache-Ignite-CLI-Module";
 
+    /** Maven artifact resolver. */
+    private final MavenArtifactResolver mavenArtifactRslvr;
+
+    /** Current Ignite CLI version. */
+    private final CliVersionInfo cliVerInfo;
+
+    /** Storage of meta info of installed modules. */
+    private final ModuleRegistry moduleRegistry;
+
+    /** List of standard Ignite modules. */
+    private final List<StandardModuleDefinition> modules;
+
+    /** Print writer for output user messages. */
     private PrintWriter out;
+
+    /** Color scheme to enrich user output. */
     private ColorScheme cs;
 
+    /**
+     * Creates module manager instance.
+     *
+     * @param mavenArtifactRslvr Maven artifact resolver.
+     * @param cliVerInfo Current Ignite CLI version info.
+     * @param moduleRegistry Module storage.
+     */
     @Inject
     public ModuleManager(
-        MavenArtifactResolver mavenArtifactResolver, CliVersionInfo cliVersionInfo,
-        ModuleStorage moduleStorage) {
+        MavenArtifactResolver mavenArtifactRslvr, CliVersionInfo cliVerInfo,
+        ModuleRegistry moduleRegistry) {
         modules = readBuiltinModules();
-        this.mavenArtifactResolver = mavenArtifactResolver;
-        this.cliVersionInfo = cliVersionInfo;
-        this.moduleStorage = moduleStorage;
+        this.mavenArtifactRslvr = mavenArtifactRslvr;
+        this.cliVerInfo = cliVerInfo;
+        this.moduleRegistry = moduleRegistry;
     }
 
+    /**
+     * Sets print writer for any user messages.
+     *
+     * @param out PrintWriter
+     */
     public void setOut(PrintWriter out) {
         this.out = out;
 
-        mavenArtifactResolver.setOut(out);
+        mavenArtifactRslvr.setOut(out);
     }
 
+    /**
+     * Sets color scheme for enrhiching user output.
+     *
+     * @param cs ColorScheme
+     */
     public void setColorScheme(ColorScheme cs) {
         this.cs = cs;
     }
 
+    /**
+     * Installs the CLI/server module by name to according directories from {@link IgnitePaths}.
+     *
+     * @param name Module name can be either fully qualified maven artifact name (groupId:artifactId:version)
+     *             or the name of the standard Ignite module.
+     * @param ignitePaths Ignite paths instance.
+     * @param repositories Custom maven repositories to resolve module from.
+     */
     public void addModule(String name, IgnitePaths ignitePaths, List<URL> repositories) {
         Path installPath = ignitePaths.libsDir();
+
         if (name.startsWith("mvn:")) {
             MavenCoordinates mavenCoordinates = MavenCoordinates.of(name);
 
             try {
-                ResolveResult resolveResult = mavenArtifactResolver.resolve(
+                ResolveResult resolveRes = mavenArtifactRslvr.resolve(
                     installPath,
-                    mavenCoordinates.groupId,
+                    mavenCoordinates.grpId,
                     mavenCoordinates.artifactId,
-                    mavenCoordinates.version,
+                    mavenCoordinates.ver,
                     repositories
                 );
 
-                String mvnName = String.join(":", mavenCoordinates.groupId,
-                    mavenCoordinates.artifactId, mavenCoordinates.version);
+                String mvnName = String.join(":", mavenCoordinates.grpId,
+                    mavenCoordinates.artifactId, mavenCoordinates.ver);
 
-                var isCliModule = isRootArtifactCliModule(mavenCoordinates.artifactId, mavenCoordinates.version, resolveResult.artifacts());
-                moduleStorage.saveModule(new ModuleStorage.ModuleDefinition(
+                var isCliModule = isRootArtifactCliModule(
+                    mavenCoordinates.artifactId, mavenCoordinates.ver,
+                    resolveRes.artifacts());
+
+                moduleRegistry.saveModule(new ModuleRegistry.ModuleDefinition(
                     mvnName,
-                    (isCliModule)? Collections.emptyList() : resolveResult.artifacts(),
-                    (isCliModule)? resolveResult.artifacts() : Collections.emptyList(),
-                    ModuleStorage.SourceType.Maven,
+                    (isCliModule) ? Collections.emptyList() : resolveRes.artifacts(),
+                    (isCliModule) ? resolveRes.artifacts() : Collections.emptyList(),
+                    ModuleRegistry.SourceType.Maven,
                     name
                 ));
 
@@ -106,20 +156,23 @@ public class ModuleManager {
                 throw new IgniteCLIException("\nFailed to install " + name, e);
             }
         }
-        else if (isStandardModuleName(name)) {
-            StandardModuleDefinition moduleDescription = readBuiltinModules()
+        else if (isBuiltinModuleName(name)) {
+            StandardModuleDefinition moduleDesc = readBuiltinModules()
                 .stream()
                 .filter(m -> m.name.equals(name))
                 .findFirst().get();
+
             List<ResolveResult> libsResolveResults = new ArrayList<>();
-            for (String artifact: moduleDescription.artifacts) {
-                MavenCoordinates mavenCoordinates = MavenCoordinates.of(artifact, cliVersionInfo.version);
+
+            for (String artifact: moduleDesc.artifacts) {
+                MavenCoordinates mavenCoordinates = MavenCoordinates.of(artifact, cliVerInfo.ver);
+
                 try {
-                    libsResolveResults.add(mavenArtifactResolver.resolve(
+                    libsResolveResults.add(mavenArtifactRslvr.resolve(
                         ignitePaths.libsDir(),
-                        mavenCoordinates.groupId,
+                        mavenCoordinates.grpId,
                         mavenCoordinates.artifactId,
-                        mavenCoordinates.version,
+                        mavenCoordinates.ver,
                         repositories
                     ));
                 }
@@ -129,14 +182,16 @@ public class ModuleManager {
             }
 
             List<ResolveResult> cliResolvResults = new ArrayList<>();
-            for (String artifact: moduleDescription.cliArtifacts) {
-                MavenCoordinates mavenCoordinates = MavenCoordinates.of(artifact, cliVersionInfo.version);
+
+            for (String artifact: moduleDesc.cliArtifacts) {
+                MavenCoordinates mavenCoordinates = MavenCoordinates.of(artifact, cliVerInfo.ver);
+
                 try {
-                    cliResolvResults.add(mavenArtifactResolver.resolve(
+                    cliResolvResults.add(mavenArtifactRslvr.resolve(
                         ignitePaths.cliLibsDir(),
-                        mavenCoordinates.groupId,
+                        mavenCoordinates.grpId,
                         mavenCoordinates.artifactId,
-                        mavenCoordinates.version,
+                        mavenCoordinates.ver,
                         repositories
                     ));
                 }
@@ -146,11 +201,11 @@ public class ModuleManager {
             }
 
             try {
-                moduleStorage.saveModule(new ModuleStorage.ModuleDefinition(
+                moduleRegistry.saveModule(new ModuleRegistry.ModuleDefinition(
                     name,
                     libsResolveResults.stream().flatMap(r -> r.artifacts().stream()).collect(Collectors.toList()),
                     cliResolvResults.stream().flatMap(r -> r.artifacts().stream()).collect(Collectors.toList()),
-                    ModuleStorage.SourceType.Standard,
+                    ModuleRegistry.SourceType.Standard,
                     name
                 ));
             }
@@ -165,9 +220,16 @@ public class ModuleManager {
         }
     }
 
+    /**
+     * Removes module by name.
+     *
+     * @param name Module name can be either the name of standard Ignite module
+     *             or the fully qualified maven artifact 'groupId:artifactId:version'.
+     * @return true if module was removed, false otherwise.
+     */
     public boolean removeModule(String name) {
         try {
-            return moduleStorage.removeModule(name);
+            return moduleRegistry.removeModule(name);
         }
         catch (IOException e) {
             throw new IgniteCLIException(
@@ -175,50 +237,73 @@ public class ModuleManager {
         }
     }
 
+    /**
+     * Returns builtin Ignite modules list.
+     * Builtin modules list packaged with CLI tool and so, depends only on its' version.
+     *
+     * @return Builtin modules list.
+     */
     public List<StandardModuleDefinition> builtinModules() {
-        return modules;
+        return Collections.unmodifiableList(modules);
     }
 
-    private boolean isRootArtifactCliModule(String artifactId, String version, List<Path> artifacts) throws IOException {
+    /**
+     * Checks if root artifact contains Jar manifest key, which marks it as CLI extension.
+     *
+     * @param artifactId Maven artifact id.
+     * @param ver Maven root artifact version.
+     * @param artifacts Paths for all dependencies' files of the artifact.
+     * @return true if the artifact has CLI mark, false otherwise.
+     * @throws IOException If can't read artifact manifest.
+     */
+    private boolean isRootArtifactCliModule(String artifactId, String ver, List<Path> artifacts) throws IOException {
        var rootJarArtifactOpt = artifacts.stream()
-           .filter(p -> MavenArtifactResolver.fileNameByArtifactPattern(artifactId, version).equals(p.getFileName().toString()))
+           .filter(p -> MavenArtifactResolver.fileNameByArtifactPattern(artifactId, ver).equals(p.getFileName().toString()))
            .findFirst();
+
        if (rootJarArtifactOpt.isPresent()) {
            try (var input = new FileInputStream(rootJarArtifactOpt.get().toFile())) {
                var jarStream = new JarInputStream(input);
                var manifest = jarStream.getManifest();
+
                return "true".equals(manifest.getMainAttributes().getValue(CLI_MODULE_MANIFEST_HEADER));
            }
-       } else return false;
+       }
+       else
+           return false;
     }
 
-    private boolean isStandardModuleName(String name) {
+    /**
+     * Checks if the module is a builtin Ignite module.
+     *
+     * @param name Module name.
+     * @return true if the module is a builtin Ignite module.
+     */
+    private boolean isBuiltinModuleName(String name) {
         return readBuiltinModules().stream().anyMatch(m -> m.name.equals(name));
     }
 
+    /**
+     * Reads builtin modules from builtin modules registry.
+     *
+     * @return List of builtin modules.
+     */
     private static List<StandardModuleDefinition> readBuiltinModules() {
-        com.typesafe.config.ConfigObject config = ConfigFactory.load("builtin_modules.conf").getObject("modules");
+        var cfg = ConfigFactory.load("builtin_modules.conf").getObject("modules");
+
         List<StandardModuleDefinition> modules = new ArrayList<>();
-        for (Map.Entry<String, ConfigValue> entry: config.entrySet()) {
-            ConfigObject configObject = (ConfigObject) entry.getValue();
+
+        for (Map.Entry<String, ConfigValue> entry: cfg.entrySet()) {
+            ConfigObject cfgObj = (ConfigObject) entry.getValue();
+
             modules.add(new StandardModuleDefinition(
                 entry.getKey(),
-                configObject.toConfig().getString("description"),
-                configObject.toConfig().getStringList("artifacts"),
-                configObject.toConfig().getStringList("cli-artifacts")
+                cfgObj.toConfig().getString("description"),
+                cfgObj.toConfig().getStringList("artifacts"),
+                cfgObj.toConfig().getStringList("cli-artifacts")
             ));
         }
+
         return modules;
     }
-
-    private static class IgniteArtifacts {
-        private List<Path> serverArtifacts;
-        private List<Path> cliArtifacts;
-
-        public IgniteArtifacts(List<Path> serverArtifacts, List<Path> cliArtifacts) {
-            this.serverArtifacts = serverArtifacts;
-            this.cliArtifacts = cliArtifacts;
-        }
-    }
-
 }

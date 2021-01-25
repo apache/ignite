@@ -17,22 +17,44 @@
 
 package org.apache.ignite.cli.builtins.module;
 
+import java.util.Collections;
 import java.util.List;
 
+/**
+ * Definition of Ignite standard module.
+ * Every module has two artifacts' lists - one for server modules
+ * and one for CLI tool extensions, if any.
+ */
 public class StandardModuleDefinition {
+    /** Module name. **/
     public final String name;
-    public final String description;
+
+    /** Module description. */
+    public final String desc;
+
+    /** List of server artifacts. */
     public final List<String> artifacts;
+
+    /** List of CLI tool artifacts. */
     public final List<String> cliArtifacts;
 
-    public StandardModuleDefinition(String name, String description, List<String> artifacts, List<String> cliArtifacts) {
+    /**
+     * Creates definition for standard Ignite module.
+     *
+     * @param name Module name.
+     * @param desc Module description.
+     * @param artifacts Server artifacts.
+     * @param cliArtifacts CLI tool artifacts.
+     */
+    public StandardModuleDefinition(String name, String desc, List<String> artifacts, List<String> cliArtifacts) {
         this.name = name;
-        this.description = description;
-        this.artifacts = artifacts;
-        this.cliArtifacts = cliArtifacts;
+        this.desc = desc;
+        this.artifacts = Collections.unmodifiableList(artifacts);
+        this.cliArtifacts = Collections.unmodifiableList(cliArtifacts);
     }
 
-    public String toString() {
-        return this.name + ":\t" + this.description;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name + ":\t" + desc;
     }
 }

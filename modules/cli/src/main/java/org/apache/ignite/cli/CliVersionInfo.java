@@ -21,26 +21,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 import javax.inject.Singleton;
-import io.micronaut.core.annotation.Introspected;
 
+/**
+ * Provider of current Ignite CLI version info from the builtin properties file.
+ */
 @Singleton
-@Introspected
 public class CliVersionInfo {
+    /** Ignite CLI version. */
+    public final String ver;
 
-    public final String version;
-
+    /**
+     * Creates Ignite CLI version provider according to builtin version file.
+     */
     public CliVersionInfo() {
         try (InputStream inputStream = CliVersionInfo.class.getResourceAsStream("/version.properties")) {
             Properties prop = new Properties();
             prop.load(inputStream);
-            version = prop.getProperty("version", "undefined");
+
+            ver = prop.getProperty("version", "undefined");
         }
         catch (IOException e) {
             throw new IgniteCLIException("Can' read ignite version info");
         }
     }
 
-    public CliVersionInfo(String version) {
-        this.version = version;
+    /**
+     * Creates Ignite CLI version provider from the manually setted version.
+     * @param ver Ignite CLI version
+     */
+    public CliVersionInfo(String ver) {
+        this.ver = ver;
     }
 }

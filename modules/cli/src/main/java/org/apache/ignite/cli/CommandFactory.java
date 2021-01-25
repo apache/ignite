@@ -21,16 +21,25 @@ import java.util.Optional;
 import io.micronaut.context.ApplicationContext;
 import picocli.CommandLine;
 
+/**
+ * Picocli command factory for initialize commands and DI dependencies.
+ */
 public class CommandFactory implements CommandLine.IFactory {
+    /** DI application context. */
+    private final ApplicationContext applicationCtx;
 
-    private final ApplicationContext applicationContext;
-
-    public CommandFactory(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
+    /**
+     * Creates new command factory.
+     *
+     * @param applicationCtx DI application context.
+     */
+    public CommandFactory(ApplicationContext applicationCtx) {
+        this.applicationCtx = applicationCtx;
     }
 
+    /** {@inheritDoc} */
     @Override public <K> K create(Class<K> cls) throws Exception {
-        Optional<K> bean = applicationContext.findOrInstantiateBean(cls);
-        return bean.isPresent() ? bean.get() : CommandLine.defaultFactory().create(cls);// custom factory lookup or instantiation
+        Optional<K> bean = applicationCtx.findOrInstantiateBean(cls);
+        return bean.isPresent() ? bean.get() : CommandLine.defaultFactory().create(cls);
     }
 }

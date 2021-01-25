@@ -18,16 +18,29 @@
 package org.apache.ignite.cli.builtins.module;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
+/**
+ * Result of resolving maven artifact dependencies.
+ */
 public class ResolveResult {
-    private List<Path> artifacts;
+    /** List of resolver artifacts' paths. */
+    private final List<Path> artifacts;
 
+    /**
+     * Creates result of artifacts resolving.
+     *
+     * @param artifacts List of artifacts paths.
+     */
     public ResolveResult(List<Path> artifacts) {
         this.artifacts = artifacts;
     }
 
+    /**
+     * @return List of artifacts' paths.
+     */
     public List<Path> artifacts() {
-        return artifacts;
+        return Collections.unmodifiableList(artifacts);
     }
 }

@@ -38,8 +38,15 @@ import org.jline.widget.TailTipWidgets;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 
+/**
+ * Interactive shell mode for Ignite CLI.
+ */
 public class InteractiveWrapper {
-
+    /**
+     * Start interactive shell.
+     *
+     * @param cmd Prepared CommandLine instance to use for interactive mode.
+     */
     public void run(CommandLine cmd) {
         PicocliCommands picocliCommands = new PicocliCommands(workDir(), cmd) {
             @Override public Object invoke(CommandSession ses, String cmd, Object... args) throws Exception {
@@ -49,18 +56,19 @@ public class InteractiveWrapper {
 
         Parser parser = new DefaultParser();
         try (Terminal terminal = TerminalBuilder.builder().build()) {
-            SystemRegistry systemRegistry = new SystemRegistryImpl(parser, terminal, InteractiveWrapper::workDir, null);
-            systemRegistry.setCommandRegistries(picocliCommands);
+            SystemRegistry sysRegistry = new SystemRegistryImpl(parser, terminal, InteractiveWrapper::workDir, null);
+            sysRegistry.setCommandRegistries(picocliCommands);
 
             LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .completer(systemRegistry.completer())
+                .completer(sysRegistry.completer())
                 .parser(parser)
                 .variable(LineReader.LIST_MAX, 50)   // max tab completion candidates
                 .build();
 
-            TailTipWidgets widgets = new TailTipWidgets(reader, systemRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
+            TailTipWidgets widgets = new TailTipWidgets(reader, sysRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
             widgets.enable();
+
             KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
             keyMap.bind(new Reference("tailtip-toggle"), KeyMap.alt("s"));
 
@@ -70,15 +78,17 @@ public class InteractiveWrapper {
             String line;
             while (true) {
                 try {
-                    systemRegistry.cleanUp();
+                    sysRegistry.cleanUp();
+
                     line = reader.readLine(prompt, rightPrompt, (MaskingCallback) null, null);
-                    systemRegistry.execute(line);
-                } catch (UserInterruptException e) {
+
+                    sysRegistry.execute(line);
+                } catch (UserInterruptException ignored) {
                     // Ignore
                 } catch (EndOfFileException e) {
                     return;
                 } catch (Exception e) {
-                    systemRegistry.trace(e);
+                    sysRegistry.trace(e);
                 }
             }
         }
@@ -87,6 +97,7 @@ public class InteractiveWrapper {
         }
     }
 
+    /** */
     private static Path workDir() {
         return Paths.get(System.getProperty("user.dir"));
     }

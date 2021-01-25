@@ -17,14 +17,25 @@
 
 package org.apache.ignite.cli;
 
+/**
+ * Top level runtime exception for throwing the error message to user by {@link ErrorHandler}.
+ */
 public class IgniteCLIException extends RuntimeException {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    public IgniteCLIException(String message) {
-        super(message);
+    /**
+     * @param msg Message.
+     */
+    public IgniteCLIException(String msg) {
+        super(msg);
     }
 
-    public IgniteCLIException(String message, Throwable cause) {
-        super(message, cause);
+    /**
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    public IgniteCLIException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

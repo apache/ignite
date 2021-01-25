@@ -24,6 +24,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Model.CommandSpec;
 
+/**
+ * Base class for any Ignite commands.
+ */
 @CommandLine.Command(versionProvider = VersionProvider.class)
 public abstract class SpecAdapter implements Runnable {
     private static final String[] BANNER = new String[] {

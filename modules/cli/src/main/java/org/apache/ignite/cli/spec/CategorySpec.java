@@ -20,7 +20,11 @@ package org.apache.ignite.cli.spec;
 import java.io.PrintWriter;
 import picocli.CommandLine.Help.ColorScheme;
 
+/**
+ * Base specification for commands which have subcommands.
+ */
 public abstract class CategorySpec extends SpecAdapter {
+    /** {@inheritDoc} */
     @Override public void run() {
         PrintWriter out = spec.commandLine().getOut();
         ColorScheme cs = spec.commandLine().getColorScheme();

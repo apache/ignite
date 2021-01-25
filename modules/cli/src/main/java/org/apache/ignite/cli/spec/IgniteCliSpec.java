@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cli.spec;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -32,12 +31,12 @@ import org.apache.ignite.cli.ErrorHandler;
 import org.apache.ignite.cli.HelpFactoryImpl;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.InteractiveWrapper;
-import org.apache.ignite.cli.builtins.module.ModuleStorage;
+import org.apache.ignite.cli.builtins.module.ModuleRegistry;
 import org.apache.ignite.cli.common.IgniteCommand;
 import picocli.CommandLine;
 
 /**
- *
+ * Root command of Ignite CLI.
  */
 @CommandLine.Command(
     name = "ignite",
@@ -50,9 +49,11 @@ import picocli.CommandLine;
     }
 )
 public class IgniteCliSpec extends CommandSpec {
+    /** Interactive mode option. */
     @CommandLine.Option(names = "-i", hidden = true, required = false)
-    boolean interactive;
+    private boolean interactive;
 
+    /** {@inheritDoc} */
     @Override public void run() {
         CommandLine cli = spec.commandLine();
 
@@ -64,12 +65,21 @@ public class IgniteCliSpec extends CommandSpec {
             cli.usage(cli.getOut());
     }
 
-    public static CommandLine initCli(ApplicationContext applicationContext) {
-        CommandLine.IFactory factory = new CommandFactory(applicationContext);
-        ErrorHandler errorHandler = applicationContext.createBean(ErrorHandler.class);
+    /**
+     * Init Ignite command line with needed look&feel options
+     * and loads external extensions if any exists.
+     *
+     * @param applicationCtx DI application context.
+     * @return Initialized command line instance.
+     */
+    public static CommandLine initCli(ApplicationContext applicationCtx) {
+        CommandLine.IFactory factory = new CommandFactory(applicationCtx);
+
+        ErrorHandler errorHnd = applicationCtx.createBean(ErrorHandler.class);
+
         CommandLine cli = new CommandLine(IgniteCliSpec.class, factory)
-            .setExecutionExceptionHandler(errorHandler)
-            .setParameterExceptionHandler(errorHandler);
+            .setExecutionExceptionHandler(errorHnd)
+            .setParameterExceptionHandler(errorHnd);
 
         cli.setHelpFactory(new HelpFactoryImpl());
 
@@ -80,12 +90,12 @@ public class IgniteCliSpec extends CommandSpec {
             .errors(CommandLine.Help.Ansi.Style.fg_red, CommandLine.Help.Ansi.Style.bold)
             .build());
 
-        applicationContext.createBean(CliPathsConfigLoader.class)
+        applicationCtx.createBean(CliPathsConfigLoader.class)
             .loadIgnitePathsConfig()
             .ifPresent(ignitePaths ->
                 loadSubcommands(
                     cli,
-                    applicationContext.createBean(ModuleStorage.class)
+                    applicationCtx.createBean(ModuleRegistry.class)
                         .listInstalled()
                         .modules
                         .stream()
@@ -95,7 +105,13 @@ public class IgniteCliSpec extends CommandSpec {
         return cli;
     }
 
-    public static void loadSubcommands(CommandLine commandLine, List<Path> cliLibs) {
+    /**
+     * Loads external Ignite CLI commands from installed modules.
+     *
+     * @param cmdLine Command line
+     * @param cliLibs List of artifacts to load.
+     */
+    public static void loadSubcommands(CommandLine cmdLine, List<Path> cliLibs) {
         URL[] urls = cliLibs.stream()
             .map(p -> {
                 try {
@@ -105,12 +121,16 @@ public class IgniteCliSpec extends CommandSpec {
                     throw new IgniteCLIException("Can't convert cli module path to URL for loading by classloader");
                 }
             }).toArray(URL[]::new);
-        ClassLoader classLoader = new URLClassLoader(urls,
+
+        ClassLoader clsLdr = new URLClassLoader(
+            urls,
             IgniteCliSpec.class.getClassLoader());
-        ServiceLoader<IgniteCommand> loader = ServiceLoader.load(IgniteCommand.class, classLoader);
-        loader.reload();
-        for (IgniteCommand igniteCommand: loader) {
-            commandLine.addSubcommand(igniteCommand);
+
+        ServiceLoader<IgniteCommand> ldr = ServiceLoader.load(IgniteCommand.class, clsLdr);
+        ldr.reload();
+
+        for (IgniteCommand igniteCommand: ldr) {
+            cmdLine.addSubcommand(igniteCommand);
         }
     }
 }

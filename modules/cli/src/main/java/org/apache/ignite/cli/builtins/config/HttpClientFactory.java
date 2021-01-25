@@ -21,9 +21,16 @@ import java.net.http.HttpClient;
 import javax.inject.Singleton;
 import io.micronaut.context.annotation.Factory;
 
+/**
+ * Factory for producing simple HTTP clients.
+ */
 @Factory
 public class HttpClientFactory {
-
+    /**
+     * Creates new HTTP client.
+     *
+     * @return HttpClient
+     */
     @Singleton
     HttpClient httpClient() {
         return HttpClient

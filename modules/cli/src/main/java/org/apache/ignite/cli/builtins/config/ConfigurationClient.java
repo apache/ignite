@@ -35,50 +35,83 @@ import org.apache.ignite.cli.IgniteCLIException;
 import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine.Help.ColorScheme;
 
+/**
+ * Client to get/put HOCON based configuration from/to Ignite server nodes
+ */
 @Singleton
 public class ConfigurationClient {
+    /** Url for getting configuration from REST endpoint of the node. */
+    private static final String GET_URL = "/management/v1/configuration/";
 
-    private final String GET_URL = "/management/v1/configuration/";
-    private final String SET_URL = "/management/v1/configuration/";
+    /** Url for setting configuration with REST endpoint of the node. */
+    private static final String SET_URL = "/management/v1/configuration/";
 
+    /** Http client. */
     private final HttpClient httpClient;
+
+    /** Mapper serialize/deserialize json values during communication with node REST endpoint. */
     private final ObjectMapper mapper;
 
+    /**
+     * Creates new configuration client.
+     *
+     * @param httpClient Http client.
+     */
     @Inject
     public ConfigurationClient(HttpClient httpClient) {
         this.httpClient = httpClient;
         mapper = new ObjectMapper();
     }
 
-    public String get(String host, int port,
+    /**
+     * Gets server node configuration as a raw JSON string.
+     *
+     * @param host String representation of server node host.
+     * @param port Host REST port.
+     * @param rawHoconPath HOCON dot-delimited path of requested configuration.
+     * @return JSON string with node configuration.
+     */
+    public String get(
+        String host,
+        int port,
         @Nullable String rawHoconPath) {
-        var request = HttpRequest
+        var req = HttpRequest
             .newBuilder()
             .header("Content-Type", "application/json");
 
         if (rawHoconPath == null)
-            request.uri(URI.create("http://" + host + ":" + port + GET_URL));
+            req.uri(URI.create("http://" + host + ":" + port + GET_URL));
         else
-            request.uri(URI.create("http://" + host + ":" + port + GET_URL +
+            req.uri(URI.create("http://" + host + ":" + port + GET_URL +
                 rawHoconPath));
 
         try {
-            HttpResponse<String> response =
-                httpClient.send(request.build(),
+            HttpResponse<String> res =
+                httpClient.send(req.build(),
                     HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == HttpURLConnection.HTTP_OK)
+
+            if (res.statusCode() == HttpURLConnection.HTTP_OK)
                 return mapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(mapper.readValue(response.body(), JsonNode.class));
+                    .writeValueAsString(mapper.readValue(res.body(), JsonNode.class));
             else
-                throw error("Can't get configuration", response);
+                throw error("Can't get configuration", res);
         }
         catch (IOException | InterruptedException e) {
             throw new IgniteCLIException("Connection issues while trying to send http request");
         }
     }
 
+    /**
+     * Sets node configuration from JSON string with configs.
+     *
+     * @param host String representation of server node host.
+     * @param port Host REST port.
+     * @param rawHoconData Valid HOCON represented as a string.
+     * @param out PrintWriter for printing user messages.
+     * @param cs ColorScheme to enrich user messages.
+     */
     public void set(String host, int port, String rawHoconData, PrintWriter out, ColorScheme cs) {
-        var request = HttpRequest
+        var req = HttpRequest
             .newBuilder()
             .POST(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
             .header("Content-Type", "application/json")
@@ -86,31 +119,45 @@ public class ConfigurationClient {
             .build();
 
         try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+            HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+
+            if (res.statusCode() == HttpURLConnection.HTTP_OK) {
                 out.println("Configuration was updated successfully.");
                 out.println();
                 out.println("Use the " + cs.commandText("ignite config get") +
                     " command to view the updated configuration.");
             }
             else
-                throw error("Fail to set configuration", response);
+                throw error("Failed to set configuration", res);
         }
         catch (IOException | InterruptedException e) {
             throw new IgniteCLIException("Connection issues while trying to send http request");
         }
     }
 
-    private IgniteCLIException error(String message, HttpResponse<String> response) throws JsonProcessingException {
-        var errorMessage = mapper.writerWithDefaultPrettyPrinter()
-            .writeValueAsString(mapper.readValue(response.body(), JsonNode.class));
-        return new IgniteCLIException(message + "\n\n" + errorMessage);
+    /**
+     * Prepares exception with message, enriched by HTTP response details.
+     *
+     * @param msg Base error message.
+     * @param res Http response, which cause the raising exce[tion.
+     * @return Exception with detailed message.
+     * @throws JsonProcessingException if response has incorrect error format.
+     */
+    private IgniteCLIException error(String msg, HttpResponse<String> res) throws JsonProcessingException {
+        var errorMsg = mapper.writerWithDefaultPrettyPrinter()
+            .writeValueAsString(mapper.readValue(res.body(), JsonNode.class));
+
+        return new IgniteCLIException(msg + "\n\n" + errorMsg);
     }
 
+    /**
+     * Produces JSON representation of any valid HOCON string.
+     *
+     * @param rawHoconData HOCON string.
+     * @return JSON representation of HOCON string.
+     */
     private static String renderJsonFromHocon(String rawHoconData) {
         return ConfigFactory.parseString(rawHoconData)
             .root().render(ConfigRenderOptions.concise());
     }
-
-
 }

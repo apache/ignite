@@ -19,7 +19,11 @@ package org.apache.ignite.cli.spec;
 
 import picocli.CommandLine;
 
+/**
+ * Base class for commands without any subcommands.
+ */
 public abstract class CommandSpec extends SpecAdapter {
+    /** Help option specification */
     @CommandLine.Option(names = "--help", usageHelp = true, hidden = true)
     protected boolean usageHelpRequested;
 }

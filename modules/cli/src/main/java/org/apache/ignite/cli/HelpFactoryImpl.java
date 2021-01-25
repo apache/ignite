@@ -29,19 +29,26 @@ import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 
+/**
+ * Implementation of Picocli factory for help message formatting.
+ */
 public class HelpFactoryImpl implements CommandLine.IHelpFactory {
+    /** Section key banner. */
     public static final String SECTION_KEY_BANNER = "banner";
+
+    /** Section key parameter option table. */
     public static final String SECTION_KEY_PARAMETER_OPTION_TABLE = "paramsOptsTable";
 
-    @Override public CommandLine.Help create(CommandLine.Model.CommandSpec commandSpec, ColorScheme cs) {
-        boolean hasCommands = !commandSpec.subcommands().isEmpty();
-        boolean hasOptions = commandSpec.options().stream().anyMatch(o -> !o.hidden());
-        boolean hasParameters = commandSpec.positionalParameters().stream().anyMatch(o -> !o.hidden());
+    /** {@inheritDoc} */
+    @Override public CommandLine.Help create(CommandLine.Model.CommandSpec cmdSpec, ColorScheme cs) {
+        boolean hasCommands = !cmdSpec.subcommands().isEmpty();
+        boolean hasOptions = cmdSpec.options().stream().anyMatch(o -> !o.hidden());
+        boolean hasParameters = cmdSpec.positionalParameters().stream().anyMatch(o -> !o.hidden());
 
         // Any command can have either subcommands or options/parameters, but not both.
         assert !(hasCommands && (hasOptions || hasParameters));
 
-        commandSpec.usageMessage().sectionKeys(Arrays.asList(
+        cmdSpec.usageMessage().sectionKeys(Arrays.asList(
             SECTION_KEY_BANNER,
             CommandLine.Model.UsageMessageSpec.SECTION_KEY_SYNOPSIS,
             CommandLine.Model.UsageMessageSpec.SECTION_KEY_DESCRIPTION,
@@ -51,7 +58,7 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
 
         var sectionMap = new HashMap<String, CommandLine.IHelpSectionRenderer>();
 
-        if (commandSpec.commandLine().isUsageHelpRequested()) {
+        if (cmdSpec.commandLine().isUsageHelpRequested()) {
             sectionMap.put(SECTION_KEY_BANNER,
                 help -> {
                     assert help.commandSpec().commandLine().getCommand() instanceof SpecAdapter;
@@ -76,7 +83,7 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
                         sb.append(cs.optionText(" [OPTIONS]"));
 
                     if (hasParameters) {
-                        for (PositionalParamSpec parameter : commandSpec.positionalParameters())
+                        for (PositionalParamSpec parameter : cmdSpec.positionalParameters())
                             sb.append(' ').append(cs.parameterText(parameter.paramLabel()));
                     }
 
@@ -92,73 +99,74 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
 
         if (hasCommands) {
             sectionMap.put(CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST, help -> {
-                Table table = new Table(0, cs);
+                Table tbl = new Table(0, cs);
 
-                table.addSection("@|bold COMMANDS|@");
+                tbl.addSection("@|bold COMMANDS|@");
 
                 for (Map.Entry<String, CommandLine.Help> entry : help.subcommands().entrySet()) {
                     String name = entry.getKey();
+
                     CommandLine.Help cmd = entry.getValue();
 
-                    if (cmd.subcommands().isEmpty()) {
-                        table.addRow(cs.commandText(name), cmd.description().trim());
-                    }
+                    if (cmd.subcommands().isEmpty())
+                        tbl.addRow(cs.commandText(name), cmd.description().trim());
                     else {
                         for (Map.Entry<String, CommandLine.Help> subEntry : cmd.subcommands().entrySet()) {
                             String subName = subEntry.getKey();
+
                             CommandLine.Help subCmd = subEntry.getValue();
 
                             // Further hierarchy is prohibited.
                             assert subCmd.subcommands().isEmpty();
 
-                            table.addRow(cs.commandText(name + " " + subName), subCmd.description().trim());
+                            tbl.addRow(cs.commandText(name + " " + subName), subCmd.description().trim());
                         }
                     }
                 }
 
-                return table.toString() + "\n";
+                return tbl.toString() + "\n";
             });
         }
         else if (hasParameters || hasOptions) {
             sectionMap.put(SECTION_KEY_PARAMETER_OPTION_TABLE, help -> {
-                Table table = new Table(0, cs);
+                Table tbl = new Table(0, cs);
 
                 if (hasParameters) {
-                    table.addSection("@|bold REQUIRED PARAMETERS|@");
+                    tbl.addSection("@|bold REQUIRED PARAMETERS|@");
 
                     for (PositionalParamSpec param : help.commandSpec().positionalParameters()) {
                         if (!param.hidden()) {
-                            // TODO: Support multiple-line descriptions.
+                            // TODO: IGNITE-14022 Support multiple-line descriptions.
                             assert param.description().length == 1;
 
-                            table.addRow(cs.parameterText(param.paramLabel()), param.description()[0]);
+                            tbl.addRow(cs.parameterText(param.paramLabel()), param.description()[0]);
                         }
                     }
                 }
 
                 if (hasOptions) {
-                    table.addSection("@|bold OPTIONS|@");
+                    tbl.addSection("@|bold OPTIONS|@");
 
                     for (OptionSpec option : help.commandSpec().options()) {
                         if (!option.hidden()) {
-                            // TODO: Support multiple names.
+                            // TODO: IGNITE-14022 Support multiple names.
                             assert option.names().length == 1;
-                            // TODO: Support multiple-line descriptions.
+                            // TODO: IGNITE-14022 Support multiple-line descriptions.
                             assert option.description().length == 1;
 
-                            table.addRow(
+                            tbl.addRow(
                                 cs.optionText(option.names()[0] + '=' + option.paramLabel()),
                                 option.description()[0]);
                         }
                     }
                 }
 
-                return table.toString() + "\n";
+                return tbl.toString() + "\n";
             });
         }
 
-        commandSpec.usageMessage().sectionMap(sectionMap);
+        cmdSpec.usageMessage().sectionMap(sectionMap);
 
-        return new CommandLine.Help(commandSpec, cs);
+        return new CommandLine.Help(cmdSpec, cs);
     }
 }

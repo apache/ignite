@@ -19,27 +19,56 @@ package org.apache.ignite.cli.builtins.module;
 
 import org.apache.ignite.cli.IgniteCLIException;
 
+/**
+ * Simple wrapper of maven artifact coordinates groupid:artifactd:version.
+ */
 public class MavenCoordinates {
-    public final String groupId;
-    public final String artifactId;
-    public final String version;
+    /** Group id */
+    public final String grpId;
 
-    public MavenCoordinates(String groupId, String artifactId, String version) {
-        this.groupId = groupId;
+    /** Artifact id */
+    public final String artifactId;
+
+    /** Artifact version */
+    public final String ver;
+
+    /**
+     * Creates maven coordinates.
+     *
+     * @param grpId Maven group id.
+     * @param artifactId Maven artifact id.
+     * @param ver Maven version.
+     */
+    public MavenCoordinates(String grpId, String artifactId, String ver) {
+        this.grpId = grpId;
         this.artifactId = artifactId;
-        this.version = version;
+        this.ver = ver;
     }
 
-    public static MavenCoordinates of(String mvnString) {
-        String[] coords = mvnString.split(":");
+    /**
+     * Creates instance from raw string 'groupdId:artifactId:version'.
+     *
+     * @param mvnStr Raw maven artifactd string in format 'groupdId:artifactId:version'.
+     * @return Maven coordinates instance.
+     */
+    public static MavenCoordinates of(String mvnStr) {
+        String[] coords = mvnStr.split(":");
 
         if (coords.length == 4)
             return new MavenCoordinates(coords[1], coords[2], coords[3]);
         else
-            throw new IgniteCLIException("Incorrect maven coordinates " + mvnString);
+            throw new IgniteCLIException("Incorrect maven coordinates " + mvnStr);
     }
 
-    static MavenCoordinates of(String mvnString, String version) {
-        return of(mvnString + ":" + version);
+    /**
+     * Creates instance from raw string 'groupdId:artifactId'.
+     * Artifact version will be received separately.
+     *
+     * @param mvnStr Raw maven artifactd string in format 'groupdId:artifactId'.
+     * @param ver Version of maven artifact.
+     * @return Maven coordinates instance.
+     */
+    static MavenCoordinates of(String mvnStr, String ver) {
+        return of(mvnStr + ":" + ver);
     }
 }

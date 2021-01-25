@@ -28,12 +28,15 @@ import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.Table;
 import org.apache.ignite.cli.builtins.module.MavenCoordinates;
 import org.apache.ignite.cli.builtins.module.ModuleManager;
-import org.apache.ignite.cli.builtins.module.ModuleStorage;
+import org.apache.ignite.cli.builtins.module.ModuleRegistry;
 import org.apache.ignite.cli.builtins.module.StandardModuleDefinition;
 import org.apache.ignite.cli.common.IgniteCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Help.ColorScheme;
 
+/**
+ * Commands for managing Ignite modules.
+ */
 @CommandLine.Command(
     name = "module",
     description = "Manages optional Ignite modules and additional Maven dependencies.",
@@ -44,79 +47,101 @@ import picocli.CommandLine.Help.ColorScheme;
     }
 )
 public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
+    /** Command for add Ignite modules. */
     @CommandLine.Command(
         name = "add",
         description = "Adds an optional Ignite module or an additional Maven dependency."
     )
     public static class AddModuleCommandSpec extends CommandSpec {
 
-        @Inject private ModuleManager moduleManager;
-
+        /** Module manager. */
         @Inject
-        private CliPathsConfigLoader cliPathsConfigLoader;
+        private ModuleManager moduleMgr;
 
+        /** Loader of ignite distribution paths' confg. */
+        @Inject
+        private CliPathsConfigLoader cliPathsCfgLdr;
+
+        /** Command option for setting custom maven repository for module lookup. */
         @CommandLine.Option(
             names = "--repo",
             description = "Additional Maven repository URL"
         )
-        public URL[] urls;
+        private URL[] urls;
 
+        /** Module name command parameter. */
         @CommandLine.Parameters(
             paramLabel = "module",
             description = "Optional Ignite module name or Maven dependency coordinates (mvn:groupId:artifactId:version)"
         )
-        public String moduleName;
+        private String moduleName;
 
+        /** {@inheritDoc} */
         @Override public void run() {
-            var ignitePaths = cliPathsConfigLoader.loadIgnitePathsOrThrowError();
+            var ignitePaths = cliPathsCfgLdr.loadIgnitePathsOrThrowError();
 
-            moduleManager.setOut(spec.commandLine().getOut());
-            moduleManager.setColorScheme(spec.commandLine().getColorScheme());
+            moduleMgr.setOut(spec.commandLine().getOut());
+            moduleMgr.setColorScheme(spec.commandLine().getColorScheme());
 
-            moduleManager.addModule(moduleName,
+            moduleMgr.addModule(moduleName,
                 ignitePaths,
-                (urls == null)? Collections.emptyList() : Arrays.asList(urls));
+                (urls == null) ? Collections.emptyList() : Arrays.asList(urls));
         }
     }
 
+    /**
+     * Command for removing installed Ignite modules.
+     */
     @CommandLine.Command(
         name = "remove",
         description = "Removes an optional Ignite module or an additional Maven dependency."
     )
     public static class RemoveModuleCommandSpec extends CommandSpec {
 
-        @Inject private ModuleManager moduleManager;
+        /** Module manager. */
+        @Inject
+        private ModuleManager moduleMgr;
 
+        /** Module name command parameter. */
         @CommandLine.Parameters(
             paramLabel = "module",
             description = "Optional Ignite module name or Maven dependency coordinates (groupId:artifactId:version)"
         )
-        public String moduleName;
+        private String moduleName;
 
+        /** {@inheritDoc} */
         @Override public void run() {
             PrintWriter out = spec.commandLine().getOut();
             ColorScheme cs = spec.commandLine().getColorScheme();
 
-            if (moduleManager.removeModule(moduleName))
+            if (moduleMgr.removeModule(moduleName))
                 out.println("Module " + cs.parameterText(moduleName) + " was removed successfully.");
             else
                 out.println("Nothing to do: module " + cs.parameterText(moduleName) + " is not yet added.");
         }
     }
 
+    /**
+     * Shows available and installed Ignite modules.
+     */
     @CommandLine.Command(
         name = "list",
         description = "Shows the list of Ignite modules and Maven dependencies."
     )
     public static class ListModuleCommandSpec extends CommandSpec {
+        /** Module manager. */
+        @Inject
+        private ModuleManager moduleMgr;
 
-        @Inject private ModuleManager moduleManager;
-        @Inject private ModuleStorage moduleStorage;
+        /** Module registry. */
+        @Inject
+        private ModuleRegistry moduleRegistry;
 
+        /** {@inheritDoc} */
         @Override public void run() {
-            var installedModules = new LinkedHashMap<String, ModuleStorage.ModuleDefinition>();
+            var installedModules = new LinkedHashMap<String, ModuleRegistry.ModuleDefinition>();
 
-            for (var m: moduleStorage
+            for (var m: moduleRegistry
                 .listInstalled()
                 .modules
             ) {
@@ -126,7 +151,7 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
             PrintWriter out = spec.commandLine().getOut();
             ColorScheme cs = spec.commandLine().getColorScheme();
 
-            var builtinModules = moduleManager.builtinModules()
+            var builtinModules = moduleMgr.builtinModules()
                 .stream()
                 .filter(m -> !m.name.startsWith(ModuleManager.INTERNAL_MODULE_PREFIX))
                 .map(m -> new StandardModuleView(m, installedModules.containsKey(m.name)))
@@ -134,16 +159,15 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
 
             out.println(cs.text("@|bold Optional Ignite Modules|@"));
 
-            if (builtinModules.isEmpty()) {
+            if (builtinModules.isEmpty())
                 out.println("    Currently, there are no optional Ignite modules available for installation.");
-            }
             else {
                 Table table = new Table(0, cs);
 
                 table.addRow("@|bold Name|@", "@|bold Description|@", "@|bold Installed?|@");
 
                 for (StandardModuleView m : builtinModules) {
-                    table.addRow(m.standardModuleDefinition.name, m.standardModuleDefinition.description,
+                    table.addRow(m.standardModuleDefinition.name, m.standardModuleDefinition.desc,
                         m.installed ? "Yes" : "No");
                 }
 
@@ -154,7 +178,7 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
             out.println(cs.text("@|bold Additional Maven Dependencies|@"));
 
             var externalInstalledModules = installedModules.values().stream()
-                .filter(m -> !(m.type == ModuleStorage.SourceType.Standard))
+                .filter(m -> !(m.type == ModuleRegistry.SourceType.Standard))
                 .collect(Collectors.toList());
 
             if (externalInstalledModules.isEmpty()) {
@@ -166,10 +190,10 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
 
                 table.addRow("@|bold Group ID|@", "@|bold Artifact ID|@", "@|bold Version|@");
 
-                for (ModuleStorage.ModuleDefinition m :externalInstalledModules){
+                for (ModuleRegistry.ModuleDefinition m :externalInstalledModules) {
                     MavenCoordinates mvn = MavenCoordinates.of("mvn:" + m.name);
 
-                    table.addRow(mvn.groupId, mvn.artifactId, mvn.version);
+                    table.addRow(mvn.grpId, mvn.artifactId, mvn.ver);
                 }
 
                 out.println(table);
@@ -178,10 +202,22 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
             }
         }
 
+        /**
+         * Simple tuple-like wrapper for (StandardModuleDefinition, installed) pairs.
+         */
         private static class StandardModuleView {
-            public final StandardModuleDefinition standardModuleDefinition;
-            public final boolean installed;
+            /** Module definition. */
+            private final StandardModuleDefinition standardModuleDefinition;
 
+            /** Installed flag. */
+            private final boolean installed;
+
+            /**
+             * Creates (moduleDefinition, installed) pair.
+             *
+             * @param standardModuleDefinition Module definition.
+             * @param installed true if module already installed, false otherwise.
+             */
             public StandardModuleView(StandardModuleDefinition standardModuleDefinition, boolean installed) {
                 this.standardModuleDefinition = standardModuleDefinition;
                 this.installed = installed;

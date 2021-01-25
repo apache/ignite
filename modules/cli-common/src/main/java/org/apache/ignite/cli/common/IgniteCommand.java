@@ -17,5 +17,12 @@
 
 package org.apache.ignite.cli.common;
 
+/**
+ * Marker interface, which must be implemented by any external Ignite CLI command instance.
+ * This marker will be used by java {@link java.util.ServiceLoader} to find the commands inside your module.
+ *
+ * Note: Also, to be a valid command you must ensure
+ * that your class satisfy one of the criteria from {@link picocli.CommandLine#addSubcommand(Object)}
+ */
 public interface IgniteCommand {
 }

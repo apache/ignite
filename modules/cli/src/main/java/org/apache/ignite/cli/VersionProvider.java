@@ -22,18 +22,28 @@ import javax.inject.Singleton;
 import io.micronaut.core.annotation.Introspected;
 import picocli.CommandLine;
 
+/**
+ * Version provider for Picocli interactions.
+ */
 @Singleton
 @Introspected
 public class VersionProvider implements CommandLine.IVersionProvider {
 
-    private final CliVersionInfo cliVersionInfo;
+    /** Actual Ignite CLI version info. */
+    private final CliVersionInfo cliVerInfo;
 
+    /**
+     * Creates version provider.
+     *
+     * @param cliVerInfo Actual Ignite CLI version container.
+     */
     @Inject
-    public VersionProvider(CliVersionInfo cliVersionInfo) {
-        this.cliVersionInfo = cliVersionInfo;
+    public VersionProvider(CliVersionInfo cliVerInfo) {
+        this.cliVerInfo = cliVerInfo;
     }
 
-    @Override public String[] getVersion() throws Exception {
-        return new String[] { "Apache Ignite CLI ver. " + cliVersionInfo.version};
+    /** {@inheritDoc} */
+    @Override public String[] getVersion() {
+        return new String[] { "Apache Ignite CLI ver. " + cliVerInfo.ver};
     }
 }

@@ -25,10 +25,18 @@ import io.micronaut.core.annotation.Introspected;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.IgniteCliApp;
 
+/**
+ * Interface for resolving different fs paths like home directory.
+ */
 public interface SystemPathResolver {
-
+    /**
+     * @return System specific user home directory.
+     */
     Path osHomeDirectoryPath();
 
+    /**
+     * @return Directory where CLI tool binary placed.
+     */
     Path toolHomeDirectoryPath();
 
     /**
@@ -37,10 +45,12 @@ public interface SystemPathResolver {
     @Singleton
     @Introspected
     class DefaultPathResolver implements SystemPathResolver {
+        /** {@inheritDoc} */
         @Override public Path osHomeDirectoryPath() {
             return Path.of(System.getProperty("user.home"));
         }
 
+        /** {@inheritDoc} */
         @Override public Path toolHomeDirectoryPath() {
             try {
                 var file = new File(IgniteCliApp.class.getProtectionDomain().getCodeSource().getLocation().toURI());

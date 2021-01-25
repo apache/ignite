@@ -31,4 +31,10 @@
 
     <artifactId>ignite-cli-common</artifactId>
     <version>3.0.0-SNAPSHOT</version>
+    <dependencies>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
+    </dependencies>
 </project>
