@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
+import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1164,6 +1165,24 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             fut::get,
             IgniteException.class,
             "Snapshots on an in-memory clusters are not allowed.");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckCommand() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        IgniteInternalFuture<?> fut = snp(ignite).checkSnapshot(SNAPSHOT_NAME);
+
+        System.out.println(">>>>> " + fut.get());
+
+//        assertThrowsAnyCause(log,
+//            fut::get,
+//            IgniteException.class,
+//            "Snapshots on an in-memory clusters are not allowed.");
     }
 
     /**

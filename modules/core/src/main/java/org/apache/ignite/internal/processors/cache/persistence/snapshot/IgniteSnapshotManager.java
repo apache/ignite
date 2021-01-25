@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -791,7 +790,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @return {@code true} if snapshot is OK.
      */
-    public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshot(String name) {
+    public IgniteInternalFuture<Map<ClusterNode, Set<SnapshotMetadata>>> checkSnapshot(String name) {
+        // IdleVerifyResultV2 result
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -806,7 +806,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             .execute(VisorSnapshotMetadataCollectorTask.class,
                 new VisorTaskArgument<>(blts, name, false));
 
-        return new GridFinishedFuture<>(new IgniteException(""));
+        // After snapshot metadata collected need to validate it.
+
+        // Prepare job distribution to check snapshot data.
+
+        return fut;
     }
 
     /**
@@ -828,19 +832,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata prev = null;
 
         for (File smf : smfs) {
-            String smfName = smf.getName();
+            String smfNameEx = smf.getName();
 
-            if (!smfName.endsWith(SNAPSHOT_METAFILE_EXT))
+            if (!smfNameEx.endsWith(SNAPSHOT_METAFILE_EXT))
                 continue;
+
+            String smfName = smfNameEx.substring(0, smfNameEx.length() - SNAPSHOT_METAFILE_EXT.length());
 
             try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
                 SnapshotMetadata curr = marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
 
                 assert U.maskForFileName(curr.consistentId()).equals(smfName) :
-                    "smfName=" + smfName + ", consId=" + curr.consistentId();
+                    "smfName=" + smfName + ", consId=" + U.maskForFileName(curr.consistentId());
                 assert prev == null || sameSnapshotMetadata(prev, curr) : "prev=" + prev + ", curr=" + curr;
 
-                metasMap.put(smfName.substring(0, smfName.length() - SNAPSHOT_METAFILE_EXT.length()), curr);
+                metasMap.put(smfName, curr);
 
                 prev = curr;
             }

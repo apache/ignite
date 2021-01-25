@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -45,12 +46,15 @@ public class SnapshotMetadata implements Serializable {
     private String consId;
 
     /** The list of cache groups ids which were included into snapshot. */
+    @GridToStringInclude
     private List<Integer> grpIds;
 
     /** The set of affected by snapshot baseline nodes. */
+    @GridToStringInclude
     private Set<String> bltNodes;
 
     /** Map of cache group partitions from which snapshot has been taken on local node. */
+    @GridToStringInclude
     private Map<Integer, Set<Integer>> parts = new HashMap<>();
 
     /**
