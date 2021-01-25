@@ -56,7 +56,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 
 /**
  * Distributed process to restore cache group from the snapshot.
@@ -73,9 +72,6 @@ public class SnapshotRestoreCacheGroupProcess {
 
     /** Cache group restore perform phase. */
     private final DistributedProcess<SnapshotRestorePerformRequest, SnapshotRestorePerformResponse> performRestoreProc;
-
-    /** Cache group restore rollback phase. */
-    private final DistributedProcess<SnapshotRestoreRollbackRequest, SnapshotRestoreRollbackResponse> rollbackRestoreProc;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -98,8 +94,6 @@ public class SnapshotRestoreCacheGroupProcess {
             new DistributedProcess<>(ctx, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, this::prepare, this::finishPrepare);
         performRestoreProc =
             new DistributedProcess<>(ctx, RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM, this::perform, this::finishPerform);
-        rollbackRestoreProc =
-            new DistributedProcess<>(ctx, RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK, this::rollback, this::finishRollback);
 
         fut.onDone();
     }
@@ -579,11 +573,7 @@ public class SnapshotRestoreCacheGroupProcess {
         Exception failure = F.first(errs.values());
 
         if (failure != null) {
-            if (U.isLocalNodeCoordinator(ctx.discovery())) {
-                log.info("Starting snapshot restore rollback routine.");
-
-                rollbackRestoreProc.start(reqId, new SnapshotRestoreRollbackRequest(fut0.id(), failure));
-            }
+            fut0.onDone(failure);
 
             return;
         }
@@ -592,42 +582,6 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
 
         ctx.cache().dynamicStartCachesByStoredConf(fut0.context().startConfigs(), true, true, false, null, true);
-    }
-
-    /**
-     * @param req Request to rollback snapshot restore.
-     * @return Result future.
-     */
-    private IgniteInternalFuture<SnapshotRestoreRollbackResponse> rollback(SnapshotRestoreRollbackRequest req) {
-        if (ctx.clientNode())
-            return new GridFinishedFuture<>();
-
-        RestoreSnapshotFuture fut0 = fut;
-
-        if (fut0.isDone() || fut0.interrupted())
-            return new GridFinishedFuture<>();
-
-        OperationContext opCtx = fut0.context();
-
-        if (!req.requestId().equals(opCtx.requestId()))
-            return errResponse("Unknown snapshot restore rollback operation was rejected.");
-
-        for (String grpName : opCtx.groups())
-            rollbackChanges(opCtx, grpName);
-
-        return new GridFinishedFuture<>(req.reason());
-    }
-
-    /**
-     * @param reqId Request ID.
-     * @param res Results.
-     * @param errs Errors.
-     */
-    private void finishRollback(UUID reqId, Map<UUID, SnapshotRestoreRollbackResponse> res, Map<UUID, Exception> errs) {
-        RestoreSnapshotFuture fut0 = fut;
-
-        if (!F.isEmpty(errs))
-            completeFuture(reqId, errs, fut0);
     }
 
     /**

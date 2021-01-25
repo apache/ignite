@@ -455,11 +455,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Cache group restore from snapshot perform process.
          */
-        RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM,
-
-        /**
-         * Cache group restore from snapshot rollback process.
-         */
-        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
+        RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM
     }
 }
