@@ -88,6 +88,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
@@ -363,17 +364,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         IgniteEvents evts = ignite.events();
 
         evts.localListen(e -> {
-            WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
-
-            long idx = archComplEvt.getAbsWalSegmentIdx();
-
-            log.info("Finished archive for segment [" + idx + ", " + archComplEvt.getArchiveFile() + "]: [" + e + ']');
-
             if (waitingForEvt.get())
                 forceArchiveSegment.countDown();
 
@@ -383,8 +378,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         putDummyRecords(ignite, 100);
 
         waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
-
-        log.info("Wait for archiving segment for inactive grid started");
 
         boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + 1001, TimeUnit.MILLISECONDS);
 

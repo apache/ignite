@@ -331,9 +331,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final long walAutoArchiveAfterInactivity;
 
-    /**
-     * Positive (non-0) value indicates WAL must be archived even if not complete<br>
-     */
+    /** Positive (non-0) value indicates WAL must be archived even if not complete. */
     private final long walForceArchiveTimeout;
 
     /**
