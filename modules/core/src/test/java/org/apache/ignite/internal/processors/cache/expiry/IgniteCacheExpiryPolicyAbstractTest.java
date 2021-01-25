@@ -969,6 +969,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-305")
     @Test
     public void testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
@@ -988,9 +989,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         assertEquals(1, jcache(1).get(key));
 
-        checkTtl(key, 62_000L, true);
-
-        assertEquals(1, jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+        assertEquals(1, jcache(2).withExpiryPolicy(
+            new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
 
         checkTtl(key, TTL_FOR_EXPIRE, true);
 
@@ -1005,11 +1005,110 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 60_000L);
 
         IgniteCache<Object, Object> cache =
-            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
+            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(
+                grid(1).localNode(), key) ? jcache(1) : jcache(2);
 
         assertEquals(1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
+
+    }
+
+    /**
+     * Given test should be removed after IGNITE-305 will be fixed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearAccessSimplified() throws Exception {
+        if (cacheMode() != PARTITIONED)
+            return;
+
+        nearCache = true;
+
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, 62_000L));
+
+        startGrids();
+
+        Integer key = primaryKeys(jcache(0), 1, 500_000).get(0);
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+
+        cache0.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        assertEquals(1, jcache(1).get(key));
+
+        // Small delay is added in order to prevent race based on IGNITE-305.
+        Thread.sleep(500);
+
+        assertEquals(1, jcache(2).withExpiryPolicy(
+            new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+
+        checkTtl(key, TTL_FOR_EXPIRE, true);
+
+        waitExpired(key);
+
+        // Test reader update on get.
+
+        key = nearKeys(jcache(0), 1, 600_000).get(0);
+
+        cache0.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        IgniteCache<Object, Object> cache =
+            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(
+                grid(1).localNode(), key) ? jcache(1) : jcache(2);
+
+        assertEquals(1, cache.get(key));
+
+        checkTtl(key, 62_000L, true);
+    }
+
+    /**
+     * Given test should be removed after IGNITE-305 will be fixed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearAccessGetAllTtlSimplified() throws Exception {
+        if (cacheMode() != PARTITIONED)
+            return;
+
+        nearCache = true;
+
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, 62_000L));
+
+        startGrids();
+
+        Map<Integer, Integer> vals = new HashMap<>();
+
+        for (int i = 1; i < 5; i++)
+            vals.put(i, i);
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+
+        cache0.removeAll(vals.keySet());
+
+        cache0.putAll(vals);
+
+        jcache(1).getAll(vals.keySet());
+
+        // Small delay is added in order to prevent race based on IGNITE-305.
+        Thread.sleep(500);
+
+        jcache(2).withExpiryPolicy(
+            new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).getAll(vals.keySet());
+
+        for (Integer key : vals.keySet()) {
+            info("Checking iterator key: " + key);
+
+            checkTtl(key, TTL_FOR_EXPIRE, true);
+        }
+
+        waitExpired(vals.keySet());
     }
 
     /**
@@ -1172,7 +1271,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                         ", backup=" + affinity(cache).isBackup(node, key) + ']');
                 }
 
-                assertNull("Unexpected non-null value for grid " + i, val);
+                assertNull("Unexpected non-null value for grid " + i + " key: " + key, val);
             }
         }
 
@@ -1230,8 +1329,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                         found = true;
 
-                        if (ttl > 0)
-                            assertTrue(e.expireTime() > 0);
+                        if (ttl > 0) {
+                            assertTrue("Unexpected expiration time, key: " + key + " expirationtime: "
+                                + e.expireTime(), e.expireTime() > 0);
+                        }
                         else
                             assertEquals(0, e.expireTime());
                     }

@@ -585,6 +585,18 @@ public class BinaryContext {
     }
 
     /**
+     * Registers binary type locally.
+     *
+     * @param binaryType Binary type to register.
+     * @param failIfUnregistered Whether to fail when not registered.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     */
+    public void registerClassLocally(BinaryType binaryType, boolean failIfUnregistered, byte platformId) {
+        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
+        registerUserClassName(binaryType.typeId(), binaryType.typeName(), failIfUnregistered, true, platformId);
+    }
+
+    /**
      * @param cls Class.
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
@@ -804,7 +816,7 @@ public class BinaryContext {
 
         int typeId = desc.typeId();
 
-        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg);
+        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg, JAVA_ID);
 
         if (registered) {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
@@ -1174,17 +1186,24 @@ public class BinaryContext {
      * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@link
      * org.apache.ignite.internal.processors.marshaller.MappingExchangeResult} future instead of synchronously awaiting
      * for its completion.
+     * @param onlyLocReg Whether to register only on the current node.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
      * @return {@code True} if the mapping was registered successfully.
      */
-    public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered, boolean onlyLocReg) {
+    public boolean registerUserClassName(
+            int typeId,
+            String clsName,
+            boolean failIfUnregistered,
+            boolean onlyLocReg,
+            byte platformId) {
         IgniteCheckedException e = null;
 
         boolean res = false;
 
         try {
             res = onlyLocReg
-                ? marshCtx.registerClassNameLocally(JAVA_ID, typeId, clsName)
-                : marshCtx.registerClassName(JAVA_ID, typeId, clsName, failIfUnregistered);
+                ? marshCtx.registerClassNameLocally(platformId, typeId, clsName)
+                : marshCtx.registerClassName(platformId, typeId, clsName, failIfUnregistered);
         }
         catch (DuplicateTypeIdException dupEx) {
             // Ignore if trying to register mapped type name of the already registered class name and vise versa

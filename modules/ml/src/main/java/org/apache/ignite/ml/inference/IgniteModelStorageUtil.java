@@ -42,7 +42,14 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Utils class that helps to operate with model storage and Ignite models.
  */
-public class IgniteModelStorageUtil {
+public final class IgniteModelStorageUtil {
+    /**
+     *
+     */
+    private IgniteModelStorageUtil(){
+        // No-op.
+    }
+
     /** Folder to be used to store Ignite models. */
     private static final String IGNITE_MDL_FOLDER = "/ignite_models";
 

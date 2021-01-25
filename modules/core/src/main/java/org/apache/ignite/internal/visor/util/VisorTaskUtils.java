@@ -1107,7 +1107,7 @@ public class VisorTaskUtils {
      *     IPv4, private IPv4, IPv4 local host, IPv6.
      *     Lower addresses first.
      */
-    private static class SortableAddress implements Comparable<SortableAddress> {
+    public static class SortableAddress implements Comparable<SortableAddress> {
         /** */
         private int type;
 
@@ -1122,7 +1122,7 @@ public class VisorTaskUtils {
          *
          * @param addr Address as string.
          */
-        private SortableAddress(String addr) {
+        public SortableAddress(String addr) {
             this.addr = addr;
 
             if (addr.indexOf(':') > 0)

@@ -27,7 +27,8 @@ find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread sy
 
 find_package(ODBC REQUIRED)
 
-include_directories(include ../odbc/include ../network/include ${ODBC_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${ODBC_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+include_directories(include ../odbc/include ../network/include)
 
 set(SOURCES src/teamcity/teamcity_boost.cpp
         src/teamcity/teamcity_messages.cpp
@@ -65,6 +66,8 @@ set(SOURCES src/teamcity/teamcity_boost.cpp
         src/authentication_test.cpp
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
+        src/cursor_binding_test.cpp
+        src/test_server.cpp
         ../odbc/src/log.cpp
         ../odbc/src/cursor.cpp
         ../odbc/src/diagnostic/diagnostic_record.cpp

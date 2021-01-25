@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -163,11 +164,14 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             } else
                 assertTrue(F.isEmpty(matcher.group("total")));
 
-            regions.add(matcher.group("name").trim());
+            String regName = matcher.group("name").trim();
+
+            regions.add(regName);
         }
 
         Set<String> expRegions = grid(0).context().cache().context().database().dataRegions().stream()
             .map(v -> v.config().getName().trim())
+            .filter(regName -> !DataStructuresProcessor.VOLATILE_DATA_REGION_NAME.equals(regName))
             .collect(Collectors.toSet());
 
         assertFalse("No data regions in the log.", regions.isEmpty());

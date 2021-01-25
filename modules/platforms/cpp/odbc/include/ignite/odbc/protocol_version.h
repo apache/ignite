@@ -49,6 +49,9 @@ namespace ignite
             /** Version 2.7.0: added fields precision and scale. */
             static const ProtocolVersion VERSION_2_7_0;
 
+            /** Version 2.8.0: added column nullability info. */
+            static const ProtocolVersion VERSION_2_8_0;
+
             typedef std::set<ProtocolVersion> VersionSet;
 
             /**

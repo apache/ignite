@@ -101,10 +101,22 @@ namespace ignite
                      * Get active transaction for the current thread.
                      *
                      * @return Active transaction implementation for current thread
-                     * or null pointer if there is no active transaction for
-                     * the thread.
+                     * or null pointer if there is no active transaction for the thread.
                      */
                     SP_TransactionImpl GetCurrent();
+
+                    /**
+                     * Set active transaction for the current thread.
+                     *
+                     * @param impl Active transaction implementation for current thread
+                     * or null pointer if there is no active transaction for the thread.
+                     */
+                    void SetCurrent(const SP_TransactionImpl& impl);
+
+                    /**
+                     * Reset active transaction for the current thread.
+                     */
+                    void ResetCurrent();
 
                     /**
                      * Synchronously send message and receive response.
@@ -115,9 +127,13 @@ namespace ignite
                      */
                     template<typename ReqT, typename RspT>
                     void SendTxMessage(const ReqT& req, RspT& rsp);
+
                 private:
                     /** Data router. */
                     SP_DataRouter router;
+
+                    /** Thread local instance of the transaction. */
+                    ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> threadTx;
 
                     IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl);
                 };

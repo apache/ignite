@@ -153,7 +153,7 @@ http://node1:8080/ignite?cmd=size&cacheName=cache1
 == Streaming data with Ignite Kafka Streamer Module
 
 If you are using Maven to manage dependencies of your project, first of all you will have to add Kafka Streamer module
-dependency like this (replace `${ignite.version}` with actual Ignite version you are interested in):
+dependency like this (replace `${ignite-kafka-ext.version}` with actual Ignite Kafka Extension version you are interested in):
 
 [tabs]
 --
@@ -169,8 +169,8 @@ tab:pom.xml[]
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-kafka</artifactId>
-            <version>${ignite.version}</version>
+            <artifactId>ignite-kafka-ext</artifactId>
+            <version>${ignite-kafka-ext.version}</version>
         </dependency>
         ...
     </dependencies>

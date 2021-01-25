@@ -82,3 +82,72 @@ include::code-snippets/dotnet/MemoryArchitecture.cs[tag=mem,indent=0]
 tab:C++[unsupported]
 --
 
+== Cache Warm-Up Strategy
+
+The cache warm-up strategy provides an ability to load data from the disk to the node before it is joined to the cluster.
+This prevents performance loss when the node is restarted.
+
+[NOTE]
+====
+The cache warm-up strategy is applicable only to the data regions. It can be configured both for all regions (by default) or for each region separately.
+====
+
+Presently, Ignite warm-up strategy implies loading data into the region, starting with indexes, until it runs out of free space.
+
+To warm up all data regions, pass the configuration parameter `LoadAllWarmUpStrategy` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
+
+[source, java]
+----
+setDefaultWarmUpConfiguration(loadAllWarmUpStrategy)
+----
+
+To warm up a specific data region, pass the configuration parameter `LoadAllWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+
+[source, java]
+----
+setWarmUpConfiguration(loadAllWarmUpStrategy)
+----
+
+To stop warming up all data regions, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
+
+[source, java]
+----
+setDefaultWarmUpConfiguration(noOpWarmUpStrategy)
+----
+
+To stop warming up a specific data region, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+
+[source, java]
+----
+setWarmUpConfiguration(noOpWarmUpStrategy)
+----
+
+You can also stop the cache warming up process by using `control.sh` and JMX.
+
+To stop the warming up using control.sh:
+
+[tabs]
+--
+tab:Linux[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --warm-up --stop --yes
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --warm-up --stop --yes
+----
+--
+
+To stop the warming up using JMX, use the method below:
+
+[source, java]
+----
+org.apache.ignite.mxbean.WarmUpMXBean#stopWarmUp
+----
+
+
+
+
+

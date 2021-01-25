@@ -34,13 +34,13 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Checks that node can be started without operations with undefined IGNITE_HOME.
  * <p>
- * Notes:
- * 1. The test is intentionally made  independent from {@link GridCommonAbstractTest} stuff.
- * 2. Do not replace native Java asserts with JUnit ones - test won't fall on TeamCity.
+ * The test is intentionally made  independent from {@link GridCommonAbstractTest} stuff.
  */
 public class GridStartupWithUndefinedIgniteHomeSelfTest {
     /** */
@@ -67,13 +67,13 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest {
         // it will initialize cached value which is forbidden to override.
         String igniteHome = IgniteSystemProperties.getString(IGNITE_HOME);
 
-        assert igniteHome != null;
+        assertNotNull(igniteHome);
 
         U.setIgniteHome(null);
 
         String igniteHome0 = U.getIgniteHome();
 
-        assert igniteHome0 == null;
+        assertNull(igniteHome0);
 
         IgniteLogger log = new JavaLogger();
 
@@ -93,11 +93,11 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest {
             cfg.setConnectorConfiguration(null);
 
             try (Ignite ignite = G.start(cfg)) {
-                assert ignite != null;
+                assertNotNull(ignite);
 
                 igniteHome0 = U.getIgniteHome();
 
-                assert igniteHome0 == null;
+                assertNull(igniteHome0);
 
                 X.println("Stopping grid " + ignite.cluster().localNode().id());
             }

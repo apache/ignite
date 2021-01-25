@@ -34,8 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -612,14 +610,14 @@ public class FunctionalTest {
             );
             cache.put(0, "value0");
 
-            Future<?> fut;
+            IgniteInternalFuture<?> fut;
 
             try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
                 assertEquals("value0", cache.get(0));
 
                 CyclicBarrier barrier = new CyclicBarrier(2);
 
-                fut = ForkJoinPool.commonPool().submit(() -> {
+                fut = GridTestUtils.runAsync(() -> {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
                         cache.put(0, "value2");
                         tx2.commit();
@@ -663,7 +661,7 @@ public class FunctionalTest {
             try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                 assertEquals("value0", cache.get(0));
 
-                Future<?> fut = ForkJoinPool.commonPool().submit(() -> {
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                         cache.put(0, "value2");
                         tx2.commit();
@@ -708,15 +706,13 @@ public class FunctionalTest {
 
                 cache.put(0, "value1");
 
-                Future<?> f = ForkJoinPool.commonPool().submit(() -> {
+                GridTestUtils.runAsync(() -> {
                     assertEquals("value0", cache.get(0));
 
                     cache.put(0, "value2");
 
                     assertEquals("value2", cache.get(0));
-                });
-
-                f.get();
+                }).get();
 
                 tx.commit();
             }
@@ -962,7 +958,7 @@ public class FunctionalTest {
 
                 cache.put(0, "value18");
 
-                Future<?> fut = ForkJoinPool.commonPool().submit(() -> {
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
                     try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                         cache.put(1, "value19");
 
@@ -1002,7 +998,7 @@ public class FunctionalTest {
             try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 cache.put(0, "value20");
 
-                ForkJoinPool.commonPool().submit(() -> {
+                GridTestUtils.runAsync(() -> {
                     // Implicit transaction started here.
                     cache.put(1, "value21");
 
@@ -1041,7 +1037,7 @@ public class FunctionalTest {
                 // Start implicit transaction after explicit transaction has been closed by another thread.
                 cache.put(0, "value22");
 
-                ForkJoinPool.commonPool().submit(() -> assertEquals("value22", cache.get(0))).get();
+                GridTestUtils.runAsync(() -> assertEquals("value22", cache.get(0))).get();
 
                 // New explicit transaction can be started after current transaction has been closed by another thread.
                 try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -1092,7 +1088,7 @@ public class FunctionalTest {
             // Test that implicit transaction started after commit of previous one without closing.
             cache.put(0, "value24");
 
-            ForkJoinPool.commonPool().submit(() -> assertEquals("value24", cache.get(0))).get();
+            GridTestUtils.runAsync(() -> assertEquals("value24", cache.get(0))).get();
         }
     }
 

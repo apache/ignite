@@ -115,7 +115,7 @@ While streaming mode allows you to load data much faster than other data loading
 2. Due to streaming mode's asynchronous nature, you cannot know update counts for every statement executed; all JDBC/ODBC commands returning update counts will return 0.
 
 === Example
-As an example, you can use the sample world.sql file that is shipped with the latest Ignite distribution. It can be found in the `{IGNITE_HOME}/examples/sql/` directory. You can use the `run` command from link:sqlline[SQLLine, window=_blank], as shown below:
+As an example, you can use the sample world.sql file that is shipped with the latest Ignite distribution. It can be found in the `{IGNITE_HOME}/examples/sql/` directory. You can use the `run` command from tools/sqlline[SQLLine, window=_blank], as shown below:
 
 [source,shell]
 ----

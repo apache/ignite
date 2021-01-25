@@ -201,7 +201,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (lastErr != null)
                     throw new IgniteCheckedException("Failed to bind to any [host:port] from the range [" +
                         "host=" + host + ", portFrom=" + cliConnCfg.getPort() + ", portTo=" + portTo +
-                        ", lastErr=" + lastErr + ']');
+                        ", lastErr=" + lastErr + ']', lastErr);
 
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
