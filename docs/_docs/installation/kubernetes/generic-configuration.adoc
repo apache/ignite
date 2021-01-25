@@ -146,7 +146,7 @@ include::{configDir}/stateful/node-configuration.xml[tag=config-block]
 --
 
 
-The `namespace` and `serviceName` properties of the IP finder must be the same as specified in the <<Creating Service,service configuration>>.
+The `namespace` and `serviceName` properties of the IP finder configuration must be the same as specified in the <<Creating Service,service configuration>>.
 Add other properties as required for your use case.
 
 To create the ConfigMap, run the following command in the directory with the `node-configuration.xml` file.
@@ -386,6 +386,18 @@ Note that we use the external IP address (LoadBalancer Ingress) of the service.
 [source, java]
 ----
 include::{javaFile}[tags=connectThinClient, indent=0]
+----
+
+== Partition Awareness
+
+include::../../includes/partition-awareness.adoc[]
+
+To enable the partition awareness feature within scaling Kubernetes enviroment, one should start a client within the cluster and configure it with `KubernetesConnectionConfiguration`.
+In this case, a client can connect to every pod in a cluster.
+
+[source, java]
+----
+include::{javaFile}[tags=connectThinClientWithKubernetesConfiguration, indent=0]
 ----
 
 === Connecting to REST API
