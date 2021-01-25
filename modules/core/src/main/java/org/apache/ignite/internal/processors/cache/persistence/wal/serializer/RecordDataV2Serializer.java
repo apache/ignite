@@ -261,6 +261,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case MVCC_DATA_RECORD:
             case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());

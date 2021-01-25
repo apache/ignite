@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class DataRecord extends TimeStampRecord {
     /** */
     @GridToStringInclude
-    private List<? extends DataEntry> writeEntries;
+    private List<DataEntry> writeEntries;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
@@ -80,7 +80,7 @@ public class DataRecord extends TimeStampRecord {
      * @param writeEntries Write entries.
      * @return {@code this} for chaining.
      */
-    public DataRecord setWriteEntries(List<? extends DataEntry> writeEntries) {
+    public DataRecord setWriteEntries(List<DataEntry> writeEntries) {
         this.writeEntries = writeEntries;
 
         return this;
@@ -89,7 +89,7 @@ public class DataRecord extends TimeStampRecord {
     /**
      * @return Collection of write entries.
      */
-    public List<? extends DataEntry> writeEntries() {
+    public List<DataEntry> writeEntries() {
         return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
     }
 

@@ -19,7 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntryV2;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -73,7 +73,7 @@ public class TestStorageUtils {
 
             // Create data entry
 
-            DataEntryV2 dataEntry = new DataEntryV2(
+            DataEntry dataEntry = new DataEntry(
                 ctx.cacheId(),
                 keyCacheObj,
                 new CacheObjectImpl(valToPut, null),

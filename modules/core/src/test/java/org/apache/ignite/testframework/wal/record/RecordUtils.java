@@ -111,7 +111,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_REMOVE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_SET_FREE_LIST_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
@@ -169,7 +169,7 @@ public class RecordUtils {
         new EnumMap<WALRecord.RecordType, Supplier<WALRecord>>(WALRecord.RecordType.class) {{
             put(TX_RECORD, RecordUtils::buildTxRecord);
             put(PAGE_RECORD, RecordUtils::buildPageSnapshot);
-            put(DATA_RECORD, RecordUtils::buildDataRecord);
+            put(DATA_RECORD_V2, RecordUtils::buildDataRecord);
             put(CHECKPOINT_RECORD, RecordUtils::buildCheckpointRecord);
             put(HEADER_RECORD, RecordUtils::buildHeaderRecord);
             put(INIT_NEW_PAGE_RECORD, RecordUtils::buildInitNewPageRecord);
