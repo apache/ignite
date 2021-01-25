@@ -48,7 +48,6 @@ class SnapshotTest(IgniteTest):
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
-
         )
 
         service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
@@ -60,7 +59,7 @@ class SnapshotTest(IgniteTest):
         client_config = IgniteConfiguration(
             client_mode=True,
             version=IgniteVersion(ignite_version),
-            discovery_spi=from_ignite_cluster(service),
+            discovery_spi=from_ignite_cluster(service)
         )
 
         loader = IgniteApplicationService(
@@ -72,14 +71,13 @@ class SnapshotTest(IgniteTest):
                 "cacheName": self.CACHE_NAME,
                 "interval": 500_000,
                 "dataSizeKB": 1
-            },
+            }
         )
 
         loader.run()
 
         control_utility.validate_indexes()
         control_utility.idle_verify()
-
         node = service.nodes[0]
 
         dump_1 = control_utility.idle_verify_dump(node)

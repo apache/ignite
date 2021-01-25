@@ -168,23 +168,6 @@ class ControlUtility:
 
         assert "Command [SNAPSHOT] finished with code: 0" in res
 
-        self.await_snapshot(snapshot_name, timeout_sec)
-
-    def snapshot_init(self, snapshot_name: str):
-        """
-        Initialize the snapshot operation.
-        :param snapshot_name: Name of Snapshot.
-        """
-        res = self.__run(f"--snapshot create {snapshot_name}")
-
-        assert "Command [SNAPSHOT] finished with code: 0" in res
-
-    def await_snapshot(self, snapshot_name: str, timeout_sec=60):
-        """
-        Waiting for the snapshot to complete.
-        :param snapshot_name: Name of Snapshot.
-        :param timeout_sec: Timeout to await snapshot to complete.
-        """
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
