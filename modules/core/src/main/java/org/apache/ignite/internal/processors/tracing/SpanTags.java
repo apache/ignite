@@ -111,7 +111,7 @@ public class SpanTags {
     /** Whether parsing of the SQL query was skipped due to the cached result. */
     public static final String SQL_PARSER_CACHE_HIT = "sql.parser.cache.hit";
 
-    /** Text of SQL query. */
+    /** Query identifier. */
     public static final String SQL_QRY_ID = "sql.query.id";
 
     /** */

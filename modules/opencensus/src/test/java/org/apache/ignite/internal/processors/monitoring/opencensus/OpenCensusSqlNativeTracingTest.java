@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableMap;
 import io.opencensus.trace.SpanId;
 import io.opencensus.trace.Tracing;
@@ -287,10 +286,10 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             "SELECT * FROM " + prsnTable + " AS p JOIN " + orgTable + " AS o ON o.orgId = p.prsnId",
             TEST_SCHEMA, false, true, true);
 
-        checkChildSpan(SQL_QRY_PARSE, rootSpan);
+        assertTrue(Long.parseLong(getAttribute(rootSpan, SQL_QRY_ID)) > 0);
 
-        SpanId curOpenSpan = checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
-        assertTrue(Long.parseLong(getAttribute(curOpenSpan, SQL_QRY_ID)) > 0);
+        checkChildSpan(SQL_QRY_PARSE, rootSpan);
+        checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
 
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
 
@@ -551,8 +550,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     protected void checkBasicSelectQuerySpanTree(SpanId rootSpan, int expRows) {
         int fetchedRows = 0;
 
-        SpanId curOpenSpan = checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
-        assertTrue(Long.parseLong(getAttribute(curOpenSpan, SQL_QRY_ID)) > 0);
+        assertTrue(Long.parseLong(getAttribute(rootSpan, SQL_QRY_ID)) > 0);
 
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
 
@@ -712,7 +710,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 .put(tag(NODE, NAME), reducer().name())
                 .put(SQL_QRY_TEXT, sql)
                 .put(SQL_SCHEMA, schema)
-                .build()
+                .build(),
+            CheckAttributes.CONTAINS
         ).get(0);
     }
 

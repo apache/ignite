@@ -76,11 +76,10 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
 
         SpanId rootSpan = executeAndCheckRootSpan("SELECT orgVal FROM " + orgTable, TEST_SCHEMA, false, false, true);
 
+        assertTrue(Long.parseLong(getAttribute(rootSpan, SQL_QRY_ID)) > 0);
+
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
-
-        SpanId curOpenSpanId = checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
-        assertTrue(Long.parseLong(getAttribute(curOpenSpanId, SQL_QRY_ID)) > 0);
-
+        checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
         checkChildSpan(SQL_ITER_OPEN, rootSpan);
 
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
