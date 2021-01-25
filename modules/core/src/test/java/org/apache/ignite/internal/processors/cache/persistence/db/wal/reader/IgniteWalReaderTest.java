@@ -964,7 +964,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             0,
             null,
             dataRecord -> {
-                final List<? extends DataEntry> entries = dataRecord.writeEntries();
+                final List<DataEntry> entries = dataRecord.writeEntries();
 
                 sb.append("{");
 

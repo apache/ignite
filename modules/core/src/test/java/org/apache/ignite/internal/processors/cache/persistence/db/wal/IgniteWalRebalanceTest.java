@@ -764,7 +764,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     0,
                     0,
                     0,
-                    true
+                    false
                 )));
 
                 File walDir = U.field(walMgr, "walWorkDir");

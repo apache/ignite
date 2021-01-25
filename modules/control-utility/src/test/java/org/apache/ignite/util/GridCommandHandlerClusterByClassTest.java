@@ -1524,7 +1524,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 0L,
                 partId,
                 updateCntr,
-                true
+                false
             );
 
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.shared().database();

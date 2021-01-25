@@ -2076,33 +2076,34 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(
-                    cacheId,
-                    key,
-                    val,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr,
-                    true
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                false
             );
         }
         else
             return new LazyDataEntry(
-                    cctx,
-                    cacheId,
-                    keyType,
-                    keyBytes,
-                    valType,
-                    valBytes,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr,
-                    true);
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                false
+            );
     }
 
     /**
@@ -2238,7 +2239,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8;
+            /*part cnt*/8 +
+            /*primary*/1;
     }
 
     /**
@@ -2271,7 +2273,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0, true);
+            super(0, null, null, READ, null, null, 0, 0, 0, false);
         }
     }
 }
