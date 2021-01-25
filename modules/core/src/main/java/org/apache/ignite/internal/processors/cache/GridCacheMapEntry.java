@@ -1349,7 +1349,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer, topVer);
+                logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
 
             update(null, 0, 0, newVer, true);
 
@@ -4393,11 +4393,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param expireTime Expire time (or 0 if not applicable).     *
      * @param updCntr Update counter.
      * @param mvccVer Mvcc version.
-     * @param topVer Topology version.
      * @throws IgniteCheckedException In case of log failure.
      */
     protected WALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
-        MvccSnapshot mvccVer, AffinityTopologyVersion topVer)
+        MvccSnapshot mvccVer)
         throws IgniteCheckedException {
         assert mvccVer != null;
         assert cctx.transactionalSnapshot();
@@ -5311,7 +5310,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                    entry.logMvccUpdate(tx, null, 0, 0, mvccVer, topVer);
+                    entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
 
@@ -6882,7 +6881,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     info.newMvccTxState());
 
                 if (walEnabled)
-                    walEntries.add(toMvccDataEntry(info, tx, topVer));
+                    walEntries.add(toMvccDataEntry(info, tx));
 
                 if (oldVal == null
                     && MvccUtils.compare(info.mvccVersion(),

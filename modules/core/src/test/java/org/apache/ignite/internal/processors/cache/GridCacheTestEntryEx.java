@@ -91,7 +91,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entries) {
+    @Override public boolean mvccPreloadEntry(
+        List<GridCacheMvccEntryInfo> entries) {
         assert false;
 
         return false;
