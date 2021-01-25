@@ -541,7 +541,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return true;
      * } else {
@@ -560,7 +560,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return true;
      * } else {
@@ -580,7 +580,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return null;
      * } else {
@@ -600,7 +600,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return null;
      * } else {
@@ -633,27 +633,27 @@ public interface ClientCache<K, V> {
      * Clears entry with specified key from the cache.
      * In contrast to {@link #remove(Object)}}, this method does not notify event listeners and cache writers.
      */
-    public void clear(K key);
+    public void clear(K key) throws ClientException;
 
     /**
      * Clears entry with specified key from the cache asynchronously.
      * In contrast to {@link #removeAsync(Object)}}, this method does not notify event listeners and cache writers.
      * @return Future representing pending completion of the operation.
      */
-    public IgniteClientFuture<Void> clearAsync(K key);
+    public IgniteClientFuture<Void> clearAsync(K key) throws ClientException;
 
     /**
      * Clears entries with specified keys from the cache.
      * In contrast to {@link #removeAll(Set)}, this method does not notify event listeners and cache writers.
      */
-    public void clearAll(Set<? extends K> keys);
+    public void clearAll(Set<? extends K> keys) throws ClientException;
 
     /**
      * Clears entries with specified keys from the cache asynchronously.
      * In contrast to {@link #removeAllAsync(Set)}, this method does not notify event listeners and cache writers.
      * @return Future representing pending completion of the operation.
      */
-    public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys);
+    public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException;
 
     /**
      * Returns cache that will operate with binary objects.

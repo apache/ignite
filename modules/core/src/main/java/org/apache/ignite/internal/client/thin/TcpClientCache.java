@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.cache.Cache;
-import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -42,7 +41,6 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
-import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -617,7 +615,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClientFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException, TransactionException {
+    @Override public IgniteClientFuture<V> getAndPutIfAbsentAsync(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -643,7 +641,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(K key) {
+    @Override public void clear(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -656,7 +654,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClientFuture<Void> clearAsync(K key) {
+    @Override public IgniteClientFuture<Void> clearAsync(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -669,7 +667,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll(Set<? extends K> keys) {
+    @Override public void clearAll(Set<? extends K> keys) throws ClientException {
         if (keys == null)
             throw new NullPointerException("keys");
 
@@ -683,7 +681,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) {
+    @Override public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException {
         if (keys == null)
             throw new NullPointerException("keys");
 
