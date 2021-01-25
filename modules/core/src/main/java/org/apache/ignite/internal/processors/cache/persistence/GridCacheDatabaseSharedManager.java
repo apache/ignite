@@ -1471,10 +1471,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
 
-        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrps.stream()
+        List<Integer> stoppedGrpIds = stoppedGrps.stream()
             .filter(IgniteBiTuple::get2)
             .map(t -> t.get1().groupId())
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+
+        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrpIds);
+
+        initiallyLocalWalDisabledGrps.removeAll(stoppedGrpIds);
+        initiallyGlobalWalDisabledGrps.removeAll(stoppedGrpIds);
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
