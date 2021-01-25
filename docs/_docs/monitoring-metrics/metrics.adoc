@@ -24,8 +24,8 @@ You can also access them programmatically.
 
 On this page, we've collected the most useful metrics and grouped them into various common categories based on the monitoring task.
 
-[NOTE]
-====
+== Enabling JMX for Ignite
+
 By default, the JMX automatic configuration is disabled.
 To enable it, configure the following environment variables:
 
@@ -33,13 +33,13 @@ To enable it, configure the following environment variables:
 * For `ignite.sh`, configure the `JVM_OPTS` variable
 
 For example:
+
 [source,shell]
 ----
 JVM_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 ----
 
-====
 
 // link:monitoring-metrics/configuring-metrics[Configuring Metrics]
 
