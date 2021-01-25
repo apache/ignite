@@ -635,58 +635,6 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return fut;
     }
 
-    /** @throws Exception If fails. */
-    @Test
-    // todo
-    @Ignore
-    public void testActivateFromClientWhenRestoring() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder, dfltCacheCfg);
-
-        IgniteEx client = startClientGrid("client");
-
-        client.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        putKeys(client.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE, CACHE_KEYS_RANGE);
-
-        client.cluster().state(ClusterState.INACTIVE);
-
-        // todo block distribprocess and try to activate cluster
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
-
-        spi.blockMessages((node, msg) -> {
-            if (msg instanceof SingleNodeMessage)
-                return true;
-
-            System.out.println(">xxx> " + node.id());
-
-            return false;
-        });
-
-        IgniteFuture<Void> fut =
-            grid(1).snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
-
-        spi.waitForBlocked();
-
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> {
-                client.cluster().state(ClusterState.ACTIVE);
-
-                return null;
-            },
-            IllegalStateException.class,
-            "The cluster cannot be activated until the snapshot restore operation is complete."
-        );
-
-        spi.stopBlock();
-
-        fut.get(TIMEOUT);
-
-        client.cluster().state(ClusterState.ACTIVE);
-
-        checkCacheKeys(client.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
-    }
-
     private void checkCacheKeys(IgniteCache<Object, Object> testCache, int keysCnt) {
         assertEquals(keysCnt, testCache.size());
 
