@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.suites;
+package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBufferTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFactoryFilterRandomOperationTest;

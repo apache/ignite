@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
@@ -28,10 +28,12 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
+ * Regular Ignite tests executed with {@link ZookeeperDiscoverySpi}.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -45,7 +47,12 @@ import org.junit.runners.Suite;
     GridCachePartitionedMultiJvmFullApiSelfTest.class,
     GridP2PContinuousDeploymentSelfTest.class,
     CacheContinuousQueryOperationP2PTest.class,
-    CacheContinuousQueryLongP2PTest.class,
+    CacheContinuousQueryLongP2PTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite3 {
+    /** */
+    @BeforeClass
+    public static void init() throws Exception {
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
+    }
 }

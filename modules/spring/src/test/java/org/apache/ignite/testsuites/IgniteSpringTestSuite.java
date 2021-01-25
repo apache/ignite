@@ -34,12 +34,14 @@ import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
 import org.apache.ignite.internal.IgniteSpringBeanTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
 import org.apache.ignite.internal.processors.resource.GridTransformSpringInjectionSelfTest;
 import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
 import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
+import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
 import org.apache.ignite.transactions.spring.IgniteClientSpringTransactionManagerTest;
@@ -95,6 +97,10 @@ import org.junit.runners.Suite;
     SpringEncryptedCacheRestartClientTest.class,
 
     GridSpringCacheManagerMultiJvmSelfTest.class,
+
+    GridCommandLineLoaderTest.class,
+
+    GridCacheDhtMultiBackupTest.class,
 
     ClusterStateXmlPropertiesTest.class
 })

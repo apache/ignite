@@ -151,6 +151,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     CacheMvccContinuousWithTransformerReplicatedSelfTest.class,
 
     // Transaction recovery.
+    CacheMvccTxRecoveryTest.class,
+
+    IgniteCacheMvccSqlTestSuite.MvccPartitionedPrimaryNodeFailureRecoveryTest.class,
+    IgniteCacheMvccSqlTestSuite.MvccPartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class,
+    IgniteCacheMvccSqlTestSuite.MvccColocatedTxPessimisticOriginatingNodeFailureRecoveryTest.class,
+    IgniteCacheMvccSqlTestSuite.MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class,
     CacheMvccTxRecoveryTest.class
 })
 public class IgniteCacheMvccSqlTestSuite {
