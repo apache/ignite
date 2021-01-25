@@ -42,9 +42,7 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         int dataSize = jNode.get("dataSizeKB").asInt() * KB;
 
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        long start = rnd.nextLong();
+        long start = ThreadLocalRandom.current().nextLong();
 
         markInitialized();
 
@@ -73,5 +71,4 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         markFinished();
     }
-
 }
