@@ -712,10 +712,19 @@ The commands below allow to get a specific information on indexes and to trigger
 
 To get the list of all indexes that match specified filters, use the command:
 
-[source, shell]
+[tabs]
+--
+tab:Unix[]
+[source,shell]
 ----
---cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+control.sh --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
 ----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+----
+--
 
 Parameters:
 
@@ -730,17 +739,37 @@ Parameters:
 
 To get the list of all caches that have index rebuild in progress, use the command below:
 
-[source, shell]
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
 ----
---cache indexes_rebuild_status [--node-id nodeId]
+control.sh --cache indexes_rebuild_status [--node-id nodeId]
 ----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_rebuild_status [--node-id nodeId]
+----
+--
+
 
 To trigger the rebuild process of all indexes for the specified caches or the cache groups, use the command:
 
-[source, shell]
+[tabs]
+--
+tab:Unix[]
+[source,shell]
 ----
---cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
 ----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+----
+--
 
 Parameters:
 
