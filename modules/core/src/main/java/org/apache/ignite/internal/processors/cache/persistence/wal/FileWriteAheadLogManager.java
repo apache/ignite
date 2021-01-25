@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -132,7 +131,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
@@ -1530,25 +1529,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
         }
 
-        FileDescriptor[] walWorkFiles = scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER));
+        FileDescriptor[] walFiles = scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER));
 
-        if (F.isEmpty(walWorkFiles))
+        if (F.isEmpty(walFiles))
             createFile(new File(walWorkDir, fileName(0)));
 
         if (isArchiverEnabled()) {
-            if (!F.isEmpty(walWorkFiles) &&
-                (walWorkFiles.length > dsCfg.getWalSegments() || walWorkFiles[0].idx() != 0)) {
-                List<FileDescriptor> toMove = new ArrayList<>(F.asList(walWorkFiles));
-                FileDescriptor toRen = toMove.remove(toMove.size() - 1);
+            List<FileDescriptor> toMove = new ArrayList<>();
+            @Nullable FileDescriptor toRen = null;
 
-                toMove.addAll(F.asList(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER))));
+            if (!F.isEmpty(walFiles) && (walFiles.length > dsCfg.getWalSegments() || walFiles[0].idx() != 0)) {
+                toMove.addAll(F.asList(walFiles));
 
-                log.warning("Incorrect content of WAL working directory for archiving, to correct this, " +
-                    "segments will be moved to WAL archive directory and last segment will be renamed " +
-                    "and formatted to correct size, this may take a long time [toMove=[" +
-                    toMove.stream().map(fd -> fd.file().getName()).collect(joining(",")) +
-                    "], toRename=[" + toRen.file().getName() + " -> " +
-                    FileDescriptor.fileName(toRen.idx() % dsCfg.getWalSegments()) + ']');
+                FileDescriptor rmv = toMove.remove(toMove.size() - 1);
+                toRen = rmv.idx() != rmv.idx() % dsCfg.getWalSegments() ? rmv : null;
+            }
+
+            toMove.addAll(F.asList(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER))));
+
+            if (!toMove.isEmpty() || toRen != null) {
+                log.warning("Invalid WAL working directory contents found, for archiving to work, will need " +
+                    (toMove.isEmpty() ? "" : "move WAL segments to archive " + (toRen == null ? "" : "and ")) +
+                    (toRen == null ? "" : "rename last WAL segment") + ", this may take some time [" +
+                    (toMove.isEmpty() ? "" : "toMove=" + F.viewReadOnly(toMove, fd -> fd.file().getName())) +
+                    (toRen == null ? "" : (toMove.isEmpty() ? "" : ", ") + "toRename=[" + toRen.file().getName() +
+                        " -> " + fileName(toRen.idx() % dsCfg.getWalSegments()) + ']') + ']');
 
                 for (FileDescriptor fd : toMove) {
                     File tmpDst = new File(walArchiveDir, fd.file().getName() + TMP_SUFFIX);
@@ -1572,15 +1577,47 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
 
-                if (toRen.idx() != toRen.idx() % dsCfg.getWalSegments() ||
-                    (toRen.file().length() < dsCfg.getWalSegmentSize() && (mode == WALMode.FSYNC || mmap))) {
-                    File tmpDst = new File(walWorkDir, fileName(toRen.idx() % dsCfg.getWalSegments()) + TMP_SUFFIX);
-                    File dst = new File(walWorkDir, fileName(toRen.idx() % dsCfg.getWalSegments()));
+                if (toRen != null) {
+                    String toRenFileName = fileName(toRen.idx() % dsCfg.getWalSegments());
+
+                    File tmpDst = new File(walWorkDir, toRenFileName + TMP_SUFFIX);
+                    File dst = new File(walWorkDir, toRenFileName);
 
                     try {
                         Files.copy(toRen.file().toPath(), tmpDst.toPath());
 
-                        if (tmpDst.length() < dsCfg.getWalSegmentSize() && (mode == WALMode.FSYNC || mmap)) {
+                        Files.move(tmpDst.toPath(), dst.toPath());
+
+                        Files.delete(toRen.file().toPath());
+
+                        if (log.isInfoEnabled()) {
+                            log.info("WAL segment renamed [src=" + toRen.file().getAbsolutePath() +
+                                ", dst=" + dst.getAbsolutePath() + ']');
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new StorageException("Failed to rename WAL segment [src=" +
+                            toRen.file().getAbsolutePath() + ", dst=" + dst.getAbsolutePath() + ']', e);
+                    }
+                }
+            }
+
+            if (mode == WALMode.FSYNC || mmap) {
+                List<FileDescriptor> toFormat = Arrays.stream(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER)))
+                    .filter(fd -> fd.file().length() < dsCfg.getWalSegmentSize()).collect(toList());
+
+                if (!toFormat.isEmpty()) {
+                    log.warning("Invalid WAL working directory contents found, for archiving to work, will need to " +
+                        "format WAL segments to configured size, this may take some time [toFormat=" +
+                        F.viewReadOnly(toFormat, fd -> fd.file().getName()) + ", cfgSize=" +
+                        U.humanReadableByteCount(dsCfg.getWalSegmentSize()) + ']');
+
+                    for (FileDescriptor fd : toFormat) {
+                        File tmpDst = new File(fd.file().getName() + TMP_SUFFIX);
+
+                        try {
+                            Files.copy(fd.file().toPath(), tmpDst.toPath());
+
                             if (log.isDebugEnabled()) {
                                 log.debug("Start formatting WAL segment [filePath=" + tmpDst.getAbsolutePath() +
                                     ", fileSize=" + U.humanReadableByteCount(tmpDst.length()) +
@@ -1588,31 +1625,27 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             }
 
                             try (FileIO fileIO = ioFactory.create(tmpDst, CREATE, READ, WRITE)) {
-                                int left = (int)(tmpDst.length() - dsCfg.getWalSegmentSize());
+                                int left = (int)(dsCfg.getWalSegmentSize() - tmpDst.length());
 
-                                while ((left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left))) > 0)
-                                    ;
+                                fileIO.position(tmpDst.length());
+
+                                while (left > 0)
+                                    left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left));
 
                                 fileIO.force();
                             }
-                        }
 
-                        if (toRen.file().getName().equals(dst.getName()))
-                            Files.move(tmpDst.toPath(), dst.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
-                        else {
-                            Files.move(tmpDst.toPath(), dst.toPath());
+                            Files.move(tmpDst.toPath(), fd.file().toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
 
-                            Files.delete(toRen.file().toPath());
+                            if (log.isInfoEnabled())
+                                log.info("WAL segment formatted: " + fd.file().getAbsolutePath());
                         }
-
-                        if (log.isInfoEnabled()) {
-                            log.info("WAL segment renamed and formatted [src=" + toRen.file().getAbsolutePath() +
-                                ", dst=" + dst.getAbsolutePath() + ']');
+                        catch (IOException e) {
+                            throw new StorageException(
+                                "Failed to format WAL segment: " + fd.file().getAbsolutePath(),
+                                e
+                            );
                         }
-                    }
-                    catch (IOException e) {
-                        throw new StorageException("Failed to rename or format WAL segment [src=" +
-                            toRen.file().getAbsolutePath() + ", dst=" + dst.getAbsolutePath() + ']', e);
                     }
                 }
             }
@@ -3014,7 +3047,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (files == null)
                 return Collections.emptyList();
 
-            return Arrays.stream(files).map(File::getName).sorted().collect(Collectors.toList());
+            return Arrays.stream(files).map(File::getName).sorted().collect(toList());
         }
 
         /** {@inheritDoc} */
