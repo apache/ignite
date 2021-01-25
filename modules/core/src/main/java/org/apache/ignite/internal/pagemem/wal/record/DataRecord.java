@@ -35,7 +35,7 @@ public class DataRecord extends TimeStampRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.DATA_RECORD;
+        return RecordType.DATA_RECORD_V2;
     }
 
     /**

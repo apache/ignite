@@ -114,6 +114,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
@@ -231,6 +232,7 @@ public class RecordUtils {
             put(ENCRYPTED_DATA_RECORD, RecordUtils::buildEncryptedDataRecord);
             put(ENCRYPTED_RECORD_V2, RecordUtils::buildEncryptedRecordV2);
             put(ENCRYPTED_DATA_RECORD_V2, RecordUtils::buildEncryptedDataRecordV2);
+            put(ENCRYPTED_DATA_RECORD_V3, RecordUtils::buildEncryptedDataRecordV3);
             put(MVCC_DATA_RECORD, RecordUtils::buildMvccDataRecord);
             put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
             put(CONSISTENT_CUT, RecordUtils::buildConsistentCutRecord);
@@ -591,6 +593,11 @@ public class RecordUtils {
     /** **/
     public static UnsupportedWalRecord buildEncryptedDataRecordV2() {
         return new UnsupportedWalRecord(ENCRYPTED_DATA_RECORD_V2);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildEncryptedDataRecordV3() {
+        return new UnsupportedWalRecord(ENCRYPTED_DATA_RECORD_V3);
     }
 
     /** **/
