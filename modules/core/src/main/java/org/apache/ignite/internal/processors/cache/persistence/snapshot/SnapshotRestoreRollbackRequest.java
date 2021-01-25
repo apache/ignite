@@ -28,11 +28,11 @@ public class SnapshotRestoreRollbackRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** The reason to rollback operation. */
-    private final Throwable reason;
-
     /** Request ID. */
     private final UUID reqId;
+
+    /** The reason to rollback operation. */
+    private final Throwable reason;
 
     /**
      * @param reqId Request ID.

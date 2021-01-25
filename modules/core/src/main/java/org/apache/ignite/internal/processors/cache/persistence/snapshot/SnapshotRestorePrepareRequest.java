@@ -32,6 +32,9 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Request ID. */
+    private final UUID reqId;
+
     /** Snapshot name. */
     private final String snpName;
 
@@ -42,9 +45,6 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /** List of baseline node IDs that must be alive to complete the operation. */
     @GridToStringInclude
     private final Set<UUID> reqNodes;
-
-    /** Request ID. */
-    private final UUID reqId;
 
     /**
      * @param reqId Request ID.

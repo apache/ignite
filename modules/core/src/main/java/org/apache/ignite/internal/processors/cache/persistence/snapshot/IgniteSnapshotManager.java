@@ -56,6 +56,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1123,12 +1124,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Snapshot name.
      * @param checkCompatibility Don't update metadata, just check the compatibility of the snapshot metadata.
      * @param failIfAbsent Throw an exception if the snapshot metadata folder doesn't exists.
+     * @param interruptClosure A closure to quickly interrupt the merge process.
      * @throws IgniteCheckedException If failed.
      */
     protected void mergeSnapshotMetadata(
         String snpName,
         boolean checkCompatibility,
-        boolean failIfAbsent
+        boolean failIfAbsent,
+        Supplier<Boolean> interruptClosure
     ) throws IgniteCheckedException {
         File binDir = binaryWorkDir(snapshotLocalDir(snpName).getAbsolutePath(), pdsSettings.folderName());
 
@@ -1146,6 +1149,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
 
         for (File file : binDir.listFiles()) {
+            if (interruptClosure.get())
+                return;
+
             try (FileInputStream in = new FileInputStream(file)) {
                 BinaryMetadata newMeta = U.unmarshal(marshaller, in, clsLdr);
 

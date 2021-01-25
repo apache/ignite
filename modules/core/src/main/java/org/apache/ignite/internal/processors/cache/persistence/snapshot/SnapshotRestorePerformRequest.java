@@ -17,32 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collection;
-import java.util.Set;
+import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Request to perform snapshot restore.
  */
-public class SnapshotRestorePerformRequest extends SnapshotRestorePrepareRequest {
+public class SnapshotRestorePerformRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** Request ID. */
+    private final UUID reqId;
 
     /** Node ID from which to update the binary metadata. */
     private final UUID updateMetaNodeId;
 
     /**
      * @param reqId Request ID.
-     * @param snpName Snapshot name.
-     * @param grps List of cache group names to restore from the snapshot.
-     * @param reqNodes List of baseline node IDs that must be alive to complete the operation.
      * @param updateMetaNodeId Node ID from which to update the binary metadata.
      */
-    public SnapshotRestorePerformRequest(UUID reqId, String snpName, Collection<String> grps, Set<UUID> reqNodes, UUID updateMetaNodeId) {
-        super(reqId, snpName, grps, reqNodes);
-
+    public SnapshotRestorePerformRequest(UUID reqId, UUID updateMetaNodeId) {
+        this.reqId = reqId;
         this.updateMetaNodeId = updateMetaNodeId;
+    }
+
+    /**
+     * @return Request ID.
+     */
+    public UUID requestId() {
+        return reqId;
     }
 
     /**
