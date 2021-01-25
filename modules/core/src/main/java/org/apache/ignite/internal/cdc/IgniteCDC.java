@@ -40,7 +40,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -50,9 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.NODE_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.UUID_STR_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
@@ -208,15 +208,15 @@ public class IgniteCDC implements Runnable {
     }
 
     /** Founds required directories. */
-    private void init() throws IgniteCheckedException, IOException {
+    private void init() throws IOException {
         String workDir = workDir(cfg);
         String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
         Files.createDirectories(cdcDir.resolve(STATE_DIR));
 
-        binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
+        binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(workDir, consIdDir);
 
-        marshaller = U.resolveWorkDirectory(workDir, DFLT_MARSHALLER_PATH, false);
+        marshaller = MarshallerContextImpl.mappingFileStoreWorkDir(workDir);
 
         if (log.isDebugEnabled()) {
             log.debug("Using BinaryMeta directory[dir=" + binaryMeta + ']');
@@ -224,7 +224,7 @@ public class IgniteCDC implements Runnable {
         }
     }
 
-    /** Reads all available from segment. */
+    /** Reads all available records from segment. */
     private void readSegment(Path segment) throws IgniteCheckedException, IOException {
         log.info("Processing WAL segment[segment=" + segment + ']');
 
