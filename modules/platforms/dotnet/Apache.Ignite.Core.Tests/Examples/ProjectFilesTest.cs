@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly string LaunchJsonText = File.ReadAllText(ExamplePaths.LaunchJsonFile);
 
         /** */
+        private static readonly string TargetFramework = ExamplePaths.GetTargetFramework(ExamplePaths.SharedProjFile);
+
+        /** */
         private static readonly string[] ThickOnlyExamples = {
             "NearCache", "DataStreamer", "MultiTieredCache", "QueryFullText", "Store", "EntryProcessor",
              "TransactionDeadlockDetection", "Func", "PeerAssemblyLoading", "Task", "AtomicLong",
@@ -60,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             var text = File.ReadAllText(example.ProjectFile);
 
             StringAssert.Contains("<OutputType>Exe</OutputType>", text);
-            StringAssert.Contains("<TargetFramework>netcoreapp2.1</TargetFramework>", text);
+            StringAssert.Contains($"<TargetFramework>{TargetFramework}</TargetFramework>", text);
             StringAssert.Contains("<ProjectReference Include=\"..\\..\\..\\Shared\\Shared.csproj", text);
             StringAssert.Contains($"{example.Name}.csproj", ExamplesSlnText);
             StringAssert.Contains($"{example.Name}.dll", LaunchJsonText);
@@ -158,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             public string PreLaunchTask { get; set; } = "build";
 
             /** */
-            public string Program { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll";
+            public string Program { get; set; } = string.Empty;
 
             /** */
             public string[] Args { get; set; } = Array.Empty<string>();
