@@ -35,6 +35,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntryV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -622,7 +623,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                         dataEntries.add(
                                             new T2<>(
-                                                new DataEntry(
+                                                new DataEntryV2(
                                                     cacheCtx.cacheId(),
                                                     txEntry.key(),
                                                     val,

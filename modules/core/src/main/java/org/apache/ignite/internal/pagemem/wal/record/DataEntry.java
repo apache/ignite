@@ -61,12 +61,8 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
-    /** */
-    @GridToStringInclude
-    protected boolean primary;
-
     /** Constructor. */
-    private DataEntry() {
+    protected DataEntry() {
         // No-op, used from factory methods.
     }
 
@@ -80,7 +76,6 @@ public class DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public DataEntry(
         int cacheId,
@@ -91,8 +86,7 @@ public class DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt,
-        boolean primary
+        long partCnt
     ) {
         this.cacheId = cacheId;
         this.key = key;
@@ -103,7 +97,6 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
-        this.primary = primary;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
         assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
@@ -182,13 +175,6 @@ public class DataEntry {
      */
     public long expireTime() {
         return expireTime;
-    }
-
-    /**
-     * @return {@code True} if node is primary for partition in the moment of logging.
-     */
-    public boolean primary() {
-        return primary;
     }
 
     /** {@inheritDoc} */

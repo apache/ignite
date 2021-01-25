@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 /**
  * Data Entry for automatic unwrapping key and value from Data Entry
  */
-public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
+public class UnwrapDataEntryV2 extends DataEntryV2 implements UnwrappedDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;
 
@@ -48,8 +48,9 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
      * @param partCnt Partition counter.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
      * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
-    public UnwrapDataEntry(
+    public UnwrapDataEntryV2(
         final int cacheId,
         final KeyCacheObject key,
         final CacheObject val,
@@ -60,8 +61,9 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final int partId,
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
-        final boolean keepBinary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        final boolean keepBinary,
+        final boolean primary) {
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, primary);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }
@@ -83,7 +85,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
             return unwrapped;
         }
         catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+            cacheObjValCtx.kernalContext().log(UnwrapDataEntryV2.class)
                 .error("Unable to convert key [" + key + "]", e);
 
             return null;
@@ -102,7 +104,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
             return val.value(cacheObjValCtx, false);
         }
         catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+            cacheObjValCtx.kernalContext().log(UnwrapDataEntryV2.class)
                 .error("Unable to convert value [" + value() + "]", e);
             return null;
         }

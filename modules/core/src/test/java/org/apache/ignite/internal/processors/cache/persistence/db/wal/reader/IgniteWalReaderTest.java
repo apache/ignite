@@ -59,6 +59,7 @@ import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntryV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -88,6 +89,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
@@ -128,8 +130,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Whether to enable WAL archive compaction. */
     private boolean enableWalCompaction;
 
-    /** Backup count */
-    private int backupCnt = 0;
+    /** Backup count. */
+    private int backupCnt;
 
     /** DataEntry from primary flag. */
     private boolean primary = true;
@@ -273,7 +275,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         KeyCacheObject key = entry.key();
                         CacheObject val = entry.value();
 
-                        assertEquals(primary, entry.primary());
+                        assertEquals(primary, ((DataEntryV2)entry).primary());
 
                         if (DUMP_RECORDS)
                             log.info("Op: " + entry.op() + ", Key: " + key + ", Value: " + val);
@@ -962,7 +964,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             0,
             null,
             dataRecord -> {
-                final List<DataEntry> entries = dataRecord.writeEntries();
+                final List<? extends DataEntry> entries = dataRecord.writeEntries();
 
                 sb.append("{");
 
@@ -1014,7 +1016,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         IgniteEx ignite = startGrid("node0");
         Ignite ignite1 = startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         IgniteCache<Integer, IndexedObject> cache = ignite.cache(CACHE_NAME);
 
@@ -1045,7 +1047,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
         IgniteInClosure<DataRecord> drHnd = dataRecord -> {
-            List<DataEntry> entries = dataRecord.writeEntries();
+            List<? extends DataEntry> entries = dataRecord.writeEntries();
 
             for (DataEntry entry : entries) {
                 GridCacheOperation op = entry.op();
@@ -1122,7 +1124,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
         IgniteInClosure<DataRecord> drHnd = dataRecord -> {
-            List<DataEntry> entries = dataRecord.writeEntries();
+            List<? extends DataEntry> entries = dataRecord.writeEntries();
 
             sb.append("{");
 
@@ -1452,10 +1454,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         if (dataRecordHnd != null)
                             dataRecordHnd.apply(dataRecord);
 
-                        List<DataEntry> entries = dataRecord.writeEntries();
+                        List<? extends DataEntry> entries = dataRecord.writeEntries();
 
                         for (DataEntry entry : entries) {
-                            assertEquals(primary, entry.primary());
+                            assertEquals(primary, ((DataEntryV2)entry).primary());
 
                             GridCacheVersion globalTxId = entry.nearXidVersion();
 

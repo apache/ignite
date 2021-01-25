@@ -20,17 +20,24 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents Data Entry ({@link #key}, {@link #val value}) pair for mvcc update {@link #op operation} in WAL log.
+ * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
+ * V2 adds {@code primary} flag.
  */
-public class MvccDataEntry extends DataEntry {
-    /** Entry version. */
-    private MvccVersion mvccVer;
+public class DataEntryV2 extends DataEntry {
+    /** */
+    @GridToStringInclude
+    protected boolean primary;
+
+    /** Constructor. */
+    public DataEntryV2() {
+        // No-op, used from factory methods.
+    }
 
     /**
      * @param cacheId Cache ID.
@@ -42,9 +49,9 @@ public class MvccDataEntry extends DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param mvccVer Mvcc version.
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
-    public MvccDataEntry(
+    public DataEntryV2(
         int cacheId,
         KeyCacheObject key,
         @Nullable CacheObject val,
@@ -54,22 +61,22 @@ public class MvccDataEntry extends DataEntry {
         long expireTime,
         int partId,
         long partCnt,
-        MvccVersion mvccVer
+        boolean primary
     ) {
         super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
 
-        this.mvccVer = mvccVer;
+        this.primary = primary;
     }
 
     /**
-     * @return Mvcc version.
+     * @return {@code True} if node is primary for partition in the moment of logging.
      */
-    public MvccVersion mvccVer() {
-        return mvccVer;
+    public boolean primary() {
+        return primary;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccDataEntry.class, this);
+        return S.toString(DataEntryV2.class, this);
     }
 }

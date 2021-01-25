@@ -55,7 +55,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntryV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -754,7 +754,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 // Corrupt wal record in order to fail historical rebalance from supplier1 node.
                 IgniteWriteAheadLogManager walMgr = supplier1.context().cache().context().wal();
 
-                WALPointer ptr = walMgr.log(new DataRecord(new DataEntry(
+                WALPointer ptr = walMgr.log(new DataRecord(new DataEntryV2(
                     CU.cacheId("test-cache-1"),
                     new KeyCacheObjectImpl(0, null, 0),
                     null,

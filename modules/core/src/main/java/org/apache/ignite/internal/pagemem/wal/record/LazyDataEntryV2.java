@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation}. <br>
  * This Data entry was not converted to key, value pair during record deserialization.
  */
-public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
+public class LazyDataEntryV2 extends DataEntryV2 implements MarshalledDataEntry {
     /** */
     private GridCacheSharedContext cctx;
 
@@ -60,8 +60,9 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
-    public LazyDataEntry(
+    public LazyDataEntryV2(
         GridCacheSharedContext cctx,
         int cacheId,
         byte keyType,
@@ -73,9 +74,10 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        boolean primary
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, primary);
 
         this.cctx = cctx;
         this.keyType = keyType;

@@ -400,7 +400,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(
             kernalCtx, null, null, false, false, false, false, false);
 
-        final List<DataEntry> entries = dataRec.writeEntries();
+        final List<? extends DataEntry> entries = dataRec.writeEntries();
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
 
         for (DataEntry dataEntry : entries) {
@@ -498,8 +498,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionId(),
                 dataEntry.partitionCounter(),
                 coCtx,
-                keepBinary,
-                dataEntry.primary());
+                keepBinary);
     }
 
     /** {@inheritDoc} */

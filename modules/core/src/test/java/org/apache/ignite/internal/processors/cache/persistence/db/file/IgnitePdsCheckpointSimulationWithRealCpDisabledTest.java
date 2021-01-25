@@ -54,6 +54,7 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntryV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
@@ -356,7 +357,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 new MvccDataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
                     0L,
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
-                new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
+                new DataEntryV2(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
                     0L,
                     cctx.affinity().partition(i), i, true));
         }
