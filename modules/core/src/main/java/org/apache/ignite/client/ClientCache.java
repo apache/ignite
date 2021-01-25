@@ -631,13 +631,13 @@ public interface ClientCache<K, V> {
 
     /**
      * Clears entry with specified key from the cache.
-     * In contrast to {@link #remove(Object)}}, this method does not notify event listeners and cache writers.
+     * In contrast to {@link #remove(Object)}, this method does not notify event listeners and cache writers.
      */
     public void clear(K key) throws ClientException;
 
     /**
      * Clears entry with specified key from the cache asynchronously.
-     * In contrast to {@link #removeAsync(Object)}}, this method does not notify event listeners and cache writers.
+     * In contrast to {@link #removeAsync(Object)}, this method does not notify event listeners and cache writers.
      * @return Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync(K key) throws ClientException;
