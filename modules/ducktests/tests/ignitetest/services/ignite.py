@@ -33,10 +33,10 @@ class IgniteService(IgniteAwareService):
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, shutdown_timeout_sec=10,
-                 modules=None):
+    def __init__(self, context, config, num_nodes, jvm_opts=None, full_jvm_opts=None, startup_timeout_sec=60,
+                 shutdown_timeout_sec=10, modules=None):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
-                         jvm_opts=jvm_opts)
+                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
