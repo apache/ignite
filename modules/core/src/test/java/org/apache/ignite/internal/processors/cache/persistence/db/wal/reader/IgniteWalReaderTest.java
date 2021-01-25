@@ -1124,7 +1124,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
         IgniteInClosure<DataRecord> drHnd = dataRecord -> {
-            List<? extends DataEntry> entries = dataRecord.writeEntries();
+            List<DataEntry> entries = dataRecord.writeEntries();
 
             sb.append("{");
 
@@ -1454,7 +1454,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         if (dataRecordHnd != null)
                             dataRecordHnd.apply(dataRecord);
 
-                        List<? extends DataEntry> entries = dataRecord.writeEntries();
+                        List<DataEntry> entries = dataRecord.writeEntries();
 
                         for (DataEntry entry : entries) {
                             if (walRecord.type() == DATA_RECORD_V2)

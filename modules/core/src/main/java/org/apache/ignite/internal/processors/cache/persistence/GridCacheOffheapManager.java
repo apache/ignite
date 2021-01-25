@@ -1430,7 +1430,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private WALIterator walIt;
 
         /** */
-        private Iterator<? extends DataEntry> entryIt;
+        private Iterator<DataEntry> entryIt;
 
         /** */
         private DataEntry next;
