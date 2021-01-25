@@ -62,7 +62,6 @@ public class LazyMvccDataEntry extends MvccDataEntry implements MarshalledDataEn
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      * @param mvccVer Mvcc version.
-     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public LazyMvccDataEntry(
         GridCacheSharedContext cctx,
@@ -77,10 +76,9 @@ public class LazyMvccDataEntry extends MvccDataEntry implements MarshalledDataEn
         long expireTime,
         int partId,
         long partCnt,
-        MvccVersion mvccVer,
-        boolean primary
+        MvccVersion mvccVer
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer, primary);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
 
         this.cctx = cctx;
         this.keyType = keyType;

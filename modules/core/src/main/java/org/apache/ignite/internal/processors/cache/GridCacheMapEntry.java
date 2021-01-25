@@ -1231,8 +1231,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     expireTime,
                     key.partition(),
                     0L,
-                    mvccVer,
-                    cctx.affinity().primaryByPartition(cctx.localNode(), partition(), topVer))
+                    mvccVer)
                 ));
             }
 
@@ -3484,8 +3483,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             expireTime,
                             partition(),
                             updateCntr,
-                            mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer,
-                            cctx.affinity().primaryByPartition(cctx.localNode(), partition(), topVer)
+                            mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
                     } else {
                         cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -4421,8 +4419,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 key.partition(),
                 updCntr,
-                mvccVer,
-                cctx.affinity().primaryByPartition(cctx.localNode(), partition(), topVer))));
+                mvccVer
         }
         else
             return null;
@@ -5673,8 +5670,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         expireTime,
                         entry.key().partition(),
                         0L,
-                        mvccVer,
-                        cctx.affinity().primaryByPartition(cctx.localNode(), entry.key().partition(), topVer))));
+                        mvccVer)));
 
                 entry.update(val, expireTime, ttl, newVer, true);
 
@@ -6920,8 +6916,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         last.expireTime(),
                         key.partition(),
                         0,
-                        last.mvccVersion(),
-                        cctx.affinity().primaryByPartition(cctx.localNode(), key.partition(), topVer)));
+                        last.mvccVersion()));
             }
             else {
                 assert last.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
@@ -7025,8 +7020,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             info.expireTime(),
             key.partition(),
             0,
-            info.mvccVersion(),
-            cctx.affinity().primaryByPartition(cctx.localNode(), key.partition(), topVer)
+            info.mvccVersion()
         );
     }
 
