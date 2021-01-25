@@ -24,6 +24,7 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
+from ignitetest.services.utils.auth.auth_provider import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN
 from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
 
 
@@ -37,12 +38,13 @@ class ControlUtility:
     def __init__(self, cluster,
                  key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
-                 admin_login: str = None, admin_password: str = DEFAULT_PASSWORD):
+                 login: str = None, password: str = None):
         self._cluster = cluster
         self.logger = cluster.context.logger
 
         if cluster.context.globals.get("use_ssl", False):
             admin_dict = cluster.globals.get("admin", dict())
+            if admin_dict is not None and "ssl" in admin_dict: admin_dict = admin_dict("ssl")
 
             self.key_store_path = admin_dict.get("key_store_path",
                                                  self.jks_path(admin_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
@@ -57,13 +59,13 @@ class ControlUtility:
             self.trust_store_path = self.jks_path(trust_store_jks)
             self.trust_store_password = trust_store_password
 
-        if admin_login is None:
-            if cluster.context.globals.get("admin_login"):
-                self.admin_login = cluster.globals.get("admin_login")
-        if admin_password is DEFAULT_PASSWORD:
-            if cluster.context.globals.get("admin_password"):
-                self.admin_password = cluster.globals.get("admin_password")
-
+        if cluster.context.globals.get("use_auth", False):
+            admin_dict = cluster.globals.get("admin", dict())
+            self.admin_login = admin_dict.get("login", DEFAULT_AUTH_LOGIN)
+            self.admin_password = admin_dict.get("password", DEFAULT_AUTH_PASSWORD)
+        elif login is not None:
+            self.admin_login = login
+            self.admin_password = password
 
     def jks_path(self, jks_name: str):
         """
