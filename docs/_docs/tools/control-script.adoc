@@ -521,6 +521,50 @@ validate_indexes has finished with errors (listed above).
 Like `idle_verify`, index validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
 ====
 
+=== Check SQL Index Inline Size
+
+During the operation of the Ignite cluster it could have a different SQL index inline size on cluster nodes.
+For example, due to the `IGNITE_MAX_INDEX_PAYLOAD_SIZE` property value is different on cluster nodes. The difference
+of index inline size may lead to performance drop.
+
+The `check_index_inline_sizes` command validates the indexes inline size of given caches on all cluster nodes. The inline
+size of secondary indexes is always checked on a node join and the WARN message is printed to the log if differ.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Checks that secondary indexes inline sizes are the same on all cluster nodes.
+control.sh|bat --cache check_index_inline_sizes
+----
+--
+
+The console output if the index inline sizes are different:
+
+[source,text]
+----
+Control utility [ver. 2.10.0]
+2021 Copyright(C) Apache Software Foundation
+User: test
+Time: 2021-04-27T16:13:21.213
+Command [CACHE] started
+Arguments: --cache check_index_inline_sizes --yes
+--------------------------------------------------------------------------------
+Found 4 secondary indexes.
+3 index(es) have different effective inline size on nodes. It can lead to
+performance degradation in SQL queries.
+Index(es):
+  Full index name: PUBLIC#TEST_TABLE#L_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+  Full index name: PUBLIC#TEST_TABLE#S1_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+  Full index name: PUBLIC#TEST_TABLE#I_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+----
 
 == Tracing Configuration
 
