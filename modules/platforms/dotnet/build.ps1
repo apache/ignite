@@ -174,7 +174,7 @@ cd $PSScriptRoot
 
 
 # 2) Build .NET
-if ((!$skipDotNet) -and (!$skipNuGet)) {
+if (!($skipDotNet -and $skipNuGet)) {
     # Detect NuGet
     $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
