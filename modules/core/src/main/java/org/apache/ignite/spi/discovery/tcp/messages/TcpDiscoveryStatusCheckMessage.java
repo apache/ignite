@@ -32,7 +32,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * If a failed node id is specified then the message is sent across the ring up to the sender node
  * to ensure that the failed node is actually failed.
+ *
+ * @deprecated For backward support of previous Inite versions. Duplicates forward node ping and backward connection
+ * check. To be removed in future releases.
  */
+@Deprecated
 public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
