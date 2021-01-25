@@ -106,7 +106,8 @@ public class Checkpointer extends GridWorker {
         "walCpRecordFsyncDuration=%dms, " +
         "writeCheckpointEntryDuration=%dms, " +
         "splitAndSortCpPagesDuration=%dms, " +
-        "%s pages=%d, " +
+        "%s" +
+        "pages=%d, " +
         "reason='%s']";
 
     /** Skip sync. */
@@ -408,8 +409,8 @@ public class Checkpointer extends GridWorker {
                         log.info(
                             String.format(
                                 CHECKPOINT_STARTED_LOG_FORMAT,
-                                chp.cpEntry.checkpointId(),
-                                chp.cpEntry.checkpointMark(),
+                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
+                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
                                 tracker.beforeLockDuration(),
                                 tracker.lockWaitDuration(),
                                 tracker.listenersExecuteDuration(),
@@ -417,7 +418,7 @@ public class Checkpointer extends GridWorker {
                                 tracker.walCpRecordFsyncDuration(),
                                 tracker.writeCheckpointEntryDuration(),
                                 tracker.splitAndSortCpPagesDuration(),
-                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms," : "",
+                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
                                 chp.pagesSize,
                                 chp.progress.reason()
                             )
@@ -455,16 +456,12 @@ public class Checkpointer extends GridWorker {
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                 if (log.isInfoEnabled()) {
-                    String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
-
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                            "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
-                            "total=%dms]",
+                            "walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
                         chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                         chp.pagesSize,
                         chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
-                        chp.walFilesDeleted,
-                        walSegsCoveredMsg,
+                        walRangeStr(chp.walSegsCoveredRange),
                         tracker.markDuration(),
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
@@ -576,11 +573,18 @@ public class Checkpointer extends GridWorker {
     private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
         if (persStoreMetrics.metricsEnabled()) {
             persStoreMetrics.onCheckpoint(
+                tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
                 tracker.markDuration(),
+                tracker.lockHoldDuration(),
                 tracker.pagesWriteDuration(),
                 tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
                 tracker.totalDuration(),
+                tracker.checkpointStartTime(),
                 chp.pagesSize,
                 tracker.dataPagesWritten(),
                 tracker.cowPagesWritten()
@@ -589,9 +593,15 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
+     * Creates a string of a range WAL segments.
+     *
+     * @param walRange Range of WAL segments.
      * @return The message about how many WAL segments was between previous checkpoint and current one.
      */
-    private String prepareWalSegsCoveredMsg(IgniteBiTuple<Long, Long> walRange) {
+    private String walRangeStr(@Nullable IgniteBiTuple<Long, Long> walRange) {
+        if (walRange == null)
+            return "";
+
         String res;
 
         long startIdx = walRange.get1();
@@ -852,6 +862,9 @@ public class Checkpointer extends GridWorker {
      * Restart worker in IgniteThread.
      */
     public void start() {
+        if (runner() != null)
+            return;
+
         assert runner() == null : "Checkpointer is running.";
 
         new IgniteThread(this).start();

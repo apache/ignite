@@ -178,7 +178,7 @@ public class CheckpointPagesWriter implements Runnable {
 
         CheckpointMetricsTracker tracker = persStoreMetrics.metricsEnabled() ? this.tracker : null;
 
-        PageStoreWriter pageStoreWriter = createPageStoreWriter(pagesToRetry);
+        Map<PageMemoryEx, PageStoreWriter> pageStoreWriters = new HashMap<>();
 
         ByteBuffer tmpWriteBuf = threadBuf.get();
 
@@ -200,6 +200,8 @@ public class CheckpointPagesWriter implements Runnable {
             snapshotMgr.beforePageWrite(fullId);
 
             tmpWriteBuf.rewind();
+
+            PageStoreWriter pageStoreWriter = pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
             pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
 
@@ -227,18 +229,20 @@ public class CheckpointPagesWriter implements Runnable {
     /**
      * Factory method for create {@link PageStoreWriter}.
      *
+     * @param pageMemEx
      * @param pagesToRetry List pages for retry.
      * @return Checkpoint page write context.
      */
-    private PageStoreWriter createPageStoreWriter(Map<PageMemoryEx, List<FullPageId>> pagesToRetry) {
+    private PageStoreWriter createPageStoreWriter(
+        PageMemoryEx pageMemEx,
+        Map<PageMemoryEx, List<FullPageId>> pagesToRetry
+    ) {
         return new PageStoreWriter() {
             /** {@inheritDoc} */
             @Override public void writePage(FullPageId fullPageId, ByteBuffer buf,
                 int tag) throws IgniteCheckedException {
                 if (tag == PageMemoryImpl.TRY_AGAIN_TAG) {
-                    PageMemoryEx pageMem = pageMemoryGroupResolver.apply(fullPageId.groupId());
-
-                    pagesToRetry.computeIfAbsent(pageMem, k -> new ArrayList<>()).add(fullPageId);
+                    pagesToRetry.computeIfAbsent(pageMemEx, k -> new ArrayList<>()).add(fullPageId);
 
                     return;
                 }
@@ -258,7 +262,7 @@ public class CheckpointPagesWriter implements Runnable {
 
                 curCpProgress.updateWrittenPages(1);
 
-                PageStore store = pageWriter.write(fullPageId, buf, tag);
+                PageStore store = pageWriter.write(pageMemEx, fullPageId, buf, tag);
 
                 updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
             }
@@ -268,12 +272,15 @@ public class CheckpointPagesWriter implements Runnable {
     /** Interface which allows to write one page to page store. */
     public interface CheckpointPageWriter {
         /**
+         *
+         * @param pageMemEx Page memory from which page should be written.
          * @param fullPageId Full page id.
          * @param buf Byte buffer.
          * @param tag Page tag.
          * @return {@link PageStore} which was used to write.
          * @throws IgniteCheckedException if fail.
          */
-        PageStore write(FullPageId fullPageId, ByteBuffer buf, int tag) throws IgniteCheckedException;
+        PageStore write(PageMemoryEx pageMemEx, FullPageId fullPageId, ByteBuffer buf, int tag)
+            throws IgniteCheckedException;
     }
 }

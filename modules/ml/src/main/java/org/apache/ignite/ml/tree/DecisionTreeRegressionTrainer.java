@@ -31,7 +31,7 @@ import org.apache.ignite.ml.tree.leaf.MeanDecisionTreeLeafBuilder;
  * Decision tree regressor based on distributed decision tree trainer that allows to fit trees using row-partitioned
  * dataset.
  */
-public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasure> {
+public class DecisionTreeRegressionTrainer extends DecisionTreeTrainer<MSEImpurityMeasure> {
     /**
      * Constructs a new decision tree regressor with default impurity function compressor.
      *

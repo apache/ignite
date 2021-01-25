@@ -26,7 +26,7 @@ namespace ignite
     {
         namespace query
         {
-            SpecialColumnsQuery::SpecialColumnsQuery(diagnostic::Diagnosable& diag,
+            SpecialColumnsQuery::SpecialColumnsQuery(diagnostic::DiagnosableAdapter& diag,
                 int16_t type, const std::string& catalog, const std::string& schema,
                 const std::string& table, int16_t scope, int16_t nullable) :
                 Query(diag, QueryType::SPECIAL_COLUMNS),
@@ -71,9 +71,9 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
             }
 
-            const meta::ColumnMetaVector& SpecialColumnsQuery::GetMeta() const
+            const meta::ColumnMetaVector* SpecialColumnsQuery::GetMeta()
             {
-                return columnsMeta;
+                return &columnsMeta;
             }
 
             SqlResult::Type SpecialColumnsQuery::FetchNextRow(app::ColumnBindingMap&)

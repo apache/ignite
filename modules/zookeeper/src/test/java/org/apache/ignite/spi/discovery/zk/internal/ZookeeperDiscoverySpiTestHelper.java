@@ -135,8 +135,10 @@ class ZookeeperDiscoverySpiTestHelper {
      * @param topVer Topology version.
      * @return Expected event instance.
      */
-    static DiscoveryEvent failEvent(long topVer) {
-        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_FAILED, null);
+    static DiscoveryEvent leftEvent(long topVer, boolean fail) {
+        int eventType = fail ? EventType.EVT_NODE_FAILED : EventType.EVT_NODE_LEFT;
+
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, eventType, null);
 
         expEvt.topologySnapshot(topVer, null);
 

@@ -234,7 +234,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
             int grpId = (Integer)mock.getArguments()[0];
 
-            if (gridCtx.encryption().groupKey(grpId) == null)
+            if (gridCtx.encryption().getActiveKey(grpId) == null)
                 return pageSize;
 
             return pageSize
@@ -265,6 +265,8 @@ public class PageMemoryTracker implements IgnitePlugin {
         memoryProvider.initialize(chunks);
 
         memoryRegion = memoryProvider.nextRegion();
+
+        GridUnsafe.setMemory(memoryRegion.address(), memoryRegion.size(), (byte)0);
 
         maxPages = (int)(maxMemorySize / pageSize);
 
@@ -471,8 +473,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 page.lock();
 
-            try {
-                GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
+                try {
+                    GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
 
                     page.changeHistory().clear();
 
@@ -694,7 +696,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         }
 
         if (!locBuf.equals(rmtBuf)) {
-            log.error("Page buffers are not equals: " + fullPageId);
+            log.error("Page buffers are not equals [fullPageId=" + fullPageId + ", pageIo=" + pageIo + ']');
 
             dumpDiff(locBuf, rmtBuf);
 

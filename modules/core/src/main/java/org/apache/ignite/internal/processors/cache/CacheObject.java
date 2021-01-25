@@ -46,6 +46,16 @@ public interface CacheObject extends Message {
     @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy);
 
     /**
+     * Deserializes a value from an internal representation.
+     *
+     * @param ctx Context.
+     * @param cpy If {@code true} need to copy value.
+     * @param ldr Class loader, if it is {@code null}, default class loader will be used.
+     * @return Value.
+     */
+    @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr);
+
+    /**
      * @param ctx Context.
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.

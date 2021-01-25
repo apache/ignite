@@ -68,10 +68,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     public static final int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
 
     /**
-     * Unused. Keep for backward compatibility.
+     * Whether to treat replicated as partitioned (for outer joins).
      */
-    @SuppressWarnings("unused")
-    public static final int FLAG_UNUSED = 1 << 2;
+    public static final int FLAG_REPLICATED_AS_PARTITIONED = 1 << 2;
 
     /**
      * If it is an EXPLAIN command.
@@ -479,7 +478,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         boolean lazy,
         boolean replicatedOnly,
         boolean explain,
-        Boolean dataPageScanEnabled) {
+        Boolean dataPageScanEnabled,
+        boolean treatReplicatedAsPartitioned) {
         int flags = enforceJoinOrder ? FLAG_ENFORCE_JOIN_ORDER : 0;
 
         // Distributed joins flag is set if it is either reald
@@ -496,6 +496,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
             flags |= FLAG_LAZY;
 
         flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+
+        if (treatReplicatedAsPartitioned)
+            flags |= FLAG_REPLICATED_AS_PARTITIONED;
 
         return flags;
     }

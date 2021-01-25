@@ -17,9 +17,9 @@
 
 package org.apache.ignite.transactions.spring;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.spring.GridSpringTransactionService.CacheProxy;
 import org.junit.Test;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.InvalidIsolationLevelException;
@@ -33,7 +33,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     protected static final String CACHE_NAME = "testCache";
 
     /** */
-    public abstract IgniteCache<Integer, String> cache();
+    public abstract CacheProxy<Integer, String> cache();
 
     /** */
     public abstract GridSpringTransactionService service();

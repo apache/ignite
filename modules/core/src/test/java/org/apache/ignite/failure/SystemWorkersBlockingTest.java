@@ -17,9 +17,12 @@
 
 package org.apache.ignite.failure;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -30,8 +33,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 
 /**
@@ -43,6 +46,12 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
 
     /** Handler latch. */
     private final CountDownLatch hndLatch = new CountDownLatch(1);
+
+    /** Blocking thread latch. */
+    private final CountDownLatch blockLatch = new CountDownLatch(1);
+
+    /** Worker executor. */
+    private final ExecutorService workerExecutor = Executors.newSingleThreadExecutor();
 
     /** Reference to failure error. */
     private final AtomicReference<Throwable> failureError = new AtomicReference<>();
@@ -81,6 +90,13 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        blockLatch.countDown();
+
+        if (workerExecutor.isTerminated()) {
+            workerExecutor.shutdownNow();
+            workerExecutor.awaitTermination(2 * SYSTEM_WORKER_BLOCKED_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+
         stopAllGrids();
     }
 
@@ -91,34 +107,23 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     public void testBlockingWorker() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        GridWorker worker = new LatchingGridWorker(ignite);
 
-        GridWorker worker = new GridWorker(ignite.name(), "test-worker", log) {
-            @Override protected void body() throws InterruptedException {
-                blockLatch.await();
-            }
-        };
+        runWorker(worker);
 
-        IgniteThread runner = null;
-        try {
-            runner = runWorker(worker);
+        ignite.context().workersRegistry().register(worker);
 
-            ignite.context().workersRegistry().register(worker);
+        assertTrue(hndLatch.await(ignite.configuration().getFailureDetectionTimeout() * 2,
+            TimeUnit.MILLISECONDS));
 
-            assertTrue(hndLatch.await(SYSTEM_WORKER_BLOCKED_TIMEOUT * 2, TimeUnit.MILLISECONDS));
+        Throwable blockedExeption = failureError.get();
 
-            Throwable err = failureError.get();
+        assertNotNull(blockedExeption);
 
-            assertNotNull(err);
-            assertTrue(err.getMessage() != null && err.getMessage().contains("test-worker"));
-        }
-        finally {
-            if (runner != null) {
-                blockLatch.countDown();
-
-                runner.join(SYSTEM_WORKER_BLOCKED_TIMEOUT);
-            }
-        }
+        assertTrue(Arrays.stream(blockedExeption.getStackTrace()).anyMatch(
+            e -> CountDownLatch.class.getName().equals(e.getClassName())));
+        assertTrue(Arrays.stream(blockedExeption.getStackTrace()).anyMatch(
+            e -> LatchingGridWorker.class.getName().equals(e.getClassName())));
     }
 
     /**
@@ -145,26 +150,37 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteThread runner = runWorker(worker);
+        runWorker(worker);
 
         Thread.sleep(2 * SYSTEM_WORKER_BLOCKED_TIMEOUT);
 
-        runner.interrupt();
+        workerExecutor.shutdownNow();
 
-        assertTrue(finishLatch.await(SYSTEM_WORKER_BLOCKED_TIMEOUT, TimeUnit.MILLISECONDS));
+        assertTrue(workerExecutor.awaitTermination(SYSTEM_WORKER_BLOCKED_TIMEOUT, TimeUnit.MILLISECONDS));
     }
 
     /**
-     * @param worker Grid worker to run.
-     * @return Thread, running worker.
+     * Run worker and wait for its initialization.
+     *
+     * @param worker GridWorker to run.
+     * @throws IgniteInterruptedCheckedException If wait is interrupted.
      */
-    private IgniteThread runWorker(GridWorker worker) throws IgniteInterruptedCheckedException {
-        IgniteThread runner = new IgniteThread(worker);
-
-        runner.start();
+    private void runWorker(GridWorker worker) throws IgniteInterruptedCheckedException {
+        workerExecutor.execute(worker);
 
         GridTestUtils.waitForCondition(() -> worker.runner() != null, 100);
+    }
 
-        return runner;
+    /** */
+    private class LatchingGridWorker extends GridWorker {
+        /** */
+        public LatchingGridWorker(IgniteEx ignite) {
+            super(ignite.name(), "test-worker", GridAbstractTest.log);
+        }
+
+        /** */
+        @Override protected void body() throws InterruptedException {
+            blockLatch.await();
+        }
     }
 }

@@ -524,6 +524,17 @@ final class ClientUtils {
         out.writeBoolean(qry.isLazy());
         out.writeLong(qry.getTimeout());
         out.writeBoolean(true); // include column names
+
+        if (qry.getPartitions() != null) {
+            out.writeInt(qry.getPartitions().length);
+
+            for (int part : qry.getPartitions())
+                out.writeInt(part);
+        }
+        else
+            out.writeInt(-1);
+
+        out.writeInt(qry.getUpdateBatchSize());
     }
 
     /** Write Ignite binary object to output stream. */

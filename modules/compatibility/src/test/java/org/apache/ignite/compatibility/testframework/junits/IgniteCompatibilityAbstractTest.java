@@ -45,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Super class for all compatibility tests.
  */
+@SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final ClassLoader CLASS_LOADER = IgniteCompatibilityAbstractTest.class.getClassLoader();
@@ -56,10 +57,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     protected static final int NODE_JOIN_TIMEOUT = 30_000;
 
     /** Local JVM Ignite node. */
-    protected Ignite locJvmInstance = null;
+    protected transient Ignite locJvmInstance = null;
 
     /** Remote JVM Ignite instance. */
-    protected Ignite rmJvmInstance = null;
+    protected transient Ignite rmJvmInstance = null;
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {

@@ -39,7 +39,6 @@ Transparent Data Encryption has some limitations that you should be aware of bef
 
 *Encryption*
 
-* No option to change the encryption key at runtime.
 * No option to encrypt/decrypt existing caches/tables.
 
 *Snapshots and Recovery*

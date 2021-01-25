@@ -41,7 +41,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Deployment\**" />
-    <None Remove="Examples\**" />
 
     <None Update="Config\ignite-halthandler-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\native-client-test-cache-affinity.xml" CopyToOutputDirectory="PreserveNewest" />
@@ -89,22 +88,24 @@
     <None Update="Config\Cache\Store\cache-store-session-shared-factory.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function2.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-attribute-node-filter.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="custom_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Compute\Forked\**" />
+    <None Update="Config\query-entity-metadata-registration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
 
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Deployment\**" />
-    <Compile Remove="Examples\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="Deployment\**" />
-    <EmbeddedResource Remove="Examples\**" />
     <EmbeddedResource Remove="Compute\Forked\**" />
   </ItemGroup>
 

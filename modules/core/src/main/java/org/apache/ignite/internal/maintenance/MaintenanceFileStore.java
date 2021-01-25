@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -52,7 +51,7 @@ import org.apache.ignite.maintenance.MaintenanceTask;
  */
 public class MaintenanceFileStore {
     /** */
-    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
+    public static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
     /** */
     private static final String TASKS_SEPARATOR = System.lineSeparator();

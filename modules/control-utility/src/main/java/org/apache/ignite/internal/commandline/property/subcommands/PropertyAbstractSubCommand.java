@@ -24,6 +24,7 @@ import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -35,7 +36,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 public abstract class PropertyAbstractSubCommand<
     MetadataArgsDto extends IgniteDataTransferObject,
     MetadataResultDto extends IgniteDataTransferObject>
-    implements Command<MetadataArgsDto> {
+    extends AbstractCommand<MetadataArgsDto> {
     /** */
     private MetadataArgsDto args;
 
