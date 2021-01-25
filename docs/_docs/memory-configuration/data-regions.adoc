@@ -128,7 +128,7 @@ To stop the warming up using control.sh:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --warm-up --stop --yes
