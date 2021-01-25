@@ -213,6 +213,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
             }
         }
+        
+        /// <summary>
+        /// Tests query entity validation when no <see cref="QuerySqlFieldAttribute"/> has been set.
+        /// </summary>
+        [Test]
+        public void TestQueryEntityValidationWithMissingQueryAttributes()
+        {
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cfg = new CacheConfiguration(
+                    TestUtils.TestName,
+                    new QueryEntity(typeof(string), typeof(MissingAttributesTest)));
+
+                var cache = ignite.GetOrCreateCache<string, MissingAttributesTest>(cfg);
+
+                cache["1"] = new MissingAttributesTest {Foo = "Bar"};
+            }
+        }
+
+        /// <summary>
+        /// Class without any <see cref="QuerySqlFieldAttribute"/> attributes.
+        /// </summary>
+        private class MissingAttributesTest
+        {
+            /** */
+            public string Foo { get; set; }
+        }
 
         /// <summary>
         /// Test person.
