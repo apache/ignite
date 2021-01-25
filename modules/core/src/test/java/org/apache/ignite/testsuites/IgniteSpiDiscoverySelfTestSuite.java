@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchangeTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteClientReconnectEventHandlingTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
@@ -169,7 +170,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     IgniteMetricsOverflowTest.class,
 
-    DiscoveryClientSocketTest.class
+    DiscoveryClientSocketTest.class,
+
+    DiscoverySpiDataExchangeTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */

@@ -869,6 +869,7 @@
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*CONTRIBUTING*.md</exclude><!--readme files-->
+                                        <exclude>**/*DEVNOTES*.md</exclude><!--readme files-->
                                         <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
