@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,16 +35,22 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitions;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 
 /** */
 public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Void, IdleVerifyResultV2> {
@@ -106,7 +115,7 @@ public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Void, 
         return ComputeJobResultPolicy.WAIT;
     }
 
-    /** Job that collects update counters of snapshot partitions. */
+    /** Job that collects update counters of snapshot partitions on the node it executes. */
     private static class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -135,7 +144,50 @@ public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Void, 
         }
 
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
-            return null;
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+
+            if (log.isInfoEnabled()) {
+                log.info("Verify snapshot partitions procedure has been initiated " +
+                    "[snpName=" + snpName + ", consId=" + consId + ']');
+            }
+
+            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
+            ByteBuffer pageBuf = ByteBuffer.allocate(meta.pageSize())
+                .order(ByteOrder.nativeOrder());
+
+            for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
+                String grpName = cacheGroupName(dir);
+                int grpId = CU.cacheId(grpName);
+
+                if (!meta.cacheGroupIds().contains(grpId)) {
+                    throw new IgniteException("Snapshot data doesn't contain required cache group " +
+                        "[grpName=" + grpName + ", snpName=" + snpName + ", consId=" + consId +
+                        ", meta=" + meta + ']');
+                }
+
+                for (File part : cachePartitions(dir)) {
+                    int partId = partId(part.getName());
+
+                    if (!meta.partitions().get(grpId).contains(partId)) {
+                        throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
+                            "[grpName=" + grpName + ", snpName=" + snpName + ", consId=" + consId +
+                            ", partId=" + partId + ", meta=" + meta + ']');
+                    }
+
+                    PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+
+                    // Snapshot partitions must always be in OWNING state.
+                    // There is no `primary` partitions for snapshot.
+                    PartitionHashRecordV2 rec = new PartitionHashRecordV2(key, false, consId,
+                        PartitionHashRecordV2.PartitionState.OWNING);
+
+                    snpMgr.readSnapshotPartitionMeta(part, grpId, partId, pageBuf, rec::updateCounter, rec::size);
+                    res.put(key, rec);
+                }
+            }
+
+            return res;
         }
 
         /** {@inheritDoc} */

@@ -91,7 +91,7 @@ public class VisorSnapshotMetadataCollectorTask
 
         /** {@inheritDoc} */
         @Override protected List<SnapshotMetadata> run(@Nullable String snpName) throws IgniteException {
-            return ignite.context().cache().context().snapshotMgr().localSnapshotMetadata(snpName);
+            return ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(snpName);
         }
     }
 }

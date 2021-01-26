@@ -1185,6 +1185,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 //            "Snapshots on an in-memory clusters are not allowed.");
     }
 
+    // TODO check snapshot must work for data regions with different page sizes.
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.

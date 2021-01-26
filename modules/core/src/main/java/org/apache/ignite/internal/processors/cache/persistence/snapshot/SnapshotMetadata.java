@@ -45,6 +45,9 @@ public class SnapshotMetadata implements Serializable {
     /** Consistent id of a node to which this metadata relates. */
     private String consId;
 
+    /** Page size of stored snapshot data. */
+    private int pageSize;
+
     /** The list of cache groups ids which were included into snapshot. */
     @GridToStringInclude
     private List<Integer> grpIds;
@@ -68,6 +71,7 @@ public class SnapshotMetadata implements Serializable {
      * @param rqId Unique snapshot request id.
      * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
+     * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
      */
@@ -75,6 +79,7 @@ public class SnapshotMetadata implements Serializable {
         UUID rqId,
         String snpName,
         String consId,
+        int pageSize,
         List<Integer> grpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs
@@ -82,6 +87,7 @@ public class SnapshotMetadata implements Serializable {
         this.rqId = rqId;
         this.snpName = snpName;
         this.consId = consId;
+        this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
 
@@ -130,6 +136,20 @@ public class SnapshotMetadata implements Serializable {
      */
     public void consistentId(String consId) {
         this.consId = consId;
+    }
+
+    /**
+     * @return Page size of stored snapshot data.
+     */
+    public int pageSize() {
+        return pageSize;
+    }
+
+    /**
+     * @param pageSize Page size of stored snapshot data.
+     */
+    public void pageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
     /**
