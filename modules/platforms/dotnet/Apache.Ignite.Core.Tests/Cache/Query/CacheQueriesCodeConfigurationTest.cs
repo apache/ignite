@@ -270,10 +270,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var queryEntity = cache.GetConfiguration().QueryEntities.Single();
             Assert.AreEqual(expectedTypeName, queryEntity.ValueTypeName);
 
-            var cur = cache.Query(new SqlFieldsQuery(
-                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name));
-
-            var tableName = cur.Single().Single(); // The value will be weird, see IGNITE-14064.
+            var tableName = cache.Query(new SqlFieldsQuery(
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name))
+                .Single().Single(); // The table name is weird, see IGNITE-14064.
 
             var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Foo, Bar from \"{0}\"", tableName)))
                 .Single();
@@ -299,10 +298,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var value = new GenericTest<GenericTest2<string>>(new GenericTest2<string>("foobar"));
             cache[1] = value;
 
-            var cur = cache.Query(new SqlFieldsQuery(
-                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name));
-
-            var tableName = cur.Single().Single(); // The value will be weird, see IGNITE-14064.
+            var tableName = cache.Query(new SqlFieldsQuery(
+                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name))
+                .Single().Single(); // The table name is weird, see IGNITE-14064.
 
             var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Bar from \"{0}\"", tableName)))
                 .Single().Single();
