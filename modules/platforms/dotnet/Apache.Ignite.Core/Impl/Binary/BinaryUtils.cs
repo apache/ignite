@@ -1530,8 +1530,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static string GetSqlTypeName(Type type)
         {
-            // SQL always uses simple type name without namespace, parent class, etc.
-            // TODO: Find that Java code and reference it here
+            // Ignite SQL engine always uses simple type name without namespace, parent class, etc.
+            // See QueryUtils.typeName
             return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
