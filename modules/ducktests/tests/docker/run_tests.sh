@@ -85,6 +85,9 @@ The options are as follows:
 --jdk
     Set jdk version to build, default is 8
 
+--image
+    Set custom docker image to run tests on.
+
 EOF
     exit 0
 }
