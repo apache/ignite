@@ -530,12 +530,13 @@ between index inline sizes may lead to a performance drop.
 The `check_index_inline_sizes` command validates the indexes inline size of given caches on all cluster nodes. The inline
 size of secondary indexes is always checked on a node join and a WARN message is printed to the log if they differ.
 
+Use the command below to check if the secondary indexes inline sizes are the same on all cluster nodes.
+
 [tabs]
 --
 tab:Shell[]
 [source,shell]
 ----
-# Checks that secondary indexes inline sizes are the same on all cluster nodes.
 control.sh|bat --cache check_index_inline_sizes
 ----
 --
