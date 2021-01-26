@@ -22,16 +22,12 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -46,14 +42,12 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -478,7 +472,6 @@ public class QueryParser {
                 GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
                 List<Integer> cacheIds = parser.cacheIds();
-                Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
                 // Calculate if query is in fact can be executed locally.
                 boolean loc = qry.isLocal();
@@ -519,10 +512,6 @@ public class QueryParser {
                     if (cacheIds.size() != 1)
                         throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
                             "that involve single transactional cache.");
-
-                    if (mvccCacheId == null)
-                        throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                            "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                     // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
                     GridSqlSelect selForUpdate = ((GridSqlSelect)selectStmt).copySelectForUpdate();
@@ -589,7 +578,6 @@ public class QueryParser {
                     forUpdateTwoStepQry,
                     meta,
                     cacheIds,
-                    mvccCacheId,
                     forUpdateQryOutTx,
                     forUpdateQryTx
                 );
@@ -627,48 +615,6 @@ public class QueryParser {
     }
 
     /**
-     * Get ID of the first MVCC cache for SELECT.
-     *
-     * @param objMap Object map.
-     * @return ID of the first MVCC cache or {@code null} if no MVCC caches involved.
-     */
-    private Integer mvccCacheIdForSelect(Map<Object, Object> objMap) {
-        Boolean mvccEnabled = null;
-        Integer mvccCacheId = null;
-        GridCacheContextInfo cctx = null;
-
-        for (Object o : objMap.values()) {
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-            if (o instanceof GridSqlTable && ((GridSqlTable)o).dataTable() != null) {
-                GridSqlTable tbl = (GridSqlTable)o;
-
-                if (tbl.dataTable() != null) {
-                    GridCacheContextInfo curCctx = tbl.dataTable().cacheInfo();
-
-                    assert curCctx != null;
-
-                    boolean curMvccEnabled =
-                        curCctx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-                    if (mvccEnabled == null) {
-                        mvccEnabled = curMvccEnabled;
-
-                        if (mvccEnabled)
-                            mvccCacheId = curCctx.cacheId();
-
-                        cctx = curCctx;
-                    }
-                    else if (mvccEnabled != curMvccEnabled)
-                        MvccUtils.throwAtomicityModesMismatchException(cctx.config(), curCctx.config());
-                }
-            }
-        }
-
-        return mvccCacheId;
-    }
-
-    /**
      * Prepare DML statement.
      *
      * @param planKey Plan key.
@@ -692,23 +638,6 @@ public class QueryParser {
         for (GridH2Table h2tbl : tbls)
             H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
 
-        // Check MVCC mode.
-        GridCacheContextInfo ctx = null;
-        boolean mvccEnabled = false;
-
-        for (GridH2Table h2tbl : tbls) {
-            GridCacheContextInfo curCtx = h2tbl.cacheInfo();
-            boolean curMvccEnabled = curCtx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-            if (ctx == null) {
-                ctx = curCtx;
-
-                mvccEnabled = curMvccEnabled;
-            }
-            else if (curMvccEnabled != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(ctx.config(), curCtx.config());
-        }
-
         // Get streamer info.
         GridH2Table streamTbl = null;
 
@@ -725,7 +654,6 @@ public class QueryParser {
             plan = UpdatePlanBuilder.planForStatement(
                 planKey,
                 stmt,
-                mvccEnabled,
                 idx,
                 log
             );
@@ -739,7 +667,6 @@ public class QueryParser {
 
         return new QueryParserResultDml(
             stmt,
-            mvccEnabled,
             streamTbl,
             plan
         );

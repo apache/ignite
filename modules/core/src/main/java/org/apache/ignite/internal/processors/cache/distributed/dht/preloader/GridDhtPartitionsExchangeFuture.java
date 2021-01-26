@@ -2538,9 +2538,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!cctx.localNode().isClient())
                 tryToPerformLocalSnapshotOperation();
 
-            if (err == null)
-                cctx.coordinators().onExchangeDone(events().discoveryCache());
-
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
                 comp.onDoneBeforeTopologyUnlock(this);
 

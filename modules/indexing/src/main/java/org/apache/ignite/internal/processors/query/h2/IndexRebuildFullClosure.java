@@ -29,21 +29,16 @@ public class IndexRebuildFullClosure implements SchemaIndexCacheVisitorClosure {
     /** */
     private final GridCacheQueryManager qryMgr;
 
-    /** MVCC status flag. */
-    private final boolean mvccEnabled;
-
     /**
      * @param qryMgr Query manager.
-     * @param mvccEnabled MVCC status flag.
      */
-    public IndexRebuildFullClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
+    public IndexRebuildFullClosure(GridCacheQueryManager qryMgr) {
         this.qryMgr = qryMgr;
-        this.mvccEnabled = mvccEnabled;
     }
 
     /** {@inheritDoc} */
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
         // prevRowAvailable is always true with MVCC on, and always false *on index rebuild* with MVCC off.
-        qryMgr.store(row, null, mvccEnabled);
+        qryMgr.store(row, null, false);
     }
 }

@@ -120,7 +120,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -873,14 +872,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean transactional() {
         CacheConfiguration cfg = config();
 
-        return cfg.getAtomicityMode() == TRANSACTIONAL || cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-    }
-
-    /**
-     * @return {@code True} if transactional snapshot.
-     */
-    public boolean transactionalSnapshot() {
-        return config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        return cfg.getAtomicityMode() == TRANSACTIONAL;
     }
 
     /**
@@ -2170,14 +2162,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
-    }
-
-    /**
-     * @return {@code True} if mvcc is enabled for cache.
-     */
-    public boolean mvccEnabled() {
-        return grp.mvccEnabled();
+        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
     }
 
     /**

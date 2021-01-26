@@ -40,48 +40,34 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<H2Row> implem
 
     /** */
     public static void register() {
-        register(false);
-
-        register(true);
-    }
-
-    /**
-     * @param mvcc Mvcc flag.
-     */
-    private static void register(boolean mvcc) {
-        short type = mvcc ? PageIO.T_H2_EX_REF_MVCC_INNER_START : PageIO.T_H2_EX_REF_INNER_START;
-
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
             IOVersions<? extends AbstractH2ExtrasInnerIO> io =
-                getVersions((short)(type + payload - 1), payload, mvcc);
+                getVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1), payload);
 
-            PageIO.registerH2ExtraInner(io, mvcc);
+            PageIO.registerH2ExtraInner(io);
         }
     }
 
     /**
      * @param payload Payload size.
-     * @param mvccEnabled Mvcc flag.
      * @return IOVersions for given payload.
      */
-    @SuppressWarnings("unchecked")
-    public static IOVersions<? extends BPlusInnerIO<H2Row>> getVersions(int payload, boolean mvccEnabled) {
+    public static IOVersions<? extends BPlusInnerIO<H2Row>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)
-            return mvccEnabled ? H2MvccInnerIO.VERSIONS : H2InnerIO.VERSIONS;
+            return H2InnerIO.VERSIONS;
         else
-            return (IOVersions<BPlusInnerIO<H2Row>>)PageIO.getInnerVersions((short)(payload - 1), mvccEnabled);
+            return (IOVersions<BPlusInnerIO<H2Row>>)PageIO.getInnerVersions((short)(payload - 1));
     }
 
     /**
      * @param type Type.
      * @param payload Payload size.
-     * @param mvcc Mvcc flag.
      * @return Instance of IO versions.
      */
-    private static IOVersions<? extends AbstractH2ExtrasInnerIO> getVersions(short type, short payload, boolean mvcc) {
-        return new IOVersions<>(mvcc ? new H2MvccExtrasInnerIO(type, 1, payload) : new H2ExtrasInnerIO(type, 1, payload));
+    private static IOVersions<? extends AbstractH2ExtrasInnerIO> getVersions(short type, short payload) {
+        return new IOVersions<>(new H2ExtrasInnerIO(type, 1, payload));
     }
 
     /**

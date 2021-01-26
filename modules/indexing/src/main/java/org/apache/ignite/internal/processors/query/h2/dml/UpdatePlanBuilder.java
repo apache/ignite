@@ -77,8 +77,7 @@ import org.h2.table.Column;
  */
 public final class UpdatePlanBuilder {
     /** Converter from GridSqlColumn to Column. */
-    private static final IgniteClosure<GridSqlColumn, Column> TO_H2_COL =
-        (IgniteClosure<GridSqlColumn, Column>)GridSqlColumn::column;
+    private static final IgniteClosure<GridSqlColumn, Column> TO_H2_COL = GridSqlColumn::column;
 
     /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
     private static boolean ALLOW_KEY_VAL_UPDATES = IgniteSystemProperties.getBoolean(
@@ -97,7 +96,6 @@ public final class UpdatePlanBuilder {
      *
      * @param planKey Plan key.
      * @param stmt Statement.
-     * @param mvccEnabled MVCC enabled flag.
      * @param idx Indexing.
      * @return Update plan.
      */
@@ -105,14 +103,13 @@ public final class UpdatePlanBuilder {
     public static UpdatePlan planForStatement(
         QueryDescriptor planKey,
         GridSqlStatement stmt,
-        boolean mvccEnabled,
         IgniteH2Indexing idx,
         IgniteLogger log
     ) throws IgniteCheckedException {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(planKey, stmt, idx, mvccEnabled, log);
+            return planForInsert(planKey, stmt, idx, log);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(planKey, stmt, idx, mvccEnabled, log);
+            return planForUpdate(planKey, stmt, idx, log);
         else
             throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -124,7 +121,6 @@ public final class UpdatePlanBuilder {
      * @param planKey Plan key.
      * @param stmt INSERT or MERGE statement.
      * @param idx Indexing.
-     * @param mvccEnabled Mvcc flag.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
@@ -133,7 +129,6 @@ public final class UpdatePlanBuilder {
         QueryDescriptor planKey,
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
-        boolean mvccEnabled,
         IgniteLogger log
     ) throws IgniteCheckedException {
         GridSqlQuery sel = null;
@@ -269,7 +264,6 @@ public final class UpdatePlanBuilder {
         if (rowsNum == 0 && !F.isEmpty(selectSql)) {
             distributed = checkPlanCanBeDistributed(
                 idx,
-                mvccEnabled,
                 planKey,
                 selectSql,
                 tbl.dataTable().cacheName(),
@@ -347,7 +341,6 @@ public final class UpdatePlanBuilder {
      * @param planKey Plan key.
      * @param stmt UPDATE or DELETE statement.
      * @param idx Indexing.
-     * @param mvccEnabled MVCC flag.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
@@ -355,7 +348,6 @@ public final class UpdatePlanBuilder {
         QueryDescriptor planKey,
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
-        boolean mvccEnabled,
         IgniteLogger log
     ) throws IgniteCheckedException {
         GridSqlElement target;
@@ -451,7 +443,6 @@ public final class UpdatePlanBuilder {
                 if (!F.isEmpty(selectSql)) {
                     distributed = checkPlanCanBeDistributed(
                         idx,
-                        mvccEnabled,
                         planKey,
                         selectSql,
                         tbl.dataTable().cacheName(),
@@ -487,7 +478,6 @@ public final class UpdatePlanBuilder {
                 if (!F.isEmpty(selectSql)) {
                     distributed = checkPlanCanBeDistributed(
                         idx,
-                        mvccEnabled,
                         planKey,
                         selectSql,
                         tbl.dataTable().cacheName(),
@@ -610,7 +600,7 @@ public final class UpdatePlanBuilder {
      * @return Closure returning key or value.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked", "IfMayBeConditional"})
+    @SuppressWarnings({"ConstantConditions", "IfMayBeConditional"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
         final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
@@ -888,7 +878,6 @@ public final class UpdatePlanBuilder {
      * Checks whether the given update plan can be distributed and returns additional info.
      *
      * @param idx Indexing.
-     * @param mvccEnabled Mvcc flag.
      * @param planKey Plan key.
      * @param selectQry Derived select query.
      * @param cacheName Cache name.
@@ -897,14 +886,13 @@ public final class UpdatePlanBuilder {
      */
     private static DmlDistributedPlanInfo checkPlanCanBeDistributed(
         IgniteH2Indexing idx,
-        boolean mvccEnabled,
         QueryDescriptor planKey,
         String selectQry,
         String cacheName,
         IgniteLogger log
     )
         throws IgniteCheckedException {
-        if ((!mvccEnabled && !planKey.skipReducerOnUpdate()) || planKey.batched())
+        if (!planKey.skipReducerOnUpdate() || planKey.batched())
             return null;
 
         try (H2PooledConnection conn = idx.connections().connection(planKey.schemaName())) {

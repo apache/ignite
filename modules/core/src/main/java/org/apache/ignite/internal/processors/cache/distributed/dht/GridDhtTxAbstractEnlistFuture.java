@@ -49,9 +49,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
@@ -125,9 +122,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Lock version. */
     protected final GridCacheVersion lockVer;
 
-    /** */
-    protected final MvccSnapshot mvccSnapshot;
-
     /** New DHT nodes. */
     protected Set<UUID> newDhtNodes = new HashSet<>();
 
@@ -194,7 +188,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
-     * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
@@ -206,7 +199,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
@@ -226,7 +218,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.nearLockVer = nearLockVer;
         this.nearFutId = nearFutId;
         this.nearMiniId = nearMiniId;
-        this.mvccSnapshot = mvccSnapshot;
         this.timeout = timeout;
         this.tx = tx;
         this.filter = filter;
@@ -330,8 +321,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             cctx.time().addTimeoutObject(timeoutObj);
 
         try {
-            checkCoordinatorVersion();
-
             UpdateSourceIterator<?> it = createIterator();
 
             if (!it.hasNext()) {
@@ -649,9 +638,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             || op == EnlistOperation.LOCK)
             return;
 
-        cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
-            updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
-
         addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId(), backups);
     }
 
@@ -924,21 +910,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert !nodes.isEmpty() && nodes.get(0).isLocal();
 
         return nodes.subList(1, nodes.size());
-    }
-
-    /**
-     * Checks whether new coordinator was initialized after the snapshot is acquired.
-     *
-     * Need to fit invariant that all updates are finished before a new coordinator is initialized.
-     *
-     * @throws ClusterTopologyCheckedException If failed.
-     */
-    private void checkCoordinatorVersion() throws ClusterTopologyCheckedException {
-        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
-
-        if (!crd.initialized() || crd.version() != mvccSnapshot.coordinatorVersion())
-            throw new ClusterTopologyCheckedException("Cannot perform update, coordinator was changed: " +
-                "[currentCoordinator=" + crd + ", mvccSnapshot=" + mvccSnapshot + "].");
     }
 
     /**

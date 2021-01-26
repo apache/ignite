@@ -48,9 +48,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -139,12 +136,6 @@ public class GridCacheSharedContext<K, V> {
     /** Partitons evict manager. */
     private PartitionsEvictManager evictMgr;
 
-    /** Mvcc caching manager. */
-    private MvccCachingManager mvccCachingMgr;
-
-    /** Deadlock detection manager. */
-    private DeadlockDetectionManager deadlockDetectionMgr;
-
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -211,8 +202,6 @@ public class GridCacheSharedContext<K, V> {
      * @param evictMgr Partitons evict manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
-     * @param mvccCachingMgr Mvcc caching manager.
-     * @param deadlockDetectionMgr Deadlock detection manager.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -233,8 +222,6 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
-        MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr
     ) {
         this.kernalCtx = kernalCtx;
@@ -257,8 +244,6 @@ public class GridCacheSharedContext<K, V> {
             ioMgr,
             ttlMgr,
             evictMgr,
-            mvccCachingMgr,
-            deadlockDetectionMgr,
             diagnosticMgr
         );
 
@@ -437,8 +422,6 @@ public class GridCacheSharedContext<K, V> {
             ioMgr,
             ttlMgr,
             evictMgr,
-            mvccCachingMgr,
-            deadlockDetectionMgr,
             diagnosticMgr
         );
 
@@ -487,8 +470,6 @@ public class GridCacheSharedContext<K, V> {
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
-        MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr
     ) {
         this.diagnosticMgr = add(mgrs, diagnosticMgr);
@@ -508,8 +489,6 @@ public class GridCacheSharedContext<K, V> {
         this.ioMgr = add(mgrs, ioMgr);
         this.ttlMgr = add(mgrs, ttlMgr);
         this.evictMgr = add(mgrs, evictMgr);
-        this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
-        this.deadlockDetectionMgr = add(mgrs, deadlockDetectionMgr);
     }
 
     /**
@@ -849,13 +828,6 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Cache mvcc coordinator manager.
-     */
-    public MvccProcessor coordinators() {
-        return kernalCtx.coordinators();
-    }
-
-    /**
      * @return Partition evict manager.
      */
     public PartitionsEvictManager evict() {
@@ -863,24 +835,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Mvcc transaction enlist caching manager.
-     */
-    public MvccCachingManager mvccCaching() {
-        return mvccCachingMgr;
-    }
-
-    /**
      * @return Diagnostic manager.
      */
     public CacheDiagnosticManager diagnostic() {
         return diagnosticMgr;
-    }
-
-    /**
-     * @return Deadlock detection manager.
-     */
-    public DeadlockDetectionManager deadlockDetectionMgr() {
-        return deadlockDetectionMgr;
     }
 
     /**

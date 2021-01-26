@@ -761,8 +761,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
                         ctx.cache().context().versions().onLocalJoin(topVer);
 
-                        ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
-
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
                         ctx.service().onLocalJoin(discoEvt, discoCache);
@@ -824,8 +822,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     gridStartTime = getSpi().getGridStartTime();
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
-
-                    ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 

@@ -51,9 +51,6 @@ public class QueryParserResultSelect {
     /** Involved cache IDs. */
     private final List<Integer> cacheIds;
 
-    /** ID of the first MVCC cache. */
-    private final Integer mvccCacheId;
-
     /**
      * Sql query with cleared "FOR UPDATE" statement.
      * This string is used when query is executed out of transaction.
@@ -74,7 +71,6 @@ public class QueryParserResultSelect {
      * @param forUpdateTwoStepQry FOR UPDATE query for execution within transaction.
      * @param meta Fields metadata.
      * @param cacheIds Cache IDs.
-     * @param mvccCacheId ID of the first MVCC cache.
      * @param forUpdateQryOutTx FOR UPDATE query string for execution out of transaction.
      * @param forUpdateQryTx FOR UPDATE query string for execution within transaction.
      */
@@ -84,7 +80,6 @@ public class QueryParserResultSelect {
         @Nullable GridCacheTwoStepQuery forUpdateTwoStepQry,
         List<GridQueryFieldMetadata> meta,
         List<Integer> cacheIds,
-        @Nullable Integer mvccCacheId,
         String forUpdateQryOutTx,
         String forUpdateQryTx
     ) {
@@ -93,7 +88,6 @@ public class QueryParserResultSelect {
         this.forUpdateTwoStepQry = forUpdateTwoStepQry;
         this.meta = meta;
         this.cacheIds = cacheIds;
-        this.mvccCacheId = mvccCacheId;
         this.forUpdateQryOutTx = forUpdateQryOutTx;
         this.forUpdateQryTx = forUpdateQryTx;
     }
@@ -138,20 +132,6 @@ public class QueryParserResultSelect {
      */
     public List<Integer> cacheIds() {
         return cacheIds;
-    }
-
-    /**
-     * @return ID of the first MVCC cache.
-     */
-    public Integer mvccCacheId() {
-        return mvccCacheId;
-    }
-
-    /**
-     * @return Whether this is a SELECT for MVCC caches.
-     */
-    public boolean mvccEnabled() {
-        return mvccCacheId != null;
     }
 
     /**

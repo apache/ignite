@@ -40,47 +40,34 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<H2Row> implemen
 
     /** */
     public static void register() {
-        register(false);
-
-        register(true);
-    }
-
-    /**
-     * @param mvcc Mvcc flag.
-     */
-    private static void register(boolean mvcc) {
-        short type = mvcc ? PageIO.T_H2_EX_REF_MVCC_LEAF_START : PageIO.T_H2_EX_REF_LEAF_START;
-
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
             IOVersions<? extends AbstractH2ExtrasLeafIO> io =
-                getVersions((short)(type + payload - 1), payload, mvcc);
+                getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload);
 
-            PageIO.registerH2ExtraLeaf(io, mvcc);
+            PageIO.registerH2ExtraLeaf(io);
         }
     }
 
     /**
      * @param payload Payload size.
-     * @param mvccEnabled Mvcc flag.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusLeafIO<H2Row>> getVersions(int payload, boolean mvccEnabled) {
+    public static IOVersions<? extends BPlusLeafIO<H2Row>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)
-            return mvccEnabled ? H2MvccLeafIO.VERSIONS : H2LeafIO.VERSIONS;
+            return H2LeafIO.VERSIONS;
         else
-            return (IOVersions<BPlusLeafIO<H2Row>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
+            return (IOVersions<BPlusLeafIO<H2Row>>)PageIO.getLeafVersions((short)(payload - 1));
     }
 
     /**
      * @param type Type.
      * @param payload Payload size.
-     * @param mvcc Mvcc flag.
      * @return Versions.
      */
-    private static IOVersions<? extends AbstractH2ExtrasLeafIO> getVersions(short type, short payload, boolean mvcc) {
-        return new IOVersions<>(mvcc ? new H2MvccExtrasLeafIO(type, 1, payload) : new H2ExtrasLeafIO(type, 1, payload));
+    private static IOVersions<? extends AbstractH2ExtrasLeafIO> getVersions(short type, short payload) {
+        return new IOVersions<>(new H2ExtrasLeafIO(type, 1, payload));
     }
 
     /**

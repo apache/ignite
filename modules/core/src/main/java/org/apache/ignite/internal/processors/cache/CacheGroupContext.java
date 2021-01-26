@@ -67,7 +67,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -162,9 +161,6 @@ public class CacheGroupContext {
     private volatile boolean qryEnabled;
 
     /** */
-    private final boolean mvccEnabled;
-
-    /** */
     private volatile boolean localWalEnabled;
 
     /** */
@@ -242,8 +238,6 @@ public class CacheGroupContext {
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
-        mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-
         log = ctx.kernalContext().log(getClass());
 
         metrics = new CacheGroupMetricsImpl(this);
@@ -260,13 +254,6 @@ public class CacheGroupContext {
         }
 
         hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
-    }
-
-    /**
-     * @return Mvcc flag.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
     }
 
     /**
