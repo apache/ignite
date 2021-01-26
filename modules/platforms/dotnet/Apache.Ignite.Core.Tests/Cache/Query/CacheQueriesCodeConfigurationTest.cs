@@ -248,7 +248,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestGenericQueryTypes()
         {
+            // TODO: test generic key as well.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new CacheConfiguration(
+                TestUtils.TestName,
+                new QueryEntity(typeof(int), typeof(GenericTest<string>)));
+
+            var cache = ignite.GetOrCreateCache<int, GenericTest<string>>(cfg);
+            cache[1] = new GenericTest<string> {Prop = "1"};
+
+            var res = cache.Query(new SqlFieldsQuery("select Prop from GenericTest"));
+            Assert.AreEqual("1", res.Single().Single());
         }
 
         /// <summary>
@@ -407,6 +418,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             /// </value>
             [QuerySqlField]
             public string Foo { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest<T>
+        {
+            /** */
+            [QuerySqlField]
+            public T Prop { get; set; }
         }
     }
 }
