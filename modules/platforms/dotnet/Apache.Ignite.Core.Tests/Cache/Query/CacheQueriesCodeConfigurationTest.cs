@@ -258,7 +258,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = ignite.GetOrCreateCache<int, GenericTest<string>>(cfg);
             cache[1] = new GenericTest<string> {Prop = "1"};
 
-            var res = cache.Query(new SqlFieldsQuery("select Prop from GenericTest"));
+            var tables = cache.Query(new SqlFieldsQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES"))
+                .Select(x => (string) x.Single()).ToArray();
+
+            var res = cache.Query(new SqlFieldsQuery("select Prop from \"0, CULTURE=NEUTRAL, PUBLICKEYTOKEN=7CEC85D7BEA7798E]]\""));
             Assert.AreEqual("1", res.Single().Single());
         }
 
