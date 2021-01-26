@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -249,24 +250,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestGenericQueryTypes()
         {
             // TODO: test generic key as well.
-            // TODO: There are two issues at hand:
-            // - bad binary meta with assembly version
-            // - bad table name
-            // TODO: File separate issue for the table name.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var cfg = new CacheConfiguration(
-                TestUtils.TestName,
-                new QueryEntity(typeof(int), typeof(GenericTest<string>)));
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(GenericTest<int>), typeof(GenericTest<string>))}
+            };
 
-            var cache = ignite.GetOrCreateCache<int, GenericTest<string>>(cfg);
-            cache[1] = new GenericTest<string> {Prop = "1"};
+            var cache = ignite.GetOrCreateCache<GenericTest<int>, GenericTest<string>>(cfg);
+            var key = new GenericTest<int>(1);
+            var value = new GenericTest<string>("2");
+            cache[key] = value;
 
-            var tables = cache.Query(new SqlFieldsQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES"))
-                .Select(x => (string) x.Single()).ToArray();
+            var tables = cache.Query(new SqlFieldsQuery("SELECT * FROM INFORMATION_SCHEMA.TABLES")).GetAll();
 
-            var res = cache.Query(new SqlFieldsQuery("select Prop from \"0, CULTURE=NEUTRAL, PUBLICKEYTOKEN=7CEC85D7BEA7798E]]\""));
-            Assert.AreEqual("1", res.Single().Single());
+            var binType = ignite.GetBinary().GetBinaryType(value.GetType());
+            var expectedTypeName = BinaryBasicNameMapper.FullNameInstance.GetTypeName(value.GetType().FullName);
+            var expectedTypeId = BinaryUtils.GetStringHashCodeLowerCase(expectedTypeName);
+
+            Assert.AreEqual(expectedTypeName, binType.TypeName);
+            Assert.AreEqual(expectedTypeId, binType.TypeId);
+
+            var queryEntity = cache.GetConfiguration().QueryEntities.Single();
+            Assert.AreEqual(expectedTypeName, queryEntity.ValueTypeName);
         }
 
         /// <summary>
@@ -432,6 +438,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private class GenericTest<T>
         {
+            /** */
+            public GenericTest(T prop)
+            {
+                Prop = prop;
+            }
+
             /** */
             [QuerySqlField]
             public T Prop { get; set; }
