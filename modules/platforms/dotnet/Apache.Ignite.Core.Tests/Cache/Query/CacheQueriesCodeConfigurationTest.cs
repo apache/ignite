@@ -252,12 +252,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
-                QueryEntities = new[] {new QueryEntity(typeof(GenericTest<int>), typeof(GenericTest<string>))}
+                QueryEntities = new[] {new QueryEntity(typeof(GenericTest<int>), typeof(GenericTest2<string>))}
             };
 
-            var cache = ignite.GetOrCreateCache<GenericTest<int>, GenericTest<string>>(cfg);
+            var cache = ignite.GetOrCreateCache<GenericTest<int>, GenericTest2<string>>(cfg);
             var key = new GenericTest<int>(1);
-            var value = new GenericTest<string>("2");
+            var value = new GenericTest2<string>("foo");
             cache[key] = value;
 
             var binType = ignite.GetBinary().GetBinaryType(value.GetType());
@@ -272,10 +272,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cur = cache.Query(new SqlFieldsQuery(
                 "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name));
-            var tableName = cur.Single().Single();
 
-            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT * from " + tableName)).GetAll();
-            Assert.AreEqual("1", sqlRes); // TODO
+            var tableName = cur.Single().Single(); // The value will be weird, see IGNITE-14064.
+
+            var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Foo, Bar from \"{0}\"", tableName)))
+                .Single();
+
+            Assert.AreEqual(key.Foo, sqlRes[0]);
+            Assert.AreEqual(value.Bar, sqlRes[1]);
         }
 
         /// <summary>
@@ -442,14 +446,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private class GenericTest<T>
         {
             /** */
-            public GenericTest(T prop)
+            public GenericTest(T foo)
             {
-                Prop = prop;
+                Foo = foo;
             }
 
             /** */
             [QuerySqlField]
-            public T Prop { get; set; }
+            public T Foo { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest2<T>
+        {
+            /** */
+            public GenericTest2(T bar)
+            {
+                Bar = bar;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Bar { get; set; }
         }
     }
 }
