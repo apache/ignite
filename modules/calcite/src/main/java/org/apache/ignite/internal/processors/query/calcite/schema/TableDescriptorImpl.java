@@ -679,9 +679,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         }
     }
 
-    /**
-     * @return Type description.
-     */
+    /** {@inheritDoc} */
     @Override public GridQueryTypeDescriptor typeDescription() {
         return typeDesc;
     }

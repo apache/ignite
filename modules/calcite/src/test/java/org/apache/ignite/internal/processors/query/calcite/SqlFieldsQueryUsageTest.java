@@ -61,7 +61,7 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
         execute(grid(0), "CREATE TABLE IF NOT EXISTS Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
         execute(grid(0), "alter table Person add column age int");
-        execute(grid(0),"drop table Person");
+        execute(grid(0), "drop table Person");
     }
 
     /** */
@@ -88,7 +88,7 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
 
         devCache.put(1, 2);
 
-        assertEquals(1, execute(client,"SELECT * FROM Developer").size());;
+        assertEquals(1, execute(client, "SELECT * FROM Developer").size());;
     }
 
     /**
