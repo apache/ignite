@@ -1538,12 +1538,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             // how does this work when SimpleMapper is used? - because NameMapper+IdMapper are used on the Java side
             // to get the type id from QueryEntity.valueTypeName.
 
-            // return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
-
-            // The following typeIds must match for SQL engine to work correctly (but how does it work with broken generics?):
+            // The following typeIds must match for SQL engine to work correctly
             // * CreateCache -> QueryEntity.ValueTypeName -> Java -> ctx.cacheObjects().typeId()
             // * Cache.Put -> Marshaller.GetTypeId
+            // However, thanks to "IGNITE-13160 .NET: register binary meta during cache start",
+            // we register query types in .NET Marshaller using this same full name below,
+            // so the type ids now match, even though we have bypassed the TypeNameParser, and included assembly versions
+            // in the binary metadata!
             return type.FullName;
+            // return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
         /**
