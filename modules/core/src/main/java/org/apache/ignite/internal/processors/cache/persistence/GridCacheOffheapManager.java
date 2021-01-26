@@ -1311,8 +1311,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         name,
                         grp.groupId(),
                         grp.dataRegion().pageMemory(), globalRemoveId(),
-                        reuseListForIndex(name),
-                        grp.mvccEnabled()
+                        reuseListForIndex(name)
                     );
 
                     indexStorage.dropIndex(name);
@@ -1754,46 +1753,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public int cacheId() {
             return entry.cacheId();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion() {
-            return 0; // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCoordinatorVersion() {
-            return 0; // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCounter() {
-            return 0; // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public int newMvccOperationCounter() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte mvccTxState() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte newMvccTxState() {
-            return 0; // TODO IGNITE-7384
         }
     }
 
@@ -2611,14 +2570,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx,
-            @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            return delegate.cleanup(cctx, cleanupRows);
-        }
-
-        /** {@inheritDoc} */
         @Override public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c)
             throws IgniteCheckedException {
             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -2669,17 +2620,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot mvccSnapshot)
-            throws IgniteCheckedException {
-            CacheDataStore delegate = init0(true);
-
-            if (delegate != null)
-                return delegate.cursor(mvccSnapshot);
-
-            return EMPTY_CURSOR;
-        }
-
-        /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(
             int cacheId,
             KeyCacheObject lower,
@@ -2707,21 +2647,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-            KeyCacheObject lower,
-            KeyCacheObject upper,
-            Object x,
-            MvccSnapshot mvccSnapshot)
-            throws IgniteCheckedException {
-            CacheDataStore delegate = init0(true);
-
-            if (delegate != null)
-                return delegate.cursor(cacheId, lower, upper, x, mvccSnapshot);
-
-            return EMPTY_CURSOR;
-        }
-
-        /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
             // No need to destroy delegate.
         }
@@ -2740,17 +2665,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (delegate != null)
                 return delegate.cursor(cacheId);
-
-            return EMPTY_CURSOR;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-            MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(true);
-
-            if (delegate != null)
-                return delegate.cursor(cacheId, mvccSnapshot);
 
             return EMPTY_CURSOR;
         }

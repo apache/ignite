@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -1032,7 +1031,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"StringEquality"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
         String schemaName,
         SqlFieldsQuery qry,
@@ -1041,108 +1039,94 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean failOnMultipleStmts,
         GridQueryCancel cancel
     ) {
-        try {
-            List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
+        List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
 
-            SqlFieldsQuery remainingQry = qry;
+        SqlFieldsQuery remainingQry = qry;
 
-            while (remainingQry != null) {
-                Span qrySpan = ctx.tracing().create(SQL_QRY, MTC.span())
-                    .addTag(SQL_SCHEMA, () -> schemaName);
+        while (remainingQry != null) {
+            Span qrySpan = ctx.tracing().create(SQL_QRY, MTC.span())
+                .addTag(SQL_SCHEMA, () -> schemaName);
 
-                try (TraceSurroundings ignored = MTC.supportContinual(qrySpan)) {
-                    // Parse.
-                    QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
+            try (TraceSurroundings ignored = MTC.supportContinual(qrySpan)) {
+                // Parse.
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
-                    qrySpan.addTag(SQL_QRY_TEXT, () -> parseRes.queryDescriptor().sql());
+                qrySpan.addTag(SQL_QRY_TEXT, () -> parseRes.queryDescriptor().sql());
 
-                    remainingQry = parseRes.remainingQuery();
+                remainingQry = parseRes.remainingQuery();
 
-                    // Get next command.
-                    QueryDescriptor newQryDesc = parseRes.queryDescriptor();
-                    QueryParameters newQryParams = parseRes.queryParameters();
+                // Get next command.
+                QueryDescriptor newQryDesc = parseRes.queryDescriptor();
+                QueryParameters newQryParams = parseRes.queryParameters();
 
-                    // Check if there is enough parameters. Batched statements are not checked at this point
-                    // since they pass parameters differently.
-                    if (!newQryDesc.batched()) {
-                        int qryParamsCnt = F.isEmpty(newQryParams.arguments()) ? 0 : newQryParams.arguments().length;
+                // Check if there is enough parameters. Batched statements are not checked at this point
+                // since they pass parameters differently.
+                if (!newQryDesc.batched()) {
+                    int qryParamsCnt = F.isEmpty(newQryParams.arguments()) ? 0 : newQryParams.arguments().length;
 
-                        if (qryParamsCnt < parseRes.parametersCount())
-                            throw new IgniteSQLException("Invalid number of query parameters [expected=" +
-                                parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
-                    }
-
-                    // Check if cluster state is valid.
-                    checkClusterState(parseRes);
-
-                    // Execute.
-                    if (parseRes.isCommand()) {
-                        QueryParserResultCommand cmd = parseRes.command();
-
-                        assert cmd != null;
-
-                        FieldsQueryCursor<List<?>> cmdRes = executeCommand(
-                            newQryDesc,
-                            newQryParams,
-                            cliCtx,
-                            cmd
-                        );
-
-                        res.add(cmdRes);
-                    }
-                    else if (parseRes.isDml()) {
-                        QueryParserResultDml dml = parseRes.dml();
-
-                        assert dml != null;
-
-                        List<? extends FieldsQueryCursor<List<?>>> dmlRes = executeDml(
-                            newQryDesc,
-                            newQryParams,
-                            dml,
-                            cancel
-                        );
-
-                        res.addAll(dmlRes);
-                    }
-                    else {
-                        assert parseRes.isSelect();
-
-                        QueryParserResultSelect select = parseRes.select();
-
-                        assert select != null;
-
-                        List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelect(
-                            newQryDesc,
-                            newQryParams,
-                            select,
-                            keepBinary,
-                            cancel
-                        );
-
-                        res.addAll(qryRes);
-                    }
+                    if (qryParamsCnt < parseRes.parametersCount())
+                        throw new IgniteSQLException("Invalid number of query parameters [expected=" +
+                            parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
                 }
-                catch (Throwable th) {
-                   qrySpan.addTag(ERROR, th::getMessage).end();
 
-                   throw th;
+                // Check if cluster state is valid.
+                checkClusterState(parseRes);
+
+                // Execute.
+                if (parseRes.isCommand()) {
+                    QueryParserResultCommand cmd = parseRes.command();
+
+                    assert cmd != null;
+
+                    FieldsQueryCursor<List<?>> cmdRes = executeCommand(
+                        newQryDesc,
+                        newQryParams,
+                        cliCtx,
+                        cmd
+                    );
+
+                    res.add(cmdRes);
+                }
+                else if (parseRes.isDml()) {
+                    QueryParserResultDml dml = parseRes.dml();
+
+                    assert dml != null;
+
+                    List<? extends FieldsQueryCursor<List<?>>> dmlRes = executeDml(
+                        newQryDesc,
+                        newQryParams,
+                        dml,
+                        cancel
+                    );
+
+                    res.addAll(dmlRes);
+                }
+                else {
+                    assert parseRes.isSelect();
+
+                    QueryParserResultSelect select = parseRes.select();
+
+                    assert select != null;
+
+                    List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelect(
+                        newQryDesc,
+                        newQryParams,
+                        select,
+                        keepBinary,
+                        cancel
+                    );
+
+                    res.addAll(qryRes);
                 }
             }
+            catch (Throwable th) {
+               qrySpan.addTag(ERROR, th::getMessage).end();
 
-            return res;
-        }
-        catch (RuntimeException | Error e) {
-            GridNearTxLocal tx = ctx.cache().context().tm().tx();
-
-            if (tx != null && tx.mvccSnapshot() != null &&
-                (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
-                    ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION)) {
-
-                tx.setRollbackOnly();
+               throw th;
             }
-
-            throw e;
         }
+
+        return res;
     }
 
     /**
