@@ -126,7 +126,8 @@ public class IndexingDefragmentation {
                 cpLockThreshold,
                 lastCpLockTs,
                 table
-            )
+            ),
+            grpCtx.cacheObjectContext().kernalContext().security()
         );
 
         if (log.isInfoEnabled())
