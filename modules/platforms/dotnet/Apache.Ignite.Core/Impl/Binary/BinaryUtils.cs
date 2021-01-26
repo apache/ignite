@@ -1530,23 +1530,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static string GetSqlTypeName(Type type)
         {
-            // Ignite SQL engine always uses simple type name without namespace, parent class, etc.
-            // See QueryUtils.typeName
-            // TODO: See GridQueryProcessor.store - make sure a matching table is found for generic types
-            // Java uses typeId to locate corresponding QueryEntity when storing cache data,
-            // so typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId -
-            // how does this work when SimpleMapper is used? - because NameMapper+IdMapper are used on the Java side
-            // to get the type id from QueryEntity.valueTypeName.
-
-            // The following typeIds must match for SQL engine to work correctly
-            // * CreateCache -> QueryEntity.ValueTypeName -> Java -> ctx.cacheObjects().typeId()
-            // * Cache.Put -> Marshaller.GetTypeId
-            // However, thanks to "IGNITE-13160 .NET: register binary meta during cache start",
-            // we register query types in .NET Marshaller using this same full name below,
-            // so the type ids now match, even though we have bypassed the TypeNameParser, and included assembly versions
-            // in the binary metadata!
-            return type.FullName;
-            // return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
+            // Ignite SQL engine always uses simple type name without namespace, parent class, etc -
+            // see QueryUtils.typeName.
+            // GridQueryProcessor.store uses this type name to ensure that we put correct data to the cache:
+            // cacheObjects().typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId.
+            // Additionally, this type name is passed back to UnmanagedCallbacks.BinaryTypeGet to register the
+            // query types on cache start.
+            return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
         /**
