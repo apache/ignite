@@ -249,6 +249,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestGenericQueryTypes()
         {
             // TODO: test generic key as well.
+            // TODO: There are two issues at hand:
+            // - bad binary meta with assembly version
+            // - bad table name
+            // TODO: File separate issue for the table name.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             var cfg = new CacheConfiguration(
