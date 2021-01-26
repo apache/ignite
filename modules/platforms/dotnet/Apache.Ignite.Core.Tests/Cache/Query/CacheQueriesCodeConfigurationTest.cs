@@ -33,14 +33,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// </summary>
     public class CacheQueriesCodeConfigurationTest
     {
-        // TODO: Make all tests use a single Ignite instance to reduce execution time.
         const string CacheName = "personCache";
 
         /// <summary>
         /// Tears down the test fixture.
         /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
         }
