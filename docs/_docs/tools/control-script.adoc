@@ -523,9 +523,9 @@ Like `idle_verify`, index validation tool works correctly only if updates are st
 
 === Check SQL Index Inline Size
 
-During the operation of the Ignite cluster it could have a different SQL index inline size on cluster nodes.
-For example, due to the `IGNITE_MAX_INDEX_PAYLOAD_SIZE` property value is different on cluster nodes. The difference
-of index inline size may lead to performance drop.
+A running Ignite cluster could have different SQL index inline sizes on its cluster nodes.
+For example, it could happen due to the `IGNITE_MAX_INDEX_PAYLOAD_SIZE` property value is different on the cluster nodes. The difference
+between index inline sizes may lead to a performance drop.
 
 The `check_index_inline_sizes` command validates the indexes inline size of given caches on all cluster nodes. The inline
 size of secondary indexes is always checked on a node join and the WARN message is printed to the log if differ.
