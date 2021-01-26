@@ -1535,7 +1535,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             // TODO: See GridQueryProcessor.store - make sure a matching table is found for generic types
             // Java uses typeId to locate corresponding QueryEntity when storing cache data,
             // so typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId -
-            // how does this work when SimpleMapper is used? typeIds should seemingly be mismatched!
+            // how does this work when SimpleMapper is used? - because NameMapper+IdMapper are used on the Java side
+            // to get the type id from QueryEntity.valueTypeName.
 
             // return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
             return type.FullName;
