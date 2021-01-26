@@ -1539,6 +1539,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             // to get the type id from QueryEntity.valueTypeName.
 
             // return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
+
+            // The following typeIds must match for SQL engine to work correctly (but how does it work with broken generics?):
+            // * CreateCache -> QueryEntity.ValueTypeName -> Java -> ctx.cacheObjects().typeId()
+            // * Cache.Put -> Marshaller.GetTypeId
             return type.FullName;
         }
 
