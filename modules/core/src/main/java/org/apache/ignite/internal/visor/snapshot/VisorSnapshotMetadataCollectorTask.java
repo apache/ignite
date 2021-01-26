@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,13 +36,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /** Snapshot task to collect snapshot metadata from the baseline nodes for given snapshot name. */
 @GridInternal
 public class VisorSnapshotMetadataCollectorTask
-    extends VisorMultiNodeTask<String, Map<ClusterNode, Set<SnapshotMetadata>>, Set<SnapshotMetadata>> {
+    extends VisorMultiNodeTask<String, Map<ClusterNode, List<SnapshotMetadata>>, List<SnapshotMetadata>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected @Nullable Map<ClusterNode, Set<SnapshotMetadata>> reduce0(List<ComputeJobResult> results) throws IgniteException {
-        Map<ClusterNode, Set<SnapshotMetadata>> reduceRes = new HashMap<>();
+    @Override protected @Nullable Map<ClusterNode, List<SnapshotMetadata>> reduce0(List<ComputeJobResult> results) throws IgniteException {
+        Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
 
         SnapshotMetadata first = null;
 
@@ -63,7 +63,7 @@ public class VisorSnapshotMetadataCollectorTask
                         "[first=" + first + ", meta=" + meta + ", nodeId=" + res.getNode().id() + ']');
                 }
 
-                reduceRes.computeIfAbsent(res.getNode(), n -> new HashSet<>())
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
                     .add(meta);
             }
         }
@@ -72,13 +72,13 @@ public class VisorSnapshotMetadataCollectorTask
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, Set<SnapshotMetadata>> job(String snpName) {
+    @Override protected VisorJob<String, List<SnapshotMetadata>> job(String snpName) {
         return new VisorSnapshotMetadataCollectorJob(snpName);
     }
 
     /** Compute job which collects snapshot metadata files on the node it run. */
     private static class VisorSnapshotMetadataCollectorJob
-        extends VisorJob<String, Set<SnapshotMetadata>> {
+        extends VisorJob<String, List<SnapshotMetadata>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -90,7 +90,7 @@ public class VisorSnapshotMetadataCollectorTask
         }
 
         /** {@inheritDoc} */
-        @Override protected Set<SnapshotMetadata> run(@Nullable String snpName) throws IgniteException {
+        @Override protected List<SnapshotMetadata> run(@Nullable String snpName) throws IgniteException {
             return ignite.context().cache().context().snapshotMgr().localSnapshotMetadata(snpName);
         }
     }

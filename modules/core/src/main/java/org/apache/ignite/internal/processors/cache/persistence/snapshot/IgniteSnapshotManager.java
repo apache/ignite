@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -790,7 +791,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @return {@code true} if snapshot is OK.
      */
-    public IgniteInternalFuture<Map<ClusterNode, Set<SnapshotMetadata>>> checkSnapshot(String name) {
+    public IgniteInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> checkSnapshot(String name) {
         // IdleVerifyResultV2 result
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -801,12 +802,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
 
-        ComputeTaskInternalFuture<Map<ClusterNode, Set<SnapshotMetadata>>> fut = cctx.kernalContext()
+        ComputeTaskInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> fut = cctx.kernalContext()
             .task()
             .execute(VisorSnapshotMetadataCollectorTask.class,
                 new VisorTaskArgument<>(blts, name, false));
 
         // After snapshot metadata collected need to validate it.
+        // TODO check NodeFilter works correct. SnapshotMetadata must be created on empty cluster node too.
 
         // Prepare job distribution to check snapshot data.
 
@@ -814,12 +816,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param name Snapshot name.
-     * @return Map of consistent ids and their corresponding snapshot metadata for
-     * the given snapshot name on local node. If snapshot has been taken from local
-     * node the snapshot metadata for given local node will be placed on the first place.
+     * @param clusterMetas Received snapshot metadata from each node.
+     * @return {@code true} if all snapshot metadata parts successfully found.
      */
-    public Set<SnapshotMetadata> localSnapshotMetadata(String name) {
+    private static boolean allSnapshotParts(Collection<Set<SnapshotMetadata>> clusterMetas) {
+        Set<String> snpParts = null;
+
+        for (Set<SnapshotMetadata> nodeMetas : clusterMetas) {
+            assert nodeMetas != null : clusterMetas;
+
+            for (SnapshotMetadata meta : nodeMetas) {
+                if (snpParts == null)
+                    snpParts = new HashSet<>(meta.baselineNodes());
+
+                snpParts.remove(meta.consistentId());
+
+                if (snpParts.isEmpty())
+                    return true;
+            }
+        }
+
+        return snpParts.isEmpty();
+    }
+
+    /**
+     * @param name Snapshot name.
+     * @return List of snapshot metadata for the given snapshot name on local node.
+     * If snapshot has been taken from local node the snapshot metadata for given
+     * local node will be placed on the first place.
+     */
+    public List<SnapshotMetadata> localSnapshotMetadata(String name) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -860,9 +886,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Snapshot metadata for the local node must be first in the result map.
         if (currNodeSmf == null)
-            return new HashSet<>(metasMap.values());
+            return new ArrayList<>(metasMap.values());
         else {
-            Set<SnapshotMetadata> result = new LinkedHashSet<>();
+            List<SnapshotMetadata> result = new ArrayList<>();
 
             result.add(currNodeSmf);
             result.addAll(metasMap.values());
@@ -946,8 +972,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .map(CacheGroupDescriptor::groupId)
                 .collect(Collectors.toList());
 
-            List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
-
             snpFut0.listen(f -> {
                 if (f.error() == null)
                     recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG + grps, EVT_CLUSTER_SNAPSHOT_FINISHED);
@@ -959,9 +983,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx.localNodeId(),
                 name,
                 grps,
-                new HashSet<>(F.viewReadOnly(srvNodes,
-                    F.node2id(),
-                    (node) -> CU.baselineNode(node, clusterState)))));
+                new HashSet<>(cctx.kernalContext().state().onlineBaselineNodes())));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 

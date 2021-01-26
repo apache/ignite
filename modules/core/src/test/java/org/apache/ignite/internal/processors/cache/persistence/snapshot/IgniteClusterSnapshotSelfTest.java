@@ -1169,7 +1169,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotCheckCommand() throws Exception {
+    public void testClusterSnapshotCheck() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)

@@ -42,6 +42,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -111,16 +112,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
     /** {@inheritDoc} */
     @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-
-        Map<ClusterNode, Exception> exceptions = new HashMap<>();
-
-        reduceResults(results, clusterHashes, exceptions);
-
-        if (results.size() != exceptions.size())
-            return checkConflicts(clusterHashes, exceptions);
-        else
-            return new IdleVerifyResultV2(emptyMap(), emptyMap(), emptyMap(), emptyMap(), exceptions);
+        return reduce0(results);
     }
 
     /** {@inheritDoc} */
@@ -149,7 +141,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** */
-    private IdleVerifyResultV2 checkConflicts(
+    private static IdleVerifyResultV2 checkConflicts(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         Map<ClusterNode, Exception> exceptions
     ) {
@@ -198,15 +190,17 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, lostParts, exceptions);
     }
 
-    /** */
-    private void reduceResults(
-        List<ComputeJobResult> results,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
-        Map<ClusterNode, Exception> exceptions
-    ) {
+    /**
+     * @param results Received results of broadcast remote requests.
+     * @return Idle verify job result constructed from results of remote executions.
+     */
+    public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+        Map<ClusterNode, Exception> ex = new HashMap<>();
+
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                exceptions.put(res.getNode(), res.getException());
+                ex.put(res.getNode(), res.getException());
 
                 continue;
             }
@@ -219,6 +213,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 records.add(e.getValue());
             }
         }
+
+        if (results.size() != ex.size())
+            return checkConflicts(clusterHashes, ex);
+        else
+            return new IdleVerifyResultV2(emptyMap(), emptyMap(), emptyMap(), emptyMap(), ex);
     }
 
     /**
