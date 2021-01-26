@@ -91,7 +91,7 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
 
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
-        Map<Integer, String> partToAttr = partToAttr(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
+        Map<Integer, String> partToAttr = partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
 
         assertTrue(F.exist(partToAttr.values(), "A"::equals));
         assertTrue(F.exist(partToAttr.values(), "B"::equals));
@@ -123,7 +123,7 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
 
             AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
-            Map<Integer, String> partToAttr = partToAttr(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
+            Map<Integer, String> partToAttr = partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
 
             grid(0).cluster().baselineAutoAdjustEnabled(false);
 
@@ -134,14 +134,14 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
 
             awaitPartitionMapExchange();
 
-            assertEquals(partToAttr, partToAttr(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
+            assertEquals(partToAttr, partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
 
             // Check that not BLT nodes do not affect distribution.
             startGrid(6, "D");
 
             awaitPartitionMapExchange();
 
-            assertEquals(partToAttr, partToAttr(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
+            assertEquals(partToAttr, partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
 
             // Check that distribution is recalculated after BLT change.
             long topVer = grid(0).cluster().topologyVersion();
@@ -152,7 +152,7 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
             assertTrue(GridTestUtils.waitForCondition(() -> F.eq(grid(0).context().discovery().topologyVersionEx(),
                     new AffinityTopologyVersion(topVer, 2)), 5_000L));
 
-            assertNotEquals(partToAttr, partToAttr(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
+            assertNotEquals(partToAttr, partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
         }
         finally {
             stopAllGrids();
@@ -174,7 +174,7 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
 
             AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
-            Map<Integer, String> partToAttr = partToAttr(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
+            Map<Integer, String> partToAttr = partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
 
             assertTrue(F.exist(partToAttr.values(), Objects::isNull));
             assertTrue(F.exist(partToAttr.values(), "A"::equals));
@@ -189,7 +189,7 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
      * Determine split attribute value for each partition and check that this value is the same for all nodes for
      * this partition.
      */
-    private Map<Integer, String> partToAttr(IgniteCache<Object, Object> cache, int partCnt) {
+    private Map<Integer, String> partToAttribute(IgniteCache<Object, Object> cache, int partCnt) {
         Map<Integer, String> partToAttr = U.newHashMap(partCnt);
 
         for (int i = 0; i < partCnt; i++) {

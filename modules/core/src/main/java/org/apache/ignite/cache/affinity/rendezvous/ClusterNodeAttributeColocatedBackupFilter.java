@@ -20,6 +20,7 @@ package org.apache.ignite.cache.affinity.rendezvous;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -40,10 +41,13 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * This implementation will discard backups rather than place copies on nodes with different attribute values. This
  * avoids trying to cram more data onto remaining nodes when some have failed.
  * <p>
- * A node attribute to compare is provided on construction.
+ * A node attribute to compare is provided on construction. Attribute name shouldn't be null.
  *
  * Note: All cluster nodes, on startup, automatically register all the environment and system properties as node
  * attributes.
+ *
+ * Note: If the attribute is absent on the node, it will be treated as {@code null} attribute value and copies of
+ * partitions assigned to this node will be co-located on other nodes with {@code null} attribute value.
  *
  * Note: Node attributes persisted in baseline topology at the time of baseline topology change. If the co-location
  * attribute of some node was updated, but the baseline topology wasn't changed, the outdated attribute value can be
@@ -91,6 +95,8 @@ public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredic
      * @param attrName The attribute name for the attribute to compare.
      */
     public ClusterNodeAttributeColocatedBackupFilter(String attrName) {
+        A.notNullOrEmpty(attrName, "attrName");
+
         this.attrName = attrName;
     }
 
@@ -106,9 +112,8 @@ public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredic
      *                           The primary is first.
      */
     @Override public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
-        for (ClusterNode node : previouslySelected)
-            return Objects.equals(candidate.attribute(attrName), node.attribute(attrName));
+        A.notEmpty(previouslySelected, "previouslySelected");
 
-        return true;
+        return Objects.equals(candidate.attribute(attrName), previouslySelected.get(0).attribute(attrName));
     }
 }
