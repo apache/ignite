@@ -540,7 +540,7 @@ control.sh|bat --cache check_index_inline_sizes
 ----
 --
 
-The console output if the index inline sizes are different:
+If the index inline sizes are different, the console output is similar to the data below:
 
 [source,text]
 ----
