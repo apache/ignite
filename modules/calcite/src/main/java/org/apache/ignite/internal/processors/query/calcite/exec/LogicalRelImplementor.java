@@ -223,7 +223,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
+        assert rel.getJoinType() == JoinRelType.INNER : "only INNER join supported by IgniteCorrelatedNestedLoop";
 
         Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet());
 
