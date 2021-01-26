@@ -75,7 +75,11 @@ public class UsageTest {
         try {
             configurator.set(Selectors.LOCAL_BASELINE_AUTO_ADJUST_ENABLED, false);
             Assertions.fail();
-        } catch (ConfigurationValidationException e) {}
+        }
+        catch (ConfigurationValidationException e) {
+            // No-op.
+        }
+
         configurator.set(Selectors.LOCAL_BASELINE_AUTO_ADJUST, new ChangeAutoAdjust().withEnabled(false).withTimeout(0L));
         configurator.getRoot().baseline().nodes().get("node1").autoAdjustEnabled(false);
         configurator.getRoot().baseline().autoAdjust().enabled(true);
