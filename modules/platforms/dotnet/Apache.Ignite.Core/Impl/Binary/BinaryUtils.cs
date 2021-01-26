@@ -1532,6 +1532,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             // Ignite SQL engine always uses simple type name without namespace, parent class, etc.
             // See QueryUtils.typeName
+            // TODO: See GridQueryProcessor.store - make sure a matching table is found for generic types
+            // ("Key-value pair is not inserted into any SQL table"...)
             return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
