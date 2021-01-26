@@ -1530,11 +1530,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static string GetSqlTypeName(Type type)
         {
-            // TODO: Remove assembly names from generics
-            // TODO: Type name must match whatever gets registered in binary meta.
-            var res = TypeNameParser.Parse(type.FullName);
-
-            return res.GetFullName();
+            // SQL always uses simple type name without namespace, parent class, etc.
+            // TODO: Find that Java code and reference it here
+            return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
         /**
