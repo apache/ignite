@@ -32,7 +32,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// </summary>
     public class CacheQueriesCodeConfigurationTest
     {
+        // TODO: Make all tests use a single Ignite instance to reduce execution time.
         const string CacheName = "personCache";
+
+        /// <summary>
+        /// Tears down the test fixture.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
 
         /// <summary>
         /// Tests the SQL query.
@@ -147,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(-1, idx[1].InlineSize);
             Assert.AreEqual(513, idx[2].InlineSize);
             Assert.AreEqual(-1, idx[3].InlineSize);
-            
+
             Assert.AreEqual(3, idxField.Precision);
             Assert.AreEqual(4, idxField.Scale);
         }
@@ -213,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
             }
         }
-        
+
         /// <summary>
         /// Tests query entity validation when no <see cref="QuerySqlFieldAttribute"/> has been set.
         /// </summary>
@@ -230,6 +240,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache["1"] = new MissingAttributesTest {Foo = "Bar"};
             }
+        }
+
+        /// <summary>
+        /// Tests that key and value types can be generic.
+        /// </summary>
+        [Test]
+        public void TestGenericQueryTypes()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
         }
 
         /// <summary>
