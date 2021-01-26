@@ -94,6 +94,8 @@ class DiscoveryTest(IgniteTest):
 
         discovery_spi.so_linger = 0
 
+        # discovery_spi.connectionRecoveryTimeout = 400
+
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             discovery_spi=discovery_spi,

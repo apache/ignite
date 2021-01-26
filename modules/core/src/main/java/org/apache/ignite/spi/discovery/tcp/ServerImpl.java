@@ -3325,7 +3325,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMetricsUpdateMessage();
 
-            checkMetricsReceiving();
+            //checkMetricsReceiving();
 
             checkPendingCustomMessages();
 
@@ -3655,8 +3655,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.error("TEST | Failed to connect to next " + U.toShortString(next) +
                                     ". Send state: " + sndState);
                                 log.error("TEST | sndState: " + sndState);
-                                if(sndState != null)
-                                    log.error( "TEST | Left: " + U.nanosToMillis(System.nanoTime() - sndState.failTimeNanos));
+                                if(sndState != null) {
+                                    log.error("TEST | Left: " + U.nanosToMillis(sndState.failTimeNanos - System.nanoTime()));
+                                    log.error("TEST | sndState.checkTimeout(): " + (System.nanoTime() >= sndState.failTimeNanos));
+                                }
 
                                 // Fastens failure detection.
                                 if (sndState != null && sndState.checkTimeout()) {
