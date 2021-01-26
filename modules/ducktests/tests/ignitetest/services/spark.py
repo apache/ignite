@@ -21,14 +21,14 @@ import os.path
 from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.services.background_thread import BackgroundThreadService
+from ducktape.services.service import Service
 
 from ignitetest.services.utils.path import PathAware
 from ignitetest.services.utils.log_utils import monitor_log
 
 
 # pylint: disable=abstract-method
-class SparkService(BackgroundThreadService, PathAware):
+class SparkService(Service, PathAware):
     """
     Start a spark node.
     """
@@ -56,8 +56,8 @@ class SparkService(BackgroundThreadService, PathAware):
     def globals(self):
         return self.context.globals
 
-    def start(self, clean=True):
-        BackgroundThreadService.start(self, clean=clean)
+    def start(self, **kwargs):
+        super().start(**kwargs)
 
         self.logger.info("Waiting for Spark to start...")
 
@@ -89,7 +89,7 @@ class SparkService(BackgroundThreadService, PathAware):
                 "collect_default": True
             }
 
-    def start_node(self, node):
+    def start_node(self, node, **kwargs):
         self.init_persistent(node)
 
         cmd = self.start_cmd(node)
@@ -113,13 +113,13 @@ class SparkService(BackgroundThreadService, PathAware):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    def stop_node(self, node):
+    def stop_node(self, node, **kwargs):
         if node == self.nodes[0]:
             node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-master.sh"))
         else:
             node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-slave.sh"))
 
-    def clean_node(self, node):
+    def clean_node(self, node, **kwargs):
         """
         Clean spark persistence files
         """
