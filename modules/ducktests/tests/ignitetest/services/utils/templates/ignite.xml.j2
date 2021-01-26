@@ -23,6 +23,7 @@
 {% import 'datastorage_macro.j2' as datastorage_utils %}
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_factory_macro.j2' as ssl_factory_util %}
+{% import 'credentials_macro.j2' as credentials_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -71,4 +72,7 @@
             </property>
         {% endif %}
     </bean>
+    {% if config.ssl_context_factory %}
+        {{ ssl_factory_util.ssl_factory(config.ssl_context_factory) }}
+    {% endif %}
 </beans>

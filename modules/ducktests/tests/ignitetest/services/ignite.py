@@ -39,7 +39,7 @@ class IgniteService(IgniteAwareService):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
-    def clean_node(self, node):
+    def clean_node(self, node, **kwargs):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 

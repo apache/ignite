@@ -16,7 +16,7 @@ a running node.
 
 ## Requirements
 To just start tests locally the only requirement is preinstalled `docker`. 
-For development process requirements are `python` >= 3.6.
+For development process requirements are `python` >= 3.7.
 
 ## Run tests locally
 - Change a current directory to`${IGNITE_HOME}`
@@ -55,7 +55,7 @@ All commits and PR's are checked against multiple python's version, namely 3.6, 
 If you want to check your PR as it will be checked on Travis CI, you should do following steps:
 
 - Install `pyenv`, see installation instruction [here](https://github.com/pyenv/pyenv#installation).
-- Install different versions of python (recommended versions are `3.6.12`, `3.7.9`, `3.8.5`)
-- Activate them with a command `pyenv shell 3.6.12 3.7.9 3.8.5`
+- Install different versions of python (recommended versions are `3.7.9` and `3.8.5`)
+- Activate them with a command `pyenv shell 3.7.9 3.8.5`
 - Install `tox` by invoking a command `pip install tox`
 - Change a current directory to `${DUCKTESTS_DIR}` and invoke `tox`

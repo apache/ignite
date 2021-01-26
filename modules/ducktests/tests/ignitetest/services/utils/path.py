@@ -52,6 +52,7 @@ class PathAware:
         Init persistent directory.
         :param node: Service node.
         """
+        node.account.ssh("sudo chown -R ducker:ducker /mnt")
         node.account.mkdirs(f"{self.persistent_root} {self.temp_dir} {self.work_dir} {self.log_dir}")
 
     def init_logs_attribute(self):

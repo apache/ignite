@@ -24,8 +24,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
-default_image_name="ducker-ignite-openjdk-8"
-IMAGE_NAME="${IMAGE_NAME:-$default_image_name}"
+JDK_VERSION="${JDK_VERSION:-8}"
+IMAGE_PREFIX="ducker-ignite-openjdk"
 
 ###
 # DuckerTest parameters are specified with options to the script
@@ -82,6 +82,9 @@ The options are as follows:
 -t|--tc-paths
     Path to ducktests. Must be relative path to 'IGNITE/modules/ducktests/tests' directory
 
+--jdk
+    Set jdk version to build, default is 8
+
 EOF
     exit 0
 }
@@ -125,17 +128,15 @@ while [[ $# -ge 1 ]]; do
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
         -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
+        --jdk) JDK_VERSION="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
     esac
 done
 
-if [[ "$IMAGE_NAME" == "$default_image_name" ]]; then
-    "$SCRIPT_DIR"/ducker-ignite build "$IMAGE_NAME" || die "ducker-ignite build failed"
-else
-    echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
-         "Otherwise build it with 'ducker-ignite build' command"
-fi
+
+IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
+"$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
 
 if [ -z "$FORCE" ]; then
     # If docker image changed then restart cluster (down here and up within next step)
