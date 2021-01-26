@@ -67,7 +67,12 @@
                         Enables Kubernetes IP finder and setting custom namespace and service names.
                     -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder">
-                        <property name="namespace" value="ignite"/>
+                        <constructor-arg>
+                            <bean class="org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration">
+                                <!-- Assumed that you have RBAC configured and `ignite` namespace created for it. -->
+                                <property name="namespace" value="ignite" />
+                            </bean>
+                        </constructor-arg>
                     </bean>
                 </property>
             </bean>

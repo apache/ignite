@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -155,8 +154,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
             db.persistentStoreMetricsImpl(),
             context.longJvmPauseDetector(),
             context.failure(),
-            context.cache(),
-            (FilePageStoreManager)context.cache().context().pageStore()
+            context.cache()
         );
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.

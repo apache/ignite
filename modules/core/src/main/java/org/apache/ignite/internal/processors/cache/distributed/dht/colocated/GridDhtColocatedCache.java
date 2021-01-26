@@ -188,9 +188,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean needVer) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (keyCheck)
-            validateCacheKey(key);
-
         GridNearTxLocal tx = checkCurrentTx();
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -324,9 +321,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
-
-        if (keyCheck)
-            validateCacheKeys(keys);
 
         warnIfUnordered(keys, BulkOperation.GET);
 

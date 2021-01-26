@@ -46,6 +46,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -89,6 +90,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -1544,15 +1546,30 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testClientQueryExecutedEvents() throws Exception {
+        doTestClientQueryExecutedEvents(false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
+    public void testClientQueryExecutedEventsIncludeSensitive() throws Exception {
+        doTestClientQueryExecutedEvents(true);
+    }
+
+    /** */
+    public void doTestClientQueryExecutedEvents(boolean inclSens) throws Exception {
         CountDownLatch execLatch = new CountDownLatch(9);
 
         IgnitePredicate<SqlQueryExecutionEvent> lsnr = evt -> {
             assertNotNull(evt.text());
+            if (inclSens)
+                assertTrue(evt.toString().contains("args="));
+            else
+                assertFalse(evt.toString().contains("args="));
 
             execLatch.countDown();
 

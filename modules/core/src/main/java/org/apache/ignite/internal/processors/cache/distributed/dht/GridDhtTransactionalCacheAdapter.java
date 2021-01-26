@@ -36,6 +36,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -1148,6 +1150,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         tx.topologyVersion(req.topologyVersion());
                     }
+
+                    GridDhtPartitionsExchangeFuture lastFinishedFut = ctx.shared().exchange().lastFinishedFuture();
+
+                    CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+                    CacheInvalidStateException validateCacheE = lastFinishedFut
+                            .validateCache(ctx, opCtx != null && opCtx.recovery(), req.txRead(), null, keys);
+
+                    if (validateCacheE != null)
+                        throw validateCacheE;
                 }
                 else {
                     fut = new GridDhtLockFuture(ctx,
@@ -1303,9 +1315,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            String err = "Failed to unmarshal at least one of the keys for lock request message: " + req;
-
-            U.error(log, err, e);
+            U.error(log, req, e);
 
             if (tx != null) {
                 try {
@@ -1331,7 +1341,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             return new GridDhtFinishedFuture<>(
-                new IgniteCheckedException(err, e));
+                new IgniteCheckedException(e));
         }
     }
 

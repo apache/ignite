@@ -361,6 +361,10 @@
                                 <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl</packages>
                             </group>
                             <group>
+                                <title>Maintenance APIs</title>
+                                <packages>org.apache.ignite.maintenance</packages>
+                            </group>
+                            <group>
                                 <title>MXBeans classes</title>
                                 <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
                             </group>
@@ -447,6 +451,10 @@
                             <group>
                                 <title>Yarn Integration</title>
                                 <packages>org.apache.ignite.yarn*</packages>
+                            </group>
+                            <group>
+                                <title>Kubernetes Integration</title>
+                                <packages>org.apache.ignite.kubernetes*</packages>
                             </group>
                             <group>
                                 <title>Platforms</title>
@@ -856,6 +864,7 @@
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*CONTRIBUTING*.md</exclude><!--readme files-->
+                                        <exclude>**/*DEVNOTES*.md</exclude><!--readme files-->
                                         <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->

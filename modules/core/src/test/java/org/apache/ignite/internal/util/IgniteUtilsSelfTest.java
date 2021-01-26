@@ -25,6 +25,7 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -39,6 +40,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -99,6 +102,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -1485,6 +1489,34 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals("1.0 MB", U.humanReadableByteCount(1024 * 1024));
         assertEquals("6.0 MB", U.humanReadableByteCount(6 * 1024 * 1024));
         assertEquals("6.1 MB", U.humanReadableByteCount(6 * 1024 * 1024 + 130 * 1024));
+    }
+
+    /**
+     * Test to verify the {@link U#uncompressedSize}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUncompressedSize() throws Exception {
+        File zipFile = new File(System.getProperty("java.io.tmpdir"), "test.zip");
+
+        try {
+            assertThrows(log, () -> U.uncompressedSize(zipFile), IOException.class, null);
+
+            byte[] raw = IntStream.range(0, 10).mapToObj(i -> zipFile.getAbsolutePath() + i)
+                .collect(joining()).getBytes(StandardCharsets.UTF_8);
+
+            try (FileOutputStream fos = new FileOutputStream(zipFile)) {
+                fos.write(U.zip(raw));
+
+                fos.flush();
+            }
+
+            assertEquals(raw.length, U.uncompressedSize(zipFile));
+        }
+        finally {
+            assertTrue(U.delete(zipFile));
+        }
     }
 
     /**

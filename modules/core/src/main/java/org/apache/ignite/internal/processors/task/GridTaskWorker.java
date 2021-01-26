@@ -52,7 +52,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
-import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
@@ -80,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
@@ -543,13 +541,14 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 processDelayedResponses();
             }
             catch (ClusterGroupEmptyCheckedException e) {
-                U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
+                if (log.isDebugEnabled())
+                    U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
 
                 finishTask(null, e);
             }
             catch (IgniteException | IgniteCheckedException e) {
                 if (!fut.isCancelled()) {
-                    if (!(e instanceof VisorClusterGroupEmptyException))
+                    if (log.isDebugEnabled())
                         U.error(log, "Failed to map task jobs to nodes: " + ses, e);
 
                     finishTask(null, e);
@@ -562,6 +561,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 String errMsg = "Failed to map task jobs to nodes due to undeclared user exception" +
                     " [cause=" + e.getMessage() + ", ses=" + ses + "]";
 
+            if (log.isDebugEnabled())
                 U.error(log, errMsg, e);
 
                 finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
@@ -848,7 +848,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                                 ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Error deserializing job response: " + res, e);
+                            if (log.isDebugEnabled())
+                                U.error(log, "Error deserializing job response: " + res, e);
 
                             finishTask(null, e);
                         }
@@ -982,7 +983,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
+                    if (log.isDebugEnabled())
+                        U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
 
                     finishTask(null, e);
 
@@ -1042,7 +1044,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                                 sendRequest(jRes);
                             }
                             catch (Exception e) {
-                                U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
+                                if (log.isDebugEnabled())
+                                    U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
 
                                 finishTask(null, e);
                             }
@@ -1091,7 +1094,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         return plc;
                     }
                     catch (IgniteException e) {
-                        if (X.hasCause(e, GridInternalException.class)) {
+                        if (X.hasCause(e, ComputeJobFailoverException.class)) {
                             // Print internal exceptions only if debug is enabled.
                             if (log.isDebugEnabled())
                                 U.error(log, "Failed to obtain remote job result policy for result from " +
@@ -1108,13 +1111,16 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         }
                         else if (X.hasCause(e, GridServiceNotFoundException.class) ||
                             X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                            // Should be throttled, because GridServiceProxy continuously retry getting service.
-                            LT.error(log, e, "Failed to obtain remote job result policy for result from " +
-                                "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
+                            if (log.isDebugEnabled()) {
+                                // Should be throttled, because GridServiceProxy continuously retry getting service.
+                                LT.error(log, e, "Failed to obtain remote job result policy for result from " +
+                                    "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
+                            }
                         }
-                        else
+                        else if (log.isDebugEnabled()) {
                             U.error(log, "Failed to obtain remote job result policy for result from " +
                                 "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
+                        }
 
                         finishTask(null, e);
 
@@ -1125,7 +1131,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             "ComputeTask.result(..) method due to undeclared user exception " +
                             "(will fail the whole task): " + jobRes;
 
-                        U.error(log, errMsg, e);
+                        if (log.isDebugEnabled())
+                            U.error(log, errMsg, e);
 
                         Throwable tmp = new ComputeUserUndeclaredException(errMsg, e);
 
@@ -1175,12 +1182,14 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
         catch (ClusterTopologyCheckedException e) {
-            U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
+            if (log.isDebugEnabled())
+                U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
 
             userE = e;
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to reduce job results for task: " + task, e);
+            if (log.isDebugEnabled())
+                U.error(log, "Failed to reduce job results for task: " + task, e);
 
             userE = e;
         }
@@ -1189,7 +1198,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             String errMsg = "Failed to reduce job results due to undeclared user exception [task=" + task +
                 ", err=" + e + ']';
 
-            U.error(log, errMsg, e);
+            if (log.isDebugEnabled())
+                U.error(log, errMsg, e);
 
             userE = new ComputeUserUndeclaredException(errMsg, e);
 
@@ -1227,7 +1237,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             String errMsg = "Failed to failover job due to undeclared user exception [job=" +
                 jobRes.getJob() + ", err=" + e + ']';
 
-            U.error(log, errMsg, e);
+            if (log.isDebugEnabled())
+                U.error(log, errMsg, e);
 
             finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
 
@@ -1369,9 +1380,11 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 // that we make this check because we cannot count on exception being
                 // thrown in case of send failure.
                 if (curNode == null) {
-                    U.warn(log, "Failed to send job request because remote node left grid (if fail-over is enabled, " +
-                        "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                        ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                    if (log.isDebugEnabled()) {
+                        U.warn(log, "Failed to send job request because remote node left grid (if fail-over is enabled, " +
+                            "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                            ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                    }
 
                     ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
@@ -1473,13 +1486,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     // Avoid stack trace if node has left grid.
                     if (deadNode) {
-                        U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
-                            "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                            ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                        if (log.isDebugEnabled()) {
+                            U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
+                                "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                                ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                        }
 
                         fakeErr = new ClusterTopologyException("Failed to send job due to node failure: " + node, e);
                     }
-                    else
+                    else if (log.isDebugEnabled())
                         U.error(log, "Failed to send job request: " + req, e);
 
                 }

@@ -453,7 +453,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    private MetaPageInfo getMetaInfo() throws IgniteCheckedException {
+    public MetaPageInfo getMetaInfo() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
 
         try {
@@ -498,6 +498,38 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
                 if (wal != null)
                     wal.log(new PageSnapshot(new FullPageId(metaPageId, grpId),
                         pageAddr, pageMem.pageSize(), pageMem.realPageSize(grpId)));
+            }
+            finally {
+                writeUnlock(metaPageId, metaPage, pageAddr, true);
+            }
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * Copy info from another meta page.
+     * @param info Meta page info.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void copyMetaInfo(MetaPageInfo info) throws IgniteCheckedException {
+        final long metaPage = acquirePage(metaPageId);
+
+        try {
+            long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO.setValues(
+                    pageAddr,
+                    info.inlineSize,
+                    info.useUnwrappedPk,
+                    info.inlineObjSupported,
+                    info.inlineObjHash
+                );
             }
             finally {
                 writeUnlock(metaPageId, metaPage, pageAddr, true);
@@ -623,6 +655,40 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         }
 
         return mvccCompare(r1, r2);
+    }
+
+    /**
+     * Checks both rows are the same. <p/>
+     * Primarly used to verify both search rows are the same and we can apply
+     * the single row lookup optimization.
+     *
+     * @param r1 The first row.
+     * @param r2 Another row.
+     * @return {@code true} in case both rows are efficiently the same, {@code false} otherwise.
+     */
+    boolean checkRowsTheSame(H2Row r1, H2Row r2) {
+        if (r1 == r2)
+            return true;
+
+        for (int i = 0, len = cols.length; i < len; i++) {
+            IndexColumn idxCol = cols[i];
+
+            int idx = idxCol.column.getColumnId();
+
+            Value v1 = r1.getValue(idx);
+            Value v2 = r2.getValue(idx);
+
+            if (v1 == null && v2 == null)
+                continue;
+
+            if (!(v1 != null && v2 != null))
+                return false;
+
+            if (compareValues(v1, v2) != 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**

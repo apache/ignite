@@ -168,6 +168,7 @@ import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
+import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.SqlTransactionCommandsWithMvccDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
@@ -232,6 +233,7 @@ import org.apache.ignite.internal.processors.query.SqlNotNullKeyValueFieldTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
+import org.apache.ignite.internal.processors.query.SqlResultSetMetaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
@@ -277,6 +279,7 @@ import org.apache.ignite.internal.sql.SqlParserTransactionalKeywordsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
+import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
 import org.apache.ignite.util.KillCommandsMXBeanTest;
 import org.apache.ignite.util.KillCommandsSQLTest;
@@ -297,6 +300,7 @@ import org.junit.runners.Suite;
 
     PartitionedSqlTest.class,
     ReplicatedSqlTest.class,
+    ReplicatedSqlCustomPartitionsTest.class,
 
     SqlParserCreateIndexSelfTest.class,
     SqlParserDropIndexSelfTest.class,
@@ -312,6 +316,8 @@ import org.junit.runners.Suite;
     SqlSchemaSelfTest.class,
     SqlIllegalSchemaSelfTest.class,
     MultipleStatementsSqlQuerySelfTest.class,
+
+    SqlResultSetMetaSelfTest.class,
 
     BasicIndexTest.class,
     ArrayIndexTest.class,
@@ -578,6 +584,9 @@ import org.junit.runners.Suite;
 
     // Partition loss.
     IndexingCachePartitionLossPolicySelfTest.class,
+
+    // Partitions eviction
+    SqlPartitionEvictionTest.class,
 
     // GROUP_CONCAT
     IgniteSqlGroupConcatCollocatedTest.class,

@@ -73,4 +73,4 @@ streamer.start();
 ----
 --
 
-Refer to the Javadocs of the `ignite-mqtt` module for more info on the available options.
+Refer to the Javadocs of the `ignite-mqtt-ext` module for more info on the available options.

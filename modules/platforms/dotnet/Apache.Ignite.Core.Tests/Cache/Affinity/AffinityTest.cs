@@ -38,15 +38,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-affinity.xml"),
-                    IgniteInstanceName = "grid-" + i
-                };
-
-                Ignition.Start(cfg);
+                Ignition.Start(GetConfig(i, client: i == 2));
             }
         }
 
@@ -76,6 +70,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
+        /// Tests that affinity can be retrieved from client node right after the cache has been started on server node.
+        /// </summary>
+        [Test]
+        public void TestAffinityRetrievalForNewCache()
+        {
+            var server = Ignition.GetIgnite("grid-0");
+            var client = Ignition.GetIgnite("grid-2");
+
+            var serverCache = server.CreateCache<int, int>(TestUtils.TestName);
+            var clientAff = client.GetAffinity(serverCache.Name);
+
+            Assert.IsNotNull(clientAff);
+        }
+
+        /// <summary>
         /// Test affinity with binary flag.
         /// </summary>
         [Test]
@@ -101,18 +110,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <summary>
         /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
         /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/> and
-        /// configured in a Spring XML file. 
+        /// configured in a Spring XML file.
         /// </summary>
         [Test]
         public void TestAffinityKeyMappedWithQueryEntitySpringXml()
         {
-            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), "cache1");
-            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), "cache1");
+            foreach (var ignite in Ignition.GetAll())
+            {
+                TestAffinityKeyMappedWithQueryEntity0(ignite, "cache1");
+            }
         }
 
         /// <summary>
         /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
-        /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/>. 
+        /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/>.
         /// </summary>
         [Test]
         public void TestAffinityKeyMappedWithQueryEntity()
@@ -194,7 +205,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 return _id;
             }
         }
-        
+
+        /// <summary>
+        /// Gets Ignite config.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(int idx, bool client = false)
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-affinity.xml"),
+                IgniteInstanceName = "grid-" + idx,
+                ClientMode = client
+            };
+        }
+
         /// <summary>
         /// Query entity key.
         /// </summary>
@@ -204,12 +228,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             /** */
             [QuerySqlField]
             public string Data { get; set; }
-            
+
             /** */
             [AffinityKeyMapped]
             public long AffinityKey { get; set; }
         }
-        
+
         /// <summary>
         /// Query entity key.
         /// </summary>
@@ -219,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             /** */
             [QuerySqlField]
             public string Name { get; set; }
-            
+
             /** */
             [AffinityKeyMapped]
             public long AffKey { get; set; }
