@@ -65,11 +65,14 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
     /** Timeout. */
     private static final long TIMEOUT = 15_000;
 
+    /** Binary type name. */
     private static final String BIN_TYPE_NAME = "customType";
 
-    protected CacheConfiguration[] cacheCfgs;
+    /** Static cache configurations. */
+    protected CacheConfiguration<?, ?>[] cacheCfgs;
 
-    protected Function<Integer, Object> valueBuilder = new IndexedValueBuilder();
+    /** Cache value builder. */
+    protected Function<Integer, Object> valBuilder = new IndexedValueBuilder();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -86,6 +89,9 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return cfg;
     }
 
+    /**
+     * @param typeName Type name.
+     */
     private QueryEntity queryEntity(String typeName) {
         return new QueryEntity()
             .setKeyType("java.lang.Integer")
@@ -94,12 +100,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
             .setIndexes(Arrays.asList(new QueryIndex("id"), new QueryIndex("name")));
     }
 
-    /** {@inheritDoc} */
-    @Override public void afterTestSnapshot() throws Exception {
-        stopAllGrids();
-    }
-
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testBasicClusterSnapshotRestore() throws Exception {
         int keysCnt = 10_000;
@@ -116,12 +117,12 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(cache, keysCnt);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testBasicClusterSnapshotRestoreWithMetadata() throws Exception {
         int keysCnt = 10_000;
 
-        valueBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
 
         IgniteEx ignite = startGridsWithSnapshot(2, keysCnt);
 
@@ -142,10 +143,10 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(cache, keysCnt);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder, dfltCacheCfg);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -158,10 +159,10 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
             log, () -> fut.get(TIMEOUT), IgniteException.class, "The cluster should be active");
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testRestoreWithMissedPartitions() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder, dfltCacheCfg.setBackups(0));
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg.setBackups(0));
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -198,16 +199,16 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreDiffTopology() throws Exception {
         int nodesCnt = 4;
 
         int keysCnt = 10_000;
 
-        valueBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
 
-        IgniteEx ignite = startGridsWithCache(nodesCnt - 2, keysCnt, valueBuilder, dfltCacheCfg);
+        IgniteEx ignite = startGridsWithCache(nodesCnt - 2, keysCnt, valBuilder, dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -241,7 +242,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(cache, keysCnt);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testRestoreSharedCacheGroup() throws Exception {
         String grpName = "shared";
@@ -288,7 +289,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(ignite.cache(cacheName2), CACHE_KEYS_RANGE);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testRestoreCacheGroupWithNodeFilter() throws Exception {
         String cacheName1 = "cache1";
@@ -342,10 +343,10 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(ignite0.cache(cacheName2), CACHE_KEYS_RANGE);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testIncompatibleMetasUpdate() throws Exception {
-        valueBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
@@ -411,7 +412,17 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
             assertEquals(objs[i], cache1.get(i));
     }
 
-    private IgniteCache<Integer, Object> createCacheWithBinaryType(Ignite ignite, String cacheName, Function<Integer, BinaryObject> valBuilder) {
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name.
+     * @param valBuilder Binary value builder.
+     * @return Created cache.
+     */
+    private IgniteCache<Integer, Object> createCacheWithBinaryType(
+        Ignite ignite,
+        String cacheName,
+        Function<Integer, BinaryObject> valBuilder
+    ) {
         IgniteCache<Integer, Object> cache = ignite.createCache(new CacheConfiguration<>(cacheName)).withKeepBinary();
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
@@ -420,16 +431,26 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return cache;
     }
 
+    /**
+     * @throws Exception if failed
+     */
     @Test
     public void testParallelCacheStartWithTheSameNameOnPrepare() throws Exception {
         checkCacheStartWithTheSameName(true);
     }
 
+    /**
+     * @throws Exception if failed
+     */
     @Test
     public void testParallelCacheStartWithTheSameNameOnPerform() throws Exception {
         checkCacheStartWithTheSameName(false);
     }
 
+    /**
+     * @param prepare {@code True} to start cache during prepare phase, {@code False} to start cache during perform phase.
+     * @throws Exception if failed.
+     */
     private void checkCacheStartWithTheSameName(boolean prepare) throws Exception {
         String grpName = "shared";
         String cacheName = "cache1";
@@ -440,7 +461,8 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, prepare ? RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE : RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM, grpName);
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, prepare ?
+            RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE : RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM, grpName);
 
         String msgFormat = "Cache start failed. A cache named \"%s\" is currently being restored from a snapshot.";
 
@@ -483,18 +505,22 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         }
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testRollbackOnNodeFail() throws Exception {
         checkBaselineChange(true);
     }
 
-    /** @throws Exception If fails. */
+    /** @throws Exception If failed. */
     @Test
     public void testNodeJoin() throws Exception {
         checkBaselineChange(false);
     }
 
+    /**
+     * @param stopNode {@code True} to check node fail, {@code False} to check node join.
+     * @throws Exception if failed.
+     */
     private void checkBaselineChange(boolean stopNode) throws Exception {
         int keysCnt = 10_000;
 
@@ -537,37 +563,70 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(cache, keysCnt);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testClusterStateChangeActiveReadonlyDuringPrepare() throws Exception {
         checkReadOnlyDuringRestoring(RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE);
     }
 
+
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testClusterStateChangeActiveReadonlyDuringPerform() throws Exception {
         checkReadOnlyDuringRestoring(RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM);
     }
 
+    /**
+     * @param procType The type of distributed process on which communication is blocked.
+     * @throws Exception if failed.
+     */
     private void checkReadOnlyDuringRestoring(DistributedProcessType procType) throws Exception {
         checkClusterStateChange(ClusterState.ACTIVE_READ_ONLY, procType, IgniteClusterReadOnlyException.class,
             "Failed to perform start cache operation (cluster is in read-only mode)");
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testClusterDeactivateOnPrepare() throws Exception {
         checkDeactivationDuringRestoring(RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testClusterDeactivateOnPerform() throws Exception {
         checkDeactivationDuringRestoring(RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM);
     }
 
+    /**
+     * @param procType The type of distributed process on which communication is blocked.
+     * @throws Exception if failed.
+     */
     private void checkDeactivationDuringRestoring(DistributedProcessType procType) throws Exception {
         checkClusterStateChange(ClusterState.INACTIVE, procType, IgniteCheckedException.class,
             "The cluster has been deactivated.");
     }
 
-    private void checkClusterStateChange(ClusterState state, DistributedProcessType procType, Class<? extends Throwable> expCls, String expMsg) throws Exception {
+    /**
+     * @param state Cluster state.
+     * @param procType The type of distributed process on which communication is blocked.
+     * @param expCls Expected exception class.
+     * @param expMsg Expected exception message.
+     * @throws Exception if failed.
+     */
+    private void checkClusterStateChange(
+        ClusterState state,
+        DistributedProcessType procType,
+        Class<? extends Throwable> expCls,
+        String expMsg
+    ) throws Exception {
         Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
@@ -589,6 +648,11 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
 
+    /**
+     * @param nodesCnt Count of nodes.
+     * @param cacheName Cache name.
+     * @throws IgniteCheckedException if failed.
+     */
     private void ensureCacheDirEmpty(int nodesCnt, String cacheName) throws IgniteCheckedException {
         for (int nodeIdx = 0; nodeIdx < nodesCnt; nodeIdx++) {
             IgniteEx grid = grid(nodeIdx);
@@ -602,6 +666,12 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         }
     }
 
+    /**
+     * @param ignite Ignite.
+     * @param cacheOrGrpName Cache (or group) name.
+     * @return Local path to the cache directory.
+     * @throws IgniteCheckedException if failed.
+     */
     private File resolveCacheDir(IgniteEx ignite, String cacheOrGrpName) throws IgniteCheckedException {
         File workDIr = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
@@ -615,8 +685,14 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return new File(workDIr, nodeDirName + CACHE_GRP_DIR_PREFIX + cacheOrGrpName);
     }
 
+    /**
+     * @param nodesCnt Nodes count.
+     * @param keysCnt Number of keys to create.
+     * @return Ignite coordinator instance.
+     * @throws Exception if failed.
+     */
     private IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt) throws Exception {
-        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder, dfltCacheCfg);
+        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valBuilder, dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -627,7 +703,18 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return ignite;
     }
 
-    private IgniteFuture<Void> waitForBlockOnRestore(TestRecordingCommunicationSpi spi, DistributedProcessType restorePhase, String grpName) throws InterruptedException {
+    /**
+     * @param spi Test communication spi.
+     * @param restorePhase The type of distributed process on which communication is blocked.
+     * @param grpName Cache group name.
+     * @return Snapshot restore future.
+     * @throws InterruptedException if interrupted.
+     */
+    private IgniteFuture<Void> waitForBlockOnRestore(
+        TestRecordingCommunicationSpi spi,
+        DistributedProcessType restorePhase,
+        String grpName
+    ) throws InterruptedException {
         spi.blockMessages((node, msg) ->
             msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == restorePhase.ordinal());
 
@@ -639,26 +726,28 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return fut;
     }
 
-    private void checkCacheKeys(IgniteCache<Object, Object> testCache, int keysCnt) {
-        assertEquals(keysCnt, testCache.size());
-
-        for (int i = 0; i < keysCnt; i++)
-            assertEquals(valueBuilder.apply(i), testCache.get(i));
-    }
-
+    /**
+     * @param cache Cache.
+     * @param startIdx The initial value of the number for the key.
+     * @param cnt Number of entries to put in the cache.
+     */
     private void putKeys(IgniteCache<Integer, Object> cache, int startIdx, int cnt) {
         for (int i = startIdx; i < (startIdx + cnt); i++)
-            cache.put(i, valueBuilder.apply(i));
+            cache.put(i, valBuilder.apply(i));
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keysCnt Expected number of keys.
+     */
+    private void checkCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
+        assertEquals(keysCnt, cache.size());
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals(valBuilder.apply(i), cache.get(i));
     }
 
     /** */
-    private static class IntValueBuilder implements Function<Integer, Object> {
-        /** {@inheritDoc} */
-        @Override public Object apply(Integer key) {
-            return key;
-        }
-    }
-
     private static class IndexedValueBuilder implements Function<Integer, Object> {
         /** {@inheritDoc} */
         @Override public Object apply(Integer key) {

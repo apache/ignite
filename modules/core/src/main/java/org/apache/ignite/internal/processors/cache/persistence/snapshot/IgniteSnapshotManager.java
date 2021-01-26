@@ -1234,7 +1234,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param files List pf created files.
+     * @param files Collection of files to delete.
      */
     protected void rollbackRestoreOperation(Collection<File> files) {
         List<File> dirs = new ArrayList<>();
