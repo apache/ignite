@@ -283,6 +283,34 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests that query types can be nested generic.
+        /// </summary>
+        [Test]
+        public void TestNestedGenericQueryTypes()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest<GenericTest2<string>>))}
+            };
+
+            var cache = ignite.GetOrCreateCache<int, GenericTest<GenericTest2<string>>>(cfg);
+            var value = new GenericTest<GenericTest2<string>>(new GenericTest2<string>("foobar"));
+            cache[1] = value;
+
+            var cur = cache.Query(new SqlFieldsQuery(
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name));
+
+            var tableName = cur.Single().Single(); // The value will be weird, see IGNITE-14064.
+
+            var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Bar from \"{0}\"", tableName)))
+                .Single().Single();
+
+            Assert.AreEqual(value.Foo.Bar, sqlRes);
+        }
+
+        /// <summary>
         /// Class without any <see cref="QuerySqlFieldAttribute"/> attributes.
         /// </summary>
         private class MissingAttributesTest
