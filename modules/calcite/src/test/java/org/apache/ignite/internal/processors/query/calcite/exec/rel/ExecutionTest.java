@@ -33,6 +33,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -181,287 +182,287 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(12, res.size());
     }
-
-    /**
-     *
-     */
-    @Test
-    public void testLeftJoin() {
-        //    select e.id, e.name, d.name as dep_name
-        //      from emp e
-        // left join dep d
-        //        on e.depno = d.depno
-
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
-
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", null},
-            new Object[] {3, "Alexey", 1}
-        ));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class);
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"}
-        ));
-
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
-
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT, r -> r[2] == r[3]);
-        join.register(F.asList(persons, deps));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[0], r[1], r[4]});
-        project.register(join);
-
-        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
-        node.register(project);
-
-        assert node.hasNext();
-
-        ArrayList<Object[]> rows = new ArrayList<>();
-
-        while (node.hasNext())
-            rows.add(node.next());
-
-        assertEquals(4, rows.size());
-
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testRightJoin() {
-        //     select e.id, e.name, d.name as dep_name
-        //       from dep d
-        // right join emp e
-        //         on e.depno = d.depno
-
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
-
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", null},
-            new Object[] {3, "Alexey", 1}
-        ));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class);
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"},
-            new Object[] {3, "QA"}
-        ));
-
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class, String.class, Integer.class);
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, RIGHT, r -> r[0] == r[4]);
-        join.register(F.asList(deps, persons));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[2], r[3], r[1]});
-        project.register(join);
-
-        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
-        node.register(project);
-
-        assert node.hasNext();
-
-        ArrayList<Object[]> rows = new ArrayList<>();
-
-        while (node.hasNext())
-            rows.add(node.next());
-
-        assertEquals(4, rows.size());
-
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(3));
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testFullOuterJoin() {
-        //          select e.id, e.name, d.name as dep_name
-        //            from emp e
-        // full outer join dep d
-        //              on e.depno = d.depno
-
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
-
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", null},
-            new Object[] {3, "Alexey", 1}
-        ));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class);
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"},
-            new Object[] {3, "QA"}
-        ));
-
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
-
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, FULL, r -> r[2] == r[3]);
-        join.register(F.asList(persons, deps));
-
-        rowType = TypeUtils.createRowType(tf, Integer.class, String.class, String.class);
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[0], r[1], r[4]});
-        project.register(join);
-
-        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
-        node.register(project);
-
-        assert node.hasNext();
-
-        ArrayList<Object[]> rows = new ArrayList<>();
-
-        while (node.hasNext())
-            rows.add(node.next());
-
-        assertEquals(5, rows.size());
-
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
-        Assert.assertArrayEquals(new Object[] {null, null, "QA"}, rows.get(4));
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSemiJoin() {
-        //    select d.name as dep_name
-        //      from dep d
-        // semi join emp e
-        //        on e.depno = d.depno
-
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
-
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", null},
-            new Object[] {3, "Alexey", 1}
-        ));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class);
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"},
-            new Object[] {3, "QA"}
-        ));
-
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
-
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, SEMI, r -> r[0] == r[4]);
-        join.register(F.asList(deps, persons));
-
-        rowType = TypeUtils.createRowType(tf, String.class);
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[1]});
-        project.register(join);
-
-        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
-        node.register(project);
-
-        assert node.hasNext();
-
-        ArrayList<Object[]> rows = new ArrayList<>();
-
-        while (node.hasNext())
-            rows.add(node.next());
-
-        assertEquals(2, rows.size());
-
-        Assert.assertArrayEquals(new Object[] {"Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {"SQL"}, rows.get(1));
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testAntiJoin() {
-        //    select d.name as dep_name
-        //      from dep d
-        // anti join emp e
-        //        on e.depno = d.depno
-
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
-
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", null},
-            new Object[] {3, "Alexey", 1}
-        ));
-
-        rowType = TypeUtils.createRowType(tf, int.class, String.class);
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"},
-            new Object[] {3, "QA"}
-        ));
-
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
-
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, ANTI, r -> r[0] == r[4]);
-        join.register(F.asList(deps, persons));
-
-        rowType = TypeUtils.createRowType(tf, String.class);
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[1]});
-        project.register(join);
-
-        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
-        node.register(project);
-
-        assert node.hasNext();
-
-        ArrayList<Object[]> rows = new ArrayList<>();
-
-        while (node.hasNext())
-            rows.add(node.next());
-
-        assertEquals(1, rows.size());
-
-        Assert.assertArrayEquals(new Object[] {"QA"}, rows.get(0));
-    }
+//
+//    /**
+//     *
+//     */
+//    @Test
+//    public void testLeftJoin() {
+//        //    select e.id, e.name, d.name as dep_name
+//        //      from emp e
+//        // left join dep d
+//        //        on e.depno = d.depno
+//
+//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+//
+//        IgniteTypeFactory tf = ctx.getTypeFactory();
+//        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+//
+//        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {0, "Igor", 1},
+//            new Object[] {1, "Roman", 2},
+//            new Object[] {2, "Ivan", null},
+//            new Object[] {3, "Alexey", 1}
+//        ));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+//        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {1, "Core"},
+//            new Object[] {2, "SQL"}
+//        ));
+//
+//        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
+//        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+//
+//        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT, r -> r[2] == r[3]);
+//        join.register(F.asList(persons, deps));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+//        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[0], r[1], r[4]});
+//        project.register(join);
+//
+//        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
+//        node.register(project);
+//
+//        assert node.hasNext();
+//
+//        ArrayList<Object[]> rows = new ArrayList<>();
+//
+//        while (node.hasNext())
+//            rows.add(node.next());
+//
+//        assertEquals(4, rows.size());
+//
+//        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
+//        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
+//        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
+//        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
+//    }
+//
+//    /**
+//     *
+//     */
+//    @Test
+//    public void testRightJoin() {
+//        //     select e.id, e.name, d.name as dep_name
+//        //       from dep d
+//        // right join emp e
+//        //         on e.depno = d.depno
+//
+//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+//        IgniteTypeFactory tf = ctx.getTypeFactory();
+//        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+//
+//        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {0, "Igor", 1},
+//            new Object[] {1, "Roman", 2},
+//            new Object[] {2, "Ivan", null},
+//            new Object[] {3, "Alexey", 1}
+//        ));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+//        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {1, "Core"},
+//            new Object[] {2, "SQL"},
+//            new Object[] {3, "QA"}
+//        ));
+//
+//        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class, String.class, Integer.class);
+//        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+//        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//
+//        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, RIGHT, r -> r[0] == r[4]);
+//        join.register(F.asList(deps, persons));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+//        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[2], r[3], r[1]});
+//        project.register(join);
+//
+//        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
+//        node.register(project);
+//
+//        assert node.hasNext();
+//
+//        ArrayList<Object[]> rows = new ArrayList<>();
+//
+//        while (node.hasNext())
+//            rows.add(node.next());
+//
+//        assertEquals(4, rows.size());
+//
+//        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
+//        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(1));
+//        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(2));
+//        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(3));
+//    }
+//
+//    /**
+//     *
+//     */
+//    @Test
+//    public void testFullOuterJoin() {
+//        //          select e.id, e.name, d.name as dep_name
+//        //            from emp e
+//        // full outer join dep d
+//        //              on e.depno = d.depno
+//
+//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+//        IgniteTypeFactory tf = ctx.getTypeFactory();
+//        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+//
+//        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {0, "Igor", 1},
+//            new Object[] {1, "Roman", 2},
+//            new Object[] {2, "Ivan", null},
+//            new Object[] {3, "Alexey", 1}
+//        ));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+//        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {1, "Core"},
+//            new Object[] {2, "SQL"},
+//            new Object[] {3, "QA"}
+//        ));
+//
+//        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
+//        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+//
+//        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, FULL, r -> r[2] == r[3]);
+//        join.register(F.asList(persons, deps));
+//
+//        rowType = TypeUtils.createRowType(tf, Integer.class, String.class, String.class);
+//        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[0], r[1], r[4]});
+//        project.register(join);
+//
+//        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
+//        node.register(project);
+//
+//        assert node.hasNext();
+//
+//        ArrayList<Object[]> rows = new ArrayList<>();
+//
+//        while (node.hasNext())
+//            rows.add(node.next());
+//
+//        assertEquals(5, rows.size());
+//
+//        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
+//        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
+//        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
+//        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
+//        Assert.assertArrayEquals(new Object[] {null, null, "QA"}, rows.get(4));
+//    }
+//
+//    /**
+//     *
+//     */
+//    @Test
+//    public void testSemiJoin() {
+//        //    select d.name as dep_name
+//        //      from dep d
+//        // semi join emp e
+//        //        on e.depno = d.depno
+//
+//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+//        IgniteTypeFactory tf = ctx.getTypeFactory();
+//        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+//
+//        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {0, "Igor", 1},
+//            new Object[] {1, "Roman", 2},
+//            new Object[] {2, "Ivan", null},
+//            new Object[] {3, "Alexey", 1}
+//        ));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+//        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {1, "Core"},
+//            new Object[] {2, "SQL"},
+//            new Object[] {3, "QA"}
+//        ));
+//
+//        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+//
+//        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, SEMI, r -> r[0] == r[4]);
+//        join.register(F.asList(deps, persons));
+//
+//        rowType = TypeUtils.createRowType(tf, String.class);
+//        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[1]});
+//        project.register(join);
+//
+//        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
+//        node.register(project);
+//
+//        assert node.hasNext();
+//
+//        ArrayList<Object[]> rows = new ArrayList<>();
+//
+//        while (node.hasNext())
+//            rows.add(node.next());
+//
+//        assertEquals(2, rows.size());
+//
+//        Assert.assertArrayEquals(new Object[] {"Core"}, rows.get(0));
+//        Assert.assertArrayEquals(new Object[] {"SQL"}, rows.get(1));
+//    }
+//
+//    /**
+//     *
+//     */
+//    @Test
+//    public void testAntiJoin() {
+//        //    select d.name as dep_name
+//        //      from dep d
+//        // anti join emp e
+//        //        on e.depno = d.depno
+//
+//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+//        IgniteTypeFactory tf = ctx.getTypeFactory();
+//        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+//
+//        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {0, "Igor", 1},
+//            new Object[] {1, "Roman", 2},
+//            new Object[] {2, "Ivan", null},
+//            new Object[] {3, "Alexey", 1}
+//        ));
+//
+//        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+//        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
+//            new Object[] {1, "Core"},
+//            new Object[] {2, "SQL"},
+//            new Object[] {3, "QA"}
+//        ));
+//
+//        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+//        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+//
+//        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, ANTI, r -> r[0] == r[4]);
+//        join.register(F.asList(deps, persons));
+//
+//        rowType = TypeUtils.createRowType(tf, String.class);
+//        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[] {r[1]});
+//        project.register(join);
+//
+//        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
+//        node.register(project);
+//
+//        assert node.hasNext();
+//
+//        ArrayList<Object[]> rows = new ArrayList<>();
+//
+//        while (node.hasNext())
+//            rows.add(node.next());
+//
+//        assertEquals(1, rows.size());
+//
+//        Assert.assertArrayEquals(new Object[] {"QA"}, rows.get(0));
+//    }
 
     /**
      *
@@ -1047,6 +1048,36 @@ public class ExecutionTest extends AbstractExecutionTest {
     }
 
     /**
+     * Test verifies that an AssertionError thrown from an execution node
+     * proprely handled by a task executor.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void test() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class);
+
+        CorruptedNode<Object[]> node = new CorruptedNode<>();
+
+        RootNode<Object[]> root = new RootNode<>(ctx, rowType);
+        root.register(node);
+
+        new Thread(() -> {
+            try {
+                U.sleep(5_000);
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+            }
+
+            if (!root.isClosed())
+                root.close();
+        }, "test-watchdog").start();
+
+        GridTestUtils.assertThrowsWithCause(root::hasNext, AssertionError.class);
+    }
+
+    /**
      *
      */
     private Object[] row(Object... fields) {
@@ -1081,5 +1112,55 @@ public class ExecutionTest extends AbstractExecutionTest {
                 return fields;
             }
         };
+    }
+
+    static class CorruptedNode<T> implements Node<T> {
+        /** {@inheritDoc} */
+        @Override public ExecutionContext<T> context() {
+            assert false;
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType rowType() {
+            assert false;
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Downstream<T> downstream() {
+            assert false;
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void register(List<Node<T>> sources) {
+            assert false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Node<T>> sources() {
+            assert false;
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onRegister(Downstream<T> downstream) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void request(int rowsCnt) throws Exception {
+            assert false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rewind() {
+            assert false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+        }
     }
 }

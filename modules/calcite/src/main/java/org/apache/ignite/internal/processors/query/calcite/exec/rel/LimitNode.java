@@ -60,7 +60,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
@@ -73,18 +73,13 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (offset > 0 && rowsProcessed == 0)
             rowsCnt = offset + rowsCnt;
 
-        try {
-            checkState();
+        checkState();
 
-            source().request(waiting = rowsCnt);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        source().request(waiting = rowsCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         if (waiting == -1)
             return;
 
@@ -92,12 +87,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         --waiting;
 
-        try {
-            checkState();
-        }
-        catch (Throwable e) {
-            onError(e);
-        }
+        checkState();
 
         if (rowsProcessed > offset) {
             if (fetchNode == null || (fetchNode != null && rowsProcessed <= fetch + offset))
@@ -109,20 +99,15 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
-        try {
-            if (waiting == -1)
-                return;
+    @Override public void end() throws Exception {
+        if (waiting == -1)
+            return;
 
-            assert downstream() != null;
+        assert downstream() != null;
 
-            waiting = -1;
+        waiting = -1;
 
-            downstream().end();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        downstream().end();
     }
 
     /** {@inheritDoc} */

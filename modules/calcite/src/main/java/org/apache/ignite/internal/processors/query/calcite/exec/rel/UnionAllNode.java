@@ -47,54 +47,39 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources());
         assert rowsCnt > 0 && waiting == 0;
 
-        try {
-            checkState();
+        checkState();
 
-            source().request(waiting = rowsCnt);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        source().request(waiting = rowsCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            downstream().push(row);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        downstream().push(row);
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            if (++curSrc < sources().size())
-                source().request(waiting);
-            else {
-                waiting = -1;
-                downstream().end();
-            }
-        }
-        catch (Exception e) {
-            onError(e);
+        if (++curSrc < sources().size())
+            source().request(waiting);
+        else {
+            waiting = -1;
+            downstream().end();
         }
     }
 

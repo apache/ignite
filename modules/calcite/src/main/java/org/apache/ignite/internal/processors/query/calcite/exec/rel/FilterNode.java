@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
+
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -55,58 +55,43 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (!inLoop)
-                context().execute(this::doFilter);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (!inLoop)
+            context().execute(this::doFilter, this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            if (pred.test(row))
-                inBuf.add(row);
+        if (pred.test(row))
+            inBuf.add(row);
 
-            filter();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        filter();
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            filter();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        filter();
     }
 
     /** {@inheritDoc} */
@@ -125,19 +110,14 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private void doFilter() {
-        try {
-            checkState();
+    private void doFilter() throws Exception {
+        checkState();
 
-            filter();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        filter();
     }
 
     /** */
-    private void filter() throws IgniteCheckedException {
+    private void filter() throws Exception {
         inLoop = true;
         try {
             while (requested > 0 && !inBuf.isEmpty()) {

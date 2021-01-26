@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
@@ -226,8 +228,22 @@ public class ExecutionContext<Row> implements DataContext {
      *
      * @param task Query task.
      */
-    public void execute(Runnable task) {
-        executor.execute(qryId, fragmentId(), task);
+    public void execute(RunnableX task, Consumer<Throwable> onError) {
+        executor.execute(qryId, fragmentId(), () -> {
+            try {
+                task.run();
+            }
+            catch (Throwable t) {
+                onError.accept(t);
+            }
+        });
+    }
+
+    /** */
+    @FunctionalInterface
+    public interface RunnableX {
+        /** */
+        void run() throws Exception;
     }
 
     /**

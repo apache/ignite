@@ -74,27 +74,22 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested += rowsCnt;
+        requested += rowsCnt;
 
-            if ((waiting == -1 || rowIdx < rows.size()) && !inLoop)
-                context().execute(this::doPush);
-            else if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if ((waiting == -1 || rowIdx < rows.size()) && !inLoop)
+            context().execute(this::doPush, this::onError);
+        else if (waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
     }
 
     /** */
-    private void doPush() {
+    private void doPush() throws Exception {
         if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
             downstream().end();
 
@@ -106,7 +101,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     }
 
     /** */
-    private void pushToDownstream() {
+    private void pushToDownstream() throws Exception {
         inLoop = true;
 
         downstream().push(rows.get(rowIdx));
@@ -121,43 +116,33 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            rows.add(row);
+        rows.add(row);
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
+        if (waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
 
-            if (requested > 0 && rowIdx < rows.size())
-                pushToDownstream();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (requested > 0 && rowIdx < rows.size())
+            pushToDownstream();
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            if (rowIdx >= rows.size() && requested > 0)
-                downstream().end();
-        }
-        catch (Exception e) {
-            downstream().onError(e);
-        }
+        if (rowIdx >= rows.size() && requested > 0)
+            downstream().end();
     }
 }

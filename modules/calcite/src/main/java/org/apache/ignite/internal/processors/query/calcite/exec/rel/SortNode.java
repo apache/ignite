@@ -18,8 +18,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
+
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -65,75 +65,50 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
         assert waiting <= 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-            else if (!inLoop)
-                context().execute(this::doFlush);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
-    }
-
-    /** */
-    private void doFlush() {
-        try {
-            flush();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
+        else if (!inLoop)
+            context().execute(this::flush, this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            rows.add(row);
+        rows.add(row);
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            flush();
-        }
-        catch (Exception e) {
-            downstream().onError(e);
-        }
+        flush();
     }
 
     /** */
-    private void flush() throws IgniteCheckedException {
+    private void flush() throws Exception {
         assert waiting == -1;
 
         int processed = 0;
@@ -149,7 +124,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::doFlush);
+                    context().execute(this::flush, this::onError);
 
                     return;
                 }

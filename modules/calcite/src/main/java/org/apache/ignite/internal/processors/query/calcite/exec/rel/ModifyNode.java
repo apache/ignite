@@ -89,71 +89,56 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (!inLoop)
-                tryEnd();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (!inLoop)
+            tryEnd();
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
         assert state == State.UPDATING;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            switch (op) {
-                case DELETE:
-                case UPDATE:
-                case INSERT:
-                    tuples.add(desc.toTuple(context(), row, op, cols));
+        switch (op) {
+            case DELETE:
+            case UPDATE:
+            case INSERT:
+                tuples.add(desc.toTuple(context(), row, op, cols));
 
-                    flushTuples(false);
+                flushTuples(false);
 
-                    break;
-                default:
-                    throw new UnsupportedOperationException(op.name());
-            }
-
-            if (waiting == 0)
-                source().request(waiting = MODIFY_BATCH_SIZE);
+                break;
+            default:
+                throw new UnsupportedOperationException(op.name());
         }
-        catch (Exception e) {
-            onError(e);
-        }
+
+        if (waiting == 0)
+            source().request(waiting = MODIFY_BATCH_SIZE);
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
-            state = State.UPDATED;
+        waiting = -1;
+        state = State.UPDATED;
 
-            tryEnd();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        tryEnd();
     }
 
     /** {@inheritDoc} */
@@ -170,7 +155,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private void tryEnd() throws IgniteCheckedException {
+    private void tryEnd() throws Exception {
         assert downstream() != null;
 
         if (state == State.UPDATING && waiting == 0)

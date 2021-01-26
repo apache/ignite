@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
@@ -178,7 +178,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     }
 
     /** */
-    protected void checkState() throws IgniteCheckedException {
+    protected void checkState() throws Exception {
         if (context().isCancelled())
             throw new ExecutionCancelledException();
         if (Thread.interrupted())
