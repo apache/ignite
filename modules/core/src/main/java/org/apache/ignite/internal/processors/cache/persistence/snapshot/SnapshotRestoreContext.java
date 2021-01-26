@@ -43,12 +43,6 @@ import org.jetbrains.annotations.Nullable;
  * Cache restore from snapshot operation context.
  */
 class SnapshotRestoreContext {
-    private final Map<String, List<File>> newGrpFiles = new HashMap<>();
-
-    private final Map<String, PendingStartCacheGroup> pendingStartCaches = new ConcurrentHashMap<>();
-
-    private final Set<Integer> cacheIds = new GridConcurrentHashSet<>();
-
     /** Request ID. */
     private final UUID reqId;
 
@@ -61,10 +55,16 @@ class SnapshotRestoreContext {
     /** Snapshot manager. */
     private final IgniteSnapshotManager snapshotMgr;
 
-    private volatile Collection<StoredCacheData> cacheCfgsToStart;
-
     /** Restore operation lock. */
     private final ReentrantLock rollbackLock = new ReentrantLock();
+
+    private final Map<String, List<File>> createdFiles = new HashMap<>();
+
+    private final Map<String, PendingStartCacheGroup> pendingStartCaches = new ConcurrentHashMap<>();
+
+    private final Set<Integer> cacheIds = new GridConcurrentHashSet<>();
+
+    private volatile Collection<StoredCacheData> cacheCfgsToStart;
 
     /**
      * @param reqId Request ID.
@@ -91,14 +91,17 @@ class SnapshotRestoreContext {
         return reqId;
     }
 
+    /** @return List of baseline node IDs that must be alive to complete the operation. */
     public Set<UUID> nodes() {
         return reqNodes;
     }
 
+    /** @return Snapshot name. */
     public String snapshotName() {
         return snpName;
     }
 
+    /** @return List of cache group names to restore from the snapshot. */
     public Set<String> groups() {
         return pendingStartCaches.keySet();
     }
@@ -125,7 +128,13 @@ class SnapshotRestoreContext {
         return cacheCfgsToStart;
     }
 
-    public void processCacheStart(String cacheName, @Nullable String grpName, @Nullable Throwable err, ExecutorService svc, GridFutureAdapter<Void> finishFut) {
+    public void processCacheStart(
+        String cacheName,
+        @Nullable String grpName,
+        @Nullable Throwable err,
+        ExecutorService svc,
+        GridFutureAdapter<Void> finishFut
+    ) {
         String grpName0 = grpName != null ? grpName : cacheName;
 
         PendingStartCacheGroup pendingGrp = pendingStartCaches.get(grpName0);
@@ -170,8 +179,10 @@ class SnapshotRestoreContext {
     }
 
     /**
+     * Restore specified cache groups from the local snapshot directory.
+     *
      * @param updateMetadata Update binary metadata flag.
-     * @param interruptClosure A closure to quickly interrupt the merge process.
+     * @param interruptClosure A closure to quickly interrupt the process.
      * @throws IgniteCheckedException If failed.
      */
     public void restore(boolean updateMetadata, Supplier<Boolean> interruptClosure) throws IgniteCheckedException {
@@ -185,14 +196,11 @@ class SnapshotRestoreContext {
             rollbackLock.lock();
 
             try {
-                if (interruptClosure.get())
-                    return;
-
                 List<File> newFiles = new ArrayList<>();
 
-                newGrpFiles.put(grpName, newFiles);
+                createdFiles.put(grpName, newFiles);
 
-                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, newFiles);
+                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, newFiles, interruptClosure);
             }
             finally {
                 rollbackLock.unlock();
@@ -201,7 +209,7 @@ class SnapshotRestoreContext {
     }
 
     /**
-     * Rollback changes made by process.
+     * Rollback changes made by process in specified cache group.
      *
      * @param grpName Cache group name.
      */
@@ -209,7 +217,7 @@ class SnapshotRestoreContext {
         rollbackLock.lock();
 
         try {
-            List<File> createdFiles = newGrpFiles.remove(grpName);
+            List<File> createdFiles = this.createdFiles.remove(grpName);
 
             if (F.isEmpty(createdFiles))
                 return;

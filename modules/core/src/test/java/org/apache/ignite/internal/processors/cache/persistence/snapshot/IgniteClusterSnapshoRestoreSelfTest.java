@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -166,7 +165,9 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        putKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE, CACHE_KEYS_RANGE);
+        ignite.cache(dfltCacheCfg.getName()).destroy();
+
+        awaitPartitionMapExchange();
 
         forceCheckpoint();
 
@@ -272,7 +273,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> snp.restoreCacheGroups(SNAPSHOT_NAME, Arrays.asList(grpName, cacheName1, cacheName2)).get(TIMEOUT),
+            () -> snp.restoreCacheGroups(SNAPSHOT_NAME, Arrays.asList(cacheName1, cacheName2)).get(TIMEOUT),
             IllegalArgumentException.class,
             "Cache group(s) not found in snapshot"
         );
@@ -332,7 +333,10 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(cacheName1)).get(TIMEOUT);
+        awaitPartitionMapExchange();
+
         ignite1.snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(cacheName2)).get(TIMEOUT);
+        awaitPartitionMapExchange();
 
         checkCacheKeys(ignite0.cache(cacheName1), CACHE_KEYS_RANGE);
         checkCacheKeys(ignite0.cache(cacheName2), CACHE_KEYS_RANGE);

@@ -1178,9 +1178,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Snapshot name.
      * @param grpName Cache group name.
      * @param newFiles A list to keep track of the files created, the list updates during the restore process.
+     * @param interruptClosure A closure to quickly interrupt copying partition files.
      * @throws IgniteCheckedException If failed.
      */
-    protected void restoreCacheGroupFiles(String snpName, String grpName, List<File> newFiles) throws IgniteCheckedException {
+    protected void restoreCacheGroupFiles(
+        String snpName,
+        String grpName,
+        List<File> newFiles,
+        Supplier<Boolean> interruptClosure
+    ) throws IgniteCheckedException {
         File snapshotCacheDir = resolveSnapshotCacheDir(snpName, grpName);
 
         if (!snapshotCacheDir.exists())
@@ -1207,6 +1213,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             for (File snpFile : snapshotCacheDir.listFiles()) {
+                if (interruptClosure.get())
+                    return;
+
                 File target = new File(cacheDir, snpFile.getName());
 
                 if (log.isDebugEnabled()) {

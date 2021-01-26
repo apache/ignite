@@ -33,7 +33,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -151,6 +150,10 @@ public class SnapshotRestoreCacheGroupProcess {
         return !staleFuture(fut0) && (cacheName == null || fut0.context().containsCache(cacheName));
     }
 
+    /**
+     * @param fut The future of cache snapshot restore operation.
+     * @return {@code True} if the future completed or not initiated.
+     */
     public boolean staleFuture(RestoreSnapshotFuture fut) {
         return fut.isDone() || fut.context() == null;
     }
@@ -270,11 +273,18 @@ public class SnapshotRestoreCacheGroupProcess {
         IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
         // Collect cache configuration(s).
-        for (String cacheName : req.groups()) {
-            CacheGroupSnapshotDetails grpCfg = snapshotMgr.readCacheGroupDetails(req.snapshotName(), cacheName);
+        for (String grpName : req.groups()) {
+            CacheGroupSnapshotDetails grpCfg = snapshotMgr.readCacheGroupDetails(req.snapshotName(), grpName);
 
-            if (grpCfg != null)
-                grpCfgs.add(grpCfg);
+            if (grpCfg == null)
+                continue;
+
+            ensureCacheAbsent(grpName);
+
+            for (StoredCacheData cfg : grpCfg.configs())
+                ensureCacheAbsent(cfg.config().getName());
+
+            grpCfgs.add(grpCfg);
         }
 
         if (grpCfgs.isEmpty())
@@ -285,6 +295,21 @@ public class SnapshotRestoreCacheGroupProcess {
         ctx.cache().context().snapshotMgr().mergeSnapshotMetadata(req.snapshotName(), true, false, fut0::interrupted);
 
         return new SnapshotRestorePrepareResponse(grpCfgs);
+    }
+
+    /**
+     * Ensures that a cache with the specified name does not exist locally.
+     *
+     * @param name Cache name.
+     * @throws IllegalStateException If cache with the specified name already exists.
+     */
+    private void ensureCacheAbsent(String name) throws IllegalStateException {
+        int id = CU.cacheId(name);
+
+        if (ctx.cache().cacheDescriptor(id) != null || ctx.cache().cacheGroupDescriptor(id) != null) {
+            throw new IllegalStateException("Cache \"" + name +
+                "\" should be destroyed manually before perform restore operation.");
+        }
     }
 
     /**
@@ -350,13 +375,6 @@ public class SnapshotRestoreCacheGroupProcess {
                         opCtx.addSharedCache(cacheName, grpDetails.groupName());
 
                     cacheCfgs.add(cacheData);
-
-                    CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheName));
-
-                    if (desc != null) {
-                        throw new IllegalStateException("Cache \"" + desc.cacheOrGroupName() +
-                            "\" should be destroyed manually before perform restore operation.");
-                    }
                 }
             }
 
@@ -449,22 +467,32 @@ public class SnapshotRestoreCacheGroupProcess {
 
         GridFutureAdapter<SnapshotRestorePerformResponse> retFut = new GridFutureAdapter<>();
 
-        if (!ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx.snapshotName()).exists())
-            return new GridFinishedFuture<>();
+        try {
+            if (!ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx.snapshotName()).exists())
+                return new GridFinishedFuture<>();
 
-        boolean updateMeta = ctx.localNodeId().equals(req.updateMetaNodeId());
-
-        ctx.getSystemExecutorService().submit(() -> {
-            try {
-                opCtx.restore(updateMeta, fut0::interrupted);
-
-                retFut.onDone();
-            } catch (Throwable t) {
-                retFut.onDone(t);
+            for (StoredCacheData cfg : opCtx.startConfigs()) {
+                if (!F.isEmpty(cfg.config().getGroupName()))
+                    ensureCacheAbsent(cfg.config().getName());
             }
-        });
 
-        return retFut;
+            boolean updateMeta = ctx.localNodeId().equals(req.updateMetaNodeId());
+
+            ctx.getSystemExecutorService().submit(() -> {
+                try {
+                    opCtx.restore(updateMeta, fut0::interrupted);
+
+                    retFut.onDone();
+                }
+                catch (Throwable t) {
+                    retFut.onDone(t);
+                }
+            });
+
+            return retFut;
+        } catch (Exception e) {
+            return errResponse(e);
+        }
     }
 
     /**
