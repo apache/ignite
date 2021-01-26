@@ -50,7 +50,7 @@ public interface BinaryIdMapper {
      *
      * @param typeId Type ID.
      * @param fieldName Field name. Filed anme is a result of {@link BinaryNameMapper#fieldName(String)} call for an
-     *        initial filed name.
+     *        initial field name.
      * @return Field ID.
      * @see BinaryNameMapper#fieldName(String)
      */
