@@ -126,17 +126,17 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
-        addData(cache, 0, KEYS_CNT*2);
-        addData(txCache, 0, KEYS_CNT*2);
+        addData(cache, 0, KEYS_CNT * 2);
+        addData(txCache, 0, KEYS_CNT * 2);
 
-        assertTrue(waitForSize(KEYS_CNT*2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
-        assertTrue(waitForSize(KEYS_CNT*2, TX_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, lsnr));
 
         fut.cancel();
 
         Set<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
-        for (int i = 0; i < KEYS_CNT*2; i++)
+        for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
 
         assertTrue(lsnr.stoped);
@@ -254,7 +254,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             assertTrue(lsnr1.stoped);
             assertTrue(lsnr2.stoped);
 
-            removeData(cache, 0, KEYS_CNT*2);
+            removeData(cache, 0, KEYS_CNT * 2);
 
             IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
             IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
@@ -438,7 +438,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onChange(Iterable<EntryEvent<Integer, User>> events) {
             for (EntryEvent<Integer, User> evt : events) {
-                if(!evt.primary())
+                if (!evt.primary())
                     continue;
 
                 cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
