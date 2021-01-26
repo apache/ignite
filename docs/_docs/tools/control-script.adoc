@@ -528,7 +528,7 @@ For example, it could happen due to the `IGNITE_MAX_INDEX_PAYLOAD_SIZE` property
 between index inline sizes may lead to a performance drop.
 
 The `check_index_inline_sizes` command validates the indexes inline size of given caches on all cluster nodes. The inline
-size of secondary indexes is always checked on a node join and the WARN message is printed to the log if differ.
+size of secondary indexes is always checked on a node join and a WARN message is printed to the log if they differ.
 
 [tabs]
 --
