@@ -249,7 +249,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestGenericQueryTypes()
         {
-            // TODO: test generic key as well.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             var cfg = new CacheConfiguration(TestUtils.TestName)
@@ -262,8 +261,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var value = new GenericTest<string>("2");
             cache[key] = value;
 
-            var tables = cache.Query(new SqlFieldsQuery("SELECT * FROM INFORMATION_SCHEMA.TABLES")).GetAll();
-
             var binType = ignite.GetBinary().GetBinaryType(value.GetType());
             var expectedTypeName = BinaryBasicNameMapper.FullNameInstance.GetTypeName(value.GetType().FullName);
             var expectedTypeId = BinaryUtils.GetStringHashCodeLowerCase(expectedTypeName);
@@ -273,6 +270,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var queryEntity = cache.GetConfiguration().QueryEntities.Single();
             Assert.AreEqual(expectedTypeName, queryEntity.ValueTypeName);
+
+            var cur = cache.Query(new SqlFieldsQuery(
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name));
+            var tableName = cur.Single().Single();
+
+            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT * from " + tableName)).GetAll();
+            Assert.AreEqual("1", sqlRes); // TODO
         }
 
         /// <summary>
