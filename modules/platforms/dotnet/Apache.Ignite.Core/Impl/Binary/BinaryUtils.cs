@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public const int ObjTypeId = -1;
 
         /** Ticks for Java epoch. */
-        private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        public static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
         /** Binding flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -388,13 +388,17 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write date.</summary>
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
+         * <param name="converter">Timestamp Converter.</param>
          */
-        public static void WriteTimestamp(DateTime val, IBinaryStream stream)
+        public static void WriteTimestamp(DateTime val, IBinaryStream stream, ITimestampConverter converter)
         {
             long high;
             int low;
 
-            ToJavaDate(val, out high, out low);
+            if (converter != null)
+                converter.ToJavaTicks(val, out high, out low);
+            else
+                ToJavaDate(val, out high, out low);
 
             stream.WriteLong(high);
             stream.WriteInt(low);
@@ -403,14 +407,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Read date.</summary>
          * <param name="stream">Stream.</param>
+         * <param name="converter">Timestamp Converter.</param>
          * <returns>Date</returns>
          */
-        public static DateTime? ReadTimestamp(IBinaryStream stream)
+        public static DateTime? ReadTimestamp(IBinaryStream stream, ITimestampConverter converter)
         {
             long high = stream.ReadLong();
             int low = stream.ReadInt();
 
-            return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+            if (converter != null)
+                return converter.FromJavaTicks(high, low);
+            else
+                return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
 
         /// <summary>
@@ -438,7 +446,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
+        /// <param name="converter">Timestamp Converter.</param>
+        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream, ITimestampConverter converter)
         {
             stream.WriteInt(vals.Length);
 
@@ -448,7 +457,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     stream.WriteByte(BinaryTypeId.Timestamp);
 
-                    WriteTimestamp(val.Value, stream);
+                    WriteTimestamp(val.Value, stream, converter);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -1165,15 +1174,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Read timestamp array.
         /// </summary>
         /// <param name="stream">Stream.</param>
+        /// <param name="converter">Timestamp Converter.</param>
         /// <returns>Timestamp array.</returns>
-        public static DateTime?[] ReadTimestampArray(IBinaryStream stream)
+        public static DateTime?[] ReadTimestampArray(IBinaryStream stream, ITimestampConverter converter)
         {
             int len = stream.ReadInt();
 
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream, converter);
 
             return vals;
         }
@@ -1612,7 +1622,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="high">High part (milliseconds).</param>
          * <param name="low">Low part (nanoseconds)</param>
          */
-        private static void ToJavaDate(DateTime date, out long high, out int low)
+        public static void ToJavaDate(DateTime date, out long high, out int low)
         {
             if (date.Kind != DateTimeKind.Utc)
             {

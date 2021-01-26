@@ -26,6 +26,7 @@ from abc import ABCMeta, abstractmethod
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
 from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
+from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 
 
 def resolve_spec(service, context, config, **kwargs):
@@ -59,11 +60,21 @@ class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
     """
-    def __init__(self, path_aware, config, project, jvm_opts):
+    # pylint: disable=R0913
+    def __init__(self, path_aware, config, project, jvm_opts=None, full_jvm_opts=None):
         self.project = project
         self.path_aware = path_aware
         self.envs = {}
-        self.jvm_opts = jvm_opts or []
+
+        if full_jvm_opts:
+            self.jvm_opts = full_jvm_opts
+
+            if jvm_opts:
+                self._add_jvm_opts(jvm_opts)
+        else:
+            self.jvm_opts = create_jvm_settings(opts=jvm_opts,
+                                                gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
+                                                oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
         self.config = config
         self.version = config.version
 
@@ -109,6 +120,10 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         opts = ["-J%s" % o for o in self.jvm_opts]
         return " ".join(opts)
+
+    def _add_jvm_opts(self, opts):
+        """Properly adds JVM options to current"""
+        self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts)
 
 
 class IgniteNodeSpec(IgniteSpec):
@@ -168,11 +183,9 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
             'USER_LIBS': ":".join(libs)
         }
 
-        self.jvm_opts.extend([
-            "-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-            "-Dlog4j.configDebug=true"
-        ])
+        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
+                            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
+                            "-Dlog4j.configDebug=true"])
 
 
 class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
@@ -198,15 +211,13 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
             "USER_LIBS": ":".join(libs)
         }
 
-        self.jvm_opts.extend([
-            "-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-            "-Dlog4j.configDebug=true",
-            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
-            "-Xmx1G",
-            "-ea",
-            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
-        ])
+        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
+                            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
+                            "-Dlog4j.configDebug=true",
+                            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
+                            "-Xmx1G",
+                            "-ea",
+                            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
         self.args = [
             str(start_ignite),

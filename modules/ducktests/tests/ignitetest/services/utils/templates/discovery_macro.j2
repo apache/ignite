@@ -39,6 +39,7 @@
     <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
         <property name="zkConnectionString" value="{{ spi.connection_string }}"/>
         <property name="zkRootPath" value="{{ spi.root_path }}"/>
+        <property name="sessionTimeout" value="{{ spi.session_timeout }}"/>
     </bean>
 {% endmacro %}
 
@@ -46,6 +47,9 @@
     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
         {% if spi.local_address %}
             <property name="localAddress" value="{{ spi.local_address }}"/>
+        {% endif %}
+        {% if spi.so_linger is defined %}
+            <property name="soLinger" value="{{ spi.so_linger }}"/>
         {% endif %}
         <property name="localPort" value="{{ spi.port }}"/>
         <property name="localPortRange" value="{{ spi.port_range }}"/>

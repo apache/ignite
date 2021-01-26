@@ -49,6 +49,7 @@ class ZookeeperDiscoverySpi(DiscoverySpi):
         self.connection_string = zoo_service.connection_string()
         self.port = zoo_service.settings.client_port
         self.root_path = root_path
+        self.session_timeout = zoo_service.settings.min_session_timeout
 
     @property
     def type(self):

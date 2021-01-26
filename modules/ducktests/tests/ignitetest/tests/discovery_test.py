@@ -36,7 +36,7 @@ from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
@@ -165,6 +165,9 @@ class DiscoveryTest(IgniteTest):
             discovery_spi = from_zookeeper_cluster(zk_quorum)
         else:
             discovery_spi = TcpDiscoverySpi()
+
+            if LATEST_2_7 < test_config.version <= V_2_9_0:
+                discovery_spi.so_linger = 0
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
