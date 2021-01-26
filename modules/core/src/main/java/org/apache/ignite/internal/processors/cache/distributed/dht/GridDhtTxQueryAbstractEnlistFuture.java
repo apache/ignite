@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -37,7 +36,6 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
      * Constructor.
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
-     * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
@@ -47,7 +45,6 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
      */
     protected GridDhtTxQueryAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
@@ -56,7 +53,6 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
         GridCacheContext<?, ?> cctx) {
         super(nearNodeId,
             nearLockVer,
-            mvccSnapshot,
             threadId,
             nearFutId,
             nearMiniId,

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Objects;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,9 +44,6 @@ public class QueryContext {
     private final DistributedJoinContext distributedJoinCtx;
 
     /** */
-    private final MvccSnapshot mvccSnapshot;
-
-    /** */
     private final PartitionReservation reservations;
 
     /** {@code True} for local queries, {@code false} for distributed ones. */
@@ -59,22 +55,18 @@ public class QueryContext {
      * @param segment Index segment ID.
      * @param filter Filter.
      * @param distributedJoinCtx Distributed join context.
-     * @param mvccSnapshot MVCC snapshot.
      * @param loc {@code True} for local queries, {@code false} for distributed ones.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryContext(
         int segment,
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
-        @Nullable MvccSnapshot mvccSnapshot,
         @Nullable PartitionReservation reservations,
         boolean loc
     ) {
         this.segment = segment;
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;
-        this.mvccSnapshot = mvccSnapshot;
         this.reservations = reservations;
         this.loc = loc;
     }
@@ -90,15 +82,7 @@ public class QueryContext {
             filter,
             null,
             null,
-            null,
             local);
-    }
-
-    /**
-     * @return Mvcc snapshot.
-     */
-    @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**

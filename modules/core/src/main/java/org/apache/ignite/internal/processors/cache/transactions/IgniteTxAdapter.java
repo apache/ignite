@@ -62,8 +62,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -264,10 +262,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
-    /** Mvcc tx update snapshot. */
-    @GridToStringInclude
-    protected volatile MvccSnapshot mvccSnapshot;
-
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
 
@@ -415,18 +409,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public void setParentTx(GridNearTxLocal parentTx) {
         this.parentTx = parentTx;
-    }
-
-    /**
-     * @return Mvcc info.
-     */
-    @Override @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
@@ -1227,11 +1209,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    cctx.tm().setMvccState(this, toMvccState(state));
-
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK)
                     ptr = cctx.tm().logTxRecord(this);
-                }
             }
         }
 
@@ -1257,20 +1236,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return valid;
-    }
-
-    /** */
-    private byte toMvccState(TransactionState state) {
-        switch (state) {
-            case PREPARED:
-                return TxState.PREPARED;
-            case COMMITTED:
-                return TxState.COMMITTED;
-            case ROLLED_BACK:
-                return TxState.ABORTED;
-            default:
-                throw new IllegalStateException("Unexpected state: " + state);
-        }
     }
 
     /** */
@@ -2093,16 +2058,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             this.timeout = timeout;
             this.state = state;
             this.rollbackOnly = rollbackOnly;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public MvccSnapshot mvccSnapshot() {
-            return null;
         }
 
         /** {@inheritDoc} */

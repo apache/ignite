@@ -96,14 +96,6 @@ class OdbcRequestHandlerWorker extends GridWorker {
             }
         }
         finally {
-            // Notify indexing that this worker is being stopped.
-            try {
-                ctx.query().getIndexing().onClientDisconnect();
-            }
-            catch (Exception e) {
-                // No-op.
-            }
-
             // Drain the queue on stop.
             T2<OdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.poll();
 

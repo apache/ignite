@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -57,7 +56,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
      *
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
-     * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
@@ -72,7 +70,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
      */
     public GridDhtTxEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
@@ -86,7 +83,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
         boolean keepBinary) {
         super(nearNodeId,
             nearLockVer,
-            mvccSnapshot,
             threadId,
             nearFutId,
             nearMiniId,

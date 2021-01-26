@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
@@ -74,13 +73,6 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void stop() throws IgniteCheckedException;
-
-    /**
-     * Performs necessary actions on disconnect of a stateful client (say, one associated with a transaction).
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onClientDisconnect() throws IgniteCheckedException;
 
     /**
      * Generate SqlFieldsQuery from SqlQuery.
@@ -229,7 +221,6 @@ public interface GridQueryIndexing {
      * @param pageMemory Page memory to work with.
      * @param removeId Global remove id.
      * @param reuseList Reuse list where free pages should be stored.
-     * @param mvccEnabled Is mvcc enabled for group or not.
      * @throws IgniteCheckedException If failed.
      */
     public void destroyOrphanIndex(
@@ -238,39 +229,7 @@ public interface GridQueryIndexing {
         int grpId,
         PageMemory pageMemory,
         final GridAtomicLong removeId,
-        final ReuseList reuseList,
-        boolean mvccEnabled) throws IgniteCheckedException;
-
-    /**
-     *
-     * @param cctx Cache context.
-     * @param ids Involved cache ids.
-     * @param parts Partitions.
-     * @param schema Schema name.
-     * @param qry Query string.
-     * @param params Query parameters.
-     * @param flags Flags.
-     * @param pageSize Fetch page size.
-     * @param timeout Timeout.
-     * @param topVer Topology version.
-     * @param mvccSnapshot MVCC snapshot.
-     * @param cancel Query cancel object.
-     * @return Cursor over entries which are going to be changed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
-        GridCacheContext<?, ?> cctx,
-        int[] ids,
-        int[] parts,
-        String schema,
-        String qry,
-        Object[] params,
-        int flags,
-        int pageSize,
-        int timeout,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel
+        final ReuseList reuseList
     ) throws IgniteCheckedException;
 
     /**
