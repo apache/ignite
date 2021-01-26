@@ -85,6 +85,9 @@ The options are as follows:
 --jdk
     Set jdk version to build, default is 8
 
+--image
+    Set custom docker image to run tests on.
+
 EOF
     exit 0
 }
@@ -129,14 +132,19 @@ while [[ $# -ge 1 ]]; do
         -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
+        --image) IMAGE_NAME="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
     esac
 done
 
-
-IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-"$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+if [ -z "$IMAGE_NAME" ]; then
+    IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
+    "$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+else
+    echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
+         "Otherwise build it with 'ducker-ignite build' command"
+fi
 
 if [ -z "$FORCE" ]; then
     # If docker image changed then restart cluster (down here and up within next step)
