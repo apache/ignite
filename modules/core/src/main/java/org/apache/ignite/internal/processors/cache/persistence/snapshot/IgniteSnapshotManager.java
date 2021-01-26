@@ -1138,7 +1138,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!binDir.exists()) {
             if (failIfAbsent) {
                 throw new IgniteCheckedException("Unable to update cluster metadata from snapshot, " +
-                    "directory doesn't exists [snpName=" + snpName + ", dir=" + binDir + ']');
+                    "directory doesn't exists [snapshot=" + snpName + ", dir=" + binDir + ']');
             }
 
             return;
@@ -1177,15 +1177,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param grpName Cache group name.
-     * @param newFiles A list to keep track of the files created, the list updates during the restore process.
      * @param interruptClosure A closure to quickly interrupt copying partition files.
+     * @param newFiles A list to keep track of the files created, the list updates during the restore process.
      * @throws IgniteCheckedException If failed.
      */
     protected void restoreCacheGroupFiles(
         String snpName,
         String grpName,
-        List<File> newFiles,
-        Supplier<Boolean> interruptClosure
+        Supplier<Boolean> interruptClosure,
+        List<File> newFiles
     ) throws IgniteCheckedException {
         File snapshotCacheDir = resolveSnapshotCacheDir(snpName, grpName);
 
@@ -1274,24 +1274,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param grpName Cache group name.
-     * @return Details about the locally stored cache group, or {@code null} if cache group (or snapshot) was not found.
+     * @return Details about the locally stored cache group, or {@code null} if the snapshot doesn't exist.
      * @throws IgniteCheckedException if failed.
      */
     protected @Nullable CacheGroupSnapshotDetails readCacheGroupDetails(
         String snpName,
         String grpName
     ) throws IgniteCheckedException {
-        IgniteConfiguration nodeCfg = cctx.kernalContext().config();
         File cacheDir = resolveSnapshotCacheDir(snpName, grpName);
 
         if (!cacheDir.exists())
             return null;
 
-        List<StoredCacheData> cacheCfgs = new ArrayList<>(1);
-        Set<Integer> parts = new HashSet<>();
-
+        IgniteConfiguration nodeCfg = cctx.kernalContext().config();
         JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(nodeCfg.getIgniteInstanceName());
         ClassLoader clsLdr = U.resolveClassLoader(nodeCfg);
+
+        List<StoredCacheData> cacheCfgs = new ArrayList<>(1);
+        Set<Integer> parts = new HashSet<>();
 
         for (File file : cacheDir.listFiles()) {
             if (file.isDirectory())
@@ -1313,7 +1313,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        return new CacheGroupSnapshotDetails(grpName, cacheCfgs, parts);
+        return new CacheGroupSnapshotDetails(cacheCfgs, parts);
     }
 
     /** {@inheritDoc} */

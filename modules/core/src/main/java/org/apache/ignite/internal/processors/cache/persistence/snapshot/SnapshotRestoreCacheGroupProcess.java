@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -184,7 +185,7 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
 
         if (fut0.context().nodes().contains(leftNodeId)) {
-            fut.onDone(new IgniteException(OP_REJECT_MSG +
+            fut0.onDone(new IgniteException(OP_REJECT_MSG +
                 "Baseline node has left the cluster [nodeId=" + leftNodeId + ']'));
         }
     }
@@ -195,9 +196,6 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param reason Interruption reason.
      */
     public void stop(String reason) {
-        if (ctx.clientNode())
-            return;
-
         RestoreSnapshotFuture fut0 = fut;
 
         if (staleFuture(fut0))
@@ -331,72 +329,34 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
         }
 
-        UUID updateMetadataNode = null;
-
-        for (Map.Entry<UUID, SnapshotRestorePrepareResponse> entry : res.entrySet()) {
-            SnapshotRestorePrepareResponse resp = entry.getValue();
-
-            if (resp != null && !F.isEmpty(resp.groups())) {
-                updateMetadataNode = entry.getKey();
-
-                break;
-            }
-        }
-
         SnapshotRestoreContext opCtx = fut0.context();
 
-        Set<String> notFoundGroups = new HashSet<>(opCtx.groups());
+        Set<String> missedGroups = new HashSet<>(opCtx.groups());
 
         try {
-            Collection<CacheGroupSnapshotDetails> grpsDetails = mergeNodeResults(res);
+            for (CacheGroupSnapshotDetails grpDetails : mergeNodeResults(res)) {
+                CacheConfiguration<?, ?> cfg = F.first(grpDetails.configs()).config();
 
-            List<StoredCacheData> cacheCfgs = new ArrayList<>();
+                String grpName = cfg.getGroupName() == null ? cfg.getName() : cfg.getGroupName();
 
-            for (CacheGroupSnapshotDetails grpDetails : grpsDetails) {
-                StoredCacheData cdata = F.first(grpDetails.configs());
-
-                if (cdata == null)
-                    continue;
-
-                int reqParts = cdata.config().getAffinity().partitions();
+                int reqParts = cfg.getAffinity().partitions();
                 int availParts = grpDetails.parts().size();
 
                 if (reqParts != availParts) {
                     throw new IgniteCheckedException("Cannot restore snapshot, not all partitions available [" +
-                        "required=" + reqParts + ", avail=" + availParts + ", grp=" + grpDetails.groupName() + ']');
+                        "required=" + reqParts + ", avail=" + availParts + ", group=" + grpName + ']');
                 }
 
-                notFoundGroups.remove(grpDetails.groupName());
+                missedGroups.remove(grpName);
 
-                for (StoredCacheData cacheData : grpDetails.configs()) {
-                    String cacheName = cacheData.config().getName();
-
-                    if (!F.isEmpty(cacheData.config().getGroupName()))
-                        opCtx.addSharedCache(cacheName, grpDetails.groupName());
-
-                    cacheCfgs.add(cacheData);
-                }
+                for (StoredCacheData cacheData : grpDetails.configs())
+                    opCtx.addCacheData(cacheData);
             }
 
-            if (!notFoundGroups.isEmpty()) {
+            if (!missedGroups.isEmpty()) {
                 throw new IllegalArgumentException("Cache group(s) not found in snapshot [groups=" +
-                    F.concat(notFoundGroups, ", ") + ", snapshot=" + opCtx.snapshotName() + ']');
+                    F.concat(missedGroups, ", ") + ", snapshot=" + opCtx.snapshotName() + ']');
             }
-
-            Set<UUID> srvNodeIds = new HashSet<>(F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-                F.node2id(),
-                (node) -> CU.baselineNode(node, ctx.state().clusterState())));
-
-            Set<UUID> reqNodes = new HashSet<>(opCtx.nodes());
-
-            reqNodes.removeAll(srvNodeIds);
-
-            if (!reqNodes.isEmpty()) {
-                throw new IllegalStateException("Unable to perform a restore operation, server node(s) left " +
-                    "the cluster [nodeIds=" + F.concat(reqNodes, ", ") + ']');
-            }
-
-            opCtx.startConfigs(cacheCfgs);
         }
         catch (Exception e) {
             fut0.onDone(e);
@@ -404,8 +364,11 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
         }
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()) && !fut0.isDone())
-            performRestoreProc.start(reqId, new SnapshotRestorePerformRequest(reqId, updateMetadataNode));
+        if (U.isLocalNodeCoordinator(ctx.discovery()) && !fut0.isDone()) {
+            UUID metaUpdateNode = F.first(F.viewReadOnly(res.entrySet(), Map.Entry::getKey, e -> e.getValue() != null));
+
+            performRestoreProc.start(reqId, new SnapshotRestorePerformRequest(reqId, metaUpdateNode));
+        }
     }
 
     /**
@@ -417,15 +380,17 @@ public class SnapshotRestoreCacheGroupProcess {
 
         for (Map.Entry<UUID, SnapshotRestorePrepareResponse> entry : res.entrySet()) {
             UUID currNodeId = entry.getKey();
-            SnapshotRestorePrepareResponse singleResp = entry.getValue();
+            SnapshotRestorePrepareResponse nodeResp = entry.getValue();
 
-            if (singleResp == null)
+            if (nodeResp == null)
                 continue;
 
-            for (CacheGroupSnapshotDetails nodeDetails : singleResp.groups()) {
-                T2<UUID, CacheGroupSnapshotDetails> clusterDetailsPair = globalDetails.get(nodeDetails.groupName());
+            for (CacheGroupSnapshotDetails nodeDetails : nodeResp.groups()) {
+                CacheConfiguration<?, ?> cfg = F.first(nodeDetails.configs()).config();
 
-                String grpName = nodeDetails.groupName();
+                String grpName = cfg.getGroupName() == null ? cfg.getName() : cfg.getGroupName();
+
+                T2<UUID, CacheGroupSnapshotDetails> clusterDetailsPair = globalDetails.get(grpName);
 
                 if (clusterDetailsPair == null) {
                     globalDetails.put(grpName, new T2<>(currNodeId, nodeDetails));
@@ -460,6 +425,10 @@ public class SnapshotRestoreCacheGroupProcess {
             return new GridFinishedFuture<>();
 
         RestoreSnapshotFuture fut0 = fut;
+
+        if (fut0.isDone() || fut0.interrupted())
+            return new GridFinishedFuture<>();
+
         SnapshotRestoreContext opCtx = fut0.context();
 
         if (!req.requestId().equals(opCtx.requestId()))
@@ -471,7 +440,7 @@ public class SnapshotRestoreCacheGroupProcess {
             if (!ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx.snapshotName()).exists())
                 return new GridFinishedFuture<>();
 
-            for (StoredCacheData cfg : opCtx.startConfigs()) {
+            for (StoredCacheData cfg : opCtx.configs()) {
                 if (!F.isEmpty(cfg.config().getGroupName()))
                     ensureCacheAbsent(cfg.config().getName());
             }
@@ -517,7 +486,7 @@ public class SnapshotRestoreCacheGroupProcess {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return;
 
-        ctx.cache().dynamicStartCachesByStoredConf(fut0.context().startConfigs(), true, true, false, null, true);
+        ctx.cache().dynamicStartCachesByStoredConf(fut0.context().configs(), true, true, false, null, true);
     }
 
     /**
@@ -548,14 +517,14 @@ public class SnapshotRestoreCacheGroupProcess {
         private volatile SnapshotRestoreContext ctx;
 
         /**
-         * @return Snapshot restore operation context.
+         * @return Cache group restore from snapshot operation context.
          */
         public SnapshotRestoreContext context() {
             return ctx;
         }
 
         /**
-         * @param ctx Snapshot restore operation context.
+         * @param ctx Cache group restore from snapshot operation context.
          */
         public void init(SnapshotRestoreContext ctx) {
             this.ctx = ctx;

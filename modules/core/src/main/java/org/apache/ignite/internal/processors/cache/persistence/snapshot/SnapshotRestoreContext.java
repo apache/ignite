@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache restore from snapshot operation context.
+ * Cache group restore from snapshot operation context.
  */
 class SnapshotRestoreContext {
     /** Request ID. */
@@ -58,13 +58,11 @@ class SnapshotRestoreContext {
     /** Restore operation lock. */
     private final ReentrantLock rollbackLock = new ReentrantLock();
 
-    private final Map<String, List<File>> createdFiles = new HashMap<>();
+    /** Cache configurations. */
+    private final Map<Integer, StoredCacheData> cacheCfgs = new ConcurrentHashMap<>();
 
-    private final Map<String, PendingStartCacheGroup> pendingStartCaches = new ConcurrentHashMap<>();
-
-    private final Set<Integer> cacheIds = new GridConcurrentHashSet<>();
-
-    private volatile Collection<StoredCacheData> cacheCfgsToStart;
+    /** Restored cache groups. */
+    private final Map<String, GroupRestoreContext> grps = new ConcurrentHashMap<>();
 
     /**
      * @param reqId Request ID.
@@ -75,10 +73,8 @@ class SnapshotRestoreContext {
      */
     public SnapshotRestoreContext(UUID reqId, String snpName, Set<UUID> reqNodes, Collection<String> grps,
         IgniteSnapshotManager snapshotMgr) {
-        for (String grpName : grps) {
-            cacheIds.add(CU.cacheId(grpName));
-            pendingStartCaches.put(grpName, new PendingStartCacheGroup());
-        }
+        for (String grpName : grps)
+            this.grps.put(grpName, new GroupRestoreContext());
 
         this.reqId = reqId;
         this.reqNodes = reqNodes;
@@ -93,7 +89,7 @@ class SnapshotRestoreContext {
 
     /** @return List of baseline node IDs that must be alive to complete the operation. */
     public Set<UUID> nodes() {
-        return reqNodes;
+        return Collections.unmodifiableSet(reqNodes);
     }
 
     /** @return Snapshot name. */
@@ -103,31 +99,49 @@ class SnapshotRestoreContext {
 
     /** @return List of cache group names to restore from the snapshot. */
     public Set<String> groups() {
-        return pendingStartCaches.keySet();
+        return grps.keySet();
     }
 
-    public void addSharedCache(String cacheName, String grpName) {
-        cacheIds.add(CU.cacheId(cacheName));
-
-        PendingStartCacheGroup sharedGrp = pendingStartCaches.get(grpName);
-
-        assert sharedGrp != null : grpName;
-
-        sharedGrp.caches.add(cacheName);
-    }
-
+    /**
+     * @param name Cache name.
+     * @return {@code True} if the cache with the specified name is currently being restored.
+     */
     public boolean containsCache(String name) {
-        return cacheIds.contains(CU.cacheId(name));
+        return grps.containsKey(name) || cacheCfgs.containsKey(CU.cacheId(name));
     }
 
-    public void startConfigs(Collection<StoredCacheData> ccfgs) {
-        cacheCfgsToStart = ccfgs;
+    /** @return Cache configurations. */
+    public Collection<StoredCacheData> configs() {
+        return cacheCfgs.values();
     }
 
-    public Collection<StoredCacheData> startConfigs() {
-        return cacheCfgsToStart;
+    /**
+     * @param cacheData Stored cache data.
+     */
+    public void addCacheData(StoredCacheData cacheData) {
+        String cacheName = cacheData.config().getName();
+
+        cacheCfgs.put(CU.cacheId(cacheName), cacheData);
+
+        String grpName = cacheData.config().getGroupName();
+
+        if (grpName == null)
+            return;
+
+        GroupRestoreContext grpCtx = grps.get(grpName);
+
+        assert grpCtx != null : grpName;
+
+        grpCtx.caches.add(cacheName);
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @param grpName Group name.
+     * @param err Exception (if any).
+     * @param svc Executor service for asynchronous rollback.
+     * @param finishFut A future to be completed when all restored cache groups are started or rolled back.
+     */
     public void processCacheStart(
         String cacheName,
         @Nullable String grpName,
@@ -137,25 +151,27 @@ class SnapshotRestoreContext {
     ) {
         String grpName0 = grpName != null ? grpName : cacheName;
 
-        PendingStartCacheGroup pendingGrp = pendingStartCaches.get(grpName0);
+        GroupRestoreContext grp = grps.get(grpName0);
 
         // If any of shared caches has been started - we cannot rollback changes.
-        if (pendingGrp.caches.remove(cacheName) && err == null)
-            pendingGrp.canRollback = false;
+        if (grp.caches.remove(cacheName) && err == null)
+            grp.started = true;
 
-        if (!pendingGrp.caches.isEmpty())
+        if (!grp.caches.isEmpty()) {
+            if (err != null)
+                grp.startErr = err;
+
             return;
+        }
 
-        if (err != null && pendingGrp.canRollback) {
+        if (err != null && !grp.started) {
             svc.submit(() -> {
                 rollbackLock.lock();
 
                 try {
-                    pendingStartCaches.remove(grpName0);
-
                     rollback(grpName0);
 
-                    if (pendingStartCaches.isEmpty())
+                    if (grps.isEmpty())
                         finishFut.onDone(err);
                 }
                 finally {
@@ -169,10 +185,8 @@ class SnapshotRestoreContext {
         rollbackLock.lock();
 
         try {
-            pendingStartCaches.remove(grpName0);
-
-            if (pendingStartCaches.isEmpty())
-                finishFut.onDone();
+            if (grps.remove(grpName0) != null && grps.isEmpty())
+                finishFut.onDone(null, err == null ? grp.startErr : err);
         } finally {
             rollbackLock.unlock();
         }
@@ -196,11 +210,9 @@ class SnapshotRestoreContext {
             rollbackLock.lock();
 
             try {
-                List<File> newFiles = new ArrayList<>();
+                GroupRestoreContext grp = grps.get(grpName);
 
-                createdFiles.put(grpName, newFiles);
-
-                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, newFiles, interruptClosure);
+                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, interruptClosure, grp.files);
             }
             finally {
                 rollbackLock.unlock();
@@ -217,12 +229,12 @@ class SnapshotRestoreContext {
         rollbackLock.lock();
 
         try {
-            List<File> createdFiles = this.createdFiles.remove(grpName);
+            GroupRestoreContext grp = grps.remove(grpName);
 
-            if (F.isEmpty(createdFiles))
+            if (grp == null || F.isEmpty(grp.files))
                 return;
 
-            snapshotMgr.rollbackRestoreOperation(createdFiles);
+            snapshotMgr.rollbackRestoreOperation(grp.files);
         } finally {
             rollbackLock.unlock();
         }
@@ -234,9 +246,17 @@ class SnapshotRestoreContext {
     }
 
     /** */
-    private static class PendingStartCacheGroup {
-        volatile boolean canRollback = true;
+    private static class GroupRestoreContext {
+        /** List of caches of the cache group. */
+        final Set<String> caches = new GridConcurrentHashSet<>();
 
-        Set<String> caches = new GridConcurrentHashSet<>();
+        /** Files created in the cache group folder during a restore operation. */
+        final List<File> files = new ArrayList<>();
+
+        /** The flag indicates that one of the caches in this cache group has been started. */
+        volatile boolean started;
+
+        /** An exception that was thrown when starting a shared cache group (if any). */
+        volatile Throwable startErr;
     }
 }

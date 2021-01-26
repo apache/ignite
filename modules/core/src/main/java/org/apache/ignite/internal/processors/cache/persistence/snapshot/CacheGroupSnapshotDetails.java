@@ -27,9 +27,6 @@ class CacheGroupSnapshotDetails implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Cache group name. */
-    private String grpName;
-
     /** Local partition IDs. */
     private Set<Integer> parts;
 
@@ -37,34 +34,21 @@ class CacheGroupSnapshotDetails implements Serializable {
     private List<StoredCacheData> cfgs;
 
     /**
-     * @param grpName Cache group name.
      * @param cfgs Group cache configurations.
      * @param parts Local partition IDs.
      */
-    public CacheGroupSnapshotDetails(String grpName, List<StoredCacheData> cfgs, Set<Integer> parts) {
-        this.grpName = grpName;
+    public CacheGroupSnapshotDetails(List<StoredCacheData> cfgs, Set<Integer> parts) {
         this.cfgs = cfgs;
         this.parts = parts;
     }
 
-    /**
-     * @return Group cache configurations.
-     */
+    /** @return Group cache configurations. */
     public List<StoredCacheData> configs() {
         return cfgs;
     }
 
-    /**
-     * @return Local partition IDs.
-     */
+    /** @return Local partition IDs. */
     public Set<Integer> parts() {
         return parts;
-    }
-
-    /**
-     * @return Cache group name.
-     */
-    public String groupName() {
-        return grpName;
     }
 }
