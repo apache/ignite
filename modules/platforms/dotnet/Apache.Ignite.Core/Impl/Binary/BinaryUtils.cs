@@ -1533,8 +1533,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Ignite SQL engine always uses simple type name without namespace, parent class, etc.
             // See QueryUtils.typeName
             // TODO: See GridQueryProcessor.store - make sure a matching table is found for generic types
-            // ("Key-value pair is not inserted into any SQL table"...)
-            return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
+            // Java uses typeId to locate corresponding QueryEntity when storing cache data,
+            // so typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId -
+            // how does this work when SimpleMapper is used? typeIds should seemingly be mismatched!
+
+            // return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
+            return type.FullName;
         }
 
         /**
