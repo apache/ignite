@@ -16,6 +16,7 @@
 """
 This module contains class to start ignite cluster node.
 """
+
 import os
 import re
 import signal
@@ -61,8 +62,6 @@ class IgniteService(IgniteAwareService):
 
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
-            output = list(node.account.ssh_capture(f'du -hd2 {self.database_dir}', allow_fail=False))
-            self.logger.warn(output)
 
     def thread_dump(self, node):
         """

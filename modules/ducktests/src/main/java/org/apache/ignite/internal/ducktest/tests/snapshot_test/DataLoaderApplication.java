@@ -42,31 +42,31 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         int dataSize = jNode.get("dataSizeKB").asInt() * KB;
 
-        long start = ThreadLocalRandom.current().nextLong();
-
         markInitialized();
 
         QueryEntity queryEntity = new QueryEntity()
             .setKeyFieldName("id")
             .setKeyType(Long.class.getName())
-            .setValueType(TestData.class.getName())
+            .setTableName("TEST_TABLE")
+            .setValueType(byte[].class.getName())
             .addQueryField("id", Long.class.getName(), null)
             .setIndexes(Collections.singletonList(new QueryIndex("id")));
 
-        CacheConfiguration<Long, TestData> cacheCfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Long, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.REPLICATED);
         cacheCfg.setQueryEntities(Collections.singletonList(queryEntity));
 
         ignite.getOrCreateCache(cacheCfg);
 
+        long start = ThreadLocalRandom.current().nextLong();
+
         byte[] data = new byte[dataSize];
 
-        try (IgniteDataStreamer<Long, TestData> dataStreamer = ignite.dataStreamer(cacheName)) {
+        try (IgniteDataStreamer<Long, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
             dataStreamer.autoFlushFrequency(1000);
 
-            for (long i = start; i < start + interval; i++) {
-                dataStreamer.addData(i, new TestData(data));
-            }
+            for (long i = start; i < start + interval; i++)
+                dataStreamer.addData(i, data);
         }
 
         markFinished();
