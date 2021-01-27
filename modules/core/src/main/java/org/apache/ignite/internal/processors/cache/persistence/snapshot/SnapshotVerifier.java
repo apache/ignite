@@ -18,35 +18,17 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.file.Path;
-import org.apache.ignite.internal.GridKernalContext;
 
 /**
  * Interface to check snapshot files integrity before restoring them.
  */
-public interface SnapshotDigest {
-    /**
-     * @return Instance of SnapshotDigest.
-     */
-    public static SnapshotDigest getInstance(GridKernalContext ctx) {
-        SnapshotDigest res = ctx.plugins().createComponent(SnapshotDigest.class);
-
-        if (res == null) {
-            res = new SnapshotDigest() {
-                @Override public void verify(Path snpDir) {
-                    // No-op.
-                }
-            };
-        }
-
-        return res;
-    }
-
+public interface SnapshotVerifier {
     /**
      * Verify snapshot integrity.
      *
      * @param snpDir Path to a snapshot directory.
-     * @throws SnapshotDigestException Thrown if snapshot integrity is corrupted or impossible to check.
+     * @throws SnapshotVerifierException Thrown if snapshot integrity is corrupted or impossible to check.
      */
-    public void verify(Path snpDir) throws SnapshotDigestException;
+    public void verify(Path snpDir) throws SnapshotVerifierException;
 
 }

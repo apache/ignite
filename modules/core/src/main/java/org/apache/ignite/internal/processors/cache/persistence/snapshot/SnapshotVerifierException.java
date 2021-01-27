@@ -23,18 +23,18 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Thrown when snapshot integrity is corrupted or impossible to check.
  */
-public class SnapshotDigestException extends IgniteCheckedException {
+public class SnapshotVerifierException extends IgniteCheckedException {
     /**
      * @param msg Message.
      */
-    public SnapshotDigestException(String msg) {
+    public SnapshotVerifierException(String msg) {
         super(msg);
     }
 
     /**
      * @param cause Cause.
      */
-    public SnapshotDigestException(Throwable cause) {
+    public SnapshotVerifierException(Throwable cause) {
         super(cause);
     }
 
@@ -43,7 +43,7 @@ public class SnapshotDigestException extends IgniteCheckedException {
      * @param cause Cause.
      * @param writableStackTrace Writable stack trace.
      */
-    public SnapshotDigestException(String msg, @Nullable Throwable cause,
+    public SnapshotVerifierException(String msg, @Nullable Throwable cause,
         boolean writableStackTrace) {
         super(msg, cause, writableStackTrace);
     }
@@ -52,7 +52,7 @@ public class SnapshotDigestException extends IgniteCheckedException {
      * @param msg Message.
      * @param cause Cause.
      */
-    public SnapshotDigestException(String msg, @Nullable Throwable cause) {
+    public SnapshotVerifierException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
