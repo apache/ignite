@@ -89,10 +89,10 @@ class DiscoveryTest(IgniteTest):
         self.netfilter_store_path = None
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @ignite_versions(str(LATEST))
-    @matrix(nodes_to_kill=[2], failure_detection_timeout=[FAILURE_TIMEOUT], disable_conn_recovery=[False],
-            net_part=[IgniteService.NetPart.ALL],
-            load_type=[ClusterLoad.TRANSACTIONAL])
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT], disable_conn_recovery=[False, True],
+            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INCOMING],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout,
                                            disable_conn_recovery: bool, net_part: IgniteService.NetPart):
         """
@@ -178,7 +178,7 @@ class DiscoveryTest(IgniteTest):
                 discovery_spi.so_linger = 0
 
             if test_config.disable_conn_recovery:
-                discovery_spi.connectionRecoveryTimeout = 0
+                discovery_spi.connRecoveryTimeout = 0
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
