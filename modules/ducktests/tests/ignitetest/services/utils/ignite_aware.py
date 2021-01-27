@@ -25,9 +25,9 @@ from abc import abstractmethod, ABCMeta
 from datetime import datetime
 from threading import Thread
 
-from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
@@ -74,20 +74,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     def globals(self):
         return self.context.globals
 
-    def start_async(self, full_async=True, clean=True):
+    def start_async(self, full_async=True, **kwargs):
         """
         Starts in async way.
         """
         if full_async:
-            if clean:
-                self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node, simultaneously=False)
+            self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node, simultaneously=False)
 
             self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node), simultaneously=True)
         else:
-            super().start()
+            super().start(**kwargs)
 
-    def start(self, clean=True, full_async=False):
-        self.start_async(full_async=full_async, clean=clean)
+    def start(self, full_async=False, **kwargs):
+        self.start_async(full_async=full_async, **kwargs)
         self.await_started()
 
     def await_started(self):
@@ -98,26 +97,26 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
-    def start_node(self, node):
+    def start_node(self, node, **kwargs):
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
 
-        super().start_node(node)
+        super().start_node(node, **kwargs)
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
         ignite_jmx_mixin(node, self.spec, self.pids(node))
 
-    def stop_async(self):
+    def stop_async(self, **kwargs):
         """
         Stop in async way.
         """
-        super().stop()
+        super().stop(**kwargs)
 
-    def stop(self):
+    def stop(self, **kwargs):
         if not self.killed:
-            self.stop_async()
+            self.stop_async(**kwargs)
             self.await_stopped()
         else:
             self.logger.debug("Skipping node stop since it already killed.")
@@ -138,7 +137,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                        err_msg="Node %s's remote processes failed to stop in %d seconds" %
                                (str(node.account), self.shutdown_timeout_sec))
 
-    def stop_node(self, node):
+    def stop_node(self, node, **kwargs):
         pids = self.pids(node)
 
         for pid in pids:
@@ -163,10 +162,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self.killed = True
 
-    def clean(self):
+    def clean(self, **kwargs):
         self.__restore_iptables()
 
-        super().clean()
+        super().clean(**kwargs)
 
     def init_persistent(self, node):
         """
@@ -220,7 +219,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         raise NotImplementedError
 
     # pylint: disable=W0613
-    def _worker(self, idx, node):
+    def worker(self, idx, node, **kwargs):
         cmd = self.spec.command(node)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
@@ -340,11 +339,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
         return self.exec_on_nodes_async(nodes,
-                                        lambda srvc, n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                         n.account.ssh_client.exec_command(cmd % "OUTPUT"),
-                                                         self.logger.debug("Activated netfilter on '%s': %s" %
-                                                                           (n.name, self.__dump_netfilter_settings(n)))
-                                                         )
+                                        lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
+                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT"),
+                                                   self.logger.debug("Activated netfilter on '%s': %s" %
+                                                                     (n.name, self.__dump_netfilter_settings(n)))
+                                                   )
                                         )
 
     def __backup_iptables(self, nodes):

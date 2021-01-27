@@ -22,7 +22,6 @@ from distutils.version import LooseVersion
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
-
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
@@ -36,7 +35,7 @@ class ZookeeperSettings:
         self.tick_time = kwargs.get('tick_time', self.min_session_timeout // 3)
         self.init_limit = kwargs.get('init_limit', 10)
         self.sync_limit = kwargs.get('sync_limit', 5)
-        self.force_sync = kwargs.get('force_sync', 'yes')
+        self.force_sync = kwargs.get('force_sync', 'no')
         self.client_port = kwargs.get('client_port', 2181)
 
         version = kwargs.get("version")
@@ -82,8 +81,8 @@ class ZookeeperService(Service, PathAware):
     def project(self):
         return "zookeeper"
 
-    def start(self, clean=True):
-        super().start(clean=clean)
+    def start(self, **kwargs):
+        super().start(**kwargs)
         self.logger.info("Waiting for Zookeeper quorum...")
 
         for node in self.nodes:
@@ -91,7 +90,7 @@ class ZookeeperService(Service, PathAware):
 
         self.logger.info("Zookeeper quorum is formed.")
 
-    def start_node(self, node):
+    def start_node(self, node, **kwargs):
         idx = self.idx(node)
 
         self.logger.info("Starting Zookeeper node %d on %s", idx, node.account.hostname)
@@ -164,12 +163,12 @@ class ZookeeperService(Service, PathAware):
         """
         return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
-    def stop_node(self, node):
+    def stop_node(self, node, **kwargs):
         idx = self.idx(node)
         self.logger.info("Stopping %s node %d on %s" % (type(self).__name__, idx, node.account.hostname))
         node.account.kill_process("zookeeper", allow_fail=False)
 
-    def clean_node(self, node):
+    def clean_node(self, node, **kwargs):
         self.logger.info("Cleaning Zookeeper node %d on %s", self.idx(node), node.account.hostname)
         if self.alive(node):
             self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
