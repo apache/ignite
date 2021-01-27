@@ -23,6 +23,7 @@ import sys
 import time
 from abc import abstractmethod, ABCMeta
 from datetime import datetime
+from enum import IntEnum
 from threading import Thread
 
 from ducktape.utils.util import wait_until
@@ -33,6 +34,7 @@ from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.utils.enum import constructible
 
 
 # pylint: disable=too-many-public-methods
@@ -40,6 +42,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     """
     The base class to build services aware of Ignite.
     """
+    @constructible
+    class NetPart(IntEnum):
+        """
+        Network part to emulate failure.
+        """
+        INCOMING = 0
+        OUTCOMING = 1
+        ALL = 2
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
@@ -296,24 +306,24 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         return os.path.join(self.temp_dir, "iptables.bak")
 
-    def drop_network(self, nodes=None, network_part=0):
+    def drop_network(self, nodes=None, net_part: NetPart = NetPart.ALL):
         """
         Disconnects node from cluster.
+        :param nodes: Nodes to emulate network failure on.
+        :param net_part: Part of network to emulate failure of.
         """
         if nodes is None:
             assert self.num_nodes == 1
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.info("Dropping " +
-                             "all" if not network_part else ("incoming" if network_part < 0 else "outcoming") +
-                             " Ignite connections on '" + node.account.hostname + "' ...")
+            self.logger.info("Dropping " + str(net_part) + " Ignite connections on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
 
-        return self.exec_on_nodes_async(nodes, lambda n: self.__enable_netfilter(n, network_part))
+        return self.exec_on_nodes_async(nodes, lambda n: self.__enable_netfilter(n, net_part))
 
-    def __enable_netfilter(self, node, network_part):
+    def __enable_netfilter(self, node, network_part: NetPart):
         cm_spi = self.config.communication_spi
         dsc_spi = self.config.discovery_spi
 
@@ -323,13 +333,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
-        if network_part <= 0:
+        if network_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INCOMING):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I FORWARD 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        if network_part >= 0:
+        if network_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTCOMING):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
