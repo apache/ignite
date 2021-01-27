@@ -214,11 +214,13 @@ public class SnapshotRestoreCacheGroupProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
-        if (inProgress(null))
-            return errResponse(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
+        if (inProgress(null)) {
+            return new GridFinishedFuture<>(
+                new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed."));
+        }
 
         if (!ctx.state().clusterState().state().active())
-            return errResponse(new IllegalStateException(OP_REJECT_MSG + "The cluster should be active."));
+            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG + "The cluster should be active."));
 
         // Skip creating future on initiator.
         if (fut.isDone())
@@ -320,7 +322,7 @@ public class SnapshotRestoreCacheGroupProcess {
     private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestorePrepareResponse> res, Map<UUID, Exception> errs) {
         RestoreSnapshotFuture fut0 = fut;
 
-        if (fut0.interrupted() || !reqId.equals(fut0.context().requestId()) || fut0.isDone())
+        if (fut0.isDone() || fut0.interrupted() || !reqId.equals(fut0.context().requestId()))
             return;
 
         if (!errs.isEmpty()) {
@@ -421,9 +423,6 @@ public class SnapshotRestoreCacheGroupProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<SnapshotRestorePerformResponse> perform(SnapshotRestorePerformRequest req) {
-        if (ctx.clientNode())
-            return new GridFinishedFuture<>();
-
         RestoreSnapshotFuture fut0 = fut;
 
         if (fut0.isDone() || fut0.interrupted())
@@ -432,7 +431,7 @@ public class SnapshotRestoreCacheGroupProcess {
         SnapshotRestoreContext opCtx = fut0.context();
 
         if (!req.requestId().equals(opCtx.requestId()))
-            return errResponse("Unknown snapshot restore operation was rejected.");
+            return new GridFinishedFuture<>(new IgniteException("Unknown snapshot restore operation was rejected."));
 
         GridFutureAdapter<SnapshotRestorePerformResponse> retFut = new GridFutureAdapter<>();
 
@@ -460,7 +459,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
             return retFut;
         } catch (Exception e) {
-            return errResponse(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -472,7 +471,7 @@ public class SnapshotRestoreCacheGroupProcess {
     private void finishPerform(UUID reqId, Map<UUID, SnapshotRestorePerformResponse> res, Map<UUID, Exception> errs) {
         RestoreSnapshotFuture fut0 = fut;
 
-        if (fut0.isDone() || fut0.interrupted())
+        if (fut0.isDone() || fut0.interrupted() || !reqId.equals(fut0.context().requestId()))
             return;
 
         Exception failure = F.first(errs.values());
@@ -487,24 +486,6 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
 
         ctx.cache().dynamicStartCachesByStoredConf(fut0.context().configs(), true, true, false, null, true);
-    }
-
-    /**
-     * @param msg Error message.
-     * @param <T> Type of the future.
-     * @return Failed with the specified error message future.
-     */
-    private <T> IgniteInternalFuture<T> errResponse(String msg) {
-        return errResponse(new IgniteException(msg));
-    }
-
-    /**
-     * @param ex Exception.
-     * @param <T> Type of the future.
-     * @return Failed with the specified exception future.
-     */
-    private <T> IgniteInternalFuture<T> errResponse(Exception ex) {
-        return new GridFinishedFuture<>(ex);
     }
 
     /** */
@@ -547,7 +528,8 @@ public class SnapshotRestoreCacheGroupProcess {
 
                 Set<String> grpNames = opCtx0.groups();
 
-                log.error("Snapshot restore process has been interrupted [grps=" + grpNames + ']', err);
+                log.error("Snapshot restore process has been interrupted " +
+                    "[groups=" + grpNames + ", snapshot=" + opCtx0.snapshotName() + ']', err);
 
                 for (String grpName : grpNames)
                     opCtx0.rollback(grpName);
