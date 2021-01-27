@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 
-/** */
+/**
+ * Contains information about partitions and cache configurations located in the cache group snapshot directory.
+ */
 class CacheGroupSnapshotDetails implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -30,11 +32,11 @@ class CacheGroupSnapshotDetails implements Serializable {
     /** Local partition IDs. */
     private Set<Integer> parts;
 
-    /** Group cache configurations. */
+    /** Stored cache configurations. */
     private List<StoredCacheData> cfgs;
 
     /**
-     * @param cfgs Group cache configurations.
+     * @param cfgs Stored cache configurations.
      * @param parts Local partition IDs.
      */
     public CacheGroupSnapshotDetails(List<StoredCacheData> cfgs, Set<Integer> parts) {
@@ -42,7 +44,7 @@ class CacheGroupSnapshotDetails implements Serializable {
         this.parts = parts;
     }
 
-    /** @return Group cache configurations. */
+    /** @return Stored cache configurations. */
     public List<StoredCacheData> configs() {
         return cfgs;
     }
