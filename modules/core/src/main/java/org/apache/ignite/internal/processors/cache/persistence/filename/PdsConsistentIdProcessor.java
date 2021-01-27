@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.NodeFileLockHolder;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -57,10 +57,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private static final String NODEIDX_UID_SEPARATOR = "-";
 
     /** Constant node subfolder prefix and node index pattern (nodeII, where II - node index as decimal integer) */
-    private static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
+    public static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
 
     /** Uuid as string pattern. */
-    private static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    public static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /**
      * Subdir (nodeII-UID, where II - node index as decimal integer, UID - string representation of consistent ID)
@@ -179,7 +179,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         // If such a folder exists, we start up with this ID (compatibility mode)
         final String subFolder = U.maskForFileName(consistentId.toString());
 
-        final GridCacheDatabaseSharedManager.FileLockHolder oldStyleFolderLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
+        final NodeFileLockHolder oldStyleFolderLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
 
         if (oldStyleFolderLockHolder != null)
             return new PdsFolderSettings(pstStoreBasePath,
@@ -199,7 +199,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
 
         for (FolderCandidate next : getNodeIndexSortedCandidates(pstStoreBasePath)) {
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(next.subFolderFile());
+            final NodeFileLockHolder fileLockHolder = tryLock(next.subFolderFile());
 
             if (fileLockHolder != null) {
                 if (log.isInfoEnabled())
@@ -214,7 +214,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
 
         // was not able to find free slot, allocating new
-        try (final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath)) {
+        try (final NodeFileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath)) {
             final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
             final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
 
@@ -327,7 +327,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         final UUID uuid = UUID.randomUUID();
         final String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
-        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
+        final NodeFileLockHolder fileLockHolder = tryLock(newRandomFolder);
 
         if (fileLockHolder != null) {
             if (log.isInfoEnabled())
@@ -362,10 +362,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return locked directory, should be released and closed later
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(File pstStoreBasePath)
+    @NotNull private NodeFileLockHolder lockRootDirectory(File pstStoreBasePath)
         throws IgniteCheckedException {
 
-        GridCacheDatabaseSharedManager.FileLockHolder rootDirLock;
+        NodeFileLockHolder rootDirLock;
         int retry = 0;
 
         while ((rootDirLock = tryLock(pstStoreBasePath)) == null) {
@@ -414,13 +414,13 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return non null holder if lock was successful, null in case lock failed. If directory does not exist method will
      * always fail to lock.
      */
-    private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
+    private NodeFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
         if (!dbStoreDirWithSubdirectory.exists())
             return null;
 
         final String path = dbStoreDirWithSubdirectory.getAbsolutePath();
-        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
-            = new GridCacheDatabaseSharedManager.FileLockHolder(path, ctx, log);
+        final NodeFileLockHolder fileLockHolder
+            = new NodeFileLockHolder(path, ctx, log);
 
         try {
             fileLockHolder.tryLock(1000);
@@ -500,7 +500,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (settings != null) {
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = settings.getLockedFileLockHolder();
+            final NodeFileLockHolder fileLockHolder = settings.getLockedFileLockHolder();
 
             if (fileLockHolder != null)
                 fileLockHolder.close();

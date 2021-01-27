@@ -1,0 +1,61 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.cdc;
+
+import org.apache.ignite.lang.IgniteExperimental;
+
+/**
+ * Event for single entry change.
+ *
+ * @param <K> Key type.
+ * @param <V> Value type.
+ */
+@IgniteExperimental
+public interface EntryEvent<K, V> {
+    /**
+     * @return Key for the changed entry.
+     */
+    public K key();
+
+    /**
+     * @return Value for the changed entry.
+     */
+    public V value();
+
+    /**
+     * @return {@code True} if event fired on primary node for partition containing this entry.
+     * @see <a href="https://ignite.apache.org/docs/latest/configuring-caches/configuring-backups#configuring-partition-backups">Configuring partition backups.</a>
+     */
+    public boolean primary();
+
+    /**
+     * @return Operation type.
+     */
+    EntryEventType operation();
+
+    /**
+     * @return Cache ID.
+     * @see org.apache.ignite.internal.util.typedef.internal.CU#cacheId(String)
+     */
+    long cacheId();
+
+    /**
+     * @return Expire time.
+     */
+    long expireTime();
+}

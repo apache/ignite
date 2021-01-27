@@ -1569,7 +1569,7 @@ public class IgnitionEx {
     /**
      * Grid data container.
      */
-    private static final class IgniteNamedInstance {
+    public static final class IgniteNamedInstance {
         /** Map of registered MBeans. */
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
@@ -2536,7 +2536,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
+        public static IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
             throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
