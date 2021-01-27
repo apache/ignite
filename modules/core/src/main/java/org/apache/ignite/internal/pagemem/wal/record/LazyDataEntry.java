@@ -60,6 +60,7 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public LazyDataEntry(
         GridCacheSharedContext cctx,
@@ -73,9 +74,10 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        boolean primary
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, primary);
 
         this.cctx = cctx;
         this.keyType = keyType;
