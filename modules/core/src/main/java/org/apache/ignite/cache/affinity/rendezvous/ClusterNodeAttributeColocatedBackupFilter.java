@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.affinity.rendezvous;
 
 import java.util.List;
-import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -46,8 +45,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Note: All cluster nodes, on startup, automatically register all the environment and system properties as node
  * attributes.
  *
- * Note: If the attribute is absent on the node, it will be treated as {@code null} attribute value and copies of
- * partitions assigned to this node will be co-located on other nodes with {@code null} attribute value.
+ * Note: All nodes should have not an empty co-location attribute value. The absence of the attribute on some nodes
+ * can lead to improper partitions co-location.
  *
  * Note: Node attributes persisted in baseline topology at the time of baseline topology change. If the co-location
  * attribute of some node was updated, but the baseline topology wasn't changed, the outdated attribute value can be
@@ -103,9 +102,10 @@ public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredic
     /**
      * Defines a predicate which returns {@code true} if a node is acceptable for a backup
      * or {@code false} otherwise. An acceptable node is one where its attribute value
-     * is exact match with previously selected nodes.  If an attribute does not
-     * exist on exactly one node of a pair, then the attribute does not match.  If the attribute
-     * does not exist both nodes of a pair, then the attribute matches.
+     * is exact match with previously selected nodes. If an attribute does not
+     * exist on candidate node, then the attribute matches any attribute values of previously
+     * selected nodes. If the attribute does not exist on primary node, then the attribute matches
+     * any attribute value of candidate node.
      *
      * @param candidate          A node that is a candidate for becoming a backup node for a partition.
      * @param previouslySelected A list of primary/backup nodes already chosen for a partition.
@@ -114,6 +114,9 @@ public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredic
     @Override public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
         A.notEmpty(previouslySelected, "previouslySelected");
 
-        return Objects.equals(candidate.attribute(attrName), previouslySelected.get(0).attribute(attrName));
+        String primaryAttrVal = previouslySelected.get(0).attribute(attrName);
+        String candidateAttrVal = candidate.attribute(attrName);
+
+        return (primaryAttrVal == null || candidateAttrVal == null) || primaryAttrVal.equals(candidateAttrVal);
     }
 }
