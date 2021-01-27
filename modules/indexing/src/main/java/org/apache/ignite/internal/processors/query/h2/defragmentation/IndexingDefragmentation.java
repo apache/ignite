@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.defragmentation;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -55,7 +55,10 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.h2.index.Index;
 import org.h2.value.Value;
 
@@ -81,6 +84,7 @@ public class IndexingDefragmentation {
      * @param cpLock Defragmentation checkpoint read lock.
      * @param cancellationChecker Cancellation checker.
      * @param log Log.
+     * @param defragmentationThreadPool Thread pool for defragmentation.
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -91,11 +95,10 @@ public class IndexingDefragmentation {
         IntMap<LinkMap> mappingByPartition,
         CheckpointTimeoutLock cpLock,
         Runnable cancellationChecker,
-        IgniteLogger log
+        IgniteLogger log,
+        IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException {
         int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
-
-        TreeIterator treeIterator = new TreeIterator(pageSize);
 
         PageMemoryEx oldCachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
@@ -105,24 +108,70 @@ public class IndexingDefragmentation {
 
         long cpLockThreshold = 150L;
 
+        AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
+
+        IgniteUtils.doInParallel(
+            defragmentationThreadPool,
+            tables,
+            table -> defragmentTable(
+                grpCtx,
+                newCtx,
+                mappingByPartition,
+                cpLock,
+                cancellationChecker,
+                log,
+                pageSize,
+                oldCachePageMem,
+                newCachePageMemory,
+                cpLockThreshold,
+                lastCpLockTs,
+                table
+            )
+        );
+
+        if (log.isInfoEnabled())
+            log.info("Defragmentation indexes completed for group '" + grpCtx.groupId() + "'");
+    }
+
+    /**
+     * Defragment one given table.
+     */
+    private boolean defragmentTable(
+        CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
+        IntMap<LinkMap> mappingByPartition,
+        CheckpointTimeoutLock cpLock,
+        Runnable cancellationChecker,
+        IgniteLogger log,
+        int pageSize,
+        PageMemoryEx oldCachePageMem,
+        PageMemory newCachePageMemory,
+        long cpLockThreshold,
+        AtomicLong lastCpLockTs,
+        GridH2Table table
+    ) throws IgniteCheckedException {
         cpLock.checkpointReadLock();
 
         try {
-            AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
+            TreeIterator treeIterator = new TreeIterator(pageSize);
 
-            for (GridH2Table table : tables) {
-                GridCacheContext<?, ?> cctx = table.cacheContext();
+            GridCacheContext<?, ?> cctx = table.cacheContext();
 
-                if (cctx.groupId() != grpCtx.groupId())
-                    continue; // Not our index.
+            if (cctx.groupId() != grpCtx.groupId())
+                return false;
 
-                cancellationChecker.run();
+            cancellationChecker.run();
 
-                GridH2RowDescriptor rowDesc = table.rowDescriptor();
+            GridH2RowDescriptor rowDesc = table.rowDescriptor();
 
-                List<Index> indexes = table.getIndexes();
-                H2TreeIndex oldH2Idx = (H2TreeIndex)indexes.get(2);
+            List<Index> indexes = table.getIndexes();
 
+            final List<H2TreeIndex> oldIndexes = indexes.stream()
+                .filter(index -> index instanceof H2TreeIndex)
+                .map(H2TreeIndex.class::cast)
+                .collect(Collectors.toList());
+
+            for (H2TreeIndex oldH2Idx : oldIndexes) {
                 int segments = oldH2Idx.segmentsCount();
 
                 H2Tree firstTree = oldH2Idx.treeForRead(0);
@@ -156,8 +205,12 @@ public class IndexingDefragmentation {
 
                 for (int i = 0; i < segments; i++) {
                     H2Tree tree = oldH2Idx.treeForRead(i);
+                    final H2Tree.MetaPageInfo oldInfo = tree.getMetaInfo();
 
-                    newIdx.treeForRead(i).enableSequentialWriteMode();
+                    final H2Tree newTree = newIdx.treeForRead(i);
+                    newTree.copyMetaInfo(oldInfo);
+
+                    newTree.enableSequentialWriteMode();
 
                     treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         cancellationChecker.run();
@@ -205,6 +258,8 @@ public class IndexingDefragmentation {
                     });
                 }
             }
+
+            return true;
         }
         finally {
             cpLock.checkpointReadUnlock();
@@ -224,7 +279,7 @@ public class IndexingDefragmentation {
 
         int off = io.offset(idx);
 
-        List<Value> values = new ArrayList<>();
+        IntMap<Value> values = new IntHashMap<>();
 
         if (inlineIdxs != null) {
             int fieldOff = 0;
@@ -236,7 +291,9 @@ public class IndexingDefragmentation {
 
                 fieldOff += inlineIndexColumn.inlineSizeOf(value);
 
-                values.add(value);
+                final int columnIndex = inlineIndexColumn.columnIndex();
+
+                values.put(columnIndex, value);
             }
         }
 
@@ -399,10 +456,10 @@ public class IndexingDefragmentation {
      */
     private static class H2CacheRowWithIndex extends H2CacheRow {
         /** List of index values. */
-        private final List<Value> values;
+        private final IntMap<Value> values;
 
         /** Constructor. */
-        public H2CacheRowWithIndex(GridH2RowDescriptor desc, CacheDataRow row, List<Value> values) {
+        public H2CacheRowWithIndex(GridH2RowDescriptor desc, CacheDataRow row, IntMap<Value> values) {
             super(desc, row);
             this.values = values;
         }

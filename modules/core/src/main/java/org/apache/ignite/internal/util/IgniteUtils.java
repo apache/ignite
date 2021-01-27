@@ -308,6 +308,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
     /** */
+    public static final long KB = 1024L;
+
+    /** */
     public static final long MB = 1024L * 1024;
 
     /** */
@@ -12027,5 +12030,25 @@ public abstract class IgniteUtils {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Getting the total size of uncompressed data in zip.
+     *
+     * @param zip Zip file.
+     * @return Total uncompressed size.
+     * @throws IOException If failed.
+     */
+    public static long uncompressedSize(File zip) throws IOException {
+        try (ZipFile zipFile = new ZipFile(zip)) {
+            long size = 0;
+
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+
+            while (entries.hasMoreElements())
+                size += entries.nextElement().getSize();
+
+            return size;
+        }
     }
 }

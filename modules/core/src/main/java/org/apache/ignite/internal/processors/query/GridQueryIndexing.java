@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -502,7 +503,7 @@ public interface GridQueryIndexing {
      * @param mappingByPart Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
      * @param cancellationChecker Cancellation checker.
-     *
+     * @param defragmentationThreadPool Thread pool for defragmentation.
      * @throws IgniteCheckedException If failed.
      */
     void defragment(
@@ -511,6 +512,7 @@ public interface GridQueryIndexing {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
         CheckpointTimeoutLock cpLock,
-        Runnable cancellationChecker
+        Runnable cancellationChecker,
+        IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException;
 }

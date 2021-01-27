@@ -11,13 +11,19 @@
 
 ## What is Apache Ignite?
 
-Apache Ignite is a horizontally scalable, fault-tolerant distributed in-memory computing platform for building real-time applications that can process terabytes of data with in-memory speed.
+Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
 <p align="center">
     <a href="https://ignite.apache.org">
         <img src="https://github.com/apache/ignite-website/blob/master/images/png-diagrams/ignite_cluster.png" width="400px"/>
     </a>
 </p>
+
+* [Technical Documentation](https://ignite.apache.org/docs/latest/)
+* [JavaDoc](https://ignite.apache.org/releases/latest/javadoc/)
+* [C#/.NET APIs](https://ignite.apache.org/releases/latest/dotnetdoc/api/)
+* [C++ APIs](https://ignite.apache.org/releases/latest/cppdoc/)
+* [Scala APIs](https://ignite.apache.org/releases/latest/scaladoc/scalar/index.html)
 
 ## Multi-Tier Storage
 

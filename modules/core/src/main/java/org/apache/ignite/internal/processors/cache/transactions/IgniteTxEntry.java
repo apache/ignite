@@ -938,8 +938,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near,
-        ClassLoader clsLdr) throws IgniteCheckedException {
+    public void unmarshal(
+        GridCacheSharedContext<?, ?> ctx,
+        boolean near,
+        ClassLoader clsLdr
+    ) throws IgniteCheckedException {
+
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
@@ -959,7 +963,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         if (coctx == null)
             throw new CacheInvalidStateException(
-                "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
@@ -970,13 +974,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         else {
             for (CacheEntryPredicate p : filters) {
                 if (p != null)
-                    p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
+                    p.finishUnmarshal(this.ctx, clsLdr);
             }
         }
 
-        key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
+        key.finishUnmarshal(coctx, clsLdr);
 
-        val.unmarshal(this.ctx, clsLdr);
+        val.unmarshal(coctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));

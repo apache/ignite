@@ -14,20 +14,53 @@
 // limitations under the License.
 = Apache Ignite Documentation
 
-Apache Ignite is a horizontally scalable, fault-tolerant distributed in-memory computing platform for building real-time
-applications that can process terabytes of data with in-memory speed.
+Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
-Ignite documentation introduces you to the project's main capabilities, shows how to use certain features, or how to
-approach cluster optimizations and issues troubleshooting. If you are new to Ignite, then start with the
-link:docs/latest/quick-start/java[Quick Start Guides],  and build the first application in a matter of 5-10 minutes.
+The technical documentation introduces you to the key capabilities, shows how to use certain features, or how to
+approach cluster optimizations and issues troubleshooting. If you are new to Ignite, then start with our
+quick start guides, and build the first application in a matter of 5-10 minutes.
 Otherwise, select the topic of your interest and have your problems solved, and questions answered.
 Good luck with your Ignite journey!
 
-== Programming Languages
-include::includes/intro-languages.adoc[]
+== Quick Start Guides
 
-== Ignite Examples
+Build the first application in a matter of minutes.
+
+* link:quick-start/java[Java]
+* link:quick-start/sql[SQL]
+* link:quick-start/restapi[REST API]
+* link:quick-start/dotnet[C#/.NET]
+* link:quick-start/cpp[C++]
+* link:quick-start/python[Python]
+* link:quick-start/nodejs[Node.JS]
+* link:quick-start/php[PHP]
+
+== APIs
+
+API reference for various programming languages.
+
+*Latest Stable Version*
+
+* link:/releases/latest/javadoc/[JavaDoc]
+* link:/releases/latest/dotnetdoc/api/[C#/.NET]
+* link:/releases/latest/cppdoc/[C++]
+* link:/releases/latest/scaladoc/scalar/index.html[Scala]
+
+*Older Versions*
+
+* With the top-level navigation menu, change an Ignite version and select a version-specific API from the APIs drop-down list.
+* Or, go to the link:/download.cgi[downloads page] for a full archive of the versions.
+
+== Examples
 
 The Apache Ignite github repository contains a number of runnable examples that illustrate various Ignite functionality.
-Refer to the link:{githubUrl}/examples[Examples^] folder in the Ignite code base.
-The examples are also available in the binary distribution.
+
+* link:{githubUrl}/examples[Java^]
+* link:{githubUrl}/modules/platforms/dotnet/examples[C#/.NET^]
+* link:{githubUrl}/modules/platforms/cpp/examples[C++^]
+* link:{githubUrl}/modules/platforms/python/examples[Python^]
+* link:{githubUrl}/modules/platforms/nodejs/examples[Node.JS^]
+* link:{githubUrl}/modules/platforms/php/examples[PHP^]
+
+== Programming Languages
+include::includes/intro-languages.adoc[]
