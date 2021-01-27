@@ -829,7 +829,7 @@ Parameters:
 
 == System View Command
 
-The system view command prints out the content of a system view provided in the parameters list. Use the `--node-id` parameter, If you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
+The system view command prints out the content of a system view provided in the parameters list. Use the `--node-id` parameter, if you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
 
 [tabs]
 --
