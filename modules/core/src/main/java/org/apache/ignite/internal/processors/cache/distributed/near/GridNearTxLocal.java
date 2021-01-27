@@ -1257,20 +1257,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     else if (drRmvMap != null) {
                         assert drRmvMap.get(key) != null;
 
-                    drVer = drRmvMap.get(key);
-                    drTtl = -1L;
-                    drExpireTime = -1L;
-                }
-                else if (dataCenterId != null) {
-                    drVer = cacheCtx.cache().nextVersion(dataCenterId);
-                    drTtl = -1L;
-                    drExpireTime = -1L;
-                }
-                else {
-                    drVer = null;
-                    drTtl = -1L;
-                    drExpireTime = -1L;
-                }
+                        drVer = drRmvMap.get(key);
+                        drTtl = -1L;
+                        drExpireTime = -1L;
+                    }
+                    else if (dataCenterId != null) {
+                        drVer = cacheCtx.cache().nextVersion(dataCenterId);
+                        drTtl = -1L;
+                        drExpireTime = -1L;
+                    }
+                    else {
+                        drVer = null;
+                        drTtl = -1L;
+                        drExpireTime = -1L;
+                    }
 
                     if (!rmv && val == null && entryProcessor == null) {
                         setRollbackOnly();
