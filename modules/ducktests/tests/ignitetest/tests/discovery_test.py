@@ -88,7 +88,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(V_2_9_0))
-    def test_par_start(self, ignite_version):
+    def test_parstart(self, ignite_version):
         """
         Test parallel start of the cluster.
         """
@@ -120,7 +120,7 @@ class DiscoveryTest(IgniteTest):
         results['Ignite cluster start time (s)'] = 0
 
         servers, start_servers_sec = start_servers(
-            self.test_context, max_containers - DiscoveryTest.ZOOKEEPER_NODES - 1, ignite_config, full_async=False)
+            self.test_context, max_containers - DiscoveryTest.ZOOKEEPER_NODES - 1, ignite_config, full_async=True)
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 

@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -1281,6 +1282,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         // Time when join process started.
         long joinStartNanos = 0;
 
+        Random rnd = new Random();
+
         while (true) {
             Collection<InetSocketAddress> addrs = spi.resolvedAddresses();
 
@@ -1293,8 +1296,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             Collection<Exception> errs = new ArrayList<>();
 
             for (InetSocketAddress addr : addrs) {
-                log.error("TEST | trying address " + addr);
-
                 try {
                     IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
@@ -1383,7 +1384,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Concurrent discovery SPI start has been detected (local node should wait).");
 
                 try {
-                    U.sleep(spi.getReconnectDelay());
+                    U.sleep(rnd.nextInt((int)spi.getReconnectDelay()));
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -1417,7 +1418,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 try {
-                    U.sleep(spi.getReconnectDelay());
+                    U.sleep(rnd.nextInt((int)spi.getReconnectDelay()));
                 }
                 catch (IgniteInterruptedCheckedException ex) {
                     throw new IgniteSpiException("Thread has been interrupted.", ex);

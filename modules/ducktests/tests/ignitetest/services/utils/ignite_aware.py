@@ -95,12 +95,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         self.logger.info("Waiting for IgniteAware(s) to start ...")
 
-        self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
+        self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True, backoff_sec=1)
 
     def start_node(self, node, **kwargs):
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
+
+        start = time.time()
 
         super().start_node(node, **kwargs)
 
@@ -304,6 +306,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             timestamp = datetime.now()
 
             time_holder.compare_and_set(None, (mono, timestamp))
+
+        self.logger.debug("Executing async task [" + str(task) + "] on '" + node.name + "' ...")
 
         task(self, node)
 
