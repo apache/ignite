@@ -88,6 +88,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
@@ -118,6 +119,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * Archive incomplete segment after inactivity milliseconds.
      */
     private int archiveIncompleteSegmentAfterInactivityMs;
+
+    /** Force archive timeout in milliseconds. */
+    private int forceArchiveSegmentMs;
 
     /** Custom wal mode. */
     private WALMode customWalMode;
@@ -155,6 +159,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
+
+        if (forceArchiveSegmentMs > 0)
+            dsCfg.setWalForceArchiveTimeout(forceArchiveSegmentMs);
 
         String workDir = U.defaultWorkDirectory();
         File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
@@ -340,6 +347,43 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid();
 
         return evtRecorded.get();
+    }
+
+    /**
+     * Tests force time out based WAL segment archiving.
+     *
+     * @throws Exception if failure occurs.
+     */
+    @Test
+    public void testForceArchiveSegment() throws Exception {
+        AtomicBoolean waitingForEvt = new AtomicBoolean();
+
+        CountDownLatch forceArchiveSegment = new CountDownLatch(1);
+
+        forceArchiveSegmentMs = 1000;
+
+        Ignite ignite = startGrid();
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteEvents evts = ignite.events();
+
+        evts.localListen(e -> {
+            if (waitingForEvt.get())
+                forceArchiveSegment.countDown();
+
+            return true;
+        }, EVT_WAL_SEGMENT_ARCHIVED);
+
+        putDummyRecords(ignite, 100);
+
+        waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
+
+        boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + 1001, TimeUnit.MILLISECONDS);
+
+        stopGrid();
+
+        assertTrue(recordedAfterSleep);
     }
 
     /**
