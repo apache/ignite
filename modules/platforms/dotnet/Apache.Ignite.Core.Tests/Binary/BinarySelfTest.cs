@@ -1673,6 +1673,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var res = _marsh.Unmarshal<NestedList[]>(bytes);
 
             Assert.AreEqual(2, res.Length);
+            Assert.AreEqual(0, res[0].Inner.Count);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
@@ -2794,6 +2795,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private class NestedList
         {
+            // ReSharper disable once CollectionNeverUpdated.Local
             public IList<object> Inner { get; set; }
         }
     }
