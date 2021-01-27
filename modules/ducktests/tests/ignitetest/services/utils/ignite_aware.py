@@ -304,16 +304,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             assert self.num_nodes == 1
             nodes = self.nodes
 
-        self.logger.error("TEST | drop_network 1")
-
         for node in nodes:
-            self.logger.error("TEST | Dropping " +
+            self.logger.info("Dropping " +
                              "all" if not network_part else ("incoming" if network_part < 0 else "outcoming") +
                              " Ignite connections on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
-
-        self.logger.error("TEST | drop_network 2")
 
         return self.exec_on_nodes_async(nodes, lambda n: self.__enable_netfilter(n, network_part))
 
@@ -336,8 +332,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         if network_part >= 0:
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
-
-        self.logger.error("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 
         self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 

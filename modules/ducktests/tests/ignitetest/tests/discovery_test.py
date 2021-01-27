@@ -86,39 +86,6 @@ class DiscoveryTest(IgniteTest):
 
         self.netfilter_store_path = None
 
-    @ignite_versions(str(DEV_BRANCH))
-    def test(self, ignite_version):
-        results = {}
-
-        discovery_spi = TcpDiscoverySpi()
-
-        discovery_spi.so_linger = 0
-
-        # discovery_spi.connectionRecoveryTimeout = 400
-
-        ignite_config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            discovery_spi=discovery_spi,
-            failure_detection_timeout=1000,
-            caches=[CacheConfiguration(
-                name='test-cache',
-                backups=1,
-                atomicity_mode='ATOMIC'
-            )]
-        )
-
-        # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
-        # be needed for ZooKeeper.
-        servers, start_servers_sec = start_servers(self.test_context, 4, ignite_config, None)
-
-        self.logger.error("TEST | test 1")
-
-        self._simulate_and_detect_failure(servers, [servers.nodes[3]], 7000)
-
-        self.logger.error("TEST | test 3")
-
-        return results
-
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
@@ -252,9 +219,7 @@ class DiscoveryTest(IgniteTest):
 
         ids_to_wait = [node_id(n) for n in failed_nodes]
 
-        self.logger.error("TEST | _simulate_and_detect_failure 1. Node: " + str(failed_nodes))
-
-        _, first_terminated = servers.drop_network(failed_nodes, network_part=1)
+        _, first_terminated = servers.drop_network(failed_nodes)
 
         # Keeps dates of logged node failures.
         logged_timestamps = []

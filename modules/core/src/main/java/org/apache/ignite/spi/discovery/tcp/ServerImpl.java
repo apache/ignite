@@ -3325,7 +3325,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMetricsUpdateMessage();
 
-            //checkMetricsReceiving();
+            checkMetricsReceiving();
 
             checkPendingCustomMessages();
 
@@ -3459,8 +3459,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     next = newNext;
 
-                    log.error("TEST | new next: " + U.toShortString(next));
-
                     newNextNode = true;
                 }
                 else if (log.isTraceEnabled())
@@ -3503,8 +3501,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             try {
                                 sock = spi.openSocket(addr, timeoutHelper);
 
-                                log.error("TEST | connecting to: " + addr + ". Next: " + U.toShortString(next));
-
                                 out = spi.socketStream(sock);
 
                                 openSock = true;
@@ -3517,9 +3513,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (changeTop)
                                     hndMsg.changeTopology(ring.previousNodeOf(next).id());
-
-                                log.error("TEST | Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
-                                    "] with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
@@ -3647,23 +3640,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (log.isDebugEnabled())
                                     U.error(log, "Failed to connect to next node [msg=" + msg
-                                        + ", next=" + U.toShortString(next) + ", err=" + e.getMessage() + ']', e);
+                                        + ", err=" + e.getMessage() + ']', e);
 
-                                onException("Failed to connect to next node [msg=" + msg +
-                                    ", next=" + U.toShortString(next) + ", err=" + e + ']', e);
-
-                                log.error("TEST | Failed to connect to next " + U.toShortString(next) +
-                                    ". Send state: " + sndState);
-                                log.error("TEST | sndState: " + sndState);
-                                if(sndState != null) {
-                                    log.error("TEST | Left: " + U.nanosToMillis(sndState.failTimeNanos - System.nanoTime()));
-                                    log.error("TEST | sndState.checkTimeout(): " + (System.nanoTime() >= sndState.failTimeNanos));
-                                }
+                                onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
                                 // Fastens failure detection.
                                 if (sndState != null && sndState.checkTimeout()) {
-                                    log.error("TEST | Will self-segment." );
-
                                     segmentLocalNodeOnSendFail(failedNodes);
 
                                     return; // Nothing to do here.
@@ -4013,8 +3995,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             synchronized (mux) {
                 if (spiState == CONNECTING) {
-                    log.error("TEST | segmentLocalNodeOnSendFail: spiState = RING_FAILED" );
-
                     U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
                         "connectivity issues or the rest of the cluster is undergoing massive restarts. Failing " +
                         "local node join to avoid case when one node fails a big part of cluster. To disable" +
@@ -4029,8 +4009,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
             }
-
-            log.error("TEST | segmentLocalNodeOnSendFail: notifyDiscovery" );
 
             U.warn(log, "Unable to connect to next nodes in a ring, " +
                 "it seems local node is experiencing connectivity issues. Segmenting local node " +
@@ -6930,9 +6908,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // We need to suppose network delays. So we use half of this time.
                                 int backwardCheckTimeout = (int)(connCheckTick / 2);
 
-                                log.error("TEST | Remote node requests topology change. Checking connection to " +
-                                    "previous [" + previous + "] with timeout " + backwardCheckTimeout);
-
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
                                         "previous [" + previous + "] with timeout " + backwardCheckTimeout);
@@ -6954,12 +6929,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         res.previousNodeAlive(ok);
 
-                        log.error("TEST | Previous node alive status [alive=" + ok +
-                            ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
-                            ", actualPreviousNode=" + previous +
-                            ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
-                            ", connCheckInterval=" + connCheckInterval + ']');
-
                         if (log.isInfoEnabled()) {
                             log.info("Previous node alive status [alive=" + ok +
                                 ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
@@ -6968,9 +6937,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", connCheckInterval=" + connCheckInterval + ']');
                         }
                     }
-
-                    log.error("TEST | Sending handshake response [" + res + "] with timeout " +
-                        spi.getEffectiveSocketTimeout(srvSock) + " to " + rmtAddr + ":" + sock.getPort());
 
                     if (log.isDebugEnabled()) {
                         log.debug("Sending handshake response [" + res + "] with timeout " +
