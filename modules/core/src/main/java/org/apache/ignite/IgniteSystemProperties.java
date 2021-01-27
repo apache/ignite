@@ -112,7 +112,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxM
 import static org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.DFLT_TX_DEADLOCK_DETECTION_TIMEOUT;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_UPDATE_NOTIFIER;
-import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher.DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater.DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
 import static org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl.DFLT_ATOMIC_CACHE_QUERY_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DFLT_DUMP_PAGE_LOCK_ON_FAILURE;
 import static org.apache.ignite.internal.processors.failure.FailureProcessor.DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;

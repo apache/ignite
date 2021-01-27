@@ -86,6 +86,22 @@ The following code sample illustrates how to use the partition awareness feature
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
 ----
 
+If a list of server nodes is dynamically changing or scaling, then it is possible to configure the connection with custom implementation of `ClientAddressFinder`. It should provide a number of current server addresses every time a client asks for them.
+The following code sample illustrates how to use it.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=client-address-finder,indent=0]
+----
+
+The code snippet shows how an example implementation might look like if you want clients to retrieve server addresses dynamically.
+
+* The `ClientAddressFinder` is a functional interface that provides the only method `getAddresses()`.
+* The `fetchServerAddress()` is a custom function that dynamically provides server addresses.
+* Configure client with `ClientConfiguration.setAddressFinder(finder)`.
+
+Also, you can check a real example of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+
 == Using Key-Value API
 
 The Java thin client supports most of the key-value operations available in the thick client.
@@ -325,5 +341,4 @@ Configure link:security/authentication[authentication on the cluster side] and p
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-authentication,indent=0]
 -------------------------------------------------------------------------------
-
 
