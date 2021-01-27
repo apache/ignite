@@ -664,7 +664,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, false /*PME-free switch*/);
+        assertCountersSame(PARTITION_ID, true);
 
         startGrid(txTops.get(PARTITION_ID).get1().name());
 
@@ -747,7 +747,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, false /*PME-free switch*/);
+        assertCountersSame(PARTITION_ID, true);
 
         assertEquals(PRELOAD_KEYS_CNT + expCommittedSize, grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
 
@@ -899,7 +899,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, false /*PME-free switch*/);
+        assertCountersSame(PARTITION_ID, true);
 
         startGrid(txTops.get(PARTITION_ID).get1().name());
 
