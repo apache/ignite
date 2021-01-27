@@ -164,6 +164,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default CDC directory. */
+    public static final String DFLT_CDC_PATH = "db/wal/cdc";
+
     /** Default path (relative to working directory) of binary metadata folder */
     public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
 
@@ -241,6 +244,12 @@ public class DataStorageConfiguration implements Serializable {
     /** WAL archive path. */
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
+    /** CDC path. */
+    private String cdcPath = DFLT_CDC_PATH;
+
+    /** CDC enabled flag. */
+    private boolean cdcEnabled;
+
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
@@ -283,9 +292,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
-    /**
-     * Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
-     */
+    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
     private long walAutoArchiveAfterInactivity = -1;
 
     /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
@@ -723,6 +730,49 @@ public class DataStorageConfiguration implements Serializable {
         this.walArchivePath = walArchivePath;
 
         return this;
+    }
+
+    /**
+     * Gets a path to the CDC directory.
+     *
+     * @return CDC directory.
+     */
+    public String getCdcPath() {
+        return cdcPath;
+    }
+
+    /**
+     * Sets a path for the CDC directory.
+     * Hard link to every WAL Archive segment will be created in it for CDC processing purpose.
+     *
+     * @param cdcPath CDC directory.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCdcPath(String cdcPath) {
+        this.cdcPath = cdcPath;
+
+        return this;
+    }
+
+    /**
+     * Sets flag indicating whether CDC enabled.
+     *
+     * @param cdcEnabled CDC enabled flag.
+     */
+    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
+        this.cdcEnabled = cdcEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether CDC is enabled.
+     * Default value is {@code false}.
+     *
+     * @return Metrics enabled flag.
+     */
+    public boolean isCdcEnabled() {
+        return cdcEnabled;
     }
 
     /**

@@ -273,6 +273,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL archive directory (including consistent ID as subfolder). */
     private File walArchiveDir;
 
+    /** WAL cdc directory (including consistent ID as subfolder) */
+    private File cdcDir;
+
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
 
@@ -457,6 +460,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
+
+            if (dsCfg.isCdcEnabled()) {
+                cdcDir = initDirectory(
+                    dsCfg.getCdcPath(),
+                    DataStorageConfiguration.DFLT_CDC_PATH,
+                    resolveFolders.folderName(),
+                    "cdc directory"
+                );
+            }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
@@ -2038,6 +2050,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 segmentSize.put(absIdx, dstFile.length());
                 segmentAware.addCurrentWalArchiveSize(dstFile.length());
+
+                if (dsCfg.isCdcEnabled())
+                    Files.createLink(cdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
             }
             catch (IOException e) {
                 deleteArchiveFiles(dstFile, dstTmpFile);
