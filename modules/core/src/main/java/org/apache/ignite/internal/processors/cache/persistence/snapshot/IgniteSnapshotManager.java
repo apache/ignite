@@ -55,8 +55,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1036,7 +1036,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (isCacheRestoring(null)) {
                 throw new IgniteException("Snapshot operation has been rejected. " +
-                    "Cache group restore operation is currently in prgoress.");
+                    "Cache group restore operation is currently in progress.");
             }
 
             if (cctx.kernalContext().clientNode()) {
@@ -1131,7 +1131,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snpName,
         boolean checkCompatibility,
         boolean failIfAbsent,
-        Supplier<Boolean> interruptClosure
+        BooleanSupplier interruptClosure
     ) throws IgniteCheckedException {
         File binDir = binaryWorkDir(snapshotLocalDir(snpName).getAbsolutePath(), pdsSettings.folderName());
 
@@ -1149,7 +1149,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
 
         for (File file : binDir.listFiles()) {
-            if (interruptClosure.get())
+            if (interruptClosure.getAsBoolean())
                 return;
 
             try (FileInputStream in = new FileInputStream(file)) {
@@ -1177,14 +1177,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param grpName Cache group name.
-     * @param interruptClosure A closure to quickly interrupt copying partition files.
+     * @param stopChecker Node stop or prcoess interrupt checker.
      * @param newFiles A list to keep track of the files created, the list updates during the restore process.
      * @throws IgniteCheckedException If failed.
      */
     protected void restoreCacheGroupFiles(
         String snpName,
         String grpName,
-        Supplier<Boolean> interruptClosure,
+        BooleanSupplier stopChecker,
         List<File> newFiles
     ) throws IgniteCheckedException {
         File snapshotCacheDir = resolveSnapshotCacheDir(snpName, grpName);
@@ -1213,7 +1213,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             for (File snpFile : snapshotCacheDir.listFiles()) {
-                if (interruptClosure.get())
+                if (stopChecker.getAsBoolean())
                     return;
 
                 File target = new File(cacheDir, snpFile.getName());
@@ -1246,11 +1246,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (file.isDirectory())
                 dirs.add(file);
 
-            file.delete();
+            if (!file.delete())
+                log.warning("Unable to delete a file created during a cache restore operation [file=" + file + ']');
         }
 
-        for (File dir : dirs)
-            dir.delete();
+        for (File dir : dirs) {
+            if (!dir.delete())
+                log.warning("Unable to delete a folder created during a cache restore operation [file=" + dir + ']');
+        }
     }
 
     /**

@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -196,15 +196,15 @@ class SnapshotRestoreContext {
      * Restore specified cache groups from the local snapshot directory.
      *
      * @param updateMetadata Update binary metadata flag.
-     * @param interruptClosure A closure to quickly interrupt the process.
+     * @param stopChecker Node stop or prcoess interrupt checker.
      * @throws IgniteCheckedException If failed.
      */
-    public void restore(boolean updateMetadata, Supplier<Boolean> interruptClosure) throws IgniteCheckedException {
-        if (interruptClosure.get())
+    public void restore(boolean updateMetadata, BooleanSupplier stopChecker) throws IgniteCheckedException {
+        if (stopChecker.getAsBoolean())
             return;
 
         if (updateMetadata)
-            snapshotMgr.mergeSnapshotMetadata(snpName, false, true, interruptClosure);
+            snapshotMgr.mergeSnapshotMetadata(snpName, false, true, stopChecker);
 
         for (String grpName : groups()) {
             rollbackLock.lock();
@@ -212,7 +212,7 @@ class SnapshotRestoreContext {
             try {
                 GroupRestoreContext grp = grps.get(grpName);
 
-                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, interruptClosure, grp.files);
+                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, stopChecker, grp.files);
             }
             finally {
                 rollbackLock.unlock();
