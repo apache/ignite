@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
-import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -160,8 +160,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private final JdkMarshaller marsh = new JdkMarshaller();
 
-    /** Watcher of topology change for baseline auto-adjust. */
-    private ChangeTopologyWatcher changeTopologyWatcher;
+    /** Updater of baseline topology. */
+    private BaselineTopologyUpdater baselineTopologyUpdater;
 
     /** Distributed baseline configuration. */
     private DistributedBaselineConfiguration distributedBaselineConfiguration;
@@ -457,10 +457,26 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        baselineTopologyUpdater = new BaselineTopologyUpdater(ctx);
+
         ctx.event().addLocalEventListener(
-            changeTopologyWatcher = new ChangeTopologyWatcher(ctx),
+            event -> {
+                DiscoveryEvent discoEvt = (DiscoveryEvent) event;
+
+                if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
+                    return;
+
+                baselineTopologyUpdater.triggerBaselineUpdate(discoEvt.topologyVersion());
+            },
             EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED
         );
+
+        distributedBaselineConfiguration.listenAutoAdjustEnabled((name, oldVal, newVal) -> {
+           if (newVal != null && newVal) {
+               long topVer = ctx.discovery().topologyVersion();
+               baselineTopologyUpdater.triggerBaselineUpdate(topVer);
+           }
+        });
     }
 
     /** {@inheritDoc} */
@@ -1742,7 +1758,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @return Status of baseline auto-adjust.
      */
     public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
-        return changeTopologyWatcher.getStatus();
+        return baselineTopologyUpdater.getStatus();
     }
 
     /**

@@ -238,6 +238,9 @@ tab:C++[unsupported]
 
 
 === Disabling WAL
+
+WARNING: Disabling or enabling WAL should only be done on stable topology: all baseline nodes should be present, no nodes should join or leave the cluster for the duration of this operation. Otherwise, cache may be stuck in inconsistent state. If that happens, it is advised to destroy the affected cache(s).
+
 There are situations when it is reasonable to have the WAL disabled to get better performance. For instance, it is useful to disable WAL during initial data loading and enable it after the pre-loading is complete.
 
 ////
