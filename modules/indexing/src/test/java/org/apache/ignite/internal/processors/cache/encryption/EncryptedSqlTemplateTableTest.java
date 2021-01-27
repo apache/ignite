@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.encryption;
 
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -25,8 +26,6 @@ import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /** */
 public class EncryptedSqlTemplateTableTest extends EncryptedCacheRestartTest {
