@@ -51,6 +51,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Current stack frame. */
         private Frame _frame;
 
+        /** Whether we are currently detaching an object: detachment root when true, null otherwise. */
+        private object _detaching;
+
         /** Whether we are directly within peer loading object holder. */
         private bool _isInWrapper;
 
@@ -1459,23 +1462,34 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         internal void WriteObjectDetached<T>(T o)
         {
-            BinaryHandleDictionary<object, long> oldHnds = _hnds;
-            _hnds = null;
-
-            try
+            if (_detaching != null)
             {
                 Write(o);
             }
-            finally
+            else
             {
-                if (oldHnds != null)
-                {
-                    // Merge newly recorded handles with old ones and restore old on the stack.
-                    // Otherwise we can use current handles right away.
-                    if (_hnds != null)
-                        oldHnds.Merge(_hnds);
+                _detaching = o;
 
-                    _hnds = oldHnds;
+                BinaryHandleDictionary<object, long> oldHnds = _hnds;
+                _hnds = null;
+
+                try
+                {
+                    Write(o);
+                }
+                finally
+                {
+                    _detaching = null;
+
+                    if (oldHnds != null)
+                    {
+                        // Merge newly recorded handles with old ones and restore old on the stack.
+                        // Otherwise we can use current handles right away.
+                        if (_hnds != null)
+                            oldHnds.Merge(_hnds);
+
+                        _hnds = oldHnds;
+                    }
                 }
             }
         }
