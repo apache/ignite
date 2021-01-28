@@ -51,9 +51,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Current stack frame. */
         private Frame _frame;
 
-        /** Whether we are currently detaching an object. */
-        private bool _detaching;
-
         /** Whether we are directly within peer loading object holder. */
         private bool _isInWrapper;
 
@@ -627,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryUtils.WriteDecimalArray(val, _stream);
             }
         }
-        
+
         /// <summary>
         /// Write decimal array.
         /// </summary>
@@ -660,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.TimestampConverter);
             }
         }
-        
+
         /// <summary>
         /// Write date value.
         /// </summary>
@@ -908,7 +905,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Save enum fields only once - they can't change locally at runtime.
                 var metaHnd = _marsh.GetBinaryTypeHandler(desc);
                 var binaryFields = metaHnd.OnObjectWriteFinished();
-                
+
                 SaveMetadata(desc, binaryFields);
             }
         }
@@ -1163,7 +1160,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // We use GetType() of a real object instead of typeof(T) to take advantage of 
+            // We use GetType() of a real object instead of typeof(T) to take advantage of
             // automatic Nullable'1 unwrapping.
             Type type = obj.GetType();
 
@@ -1250,7 +1247,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var schemaOffset = dataEnd - pos;
 
                 int schemaId;
-                    
+
                 var flags = desc.UserType
                     ? BinaryObjectHeader.Flag.UserType
                     : BinaryObjectHeader.Flag.None;
@@ -1462,34 +1459,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         internal void WriteObjectDetached<T>(T o)
         {
-            if (_detaching)
+            BinaryHandleDictionary<object, long> oldHnds = _hnds;
+            _hnds = null;
+
+            try
             {
                 Write(o);
             }
-            else
+            finally
             {
-                _detaching = true;
-
-                BinaryHandleDictionary<object, long> oldHnds = _hnds;
-                _hnds = null;
-
-                try
+                if (oldHnds != null)
                 {
-                    Write(o);
-                }
-                finally
-                {
-                    _detaching = false;
+                    // Merge newly recorded handles with old ones and restore old on the stack.
+                    // Otherwise we can use current handles right away.
+                    if (_hnds != null)
+                        oldHnds.Merge(_hnds);
 
-                    if (oldHnds != null)
-                    {
-                        // Merge newly recorded handles with old ones and restore old on the stack.
-                        // Otherwise we can use current handles right away.
-                        if (_hnds != null)
-                            oldHnds.Merge(_hnds);
-
-                        _hnds = oldHnds;
-                    }
+                    _hnds = oldHnds;
                 }
             }
         }
