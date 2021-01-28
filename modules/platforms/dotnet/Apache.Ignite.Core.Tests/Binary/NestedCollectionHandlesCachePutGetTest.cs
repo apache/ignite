@@ -106,6 +106,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var res = cache.Get(1);
             Assert.AreEqual(2, res.Length);
             Assert.AreNotSame(res[0], res[1]);
+            Assert.AreSame(res[0].Inner, res[0].Inner[0]);
         }
 
         private class InnerList
