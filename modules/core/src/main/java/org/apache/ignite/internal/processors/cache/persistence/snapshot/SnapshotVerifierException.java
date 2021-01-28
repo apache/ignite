@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * Thrown when snapshot integrity is corrupted or impossible to check.
  */
 public class SnapshotVerifierException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Message.
      */
