@@ -31,16 +31,13 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * Loading data to cache.
  */
 public class DataLoaderApplication extends IgniteAwareApplication {
-    /** */
-    private static final int KB = 1 << 10;
-
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
 
         int interval = jNode.get("interval").asInt();
 
-        int dataSize = jNode.get("dataSizeKB").asInt() * KB;
+        int dataSize = jNode.get("dataSizeKB").asInt() * 1024;
 
         markInitialized();
 
