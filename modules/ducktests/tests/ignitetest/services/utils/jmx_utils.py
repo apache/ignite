@@ -139,7 +139,8 @@ class DiscoveryInfo:
         """
         :return: Topology order.
         """
-        return int(self.__find__("order=(\\d+),"))
+        val = self.__find__("order=(\\d+),")
+        return int(val) if val else -1
 
     @property
     def int_order(self):
