@@ -46,7 +46,8 @@ namespace ignite
              */
             IgniteClientConfiguration() :
                 sslMode(SslMode::DISABLE),
-                partitionAwareness(false)
+                partitionAwareness(false),
+                connectionsLimit(0)
             {
                 // No-op.
             }
@@ -230,6 +231,29 @@ namespace ignite
                 return partitionAwareness;
             }
 
+            /**
+             * Get connection limit.
+             * Zero means that number of active connections is not limited.
+             *
+             * @return Active connection limit.
+             */
+            uint32_t GetConnectionsLimit() const
+            {
+                return connectionsLimit;
+            }
+
+            /**
+             * Set connection limit.
+             *
+             * @see GetConnectionsLimit for details.
+             *
+             * @param connectionsLimit Connections limit to set.
+             */
+            void SetConnectionsLimit(uint32_t limit)
+            {
+                connectionsLimit = limit;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -254,6 +278,9 @@ namespace ignite
 
             /** Partition awareness. */
             bool partitionAwareness;
+
+            /** Active connections limit. */
+            uint32_t connectionsLimit;
         };
     }
 }
