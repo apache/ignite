@@ -1757,6 +1757,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         for (IgniteTxEntry entry : entries) {
             try {
+                // TODO: Make it even better - pass lessPending to localCandidatesMax so it adds the items directly,
+                // without allocating another list.
                 Collection<GridCacheMvccCandidate> candidates = entry.cached().localCandidatesMax(baseVer);
                 for (GridCacheMvccCandidate cand : candidates) {
                     lessPending.add(cand.version());
