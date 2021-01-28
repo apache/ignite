@@ -25,6 +25,12 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class NestedListsTest
     {
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// TODO
         /// </summary>
