@@ -1448,12 +1448,20 @@ public final class GridCacheMvcc {
 
         assert !col.isEmpty();
 
-        List<GridCacheMvccCandidate> cands = new ArrayList<>(col.size());
+        List<GridCacheMvccCandidate> cands = null;
 
         for (GridCacheMvccCandidate c : col) {
             // Don't include reentries.
-            if ((reentries || !c.reentry()) && c.version().isLess(maxVers))
+            if ((reentries || !c.reentry()) && c.version().isLess(maxVers)) {
+                if (cands == null)
+                    cands = new ArrayList<>(col.size());
+
                 cands.add(c);
+            }
+        }
+
+        if (cands == null) {
+            cands = Collections.emptyList();
         }
 
         return cands;
