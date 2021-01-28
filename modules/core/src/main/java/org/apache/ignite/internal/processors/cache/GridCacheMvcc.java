@@ -1381,6 +1381,14 @@ public final class GridCacheMvcc {
     }
 
     /**
+     * @param maxVers TODO.
+     * @return Collection of local candidates.
+     */
+    public Collection<GridCacheMvccCandidate> localCandidatesMax(GridCacheVersion maxVers) {
+        return candidates(locs, false, true, maxVers);
+    }
+
+    /**
      * @param reentries Flag to include reentries.
      * @param excludeVers Exclude versions.
      * @return Collection of local candidates.
@@ -1420,6 +1428,31 @@ public final class GridCacheMvcc {
         for (GridCacheMvccCandidate c : col) {
             // Don't include reentries.
             if ((reentries || !c.reentry()) && !U.containsObjectArray(excludeVers, c.version()))
+                cands.add(c);
+        }
+
+        return cands;
+    }
+
+    /**
+     * @param col Collection of candidates.
+     * @param reentries Reentry flag.
+     * @param cp Whether to copy or not.
+     * @param maxVers TODO.
+     * @return Collection of candidates minus the exclude versions.
+     */
+    private List<GridCacheMvccCandidate> candidates(List<GridCacheMvccCandidate> col,
+        boolean reentries, boolean cp, GridCacheVersion maxVers) {
+        if (col == null)
+            return Collections.emptyList();
+
+        assert !col.isEmpty();
+
+        List<GridCacheMvccCandidate> cands = new ArrayList<>(col.size());
+
+        for (GridCacheMvccCandidate c : col) {
+            // Don't include reentries.
+            if ((reentries || !c.reentry()) && c.version().isLess(maxVers))
                 cands.add(c);
         }
 

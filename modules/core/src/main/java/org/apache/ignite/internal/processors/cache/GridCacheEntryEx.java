@@ -987,6 +987,16 @@ public interface GridCacheEntryEx {
         throws GridCacheEntryRemovedException;
 
     /**
+     * Gets all local candidates.
+     *
+     * @param maxVer Exclusive upper version boundary.
+     * @return All local candidates.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public Collection<GridCacheMvccCandidate> localCandidatesMax(GridCacheVersion maxVer)
+        throws GridCacheEntryRemovedException;
+
+    /**
      * Gets all remote versions.
      *
      * @param exclude Exclude version.

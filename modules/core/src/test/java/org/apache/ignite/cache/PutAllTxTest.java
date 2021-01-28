@@ -18,16 +18,15 @@ public class PutAllTxTest extends GridCommonAbstractTest {
         Ignition.start(getConfiguration("server2"));
         Ignite ignite = Ignition.start(getConfiguration("client").setClientMode(true));
 
-        IgniteCache<Integer, String> cache = ignite.createCache(
-                new CacheConfiguration<Integer, String>("c")
+        IgniteCache<Integer, Integer> cache = ignite.createCache(
+                new CacheConfiguration<Integer, Integer>("c")
                         .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        int count = 40000;
-        int valSize = 1000;
+        int count = 50000;
 
-        Map<Integer, String> data = new TreeMap<>();
+        Map<Integer, Integer> data = new TreeMap<>();
         for (int i = 0; i < count; i++)
-            data.put(i, new String(new char[valSize]) + UUID.randomUUID());
+            data.put(i, i);
 
         long begin = System.nanoTime();
 

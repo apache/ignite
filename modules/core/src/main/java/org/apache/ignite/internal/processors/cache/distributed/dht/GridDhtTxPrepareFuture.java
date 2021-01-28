@@ -1757,9 +1757,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         for (IgniteTxEntry entry : entries) {
             try {
-                for (GridCacheMvccCandidate cand : entry.cached().localCandidates()) {
-                    if (cand.version().isLess(baseVer))
-                        lessPending.add(cand.version());
+                Collection<GridCacheMvccCandidate> candidates = entry.cached().localCandidatesMax(baseVer);
+                for (GridCacheMvccCandidate cand : candidates) {
+                    lessPending.add(cand.version());
                 }
             }
             catch (GridCacheEntryRemovedException ignored) {
