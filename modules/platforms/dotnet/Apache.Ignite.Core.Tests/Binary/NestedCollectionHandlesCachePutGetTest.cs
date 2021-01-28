@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
     /// <summary>
     /// Tests storing collections in cache.
+    /// TODO: Test ArrayList and Dictionary (non-generic).
     /// </summary>
     public class NestedCollectionHandlesCachePutGetTest
     {
