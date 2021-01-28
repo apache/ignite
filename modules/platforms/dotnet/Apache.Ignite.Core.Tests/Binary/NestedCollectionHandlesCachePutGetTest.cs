@@ -70,6 +70,44 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreNotSame(res[0], res[1]);
         }
 
+        [Test]
+        public void TestInnerArray()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            var cache = ignite.GetOrCreateCache<int, InnerArray[]>("c");
+            var innerObj = new object();
+            var inner = new[] {innerObj};
+
+            cache.Put(1, new[]
+            {
+                new InnerArray {Inner = inner},
+                new InnerArray {Inner = inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+        }
+
+        [Test]
+        public void TestInnerArrayReferenceLoop()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            var cache = ignite.GetOrCreateCache<int, InnerArray[]>("c");
+            var inner = new object[] {null};
+            inner[0] = inner;
+
+            cache.Put(1, new[]
+            {
+                new InnerArray {Inner = inner},
+                new InnerArray {Inner = inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+        }
+
         private class InnerList
         {
             public IList<object> Inner { get; set; }
@@ -78,6 +116,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         private class InnerObject
         {
             public object Inner { get; set; }
+        }
+
+        private class InnerArray
+        {
+            public object[] Inner { get; set; }
         }
     }
 }
