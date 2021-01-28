@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -52,7 +51,7 @@ public class VisorSnapshotMetadataCollectorTask
                     "from baseline nodes: " + res.getNode().id(), res.getException());
             }
 
-            Set<SnapshotMetadata> metas = res.getData();
+            List<SnapshotMetadata> metas = res.getData();
 
             for (SnapshotMetadata meta : metas) {
                 if (first == null)

@@ -53,26 +53,15 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 
 /** */
-public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Void, IdleVerifyResultV2> {
+public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Snapshot metadata distribution for given snapshot. */
-    private final Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
-
-    /**
-     * @param clusterMetas Snapshot metadata distribution for given snapshot.
-     */
-    public VisorVerifySnapshotPartitionsTask(
-        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
-    ) {
-        this.clusterMetas = clusterMetas;
-    }
 
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable Void arg
+        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
     ) throws IgniteException {
         if (!subgrid.containsAll(clusterMetas.keySet())) {
             throw new IgniteException("Some of Ignite nodes left the cluster during execution " +
@@ -84,9 +73,24 @@ public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Void, 
         Set<SnapshotMetadata> allParts = new HashSet<>();
         clusterMetas.values().forEach(allParts::addAll);
 
+        Set<String> missed = null;
+
+        for (SnapshotMetadata meta : allParts) {
+            if (missed == null)
+                missed = new HashSet<>(meta.baselineNodes());
+
+            missed.remove(meta.consistentId());
+
+            if (missed.isEmpty())
+                break;
+        }
+
+        if (!missed.isEmpty())
+            throw new IgniteException("Some snapshot parts are missed in the snapshot [missed=" + missed + ", all=" + allParts);
+
         for (int idx = 0; !allParts.isEmpty(); idx++) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
-                if (e.getValue().size() >= idx)
+                if (e.getValue().size() < idx)
                     continue;
 
                 SnapshotMetadata meta = e.getValue().get(idx);

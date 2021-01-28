@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
-import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -1175,9 +1175,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
 
-        IgniteInternalFuture<?> fut = snp(ignite).checkSnapshot(SNAPSHOT_NAME);
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
 
-        System.out.println(">>>>> " + fut.get());
+        StringBuilder b = new StringBuilder();
+        res.print(b::append);
+
+        System.out.println(">>>>> " + b);
 
 //        assertThrowsAnyCause(log,
 //            fut::get,

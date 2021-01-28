@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -63,7 +64,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -95,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -116,6 +117,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotMetadataCollectorTask;
+import org.apache.ignite.internal.visor.snapshot.VisorVerifySnapshotPartitionsTask;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
@@ -151,7 +153,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -797,52 +798,42 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @return {@code true} if snapshot is OK.
      */
-    public IgniteInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> checkSnapshot(String name) {
-        // IdleVerifyResultV2 result
+    public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshot(String name) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+        GridKernalContext kctx0 = cctx.kernalContext();
+        GridFutureAdapter<IdleVerifyResultV2> res = new GridFutureAdapter<>();
 
-        Collection<UUID> blts = cctx.kernalContext().state().onlineBaselineNodes();
+        kctx0.security().authorize(ADMIN_SNAPSHOT);
 
-        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
-
-        ComputeTaskInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> fut = cctx.kernalContext()
-            .task()
-            .execute(VisorSnapshotMetadataCollectorTask.class,
-                new VisorTaskArgument<>(blts, name, false));
-
-        // After snapshot metadata collected need to validate it.
         // TODO check NodeFilter works correct. SnapshotMetadata must be created on empty cluster node too.
 
-        // Prepare job distribution to check snapshot data.
+        CompletableFuture.supplyAsync(() ->
+            new IgniteFutureImpl<>(kctx0.task()
+                .execute(VisorSnapshotMetadataCollectorTask.class,
+                    new VisorTaskArgument<>(kctx0.state().onlineBaselineNodes(),
+                        name,
+                        false),
+                    true))
+                .get())
+            .thenApplyAsync(metas -> {
+                VisorTaskArgument<Map<ClusterNode, List<SnapshotMetadata>>> arg = new VisorTaskArgument<>(kctx0.state().onlineBaselineNodes(),
+                    metas,
+                    false);
 
-        return fut;
-    }
+                return new IgniteFutureImpl<Map<ClusterNode, List<SnapshotMetadata>>>(kctx0.task()
+                    .<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2>execute(VisorVerifySnapshotPartitionsTask.class, arg, true))
+                    .get();
+            })
+            .whenComplete((r, ex) -> {
+                if (ex == null)
+                    res.onDone(r);
+                else
+                    res.onDone(ex);
+            });
 
-    /**
-     * @param clusterMetas Received snapshot metadata from each node.
-     * @return {@code true} if all snapshot metadata parts successfully found.
-     */
-    private static boolean allSnapshotParts(Collection<Set<SnapshotMetadata>> clusterMetas) {
-        Set<String> snpParts = null;
-
-        for (Set<SnapshotMetadata> nodeMetas : clusterMetas) {
-            assert nodeMetas != null : clusterMetas;
-
-            for (SnapshotMetadata meta : nodeMetas) {
-                if (snpParts == null)
-                    snpParts = new HashSet<>(meta.baselineNodes());
-
-                snpParts.remove(meta.consistentId());
-
-                if (snpParts.isEmpty())
-                    return true;
-            }
-        }
-
-        return snpParts.isEmpty();
+        return res;
     }
 
     /**
