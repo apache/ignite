@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BooleanSupplier;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
@@ -990,6 +992,44 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkMetadata(File metadataDir) throws IgniteCheckedException {
+        for (BinaryMetadata newMeta : readMetadata(metadataDir)) {
+            BinaryMetadata oldMeta = binaryMetadata(newMeta.typeId());
+
+            if (oldMeta != null)
+                BinaryUtils.mergeMetadata(oldMeta, newMeta, null);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
+        for (BinaryMetadata newMeta : readMetadata(metadataDir)) {
+            if (stopChecker.getAsBoolean())
+                return;
+
+            addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
+        }
+    }
+
+    /**
+     * @param metadataDir Directory containing binary metadata files.
+     * @return List of found metadata types.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Collection<BinaryMetadata> readMetadata(File metadataDir) throws IgniteCheckedException {
+        if (!metadataDir.exists())
+            return Collections.emptyList();
+
+        ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
+
+        BinaryMetadataFileStore binaryMetaFileStore = new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir);
+
+        binaryMetaFileStore.restoreMetadata();
+
+        return F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
     }
 
     /** {@inheritDoc} */

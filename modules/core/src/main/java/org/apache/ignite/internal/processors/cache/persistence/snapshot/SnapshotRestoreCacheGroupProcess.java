@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PERFORM;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 
@@ -226,12 +227,9 @@ public class SnapshotRestoreCacheGroupProcess {
         if (fut.isDone())
             fut = new RestoreSnapshotFuture();
 
-        IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
+        fut.init(new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.nodes(), req.groups(), ctx));
 
-        fut.init(new SnapshotRestoreContext(
-            req.requestId(), req.snapshotName(), req.requiredNodes(), req.groups(), snpMgr));
-
-        if (!snpMgr.snapshotLocalDir(req.snapshotName()).exists())
+        if (!ctx.cache().context().snapshotMgr().snapshotLocalDir(req.snapshotName()).exists())
             return new GridFinishedFuture<>();
 
         GridFutureAdapter<SnapshotRestorePrepareResponse> retFut = new GridFutureAdapter<>();
@@ -290,16 +288,13 @@ public class SnapshotRestoreCacheGroupProcess {
         if (cacheCfgs.isEmpty())
             return null;
 
-        Set<String> cacheNames = new HashSet<>(req.groups());
-
-        cacheNames.addAll(cacheCfgs.keySet());
-
-        for (String cacheName : cacheNames)
+        for (String cacheName : F.concat(false, req.groups(), cacheCfgs.keySet()))
             ensureCacheAbsent(cacheName);
 
-        RestoreSnapshotFuture fut0 = fut;
+        File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(req.snapshotName()).getAbsolutePath(),
+            ctx.pdsFolderResolver().resolveFolders().folderName());
 
-        ctx.cache().context().snapshotMgr().mergeSnapshotMetadata(req.snapshotName(), true, false, fut0::interrupted);
+        ctx.cacheObjects().checkMetadata(binDir);
 
         return new SnapshotRestorePrepareResponse(new ArrayList<>(cacheCfgs.values()), partIds);
     }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,8 +72,6 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -85,8 +82,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -135,7 +130,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -1115,60 +1109,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> restoreCacheGroups(String snpName, Collection<String> grpNames) {
         return restoreCacheGrpProcess.start(snpName, grpNames);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param checkCompatibility Don't update metadata, just check the compatibility of the snapshot metadata.
-     * @param failIfAbsent Throw an exception if the snapshot metadata folder doesn't exists.
-     * @param interruptClosure A closure to quickly interrupt the merge process.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void mergeSnapshotMetadata(
-        String snpName,
-        boolean checkCompatibility,
-        boolean failIfAbsent,
-        BooleanSupplier interruptClosure
-    ) throws IgniteCheckedException {
-        File binDir = binaryWorkDir(snapshotLocalDir(snpName).getAbsolutePath(), pdsSettings.folderName());
-
-        if (!binDir.exists()) {
-            if (failIfAbsent) {
-                throw new IgniteCheckedException("Unable to update cluster metadata from snapshot, " +
-                    "directory doesn't exists [snapshot=" + snpName + ", dir=" + binDir + ']');
-            }
-
-            return;
-        }
-
-        Marshaller marshaller = cctx.kernalContext().config().getMarshaller();
-        ClassLoader clsLdr = U.resolveClassLoader(cctx.kernalContext().config());
-        CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
-
-        for (File file : binDir.listFiles()) {
-            if (interruptClosure.getAsBoolean())
-                return;
-
-            try (FileInputStream in = new FileInputStream(file)) {
-                BinaryMetadata newMeta = U.unmarshal(marshaller, in, clsLdr);
-
-                if (!checkCompatibility) {
-                    binProc.addMeta(newMeta.typeId(), newMeta.wrap(binProc.binaryContext()), false);
-
-                    continue;
-                }
-
-                BinaryMetadata oldMeta = binProc.binaryMetadata(newMeta.typeId());
-
-                if (oldMeta == null)
-                    continue;
-
-                BinaryUtils.mergeMetadata(oldMeta, newMeta, null);
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to read metadata " + file, e);
-            }
-        }
     }
 
     /**

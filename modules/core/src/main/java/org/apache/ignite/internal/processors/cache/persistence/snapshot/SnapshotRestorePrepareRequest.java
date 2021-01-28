@@ -44,18 +44,18 @@ public class SnapshotRestorePrepareRequest implements Serializable {
 
     /** List of baseline node IDs that must be alive to complete the operation. */
     @GridToStringInclude
-    private final Set<UUID> reqNodes;
+    private final Set<UUID> nodes;
 
     /**
      * @param reqId Request ID.
      * @param snpName Snapshot name.
      * @param grps List of cache group names to restore from the snapshot.
-     * @param reqNodes List of baseline node IDs that must be alive to complete the operation.
+     * @param nodes List of baseline node IDs that must be alive to complete the operation.
      */
-    public SnapshotRestorePrepareRequest(UUID reqId, String snpName, Collection<String> grps, Set<UUID> reqNodes) {
+    public SnapshotRestorePrepareRequest(UUID reqId, String snpName, Collection<String> grps, Set<UUID> nodes) {
         this.snpName = snpName;
         this.grps = grps;
-        this.reqNodes = reqNodes;
+        this.nodes = nodes;
         this.reqId = reqId;
     }
 
@@ -83,8 +83,8 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /**
      * @return List of baseline node IDs that must be alive to complete the operation.
      */
-    public Set<UUID> requiredNodes() {
-        return Collections.unmodifiableSet(reqNodes);
+    public Set<UUID> nodes() {
+        return Collections.unmodifiableSet(nodes);
     }
 
     /** {@inheritDoc} */

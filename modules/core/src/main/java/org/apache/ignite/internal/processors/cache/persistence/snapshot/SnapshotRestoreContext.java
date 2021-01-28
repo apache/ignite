@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -38,6 +39,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 
 /**
  * Cache group restore from snapshot operation context.
@@ -52,8 +55,8 @@ class SnapshotRestoreContext {
     /** List of baseline node IDs that must be alive to complete the operation. */
     private final Set<UUID> reqNodes;
 
-    /** Snapshot manager. */
-    private final IgniteSnapshotManager snapshotMgr;
+    /** Kernal context. */
+    private final GridKernalContext ctx;
 
     /** Restore operation lock. */
     private final ReentrantLock rollbackLock = new ReentrantLock();
@@ -69,17 +72,17 @@ class SnapshotRestoreContext {
      * @param snpName Snapshot name.
      * @param reqNodes List of baseline node IDs that must be alive to complete the operation.
      * @param grps List of cache group names to restore from the snapshot.
-     * @param snapshotMgr Snapshot manager.
+     * @param ctx Kernal context.
      */
     public SnapshotRestoreContext(UUID reqId, String snpName, Set<UUID> reqNodes, Collection<String> grps,
-        IgniteSnapshotManager snapshotMgr) {
+        GridKernalContext ctx) {
         for (String grpName : grps)
             this.grps.put(grpName, new GroupRestoreContext());
 
         this.reqId = reqId;
         this.reqNodes = reqNodes;
         this.snpName = snpName;
-        this.snapshotMgr = snapshotMgr;
+        this.ctx = ctx;
     }
 
     /** @return Request ID. */
@@ -203,8 +206,17 @@ class SnapshotRestoreContext {
         if (stopChecker.getAsBoolean())
             return;
 
-        if (updateMetadata)
-            snapshotMgr.mergeSnapshotMetadata(snpName, false, true, stopChecker);
+        if (updateMetadata) {
+            File binDir = binaryWorkDir(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpName).getAbsolutePath(),
+                ctx.pdsFolderResolver().resolveFolders().folderName());
+
+            if (!binDir.exists()) {
+                throw new IgniteCheckedException("Unable to update cluster metadata from snapshot, " +
+                    "directory doesn't exists [snapshot=" + snpName + ", dir=" + binDir + ']');
+            }
+
+            ctx.cacheObjects().updateMetadata(binDir, stopChecker);
+        }
 
         for (String grpName : groups()) {
             rollbackLock.lock();
@@ -212,7 +224,7 @@ class SnapshotRestoreContext {
             try {
                 GroupRestoreContext grp = grps.get(grpName);
 
-                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, stopChecker, grp.files);
+                ctx.cache().context().snapshotMgr().restoreCacheGroupFiles(snpName, grpName, stopChecker, grp.files);
             }
             finally {
                 rollbackLock.unlock();
@@ -234,7 +246,7 @@ class SnapshotRestoreContext {
             if (grp == null || F.isEmpty(grp.files))
                 return;
 
-            snapshotMgr.rollbackRestoreOperation(grp.files);
+            ctx.cache().context().snapshotMgr().rollbackRestoreOperation(grp.files);
         } finally {
             rollbackLock.unlock();
         }

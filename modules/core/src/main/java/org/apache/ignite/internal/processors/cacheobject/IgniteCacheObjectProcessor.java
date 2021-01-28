@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -305,6 +306,23 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param dir Destination directory.
      */
     public void saveMetadata(Collection<BinaryType> types, File dir);
+
+    /**
+     * Check the compatibility of the binary metadata files stored in the specified directory.
+     *
+     * @param metadataDir Directory containing binary metadata files.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void checkMetadata(File metadataDir) throws IgniteCheckedException;
+
+    /**
+     * Merge the binary metadata files stored in the specified directory.
+     *
+     * @param metadataDir Directory containing binary metadata files.
+     * @param stopChecker Prcoess interrupt checker.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.
