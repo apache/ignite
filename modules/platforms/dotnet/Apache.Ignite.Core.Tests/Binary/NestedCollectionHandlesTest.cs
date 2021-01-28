@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// TODO
     /// </summary>
-    public class NestedListsTest
+    public class NestedCollectionHandlesTest
     {
         [TearDown]
         public void TearDown()
