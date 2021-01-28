@@ -1460,16 +1460,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        internal void WriteObjectDetached<T>(T o, object parent = null)
+        /// <param name="o">Object to write.</param>
+        /// <param name="parentCollection">
+        /// Hack for collections. When the root object for the current writer is a known collection type
+        /// (<see cref="BinaryTypeId.Array"/>, <see cref="BinaryTypeId.Collection"/>,
+        /// <see cref="BinaryTypeId.Dictionary"/>), we want to detach every element of that collection, because
+        /// Java side handles every element as a separate BinaryObject - they can't share handles.
+        /// </param>
+        /// <typeparam name="T"></typeparam>
+        internal void WriteObjectDetached<T>(T o, object parentCollection = null)
         {
-            if (_detaching != parent)
+            if (_detaching != parentCollection)
             {
                 Write(o);
             }
             else
             {
                 var oldDetaching = _detaching;
-                _detaching = o;
+                _detaching = _detaching ?? o;
 
                 var oldHnds = _hnds;
                 _hnds = null;
