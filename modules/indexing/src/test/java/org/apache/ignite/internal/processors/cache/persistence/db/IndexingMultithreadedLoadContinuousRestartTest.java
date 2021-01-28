@@ -14,7 +14,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.util.Arrays;
@@ -157,8 +156,7 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
             forceCheckpoint();
 
             // Validate indexes on start.
-            ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME),
-                0, 0, false, true);
+            ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false, true);
             ignite.context().resource().injectGeneric(clo);
             VisorValidateIndexesJobResult res = clo.call();
 

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -34,15 +33,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.annotation.InterruptibleVisorTask;
-import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 @GridInternal
-@InterruptibleVisorTask
 public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIndexesTaskArg,
     VisorValidateIndexesTaskResult, VisorValidateIndexesJobResult> {
     /** */
@@ -98,10 +94,6 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Injected logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
         /**
          * @param arg Argument.
          * @param debug Debug.
@@ -114,7 +106,6 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
         @Override protected VisorValidateIndexesJobResult run(@Nullable VisorValidateIndexesTaskArg arg) throws IgniteException {
             try {
                 ValidateIndexesClosure clo = new ValidateIndexesClosure(
-                    this::isCancelled,
                     arg.getCaches(),
                     arg.getCheckFirst(),
                     arg.getCheckThrough(),
@@ -127,17 +118,8 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
                 return clo.call();
             }
             catch (Exception e) {
-                cancel();
-
                 throw new IgniteException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            log.warning("Index validation was cancelled.");
-
-            super.cancel();
         }
 
         /** {@inheritDoc} */
