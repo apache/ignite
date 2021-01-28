@@ -1333,12 +1333,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
+        return readObjectDetached(false);
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
+    @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
     }
 
     /** {@inheritDoc} */
@@ -1981,7 +1981,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         if (!findFieldById(fieldId))
             return null;
 
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**
