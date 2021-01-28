@@ -166,6 +166,8 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
+            discovery_spi.reconnectDelay = test_config.failure_detection_timeout // 5
+
             if LATEST_2_7 < test_config.version <= V_2_9_0:
                 discovery_spi.so_linger = 0
 
