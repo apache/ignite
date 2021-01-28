@@ -1657,25 +1657,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(outer.Val.Equals(innerObject));
         }
 
-        /// <summary>
-        /// Tests serializing/deserializing object lists with nested lists.
-        /// </summary>
-        [Test]
-        public void TestNestedLists()
-        {
-            var list = new[]
-            {
-                new NestedList {Inner = new List<object>()},
-                new NestedList {Inner = new List<object>()}
-            };
-
-            var bytes = _marsh.Marshal(list);
-            var res = _marsh.Unmarshal<NestedList[]>(bytes);
-
-            Assert.AreEqual(2, res.Length);
-            Assert.AreEqual(0, res[0].Inner.Count);
-        }
-
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
@@ -2791,12 +2772,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         private class BinaryObjectWrapper
         {
             public IBinaryObject Val;
-        }
-
-        private class NestedList
-        {
-            // ReSharper disable once CollectionNeverUpdated.Local
-            public IList<object> Inner { get; set; }
         }
     }
 }
