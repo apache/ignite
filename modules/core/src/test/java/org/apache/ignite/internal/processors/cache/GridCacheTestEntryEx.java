@@ -800,6 +800,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return mvcc.localCandidates(exclude);
     }
 
+    @Override
+    public Collection<GridCacheMvccCandidate> localCandidatesMax(GridCacheVersion maxVer) throws GridCacheEntryRemovedException {
+        // TODO
+        return null;
+    }
+
     /** @inheritDoc */
     Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
         return mvcc.localCandidates(reentries, exclude);

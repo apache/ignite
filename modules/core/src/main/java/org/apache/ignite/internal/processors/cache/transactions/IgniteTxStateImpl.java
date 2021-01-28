@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -138,36 +139,53 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         boolean read,
         GridDhtTopologyFuture topFut
     ) {
-        Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
+        if (activeCacheIds.size() == 1) {
+            IgniteTxKey anyKey = txMap.keySet().iterator().next();
 
-        for (IgniteTxKey key : txMap.keySet()) {
-            Set<KeyCacheObject> set = keysByCacheId.get(key.cacheId());
-
-            if (set == null)
-                keysByCacheId.put(key.cacheId(), set = new HashSet<>());
-
-            set.add(key.key());
-        }
-
-        for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
-            int cacheId = e.getKey();
-
+            int cacheId = anyKey.cacheId();
             GridCacheContext ctx = cctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
 
-            CacheInvalidStateException err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
+            CacheInvalidStateException err = topFut.validateCache(ctx, recovery(), read, null, txMap.keySet());
 
             if (err != null)
                 return err;
         }
+        else {
+            Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
+
+            for (IgniteTxKey key : txMap.keySet()) {
+                Set<KeyCacheObject> set = keysByCacheId.get(key.cacheId());
+
+                if (set == null)
+                    keysByCacheId.put(key.cacheId(), set = new HashSet<>());
+
+                set.add(key.key());
+            }
+
+            for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
+                int cacheId = e.getKey();
+
+                GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+                assert ctx != null : cacheId;
+
+                CacheInvalidStateException err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
+
+                if (err != null)
+                    return err;
+            }
+        }
+
+        AffinityTopologyVersion topVer = topFut.topologyVersion();
 
         for (int i = 0; i < activeCacheIds.size(); i++) {
             int cacheId = activeCacheIds.get(i);
 
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
-            if (CU.affinityNodes(cacheCtx, topFut.topologyVersion()).isEmpty()) {
+            if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
                 return new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
                     "partition nodes left the grid): " + cacheCtx.name());
             }
