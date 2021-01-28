@@ -73,7 +73,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    MAX_CONTAINERS = 12
+    MAX_CONTAINERS = 5
 
     ZOOKEEPER_NODES = 3
 
@@ -89,10 +89,10 @@ class DiscoveryTest(IgniteTest):
         self.netfilter_store_path = None
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @ignite_versions(str(LATEST))
-    @matrix(nodes_to_kill=[2], failure_detection_timeout=[FAILURE_TIMEOUT], disable_conn_recovery=[False],
+    @ignite_versions(str(DEV_BRANCH))
+    @matrix(nodes_to_kill=[1], failure_detection_timeout=[FAILURE_TIMEOUT], disable_conn_recovery=[False],
             net_part=[IgniteService.NetPart.ALL],
-            load_type=[ClusterLoad.TRANSACTIONAL])
+            load_type=[ClusterLoad.NONE])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout,
                                            disable_conn_recovery: bool, net_part: IgniteService.NetPart):
         """
@@ -110,7 +110,7 @@ class DiscoveryTest(IgniteTest):
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INCOMING],
             failure_detection_timeout=[FAILURE_TIMEOUT], disable_conn_recovery=[False, True])
-    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout,
+    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout,
                                          disable_conn_recovery: bool, net_part: IgniteService.NetPart):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
@@ -127,7 +127,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -142,7 +142,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT])
-    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
+    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
@@ -156,10 +156,10 @@ class DiscoveryTest(IgniteTest):
         max_containers = len(self.test_context.cluster)
 
         # One node is required to detect the failure.
-        assert max_containers >= 1 + test_config.nodes_to_kill + (
-            DiscoveryTest.ZOOKEEPER_NODES if test_config.with_zk else 0) + (
-                   0 if test_config.load_type == ClusterLoad.NONE else 1), "Few required containers: " + \
-                                                                           str(max_containers) + ". Check the params."
+        # assert max_containers >= 1 + test_config.nodes_to_kill + (
+        #     DiscoveryTest.ZOOKEEPER_NODES if test_config.with_zk else 0) + (
+        #            0 if test_config.load_type == ClusterLoad.NONE else 1), "Few required containers: " + \
+        #                                                                    str(max_containers) + ". Check the params."
 
         self.logger.info("Starting on " + str(max_containers) + " maximal containers.")
 
@@ -178,7 +178,7 @@ class DiscoveryTest(IgniteTest):
                 discovery_spi.so_linger = 0
 
             if test_config.disable_conn_recovery:
-                discovery_spi.connectionRecoveryTimeout = 0
+                discovery_spi.connRecoveryTimeout = 0
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
@@ -331,6 +331,7 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
 
     idx = random.randint(0, len(servers.nodes)-1)
+    idx = 3
 
     to_kill = servers.nodes[idx:] + servers.nodes[:idx-1]
 

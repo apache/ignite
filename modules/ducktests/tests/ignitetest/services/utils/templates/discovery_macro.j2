@@ -53,8 +53,8 @@
         {% endif %}
         <property name="localPort" value="{{ spi.port }}"/>
         <property name="localPortRange" value="{{ spi.port_range }}"/>
-        {% if spi.connectionRecoveryTimeout is defined %}
-            <property name="connectionRecoveryTimeout" value="{{ spi.connectionRecoveryTimeout }}"/>
+        {% if spi.connRecoveryTimeout is defined %}
+            <property name="connectionRecoveryTimeout" value="{{ spi.connRecoveryTimeout }}"/>
         {% endif %}
         {{ ip_finder(spi) }}
     </bean>

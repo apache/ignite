@@ -2950,7 +2950,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
 
         /** */
-        private long lastRingMsgTimeNanos;
+        private volatile long lastReceivedMsgNanos;
 
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
@@ -3199,10 +3199,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (debugMode)
                 debugLog(msg, "Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
-            boolean ensured = spi.ensured(msg);
-
-            if (!locNode.id().equals(msg.senderNodeId()) && ensured)
-                lastRingMsgTimeNanos = System.nanoTime();
+            if (!locNode.id().equals(msg.senderNodeId()))
+                lastReceivedMsgNanos = System.nanoTime();
 
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
@@ -3439,7 +3437,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addMessage(msg, true);
                     }
 
-                    break;
+                    if(sndState!=null) {
+                        log.error("TEST | no next node. SndState=" + sndState);
+                        log.error("TEST | no next node. Recover time left: " + U.nanosToMillis(sndState.failTimeNanos - System.currentTimeMillis()));
+                        log.error("TEST | no next node. Ping node > sndState.init" + (lastReceivedMsgNanos > sndState.initNanos));
+
+
+                    } else
+                        break;
                 }
 
                 if (!newNext.equals(next)) {
@@ -6498,7 +6503,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
                 lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
 
-            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
+            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastReceivedMsgNanos);
 
             if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
                 return;
@@ -8211,11 +8216,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final long failTimeNanos;
 
+        /** */
+        private final long initNanos;
+
         /**
          *
          */
         CrossRingMessageSendState() {
-            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
+            initNanos = System.nanoTime();
+
+            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
         }
 
         /**
