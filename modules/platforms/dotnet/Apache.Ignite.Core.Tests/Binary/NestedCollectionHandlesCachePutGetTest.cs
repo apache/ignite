@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// TODO
     /// </summary>
-    public class NestedCollectionHandlesTest
+    public class NestedCollectionHandlesCachePutGetTest
     {
         [TearDown]
         public void TearDown()
@@ -35,26 +35,49 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// TODO
         /// </summary>
         [Test]
-        public void Test()
+        public void TestInnerList()
         {
-            // TODO: Why does not this fail offline in BinarySelfTest?
-            // TODO: When writing arrays and collections, detach every single element - this is what Java does
-            // in ToCacheObject method.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            var cache = ignite.GetOrCreateCache<int, Entity[]>("c");
+            var cache = ignite.GetOrCreateCache<int, InnerList[]>("c");
+            var inner = new List<object>();
 
             cache.Put(1, new[]
             {
-                new Entity {Inner = new List<object>()},
-                new Entity {Inner = new List<object>()}
+                new InnerList {Inner = inner},
+                new InnerList {Inner = inner}
             });
 
-            cache.Get(1);
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
         }
 
-        private class Entity
+        [Test]
+        public void TestInnerObject()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            var cache = ignite.GetOrCreateCache<int, InnerObject[]>("c");
+            var inner = new object();
+
+            cache.Put(1, new[]
+            {
+                new InnerObject {Inner = inner},
+                new InnerObject {Inner = inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+        }
+
+        private class InnerList
         {
             public IList<object> Inner { get; set; }
+        }
+
+        private class InnerObject
+        {
+            public object Inner { get; set; }
         }
     }
 }
