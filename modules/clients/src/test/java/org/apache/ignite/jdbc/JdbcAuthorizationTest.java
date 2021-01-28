@@ -148,7 +148,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
 
         execute(sql, CACHE_PUT_USER);
 
-        assertTrue(ignite(0).cache(DEFAULT_CACHE_NAME).size() > cnt);
+        assertEquals(cnt + 1, ignite(0).cache(DEFAULT_CACHE_NAME).size());
     }
 
     /**
@@ -169,11 +169,11 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         assertAuthorizationFailed(sql, CACHE_READ_USER);
         assertAuthorizationFailed(sql, CACHE_REMOVE_USER);
 
-        int cnt = ignite(0).cache(DEFAULT_CACHE_NAME).size();
+        assertEquals(0, ignite(0).cache(TEST_BULKLOAD_CACHE).size());
 
         execute(sql, CACHE_PUT_USER);
 
-        assertTrue(ignite(0).cache(TEST_BULKLOAD_CACHE).size() > cnt);
+        assertEquals(2, ignite(0).cache(TEST_BULKLOAD_CACHE).size());
     }
 
     /**
