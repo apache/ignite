@@ -23,7 +23,6 @@
 {% import 'datastorage_macro.j2' as datastorage_utils %}
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_factory_macro.j2' as ssl_factory_util %}
-{% import 'credentials_macro.j2' as credentials_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -42,6 +41,7 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
+        <property name="authenticationEnabled" value="{{ config.auth or False | lower }}"/>
 
         {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
 

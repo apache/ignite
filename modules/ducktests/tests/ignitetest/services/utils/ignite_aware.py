@@ -82,6 +82,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Starts in async way.
         """
+        self.update_config_with_globals()
         super().start(**kwargs)
 
     def start(self, **kwargs):
