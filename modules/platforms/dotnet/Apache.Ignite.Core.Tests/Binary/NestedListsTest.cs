@@ -32,7 +32,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void Test()
         {
             // TODO: Why does not this fail offline in BinarySelfTest?
-            // TODO: When writing arrays and collections, detach every single element - this is what Java does.
+            // TODO: When writing arrays and collections, detach every single element - this is what Java does
+            // in ToCacheObject method.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             var cache = ignite.GetOrCreateCache<int, Entity[]>("c");
 
