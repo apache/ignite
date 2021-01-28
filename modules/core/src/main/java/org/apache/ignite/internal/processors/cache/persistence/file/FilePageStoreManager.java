@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -974,29 +975,37 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         Arrays.sort(files);
 
         for (File file : files) {
-            if (file.isDirectory()) {
-                if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
-                    File conf = new File(file, CACHE_DATA_FILENAME);
-
-                    if (conf.exists() && conf.length() > 0) {
-                        StoredCacheData cacheData = readCacheData(conf);
-
-                        String cacheName = cacheData.config().getName();
-
-                        if (!ccfgs.containsKey(cacheName))
-                            ccfgs.put(cacheName, cacheData);
-                        else {
-                            U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                                    + file.getName());
-                        }
-                    }
-                }
-                else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
-                    readCacheGroupCaches(file, ccfgs);
-            }
+            if (file.isDirectory())
+                readCacheConfigurations(file, ccfgs);
         }
 
         return ccfgs;
+    }
+
+    /**
+     * @param dir Cache (group) directory.
+     * @param ccfgs Cache configurations.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
+        if (dir.getName().startsWith(CACHE_DIR_PREFIX)) {
+            File conf = new File(dir, CACHE_DATA_FILENAME);
+
+            if (conf.exists() && conf.length() > 0) {
+                StoredCacheData cacheData = readCacheData(conf);
+
+                String cacheName = cacheData.config().getName();
+
+                if (!ccfgs.containsKey(cacheName))
+                    ccfgs.put(cacheName, cacheData);
+                else {
+                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                        + dir.getName());
+                }
+            }
+        }
+        else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+            readCacheGroupCaches(dir, ccfgs);
     }
 
     /**
@@ -1087,6 +1096,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             }
         }
+    }
+
+    /**
+     * @param cacheDIr Directory with partition files.
+     * @return Set of partition file IDs found in the directory.
+     */
+    public Set<Integer> scanPartitionIds(File cacheDIr) {
+        Set<Integer> partIds = new HashSet<>();
+
+        for (String name : cacheDIr.list((dir, name) -> name.startsWith(PART_FILE_PREFIX))) {
+            if (new File(cacheDIr, name).isDirectory())
+                continue;
+
+            String partId = name.substring(PART_FILE_PREFIX.length(), name.indexOf('.'));
+
+            partIds.add(Integer.parseInt(partId));
+        }
+
+        return partIds;
     }
 
     /**

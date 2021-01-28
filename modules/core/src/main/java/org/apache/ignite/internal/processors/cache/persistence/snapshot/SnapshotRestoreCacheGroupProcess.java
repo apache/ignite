@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -43,11 +45,9 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -268,33 +268,40 @@ public class SnapshotRestoreCacheGroupProcess {
         if (log.isInfoEnabled())
             log.info("Preparing to restore cache groups [groups=" + F.concat(req.groups(), ", ") + ']');
 
-        List<CacheGroupSnapshotDetails> grpCfgs = new ArrayList<>();
-
         IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+
+        Map<String, StoredCacheData> cacheCfgs = new HashMap<>();
+        Map<String, Set<Integer>> partIds = new HashMap<>();
 
         // Collect cache configuration(s).
         for (String grpName : req.groups()) {
-            CacheGroupSnapshotDetails grpCfg = snapshotMgr.readCacheGroupDetails(req.snapshotName(), grpName);
+            File cacheDir = snapshotMgr.resolveSnapshotCacheDir(req.snapshotName(), grpName);
 
-            if (grpCfg == null)
-                continue;
+            if (!cacheDir.exists())
+                return null;
 
-            ensureCacheAbsent(grpName);
+            FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
 
-            for (StoredCacheData cfg : grpCfg.configs())
-                ensureCacheAbsent(cfg.config().getName());
+            pageStoreMgr.readCacheConfigurations(cacheDir, cacheCfgs);
 
-            grpCfgs.add(grpCfg);
+            partIds.put(grpName, pageStoreMgr.scanPartitionIds(cacheDir));
         }
 
-        if (grpCfgs.isEmpty())
+        if (cacheCfgs.isEmpty())
             return null;
+
+        Set<String> cacheNames = new HashSet<>(req.groups());
+
+        cacheNames.addAll(cacheCfgs.keySet());
+
+        for (String cacheName : cacheNames)
+            ensureCacheAbsent(cacheName);
 
         RestoreSnapshotFuture fut0 = fut;
 
         ctx.cache().context().snapshotMgr().mergeSnapshotMetadata(req.snapshotName(), true, false, fut0::interrupted);
 
-        return new SnapshotRestorePrepareResponse(grpCfgs);
+        return new SnapshotRestorePrepareResponse(new ArrayList<>(cacheCfgs.values()), partIds);
     }
 
     /**
@@ -316,10 +323,10 @@ public class SnapshotRestoreCacheGroupProcess {
      * Completes the verification phase and starts the restore performing phase if there were no errors.
      *
      * @param reqId Request ID.
-     * @param res Results.
+     * @param results Results.
      * @param errs Errors.
      */
-    private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestorePrepareResponse> res, Map<UUID, Exception> errs) {
+    private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestorePrepareResponse> results, Map<UUID, Exception> errs) {
         RestoreSnapshotFuture fut0 = fut;
 
         if (fut0.isDone() || fut0.interrupted() || !reqId.equals(fut0.context().requestId()))
@@ -333,31 +340,62 @@ public class SnapshotRestoreCacheGroupProcess {
 
         SnapshotRestoreContext opCtx = fut0.context();
 
-        Set<String> missedGroups = new HashSet<>(opCtx.groups());
+        // First node with snapshot data.
+        UUID firstSnapshotDataNode = null;
 
         try {
-            for (CacheGroupSnapshotDetails grpDetails : mergeNodeResults(res)) {
-                CacheConfiguration<?, ?> cfg = F.first(grpDetails.configs()).config();
+            Map<String, Set<Integer>> grpPartIds = new HashMap<>();
+            List<StoredCacheData> ccfgs = null;
 
-                String grpName = cfg.getGroupName() == null ? cfg.getName() : cfg.getGroupName();
+            for (Map.Entry<UUID, SnapshotRestorePrepareResponse> entry : results.entrySet()) {
+                SnapshotRestorePrepareResponse res = entry.getValue();
 
-                int reqParts = cfg.getAffinity().partitions();
-                int availParts = grpDetails.parts().size();
+                if (res == null)
+                    continue;
+
+                if (firstSnapshotDataNode == null) {
+                    firstSnapshotDataNode = entry.getKey();
+                    ccfgs = res.configs();
+                }
+                else if (res.configs().size() != res.configs().size()) {
+                    throw new IllegalStateException("Count of cache configs in shared group mismatch [" +
+                        "node1=" + firstSnapshotDataNode + ", cnt=" + ccfgs.size() +
+                        ", node2=" + entry.getKey() + ", cnt=" + res.configs().size() +
+                        ", snapshot=" + opCtx.snapshotName() + ']');
+                }
+
+                for (Map.Entry<String, Set<Integer>> e : res.partIds().entrySet())
+                    grpPartIds.computeIfAbsent(e.getKey(), v -> new HashSet<>()).addAll(e.getValue());
+            }
+
+            if (!grpPartIds.keySet().containsAll(opCtx.groups())) {
+                Set<String> missedGroups = new HashSet<>(opCtx.groups());
+
+                missedGroups.removeAll(grpPartIds.keySet());
+
+                throw new IllegalArgumentException("Cache group(s) not found in snapshot [groups=" +
+                    F.concat(missedGroups, ", ") + ", snapshot=" + opCtx.snapshotName() + ']');
+            }
+
+            for (StoredCacheData cacheData : ccfgs) {
+                CacheConfiguration<?, ?> ccfg = cacheData.config();
+
+                String grpName = ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
+
+                Set<Integer> partIds = grpPartIds.get(grpName);
+
+                int reqParts = ccfg.getAffinity().partitions();
+                int availParts = partIds.size();
 
                 if (reqParts != availParts) {
                     throw new IgniteCheckedException("Cannot restore snapshot, not all partitions available [" +
-                        "required=" + reqParts + ", avail=" + availParts + ", group=" + grpName + ']');
+                        "required=" + reqParts +
+                        ", avail=" + availParts +
+                        ", group=" + grpName +
+                        ", snapshot=" + opCtx.snapshotName() + ']');
                 }
 
-                missedGroups.remove(grpName);
-
-                for (StoredCacheData cacheData : grpDetails.configs())
-                    opCtx.addCacheData(cacheData);
-            }
-
-            if (!missedGroups.isEmpty()) {
-                throw new IllegalArgumentException("Cache group(s) not found in snapshot [groups=" +
-                    F.concat(missedGroups, ", ") + ", snapshot=" + opCtx.snapshotName() + ']');
+                opCtx.addCacheData(cacheData);
             }
         }
         catch (Exception e) {
@@ -366,56 +404,8 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
         }
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()) && !fut0.isDone()) {
-            UUID metaUpdateNode = F.first(F.viewReadOnly(res.entrySet(), Map.Entry::getKey, e -> e.getValue() != null));
-
-            performRestoreProc.start(reqId, new SnapshotRestorePerformRequest(reqId, metaUpdateNode));
-        }
-    }
-
-    /**
-     * @param res Results from multiple nodes.
-     * @return A collection that contains information about the snapshot cache group(s) on all nodes.
-     */
-    private Collection<CacheGroupSnapshotDetails> mergeNodeResults(Map<UUID, SnapshotRestorePrepareResponse> res) {
-        Map<String, T2<UUID, CacheGroupSnapshotDetails>> globalDetails = new HashMap<>();
-
-        for (Map.Entry<UUID, SnapshotRestorePrepareResponse> entry : res.entrySet()) {
-            UUID currNodeId = entry.getKey();
-            SnapshotRestorePrepareResponse nodeResp = entry.getValue();
-
-            if (nodeResp == null)
-                continue;
-
-            for (CacheGroupSnapshotDetails nodeDetails : nodeResp.groups()) {
-                CacheConfiguration<?, ?> cfg = F.first(nodeDetails.configs()).config();
-
-                String grpName = cfg.getGroupName() == null ? cfg.getName() : cfg.getGroupName();
-
-                T2<UUID, CacheGroupSnapshotDetails> clusterDetailsPair = globalDetails.get(grpName);
-
-                if (clusterDetailsPair == null) {
-                    globalDetails.put(grpName, new T2<>(currNodeId, nodeDetails));
-
-                    continue;
-                }
-
-                CacheGroupSnapshotDetails clusterDetails = clusterDetailsPair.get2();
-
-                int currCfgCnt = nodeDetails.configs().size();
-                int savedCfgCnt = clusterDetails.configs().size();
-
-                if (currCfgCnt != savedCfgCnt) {
-                    throw new IllegalStateException("Count of cache configs in shared group mismatch [" +
-                        "node1=" + clusterDetailsPair.get1() + ", cnt=" + savedCfgCnt +
-                        ", node2=" + currNodeId + ", cnt=" + nodeDetails.configs().size() + ']');
-                }
-
-                clusterDetails.parts().addAll(nodeDetails.parts());
-            }
-        }
-
-        return F.viewReadOnly(globalDetails.values(), IgniteBiTuple::get2);
+        if (U.isLocalNodeCoordinator(ctx.discovery()) && !fut0.isDone())
+            performRestoreProc.start(reqId, new SnapshotRestorePerformRequest(reqId, firstSnapshotDataNode));
     }
 
     /**

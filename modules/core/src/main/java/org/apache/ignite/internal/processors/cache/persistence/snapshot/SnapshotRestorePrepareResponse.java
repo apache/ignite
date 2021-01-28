@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 
 /**
  * Snapshot restore prepare operation single node validation response.
@@ -27,7 +30,9 @@ public class SnapshotRestorePrepareResponse implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    private List<CacheGroupSnapshotDetails> groups;
+    private List<StoredCacheData> ccfgs;
+
+    private Map<String, Set<Integer>> partIds;
 
     /** */
     public SnapshotRestorePrepareResponse() {
@@ -37,12 +42,18 @@ public class SnapshotRestorePrepareResponse implements Serializable {
     /**
      * @param groups List of cache groups snapshot details.
      */
-    public SnapshotRestorePrepareResponse(List<CacheGroupSnapshotDetails> groups) {
-        this.groups = groups;
+    public SnapshotRestorePrepareResponse(List<StoredCacheData> ccfgs, Map<String, Set<Integer>> partIds) {
+        this.ccfgs = ccfgs;
+        this.partIds = partIds;
     }
 
     /** todo */
-    public List<CacheGroupSnapshotDetails> groups() {
-        return groups;
+    public List<StoredCacheData> configs() {
+        return ccfgs;
     }
+
+    public Map<String, Set<Integer>> partIds() {
+        return partIds;
+    }
+
 }

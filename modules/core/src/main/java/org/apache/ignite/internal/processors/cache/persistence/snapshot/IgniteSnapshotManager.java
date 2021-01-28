@@ -136,8 +136,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -167,7 +165,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -1261,7 +1258,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param cacheName Cache (group) name.
      * @return Local path to the cache directory.
      */
-    private File resolveSnapshotCacheDir(String snpName, String cacheName) {
+    public File resolveSnapshotCacheDir(String snpName, String cacheName) {
         File workDir = snapshotLocalDir(snpName);
 
         String dbPath = DFLT_STORE_DIR + File.separator + pdsSettings.folderName() + File.separator;
@@ -1272,51 +1269,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return cacheDir;
 
         return new File(workDir, dbPath + CACHE_GRP_DIR_PREFIX + cacheName);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param grpName Cache group name.
-     * @return Details about the locally stored cache group, or {@code null} if the snapshot doesn't exist.
-     * @throws IgniteCheckedException if failed.
-     */
-    protected @Nullable CacheGroupSnapshotDetails readCacheGroupDetails(
-        String snpName,
-        String grpName
-    ) throws IgniteCheckedException {
-        File cacheDir = resolveSnapshotCacheDir(snpName, grpName);
-
-        if (!cacheDir.exists())
-            return null;
-
-        IgniteConfiguration nodeCfg = cctx.kernalContext().config();
-        JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(nodeCfg.getIgniteInstanceName());
-        ClassLoader clsLdr = U.resolveClassLoader(nodeCfg);
-
-        List<StoredCacheData> cacheCfgs = new ArrayList<>(1);
-        Set<Integer> parts = new HashSet<>();
-
-        for (File file : cacheDir.listFiles()) {
-            if (file.isDirectory())
-                continue;
-
-            String name = file.getName();
-
-            if (name.endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
-                try (InputStream stream = new BufferedInputStream(new FileInputStream(file))) {
-                    cacheCfgs.add(marshaller.unmarshal(stream, clsLdr));
-                } catch (IOException e) {
-                    throw new IgniteCheckedException("Unable to read stored cache configuration: " + e.getMessage(), e);
-                }
-            }
-            else if (name.startsWith(FilePageStoreManager.PART_FILE_PREFIX)) {
-                String partId = name.substring(FilePageStoreManager.PART_FILE_PREFIX.length(), name.indexOf('.'));
-
-                parts.add(Integer.parseInt(partId));
-            }
-        }
-
-        return new CacheGroupSnapshotDetails(cacheCfgs, parts);
     }
 
     /** {@inheritDoc} */

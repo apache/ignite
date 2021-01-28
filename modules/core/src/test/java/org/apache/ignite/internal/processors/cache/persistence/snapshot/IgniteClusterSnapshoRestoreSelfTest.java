@@ -657,6 +657,10 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         for (int nodeIdx = 0; nodeIdx < nodesCnt; nodeIdx++) {
             IgniteEx grid = grid(nodeIdx);
 
+            GridTestUtils.waitForCondition(
+                () -> !grid.context().cache().context().snapshotMgr().isCacheRestoring(null),
+                TIMEOUT);
+
             File dir = resolveCacheDir(grid, cacheName);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
