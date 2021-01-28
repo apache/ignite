@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             cache.Put(1, new[]
             {
                 new object[] {inner},
-                new object[] {inner},
+                new object[] {inner}
             });
 
             var res = cache.Get(1);
