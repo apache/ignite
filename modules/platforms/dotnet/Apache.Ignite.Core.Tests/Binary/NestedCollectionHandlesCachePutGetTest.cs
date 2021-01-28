@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System.Collections.Generic;
