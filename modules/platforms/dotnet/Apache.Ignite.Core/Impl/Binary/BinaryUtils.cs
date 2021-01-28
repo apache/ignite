@@ -1084,7 +1084,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             stream.WriteInt(val.Length);
 
             for (int i = 0; i < val.Length; i++)
-                ctx.WriteObjectDetached(val.GetValue(i));
+                ctx.WriteObjectDetached(val.GetValue(i), val);
         }
 
         /// <summary>

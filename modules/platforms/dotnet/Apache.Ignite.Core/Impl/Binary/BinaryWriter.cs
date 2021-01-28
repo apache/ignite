@@ -1460,17 +1460,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        internal void WriteObjectDetached<T>(T o)
+        internal void WriteObjectDetached<T>(T o, object parent = null)
         {
-            if (_detaching != null)
+            if (_detaching != parent)
             {
                 Write(o);
             }
             else
             {
+                var oldDetaching = _detaching;
                 _detaching = o;
 
-                BinaryHandleDictionary<object, long> oldHnds = _hnds;
+                var oldHnds = _hnds;
                 _hnds = null;
 
                 try
@@ -1479,7 +1480,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 finally
                 {
-                    _detaching = null;
+                    _detaching = oldDetaching;
 
                     if (oldHnds != null)
                     {
