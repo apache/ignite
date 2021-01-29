@@ -29,66 +29,171 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class JavaBinaryInteropTest
     {
+        /** */
+        private const string CacheName = "default";
+
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// Tests that all kinds of values from .NET can be handled properly on Java side.
         /// </summary>
         [Test]
         public void TestValueRoundtrip()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            Ignition.GetIgnite().CreateCache<int, object>(CacheName);
+
+            // Basic types.
+            // Types which map directly to Java are returned properly when retrieved as object.
+            // Non-directly mapped types are returned as their counterpart.
+            CheckValueCaching((char) 128);
+            CheckValueCaching((byte) 255);
+            CheckValueCaching((sbyte) -10, false);
+            CheckValueCaching((short) -32000);
+            CheckValueCaching((ushort) 65350, false);
+            CheckValueCaching(int.MinValue);
+            CheckValueCaching(uint.MaxValue, false);
+            CheckValueCaching(long.MinValue);
+            CheckValueCaching(ulong.MaxValue, false);
+
+            CheckValueCaching((float) 1.1);
+            CheckValueCaching(2.2);
+
+            CheckValueCaching((decimal) 3.3, asArray: false);
+            CheckValueCaching(Guid.NewGuid(), asArray: false);
+            CheckValueCaching(DateTime.Now, asArray: false);
+
+            CheckValueCaching("foobar");
+
+            // Special arrays.
+            CheckValueCaching(new[] {Guid.Empty, Guid.NewGuid()}, false);
+            CheckValueCaching(new Guid?[] {Guid.Empty, Guid.NewGuid()});
+
+            CheckValueCaching(new[] {1.2m, -3.4m}, false);
+            CheckValueCaching(new decimal?[] {1.2m, -3.4m});
+
+            CheckValueCaching(new[] {DateTime.Now}, false);
+
+            // Custom types.
+            CheckValueCaching(new Foo {X = 10}, asArray: false);
+            CheckValueCaching(new Bar {X = 20}, asArray: false);
+
+            // Collections.
+            CheckValueCaching(new List<Foo>(GetFoo()));
+            CheckValueCaching(new List<Bar>(GetBar()));
+
+            CheckValueCaching(new HashSet<Foo>(GetFoo()));
+            CheckValueCaching(new HashSet<Bar>(GetBar()));
+
+            CheckValueCaching(GetFoo().ToDictionary(x => x.X, x => x));
+            CheckValueCaching(GetBar().ToDictionary(x => x.X, x => x));
+
+            // Custom type arrays.
+            // Array type is lost, because in binary mode on Java side we receive the value as Object[].
+            CheckValueCaching(new[] {new Foo {X = -1}, new Foo {X = 1}}, false);
+            CheckValueCaching(new[] {new Bar {X = -10}, new Bar {X = 10}}, false);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [Test]
+        public void TestInnerList()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerList[]>(TestUtils.TestName);
+            var inner = new List<object>();
+
+            cache.Put(1, new[]
             {
-                ignite.CreateCache<int, object>("default");
+                new InnerList {Inner = inner},
+                new InnerList {Inner = inner}
+            });
 
-                // Basic types.
-                // Types which map directly to Java are returned properly when retrieved as object.
-                // Non-directly mapped types are returned as their counterpart.
-                CheckValueCaching((char) 128);
-                CheckValueCaching((byte) 255);
-                CheckValueCaching((sbyte) -10, false);
-                CheckValueCaching((short) -32000);
-                CheckValueCaching((ushort) 65350, false);
-                CheckValueCaching(int.MinValue);
-                CheckValueCaching(uint.MaxValue, false);
-                CheckValueCaching(long.MinValue);
-                CheckValueCaching(ulong.MaxValue, false);
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+        }
 
-                CheckValueCaching((float) 1.1);
-                CheckValueCaching(2.2);
+        [Test]
+        public void TestInnerObject()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerObject[]>("c");
+            var inner = new object();
 
-                CheckValueCaching((decimal) 3.3, asArray: false);
-                CheckValueCaching(Guid.NewGuid(), asArray: false);
-                CheckValueCaching(DateTime.Now, asArray: false);
+            cache.Put(1, new[]
+            {
+                new InnerObject {Inner = inner},
+                new InnerObject {Inner = inner}
+            });
 
-                CheckValueCaching("foobar");
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+        }
 
-                // Special arrays.
-                CheckValueCaching(new[] {Guid.Empty, Guid.NewGuid()}, false);
-                CheckValueCaching(new Guid?[] {Guid.Empty, Guid.NewGuid()});
+        [Test]
+        public void TestInnerArray()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>("c");
+            var innerObj = new object();
+            var inner = new[] {innerObj};
 
-                CheckValueCaching(new[] {1.2m, -3.4m}, false);
-                CheckValueCaching(new decimal?[] {1.2m, -3.4m});
+            cache.Put(1, new[]
+            {
+                new InnerArray {Inner = inner},
+                new InnerArray {Inner = inner}
+            });
 
-                CheckValueCaching(new[] {DateTime.Now}, false);
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+        }
 
-                // Custom types.
-                CheckValueCaching(new Foo {X = 10}, asArray: false);
-                CheckValueCaching(new Bar {X = 20}, asArray: false);
+        [Test]
+        public void TestInnerArrayReferenceLoop()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>("c");
+            var inner = new object[] {null};
+            inner[0] = inner;
 
-                // Collections.
-                CheckValueCaching(new List<Foo>(GetFoo()));
-                CheckValueCaching(new List<Bar>(GetBar()));
+            cache.Put(1, new[]
+            {
+                new InnerArray {Inner = inner},
+                new InnerArray {Inner = inner}
+            });
 
-                CheckValueCaching(new HashSet<Foo>(GetFoo()));
-                CheckValueCaching(new HashSet<Bar>(GetBar()));
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
+            Assert.AreSame(res[0].Inner, res[0].Inner[0]);
+        }
 
-                CheckValueCaching(GetFoo().ToDictionary(x => x.X, x => x));
-                CheckValueCaching(GetBar().ToDictionary(x => x.X, x => x));
+        [Test]
+        [Ignore("TODO: StackOverflow in Java")]
+        public void TestNestedArrayReferenceLoop()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, object[][]>("c");
+            var inner = new object[] {null};
+            inner[0] = inner;
 
-                // Custom type arrays.
-                // Array type is lost, because in binary mode on Java side we receive the value as Object[].
-                CheckValueCaching(new[] {new Foo {X = -1}, new Foo {X = 1}}, false);
-                CheckValueCaching(new[] {new Bar {X = -10}, new Bar {X = 10}}, false);
-            }
+            cache.Put(1, new[]
+            {
+                new object[] {inner},
+                new object[] {inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Length);
+            Assert.AreNotSame(res[0], res[1]);
         }
 
         /// <summary>
@@ -96,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckValueCaching<T>(T val, bool asObject = true, bool asArray = true)
         {
-            var cache = Ignition.GetIgnite().GetCache<int, T>("default");
+            var cache = Ignition.GetIgnite().GetCache<int, T>(CacheName);
 
             cache[1] = val;
             Assert.AreEqual(val, cache[1]);
@@ -178,6 +283,24 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 return X;
             }
+        }
+
+        /** */
+        private class InnerList
+        {
+            public IList<object> Inner { get; set; }
+        }
+
+        /** */
+        private class InnerObject
+        {
+            public object Inner { get; set; }
+        }
+
+        /** */
+        private class InnerArray
+        {
+            public object[] Inner { get; set; }
         }
     }
 }
