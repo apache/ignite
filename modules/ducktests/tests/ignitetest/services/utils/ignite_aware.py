@@ -48,7 +48,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Network part to emulate failure.
         """
         INCOMING = 0
-        OUTCOMING = 1
+        OUTGOING = 1
         ALL = 2
 
     # pylint: disable=R0913
@@ -336,12 +336,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INCOMING):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
-            node.account.ssh_client.exec_command(
-                f"sudo iptables -I FORWARD 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTCOMING):
+        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTGOING):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
+            node.account.ssh_client.exec_command(
+                f"sudo iptables -I FORWARD 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
         self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 
