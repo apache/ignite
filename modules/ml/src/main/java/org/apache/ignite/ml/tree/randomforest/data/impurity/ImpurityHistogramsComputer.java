@@ -32,8 +32,8 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
+import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 
 /**
  * Class containing logic of aggregation impurity statistics within learning dataset.
@@ -52,7 +52,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      * @param nodesToLearn Nodes to learn.
      * @param dataset Dataset.
      */
-    public Map<NodeId, NodeImpurityHistograms<S>> aggregateImpurityStatistics(ArrayList<TreeRoot> roots,
+    public Map<NodeId, NodeImpurityHistograms<S>> aggregateImpurityStatistics(ArrayList<RandomForestTreeModel> roots,
         Map<Integer, BucketMeta> histMeta, Map<NodeId, TreeNode> nodesToLearn,
         Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
 
@@ -73,7 +73,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      * @return Leaf statistics for impurity computing.
      */
     private Map<NodeId, NodeImpurityHistograms<S>> aggregateImpurityStatisticsOnPartition(
-        BootstrappedDatasetPartition dataset, ArrayList<TreeRoot> roots,
+        BootstrappedDatasetPartition dataset, ArrayList<RandomForestTreeModel> roots,
         Map<Integer, BucketMeta> histMeta,
         Map<NodeId, TreeNode> part) {
 
@@ -85,7 +85,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
                 if (vector.counters()[sampleId] == 0)
                     continue;
 
-                TreeRoot root = roots.get(sampleId);
+                RandomForestTreeModel root = roots.get(sampleId);
                 NodeId key = root.getRootNode().predictNextNodeKey(vector.features());
                 if (!part.containsKey(key)) //if we didn't take all nodes from learning queue
                     continue;

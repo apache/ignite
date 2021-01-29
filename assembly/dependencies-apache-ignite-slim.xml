@@ -156,6 +156,7 @@
                 <exclude>org.apache.ignite:ignite-ml-h2o-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-ml-spark-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-ml-xgboost-model-parser</exclude>
+                <exclude>org.apache.ignite:ignite-ml-catboost-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-osgi</exclude>
                 <exclude>org.apache.ignite:ignite-osgi-karaf</exclude>
                 <exclude>org.apache.ignite:ignite-osgi-paxlogging</exclude>
