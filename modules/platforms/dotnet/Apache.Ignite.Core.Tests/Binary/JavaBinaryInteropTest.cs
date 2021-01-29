@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests array of objects with shared list instance.
+        /// Tests ArrayList of objects with shared list instance.
         /// </summary>
         [Test]
         public void TestArrayListOfObjectsWithSharedListProperty()
@@ -167,6 +167,26 @@ namespace Apache.Ignite.Core.Tests.Binary
             var res = cache.Get(1);
             Assert.AreEqual(2, res.Length);
             Assert.AreNotSame(res[0].Inner, res[1].Inner);
+        }
+
+        /// <summary>
+        /// Tests ArrayList of objects with shared object instance.
+        /// </summary>
+        [Test]
+        public void TestArrayListOfObjectsWithSharedObjectProperty()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, ArrayList>("c");
+            var inner = new object();
+
+            cache.Put(1, new ArrayList
+            {
+                new InnerObject {Inner = inner},
+                new InnerObject {Inner = inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Count);
+            Assert.AreNotSame(((InnerObject)res[0]).Inner, ((InnerObject)res[1]).Inner);
         }
 
         /// <summary>
