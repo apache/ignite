@@ -141,7 +141,7 @@ namespace ignite_test
 
     size_t GetLineOccurrencesInFile(const std::string& filePath, const std::string& line)
     {
-        std::ifstream file(filePath);
+        std::ifstream file(filePath.c_str());
 
         size_t cnt = 0;
         std::string current;
