@@ -50,7 +50,8 @@ class SnapshotTest(IgniteTest):
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1,
+                                startup_timeout_sec=180)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
@@ -66,6 +67,7 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
+            startup_timeout_sec=180,
             shutdown_timeout_sec=300,
             params={
                 "cacheName": self.CACHE_NAME,
