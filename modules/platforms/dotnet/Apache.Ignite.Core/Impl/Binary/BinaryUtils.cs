@@ -1342,8 +1342,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (DictionaryEntry entry in val)
             {
-                ctx.Write(entry.Key);
-                ctx.Write(entry.Value);
+                ctx.WriteObjectDetached(entry.Key, parentCollection: val);
+                ctx.WriteObjectDetached(entry.Value, parentCollection: val);
             }
         }
 

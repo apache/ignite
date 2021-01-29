@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var res = cache.Get(1);
             Assert.AreEqual(2, res.Count);
-            Assert.AreNotSame(res[0].Inner, res[1].Inner);
+            Assert.AreSame(res[0].Inner, res[1].Inner);
         }
 
         /// <summary>
