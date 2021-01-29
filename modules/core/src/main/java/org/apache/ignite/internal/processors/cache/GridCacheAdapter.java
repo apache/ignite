@@ -3265,9 +3265,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         A.notNull(key, "key");
 
-        if (keyCheck)
-            validateCacheKey(key);
-
         Long ttlVal = ttl0(key);
 
         if (statsEnabled)
@@ -3294,9 +3291,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
         A.notNull(key, "key");
-
-        if (keyCheck)
-            validateCacheKey(key);
 
         IgniteInternalFuture<Long> fut = ttlAsync0(key);
 
