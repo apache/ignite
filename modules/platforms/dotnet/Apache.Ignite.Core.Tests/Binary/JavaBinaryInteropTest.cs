@@ -130,32 +130,12 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests ArrayList of objects with shared list instance.
-        /// </summary>
-        [Test]
-        public void TestArrayListOfObjectsWithSharedListProperty()
-        {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, ArrayList>(TestUtils.TestName);
-            var inner = new List<object>();
-
-            cache.Put(1, new ArrayList
-            {
-                new InnerList {Inner = inner},
-                new InnerList {Inner = inner}
-            });
-
-            var res = cache.Get(1);
-            Assert.AreEqual(2, res.Count);
-            Assert.AreNotSame(((InnerList)res[0]).Inner, ((InnerList)res[1]).Inner);
-        }
-
-        /// <summary>
         /// Tests array of objects with shared object instance.
         /// </summary>
         [Test]
         public void TestArrayOfObjectsWithSharedObjectProperty()
         {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerObject[]>("c");
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerObject[]>(TestUtils.TestName);
             var inner = new object();
 
             cache.Put(1, new[]
@@ -175,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestArrayListOfObjectsWithSharedObjectProperty()
         {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, ArrayList>("c");
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, ArrayList>(TestUtils.TestName);
             var inner = new object();
 
             cache.Put(1, new ArrayList
@@ -193,9 +173,29 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests ArrayList of objects with shared object instance.
         /// </summary>
         [Test]
+        public void TestListOfObjectsWithSharedObjectProperty()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, List<InnerObject>>(TestUtils.TestName);
+            var inner = new object();
+
+            cache.Put(1, new List<InnerObject>
+            {
+                new InnerObject {Inner = inner},
+                new InnerObject {Inner = inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Count);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
+        }
+
+        /// <summary>
+        /// Tests ArrayList of objects with shared object instance.
+        /// </summary>
+        [Test]
         public void TestHashtableOfObjectsWithSharedObjectProperty()
         {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Hashtable>("c");
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Hashtable>(TestUtils.TestName);
             var inner = new object();
 
             cache.Put(1, new Hashtable
@@ -210,12 +210,32 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests ArrayList of objects with shared object instance.
+        /// </summary>
+        [Test]
+        public void TestDictionaryOfObjectsWithSharedObjectProperty()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Dictionary<int, InnerObject>>(TestUtils.TestName);
+            var inner = new object();
+
+            cache.Put(1, new Dictionary<int, InnerObject>
+            {
+                {0, new InnerObject {Inner = inner}},
+                {1, new InnerObject {Inner = inner}},
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Count);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
+        }
+
+        /// <summary>
         /// Tests array of objects with a nested array with a shared element.
         /// </summary>
         [Test]
         public void TestInnerArray()
         {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>("c");
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>(TestUtils.TestName);
             var innerObj = new object();
             var inner = new[] {innerObj};
 
@@ -236,7 +256,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestInnerArrayReferenceLoop()
         {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>("c");
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>(TestUtils.TestName);
             var inner = new object[] {null};
             inner[0] = inner;
 
