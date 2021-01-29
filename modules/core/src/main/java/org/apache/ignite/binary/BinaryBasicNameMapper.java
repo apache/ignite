@@ -87,6 +87,12 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
     private static String simpleName(String clsName) {
         assert clsName != null;
 
+        // .NET generic, not valid for Java class name. Clean up every generic part recursively.
+        int genericIdx = clsName.indexOf("[[");
+
+        if (genericIdx > 0)
+            clsName = clsName.substring(0, genericIdx + 2) + simpleName(clsName.substring(genericIdx + 2));
+
         int idx = clsName.lastIndexOf('$');
 
         if (idx == clsName.length() - 1)
