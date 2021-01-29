@@ -1467,7 +1467,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <see cref="BinaryTypeId.Dictionary"/>), we want to detach every element of that collection, because
         /// Java side handles every element as a separate BinaryObject - they can't share handles.
         /// </param>
-        /// <typeparam name="T"></typeparam>
         internal void WriteObjectDetached<T>(T o, object parentCollection = null)
         {
             if (_detaching != parentCollection)
