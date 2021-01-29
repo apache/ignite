@@ -26,36 +26,108 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @param <V> Value type.
  */
 @IgniteExperimental
-public interface EntryEvent<K, V> {
+public class EntryEvent<K, V> {
+    /** Key. */
+    private final K key;
+
+    /** Value. */
+    private final V val;
+
+    /** {@code True} if changes made on primary node. */
+    private final boolean primary;
+
+    /** Parition. */
+    private final int part;
+
+    /** Order of the entry change. */
+    private final EntryEventOrder ord;
+
+    /** Event type. */
+    private final EntryEventType op;
+
+    /** Cache id. */
+    private final long cacheId;
+
+    /** Entry expire time. */
+    private final long expireTime;
+
+    /**
+     * @param key Key.
+     * @param val Value.
+     * @param primary {@code True} if changes made on primary node.
+     * @param part Partition.
+     * @param ord Order of the entry change.
+     * @param op Event type.
+     * @param cacheId Cache id.
+     * @param expireTime Entry expire time.
+     */
+    public EntryEvent(K key, V val, boolean primary, int part,
+        EntryEventOrder ord, EntryEventType op, long cacheId, long expireTime) {
+        this.key = key;
+        this.val = val;
+        this.primary = primary;
+        this.part = part;
+        this.ord = ord;
+        this.op = op;
+        this.cacheId = cacheId;
+        this.expireTime = expireTime;
+    }
+
     /**
      * @return Key for the changed entry.
      */
-    public K key();
+    public K key() {
+        return key;
+    }
 
     /**
      * @return Value for the changed entry.
      */
-    public V value();
+    public V value() {
+        return val;
+    }
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.
      * @see <a href="https://ignite.apache.org/docs/latest/configuring-caches/configuring-backups#configuring-partition-backups">Configuring partition backups.</a>
      */
-    public boolean primary();
+    public boolean primary() {
+        return primary;
+    }
+
+    /**
+     * @return Partition number.
+     */
+    public int partition() {
+        return part;
+    }
+
+    /**
+     * @return Order of the update operation.
+     */
+    public EntryEventOrder order() {
+        return ord;
+    }
 
     /**
      * @return Operation type.
      */
-    EntryEventType operation();
+    public EntryEventType operation() {
+        return op;
+    }
 
     /**
      * @return Cache ID.
      * @see org.apache.ignite.internal.util.typedef.internal.CU#cacheId(String)
      */
-    long cacheId();
+    public long cacheId() {
+        return cacheId;
+    }
 
     /**
      * @return Expire time.
      */
-    long expireTime();
+    long expireTime() {
+        return expireTime;
+    }
 }

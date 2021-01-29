@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.DataChangeListener;
 import org.apache.ignite.cdc.EntryEvent;
+import org.apache.ignite.cdc.EntryEventOrder;
 import org.apache.ignite.cdc.EntryEventType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +68,7 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
 
     /** {@inheritDoc} */
     @Override public <T extends WALRecord> boolean onRecord(T rec) {
-        if (rec.type() != WALRecord.RecordType.DATA_RECORD)
+        if (rec.type() != WALRecord.RecordType.DATA_RECORD_V2)
             return false;
 
         DataRecord dataRecord = (DataRecord)rec;
@@ -76,44 +78,39 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
                 return F.iterator(dataRecord.writeEntries(), e -> {
                     UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
-                    return new EntryEvent<K, V>() {
-                        @Override public K key() {
-                            return (K)ue.unwrappedKey();
-                        }
+                    EntryEventType type;
 
-                        @Override public V value() {
-                            return (V)ue.unwrappedValue();
-                        }
+                    switch (e.op()) {
+                        // Combine two types of the events because `CREATE` only generated for first `put`
+                        // of the key for `TRANSACTIONAL` caches.
+                        // For `ATOMIC` caches every `put` generate `UPDATE` event.
+                        case CREATE:
+                        case UPDATE:
+                            type = EntryEventType.UPDATE;
 
-                        @Override public boolean primary() {
-                            return e.primary();
-                        }
+                            break;
 
-                        @Override public long expireTime() {
-                            return e.expireTime();
-                        }
+                        case DELETE:
+                            type = EntryEventType.DELETE;
 
-                        @Override public long cacheId() {
-                            return e.cacheId();
-                        }
+                            break;
 
-                        @Override public EntryEventType operation() {
-                            switch (e.op()) {
-                                // Combine two types of the events because `CREATE` only generated for first `put`
-                                // of the key for `TRANSACTIONAL` caches.
-                                // For `ATOMIC` caches every `put` generate `UPDATE` event.
-                                case CREATE:
-                                case UPDATE:
-                                    return EntryEventType.UPDATE;
+                        default:
+                            throw new IllegalStateException("Unexpected operation type[" + e.op());
+                    }
 
-                                case DELETE:
-                                    return EntryEventType.DELETE;
+                    GridCacheVersion ver = e.writeVersion();
 
-                                default:
-                                    throw new IllegalStateException("Unexpected operation type[" + e.op());
-                            }
-                        }
-                    };
+                    return new EntryEvent<>(
+                        (K)ue.unwrappedKey(),
+                        (V)ue.unwrappedValue(),
+                        e.primary(),
+                        e.partitionId(),
+                        new EntryEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order()),
+                        type,
+                        e.cacheId(),
+                        e.expireTime()
+                    );
                 }, true, OPS_FILTER);
             }
         });
