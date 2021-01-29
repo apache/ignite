@@ -190,6 +190,26 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests ArrayList of objects with shared object instance.
+        /// </summary>
+        [Test]
+        public void TestHashtableOfObjectsWithSharedObjectProperty()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Hashtable>("c");
+            var inner = new object();
+
+            cache.Put(1, new Hashtable
+            {
+                {0, new InnerObject {Inner = inner}},
+                {1, new InnerObject {Inner = inner}},
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Count);
+            Assert.AreNotSame(((InnerObject)res[0]).Inner, ((InnerObject)res[1]).Inner);
+        }
+
+        /// <summary>
         /// Tests array of objects with a nested array with a shared element.
         /// </summary>
         [Test]
