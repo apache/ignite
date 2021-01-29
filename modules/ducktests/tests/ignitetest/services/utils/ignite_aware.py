@@ -340,8 +340,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTGOING):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
-            node.account.ssh_client.exec_command(
-                f"sudo iptables -I FORWARD 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
         self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 
