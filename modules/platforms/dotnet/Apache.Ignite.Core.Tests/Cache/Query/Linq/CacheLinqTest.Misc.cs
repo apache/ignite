@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
     using NUnit.Framework.Constraints;
