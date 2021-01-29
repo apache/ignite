@@ -1115,7 +1115,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(String clsName) {
-        int genericStart = clsName.indexOf('`');  // .NET generic
+        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
 
         if (genericStart >= 0)
             clsName = clsName.substring(0, genericStart);

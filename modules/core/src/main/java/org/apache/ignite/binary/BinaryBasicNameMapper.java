@@ -116,6 +116,9 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
         if (idx < 0)
             idx = clsName.lastIndexOf('.');
 
+
+        // TODO: We should string namespaces from .NET generics here
+        // Foo.Bar.GenericTest2`1[[System.String]] => GenericTest2`1[[String]]
         return idx >= 0 ? clsName.substring(idx + 1) : clsName;
     }
 
