@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests array of objects with a nested array with a shared element.
         /// </summary>
         [Test]
-        public void TestInnerArray()
+        public void TestArrayOfObjectsWithSharedArrayElement()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>(TestUtils.TestName);
             var innerObj = new object();
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests array of objects with a nested array with a reference loop.
         /// </summary>
         [Test]
-        public void TestInnerArrayReferenceLoop()
+        public void TestArrayOfObjectsWithSharedArrayElementAndReferenceLoop()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerArray[]>(TestUtils.TestName);
             var inner = new object[] {null};
