@@ -1674,6 +1674,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(2, res.Length);
             Assert.AreEqual(0, res[0].Inner.Count);
+            Assert.AreEqual(0, res[1].Inner.Count);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
