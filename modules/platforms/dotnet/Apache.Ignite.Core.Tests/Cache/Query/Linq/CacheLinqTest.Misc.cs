@@ -403,13 +403,40 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
             var res = query.ToList();
-            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT * FROM GENERICTEST2")).ToArray(); // TODO: Remove
 
-            Assert.AreEqual(1, sqlRes.Length);
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(value.Bar, res[0].Value.Bar);
 
-            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST2", cache.Name);
+            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST2 as", cache.Name);
+            StringAssert.StartsWith(expectedSql, sql);
+        }
+
+        /// <summary>
+        /// Tests queries when cache key/val types are generic.
+        /// </summary>
+        [Test]
+        public void TestNestedGenericCacheTypes()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest<GenericTest2<string>>))}
+            };
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, GenericTest<GenericTest2<string>>>(cfg);
+            var key = 1;
+            var value = new GenericTest<GenericTest2<string>>(new GenericTest2<string>("foo"));
+            cache[key] = value;
+
+            var query = cache.AsCacheQueryable()
+                .Where(x => x.Value.Foo.Bar == value.Foo.Bar);
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+            var res = query.ToList();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(value.Foo.Bar, res[0].Value.Foo.Bar);
+
+            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST as", cache.Name);
             StringAssert.StartsWith(expectedSql, sql);
         }
 
