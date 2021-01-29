@@ -3439,6 +3439,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addMessage(msg, true);
                     }
 
+                    if (sndState != null && !failedNodes.isEmpty() &&
+                        lastRingMsgReceivedTime - U.millisToNanos(connCheckInterval) > sndState.initNanos)
+                        segmentLocalNodeOnSendFail(failedNodes);
+
                     break;
                 }
 
@@ -8211,11 +8215,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final long failTimeNanos;
 
+        /** */
+        private final long initNanos;
+
         /**
          *
          */
         CrossRingMessageSendState() {
-            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
+            initNanos = System.nanoTime();
+
+            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
         }
 
         /**
