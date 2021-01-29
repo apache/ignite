@@ -380,5 +380,69 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 .Select(x => selector(x))
                 .FirstOrDefault());
         }
+
+        /// <summary>
+        /// Tests queries when cache key/val types are generic.
+        /// </summary>
+        [Test]
+        public void TestGenericCacheTypes()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(GenericTest<int>), typeof(GenericTest2<string>))}
+            };
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<GenericTest<int>, GenericTest2<string>>(cfg);
+            var key = new GenericTest<int>(1);
+            var value = new GenericTest2<string>("foo");
+            cache[key] = value;
+
+            var query = cache.AsCacheQueryable()
+                .Where(x => x.Key.Foo == 1 && x.Value.Bar == "foo");
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+            var res = query.ToList();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual("foo", res[0].Value.Bar);
+
+            // ReSharper disable once PossibleNullReferenceException
+            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".{1}", cache.Name,
+                value.GetType().FullName.Split('`')[0]);
+
+            StringAssert.StartsWith(expectedSql, sql);
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest<T>
+        {
+            /** */
+            public GenericTest(T foo)
+            {
+                Foo = foo;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Foo { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest2<T>
+        {
+            /** */
+            public GenericTest2(T bar)
+            {
+                Bar = bar;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Bar { get; set; }
+        }
     }
 }
