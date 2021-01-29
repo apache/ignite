@@ -270,16 +270,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var queryEntity = cache.GetConfiguration().QueryEntities.Single();
             Assert.AreEqual(expectedTypeName, queryEntity.ValueTypeName);
 
-            var tableName = cache.Query(new SqlFieldsQuery(
-                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name))
-                .Single().Single();
-
-            var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Foo, Bar from \"{0}\"", tableName)))
-                .Single();
+            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT Foo, Bar from GENERICTEST2")).Single();
 
             Assert.AreEqual(key.Foo, sqlRes[0]);
             Assert.AreEqual(value.Bar, sqlRes[1]);
-            Assert.AreEqual(expectedTypeName.Split('`', 1)[0], tableName);
         }
 
         /// <summary>
@@ -299,20 +293,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var value = new GenericTest<GenericTest2<string>>(new GenericTest2<string>("foobar"));
             cache[1] = value;
 
-            var tableName = cache.Query(new SqlFieldsQuery(
-                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name))
-                .Single().Single(); // The table name is weird, see IGNITE-14064.
-
-            var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Bar from \"{0}\"", tableName)))
-                .Single().Single();
+            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT Bar from GENERICTEST")).Single().Single();
 
             Assert.AreEqual(value.Foo.Bar, sqlRes);
 
             var valTypeName = value.GetType().FullName;
             Assert.IsNotNull(valTypeName);
-
-            var expectedTableName = valTypeName.Split('`')[0];
-            Assert.AreEqual(expectedTableName, tableName);
         }
 
         /// <summary>

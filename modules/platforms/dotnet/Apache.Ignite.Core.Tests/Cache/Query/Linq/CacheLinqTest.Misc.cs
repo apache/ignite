@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
     using NUnit.Framework.Constraints;
@@ -402,7 +403,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
             var res = query.ToList();
+            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT * FROM GENERICTEST2")).ToArray(); // TODO: Remove
 
+            Assert.AreEqual(1, sqlRes.Length);
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(value.Bar, res[0].Value.Bar);
 
