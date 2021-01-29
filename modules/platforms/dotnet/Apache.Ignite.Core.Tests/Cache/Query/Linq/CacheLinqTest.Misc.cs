@@ -398,13 +398,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             cache[key] = value;
 
             var query = cache.AsCacheQueryable()
-                .Where(x => x.Key.Foo == 1 && x.Value.Bar == "foo");
+                .Where(x => x.Key.Foo == key.Foo && x.Value.Bar == value.Bar);
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
             var res = query.ToList();
 
             Assert.AreEqual(1, res.Count);
-            Assert.AreEqual("foo", res[0].Value.Bar);
+            Assert.AreEqual(value.Bar, res[0].Value.Bar);
 
             var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST2", cache.Name);
             StringAssert.StartsWith(expectedSql, sql);
