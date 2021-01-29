@@ -32,12 +32,18 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** */
         private const string CacheName = "default";
 
+        /// <summary>
+        /// Sets up the fixture.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
         }
 
+        /// <summary>
+        /// Tears down the fixture.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -104,10 +110,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// TODO
+        /// Tests array of objects with shared list instance.
         /// </summary>
         [Test]
-        public void TestInnerList()
+        public void TestArrayOfObjectsWithSharedListProperty()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerList[]>(TestUtils.TestName);
             var inner = new List<object>();
@@ -123,8 +129,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreNotSame(res[0], res[1]);
         }
 
+        /// <summary>
+        /// Tests array of objects with shared object instance.
+        /// </summary>
         [Test]
-        public void TestInnerObject()
+        public void TestArrayOfObjectsWithSharedObjectProperty()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, InnerObject[]>("c");
             var inner = new object();
@@ -140,6 +149,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreNotSame(res[0], res[1]);
         }
 
+        /// <summary>
+        /// Tests array of objects with a nested array with a shared element.
+        /// </summary>
         [Test]
         public void TestInnerArray()
         {
@@ -158,6 +170,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreNotSame(res[0], res[1]);
         }
 
+        /// <summary>
+        /// Tests array of objects with a nested array with a reference loop.
+        /// </summary>
         [Test]
         public void TestInnerArrayReferenceLoop()
         {
@@ -175,25 +190,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(2, res.Length);
             Assert.AreNotSame(res[0], res[1]);
             Assert.AreSame(res[0].Inner, res[0].Inner[0]);
-        }
-
-        [Test]
-        [Ignore("TODO: StackOverflow in Java")]
-        public void TestNestedArrayReferenceLoop()
-        {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, object[][]>("c");
-            var inner = new object[] {null};
-            inner[0] = inner;
-
-            cache.Put(1, new[]
-            {
-                new object[] {inner},
-                new object[] {inner}
-            });
-
-            var res = cache.Get(1);
-            Assert.AreEqual(2, res.Length);
-            Assert.AreNotSame(res[0], res[1]);
         }
 
         /// <summary>
