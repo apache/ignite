@@ -233,7 +233,15 @@ namespace ignite
 
             /**
              * Get connection limit.
-             * Zero means that number of active connections is not limited.
+             *
+             * By default, C++ thin client establishes a connection to every server node listed in @c endPoints. Use
+             * this setting to limit the number of active connections. This reduces initial connection time and the
+             * resource usage, but can have a negative effect on cache operation performance, especially if partition
+             * awareness is used.
+             *
+             * Zero value means that number of active connections is not limited.
+             *
+             * The default value is zero.
              *
              * @return Active connection limit.
              */
