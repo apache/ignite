@@ -126,7 +126,27 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var res = cache.Get(1);
             Assert.AreEqual(2, res.Length);
-            Assert.AreNotSame(res[0], res[1]);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
+        }
+
+        /// <summary>
+        /// Tests array of objects with shared list instance.
+        /// </summary>
+        [Test]
+        public void TestArrayListOfObjectsWithSharedListProperty()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, ArrayList>(TestUtils.TestName);
+            var inner = new List<object>();
+
+            cache.Put(1, new ArrayList
+            {
+                new InnerList {Inner = inner},
+                new InnerList {Inner = inner}
+            });
+
+            var res = cache.Get(1);
+            Assert.AreEqual(2, res.Count);
+            Assert.AreNotSame(((InnerList)res[0]).Inner, ((InnerList)res[1]).Inner);
         }
 
         /// <summary>
@@ -146,7 +166,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var res = cache.Get(1);
             Assert.AreEqual(2, res.Length);
-            Assert.AreNotSame(res[0], res[1]);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
         }
 
         /// <summary>
@@ -167,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var res = cache.Get(1);
             Assert.AreEqual(2, res.Length);
-            Assert.AreNotSame(res[0], res[1]);
+            Assert.AreNotSame(res[0].Inner[0], res[1].Inner[0]);
         }
 
         /// <summary>
