@@ -79,7 +79,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         blockRecoveryMessages();
 
-        CellularCluster cluster = resolveCluster(nodes, startFrom);
+        CellularCluster cluster = resolveCellularCluster(nodes, startFrom);
 
         Ignite orig = cluster.orig;
         Ignite failed = cluster.failed;
@@ -197,7 +197,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         blockRecoveryMessages();
 
-        CellularCluster cluster = resolveCluster(nodes, startFrom);
+        CellularCluster cluster = resolveCellularCluster(nodes, startFrom);
 
         Ignite orig = cluster.orig;
         Ignite failed = cluster.failed;

@@ -215,7 +215,7 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
     /**
      *
      */
-    protected CellularCluster resolveCluster(int nodes, TransactionCoordinatorNode startFrom) throws Exception {
+    protected CellularCluster resolveCellularCluster(int nodes, TransactionCoordinatorNode startFrom) throws Exception {
         Ignite failed = G.allGrids().get(new Random().nextInt(nodes));
 
         Integer cellKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
