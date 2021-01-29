@@ -272,13 +272,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var tableName = cache.Query(new SqlFieldsQuery(
                 "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?", cache.Name))
-                .Single().Single(); // The table name is weird, see IGNITE-14064.
+                .Single().Single();
 
             var sqlRes = cache.Query(new SqlFieldsQuery(string.Format("SELECT Foo, Bar from \"{0}\"", tableName)))
                 .Single();
 
             Assert.AreEqual(key.Foo, sqlRes[0]);
             Assert.AreEqual(value.Bar, sqlRes[1]);
+            Assert.AreEqual(expectedTypeName.Split('`', 1)[0], tableName);
         }
 
         /// <summary>
@@ -306,6 +307,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Single().Single();
 
             Assert.AreEqual(value.Foo.Bar, sqlRes);
+
+            var valTypeName = value.GetType().FullName;
+            Assert.IsNotNull(valTypeName);
+
+            var expectedTableName = valTypeName.Split('`')[0];
+            Assert.AreEqual(expectedTableName, tableName);
         }
 
         /// <summary>
