@@ -47,8 +47,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Network part to emulate failure.
         """
-        INCOMING = 0
-        OUTGOING = 1
+        INPUT = 0
+        OUTPUT = 1
         ALL = 2
 
     # pylint: disable=R0913
@@ -333,11 +333,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
-        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INCOMING):
+        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INPUT):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTGOING):
+        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTPUT):
             node.account.ssh_client.exec_command(
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
