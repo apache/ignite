@@ -1084,7 +1084,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             stream.WriteInt(val.Length);
 
             for (int i = 0; i < val.Length; i++)
-                ctx.WriteObjectDetached(val.GetValue(i), val);
+                ctx.WriteObjectDetached(val.GetValue(i), parentCollection: val);
         }
 
         /// <summary>
@@ -1261,7 +1261,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(colType);
 
             foreach (object elem in val)
-                ctx.Write(elem);
+                ctx.WriteObjectDetached(elem, parentCollection: val);
         }
 
         /**
