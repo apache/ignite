@@ -398,15 +398,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             cache[key] = value;
 
             var query = cache.AsCacheQueryable()
-                .Where(x => x.Key.Foo == key.Foo && x.Value.Bar == value.Bar);
+                .Where(x => x.Key.Foo == key.Foo && x.Value.Bar == value.Bar)
+                .Select(x => x.Value.Bar);
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
             var res = query.ToList();
 
             Assert.AreEqual(1, res.Count);
-            Assert.AreEqual(value.Bar, res[0].Value.Bar);
+            Assert.AreEqual(value.Bar, res[0]);
 
-            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST2 as", cache.Name);
+            var expectedSql = string.Format("select _T0.BAR from \"{0}\".GENERICTEST2 as", cache.Name);
             StringAssert.StartsWith(expectedSql, sql);
         }
 
@@ -427,15 +428,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             cache[key] = value;
 
             var query = cache.AsCacheQueryable()
-                .Where(x => x.Value.Foo.Bar == value.Foo.Bar);
+                .Where(x => x.Value.Foo.Bar == value.Foo.Bar)
+                .Select(x => x.Value.Foo);
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
             var res = query.ToList();
 
             Assert.AreEqual(1, res.Count);
-            Assert.AreEqual(value.Foo.Bar, res[0].Value.Foo.Bar);
+            Assert.AreEqual(value.Foo.Bar, res[0].Bar);
 
-            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST as", cache.Name);
+            var expectedSql = string.Format("select _T0.FOO from \"{0}\".GENERICTEST as", cache.Name);
             StringAssert.StartsWith(expectedSql, sql);
         }
 
