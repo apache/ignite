@@ -1536,8 +1536,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             // cacheObjects().typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId.
             // Additionally, this type name is passed back to UnmanagedCallbacks.BinaryTypeGet to register the
             // query types on cache start.
-
-            // TODO: Can we use configured mapper here?
             return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
