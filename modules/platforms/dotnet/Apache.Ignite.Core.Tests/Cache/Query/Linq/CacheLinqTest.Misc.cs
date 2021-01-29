@@ -406,10 +406,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual("foo", res[0].Value.Bar);
 
-            // ReSharper disable once PossibleNullReferenceException
-            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".{1}", cache.Name,
-                value.GetType().FullName.Split('`')[0]);
-
+            var expectedSql = string.Format("select _T0._KEY, _T0._VAL from \"{0}\".GENERICTEST2", cache.Name);
             StringAssert.StartsWith(expectedSql, sql);
         }
 
