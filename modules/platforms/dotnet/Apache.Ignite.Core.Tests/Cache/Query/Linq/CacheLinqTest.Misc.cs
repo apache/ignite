@@ -442,6 +442,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         }
 
         /// <summary>
+        /// Tests queries when cache val type has two generic type arguments.
+        /// </summary>
+        [Test]
+        public void TestTwoGenericArgumentsCacheTypes()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest3<int, string>))}
+            };
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, GenericTest3<int, string>>(cfg);
+            var key = 1;
+            var value = new GenericTest3<int, string>(2, "3");
+            cache[key] = value;
+
+            var query = cache.AsCacheQueryable()
+                .Where(x => x.Value.Bar == value.Bar && x.Value.Qux == value.Qux)
+                .Select(x => x.Value.Bar);
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+            var res = query.ToList();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(value.Bar, res[0]);
+
+            var expectedSql = string.Format("select _T0.FOO from \"{0}\".GENERICTEST as", cache.Name);
+            StringAssert.StartsWith(expectedSql, sql);
+        }
+
+        /// <summary>
         /// Generic query type.
         /// </summary>
         private class GenericTest<T>
@@ -471,6 +501,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             /** */
             [QuerySqlField]
             public T Bar { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type with two generic arguments.
+        /// </summary>
+        private class GenericTest3<T, T2>
+        {
+            /** */
+            public GenericTest3(T baz, T2 qux)
+            {
+                Bar = baz;
+                Qux = qux;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Bar { get; set; }
+            
+            /** */
+            [QuerySqlField]
+            public T2 Qux { get; set; }
         }
     }
 }
