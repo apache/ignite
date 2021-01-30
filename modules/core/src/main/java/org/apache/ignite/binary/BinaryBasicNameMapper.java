@@ -88,7 +88,7 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
         assert clsName != null;
 
         // .NET generic, not valid for Java class name. Clean up every generic part recursively.
-        // Example: Foo.Bar`1[[Baz.Qux`1[[System.String]]]]
+        // Example: Foo.Bar`1[[Baz.Qux`1[[System.String],[System.Int32]]]]
         int genericIdx = clsName.indexOf("[[");
 
         if (genericIdx > 0)
