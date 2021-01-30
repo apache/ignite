@@ -445,7 +445,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// Tests queries when cache val type has two generic type arguments.
         /// </summary>
         [Test]
-        public void TestTwoGenericArgumentsCacheTypes()
+        public void TestTwoGenericArgumentsCacheType()
         {
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
@@ -458,16 +458,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             cache[key] = value;
 
             var query = cache.AsCacheQueryable()
-                .Where(x => x.Value.Bar == value.Bar && x.Value.Qux == value.Qux)
-                .Select(x => x.Value.Bar);
+                .Where(x => x.Value.Baz == value.Baz && x.Value.Qux == value.Qux)
+                .Select(x => x.Value.Baz);
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
             var res = query.ToList();
 
             Assert.AreEqual(1, res.Count);
-            Assert.AreEqual(value.Bar, res[0]);
+            Assert.AreEqual(value.Baz, res[0]);
 
-            var expectedSql = string.Format("select _T0.FOO from \"{0}\".GENERICTEST as", cache.Name);
+            var expectedSql = string.Format("select _T0.BAZ from \"{0}\".GENERICTEST3 as", cache.Name);
             StringAssert.StartsWith(expectedSql, sql);
         }
 
@@ -511,13 +511,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             /** */
             public GenericTest3(T baz, T2 qux)
             {
-                Bar = baz;
+                Baz = baz;
                 Qux = qux;
             }
 
             /** */
             [QuerySqlField]
-            public T Bar { get; set; }
+            public T Baz { get; set; }
             
             /** */
             [QuerySqlField]
