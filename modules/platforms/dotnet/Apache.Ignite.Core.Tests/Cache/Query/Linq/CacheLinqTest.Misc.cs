@@ -449,16 +449,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         {
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
-                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest3<int, string>))}
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest3<int, string, bool>))}
             };
 
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, GenericTest3<int, string>>(cfg);
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, GenericTest3<int, string, bool>>(cfg);
             var key = 1;
-            var value = new GenericTest3<int, string>(2, "3");
+            var value = new GenericTest3<int, string, bool>(2, "3", true);
             cache[key] = value;
 
             var query = cache.AsCacheQueryable()
-                .Where(x => x.Value.Baz == value.Baz && x.Value.Qux == value.Qux)
+                .Where(x => x.Value.Baz == value.Baz && x.Value.Qux == value.Qux && x.Value.Quz)
                 .Select(x => x.Value.Baz);
 
             var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
@@ -506,13 +506,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// <summary>
         /// Generic query type with two generic arguments.
         /// </summary>
-        private class GenericTest3<T, T2>
+        private class GenericTest3<T, T2, T3>
         {
             /** */
-            public GenericTest3(T baz, T2 qux)
+            public GenericTest3(T baz, T2 qux, T3 quz)
             {
                 Baz = baz;
                 Qux = qux;
+                Quz = quz;
             }
 
             /** */
@@ -522,6 +523,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             /** */
             [QuerySqlField]
             public T2 Qux { get; set; }
+            
+            /** */
+            [QuerySqlField]
+            public T3 Quz { get; set; }
         }
     }
 }
