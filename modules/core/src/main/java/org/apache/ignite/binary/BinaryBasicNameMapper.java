@@ -91,8 +91,16 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
         // Example: Foo.Bar`1[[Baz.Qux`1[[System.String],[System.Int32]]]]
         int genericIdx = clsName.indexOf("[[");
 
-        if (genericIdx > 0)
-            clsName = clsName.substring(0, genericIdx + 2) + simpleName(clsName.substring(genericIdx + 2));
+        if (genericIdx > 0) {
+            int genericPartIdx = clsName.indexOf("],[", genericIdx);
+
+            if (genericPartIdx > genericIdx)
+                clsName = clsName.substring(0, genericIdx + 2) +
+                        simpleName(clsName.substring(genericIdx + 2, genericPartIdx + 3)) +
+                        simpleName(clsName.substring(genericPartIdx + 3));
+            else
+                clsName = clsName.substring(0, genericIdx + 2) + simpleName(clsName.substring(genericIdx + 2));
+        }
 
         int idx = clsName.lastIndexOf('$');
 
