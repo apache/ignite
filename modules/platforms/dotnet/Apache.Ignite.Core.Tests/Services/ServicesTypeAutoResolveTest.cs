@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Messaging;
     using NUnit.Framework;
     using org.apache.ignite.platform.model;
 
@@ -190,6 +191,50 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.Deny, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestMessagingJavaService()
+        {
+            // Deploy Java service.
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, true);
+
+            svc.startReceiveMessage();
+
+            var msgng = _grid1.GetMessaging();
+
+            msgng.Send(new V5 {Name = "1"}, "test-topic");
+            msgng.Send(new V5 {Name = "2"}, "test-topic");
+            msgng.Send(new V5 {Name = "3"}, "test-topic");
+
+            svc.testMessagesReceived();
+
+            var rcvd = new List<V6>();
+
+            var lsnr = new MessageListener<V6>((guid, v) =>
+            {
+                rcvd.Add(v);
+
+                return true;
+            });
+
+            msgng.LocalListen(lsnr, "test-topic-2");
+
+            svc.testSendMessage();
+
+            TestUtils.WaitForTrueCondition(() => rcvd.Count == 3, timeout: 2500);
+
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "1"));
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
+
+            msgng.StopLocalListen(lsnr, "test-topic-2");
         }
 
         /// <summary>

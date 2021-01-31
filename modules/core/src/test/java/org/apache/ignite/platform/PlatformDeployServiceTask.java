@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
@@ -50,10 +51,13 @@ import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Parameter;
 import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
+import org.apache.ignite.platform.model.V5;
+import org.apache.ignite.platform.model.V6;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -619,6 +623,39 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             cache.put(7, ts1);
             cache.put(8, ts2);
+        }
+
+        /** */
+        private volatile int cntMsgs;
+
+        /** */
+        public void startReceiveMessage() {
+            ignite.message().localListen("test-topic", (node, obj) -> {
+                if (obj instanceof V5) {
+                    cntMsgs++;
+
+                    return true;
+                }
+
+                return false;
+            });
+        }
+
+        /** */
+        public boolean testMessagesReceived() {
+            try {
+                return GridTestUtils.waitForCondition(() -> cntMsgs == 3, 1_000 * 5);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                return false;
+            }
+        }
+
+        /** */
+        public void testSendMessage() {
+            ignite.message().sendOrdered("test-topic-2", new V6("1"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic-2", new V6("2"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic-2", new V6("3"), 1_000 * 5);
         }
 
         /** */
