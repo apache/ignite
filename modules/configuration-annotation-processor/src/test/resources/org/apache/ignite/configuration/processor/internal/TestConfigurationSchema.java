@@ -29,11 +29,5 @@ public class TestConfigurationSchema {
     private long primitiveLong;
 
     @Value
-    private Long boxedLong;
-
-    @Value
     private int primitiveInt;
-
-    @Value
-    private Integer boxedInt;
 }

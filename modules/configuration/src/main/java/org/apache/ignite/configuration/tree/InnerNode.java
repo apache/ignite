@@ -30,9 +30,9 @@ public abstract class InnerNode implements TraversableTreeNode, Cloneable {
      * Method with auto-generated implementation. Must look like this:
      * <pre>{@code
      * @Override public void traverseChildren(ConfigurationVisitor visitor) {
-     *     this.pojoField1.accept("pojoField1", visitor);
+     *     visitor.visitInnerNode("pojoField1", this.pojoField1);
      *
-     *     this.pojoField2.accept("pojoField2", visitor);
+     *     visitor.visitNamedListNode("pojoField2", this.pojoField2);
      *
      *     visitor.visitLeafNode("primitiveField1", this.primitiveField1);
      *
@@ -52,11 +52,11 @@ public abstract class InnerNode implements TraversableTreeNode, Cloneable {
      * @Override public void traverseChild(String key, ConfigurationVisitor visitor) throws NoSuchElementException {
      *     switch (key) {
      *         case "pojoField1":
-     *             this.pojoField1.accept("pojoField1", visitor);
+     *             visitor.visitInnerNode("pojoField1", this.pojoField1);
      *             break;
      *
      *         case "pojoField2":
-     *             this.pojoField2.accept("pojoField2", visitor);
+     *             visitor.visitNamedListNode("pojoField2", this.pojoField2);
      *             break;
      *
      *         case "primitiveField1":

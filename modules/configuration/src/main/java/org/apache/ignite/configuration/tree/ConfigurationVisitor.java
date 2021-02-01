@@ -29,7 +29,8 @@ public interface ConfigurationVisitor {
      * @param key Name of the serializable value retrieved from its holder object.
      * @param val Configuration value.
      */
-    void visitLeafNode(String key, Serializable val);
+    default void visitLeafNode(String key, Serializable val) {
+    }
 
     /**
      * Invoked on visiting regular inner node.
@@ -37,7 +38,8 @@ public interface ConfigurationVisitor {
      * @param key Name of the node retrieved from its holder object.
      * @param node Inner configuration node.
      */
-    void visitInnerNode(String key, InnerNode node);
+    default void visitInnerNode(String key, InnerNode node) {
+    }
 
     /**
      * Invoked on visiting named list nodes.
@@ -45,5 +47,6 @@ public interface ConfigurationVisitor {
      * @param key Name of the node retrieved from its holder object.
      * @param node Named list inner configuration node.
      */
-    <N extends TraversableTreeNode> void visitNamedListNode(String key, NamedListNode<N> node);
+    default <N extends InnerNode> void visitNamedListNode(String key, NamedListNode<N> node) {
+    }
 }

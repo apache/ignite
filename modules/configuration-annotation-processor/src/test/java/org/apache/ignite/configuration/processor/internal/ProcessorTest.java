@@ -44,9 +44,9 @@ public class ProcessorTest extends AbstractProcessorTest {
 
         final Compilation status = batch.getCompilationStatus();
 
-        assertNotEquals(Compilation.Status.FAILURE, status);
+        assertNotEquals(Compilation.Status.FAILURE, status.status());
 
-        assertEquals(7, batch.generated().size());
+        assertEquals(11, batch.generated().size());
 
         final ConfigSet classSet = batch.getBySchema(testConfigurationSchema);
 
@@ -57,9 +57,7 @@ public class ProcessorTest extends AbstractProcessorTest {
             hasFields(
                 "value1", Types.STRING,
                 "primitiveLong", Types.LONG,
-                "boxedLong", Types.LONG,
-                "primitiveInt", Types.INT,
-                "boxedInt", Types.INT
+                "primitiveInt", Types.INT
             )
         );
 
@@ -68,9 +66,7 @@ public class ProcessorTest extends AbstractProcessorTest {
             hasMethods(
                 "value1()", Types.STRING,
                 "primitiveLong()", Types.LONG,
-                "boxedLong()", Types.LONG,
-                "primitiveInt()", Types.INT,
-                "boxedInt()", Types.INT
+                "primitiveInt()", Types.INT
             )
         );
 
@@ -79,9 +75,7 @@ public class ProcessorTest extends AbstractProcessorTest {
             hasFields(
                 "value1", Types.STRING,
                 "primitiveLong", Types.LONG,
-                "boxedLong", Types.LONG,
-                "primitiveInt", Types.INT,
-                "boxedInt", Types.INT
+                "primitiveInt", Types.INT
             )
         );
 
@@ -92,14 +86,10 @@ public class ProcessorTest extends AbstractProcessorTest {
             hasMethods(
                 "value1()", Types.STRING,
                 "primitiveLong()", Types.LONG,
-                "boxedLong()", Types.LONG,
                 "primitiveInt()", Types.INT,
-                "boxedInt()", Types.INT,
                 "withValue1(java.lang.String)", initTypeName,
                 "withPrimitiveLong(java.lang.Long)", initTypeName,
-                "withBoxedLong(java.lang.Long)", initTypeName,
-                "withPrimitiveInt(java.lang.Integer)", initTypeName,
-                "withBoxedInt(java.lang.Integer)", initTypeName
+                "withPrimitiveInt(java.lang.Integer)", initTypeName
             )
         );
     }

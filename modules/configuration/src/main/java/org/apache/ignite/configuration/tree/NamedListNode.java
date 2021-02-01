@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** */
-public final class NamedListNode<N extends TraversableTreeNode> implements NamedListView<N>, NamedListChange<N>, TraversableTreeNode, Cloneable {
+public final class NamedListNode<N extends InnerNode> implements NamedListView<N>, NamedListChange<N>, TraversableTreeNode, Cloneable {
     /** */
     private final Supplier<N> valSupplier;
 
