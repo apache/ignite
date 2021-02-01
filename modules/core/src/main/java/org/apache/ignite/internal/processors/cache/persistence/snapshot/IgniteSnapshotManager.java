@@ -64,6 +64,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
+import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -153,6 +154,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -809,21 +811,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // TODO check NodeFilter works correct. SnapshotMetadata must be created on empty cluster node too.
 
-        CompletableFuture.supplyAsync(() ->
-            new IgniteFutureImpl<>(kctx0.task()
+        CompletableFuture.supplyAsync(() -> {
+            kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+
+            return new IgniteFutureImpl<>(kctx0.task()
                 .execute(VisorSnapshotMetadataCollectorTask.class,
                     new VisorTaskArgument<>(kctx0.state().onlineBaselineNodes(),
                         name,
-                        false),
-                    true))
-                .get())
+                        log.isDebugEnabled())))
+                .get();
+        })
             .thenApplyAsync(metas -> {
-                VisorTaskArgument<Map<ClusterNode, List<SnapshotMetadata>>> arg = new VisorTaskArgument<>(kctx0.state().onlineBaselineNodes(),
-                    metas,
-                    false);
+                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
 
-                return new IgniteFutureImpl<Map<ClusterNode, List<SnapshotMetadata>>>(kctx0.task()
-                    .<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2>execute(VisorVerifySnapshotPartitionsTask.class, arg, true))
+                return new IgniteFutureImpl<>(kctx0.task()
+                    .execute(VisorVerifySnapshotPartitionsTask.class, metas))
                     .get();
             })
             .whenComplete((r, ex) -> {

@@ -423,24 +423,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskInternalFuture<R> execute(
-        Class<? extends ComputeTask<T, R>> taskCls,
-        @Nullable T arg,
-        boolean skipAuth
-    ) {
-        if (skipAuth)
-            ctx.task().setThreadContext(TC_SKIP_AUTH, true);
-
-        return execute(taskCls, arg, null);
-    }
-
-    /**
-     * @param taskCls Task class.
-     * @param arg Optional execution argument.
-     * @return Task future.
-     * @param <T> Task argument type.
-     * @param <R> Task return value type.
-     */
     public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         return execute(taskCls, arg, null);
     }
@@ -1019,7 +1001,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param ses Task session.
      * @throws IgniteCheckedException If send to any of the jobs failed.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "BusyWait"})
     private void sendSessionAttributes(Map<?, ?> attrs, GridTaskSessionImpl ses)
         throws IgniteCheckedException {
         assert attrs != null;

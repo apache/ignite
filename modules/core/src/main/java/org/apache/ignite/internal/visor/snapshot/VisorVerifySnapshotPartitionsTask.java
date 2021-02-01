@@ -53,10 +53,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 
 /** */
-public class VisorVerifySnapshotPartitionsTask extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
+public class VisorVerifySnapshotPartitionsTask
+    extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
 
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
