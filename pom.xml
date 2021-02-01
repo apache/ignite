@@ -101,8 +101,10 @@
         <module>modules/mongodb-relay</module>
 		<!-- <module>modules/presto-ignite</module> -->
         
+        <!-- 
         <module>modules/opencensus</module>
-        <module>modules/calcite</module>
+        <module>modules/calcite</module> 
+        -->
 
     </modules>
 

@@ -131,7 +131,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true));
+        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, !true));
 
         cluster = new IgniteClusterImpl(ctx);
 

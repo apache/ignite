@@ -919,17 +919,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Tuple of collection with newly generated encryption keys and master key digest.
      */
     private T2<Collection<byte[]>, byte[]> createKeys(int keyCnt) {
-        return (T2<Collection<byte[]>, byte[]>) withMasterKeyChangeReadLock(() -> {
+    	Callable<T2<Collection<byte[]>, byte[]>> callable = () -> {
             if (keyCnt == 0)
                 return new T2<>(Collections.emptyList(), getSpi().masterKeyDigest());
 
-            List<byte[]> encKeys = new ArrayList<>(keyCnt);
+            Collection<byte[]> encKeys = new ArrayList<>(keyCnt);
 
             for (int i = 0; i < keyCnt; i++)
                 encKeys.add(getSpi().encryptKey(getSpi().create()));
 
             return new T2<>(encKeys, getSpi().masterKeyDigest());
-        });
+        };
+        return withMasterKeyChangeReadLock(callable);
     }
 
     /**

@@ -108,7 +108,7 @@ public final class GridSqlType {
             return UNKNOWN;
 		//modify@byron
         Column col = new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize());
-        col.setOriginalSQL(e.getSQL());
+        //-col.setOriginalSQL(e.getSQL());
         return fromColumn(col);       
     }
 
