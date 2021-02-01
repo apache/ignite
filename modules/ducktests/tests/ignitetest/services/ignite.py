@@ -24,6 +24,7 @@ from datetime import datetime
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_SERVER_KEYSTORE
 
 
 class IgniteService(IgniteAwareService):
@@ -60,6 +61,10 @@ class IgniteService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
+
+    def update_config_with_globals(self):
+        if self.globals.get("use_ssl", False):
+            self._update_ssl_config_with_globals("server", DEFAULT_SERVER_KEYSTORE)
 
 
 def node_failed_event_pattern(failed_node_id=None):

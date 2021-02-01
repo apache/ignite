@@ -24,7 +24,7 @@ from ignitetest.services.utils.control_utility import ControlUtility, ControlUti
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import version_if, ignite_versions, cluster
+from ignitetest.utils import ignore_if, ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion, V_2_8_0
 
@@ -45,7 +45,7 @@ class BaselineTests(IgniteTest):
         blt_size = self.NUM_NODES - 2
         servers = self.__start_ignite_nodes(ignite_version, blt_size)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
         control_utility.activate()
 
         # Check baseline of activated cluster.
@@ -81,7 +81,7 @@ class BaselineTests(IgniteTest):
         blt_size = self.NUM_NODES - 1
         servers = self.__start_ignite_nodes(ignite_version, blt_size)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         control_utility.activate()
 
@@ -122,7 +122,7 @@ class BaselineTests(IgniteTest):
         """
         servers = self.__start_ignite_nodes(ignite_version, self.NUM_NODES)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         control_utility.activate()
 
@@ -137,7 +137,7 @@ class BaselineTests(IgniteTest):
         assert state.lower() == 'inactive', 'Unexpected state %s' % state
 
     @cluster(num_nodes=NUM_NODES)
-    @version_if(lambda version: version >= V_2_8_0)
+    @ignore_if(lambda version, globals: version < V_2_8_0)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_baseline_autoadjust(self, ignite_version):
         """
@@ -146,7 +146,7 @@ class BaselineTests(IgniteTest):
         blt_size = self.NUM_NODES - 2
         servers = self.__start_ignite_nodes(ignite_version, blt_size)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
         control_utility.activate()
 
         # Add node.
