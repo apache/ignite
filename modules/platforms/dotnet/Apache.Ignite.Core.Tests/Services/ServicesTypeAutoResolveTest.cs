@@ -209,11 +209,11 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var msgng = _grid1.GetMessaging();
 
-            msgng.Send(new V5 {Name = "1"}, "test-topic");
-            msgng.Send(new V5 {Name = "2"}, "test-topic");
-            msgng.Send(new V5 {Name = "3"}, "test-topic");
+            msgng.Send(new V5 {Name = "Sarah Connor"}, "test-topic");
+            msgng.Send(new V5 {Name = "John Connor"}, "test-topic");
+            msgng.Send(new V5 {Name = "Kyle Reese"}, "test-topic");
 
-            svc.testMessagesReceived();
+            Assert.IsTrue(svc.testMessagesReceived());
 
             var rcvd = new List<V6>();
 

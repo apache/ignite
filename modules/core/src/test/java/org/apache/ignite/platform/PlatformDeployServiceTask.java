@@ -631,13 +631,20 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         public void startReceiveMessage() {
             ignite.message().localListen("test-topic", (node, obj) -> {
-                if (obj instanceof V5) {
-                    cntMsgs++;
+                assertTrue(obj instanceof BinaryObject);
 
-                    return true;
-                }
+                V5 v5 = ((BinaryObject)obj).deserialize();
 
-                return false;
+                if (cntMsgs == 0)
+                    assertEquals("Sarah Connor", v5.getName());
+                else if (cntMsgs == 1)
+                    assertEquals("John Connor", v5.getName());
+                else if (cntMsgs == 2)
+                    assertEquals("Kyle Reese", v5.getName());
+
+                cntMsgs++;
+
+                return true;
             });
         }
 
