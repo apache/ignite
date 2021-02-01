@@ -188,19 +188,45 @@ public class KafkaToIgnitePlugin implements IgnitePlugin {
 
             CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(evt.key());
 
+            GridCacheVersion rmvVer = null;
+
             if (entry == null)
-                GridCacheVersion rmvVer = ???;
+                //TODO: implement me.
+                rmvVer = new GridCacheVersion(0, 0, 0);
 
-            EntryEventOrder ord = evt.order();
+            if (needToUpdate(evt.order(), entry == null ? null : (GridCacheVersion)entry.version(), rmvVer)) {
+                switch (evt.operation()) {
+                    case UPDATE:
+                        cache.put(evt.key(), evt.value()); //TODO: add version from event to entry.
 
-            GridCacheVersion kafkaVer = new GridCacheVersion(ord.topVer(), ord.nodeOrderDrId(), ord.order());
+                    case DELETE:
+                        cache.remove(evt.key()); //TODO: add version from event to entry.
 
-            if (entry.version().compareTo(kafkaVer) < 0) {
-
+                    default:
+                        throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
+                }
             }
         }
 
-        private boolean isGreater(EntryEventOrder kafkaOrd, GridCacheVersion curVer) {
+        /**
+         * TODO: add tombstone to Ignite.
+         *
+         * @param kafkaOrd Entry version from Kafka.
+         * @param curVer Current entry version.
+         * @param rmvVer Entry version from remove operation.
+         * @return {@code True} if entry should be updated. {@code False} if this update should be skipped.
+         */
+        private boolean needToUpdate(EntryEventOrder kafkaOrd, GridCacheVersion curVer, GridCacheVersion rmvVer) {
+            if (curVer == null && rmvVer == null)
+                return true;
+
+            GridCacheVersion kafkaVer =
+                new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order());
+
+            if (rmvVer != null)
+                return kafkaVer.compareTo(rmvVer) > 0;
+
+            return kafkaVer.compareTo(curVer) > 0;
         }
     }
 }
