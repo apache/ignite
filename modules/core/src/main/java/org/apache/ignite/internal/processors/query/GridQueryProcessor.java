@@ -247,7 +247,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** h2 redirection stub. */
     public static final Pattern H2_REDIRECTION_RULES =
-        Pattern.compile("\\s*(create\\s*table|create\\s*index|drop\\s*table|alter\\s*table)", CASE_INSENSITIVE);
+        Pattern.compile("\\s*((create|drop)\\s*(table|index)|alter\\s*table)", CASE_INSENSITIVE);
 
     /** @see IgniteSystemProperties#IGNITE_EXPERIMENTAL_SQL_ENGINE */
     public static final boolean DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE = false;

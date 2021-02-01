@@ -1063,7 +1063,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         RootNode<Object[]> root = new RootNode<>(ctx, rowType);
         root.register(node);
 
-        new Thread(() -> {
+        Thread watchDog = new Thread(() -> {
             try {
                 U.sleep(5_000);
             }
@@ -1072,9 +1072,13 @@ public class ExecutionTest extends AbstractExecutionTest {
 
             if (!root.isClosed())
                 root.close();
-        }, "test-watchdog").start();
+        }, "test-watchdog");
+
+        watchDog.start();
 
         GridTestUtils.assertThrowsWithCause(root::hasNext, AssertionError.class);
+
+        watchDog.interrupt();
     }
 
     /**
@@ -1121,31 +1125,27 @@ public class ExecutionTest extends AbstractExecutionTest {
     static class CorruptedNode<T> implements Node<T> {
         /** {@inheritDoc} */
         @Override public ExecutionContext<T> context() {
-            assert false;
-            return null;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public RelDataType rowType() {
-            assert false;
-            return null;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public Downstream<T> downstream() {
-            assert false;
-            return null;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public void register(List<Node<T>> sources) {
-            assert false;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public List<Node<T>> sources() {
-            assert false;
-            return null;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
@@ -1155,12 +1155,12 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         /** {@inheritDoc} */
         @Override public void request(int rowsCnt) throws Exception {
-            assert false;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public void rewind() {
-            assert false;
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
