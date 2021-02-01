@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary;
@@ -449,8 +450,15 @@ namespace Apache.Ignite.Core.Impl.Client
                     ctx => { },
                     ctx => new BinaryConfigurationClientInternal(ctx.Reader.Stream));
 
+                // TODO: Update binary config
                 // TODO: Warn if there is a mapper mismatch
                 // TODO: Warn if there is a Custom mapper, but BinaryConfiguration.Mapper is not set
+                if (binaryCfg.NameMapperMode == BinaryNameMapperMode.Custom &&
+                    (_config.BinaryConfiguration.NameMapper == null ||
+                     _config.BinaryConfiguration.NameMapper is BinaryBasicNameMapper))
+                {
+                    _logger.Warn("TODO");
+                }
             }
         }
 
