@@ -17,6 +17,7 @@
 Module contains snapshot test.
 """
 from ducktape.mark.resource import cluster
+from datetime import datetime
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -44,13 +45,15 @@ class SnapshotTest(IgniteTest):
         """
         Basic snapshot test.
         """
+        modules = ["core", "spring", "indexing"]
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1,
+                                startup_timeout_sec=180, modules=modules)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
@@ -66,6 +69,7 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
+            startup_timeout_sec=180,
             shutdown_timeout_sec=300,
             params={
                 "cacheName": self.CACHE_NAME,
@@ -76,7 +80,16 @@ class SnapshotTest(IgniteTest):
 
         loader.run()
 
+        start = datetime.now()
+
         control_utility.validate_indexes()
+
+        res = f"Index validate duration: {(datetime.now() - start).seconds} sec."
+
+        self.logger.warn(res)
+        #
+        # return res
+        #
         control_utility.idle_verify()
         node = service.nodes[0]
 
