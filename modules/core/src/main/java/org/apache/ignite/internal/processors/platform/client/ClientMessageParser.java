@@ -224,6 +224,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_BINARY_TYPE_PUT = 3003;
 
+    /** */
+    private static final short OP_BINARY_CONFIGURATION_GET = 3004;
+
     /** Start new transaction. */
     private static final short OP_TX_START = 4000;
 
@@ -325,6 +328,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_BINARY_TYPE_PUT:
                 return new ClientBinaryTypePutRequest(reader);
+
+            case OP_BINARY_CONFIGURATION_GET:
+                // TODO
+                return null;
 
             case OP_QUERY_SCAN:
                 return new ClientCacheScanQueryRequest(reader);
