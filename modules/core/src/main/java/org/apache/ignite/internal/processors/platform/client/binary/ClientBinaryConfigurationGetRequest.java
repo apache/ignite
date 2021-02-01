@@ -50,7 +50,7 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         BinaryConfiguration cfg = ctx.kernalContext().config().getBinaryConfiguration();
         boolean compactFooter = cfg != null && cfg.isCompactFooter();
-        byte nameMapperType = getMapperType(cfg);
+        byte nameMapperType = getNameMapperType(cfg);
 
         return new ClientBinaryConfigurationGetResponse(requestId(), compactFooter, nameMapperType);
     }
@@ -61,7 +61,7 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
      *
      * @return Mapper type code.
      */
-    private static byte getMapperType(BinaryConfiguration cfg) {
+    private static byte getNameMapperType(BinaryConfiguration cfg) {
         if (cfg == null || cfg.getNameMapper() == null)
             return NAME_MAPPER_BASIC_FULL;
 

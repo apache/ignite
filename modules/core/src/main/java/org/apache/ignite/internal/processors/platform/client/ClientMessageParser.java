@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
+import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryConfigurationGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNamePutRequest;
@@ -330,8 +331,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientBinaryTypePutRequest(reader);
 
             case OP_BINARY_CONFIGURATION_GET:
-                // TODO
-                return null;
+                return new ClientBinaryConfigurationGetRequest(reader);
 
             case OP_QUERY_SCAN:
                 return new ClientCacheScanQueryRequest(reader);
