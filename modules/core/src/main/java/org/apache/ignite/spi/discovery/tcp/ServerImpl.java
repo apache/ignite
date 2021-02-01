@@ -298,6 +298,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
+    /** Time of last failed message. */
+    private volatile long msgNotSentNanos;
+
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
         true; //assume that local node supports this feature
@@ -393,6 +396,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         lastRingMsgReceivedTime = 0;
 
         lastRingMsgSentTime = 0;
+
+        msgNotSentNanos = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3439,10 +3444,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         addMessage(msg, true);
                     }
 
-                    if (sndState != null && !failedNodes.isEmpty() &&
-                        lastRingMsgReceivedTime - U.millisToNanos(connCheckInterval) > sndState.initNanos)
-                        segmentLocalNodeOnSendFail(failedNodes);
-
                     break;
                 }
 
@@ -3867,8 +3868,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
-                        sndState = new CrossRingMessageSendState();
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
+                        msgNotSentNanos = System.nanoTime();
+
+                        sndState = new CrossRingMessageSendState(msgNotSentNanos);
+                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -3945,6 +3949,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     assert next == null : next;
 
+                    checkOutgoingConnection(failedNodes);
+
                     if (log.isDebugEnabled())
                         log.debug("Pending messages will be resent to local node");
 
@@ -3989,39 +3995,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ", pendingMsg=" + pendingMsg + ']');
                 }
             }
-        }
-
-        /**
-         * Segment local node on failed message send.
-         */
-        private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
-            String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
-
-            synchronized (mux) {
-                if (spiState == CONNECTING) {
-                    U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
-                        "connectivity issues or the rest of the cluster is undergoing massive restarts. Failing " +
-                        "local node join to avoid case when one node fails a big part of cluster. To disable" +
-                        " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
-                        "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                        + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
-
-                    spiState = RING_FAILED;
-
-                    mux.notifyAll();
-
-                    return;
-                }
-            }
-
-            U.warn(log, "Unable to connect to next nodes in a ring, " +
-                "it seems local node is experiencing connectivity issues. Segmenting local node " +
-                "to avoid case when one node fails a big part of cluster. To disable" +
-                " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
-                "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
-
-            notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
 
         /**
@@ -6532,6 +6505,56 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Segment local node if is being pinged while missing any outgoing ring connection.
+     *
+     * @param skipNodes If not {@code null}, aren't taken in account when observing nodes left in the ring.
+     */
+    private void checkOutgoingConnection(Collection<TcpDiscoveryNode> skipNodes) {
+        // Skip if there is no msg sending failure or wait for ping comming after the failure.
+        if (msgNotSentNanos == 0 || lastRingMsgReceivedTime < msgNotSentNanos + U.millisToNanos(connCheckInterval))
+            return;
+
+        synchronized (mux) {
+            if (spiState == CONNECTED && ring.serverNodes(skipNodes).size() == 1)
+                segmentLocalNodeOnSendFail(failedNodes.keySet());
+        }
+    }
+
+    /**
+     * Segment local node on failed message send.
+     */
+    private void segmentLocalNodeOnSendFail(Collection<TcpDiscoveryNode> failedNodes) {
+        String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
+
+        synchronized (mux) {
+            if (spiState == CONNECTING) {
+                U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
+                    "connectivity issues or the rest of the cluster is undergoing massive restarts. Failing " +
+                    "local node join to avoid case when one node fails a big part of cluster. To disable" +
+                    " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+                    "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+                    + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
+
+                spiState = RING_FAILED;
+
+                mux.notifyAll();
+
+                return;
+            }
+        }
+
+        U.warn(log, "Unable to connect to next nodes in a ring, " +
+            "it seems local node is experiencing connectivity issues. Segmenting local node " +
+            "to avoid case when one node fails a big part of cluster. To disable" +
+            " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+            "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+            + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
+
+        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+    }
+
+
+    /**
      * Creates proper timeout helper taking in account current send state and ring state.
      *
      * @param sndState Current connection recovering state. Ignored if {@code null}.
@@ -6553,6 +6576,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
+        msgNotSentNanos = 0;
+
         lastRingMsgSentTime = System.nanoTime();
     }
 
@@ -7384,6 +7409,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
+
+            checkOutgoingConnection(null);
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
@@ -8221,8 +8248,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          *
          */
-        CrossRingMessageSendState() {
-            initNanos = System.nanoTime();
+        CrossRingMessageSendState(long failTimeNamos) {
+            initNanos = failTimeNamos;
 
             failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
         }

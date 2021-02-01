@@ -1587,6 +1587,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             assert addr != null;
 
+            impl.simulateNetFailure(sock, timeoutHelper.nextTimeoutChunk(sockTimeout));
+
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
@@ -1650,6 +1652,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             OutputStream out = sock.getOutputStream();
+
+            impl.simulateNetFailure(sock, timeout);
 
             out.write(data);
 
@@ -1761,6 +1765,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         IgniteCheckedException err = null;
 
         try {
+            impl.simulateNetFailure(sock, timeout);
+
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
@@ -1804,6 +1810,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         IOException err = null;
 
         try {
+            impl.simulateNetFailure(sock, timeout);
+
             out.write(res);
 
             out.flush();
