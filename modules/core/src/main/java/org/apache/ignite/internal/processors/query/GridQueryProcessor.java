@@ -2000,7 +2000,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Nullable CacheWriteSynchronizationMode writeSyncMode,
         @Nullable Integer backups,
         boolean ifNotExists,
-        boolean encrypted,
+        @Nullable Boolean encrypted,
         @Nullable Integer qryParallelism
     ) throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
@@ -2050,7 +2050,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qryParallelism != null)
             ccfg.setQueryParallelism(qryParallelism);
 
-        ccfg.setEncryptionEnabled(encrypted);
+        if (encrypted != null)
+            ccfg.setEncryptionEnabled(encrypted);
+
         ccfg.setSqlSchema("\"" + schemaName + "\"");
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
