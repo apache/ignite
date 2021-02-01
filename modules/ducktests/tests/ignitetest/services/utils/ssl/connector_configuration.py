@@ -25,6 +25,7 @@ from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 class ConnectorConfiguration(NamedTuple):
     """
     Ignite ConnectorConfiguration.
+    Used to connect from ControlUtility (control.sh).
     """
     ssl_enabled: bool = False
     ssl_context_factory: SslContextFactory = None
