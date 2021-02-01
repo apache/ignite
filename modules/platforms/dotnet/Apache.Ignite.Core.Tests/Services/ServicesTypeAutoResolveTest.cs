@@ -205,26 +205,18 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, true);
 
-            svc.startReceiveMessage();
-
             var msgng = _grid1.GetMessaging();
 
-            msgng.Send(new V5 {Name = "Sarah Connor"}, "test-topic");
-            msgng.Send(new V5 {Name = "John Connor"}, "test-topic");
-            msgng.Send(new V5 {Name = "Kyle Reese"}, "test-topic");
+            var rcvd = new List<V5>();
 
-            Assert.IsTrue(svc.testMessagesReceived());
-
-            var rcvd = new List<V6>();
-
-            var lsnr = new MessageListener<V6>((guid, v) =>
+            var lsnr = new MessageListener<V5>((guid, v) =>
             {
                 rcvd.Add(v);
 
                 return true;
             });
 
-            msgng.LocalListen(lsnr, "test-topic-2");
+            msgng.LocalListen(lsnr, "test-topic");
 
             svc.testSendMessage();
 
@@ -234,7 +226,26 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
             Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
 
-            msgng.StopLocalListen(lsnr, "test-topic-2");
+            msgng.StopLocalListen(lsnr, "test-topic");
+
+            svc.startReceiveMessage();
+
+            msgng.Send(new V6 {Name = "Sarah Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "John Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "Kyle Reese"}, "test-topic-2");
+
+            msgng.SendAll(new[]
+            {
+                new V7 {Name = "V7-1"},
+                new V7 {Name = "V7-2"},
+                new V7 {Name = "V7-3"}
+            }, "test-topic-3");
+
+            msgng.SendOrdered(new V8 {Name = "V8"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V9"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V10"}, "test-topic-4");
+
+            Assert.IsTrue(svc.testMessagesReceived());
         }
 
         /// <summary>

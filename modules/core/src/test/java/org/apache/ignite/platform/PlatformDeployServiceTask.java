@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -53,6 +54,8 @@ import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.V5;
 import org.apache.ignite.platform.model.V6;
+import org.apache.ignite.platform.model.V7;
+import org.apache.ignite.platform.model.V8;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -626,23 +629,48 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        private volatile int cntMsgs;
+        private final AtomicInteger cntMsgs = new AtomicInteger(0);
 
         /** */
         public void startReceiveMessage() {
-            ignite.message().localListen("test-topic", (node, obj) -> {
+            ignite.message().localListen("test-topic-2", (node, obj) -> {
                 assertTrue(obj instanceof BinaryObject);
 
-                V5 v5 = ((BinaryObject)obj).deserialize();
+                V6 v6 = ((BinaryObject)obj).deserialize();
 
-                if (cntMsgs == 0)
-                    assertEquals("Sarah Connor", v5.getName());
-                else if (cntMsgs == 1)
-                    assertEquals("John Connor", v5.getName());
-                else if (cntMsgs == 2)
-                    assertEquals("Kyle Reese", v5.getName());
+                assertTrue("Sarah Connor".equals(v6.getName()) ||
+                    "John Connor".equals(v6.getName()) ||
+                    "Kyle Reese".equals(v6.getName()));
 
-                cntMsgs++;
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+
+            ignite.message().localListen("test-topic-3", (node, obj) -> {
+                assertTrue(obj instanceof BinaryObject);
+
+                V7 v7 = ((BinaryObject)obj).deserialize();
+
+                assertTrue("V7-1".equals(v7.getName()) ||
+                    "V7-2".equals(v7.getName()) ||
+                    "V7-3".equals(v7.getName()));
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+
+            ignite.message().localListen("test-topic-4", (node, obj) -> {
+                assertTrue(obj instanceof BinaryObject);
+
+                V8 v8 = ((BinaryObject)obj).deserialize();
+
+                assertTrue("V8".equals(v8.getName()) ||
+                    "V9".equals(v8.getName()) ||
+                    "V10".equals(v8.getName()));
+
+                cntMsgs.incrementAndGet();
 
                 return true;
             });
@@ -651,7 +679,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         public boolean testMessagesReceived() {
             try {
-                return GridTestUtils.waitForCondition(() -> cntMsgs == 3, 1_000 * 5);
+                return GridTestUtils.waitForCondition(() -> cntMsgs.get() == 9, 1_000 * 5);
             }
             catch (IgniteInterruptedCheckedException e) {
                 return false;
@@ -660,9 +688,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public void testSendMessage() {
-            ignite.message().sendOrdered("test-topic-2", new V6("1"), 1_000 * 5);
-            ignite.message().sendOrdered("test-topic-2", new V6("2"), 1_000 * 5);
-            ignite.message().sendOrdered("test-topic-2", new V6("3"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("1"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("2"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("3"), 1_000 * 5);
         }
 
         /** */
