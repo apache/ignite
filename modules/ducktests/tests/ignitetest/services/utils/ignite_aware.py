@@ -421,21 +421,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update ssl configuration.
         """
         _dict = self.globals.get(dict_name)
-
-        if _dict is not None:
-            ssl_context_factory = SslContextFactory(self.install_root, **_dict)
-        else:
-            ssl_context_factory = SslContextFactory(self.install_root, default_jks)
-
-        self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
-        self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-            ssl_enabled=True, ssl_context_factory=ssl_context_factory))
-
-    def _update_ssl_config_with_globals(self, dict_name: str, default_jks: str):
-        """
-        Update ssl configuration.
-        """
-        _dict = self.globals.get(dict_name)
         if _dict is not None and "ssl" in _dict: _dict = _dict.get("ssl")
 
         if _dict is not None:
