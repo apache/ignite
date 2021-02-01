@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Client.Binary;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Log;
@@ -42,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         /** Unknown topology version. */
         private const long UnknownTopologyVersion = -1;
-        
+
         /** Underlying socket. */
         private ClientSocket _socket;
 
@@ -129,14 +130,14 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
-            
+
             Connect();
         }
 
         /// <summary>
         /// Performs a send-receive operation.
         /// </summary>
-        public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+        public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
             Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
@@ -178,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs an async send-receive operation.
         /// </summary>
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
             Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
@@ -246,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     continue;
                 }
-                
+
                 yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint,
                     socket.ServerNodeId.GetValueOrDefault());
             }
@@ -279,7 +280,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
             ThrowIfDisposed();
-            
+
             if (!_config.EnablePartitionAwareness)
             {
                 return null;
@@ -438,6 +439,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 _enableDiscovery = false;
 
                 _logger.Warn("Automatic server node discovery is not supported by the server");
+            }
+
+            if (_socket.Features.HasFeature(ClientBitmaskFeature.BinaryConfiguration))
+            {
+                // TODO: Retrieve binary config only once for the entire cluster.
+                var binaryCfg = _socket.DoOutInOp(
+                    ClientOp.BinaryConfigurationGet,
+                    ctx => { },
+                    ctx => new BinaryConfigurationClientInternal(ctx.Reader.Stream));
+
+                // TODO: Warn if there is a mapper mismatch
+                // TODO: Warn if there is a Custom mapper, but BinaryConfiguration.Mapper is not set
             }
         }
 
@@ -693,7 +706,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 // Dispose and remove any connections not in current topology.
                 var toRemove = new List<Guid>();
-                
+
                 foreach (var pair in map)
                 {
                     if (!_discoveryNodes.ContainsKey(pair.Key))
@@ -733,7 +746,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
                 }
             }
-            
+
             _nodeSocketMap = map;
         }
 
@@ -780,7 +793,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 return;
             }
-            
+
             var newVer = GetTopologyVersion();
 
             if (newVer <= _discoveryTopologyVersion)
@@ -794,7 +807,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _discoveryTopologyVersion = GetServerEndpoints(
                 _discoveryTopologyVersion, newVer, discoveryNodes);
-            
+
             _discoveryNodes = discoveryNodes;
         }
 
@@ -822,7 +835,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         var id = BinaryUtils.ReadGuid(s);
                         var port = s.ReadInt();
                         var addresses = ctx.Reader.ReadStringCollection();
-                        
+
                         dict[id] = new ClientDiscoveryNode(id, port, addresses);
                     }
 
@@ -832,7 +845,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         dict.Remove(BinaryUtils.ReadGuid(s));
                     }
-                    
+
                     return topVer;
                 });
         }
@@ -843,7 +856,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private long GetTopologyVersion()
         {
             var ver = _affinityTopologyVersion;
-            
+
             return ver == null ? UnknownTopologyVersion : ((AffinityTopologyVersion) ver).Version;
         }
     }
