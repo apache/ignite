@@ -416,6 +416,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks node
+     *
      * @throws Exception If any error occurs.
      */
     @Test
@@ -433,6 +435,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         failSpi.impl.simulateNetTimeout(1, (int)failSpi.getEffectiveConnectionRecoveryTimeout() / (gridCnt + 1));
 
         waitNodeStop(grid(gridCnt - 1).name());
+
+        assert grid(0).cluster().nodes().size() == 3;
+        assert grid(1).cluster().nodes().size() == 3;
+        assert grid(2).cluster().nodes().size() == 3;
     }
 
     /**
