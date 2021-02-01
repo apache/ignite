@@ -1292,5 +1292,11 @@
                 </pluginManagement>
             </build>
         </profile>
+        <profile>
+            <id>skip-docs</id>
+            <properties>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+            </properties>
+        </profile>
     </profiles>
 </project>
