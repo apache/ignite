@@ -623,6 +623,24 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void startReceiveMessage()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public bool testMessagesReceived()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public void testSendMessage()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public object contextAttribute(string name)
         {
             return _context.CurrentCallContext.GetAttribute(name);

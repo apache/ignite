@@ -211,6 +211,15 @@ namespace Apache.Ignite.Core.Tests.Services
         void sleep(long delayMs);
 
         /** */
+        void startReceiveMessage();
+
+        /** */
+        bool testMessagesReceived();
+
+        /** */
+        void testSendMessage();
+
+        /** */
         object contextAttribute(string name);
     }
 }
