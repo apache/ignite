@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
-
 /**
  *
  */
@@ -501,18 +499,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 "   WHERE o.name = a.name)");
 
         assertEquals(1, rows.size());
-    }
-
-    /**
-     * Temporary redirects create|drop|alter commands into h2 engine.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_EXPERIMENTAL_SQL_ENGINE, value = "true")
-    public void testUseH2Functionality() {
-        execute(grid(1), "CREATE TABLE IF NOT EXISTS Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
-
-        execute(grid(1), "alter table Person add column age int");
-        execute(grid(1),"drop table Person");
     }
 
     /**

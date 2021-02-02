@@ -678,4 +678,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             desc.setValue(key0, val0, val);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryTypeDescriptor typeDescription() {
+        return typeDesc;
+    }
 }

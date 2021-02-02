@@ -2871,6 +2871,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         });
     }
 
+    /** Calcite baseb engine is available. */
+    public boolean useExperimentalEngine() {
+        return experimentalQueryEngine != null;
+    }
+
     /**
      * @param cctx Cache context.
      * @param qry Query.

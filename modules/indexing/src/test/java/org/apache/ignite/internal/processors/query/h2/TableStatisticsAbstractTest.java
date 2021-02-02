@@ -76,7 +76,7 @@ public abstract class TableStatisticsAbstractTest extends GridCommonAbstractTest
      *
      * Actual scan row count is obtained from the EXPLAIN ANALYZE command result.
      */
-    private void ensureOptimalPlanChosen(Ignite grid, String sql, String... tbls) {
+    private void ensureOptimalPlanChosen(Ignite grid, String sql) {
         int cntNoStats = runLocalExplainAnalyze(grid, true, sql);
 
         int cntStats = runLocalExplainAnalyze(grid, false, sql);

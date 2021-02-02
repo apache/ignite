@@ -96,6 +96,30 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         devCache.put(3, new Developer("Bach", 1, "Leipzig", 55));
         devCache.put(4, new Developer("Strauss", 2, "Munich", 66));
 
+        devCache.put(5, new Developer("Vagner", 4, "Leipzig", 70));
+        devCache.put(6, new Developer("Chaikovsky", 5, "Votkinsk", 53));
+        devCache.put(7, new Developer("Verdy", 6, "Rankola", 88));
+        devCache.put(8, new Developer("Stravinsky", 7, "Spt", 89));
+        devCache.put(9, new Developer("Rahmaninov", 8, "Starorussky ud", 70));
+        devCache.put(10, new Developer("Shubert", 9, "Vienna", 31));
+        devCache.put(11, new Developer("Glinka", 10, "Smolenskaya gb", 53));
+
+        devCache.put(12, new Developer("Einaudi", 11, "", -1));
+        devCache.put(13, new Developer("Glass", 12, "", -1));
+        devCache.put(14, new Developer("Rihter", 13, "", -1));
+
+        devCache.put(15, new Developer("Marradi", 14, "", -1));
+        devCache.put(16, new Developer("Zimmer", 15, "", -1));
+        devCache.put(17, new Developer("Hasaishi", 16, "", -1));
+
+        devCache.put(18, new Developer("Arnalds", 17, "", -1));
+        devCache.put(19, new Developer("Yiruma", 18, "", -1));
+        devCache.put(20, new Developer("O'Halloran", 19, "", -1));
+
+        devCache.put(21, new Developer("Cacciapaglia", 20, "", -1));
+        devCache.put(22, new Developer("Prokofiev", 21, "", -1));
+        devCache.put(23, new Developer("Musorgskii", 22, "", -1));
+
         awaitPartitionMapExchange();
     }
 
@@ -118,6 +142,25 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns("Beethoven", "Beethoven")
             .returns("Mozart", "Mozart")
             .returns("Strauss", "Strauss")
+            .returns("Vagner", "Vagner")
+            .returns("Chaikovsky", "Chaikovsky")
+            .returns("Verdy", "Verdy")
+            .returns("Stravinsky", "Stravinsky")
+            .returns("Rahmaninov", "Rahmaninov")
+            .returns("Shubert", "Shubert")
+            .returns("Glinka", "Glinka")
+            .returns("Arnalds", "Arnalds")
+            .returns("Glass", "Glass")
+            .returns("O'Halloran", "O'Halloran")
+            .returns("Prokofiev", "Prokofiev")
+            .returns("Yiruma", "Yiruma")
+            .returns("Cacciapaglia", "Cacciapaglia")
+            .returns("Einaudi", "Einaudi")
+            .returns("Hasaishi", "Hasaishi")
+            .returns("Marradi", "Marradi")
+            .returns("Musorgskii", "Musorgskii")
+            .returns("Rihter", "Rihter")
+            .returns("Zimmer", "Zimmer")
             .check();
     }
 
@@ -133,6 +176,25 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns("Mozart", "Mozart")
             .returns("Strauss", "Strauss")
             .returns("Strauss", "Beethoven")
+            .returns("Vagner", "Vagner")
+            .returns("Chaikovsky", "Chaikovsky")
+            .returns("Verdy", "Verdy")
+            .returns("Stravinsky", "Stravinsky")
+            .returns("Rahmaninov", "Rahmaninov")
+            .returns("Shubert", "Shubert")
+            .returns("Glinka", "Glinka")
+            .returns("Arnalds", "Arnalds")
+            .returns("Glass", "Glass")
+            .returns("O'Halloran", "O'Halloran")
+            .returns("Prokofiev", "Prokofiev")
+            .returns("Yiruma", "Yiruma")
+            .returns("Cacciapaglia", "Cacciapaglia")
+            .returns("Einaudi", "Einaudi")
+            .returns("Hasaishi", "Hasaishi")
+            .returns("Marradi", "Marradi")
+            .returns("Musorgskii", "Musorgskii")
+            .returns("Rihter", "Rihter")
+            .returns("Zimmer", "Zimmer")
             .check();
     }
 
@@ -147,6 +209,25 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(18, "Arnalds", 17, "", -1)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(21, "Cacciapaglia", 20, "", -1)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
             .check();
     }
 
@@ -164,20 +245,34 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testKeyColumnGreaterThanFilter() {
-        assertQuery("SELECT * FROM Developer WHERE _key>3")
+        assertQuery("SELECT * FROM Developer WHERE _key>3 and _key<12")
             .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .check();
     }
 
     /** */
     @Test
     public void testKeyColumnGreaterThanOrEqualsFilter() {
-        assertQuery("SELECT * FROM Developer WHERE _key>=?")
-            .withParams(3)
+        assertQuery("SELECT * FROM Developer WHERE _key>=? and _key<=?")
+            .withParams(3, 11)
             .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .check();
     }
 
@@ -216,20 +311,34 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testKeyAliasGreaterThanFilter() {
-        assertQuery("SELECT * FROM Developer WHERE id>?")
-            .withParams(3)
+        assertQuery("SELECT * FROM Developer WHERE id>? and id<?")
+            .withParams(3, 12)
             .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .check();
     }
 
     /** */
     @Test
     public void testKeyAliasGreaterThanOrEqualsFilter() {
-        assertQuery("SELECT * FROM Developer WHERE id>=3")
+        assertQuery("SELECT * FROM Developer WHERE id>=3 and id<12")
             .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .check();
     }
 
@@ -268,21 +377,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testIndexedFieldGreaterThanFilter() {
-        assertQuery("SELECT * FROM Developer WHERE depId>2")
+        assertQuery("SELECT * FROM Developer WHERE depId>21")
             .withParams(3)
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
-            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(23, "Musorgskii", 22, "", -1)
             .check();
     }
 
     /** */
     @Test
     public void testIndexedFieldGreaterThanOrEqualsFilter() {
-        assertQuery("SELECT * FROM Developer WHERE depId>=2")
+        assertQuery("SELECT * FROM Developer WHERE depId>=21")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
-            .returns(1, "Mozart", 3, "Vienna", 33)
-            .returns(2, "Beethoven", 2, "Vienna", 44)
-            .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
             .check();
     }
 
@@ -330,6 +438,12 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .matches(containsTableScan("PUBLIC", "DEVELOPER"))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .check();
     }
 
@@ -342,6 +456,12 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .check();
     }
 
@@ -354,6 +474,21 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(18, "Arnalds", 17, "", -1)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(21, "Cacciapaglia", 20, "", -1)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
             .check();
     }
 
@@ -366,6 +501,21 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(18, "Arnalds", 17, "", -1)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(21, "Cacciapaglia", 20, "", -1)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
             .check();
     }
 
@@ -449,6 +599,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'")
             .matches(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX, DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(10, "Shubert", 9, "Vienna", 31)
             .check();
     }
 
@@ -458,6 +609,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND city>='Vienna'")
             .matches(containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(10, "Shubert", 9, "Vienna", 31)
             .check();
     }
 
@@ -571,6 +723,15 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
+    /** */
+    @Test
+    public void testOrCondition5() {
+        assertQuery("SELECT * FROM Developer WHERE depId=1 OR name='Mozart'")
+            .matches(containsUnion(true))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .check();
+    }
+
     // ===== various complex conditions =====
 
     /** */
@@ -613,6 +774,27 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
+
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(18, "Arnalds", 17, "", -1)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(21, "Cacciapaglia", 20, "", -1)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
+
             .ordered()
             .check();
     }
@@ -624,10 +806,29 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .matches(containsSubPlan("IgniteSort"))
+            .returns(18, "Arnalds", 17, "", -1)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(21, "Cacciapaglia", 20, "", -1)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(23, "Musorgskii", 22, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(10, "Shubert", 9, "Vienna", 31)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
             .ordered()
             .check();
     }
@@ -638,10 +839,29 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         assertQuery("SELECT * FROM Developer ORDER BY name DESC, city DESC")
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
             .matches(not(containsSubPlan("IgniteSort")))
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(8, "Stravinsky", 7, "Spt", 89)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(15, "Marradi", 14, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(21, "Cacciapaglia", 20, "", -1)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(18, "Arnalds", 17, "", -1)
             .ordered()
             .check();
     }
@@ -652,10 +872,29 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         assertQuery("SELECT * FROM Developer ORDER BY age DESC")
             .matches(containsAnyProject("PUBLIC", "DEVELOPER"))
             .matches(containsSubPlan("IgniteSort"))
+            .returns(8, "Stravinsky", 7, "Spt", 89)
+            .returns(7, "Verdy", 6, "Rankola", 88)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
+            .returns(5, "Vagner", 4, "Leipzig", 70)
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
+            .returns(11, "Glinka", 10, "Smolenskaya gb", 53)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(10, "Shubert", 9, "Vienna", 31)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(12, "Einaudi", 11, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
+            .returns(19, "Yiruma", 18, "", -1)
+            .returns(21, "Cacciapaglia", 20, "", -1)
+            .returns(22, "Prokofiev", 21, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(18, "Arnalds", 17, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
             .ordered()
             .check();
     }

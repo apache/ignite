@@ -108,6 +108,21 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         devCache.put(7, new Product(7, "Video", 1, null, 0, "Canon"));
         devCache.put(8, new Product(8, null, 0, "Camera Lens", 11, "Zeiss"));
         devCache.put(9, new Product(9, null, 0, null, 0, null));
+        devCache.put(10, new Product(10, null, 0, null, 30, null));
+        devCache.put(11, new Product( 11, null, 0, null, 30, null));
+        devCache.put(12, new Product( 12, null, 0, null, 31, null));
+        devCache.put(13, new Product( 13, null, 0, null, 31, null));
+
+        devCache.put(14, new Product( 14, null, 0, null, 32, null));
+        devCache.put(15, new Product( 15, null, 0, null, 33, null));
+        devCache.put(16, new Product( 16, null, 0, null, 34, null));
+        devCache.put(17, new Product( 17, null, 0, null, 35, null));
+        devCache.put(18, new Product( 18, null, 0, null, 36, null));
+        devCache.put(19, new Product( 19, null, 0, null, 37, null));
+        devCache.put(20, new Product( 20, null, 0, null, 38, null));
+        devCache.put(21, new Product( 21, null, 0, null, 39, null));
+        devCache.put(22, new Product( 22, null, 0, null, 40, null));
+        devCache.put(23, new Product( 23, null, 0, null, 41, null));
 
         awaitPartitionMapExchange();
     }
@@ -204,14 +219,13 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testNonIndexedOrToUnionAllRewrite() throws Exception {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
             "OR category = 'Video'")
-            .matches(not(containsUnion(true)))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "PK"))
+            .matches(containsUnion(true))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -224,7 +238,6 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testAllNonIndexedOrToUnionAllRewrite() throws Exception {
         checkQuery("SELECT * " +
             "FROM products " +

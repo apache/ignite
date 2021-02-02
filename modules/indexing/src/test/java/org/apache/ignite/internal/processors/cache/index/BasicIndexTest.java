@@ -106,9 +106,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         igniteCfg.setConsistentId(igniteInstanceName);
 
         if (igniteInstanceName.startsWith(CLIENT_NAME) && clientLog != null)
-                igniteCfg.setGridLogger(clientLog);
+            igniteCfg.setGridLogger(clientLog);
         else if (srvLog != null)
-                igniteCfg.setGridLogger(srvLog);
+            igniteCfg.setGridLogger(srvLog);
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("keyStr", String.class.getName());
