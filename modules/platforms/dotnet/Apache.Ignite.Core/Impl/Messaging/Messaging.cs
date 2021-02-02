@@ -87,8 +87,19 @@ namespace Apache.Ignite.Core.Impl.Messaging
         public void Send(object message, object topic = null)
         {
             IgniteArgumentCheck.NotNull(message, "message");
+            
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
-            DoOutOp((int) Op.Send, topic, message);
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                DoOutOp((int) Op.Send, topic, message);
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
         }
 
         /** <inheritdoc /> */
@@ -96,12 +107,23 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             IgniteArgumentCheck.NotNull(messages, "messages");
 
-            DoOutOp((int) Op.SendMulti, writer =>
-            {
-                writer.Write(topic);
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
-                writer.WriteEnumerable(messages.OfType<object>());
-            });
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                DoOutOp((int) Op.SendMulti, writer =>
+                {
+                    writer.Write(topic);
+
+                    writer.WriteEnumerable(messages.OfType<object>());
+                });
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
         }
 
         /** <inheritdoc /> */
@@ -109,13 +131,24 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             IgniteArgumentCheck.NotNull(message, "message");
 
-            DoOutOp((int) Op.SendOrdered, writer =>
-            {
-                writer.Write(topic);
-                writer.Write(message);
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
-                writer.WriteLong((long)(timeout == null ? 0 : timeout.Value.TotalMilliseconds));
-            });
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                DoOutOp((int) Op.SendOrdered, writer =>
+                {
+                    writer.Write(topic);
+                    writer.Write(message);
+
+                    writer.WriteLong((long) (timeout == null ? 0 : timeout.Value.TotalMilliseconds));
+                });
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
         }
 
         /** <inheritdoc /> */
