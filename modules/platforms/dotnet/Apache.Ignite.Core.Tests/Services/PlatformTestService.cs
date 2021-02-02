@@ -617,5 +617,23 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             throw new NotImplementedException();
         }
+
+        /** <inheritDoc /> */
+        public void startReceiveMessage()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public bool testMessagesReceived()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public void testSendMessage()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
