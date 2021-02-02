@@ -84,6 +84,11 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private transient boolean hasOuterJoinReplicatedPartitioned;
 
+    /** Flag indicating that the query contains an JOIN. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient boolean hasJoin;
+
     /**
      * For {@link Message}.
      */
@@ -391,4 +396,22 @@ public class GridCacheSqlQuery implements Message {
 
         return this;
     }
+
+    /**
+     * @return {@code true} if the query contains JOIN.
+     */
+    public boolean hasJoin() {
+        return hasJoin;
+    }
+
+    /***
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery hasJoin(boolean hasJoin) {
+        this.hasJoin = hasJoin;
+
+        return this;
+    }
+
+
 }
