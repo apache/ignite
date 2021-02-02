@@ -72,7 +72,4 @@
             </property>
         {% endif %}
     </bean>
-    {% if config.ssl_context_factory %}
-        {{ ssl_factory_util.ssl_factory(config.ssl_context_factory) }}
-    {% endif %}
 </beans>

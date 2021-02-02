@@ -21,9 +21,9 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.utils import ignore_if, ignite_versions, cluster
+from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion, V_2_8_0
+from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
 # pylint: disable=W0223
@@ -56,7 +56,6 @@ class AuthenticationTests(IgniteTest):
         servers.start()
 
         control_utility = ControlUtility(cluster=servers, login="ignite", password="ignite")
-
         control_utility.activate()
 
         state, _, _ = control_utility.cluster_state()
@@ -97,7 +96,7 @@ class AuthenticationTests(IgniteTest):
 
         try:
             control_utility.activate()
-        except ControlUtilityError as exc:
+        except ControlUtilityError:
             success = True
 
         assert success is True, "User successfully execute command with wrong credentials"

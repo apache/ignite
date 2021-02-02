@@ -44,7 +44,8 @@ class ControlUtility:
 
         if cluster.context.globals.get("use_ssl", False):
             admin_dict = cluster.globals.get("admin", dict())
-            if admin_dict is not None and "ssl" in admin_dict: admin_dict = admin_dict.get("ssl")
+            if admin_dict is not None and "ssl" in admin_dict:
+                admin_dict = admin_dict.get("ssl")
 
             self.key_store_path = admin_dict.get("key_store_path",
                                                  self.jks_path(admin_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
@@ -309,7 +310,8 @@ class ControlUtility:
         auth = ""
         if hasattr(self, 'admin_login'):
             auth = f" --user {self.admin_login} --password {self.admin_password} "
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl} {auth}")
+        return self._cluster.script(f"{self.BASE_COMMAND} --host "
+                                    f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
     @staticmethod
     def __parse_output(raw_output):
