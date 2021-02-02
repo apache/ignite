@@ -179,7 +179,7 @@ class DiscoveryTest(IgniteTest):
                 discovery_spi.so_linger = 0
 
             if test_config.disable_conn_recovery:
-                discovery_spi.connRecoveryTimeout = 0
+                discovery_spi.conn_recovery_timeout = 0
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
@@ -224,7 +224,8 @@ class DiscoveryTest(IgniteTest):
 
         return results
 
-    def _simulate_and_detect_failure(self, servers, failed_nodes, event_timeout_sec, net_part: IgniteAwareService.NetPart):
+    def _simulate_and_detect_failure(self, servers, failed_nodes, event_timeout_sec,
+                                     net_part: IgniteAwareService.NetPart):
         """
         Perform node failure scenario
         """
