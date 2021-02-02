@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -45,6 +46,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -61,6 +63,10 @@ import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Parameter;
 import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
+import org.apache.ignite.platform.model.V5;
+import org.apache.ignite.platform.model.V6;
+import org.apache.ignite.platform.model.V7;
+import org.apache.ignite.platform.model.V8;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -70,6 +76,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -677,6 +684,71 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Obje
 
             cache.put(7, ts1);
             cache.put(8, ts2);
+        }
+
+        /** */
+        private final AtomicInteger cntMsgs = new AtomicInteger(0);
+
+        /** */
+        public void startReceiveMessage() {
+            ignite.message().localListen("test-topic-2", (node, obj) -> {
+                assert obj instanceof BinaryObject;
+
+                V6 v6 = ((BinaryObject)obj).deserialize();
+
+                assert "Sarah Connor".equals(v6.getName()) ||
+                    "John Connor".equals(v6.getName()) ||
+                    "Kyle Reese".equals(v6.getName());
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+
+            ignite.message().localListen("test-topic-3", (node, obj) -> {
+                assert obj instanceof BinaryObject;
+
+                V7 v7 = ((BinaryObject)obj).deserialize();
+
+                assert "V7-1".equals(v7.getName()) ||
+                    "V7-2".equals(v7.getName()) ||
+                    "V7-3".equals(v7.getName());
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+
+            ignite.message().localListen("test-topic-4", (node, obj) -> {
+                assert obj instanceof BinaryObject;
+
+                V8 v8 = ((BinaryObject)obj).deserialize();
+
+                assert "V8".equals(v8.getName()) ||
+                    "V9".equals(v8.getName()) ||
+                    "V10".equals(v8.getName());
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+        }
+
+        /** */
+        public boolean testMessagesReceived() {
+            try {
+                return GridTestUtils.waitForCondition(() -> cntMsgs.get() == 9, 1_000 * 5);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                return false;
+            }
+        }
+
+        /** */
+        public void testSendMessage() {
+            ignite.message().sendOrdered("test-topic", new V5("1"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("2"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("3"), 1_000 * 5);
         }
 
         /** */
