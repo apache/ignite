@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cli;
+package org.apache.ignite.cli.ui;
 
 import java.io.PrintWriter;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Help.Ansi;
 
 /**
  * Basic implementation of a progress bar.
  */
-public class IgniteProgressBar implements AutoCloseable {
+public class ProgressBar implements AutoCloseable {
+    /** Logger. **/
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
     /** Out to output the progress bar UI.. */
     private final PrintWriter out;
 
@@ -36,20 +41,40 @@ public class IgniteProgressBar implements AutoCloseable {
     /** Maximum progress bar value. */
     private int max;
 
+    /** Target width of bar in symbols. */
+    private final int targetBarWidth;
+
     /** Execute. */
     private ScheduledExecutorService exec;
 
     /**
      * Creates a new progress bar.
      *
+     * @param out Output which terminal render will use
      * @param initMax Initial maximum number of steps.
+     * @param terminalWidth Width of user terminal for scale progress bar length
      */
-    public IgniteProgressBar(PrintWriter out, int initMax) {
+    public ProgressBar(PrintWriter out, int initMax, int terminalWidth) {
         this.out = out;
 
         assert initMax > 0;
 
         max = initMax;
+
+        // A huge progress bar for big terminals looks ugly.
+        // It's better to have just enough wide progress bar.
+        targetBarWidth = Math.min(100, terminalWidth);
+    }
+
+    /**
+     * Updates maximum number of steps.
+     *
+     * @param newMax New maximum.
+     */
+    public void setMax(int newMax) {
+        assert newMax > 0;
+
+        max = newMax;
     }
 
     /**
@@ -76,17 +101,6 @@ public class IgniteProgressBar implements AutoCloseable {
         }
     }
 
-    /**
-     * Updates maximum number of steps.
-     *
-     * @param newMax New maximum.
-     */
-    public void setMax(int newMax) {
-        assert newMax > 0;
-
-        max = newMax;
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
         while (curr < max) {
@@ -111,27 +125,36 @@ public class IgniteProgressBar implements AutoCloseable {
     private String render() {
         assert curr <= max;
 
-        int completed = (int)((double)curr / (double)max * 100);
+        var completedPart = ((double)curr / (double)max);
+
+        // Space reserved for '||Done!'
+        var reservedSpace = 7;
+
+        if (targetBarWidth < reservedSpace) {
+           log.warn("Terminal width is so small to show the progress bar");
+
+           return "";
+        }
+
+        var numOfCompletedSymbols = (int) (completedPart * (targetBarWidth - reservedSpace));
 
         StringBuilder sb = new StringBuilder("|");
 
-        sb.append("=".repeat(completed));
+        sb.append("=".repeat(numOfCompletedSymbols));
 
         String percentage;
         int percentageLen;
 
-        if (completed < 100) {
-            sb.append('>').append(" ".repeat(99 - completed));
+        if (completedPart < 1) {
+            sb.append('>').append(" ".repeat(targetBarWidth - reservedSpace - numOfCompletedSymbols));
 
-            percentage = completed + "%";
+            percentage = (int) (completedPart * 100) + "%";
             percentageLen = percentage.length();
-        }
-        else {
-            percentage = "@|green,bold Done!|@";
-            percentageLen = 5;
-        }
 
-        sb.append("|").append(" ".repeat(6 - percentageLen)).append(percentage);
+            sb.append("|").append(" ".repeat(4 - percentageLen)).append(percentage);
+        }
+        else
+            sb.append("=|@|green,bold Done!|@");
 
         return Ansi.AUTO.string(sb.toString());
     }

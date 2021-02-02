@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cli;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.jline.console.SystemRegistry;
@@ -33,7 +32,6 @@ import org.jline.reader.Reference;
 import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 import org.jline.widget.TailTipWidgets;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
@@ -42,6 +40,16 @@ import picocli.shell.jline3.PicocliCommands;
  * Interactive shell mode for Ignite CLI.
  */
 public class InteractiveWrapper {
+    /** System terminal instance. */
+    private final Terminal terminal;
+
+    /**
+     * @param terminal Terminal.
+     */
+    public InteractiveWrapper(Terminal terminal) {
+        this.terminal = terminal;
+    }
+
     /**
      * Start interactive shell.
      *
@@ -55,45 +63,41 @@ public class InteractiveWrapper {
         };
 
         Parser parser = new DefaultParser();
-        try (Terminal terminal = TerminalBuilder.builder().build()) {
-            SystemRegistry sysRegistry = new SystemRegistryImpl(parser, terminal, InteractiveWrapper::workDir, null);
-            sysRegistry.setCommandRegistries(picocliCommands);
 
-            LineReader reader = LineReaderBuilder.builder()
-                .terminal(terminal)
-                .completer(sysRegistry.completer())
-                .parser(parser)
-                .variable(LineReader.LIST_MAX, 50)   // max tab completion candidates
-                .build();
+        SystemRegistry sysRegistry = new SystemRegistryImpl(parser, terminal, InteractiveWrapper::workDir, null);
+        sysRegistry.setCommandRegistries(picocliCommands);
 
-            TailTipWidgets widgets = new TailTipWidgets(reader, sysRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
-            widgets.enable();
+        LineReader reader = LineReaderBuilder.builder()
+            .terminal(terminal)
+            .completer(sysRegistry.completer())
+            .parser(parser)
+            .variable(LineReader.LIST_MAX, 50)   // max tab completion candidates
+            .build();
 
-            KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
-            keyMap.bind(new Reference("tailtip-toggle"), KeyMap.alt("s"));
+        TailTipWidgets widgets = new TailTipWidgets(reader, sysRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
+        widgets.enable();
 
-            String prompt = "ignite> ";
-            String rightPrompt = null;
+        KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
+        keyMap.bind(new Reference("tailtip-toggle"), KeyMap.alt("s"));
 
-            String line;
-            while (true) {
-                try {
-                    sysRegistry.cleanUp();
+        String prompt = "ignite> ";
+        String rightPrompt = null;
 
-                    line = reader.readLine(prompt, rightPrompt, (MaskingCallback) null, null);
+        String line;
+        while (true) {
+            try {
+                sysRegistry.cleanUp();
 
-                    sysRegistry.execute(line);
-                } catch (UserInterruptException ignored) {
-                    // Ignore
-                } catch (EndOfFileException e) {
-                    return;
-                } catch (Exception e) {
-                    sysRegistry.trace(e);
-                }
+                line = reader.readLine(prompt, rightPrompt, (MaskingCallback) null, null);
+
+                sysRegistry.execute(line);
+            } catch (UserInterruptException ignored) {
+                // Ignore
+            } catch (EndOfFileException e) {
+                return;
+            } catch (Exception e) {
+                sysRegistry.trace(e);
             }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
         }
     }
 

@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.CommandFactory;
@@ -33,6 +34,7 @@ import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.InteractiveWrapper;
 import org.apache.ignite.cli.builtins.module.ModuleRegistry;
 import org.apache.ignite.cli.common.IgniteCommand;
+import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 /**
@@ -53,6 +55,9 @@ public class IgniteCliSpec extends CommandSpec {
     @CommandLine.Option(names = "-i", hidden = true, required = false)
     private boolean interactive;
 
+    @Inject
+    private Terminal terminal;
+
     /** {@inheritDoc} */
     @Override public void run() {
         CommandLine cli = spec.commandLine();
@@ -60,7 +65,7 @@ public class IgniteCliSpec extends CommandSpec {
         cli.getOut().print(banner());
 
         if (interactive)
-            new InteractiveWrapper().run(cli);
+            new InteractiveWrapper(terminal).run(cli);
         else
             cli.usage(cli.getOut());
     }

@@ -37,6 +37,8 @@ import org.apache.ignite.cli.builtins.module.ModuleRegistry;
 import org.apache.ignite.cli.builtins.module.StandardModuleDefinition;
 import org.apache.ignite.cli.builtins.node.NodeManager;
 import org.apache.ignite.cli.spec.IgniteCliSpec;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -85,6 +87,11 @@ public class IgniteCliInterfaceTest {
 
         err = new ByteArrayOutputStream();
         out = new ByteArrayOutputStream();
+    }
+
+    @AfterEach
+    private void tearDown() {
+        applicationCtx.stop();
     }
 
     /** */

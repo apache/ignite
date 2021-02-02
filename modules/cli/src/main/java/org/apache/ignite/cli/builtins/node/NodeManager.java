@@ -32,8 +32,9 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.ignite.cli.IgniteCLIException;
-import org.apache.ignite.cli.IgniteProgressBar;
+import org.apache.ignite.cli.ui.ProgressBar;
 import org.apache.ignite.cli.builtins.module.ModuleRegistry;
+import org.jline.terminal.Terminal;
 
 /**
  * Manager of local Ignite nodes.
@@ -52,14 +53,19 @@ public class NodeManager {
     /** Module registry. **/
     private final ModuleRegistry moduleRegistry;
 
+    /** System terminal. **/
+    private final Terminal terminal;
+
     /**
      * Creates node manager.
      *
      * @param moduleRegistry Module registry.
+     * @param terminal System terminal instance.
      */
     @Inject
-    public NodeManager(ModuleRegistry moduleRegistry) {
+    public NodeManager(ModuleRegistry moduleRegistry, Terminal terminal) {
         this.moduleRegistry = moduleRegistry;
+        this.terminal = terminal;
     }
 
     /**
@@ -106,7 +112,7 @@ public class NodeManager {
 
             Process p = pb.start();
 
-            try (var bar = new IgniteProgressBar(out, 100)) {
+            try (var bar = new ProgressBar(out, 100, terminal.getWidth())) {
                 bar.stepPeriodically(300);
 
                 if (!waitForStart("Apache Ignite started successfully!", logFile, NODE_START_TIMEOUT)) {
