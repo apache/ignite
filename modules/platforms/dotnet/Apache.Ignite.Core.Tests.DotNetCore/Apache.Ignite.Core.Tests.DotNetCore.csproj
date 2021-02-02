@@ -351,7 +351,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesAsyncWrapper.cs" Link="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTest.cs" Link="Services\ServicesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServiceTypeAutoResolveTest.cs" Link="Services\ServiceTypeAutoResolveTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTypeAutoResolveTest.cs" Link="Services\ServicesTypeAutoResolveTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EnvVar.cs" Link="Common\EnvVar.cs" />
