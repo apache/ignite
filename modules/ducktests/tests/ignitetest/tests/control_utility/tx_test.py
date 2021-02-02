@@ -52,7 +52,7 @@ class TransactionsTests(IgniteTest):
 
         wait_for_key_locked(long_tx)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         transactions = control_utility.tx()
 
@@ -83,7 +83,7 @@ class TransactionsTests(IgniteTest):
 
         wait_for_key_locked(long_tx_1, long_tx_2)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         # check kill with specific xid.
         transactions = control_utility.tx(label_pattern='TX_1')
@@ -115,7 +115,7 @@ class TransactionsTests(IgniteTest):
                                       wait_for_topology_version=4)
 
         wait_for_key_locked(clients, servers)
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         start_check = self.monotonic()
         assert len(control_utility.tx(clients=True, label_pattern='LBL_.*')) == client_tx_count
