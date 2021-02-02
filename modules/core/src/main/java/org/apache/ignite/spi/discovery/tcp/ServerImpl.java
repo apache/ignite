@@ -298,6 +298,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
+    /** Time of last failed message. */
+    private volatile long msgNotSentNanos;
+
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
         true; //assume that local node supports this feature
@@ -393,6 +396,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         lastRingMsgReceivedTime = 0;
 
         lastRingMsgSentTime = 0;
+
+        msgNotSentNanos = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3849,8 +3854,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
-                        sndState = new CrossRingMessageSendState();
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
+                        msgNotSentNanos = System.nanoTime();
+
+                        sndState = new CrossRingMessageSendState(msgNotSentNanos);
+                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -6517,6 +6525,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void ringMessageSent(int res) {
+        msgNotSentNanos = 0;
+
         lastRingMsgSentTime = System.nanoTime();
 
         if (res == RES_OK_NOT_IN_RING && spiState == CONNECTED) {
@@ -7362,7 +7372,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return RES_OK;
 
             synchronized (mux) {
-                return ring.node(sndId) == null && spiState == CONNECTED ? RES_OK_NOT_IN_RING : RES_OK;
+                // Avoid answering with {@code RES_OK_NOT_IN_RING} if local node became the last one having not sent
+                // any message. Such node treats the others as failed whereas it can be segmented opposite.
+                return spiState == CONNECTED && ring.node(sndId) == null &&
+                    (ring.serverNodes().size() > 1 || msgNotSentNanos == 0) ? RES_OK_NOT_IN_RING : RES_OK;
             }
         }
 
@@ -8195,11 +8208,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final long failTimeNanos;
 
+        /** */
+        private final long initNanos;
+
         /**
          *
          */
-        CrossRingMessageSendState() {
-            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
+        CrossRingMessageSendState(long failTimeNamos) {
+            initNanos = failTimeNamos;
+
+            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
         }
 
         /**
