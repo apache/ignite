@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Decimal task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
+        /** Echo argument task name. */
+        public const string EchoArgTask = "org.apache.ignite.platform.PlatformComputeEchoArgTask";
+
         /** Echo type: null. */
         private const int EchoTypeNull = 0;
 

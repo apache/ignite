@@ -175,6 +175,9 @@ namespace Apache.Ignite.Core.Tests.Services
         int testOverload(int first, int second);
 
         /** */
+        int testOverload(int count, Parameter[] param);
+
+        /** */
         Employee[] testEmployees(Employee[] emps);
         
         /** */
@@ -203,5 +206,14 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         void sleep(long delayMs);
+
+        /** */
+        void startReceiveMessage();
+
+        /** */
+        bool testMessagesReceived();
+
+        /** */
+        void testSendMessage();
     }
 }
