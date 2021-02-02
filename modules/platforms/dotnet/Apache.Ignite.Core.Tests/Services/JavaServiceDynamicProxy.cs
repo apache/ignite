@@ -394,5 +394,23 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc.sleep(delayMs);
         }
+
+        /** <inheritDoc /> */
+        public void startReceiveMessage()
+        {
+            _svc.startReceiveMessage();
+        }
+
+        /** <inheritDoc /> */
+        public bool testMessagesReceived()
+        {
+            return _svc.testMessagesReceived();
+        }
+
+        /** <inheritDoc /> */
+        public void testSendMessage()
+        {
+            _svc.testSendMessage();
+        }
     }
 }
