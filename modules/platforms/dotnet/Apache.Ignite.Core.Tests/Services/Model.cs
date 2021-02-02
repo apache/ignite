@@ -144,4 +144,68 @@ namespace org.apache.ignite.platform.model
         
         public Role Role { get; set; }
     }    
+    
+    /// <summary>
+    /// A class is a clone of Java class ParamValue with the same namespace.
+    /// </summary>
+    public class ParamValue 
+    {
+        /** */
+        public int Id { get; set; }
+
+        /** */
+        public long Val { get; set; }
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class Parameter with the same namespace.
+    /// </summary>
+    public class Parameter
+    {
+        /** */
+        public int Id { get; set; }
+
+        /** */
+        public ParamValue[] Values { get; set; }
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class V1 with the same namespace.
+    /// </summary>
+    public class V1 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V2 with the same namespace.
+    /// </summary>
+    public class V2 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V3 with the same namespace.
+    /// </summary>
+    public class V3 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V4 with the same namespace.
+    /// </summary>
+    public class V4 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V5 with the same namespace.
+    /// </summary>
+    public class V5 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V6 with the same namespace.
+    /// </summary>
+    public class V6 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V6 with the same namespace.
+    /// </summary>
+    public class V7 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V6 with the same namespace.
+    /// </summary>
+    public class V8 { public String Name { get; set; } }
 }

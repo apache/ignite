@@ -326,6 +326,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public int testOverload(int count, Parameter[] param)
+        {
+            return _svc.testOverload(count, param);
+        }
+
+        /** <inheritDoc /> */
         public Employee[] testEmployees(Employee[] emps)
         {
             return _svc.testEmployees(emps);
@@ -381,6 +387,24 @@ namespace Apache.Ignite.Core.Tests.Services
         public void sleep(long delayMs)
         {
             _svc.sleep(delayMs);
+        }
+
+        /** <inheritDoc /> */
+        public void startReceiveMessage()
+        {
+            _svc.startReceiveMessage();
+        }
+
+        /** <inheritDoc /> */
+        public bool testMessagesReceived()
+        {
+            return _svc.testMessagesReceived();
+        }
+
+        /** <inheritDoc /> */
+        public void testSendMessage()
+        {
+            _svc.testSendMessage();
         }
     }
 }

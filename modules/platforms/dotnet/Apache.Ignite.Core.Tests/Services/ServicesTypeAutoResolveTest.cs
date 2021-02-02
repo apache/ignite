@@ -31,6 +31,22 @@ namespace Apache.Ignite.Core.Tests.Services
     public class ServicesTypeAutoResolveTest
     {
         /** */
+        protected internal static readonly Employee[] Emps = new[]
+        {
+            new Employee {Fio = "Sarah Connor", Salary = 1},
+            new Employee {Fio = "John Connor", Salary = 2}
+        };
+        
+        /** */
+        protected internal static readonly Parameter[] Param = new[] 
+        {
+            new Parameter()
+                {Id = 1, Values = new[] {new ParamValue() {Id = 1, Val = 42}, new ParamValue() {Id = 2, Val = 43}}},
+            new Parameter()
+                {Id = 2, Values = new[] {new ParamValue() {Id = 3, Val = 44}, new ParamValue() {Id = 4, Val = 45}}}
+        };
+
+        /** */
         private IIgnite _grid1;
 
         [TestFixtureTearDown]
@@ -127,19 +143,14 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
-            Employee[] emps = new[]
-            {
-                new Employee {Fio = "Sarah Connor", Salary = 1},
-                new Employee {Fio = "John Connor", Salary = 2}
-            };
-
-            Assert.AreEqual(42, svc.testOverload(2, emps));
+            Assert.AreEqual(42, svc.testOverload(2, Emps));
+            Assert.AreEqual(43, svc.testOverload(2, Param));
             Assert.AreEqual(3, svc.testOverload(1, 2));
             Assert.AreEqual(5, svc.testOverload(3, 2));
 
             Assert.IsNull(svc.testEmployees(null));
 
-            emps = svc.testEmployees(emps);
+            var emps = svc.testEmployees(Emps);
 
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
@@ -179,6 +190,61 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.Deny, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestMessagingJavaService()
+        {
+            // Deploy Java service.
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, true);
+
+            var msgng = _grid1.GetMessaging();
+
+            var rcvd = new List<V5>();
+
+            var lsnr = new MessageListener<V5>((guid, v) =>
+            {
+                rcvd.Add(v);
+
+                return true;
+            });
+
+            msgng.LocalListen(lsnr, "test-topic");
+
+            svc.testSendMessage();
+
+            TestUtils.WaitForTrueCondition(() => rcvd.Count == 3, timeout: 2500);
+
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "1"));
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
+
+            msgng.StopLocalListen(lsnr, "test-topic");
+
+            svc.startReceiveMessage();
+
+            msgng.Send(new V6 {Name = "Sarah Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "John Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "Kyle Reese"}, "test-topic-2");
+
+            msgng.SendAll(new[]
+            {
+                new V7 {Name = "V7-1"},
+                new V7 {Name = "V7-2"},
+                new V7 {Name = "V7-3"}
+            }, "test-topic-3");
+
+            msgng.SendOrdered(new V8 {Name = "V8"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V9"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V10"}, "test-topic-4");
+
+            Assert.IsTrue(svc.testMessagesReceived());
         }
 
         /// <summary>
