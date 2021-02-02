@@ -6553,7 +6553,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
     }
 
-
     /**
      * Creates proper timeout helper taking in account current send state and ring state.
      *

@@ -379,7 +379,7 @@ abstract class TcpDiscoveryImpl {
      *                  timeout of certain net operation will be used.
      * @see #simulateNetFailure(Socket, long)
      */
-    void simulateNetTimeout(int direction, int delay){
+    void simulateNetTimeout(int direction, int delay) {
         simulateNetTimeout = new IgnitePair<>(direction, delay < 0 ? null : delay);
     }
 
