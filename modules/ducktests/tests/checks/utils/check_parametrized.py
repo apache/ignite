@@ -23,8 +23,9 @@ from unittest.mock import Mock
 import pytest
 from ducktape.mark import parametrized, parametrize, matrix, ignore
 from ducktape.mark.mark_expander import MarkedFunctionExpander
+from ignitetest.utils import ignite_versions, ignore_if
 
-from ignitetest.utils._mark import IgniteVersionParametrize, ignite_versions, version_if
+from ignitetest.utils._mark import IgniteVersionParametrize
 from ignitetest.utils.version import IgniteVersion, V_2_8_0, V_2_8_1, V_2_7_6, DEV_BRANCH
 
 
@@ -213,13 +214,13 @@ class CheckVersionIf:
         """
         Check common scenarios with @ignite_versions parametrization.
         """
-        @version_if(lambda ver: ver != V_2_8_0, variable_name='ver')
+        @ignore_if(lambda version, globals: version == V_2_8_0, variable_name='ver')
         @ignite_versions(str(DEV_BRANCH), str(V_2_8_0), version_prefix='ver')
         def function_1(ver):
             return IgniteVersion(ver)
 
-        @version_if(lambda ver: ver > V_2_7_6, variable_name='ver_1')
-        @version_if(lambda ver: ver < V_2_8_0, variable_name='ver_2')
+        @ignore_if(lambda ver, globals: ver == V_2_7_6, variable_name='ver_1')
+        @ignore_if(lambda ver, globals: ver >= V_2_8_0, variable_name='ver_2')
         @ignite_versions((str(V_2_8_1), str(V_2_8_0)), (str(V_2_8_0), str(V_2_7_6)), version_prefix='ver')
         def function_2(ver_1, ver_2):
             return IgniteVersion(ver_1), IgniteVersion(ver_2)

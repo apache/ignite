@@ -25,6 +25,7 @@ from datetime import datetime
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_SERVER_KEYSTORE
 
 
 class IgniteService(IgniteAwareService):
@@ -34,12 +35,12 @@ class IgniteService(IgniteAwareService):
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, shutdown_timeout_sec=10,
-                 modules=None):
+    def __init__(self, context, config, num_nodes, jvm_opts=None, full_jvm_opts=None, startup_timeout_sec=60,
+                 shutdown_timeout_sec=10, modules=None):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
-                         jvm_opts=jvm_opts)
+                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
-    def clean_node(self, node):
+    def clean_node(self, node, **kwargs):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
@@ -61,6 +62,10 @@ class IgniteService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
+
+    def update_config_with_globals(self):
+        if self.globals.get("use_ssl", False):
+            self._update_ssl_config_with_globals("server", DEFAULT_SERVER_KEYSTORE)
 
 
 def node_failed_event_pattern(failed_node_id=None):

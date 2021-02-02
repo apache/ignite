@@ -23,23 +23,37 @@ import sys
 import time
 from abc import abstractmethod, ABCMeta
 from datetime import datetime
+from enum import IntEnum
 from threading import Thread
 
-from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.utils.enum import constructible
 
 
 # pylint: disable=too-many-public-methods
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
+
+
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
     """
+    @constructible
+    class NetPart(IntEnum):
+        """
+        Network part to emulate failure.
+        """
+        INPUT = 0
+        OUTPUT = 1
+        ALL = 2
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
@@ -74,15 +88,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     def globals(self):
         return self.context.globals
 
-    def start_async(self, clean=True):
+    def start_async(self, **kwargs):
         """
         Starts in async way.
         """
-        super().start(clean=clean)
+        self.update_config_with_globals()
+        super().start(**kwargs)
 
-    def start(self, clean=True):
-        self.start_async(clean=clean)
+    def start(self, **kwargs):
+        self.start_async(**kwargs)
         self.await_started()
+
+    @abstractmethod
+    def update_config_with_globals(self):
+        """
+        Update configuration with global parameters.
+        """
 
     def await_started(self):
         """
@@ -92,26 +113,26 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
-    def start_node(self, node):
+    def start_node(self, node, **kwargs):
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
 
-        super().start_node(node)
+        super().start_node(node, **kwargs)
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
         ignite_jmx_mixin(node, self.spec, self.pids(node))
 
-    def stop_async(self):
+    def stop_async(self, **kwargs):
         """
         Stop in async way.
         """
-        super().stop()
+        super().stop(**kwargs)
 
-    def stop(self):
+    def stop(self, **kwargs):
         if not self.killed:
-            self.stop_async()
+            self.stop_async(**kwargs)
             self.await_stopped()
         else:
             self.logger.debug("Skipping node stop since it already killed.")
@@ -132,7 +153,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                        err_msg="Node %s's remote processes failed to stop in %d seconds" %
                                (str(node.account), self.shutdown_timeout_sec))
 
-    def stop_node(self, node):
+    def stop_node(self, node, **kwargs):
         pids = self.pids(node)
 
         for pid in pids:
@@ -157,10 +178,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self.killed = True
 
-    def clean(self):
+    def clean(self, **kwargs):
         self.__restore_iptables()
 
-        super().clean()
+        super().clean(**kwargs)
 
     def init_persistent(self, node):
         """
@@ -201,7 +222,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         raise NotImplementedError
 
     # pylint: disable=W0613
-    def _worker(self, idx, node):
+    def worker(self, idx, node, **kwargs):
         cmd = self.spec.command(node)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
@@ -296,19 +317,24 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         return os.path.join(self.temp_dir, "iptables.bak")
 
-    def drop_network(self, nodes=None):
+    def drop_network(self, nodes=None, net_part: NetPart = NetPart.ALL):
         """
         Disconnects node from cluster.
+        :param nodes: Nodes to emulate network failure on.
+        :param net_part: Part of network to emulate failure of.
         """
         if nodes is None:
             assert self.num_nodes == 1
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.info("Dropping ignite connections on '" + node.account.hostname + "' ...")
+            self.logger.info("Dropping " + str(net_part) + " Ignite connections on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
 
+        return self.exec_on_nodes_async(nodes, lambda n: self.__enable_netfilter(n, net_part))
+
+    def __enable_netfilter(self, node, net_part: NetPart):
         cm_spi = self.config.communication_spi
         dsc_spi = self.config.discovery_spi
 
@@ -318,15 +344,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
-        cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
+        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INPUT):
+            node.account.ssh_client.exec_command(
+                f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        return self.exec_on_nodes_async(nodes,
-                                        lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT"),
-                                                   self.logger.debug("Activated netfilter on '%s': %s" %
-                                                                     (n.name, self.__dump_netfilter_settings(n)))
-                                                   )
-                                        )
+        if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTPUT):
+            node.account.ssh_client.exec_command(
+                f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
+
+        self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
@@ -389,3 +415,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
+
+    def _update_ssl_config_with_globals(self, dict_name: str, default_jks: str):
+        """
+        Update ssl configuration.
+        """
+        _dict = self.globals.get(dict_name)
+
+        if _dict is not None:
+            ssl_context_factory = SslContextFactory(self.install_root, **_dict)
+        else:
+            ssl_context_factory = SslContextFactory(self.install_root, default_jks)
+
+        self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
+        self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
+            ssl_enabled=True, ssl_context_factory=ssl_context_factory))

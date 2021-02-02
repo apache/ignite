@@ -16,7 +16,6 @@
 """
 This module contains the base class to build Ignite aware application written on java.
 """
-
 import re
 
 # pylint: disable=W0622
@@ -24,6 +23,7 @@ from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_CLIENT_KEYSTORE
 
 
 class IgniteApplicationService(IgniteAwareService):
@@ -36,10 +36,10 @@ class IgniteApplicationService(IgniteAwareService):
     # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=10, modules=None, servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
-                 start_ignite=True):
+                 full_jvm_opts=None, start_ignite=True):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
-                         jvm_opts=jvm_opts, start_ignite=start_ignite)
+                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts, start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
@@ -69,7 +69,7 @@ class IgniteApplicationService(IgniteAwareService):
         except Exception:
             raise Exception("Java application execution failed.") from None
 
-    def clean_node(self, node):
+    def clean_node(self, node, **kwargs):
         if self.alive(node):
             self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
                              (self.__class__.__name__, node.account))
@@ -107,3 +107,7 @@ class IgniteApplicationService(IgniteAwareService):
                 res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 
         return res
+
+    def update_config_with_globals(self):
+        if self.globals.get("use_ssl", False):
+            self._update_ssl_config_with_globals("client", DEFAULT_CLIENT_KEYSTORE)
