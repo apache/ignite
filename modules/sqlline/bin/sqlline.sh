@@ -100,4 +100,4 @@ CP="${IGNITE_LIBS}"
 
 CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 
-"$JAVA" ${JVM_OPTS} -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver $@
+"$JAVA" ${JVM_OPTS} -cp ${CP} sqlline.SqlLine --connectInteractionMode=notAskCredentials -d org.apache.ignite.IgniteJdbcThinDriver $@
