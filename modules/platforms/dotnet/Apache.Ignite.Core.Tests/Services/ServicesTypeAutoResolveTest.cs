@@ -287,6 +287,61 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestMessagingJavaService()
+        {
+            // Deploy Java service.
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, true);
+
+            var msgng = _grid1.GetMessaging();
+
+            var rcvd = new List<V5>();
+
+            var lsnr = new MessageListener<V5>((guid, v) =>
+            {
+                rcvd.Add(v);
+
+                return true;
+            });
+
+            msgng.LocalListen(lsnr, "test-topic");
+
+            svc.testSendMessage();
+
+            TestUtils.WaitForTrueCondition(() => rcvd.Count == 3, timeout: 2500);
+
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "1"));
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
+            Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
+
+            msgng.StopLocalListen(lsnr, "test-topic");
+
+            svc.startReceiveMessage();
+
+            msgng.Send(new V6 {Name = "Sarah Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "John Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "Kyle Reese"}, "test-topic-2");
+
+            msgng.SendAll(new[]
+            {
+                new V7 {Name = "V7-1"},
+                new V7 {Name = "V7-2"},
+                new V7 {Name = "V7-3"}
+            }, "test-topic-3");
+
+            msgng.SendOrdered(new V8 {Name = "V8"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V9"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V10"}, "test-topic-4");
+
+            Assert.IsTrue(svc.testMessagesReceived());
+        }
+
+        /// <summary>
         /// Starts the grids.
         /// </summary>
         private void StartGrids()
