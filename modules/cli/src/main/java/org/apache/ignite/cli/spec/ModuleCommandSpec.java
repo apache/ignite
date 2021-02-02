@@ -218,7 +218,7 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
              * @param standardModuleDefinition Module definition.
              * @param installed true if module already installed, false otherwise.
              */
-            public StandardModuleView(StandardModuleDefinition standardModuleDefinition, boolean installed) {
+            private StandardModuleView(StandardModuleDefinition standardModuleDefinition, boolean installed) {
                 this.standardModuleDefinition = standardModuleDefinition;
                 this.installed = installed;
             }

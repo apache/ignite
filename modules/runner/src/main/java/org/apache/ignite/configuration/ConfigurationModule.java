@@ -57,8 +57,6 @@ public class ConfigurationModule {
 
         localConfigurator = configurator;
 
-        String key = configurator.getRoot().key();
-
         confRegistry.registerConfigurator(configurator);
     }
 

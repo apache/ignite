@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.annotation.ConfigValue;
 /**
  *
  */
+@SuppressWarnings("PMD.UnusedPrivateField")
 @Config(value = "local", root = true)
 public class LocalConfigurationSchema {
     /** */

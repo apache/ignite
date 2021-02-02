@@ -131,12 +131,12 @@ public class BaseSelectors {
         MethodHandle selectorFn;
 
         /** Constructor for selector. */
-        public SelectorHolder(Selector<?, ?, ?, ?, ?> selector) {
+        private SelectorHolder(Selector<?, ?, ?, ?, ?> selector) {
             this.selector = selector;
         }
 
         /** Constructor for method handle. */
-        public SelectorHolder(MethodHandle selectorFn) {
+        private SelectorHolder(MethodHandle selectorFn) {
             this.selectorFn = selectorFn;
         }
 

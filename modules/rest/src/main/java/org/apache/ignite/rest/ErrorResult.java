@@ -17,7 +17,9 @@
 
 package org.apache.ignite.rest;
 
-/** */
+/**
+ * Error result represent a tuple of error type and user-friendly error message.
+ */
 public class ErrorResult {
     /** */
     private final String type;
@@ -29,5 +31,19 @@ public class ErrorResult {
     public ErrorResult(String type, String message) {
         this.type = type;
         this.message = message;
+    }
+
+    /**
+     * @return Error type describing the class of the error occurred.
+     */
+    public String type() {
+        return type;
+    }
+
+    /**
+     * @return User-friendly error message.
+     */
+    public String message() {
+        return message;
     }
 }

@@ -37,7 +37,6 @@ import org.apache.ignite.cli.builtins.module.ModuleRegistry;
 import org.apache.ignite.cli.builtins.module.StandardModuleDefinition;
 import org.apache.ignite.cli.builtins.node.NodeManager;
 import org.apache.ignite.cli.spec.IgniteCliSpec;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -485,8 +484,8 @@ public class IgniteCliInterfaceTest {
 
             Assertions.assertEquals(0, exitCode);
             verify(httpClient).send(
-                argThat(r -> r.uri().toString().equals("http://localhost:8081/management/v1/configuration/") &&
-                    r.headers().firstValue("Content-Type").get().equals("application/json")),
+                argThat(r -> "http://localhost:8081/management/v1/configuration/".equals(r.uri().toString()) &&
+                    "application/json".equals(r.headers().firstValue("Content-Type").get())),
                 any());
             assertEquals("{\n" +
                 "  \"baseline\" : {\n" +
@@ -511,8 +510,8 @@ public class IgniteCliInterfaceTest {
 
             Assertions.assertEquals(0, exitCode);
             verify(httpClient).send(
-                argThat(r -> r.uri().toString().equals("http://localhost:8081/management/v1/configuration/local.baseline") &&
-                    r.headers().firstValue("Content-Type").get().equals("application/json")),
+                argThat(r -> "http://localhost:8081/management/v1/configuration/local.baseline".equals(r.uri().toString()) &&
+                    "application/json".equals(r.headers().firstValue("Content-Type").get())),
                 any());
             assertEquals("{\n" +
                 "  \"autoAdjust\" : {\n" +
@@ -537,10 +536,10 @@ public class IgniteCliInterfaceTest {
 
             Assertions.assertEquals(0, exitCode);
             verify(httpClient).send(
-                argThat(r -> r.uri().toString().equals("http://localhost:8081/management/v1/configuration/") &&
-                    r.method().equals("POST") &&
+                argThat(r -> "http://localhost:8081/management/v1/configuration/".equals(r.uri().toString()) &&
+                    "POST".equals(r.method()) &&
                     r.bodyPublisher().get().contentLength() == expSentContent.getBytes().length &&
-                    r.headers().firstValue("Content-Type").get().equals("application/json")),
+                    "application/json".equals(r.headers().firstValue("Content-Type").get())),
                 any());
             assertEquals("Configuration was updated successfully.\n\n" +
                 "Use the ignite config get command to view the updated configuration.\n", out.toString());
@@ -562,10 +561,10 @@ public class IgniteCliInterfaceTest {
 
             Assertions.assertEquals(0, exitCode);
             verify(httpClient).send(
-                argThat(r -> r.uri().toString().equals("http://localhost:8081/management/v1/configuration/") &&
-                    r.method().equals("POST") &&
+                argThat(r -> "http://localhost:8081/management/v1/configuration/".equals(r.uri().toString()) &&
+                    "POST".equals(r.method()) &&
                     r.bodyPublisher().get().contentLength() == expSentContent.getBytes().length &&
-                    r.headers().firstValue("Content-Type").get().equals("application/json")),
+                    "application/json".equals(r.headers().firstValue("Content-Type").get())),
                 any());
             assertEquals("Configuration was updated successfully.\n\n" +
                 "Use the ignite config get command to view the updated configuration.\n", out.toString());

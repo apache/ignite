@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 
 /** */
+@SuppressWarnings("PMD.UnusedPrivateField")
 @Config
 public class DataStorageConfigurationSchema {
     /** */

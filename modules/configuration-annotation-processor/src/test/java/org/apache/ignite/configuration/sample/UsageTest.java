@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.Configurator;
-import org.apache.ignite.configuration.PublicConfigurator;
 import org.apache.ignite.configuration.internal.NamedList;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.StorageException;
@@ -75,25 +74,17 @@ public class UsageTest {
         final LocalConfiguration root = configurator.getRoot();
         root.baseline().autoAdjust().enabled().value();
 
-        try {
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
             configurator.set(Selectors.LOCAL_BASELINE_AUTO_ADJUST_ENABLED, false);
-            Assertions.fail();
-        }
-        catch (ConfigurationValidationException e) {
-            // No-op.
-        }
-
+        });
         configurator.set(Selectors.LOCAL_BASELINE_AUTO_ADJUST, new ChangeAutoAdjust().withEnabled(false).withTimeout(0L));
         configurator.getRoot().baseline().nodes().get("node1").autoAdjustEnabled(false);
         configurator.getRoot().baseline().autoAdjust().enabled(true);
         configurator.getRoot().baseline().nodes().get("node1").autoAdjustEnabled(true);
 
-        try {
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
             configurator.getRoot().baseline().autoAdjust().enabled(false);
-            Assertions.fail();
-        } catch (ConfigurationValidationException e) {}
-
-        PublicConfigurator<LocalConfiguration> con = new PublicConfigurator<>(configurator);
+        });
     }
 
     /**

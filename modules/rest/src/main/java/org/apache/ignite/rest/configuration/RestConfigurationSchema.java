@@ -20,6 +20,10 @@ package org.apache.ignite.rest.configuration;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 
+/**
+ * Configuration schema for REST endpoint subtree.
+ */
+@SuppressWarnings("PMD.UnusedPrivateField")
 @Config(value = "rest", root = true)
 public class RestConfigurationSchema {
     /** */

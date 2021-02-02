@@ -504,7 +504,7 @@ public class Processor extends AbstractProcessor {
         /** Get method type for public interface. */
         private final TypeName interfaceGetMethodType;
 
-        public ConfigurationFieldTypes(TypeName getMethodType, TypeName unwrappedType, TypeName viewClassType, TypeName initClassType, TypeName changeClassType, TypeName interfaceGetMethodType) {
+        private ConfigurationFieldTypes(TypeName getMethodType, TypeName unwrappedType, TypeName viewClassType, TypeName initClassType, TypeName changeClassType, TypeName interfaceGetMethodType) {
             this.getMethodType = getMethodType;
             this.unwrappedType = unwrappedType;
             this.viewClassType = viewClassType;
