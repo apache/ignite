@@ -32,11 +32,17 @@ namespace Apache.Ignite.Core.Common
         /** JavaMessage field. */
         private const string JavaMessageField = "JavaMessage";
 
+        /** JavaStackTrace field. */
+        private const string JavaStackTraceField = "JavaStackTrace";
+
         /** Java exception class name. */
         private readonly string _javaClassName;
         
         /** Java exception message. */
         private readonly string _javaMessage;
+
+        /** Java stack trace. */
+        private readonly string _javaStackTrace;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JavaException"/> class.
@@ -75,12 +81,13 @@ namespace Apache.Ignite.Core.Common
         /// <param name="stackTrace">Java stack trace.</param>
         /// <param name="cause">The cause.</param>
         public JavaException(string javaClassName, string javaMessage, string stackTrace, Exception cause)
-            : base(stackTrace ?? javaMessage, cause)
+            : base(javaMessage, cause)
         {
             // Send stackTrace to base ctor because it has all information, including class names and messages.
             // Store ClassName and Message separately for mapping purposes.
             _javaClassName = javaClassName;
             _javaMessage = javaMessage;
+            _javaStackTrace = stackTrace;
         }
 
         /// <summary>
@@ -102,6 +109,7 @@ namespace Apache.Ignite.Core.Common
         {
             _javaClassName = info.GetString(JavaClassNameField);
             _javaMessage = info.GetString(JavaMessageField);
+            _javaStackTrace = info.GetString(JavaStackTraceField);
         }
 
         /// <summary>
@@ -118,6 +126,7 @@ namespace Apache.Ignite.Core.Common
 
             info.AddValue(JavaClassNameField, _javaClassName);
             info.AddValue(JavaMessageField, _javaMessage);
+            info.AddValue(JavaStackTraceField, _javaStackTrace);
         }
 
         /// <summary>
@@ -134,6 +143,14 @@ namespace Apache.Ignite.Core.Common
         public string JavaMessage
         {
             get { return _javaMessage; }
+        }
+
+        /// <summary>
+        /// Gets the Java stack trace.
+        /// </summary>
+        public override string StackTrace
+        {
+            get { return _javaStackTrace; }
         }
     }
 }
