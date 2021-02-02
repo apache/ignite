@@ -60,7 +60,6 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
         return Arrays.asList(
             new Object[] {WALMode.LOG_ONLY},
             new Object[] {WALMode.FSYNC}
-
         );
     }
 
