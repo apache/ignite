@@ -26,6 +26,7 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
@@ -33,6 +34,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CANCEL;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CHECK;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.of;
 
@@ -91,6 +93,10 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 taskName = VisorSnapshotCancelTask.class.getName();
                 taskArgs = argIter.nextArg("Expected snapshot name.");
 
+            case CHECK:
+                taskName = VisorSnapshotCheckTask.class.getName();
+                taskArgs = argIter.nextArg("Expected snapshot name.");
+
                 break;
 
             default:
@@ -105,6 +111,9 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
         Command.usage(log, "Cancel running snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
             CANCEL.toString(), "snapshot_name");
+
+        Command.usage(log, "Check snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
+            CHECK.toString(), "snapshot_name");
     }
 
     /** {@inheritDoc} */

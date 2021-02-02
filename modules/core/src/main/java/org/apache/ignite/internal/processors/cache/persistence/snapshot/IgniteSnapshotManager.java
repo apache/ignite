@@ -64,7 +64,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -116,9 +115,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotMetadataCollectorTask;
-import org.apache.ignite.internal.visor.snapshot.VisorVerifySnapshotPartitionsTask;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
@@ -815,17 +811,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
 
             return new IgniteFutureImpl<>(kctx0.task()
-                .execute(VisorSnapshotMetadataCollectorTask.class,
-                    new VisorTaskArgument<>(kctx0.state().onlineBaselineNodes(),
-                        name,
-                        log.isDebugEnabled())))
+                .execute(SnapshotMetadataCollectorTask.class, name))
                 .get();
         })
             .thenApplyAsync(metas -> {
                 kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
 
                 return new IgniteFutureImpl<>(kctx0.task()
-                    .execute(VisorVerifySnapshotPartitionsTask.class, metas))
+                    .execute(SnapshotPartitionsVerifyTask.class, metas))
                     .get();
             })
             .whenComplete((r, ex) -> {

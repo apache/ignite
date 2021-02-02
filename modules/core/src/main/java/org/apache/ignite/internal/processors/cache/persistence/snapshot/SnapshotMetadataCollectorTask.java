@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,24 +23,51 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.sameSnapshotMetadata;
 
 /** Snapshot task to collect snapshot metadata from the baseline nodes for given snapshot name. */
 @GridInternal
-public class VisorSnapshotMetadataCollectorTask
-    extends VisorMultiNodeTask<String, Map<ClusterNode, List<SnapshotMetadata>>, List<SnapshotMetadata>> {
+public class SnapshotMetadataCollectorTask
+    extends ComputeTaskAdapter<String, Map<ClusterNode, List<SnapshotMetadata>>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override protected @Nullable Map<ClusterNode, List<SnapshotMetadata>> reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid,
+        @Nullable String snpName
+    ) throws IgniteException {
+        Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
+
+        for (ClusterNode node : subgrid) {
+            map.put(new ComputeJobAdapter(snpName) {
+                        @IgniteInstanceResource
+                        private transient IgniteEx ignite;
+
+                        @Override public List<SnapshotMetadata> execute() throws IgniteException {
+                            return ignite.context().cache().context().snapshotMgr()
+                                .readSnapshotMetadatas(snpName);
+                        }
+                    }, node);
+        }
+
+        return map;
+    }
+
+    @Override public @Nullable Map<ClusterNode, List<SnapshotMetadata>> reduce(
+        List<ComputeJobResult> results
+    ) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
 
         SnapshotMetadata first = null;
@@ -71,26 +98,8 @@ public class VisorSnapshotMetadataCollectorTask
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, List<SnapshotMetadata>> job(String snpName) {
-        return new VisorSnapshotMetadataCollectorJob(snpName);
-    }
-
-    /** Compute job which collects snapshot metadata files on the node it run. */
-    private static class VisorSnapshotMetadataCollectorJob
-        extends VisorJob<String, List<SnapshotMetadata>> {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param arg Snapshot arguments to check.
-         */
-        public VisorSnapshotMetadataCollectorJob(@Nullable String arg) {
-            super(arg, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected List<SnapshotMetadata> run(@Nullable String snpName) throws IgniteException {
-            return ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(snpName);
-        }
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        // Handle all exceptions during the `reduce` operation.
+        return ComputeJobResultPolicy.WAIT;
     }
 }
