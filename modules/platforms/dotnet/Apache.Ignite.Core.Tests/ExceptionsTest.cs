@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests
             var javaEx = ex.InnerException as JavaException;
 
             Assert.IsNotNull(javaEx);
-            Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
+            Assert.IsTrue(javaEx.StackTrace.Contains("at " + ExceptionTask));
             Assert.AreEqual(name, javaEx.JavaMessage);
             Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
 
@@ -307,7 +307,8 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
+            Assert.IsTrue(ex.GetBaseException().Message.Contains(
+                "Spring XML configuration path is invalid: z:\\invalid.xml"));
         }
 
         /// <summary>
