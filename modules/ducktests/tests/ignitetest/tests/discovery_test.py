@@ -91,7 +91,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT], disable_conn_recovery=[False, True],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
+            net_part=[IgniteService.NetPart.ALL],
             load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout,
                                            disable_conn_recovery: bool, net_part: IgniteService.NetPart):
