@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.IsTrue(ex.GetBaseException().Message.Contains(
+            Assert.IsTrue(ex.GetBaseException().StackTrace.Contains(
                 "Spring XML configuration path is invalid: z:\\invalid.xml"));
         }
 
