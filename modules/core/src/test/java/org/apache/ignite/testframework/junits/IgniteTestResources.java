@@ -113,6 +113,7 @@ public class IgniteTestResources {
             this.log = rootLog.getLogger(getClass());
 
         this.jmx = prepareMBeanServer();
+        this.cfg.setMBeanServer(jmx);
         this.ctx = new GridTestKernalContext(log, this.cfg);
         this.rsrcProc = new GridResourceProcessor(ctx);
     }

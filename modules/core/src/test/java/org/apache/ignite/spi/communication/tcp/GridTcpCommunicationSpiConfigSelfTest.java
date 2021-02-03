@@ -26,11 +26,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -143,23 +146,44 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
         TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLogger, false);
 
+        sendingSpi.onContextInitialized(sendingCtx);
+
         GridTestNode receiverNode = new GridTestNode();
         receiverNode.order(1);
         GridSpiTestContext receiverCtx = initSpiContext();
+        receiverCtx.metricsRegistryProducer((name) -> {
+            try {
+                Thread.sleep(100);
+            }
+            catch (Exception e) {}
 
-        initializeSpi(receiverCtx, receiverNode, listeningLogger, true);
+            return new MetricRegistry(name, null, null, new NullLogger());
+        });
+
+        TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLogger, true);
 
         receiverCtx.remoteNodes().add(sendingNode);
         sendingCtx.remoteNodes().add(receiverNode);
 
-        GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture sendFut = GridTestUtils.runAsync(() -> {
             Message msg = new GridTestMessage(sendingNode.id(), 0, 0);
 
             sendingSpi.sendMessage(receiverNode, msg);
         });
 
+        IgniteInternalFuture initFut = GridTestUtils.runAsync(() -> {
+            try {
+                receiverSpi.onContextInitialized(receiverCtx);
+            } catch (Exception e) {
+                // No-op.
+            }
+        });
+
         assertFalse("Check test logs, NPE was found",
             GridTestUtils.waitForCondition(() -> npeLsnr.check(), 3_000));
+
+        initFut.get();
+        sendFut.get();
     }
 
     /**
@@ -189,8 +213,6 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         rsrcs.inject(spi);
 
         spi.spiStart(getTestIgniteInstanceName() + node.order());
-
-        GridTestUtils.runAsync(() -> spi.onContextInitialized(ctx));
 
         node.setAttributes(spi.getNodeAttributes());
         node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
