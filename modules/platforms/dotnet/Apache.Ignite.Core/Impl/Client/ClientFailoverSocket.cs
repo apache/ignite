@@ -133,6 +133,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
 
             Connect();
+            OnFirstConnect();
         }
 
         /// <summary>
@@ -423,7 +424,13 @@ namespace Apache.Ignite.Core.Impl.Client
         private void Connect()
         {
             _socket = GetNextSocket();
+        }
 
+        /// <summary>
+        /// Performs initial checks when the first connection to the cluster has been established.
+        /// </summary>
+        private void OnFirstConnect()
+        {
             if (_config.EnablePartitionAwareness && !_socket.Features.HasOp(ClientOp.CachePartitions))
             {
                 _config.EnablePartitionAwareness = false;
@@ -444,7 +451,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (_socket.Features.HasFeature(ClientBitmaskFeature.BinaryConfiguration))
             {
-                // TODO: Retrieve binary config only once for the entire cluster.
                 var binaryCfg = _socket.DoOutInOp(
                     ClientOp.BinaryConfigurationGet,
                     ctx => { },
@@ -455,17 +461,19 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (binaryCfg.CompactFooter && !_marsh.CompactFooter)
                 {
                     // Changing from full to compact is not safe: some clients do not support compact footers.
-                    // Print a warning, but don't change the configuration.
-                    // TODO: Warn or Info? If the user has disabled it explicitly, maybe they know what they are doing?
-                    _logger.Warn("TODO");
+                    // Log information, but don't change the configuration.
+                    _logger.Info("BinaryConfiguration.CompactFooter is true on the server, but false on the client." +
+                                 "Consider enabling this setting to reduce cache entry size.");
                 }
 
                 if (!binaryCfg.CompactFooter && _marsh.CompactFooter)
                 {
                     // Changing from compact to full footer is safe, do it automatically.
-                    _logger.Debug("Compact footer disabled according to server configuration.");
                     _marsh.CompactFooter = false;
                     _config.BinaryConfiguration.CompactFooter = false;
+
+                    _logger.Debug("BinaryConfiguration.CompactFooter set to false on client " +
+                                  "according to server configuration.");
                 }
 
                 // Warn if there is a mapper mismatch, but don't change
