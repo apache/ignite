@@ -64,7 +64,9 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(e.InnerException);
 
-            Assert.IsTrue(e.InnerException.Message.StartsWith(
+            Assert.AreEqual("Cluster group is empty.", e.InnerException.Message);
+
+            Assert.IsTrue(e.InnerException.StackTrace.StartsWith(
                 "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
             // Check all exceptions mapping.
