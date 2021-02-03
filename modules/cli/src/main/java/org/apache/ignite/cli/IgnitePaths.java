@@ -56,6 +56,12 @@ public class IgnitePaths {
     /** Work directory for Ignite server and CLI operation. */
     public final Path workDir;
 
+    /** Directory for storing server node configs. */
+    public final Path configDir;
+
+    /** Directory for server nodes logs */
+    public final Path logDir;
+
     /**
      * Ignite CLI version.
      * Also, the same version will be used for addressing any binaries inside bin dir
@@ -69,9 +75,11 @@ public class IgnitePaths {
      * @param workDir Work directory.
      * @param ver Ignite CLI version.
      */
-    public IgnitePaths(Path binDir, Path workDir, String ver) {
+    public IgnitePaths(Path binDir, Path workDir, Path configDir, Path logDir, String ver) {
         this.binDir = binDir;
         this.workDir = workDir;
+        this.configDir = configDir;
+        this.logDir = logDir;
         this.ver = ver;
     }
 
@@ -114,28 +122,31 @@ public class IgnitePaths {
      * Path to default Ignite node config.
      */
     public Path serverDefaultConfigFile() {
-        return serverConfigDir().resolve("default-config.xml");
+        return configDir.resolve("default-config.xml");
     }
 
     /**
      * Init or recovers Ignite distributive directories structure.
      */
     public void initOrRecover() {
-        File igniteWork = workDir.toFile();
-        if (!(igniteWork.exists() || igniteWork.mkdirs()))
-            throw new IgniteCLIException("Can't create working directory: " + workDir);
+        initDirIfNeeded(workDir,"Can't create working directory: " + workDir);
+        initDirIfNeeded(binDir,"Can't create bin directory: " + binDir);
+        initDirIfNeeded(libsDir(),"Can't create a directory for ignite modules: " + libsDir());
+        initDirIfNeeded(cliLibsDir(),"Can't create a directory for cli modules: " + cliLibsDir());
+        initDirIfNeeded(configDir,"Can't create a directory for server configs: " + configDir);
+        initDirIfNeeded(logDir,"Can't create a directory for server logs: " + logDir);
+    }
 
-        File igniteBin = libsDir().toFile();
-        if (!(igniteBin.exists() || igniteBin.mkdirs()))
-            throw new IgniteCLIException("Can't create a directory for ignite modules: " + libsDir());
-
-        File igniteBinCli = cliLibsDir().toFile();
-        if (!(igniteBinCli.exists() || igniteBinCli.mkdirs()))
-            throw new IgniteCLIException("Can't create a directory for cli modules: " + cliLibsDir());
-
-        File srvCfg = serverConfigDir().toFile();
-        if (!(srvCfg.exists() || srvCfg.mkdirs()))
-            throw new IgniteCLIException("Can't create a directory for server configs: " + serverConfigDir());
+    /**
+     * Create directory if not exists.
+     *
+     * @param dir Directory
+     * @param exceptionMessage Exception message if directory wasn't created
+     */
+    private void initDirIfNeeded(Path dir, String exceptionMessage) {
+        File dirFile = dir.toFile();
+        if (!(dirFile.exists() || dirFile.mkdirs()))
+            throw new IgniteCLIException(exceptionMessage);
     }
 
     /**
@@ -145,8 +156,10 @@ public class IgnitePaths {
      */
     public boolean validateDirs() {
         return workDir.toFile().exists() &&
+                binDir.toFile().exists() &&
                 libsDir().toFile().exists() &&
                 cliLibsDir().toFile().exists() &&
-                serverConfigDir().toFile().exists();
+                configDir.toFile().exists() &&
+                logDir.toFile().exists();
     }
 }

@@ -56,7 +56,7 @@ public class CliPathsConfigLoader {
         CliVersionInfo cliVerInfo
     ) {
         this.pathRslvr = pathRslvr;
-        this.ver = cliVerInfo.ver;
+        ver = cliVerInfo.ver;
     }
 
     /**
@@ -110,13 +110,18 @@ public class CliPathsConfigLoader {
             Properties props = new Properties();
             props.load(inputStream);
 
-            if ((props.getProperty("bin") == null) || (props.getProperty("work") == null))
+            if ((props.getProperty("bin") == null) ||
+                (props.getProperty("work") == null) ||
+                (props.getProperty("config") == null) ||
+                (props.getProperty("log") == null) )
                 throw new IgniteCLIException("Config file has wrong format. " +
-                    "It must contain correct paths to bin and work dirs");
+                    "It must contain correct paths to bin, work, config and log dirs");
 
             return new IgnitePaths(
                 Path.of(props.getProperty("bin")),
                 Path.of(props.getProperty("work")),
+                Path.of(props.getProperty("config")),
+                Path.of(props.getProperty("log")),
                 ver);
         }
         catch (IOException e) {

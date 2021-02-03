@@ -76,7 +76,7 @@ public class NodeCommandSpec extends CategorySpec {
 
             out.println("Starting a new Ignite node...");
 
-            NodeManager.RunningNode node = nodeMgr.start(consistentId, ignitePaths.workDir,
+            NodeManager.RunningNode node = nodeMgr.start(consistentId, ignitePaths.logDir,
                 ignitePaths.cliPidsDir(),
                 configPath,
                 out);
@@ -152,7 +152,7 @@ public class NodeCommandSpec extends CategorySpec {
         @Override public void run() {
             IgnitePaths paths = cliPathsCfgLdr.loadIgnitePathsOrThrowError();
 
-            List<NodeManager.RunningNode> nodes = nodeMgr.getRunningNodes(paths.workDir, paths.cliPidsDir());
+            List<NodeManager.RunningNode> nodes = nodeMgr.getRunningNodes(paths.logDir, paths.cliPidsDir());
 
             PrintWriter out = spec.commandLine().getOut();
             ColorScheme cs = spec.commandLine().getColorScheme();

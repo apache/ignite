@@ -104,6 +104,8 @@ public class InitIgniteCommand {
 
         tbl.addRow("@|bold Binaries Directory|@", cfg.binDir);
         tbl.addRow("@|bold Work Directory|@", cfg.workDir);
+        tbl.addRow("@|bold Config Directory|@", cfg.configDir);
+        tbl.addRow("@|bold Log Directory|@", cfg.logDir);
 
         out.println(tbl);
         out.println();
@@ -159,8 +161,10 @@ public class InitIgniteCommand {
 
             Path binDir = pathRslvr.toolHomeDirectoryPath().resolve("ignite-bin");
             Path workDir = pathRslvr.toolHomeDirectoryPath().resolve("ignite-work");
+            Path cfgDir = pathRslvr.toolHomeDirectoryPath().resolve("ignite-config");
+            Path logDir = pathRslvr.toolHomeDirectoryPath().resolve("ignite-log");
 
-            fillNewConfigFile(newCfgFile, binDir, workDir);
+            fillNewConfigFile(newCfgFile, binDir, workDir, cfgDir, logDir);
 
             return newCfgFile;
         }
@@ -176,12 +180,19 @@ public class InitIgniteCommand {
      * @param binDir Path for bin dir.
      * @param workDir Path for work dir.
      */
-    private void fillNewConfigFile(File f, @NotNull Path binDir, @NotNull Path workDir) {
+    private void fillNewConfigFile(File f,
+        @NotNull Path binDir,
+        @NotNull Path workDir,
+        @NotNull Path cfgDir,
+        @NotNull Path logDir
+        ) {
         try (FileWriter fileWriter = new FileWriter(f)) {
             Properties props = new Properties();
 
             props.setProperty("bin", binDir.toString());
             props.setProperty("work", workDir.toString());
+            props.setProperty("config", cfgDir.toString());
+            props.setProperty("log", logDir.toString());
             props.store(fileWriter, "");
         }
         catch (IOException e) {

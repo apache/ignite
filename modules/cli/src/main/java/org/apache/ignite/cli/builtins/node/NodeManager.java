@@ -75,19 +75,18 @@ public class NodeManager {
      * just waiting for appropriate message in the node logs.
      *
      * @param consistentId Node consistent id.
-     * @param workDir Work dir for node operation.
+     * @param logDir Log dir for receiving node state.
      * @param pidsDir Dir where pid files of running nodes will be stored.
      * @param srvCfg Config for Ignite node
      * @param out PrintWriter for user messages.
      * @return Information about successfully started node
      */
-    public RunningNode start(String consistentId, Path workDir, Path pidsDir, Path srvCfg, PrintWriter out) {
-        if (getRunningNodes(workDir, pidsDir).stream().anyMatch(n -> n.consistentId.equals(consistentId)))
+    public RunningNode start(String consistentId, Path logDir, Path pidsDir, Path srvCfg, PrintWriter out) {
+        if (getRunningNodes(logDir, pidsDir).stream().anyMatch(n -> n.consistentId.equals(consistentId)))
             throw new IgniteCLIException("Node with consistentId " + consistentId + " is already exist");
 
         try {
-            Path logFile = logFile(workDir, consistentId);
-
+            Path logFile = logFile(logDir, consistentId);
             if (Files.exists(logFile))
                 Files.delete(logFile);
 
@@ -217,7 +216,7 @@ public class NodeManager {
      * @param pidsDir Dir with nodes pids.
      * @return List of running nodes.
      */
-    public List<RunningNode> getRunningNodes(Path worksDir, Path pidsDir) {
+    public List<RunningNode> getRunningNodes(Path logDir, Path pidsDir) {
         if (Files.exists(pidsDir)) {
             try (Stream<Path> files = Files.find(pidsDir, 1, (f, attrs) -> f.getFileName().toString().endsWith(".pid"))) {
                 return files
@@ -241,7 +240,7 @@ public class NodeManager {
                         else {
                             String consistentId = filename.substring(0, filename.lastIndexOf('_'));
 
-                            return Optional.of(new RunningNode(pid, consistentId, logFile(worksDir, consistentId)));
+                            return Optional.of(new RunningNode(pid, consistentId, logFile(logDir, consistentId)));
                         }
 
                     })
@@ -311,12 +310,12 @@ public class NodeManager {
     }
 
     /**
-     * @param workDir Ignite work dir.
+     * @param logDir Ignite log dir.
      * @param consistentId Node consistent id.
      * @return Path of node log file.
      */
-    private static Path logFile(Path workDir, String consistentId) {
-        return workDir.resolve(consistentId + ".log");
+    private static Path logFile(Path logDir, String consistentId) {
+          return logDir.resolve(consistentId + ".log");
     }
 
     /**

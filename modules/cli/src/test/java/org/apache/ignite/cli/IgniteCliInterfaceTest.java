@@ -102,6 +102,13 @@ public class IgniteCliInterfaceTest {
             .setOut(new PrintWriter(out, true));
     }
 
+    IgnitePaths ignitePaths = new IgnitePaths(
+            Path.of("bin"),
+            Path.of("work"),
+            Path.of("config"),
+            Path.of("log"),
+            "version");
+
     /** */
     @DisplayName("init")
     @Nested
@@ -144,17 +151,12 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("add mvn:groupId:artifact:version")
         void add() {
-            IgnitePaths paths = new IgnitePaths(
-                Path.of("binDir"),
-                Path.of("worksDir"),
-                "version");
-
-            when(cliPathsCfgLdr.loadIgnitePathsOrThrowError()).thenReturn(paths);
+            when(cliPathsCfgLdr.loadIgnitePathsOrThrowError()).thenReturn(ignitePaths);
 
             var exitCode =
                 commandLine(applicationCtx).execute("module add mvn:groupId:artifactId:version".split(" "));
 
-            verify(moduleMgr).addModule("mvn:groupId:artifactId:version", paths, Arrays.asList());
+            verify(moduleMgr).addModule("mvn:groupId:artifactId:version", ignitePaths, Collections.emptyList());
             Assertions.assertEquals(0, exitCode);
         }
 
@@ -164,10 +166,7 @@ public class IgniteCliInterfaceTest {
         void addWithCustomRepo() throws MalformedURLException {
             doNothing().when(moduleMgr).addModule(any(), any(), any());
 
-            IgnitePaths paths = new IgnitePaths(Path.of("binDir"),
-                Path.of("worksDir"), "version");
-
-            when(cliPathsCfgLdr.loadIgnitePathsOrThrowError()).thenReturn(paths);
+            when(cliPathsCfgLdr.loadIgnitePathsOrThrowError()).thenReturn(ignitePaths);
 
             var exitCode =
                 commandLine(applicationCtx)
@@ -175,7 +174,7 @@ public class IgniteCliInterfaceTest {
 
             verify(moduleMgr).addModule(
                 "mvn:groupId:artifactId:version",
-                paths,
+                ignitePaths,
                 Collections.singletonList(new URL("http://mvnrepo.com/repostiory")));
             Assertions.assertEquals(0, exitCode);
         }
@@ -186,17 +185,12 @@ public class IgniteCliInterfaceTest {
         void addBuiltinModule() {
             doNothing().when(moduleMgr).addModule(any(), any(), any());
 
-            IgnitePaths paths = new IgnitePaths(
-                Path.of("binDir"),
-                Path.of("worksDir"),
-                "version");
-
-            when(cliPathsCfgLdr.loadIgnitePathsOrThrowError()).thenReturn(paths);
+            when(cliPathsCfgLdr.loadIgnitePathsOrThrowError()).thenReturn(ignitePaths);
 
             var exitCode =
                 commandLine(applicationCtx).execute("module add test-module".split(" "));
 
-            verify(moduleMgr).addModule("test-module", paths, Collections.emptyList());
+            verify(moduleMgr).addModule("test-module", ignitePaths, Collections.emptyList());
             Assertions.assertEquals(0, exitCode);
         }
 
@@ -309,8 +303,6 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("start node1 --config conf.json")
         void start() {
-           var ignitePaths = new IgnitePaths(Path.of(""), Path.of(""), "version");
-
            var nodeName = "node1";
 
            var node =
@@ -327,7 +319,7 @@ public class IgniteCliInterfaceTest {
             var exitCode = cli.execute(("node start " + nodeName + " --config conf.json").split(" "));
 
             Assertions.assertEquals(0, exitCode);
-            verify(nodeMgr).start(nodeName, ignitePaths.workDir, ignitePaths.cliPidsDir(), Path.of("conf.json"), cli.getOut());
+            verify(nodeMgr).start(nodeName, ignitePaths.logDir, ignitePaths.cliPidsDir(), Path.of("conf.json"), cli.getOut());
             assertEquals("Starting a new Ignite node...\n\nNode is successfully started. To stop, type ignite node stop " + nodeName + "\n\n" +
                 "+---------------+---------+\n" +
                 "| Consistent ID | node1   |\n" +
@@ -343,8 +335,6 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("stop node1")
         void stopRunning() {
-            var ignitePaths = new IgnitePaths(Path.of(""), Path.of(""), "version");
-
             var nodeName = "node1";
 
             when(nodeMgr.stopWait(any(), any()))
@@ -367,8 +357,6 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("stop unknown-node")
         void stopUnknown() {
-            var ignitePaths = new IgnitePaths(Path.of(""), Path.of(""), "version");
-
             var nodeName = "unknown-node";
 
             when(nodeMgr.stopWait(any(), any()))
@@ -391,8 +379,6 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("list")
         void list() {
-            var ignitePaths = new IgnitePaths(Path.of(""), Path.of(""), "version");
-
             when(nodeMgr.getRunningNodes(any(), any()))
                 .thenReturn(Arrays.asList(
                     new NodeManager.RunningNode(1, "new1", Path.of("logFile1")),
@@ -406,7 +392,7 @@ public class IgniteCliInterfaceTest {
                 commandLine(applicationCtx).execute("node list".split(" "));
 
             Assertions.assertEquals(0, exitCode);
-            verify(nodeMgr).getRunningNodes(ignitePaths.workDir, ignitePaths.cliPidsDir());
+            verify(nodeMgr).getRunningNodes(ignitePaths.logDir, ignitePaths.cliPidsDir());
             assertEquals("Currently, there are 2 locally running nodes.\n\n" +
                 "+---------------+-----+----------+\n" +
                 "| Consistent ID | PID | Log File |\n" +
@@ -422,10 +408,8 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("list")
         void listEmpty() {
-            var ignitePaths = new IgnitePaths(Path.of(""), Path.of(""), "version");
-
             when(nodeMgr.getRunningNodes(any(), any()))
-                .thenReturn(Arrays.asList());
+                .thenReturn(Collections.emptyList());
 
             when(cliPathsCfgLdr.loadIgnitePathsOrThrowError())
                 .thenReturn(ignitePaths);
@@ -434,7 +418,7 @@ public class IgniteCliInterfaceTest {
                 commandLine(applicationCtx).execute("node list".split(" "));
 
             Assertions.assertEquals(0, exitCode);
-            verify(nodeMgr).getRunningNodes(ignitePaths.workDir, ignitePaths.cliPidsDir());
+            verify(nodeMgr).getRunningNodes(ignitePaths.logDir, ignitePaths.cliPidsDir());
             assertEquals("Currently, there are no locally running nodes.\n\n" +
                 "Use the ignite node start command to start a new node.\n", out.toString());
         }
