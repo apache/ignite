@@ -46,7 +46,7 @@ public class EntryEvent<K, V> {
     private final EntryEventType op;
 
     /** Cache id. */
-    private final long cacheId;
+    private final int cacheId;
 
     /** Entry expire time. */
     private final long expireTime;
@@ -62,7 +62,7 @@ public class EntryEvent<K, V> {
      * @param expireTime Entry expire time.
      */
     public EntryEvent(K key, V val, boolean primary, int part,
-        EntryEventOrder ord, EntryEventType op, long cacheId, long expireTime) {
+        EntryEventOrder ord, EntryEventType op, int cacheId, long expireTime) {
         this.key = key;
         this.val = val;
         this.primary = primary;
@@ -120,7 +120,7 @@ public class EntryEvent<K, V> {
      * @return Cache ID.
      * @see org.apache.ignite.internal.util.typedef.internal.CU#cacheId(String)
      */
-    public long cacheId() {
+    public int cacheId() {
         return cacheId;
     }
 

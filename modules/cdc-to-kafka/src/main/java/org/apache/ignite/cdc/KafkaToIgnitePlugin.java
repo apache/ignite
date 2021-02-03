@@ -18,16 +18,29 @@
 package org.apache.ignite.cdc;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -37,9 +50,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
-import static org.apache.ignite.cdc.KafkaToIgnite.KAFKA_TO_IGNITE_THREAD_COUNT;
 import static org.apache.ignite.cdc.KafkaUtils.TIMEOUT_MIN;
 import static org.apache.ignite.cdc.Utils.fromSystemOrProperty;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  * Plugin to apply DataEntry from Kafka to Ignite.
@@ -49,7 +64,7 @@ import static org.apache.ignite.cdc.Utils.fromSystemOrProperty;
  * 1. Same cache created on writer and reader side.
  *
  */
-public class KafkaToIgnitePlugin implements IgnitePlugin {
+public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAware {
     /** */
     public static final String PARTITIONS = "kafka.to.ignite.consumer.partitions";
 
@@ -62,6 +77,9 @@ public class KafkaToIgnitePlugin implements IgnitePlugin {
     /** Properties. */
     private final Properties props;
 
+    /** */
+    private final IgniteLogger log;
+
     /** Executor service. */
     private ExecutorService execSvc;
 
@@ -71,38 +89,157 @@ public class KafkaToIgnitePlugin implements IgnitePlugin {
     /** Kafka partitions count. */
     private int kafkaPartitionsNum;
 
+    private Set<Integer> grps;
+
     /** Map to cache ids. */
-    private ConcurrentMap<Long, IgniteCache<BinaryObject, BinaryObject>> caches = new ConcurrentHashMap<>();
+    private ConcurrentMap<Integer, IgniteCache<BinaryObject, BinaryObject>> cc = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Plugin context.
      */
-    public KafkaToIgnitePlugin(PluginContext ctx, Properties props) {
+    public KafkaToIgnitePlugin(PluginContext ctx, Properties props, Set<Integer> groups) {
         this.ctx = ctx;
         this.ign = (IgniteEx)ctx.grid();
         this.props = props;
         this.topic = fromSystemOrProperty(IGNITE_TO_KAFKA_TOPIC, props);
+        this.log = ign.log();
+        this.grps = groups;
     }
 
     /** Start the plugin. */
     public void start() throws Exception {
-        kafkaPartitionsNum = KafkaUtils.initTopic(topic, props);
+        if (log.isInfoEnabled())
+            log.warning("Starting KafkaToIgnitePlugin[" + ign.configuration().getIgniteInstanceName() + ']' + "[grps=" + grps + ']');
 
-        int thNum = Integer.parseInt(fromSystemOrProperty(KAFKA_TO_IGNITE_THREAD_COUNT, props));
-
-        ExecutorService execSvc = Executors.newFixedThreadPool(thNum);
-
-        for (int i = 0; i < thNum; i++)
-            execSvc.submit(new KafkaToIgniteWorker());
-
-        execSvc.shutdown();
-
-        execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MINUTES);
+        ign.context().cache().context().exchange().registerExchangeAwareComponent(this);
     }
 
     /** Start the plugin. */
     public void stop() {
+        if (log.isInfoEnabled())
+            log.warning("KafkaToIgnitePlugin.stop[" + ign.configuration().getIgniteInstanceName() + ']');
+    }
 
+    /** {@inheritDoc} */
+    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+        boolean destroyWorkers = workersDestroyed(fut);
+
+        if (log.isInfoEnabled()) {
+            log.warning("KafkaToIgnitePlugin.onInitBeforeTopologyLock" +
+                "[" + ign.configuration().getIgniteInstanceName() + "]" +
+                "[destroyWorkers=" + destroyWorkers + ']');
+        }
+
+        // TODO: stop and destroy kafka readers(assignments will be changed).
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        try {
+            AffinityTopologyVersion topVer = fut.get();
+
+            boolean workersDestroyed = workersDestroyed(fut);
+
+            if (log.isInfoEnabled()) {
+                log.warning("KafkaToIgnitePlugin.onDoneAfterTopologyUnlock" +
+                    "[" + ign.configuration().getIgniteInstanceName() + "]" +
+                    "[workersDestroyed=" + workersDestroyed + ", topVer=" + topVer + ']');
+            }
+
+            if (workersDestroyed)
+                switchGroupsPartitions(topVer);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Fail to get topology version.", e);
+        }
+    }
+
+    /** */
+    private void switchGroupsPartitions(AffinityTopologyVersion topVer) {
+        log.warning("KafkaToIgnitePlugin.switchGroupsPartitions " + topVer);
+
+        grps.forEach(grpId -> {
+            try {
+                switchGroupPartitions(grpId, topVer);
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /** */
+    public void switchGroupPartitions(int grpId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        GridAffinityAssignmentCache aff = ign.context().cache().context().affinity().groupAffinity(grpId);
+
+        if (aff == null) {
+            log.warning("Group not started or removed[grpId=" + grpId + ']');
+
+            return;
+        }
+
+        List<List<ClusterNode>> assignments = aff.assignments(topVer);
+
+        Set<Integer> primaryParts = IntStream.range(0, assignments.size())
+            .filter(i -> assignments.get(i).get(0).id().equals(ign.localNode().id()))
+            .boxed()
+            .collect(Collectors.toSet());
+
+        if (log.isInfoEnabled())
+            log.warning("KafkaToIgnitePlugin.switchPartitions[" + ign.configuration().getIgniteInstanceName() + ']' + primaryParts);
+    }
+
+    /** */
+    private boolean workersDestroyed(GridDhtPartitionsExchangeFuture fut) {
+        boolean isCacheAffinityChangeMessage = fut.events().events().stream().anyMatch(evt ->
+            evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+                ((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage);
+
+        if (isCacheAffinityChangeMessage) {
+            log.warning("Destroying workers because of CacheAffinityChangeMessage");
+
+            return true;
+        }
+
+        boolean srvNodeFailed = !fut.firstEvent().eventNode().isClient() &&
+            (fut.firstEvent().type() == EVT_NODE_LEFT ||
+                fut.firstEvent().type() == EVT_NODE_FAILED);
+
+        if (srvNodeFailed) {
+            log.warning("Destroying workers becuase server node failed.");
+
+            return true;
+        }
+
+        boolean assignmentsOrPrimaryChanged =
+            fut.activateCluster() ||
+            fut.affinityReassign();
+
+        if (assignmentsOrPrimaryChanged) {
+            log.warning("Destroying workers because assignmentsOrPrimaryChanged[" +
+                "activateCluster=" + fut.activateCluster() +
+                ",affinityReassign=" + fut.affinityReassign() + ']');
+
+            return true;
+        }
+
+        boolean grpCreated = grps.stream().anyMatch(fut::dynamicCacheGroupStarted);
+
+        if (grpCreated) {
+            log.warning("Destroying workers because group created");
+
+            return true;
+        }
+
+        boolean grpRemoved = fut.exchangeActions() != null && fut.exchangeActions()
+            .cacheGroupsToStop()
+            .stream()
+            .anyMatch(grpData -> grps.contains(grpData.descriptor().groupId()));
+
+        if (grpRemoved)
+            log.warning("Destroying workers because group removed");
+
+        return grpRemoved;
     }
 
     /**
@@ -177,7 +314,7 @@ public class KafkaToIgnitePlugin implements IgnitePlugin {
 
         /** Applies single event to Ignite. */
         private void apply(EntryEvent<BinaryObject, BinaryObject> evt) {
-            IgniteCache<BinaryObject, BinaryObject> cache = caches.computeIfAbsent(evt.cacheId(), cacheId -> {
+            IgniteCache<BinaryObject, BinaryObject> cache = cc.computeIfAbsent(evt.cacheId(), cacheId -> {
                 for (String cacheName : ign.cacheNames()) {
                     if (CU.cacheId(cacheName) == cacheId)
                         return ign.cache(cacheName).withKeepBinary();
@@ -190,9 +327,13 @@ public class KafkaToIgnitePlugin implements IgnitePlugin {
 
             GridCacheVersion rmvVer = null;
 
-            if (entry == null)
-                //TODO: implement me.
-                rmvVer = new GridCacheVersion(0, 0, 0);
+            if (entry == null) {
+                GridCacheContext<Object, Object> cctx = ign.context().cache().context().cacheContext(evt.cacheId());
+
+                GridDhtLocalPartition part = cctx.topology().localPartition(evt.partition());
+
+                rmvVer = part.findRemoveVersion(evt.key());
+            }
 
             if (needToUpdate(evt.order(), entry == null ? null : (GridCacheVersion)entry.version(), rmvVer)) {
                 switch (evt.operation()) {
@@ -230,3 +371,18 @@ public class KafkaToIgnitePlugin implements IgnitePlugin {
         }
     }
 }
+/*
+        kafkaPartitionsNum = KafkaUtils.initTopic(topic, props);
+
+        int thNum = Integer.parseInt(fromSystemOrProperty(KAFKA_TO_IGNITE_THREAD_COUNT, props));
+
+        ExecutorService execSvc = Executors.newFixedThreadPool(thNum);
+
+        for (int i = 0; i < thNum; i++)
+            execSvc.submit(new KafkaToIgniteWorker());
+
+        execSvc.shutdown();
+
+        execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MINUTES);
+*/
+

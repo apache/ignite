@@ -25,7 +25,9 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+/** */
 public class UtilsSelfTest {
+    /** */
     @Test
     public void testPartitionsParse() {
         assertThat(Utils.partitions("1,2,3,42-45"), is(new HashSet<>(Arrays.asList(1, 2, 3, 42, 43, 44, 45))));
@@ -39,11 +41,13 @@ public class UtilsSelfTest {
         assertThat(Utils.partitions("42-45,47-47"), is(new HashSet<>(Arrays.asList(42, 43, 44, 45, 47))));
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testPartitionsParseError() {
         Utils.partitions("");
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testPartitionsParseError2() {
         Utils.partitions("45-42");

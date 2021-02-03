@@ -19,9 +19,13 @@ package org.apache.ignite.cdc;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -31,6 +35,8 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Error message.
@@ -44,6 +50,9 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
 
     /** Path to the plugin properties file. */
     private String propertiesPath;
+
+    /** Cache namest to handle. */
+    private String[] groups;
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -68,7 +77,12 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
         try {
-            plugin = new KafkaToIgnitePlugin(ctx, Utils.properties(propertiesPath, ERR_MSG));
+            Set<Integer> grps = Arrays.stream(requireNonNull(this.groups, "Please, provide group names to handle!"))
+                .mapToInt(CU::cacheId)
+                .boxed()
+                .collect(Collectors.toSet());
+
+            plugin = new KafkaToIgnitePlugin(ctx, Utils.properties(propertiesPath, ERR_MSG), grps);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -93,6 +107,11 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
     /** @param propertiesPath Sets path to the property. */
     public void setPropertiesPath(String propertiesPath) {
         this.propertiesPath = propertiesPath;
+    }
+
+    /** @param groups Cache names to handle. */
+    public void setGroups(String... groups) {
+        this.groups = groups;
     }
 
     /** {@inheritDoc} */

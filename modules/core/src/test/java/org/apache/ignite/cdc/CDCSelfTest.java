@@ -410,7 +410,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestDataChangeListener implements DataChangeListener<Integer, User> {
         /** Keys */
-        private final ConcurrentMap<IgniteBiTuple<EntryEventType, Long>, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
+        private final ConcurrentMap<IgniteBiTuple<EntryEventType, Integer>, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
         /** */
         public boolean stoped;
