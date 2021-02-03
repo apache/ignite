@@ -160,7 +160,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     }
 
     /** {@inheritDoc} */
-    @Override public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
+    @Override public boolean handlesRow(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
             cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
     }

@@ -182,7 +182,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
             // Populate index with cache rows.
             cacheVisitor.visit(row -> {
-                if (idx.belongsToIndex(row))
+                if (idx.handlesRow(row))
                     idx.putx(row);
             });
 

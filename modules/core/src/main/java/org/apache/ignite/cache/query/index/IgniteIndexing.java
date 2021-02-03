@@ -141,7 +141,7 @@ public class IgniteIndexing implements IndexingSpi {
 
             cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
 
-            String uniqIdxName = definition.getIdxName().fqdnIdxName();
+            String uniqIdxName = definition.getIdxName().fullName();
 
             // GridQueryProcessor already checked schema operation for index duplication.
             assert cacheToIdx.get(cacheName).get(uniqIdxName) == null : "Duplicated index name " + uniqIdxName;
@@ -170,7 +170,7 @@ public class IgniteIndexing implements IndexingSpi {
 
             assert idxs != null : "Try remove index for non registered cache " + cacheName;
 
-            Index idx = idxs.remove(def.getIdxName().fqdnIdxName());
+            Index idx = idxs.remove(def.getIdxName().fullName());
 
             if (idx != null)
                 idx.destroy(softDelete);
@@ -258,10 +258,10 @@ public class IgniteIndexing implements IndexingSpi {
         Index idx, CacheDataRow row, CacheDataRow prevRow, boolean prevRowAvailable, IgniteCheckedException prevErr
     ) throws IgniteCheckedException {
         try {
-            if (row != null && !idx.belongsToIndex(row))
+            if (row != null && !idx.handlesRow(row))
                 return prevErr;
 
-            if (prevRow != null && !idx.belongsToIndex(prevRow))
+            if (prevRow != null && !idx.handlesRow(prevRow))
                 return prevErr;
 
             idx.onUpdate(prevRow, row, prevRowAvailable);

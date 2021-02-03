@@ -187,15 +187,32 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> findFirstOrLast(
-        boolean firstOrLast, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
-
+    @Override public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
             InlineTreeFilterClosure closure = getFilterClosure(filter);
 
-            IndexRow found = firstOrLast ? segments[segment].findFirst(closure) : segments[segment].findLast(closure);
+            IndexRow found = segments[segment].findFirst(closure);
+
+            if (found == null || isExpired(found))
+                return IndexValueCursor.EMPTY;
+
+            return new SingleCursor<>(found);
+
+        } finally {
+            ThreadLocalSchemaHolder.cleanSchema();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+        try {
+            ThreadLocalSchemaHolder.setSchema(def.getSchema());
+
+            InlineTreeFilterClosure closure = getFilterClosure(filter);
+
+            IndexRow found = segments[segment].findLast(closure);
 
             if (found == null || isExpired(found))
                 return IndexValueCursor.EMPTY;
@@ -444,7 +461,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
+    @Override public boolean handlesRow(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
             cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
     }

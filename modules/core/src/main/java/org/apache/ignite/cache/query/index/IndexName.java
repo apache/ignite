@@ -48,9 +48,9 @@ public class IndexName implements Serializable {
     }
 
     /**
-     * @return FQDN index name.
+     * @return Full index name.
      */
-    public String fqdnIdxName() {
+    public String fullName() {
         StringBuilder bld = new StringBuilder();
 
         if (schemaName != null)

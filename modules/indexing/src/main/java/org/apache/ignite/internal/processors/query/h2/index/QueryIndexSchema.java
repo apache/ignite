@@ -89,19 +89,11 @@ public class QueryIndexSchema implements SortedIndexSchema {
 
     /** Maps H2 column order to Ignite index order. */
     private Order getSortOrder(int sortType) {
-        Order o = new Order();
+        SortOrder sortOrder = (sortType & 1) != 0 ? SortOrder.DESC : SortOrder.ASC;
 
-        if ((sortType & 1) != 0)
-            o.setSortOrder(SortOrder.DESC);
-        else
-            o.setSortOrder(SortOrder.ASC);
+        NullsOrder nullsOrder = (sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : NullsOrder.NULLS_LAST;
 
-        if ((sortType & 2) != 0)
-            o.setNullsOrder(NullsOrder.NULLS_FIRST);
-        else if ((sortType & 4) != 0)
-            o.setNullsOrder(NullsOrder.NULLS_LAST);
-
-        return o;
+        return new Order(sortOrder, nullsOrder);
     }
 
 

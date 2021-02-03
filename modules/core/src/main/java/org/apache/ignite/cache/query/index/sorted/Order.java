@@ -22,19 +22,15 @@ package org.apache.ignite.cache.query.index.sorted;
  */
 public class Order {
     /** */
-    private NullsOrder nullsOrder;
+    private final NullsOrder nullsOrder;
 
     /** */
-    private SortOrder sortOrder;
+    private final SortOrder sortOrder;
 
     /** */
-    public void setNullsOrder(NullsOrder order) {
-        nullsOrder = order;
-    }
-
-    /** */
-    public void setSortOrder(SortOrder order) {
-        sortOrder = order;
+    public Order(SortOrder sortOrder, NullsOrder nullsOrder) {
+        this.sortOrder = sortOrder;
+        this.nullsOrder = nullsOrder;
     }
 
     /** */

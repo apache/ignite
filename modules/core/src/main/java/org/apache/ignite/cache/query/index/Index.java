@@ -42,7 +42,7 @@ public interface Index {
      * @param row Cache row.
      * @return Whether index handles specified cache row
      */
-    public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException;
+    public boolean handlesRow(CacheDataRow row) throws IgniteCheckedException;
 
     /**
      * Callback that runs when the underlying cache is updated.

@@ -76,7 +76,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
 
     /** {@inheritDoc} */
     @Override public String shortName() {
-        return "DROP_SQL_INDEX-" + idxName.fqdnIdxName() + "-" + id;
+        return "DROP_SQL_INDEX-" + idxName.fullName() + "-" + id;
     }
 
     /** {@inheritDoc} */

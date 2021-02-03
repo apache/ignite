@@ -297,7 +297,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
-            GridCursor<IndexRow> cursor = queryIndex.findFirstOrLast(b, segment(qctx), filter(qctx));
+            GridCursor<IndexRow> cursor = b ?
+                queryIndex.findFirst(segment(qctx), filter(qctx))
+                : queryIndex.findLast(segment(qctx), filter(qctx));
 
             return new H2Cursor(new IndexValueCursor<>(cursor, this::mapIndexRow));
         }

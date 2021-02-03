@@ -51,14 +51,23 @@ public interface SortedIndex extends Index {
         throws IgniteCheckedException;
 
     /**
-     * Finds first or last index row for specified tree segment and cache filter.
+     * Finds first index row for specified tree segment and cache filter.
      *
-     * @param firstOrLast if {@code true} then return first index row or otherwise last row.
      * @param segment Number of tree segment to find.
      * @param filter Cache entry filter.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexRow> findFirstOrLast(boolean firstOrLast, int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter)
+        throws IgniteCheckedException;
+
+    /**
+     * Finds last index row for specified tree segment and cache filter.
+     *
+     * @param segment Number of tree segment to find.
+     * @param filter Cache entry filter.
+     * @return Cursor of found index rows.
+     */
+    public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter)
         throws IgniteCheckedException;
 
     /**

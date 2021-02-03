@@ -84,8 +84,12 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> findFirstOrLast(boolean firstOrLast, int segment,
-        IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -120,7 +124,7 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
+    @Override public boolean handlesRow(CacheDataRow row) throws IgniteCheckedException {
         throw unsupported();
     }
 

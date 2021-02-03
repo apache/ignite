@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.cache.query.index.sorted.Order;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 
 /**
  * Defines a signle index key.
@@ -26,7 +27,7 @@ public class IndexKeyDefinition {
     /** Index key name. */
     private final String name;
 
-    /** Index key type. @see IndexKeyTypes. */
+    /** Index key type. {@link IndexKeyTypes}. */
     private final int idxType;
 
     /** Index key class. */
