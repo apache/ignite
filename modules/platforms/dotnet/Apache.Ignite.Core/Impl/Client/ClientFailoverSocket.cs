@@ -450,6 +450,15 @@ namespace Apache.Ignite.Core.Impl.Client
                     ctx => { },
                     ctx => new BinaryConfigurationClientInternal(ctx.Reader.Stream));
 
+                _logger.Debug("Server binary configuration retrieved: " + binaryCfg);
+
+                if (!binaryCfg.CompactFooter && _marsh.CompactFooter)
+                {
+                    _logger.Debug("Compact footer disabled according to server configuration.");
+                    _marsh.CompactFooter = false;
+                    _config.BinaryConfiguration.CompactFooter = false;
+                }
+
                 // TODO: Update binary config
                 // TODO: Warn if there is a mapper mismatch
                 // TODO: Warn if there is a Custom mapper, but BinaryConfiguration.Mapper is not set

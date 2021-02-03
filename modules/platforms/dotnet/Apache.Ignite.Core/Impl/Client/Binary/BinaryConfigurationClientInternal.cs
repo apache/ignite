@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Binary
 {
+    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -56,6 +57,13 @@ namespace Apache.Ignite.Core.Impl.Client.Binary
         public BinaryNameMapperMode NameMapperMode
         {
             get { return _nameMapperMode; }
+        }
+
+        /** <inheritDoc /> */
+        public override string ToString()
+        {
+            return string.Format("BinaryConfigurationClientInternal [CompactFooter={0}, NameMapperMode={1}]",
+                CompactFooter, NameMapperMode);
         }
     }
 }
