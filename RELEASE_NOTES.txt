@@ -5,9 +5,12 @@ Apache Ignite Release Notes
 Apache Ignite In-Memory Distributed Database 2.10.0
 -----------------------------------------------------------
 
+
 (!) WARNINGS:
 * The community accepted MVCC API discontinuation in future releases
 * Enabling/disabling WAL doesn't work properly on unstable topology and will be fixed soon
+* Spring Data moved to ignite-extension and will be released separately
+* Node.js, Python, PHP thin clients moved to a dedicated repository
 
 
 Ignite:
