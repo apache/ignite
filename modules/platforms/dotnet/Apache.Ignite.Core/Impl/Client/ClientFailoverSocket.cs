@@ -452,16 +452,23 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 _logger.Debug("Server binary configuration retrieved: " + binaryCfg);
 
+                if (binaryCfg.CompactFooter && !_marsh.CompactFooter)
+                {
+                    // Changing from full to compact is not safe: some clients do not support compact footers.
+                    // Print a warning, but don't change the configuration.
+                    // TODO: Warn or Info? If the user has disabled it explicitly, maybe they know what they are doing?
+                    _logger.Warn("TODO");
+                }
+
                 if (!binaryCfg.CompactFooter && _marsh.CompactFooter)
                 {
+                    // Changing from compact to full footer is safe, do it automatically.
                     _logger.Debug("Compact footer disabled according to server configuration.");
                     _marsh.CompactFooter = false;
                     _config.BinaryConfiguration.CompactFooter = false;
                 }
 
-                // TODO: Update binary config
-                // TODO: Warn if there is a mapper mismatch
-                // TODO: Warn if there is a Custom mapper, but BinaryConfiguration.Mapper is not set
+                // Warn if there is a mapper mismatch, but don't change
                 if (binaryCfg.NameMapperMode == BinaryNameMapperMode.Custom &&
                     (_config.BinaryConfiguration.NameMapper == null ||
                      _config.BinaryConfiguration.NameMapper is BinaryBasicNameMapper))
