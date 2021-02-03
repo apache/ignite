@@ -2,9 +2,15 @@ Apache Ignite Release Notes
 ===========================
 
 
-Apache Ignite In-Memory Computing Platform 2.10.0
+Apache Ignite In-Memory Distributed Database 2.10.0
 -----------------------------------------------------------
 
+(!) WARNINGS:
+* The community accepted MVCC API discontinuation in future releases
+* Enabling/disabling WAL doesn't work properly on unstable topology and will be fixed soon
+
+
+Ignite:
 * Added API for checking network connectivity between all nodes in a cluster
 * Added API to get segment sizes
 * Added InitialSize and MaxSize to DataRegion metrics
