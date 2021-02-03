@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
@@ -155,6 +156,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -3085,6 +3087,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", snpName)));
     }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testCheckSnapshot() throws Exception {
+        String snpName = "snapshot_02052020";
+
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, 1000);
+
+        snp(ig).createSnapshot(snpName)
+            .get();
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
+
+        StringBuilder sb = new StringBuilder();
+
+        ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
+
+        assertContains(log, sb.toString(), "idle_verify check has finished, no conflicts have been found");
+    }
+
 
     /**
      * @throws Exception If failed.

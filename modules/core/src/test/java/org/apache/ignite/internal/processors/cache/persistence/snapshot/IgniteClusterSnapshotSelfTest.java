@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,11 +92,15 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -1179,16 +1185,84 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
 
         StringBuilder b = new StringBuilder();
-        res.print(b::append);
+        res.print(b::append, true);
 
         assertTrue(F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "idle_verify check has finished, no conflicts have been found");
+    }
 
-        System.out.println(">>>>> " + b);
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckMissedPart() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-//        assertThrowsAnyCause(log,
-//            fut::get,
-//            IgniteException.class,
-//            "Snapshots on an in-memory clusters are not allowed.");
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+            getPartitionFileName(0));
+
+        assertNotNull(part0);
+        assertTrue(part0.toString(), part0.toFile().exists());
+        assertTrue(part0.toFile().delete());
+
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertFalse(F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache group partition");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckMissedGroup() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
+            .filter(d -> d.toFile().getName().equals(cacheDirName(dfltCacheCfg)))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Cache directory not found"));
+
+        assertTrue(dir.toString(), dir.toFile().exists());
+        assertTrue(U.delete(dir));
+
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertFalse(F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache groups");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckMissedMeta() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        File[] smfs = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).listFiles((dir, name) ->
+            name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
+
+        assertNotNull(smfs);
+        assertTrue(smfs[0].toString(), smfs[0].exists());
+        assertTrue(U.delete(smfs[0]));
+
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        System.out.println(">>>>>> " + b);
+        assertFalse(F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache groups");
     }
 
     // TODO check snapshot must work for data regions with different page sizes.

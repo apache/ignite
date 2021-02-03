@@ -25,9 +25,8 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import static java.util.Collections.singletonMap;
@@ -46,21 +45,26 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand
  */
 public class SnapshotCommand extends AbstractCommand<Object> {
     /** Command argument. */
-    private Object taskArgs;
+    private String snpName;
 
-    /** Task name. */
-    private String taskName;
+    /** Snapshot sub-command to execute. */
+    private SnapshotSubcommand cmd;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(
+            Object res = executeTaskByNameOnNode(
                 client,
-                taskName,
-                taskArgs,
+                cmd.taskName(),
+                snpName,
                 null,
                 clientCfg
             );
+
+            if (cmd == CHECK)
+                ((IdleVerifyResultV2)res).print(log::info, true);
+
+            return res;
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -72,36 +76,16 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public Object arg() {
-        return taskArgs;
+        return snpName;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        SnapshotSubcommand cmd = of(argIter.nextArg("Expected snapshot action."));
+        cmd = of(argIter.nextArg("Expected snapshot action."));
+        snpName = argIter.nextArg("Expected snapshot name.");
 
-        if (cmd == null)
-            throw new IllegalArgumentException("Expected correct action.");
-
-        switch (cmd) {
-            case CREATE:
-                taskName = VisorSnapshotCreateTask.class.getName();
-                taskArgs = argIter.nextArg("Expected snapshot name.");
-
-                break;
-
-            case CANCEL:
-                taskName = VisorSnapshotCancelTask.class.getName();
-                taskArgs = argIter.nextArg("Expected snapshot name.");
-
-            case CHECK:
-                taskName = VisorSnapshotCheckTask.class.getName();
-                taskArgs = argIter.nextArg("Expected snapshot name.");
-
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown snapshot sub-command: " + cmd);
-        }
+        if (F.isEmpty(snpName))
+            throw new IllegalArgumentException("Expected snapshot name.");
     }
 
     /** {@inheritDoc} */

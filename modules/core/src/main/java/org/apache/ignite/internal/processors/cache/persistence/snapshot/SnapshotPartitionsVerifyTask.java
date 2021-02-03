@@ -158,24 +158,22 @@ public class SnapshotPartitionsVerifyTask
             ByteBuffer pageBuf = ByteBuffer.allocate(meta.pageSize())
                 .order(ByteOrder.nativeOrder());
 
+            Set<Integer> grps = new HashSet<>(meta.cacheGroupIds());
+
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
                 String grpName = cacheGroupName(dir);
                 int grpId = CU.cacheId(grpName);
 
-                if (!meta.cacheGroupIds().contains(grpId)) {
-                    throw new IgniteException("Snapshot data doesn't contain required cache group " +
-                        "[grpName=" + grpName + ", snpName=" + snpName + ", consId=" + consId +
-                        ", meta=" + meta + ']');
-                }
+                if (!grps.remove(grpId))
+                    continue;
+
+                Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
                 for (File part : cachePartitions(dir)) {
                     int partId = partId(part.getName());
 
-                    if (!meta.partitions().get(grpId).contains(partId)) {
-                        throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
-                            "[grpName=" + grpName + ", snpName=" + snpName + ", consId=" + consId +
-                            ", partId=" + partId + ", meta=" + meta + ']');
-                    }
+                    if (!parts.remove(partId))
+                        continue;
 
                     PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
@@ -187,6 +185,18 @@ public class SnapshotPartitionsVerifyTask
                     snpMgr.readSnapshotPartitionMeta(part, grpId, partId, pageBuf, rec::updateCounter, rec::size);
                     res.put(key, rec);
                 }
+
+                if (!parts.isEmpty()) {
+                    throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
+                        "[grpName=" + grpName + ", snpName=" + snpName + ", consId=" + consId +
+                        ", missed=" + parts + ", meta=" + meta + ']');
+                }
+            }
+
+            if (!grps.isEmpty()) {
+                throw new IgniteException("Snapshot data doesn't contain required cache groups " +
+                    "[grps=" + grps + ", snpName=" + snpName + ", consId=" + consId +
+                    ", meta=" + meta + ']');
             }
 
             return res;

@@ -19,7 +19,9 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -27,17 +29,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * @see IgniteSnapshotManager#checkSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCheckTask extends VisorOneNodeTask<String, String> {
+public class VisorSnapshotCheckTask extends VisorOneNodeTask<String, IdleVerifyResultV2> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, String> job(String arg) {
+    @Override protected VisorJob<String, IdleVerifyResultV2> job(String arg) {
         return new VisorSnapshotCheckJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorJob<String, String> {
+    private static class VisorSnapshotCheckJob extends VisorJob<String, IdleVerifyResultV2> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -50,10 +52,9 @@ public class VisorSnapshotCheckTask extends VisorOneNodeTask<String, String> {
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(String name) throws IgniteException {
-            ignite.context().cache().context().snapshotMgr().checkSnapshot(name);
-
-            return "Snapshot operation cancelled.";
+        @Override protected IdleVerifyResultV2 run(String name) throws IgniteException {
+            return new IgniteFutureImpl<>(ignite.context().cache().context().snapshotMgr().checkSnapshot(name))
+                .get();
         }
     }
 }

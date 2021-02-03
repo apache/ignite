@@ -195,7 +195,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final String SNAPSHOT_METRICS = "snapshot";
 
     /** Snapshot metafile extension. */
-    private static final String SNAPSHOT_METAFILE_EXT = ".smf";
+    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -889,7 +889,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(consId)));
+        return cacheDirectories(new File(snpDir, databaseRelativePath(U.maskForFileName(consId))));
     }
 
     /**

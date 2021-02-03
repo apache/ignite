@@ -208,8 +208,11 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         return null;
     }
 
-    /** */
-    private void print(Consumer<String> printer, boolean printExceptionMessages) {
+    /**
+     * @param printer Consumer for handle formatted result.
+     * @param printExceptionMessages {@code true} if exceptions must be included too.
+     */
+    public void print(Consumer<String> printer, boolean printExceptionMessages) {
         boolean noMatchingCaches = false;
 
         boolean succeeded = true;
