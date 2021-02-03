@@ -151,11 +151,24 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         GridTestNode receiverNode = new GridTestNode();
         receiverNode.order(1);
         GridSpiTestContext receiverCtx = initSpiContext();
+
+        /*
+        * This is a dirty hack to intervene into TcpCommunicationSpi#onContextInitialized0 method
+        * and add a delay before injecting metrics listener into its clients (like InboundConnectionHandler).
+        * The purpose of the delay is to make race between sending a message and initializing TcpCommSpi visible.
+        *
+        * This solution heavily depends on current code structure of onContextInitialized0 method.
+        * If any modifications are made to it, this logic could break and the test starts failing.
+        *
+        * In that case try to rewrite the test or delete it as this race is really hard to test.
+        */
         receiverCtx.metricsRegistryProducer((name) -> {
             try {
                 Thread.sleep(100);
             }
-            catch (Exception e) {}
+            catch (Exception ignored) {
+                // No-op.
+            }
 
             return new MetricRegistry(name, null, null, new NullLogger());
         });
@@ -174,13 +187,13 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         IgniteInternalFuture initFut = GridTestUtils.runAsync(() -> {
             try {
                 receiverSpi.onContextInitialized(receiverCtx);
-            } catch (Exception e) {
+            } catch (Exception ignored) {
                 // No-op.
             }
         });
 
         assertFalse("Check test logs, NPE was found",
-            GridTestUtils.waitForCondition(() -> npeLsnr.check(), 3_000));
+            GridTestUtils.waitForCondition(npeLsnr::check, 3_000));
 
         initFut.get();
         sendFut.get();
