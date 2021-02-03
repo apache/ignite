@@ -17,39 +17,46 @@
 package org.apache.ignite.configuration.storage;
 
 import java.io.Serializable;
-import java.util.function.Consumer;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Storage interface for configuration.
+ * Common interface for configuration storage.
  */
 public interface ConfigurationStorage {
     /**
-     * Save configuration property.
-     *
-     * @param propertyName Fully qualified name of the property.
-     * @param object Object, that represents the value of the property.
-     * @param <T> Type of the property.
-     * @throws StorageException If failed to save object.
+     * Read all configuration values and current storage version.
+     * @return Values and version.
+     * @throws StorageException If failed to retrieve data.
      */
-    <T extends Serializable> void save(String propertyName, T object) throws StorageException;
+    Data readAll() throws StorageException;
 
     /**
-     * Get property value from storage.
-     *
-     * @param propertyName Fully qualified name of the property.
-     * @param <T> Type of the property.
-     * @return Object, that represents the value of the property.
-     * @throws StorageException If failed to retrieve object frm configuration storage.
+     * Write key-value pairs into the storage with last known version.
+     * @param newValues Key-value pairs.
+     * @param version Last known version.
+     * @return {@code true} if successfully written, {@code false} if version of the storage is different from the passed
+     * argument.
+     * @throws StorageException If failed to write data.
      */
-    <T extends Serializable> T get(String propertyName) throws StorageException;
+    boolean write(Map<String, Serializable> newValues, int version) throws StorageException;
 
     /**
-     * Listen for the property change in the storage.
-     *
-     * @param key Key to listen on.
-     * @param listener Listener function.
-     * @param <T> Type of the property.
-     * @throws StorageException If failed to attach listener to configuration storage.
+     * Get all the keys of the configuration storage.
+     * @return Set of keys.
+     * @throws StorageException If failed to retrieve keys.
      */
-    <T extends Serializable> void listen(String key, Consumer<T> listener) throws StorageException;
+    Set<String> keys() throws StorageException;
+
+    /**
+     * Add listener to the storage that notifies of data changes..
+     * @param listener Listener.
+     */
+    void addListener(ConfigurationStorageListener listener);
+
+    /**
+     * Remove storage listener.
+     * @param listener Listener.
+     */
+    void removeListener(ConfigurationStorageListener listener);
 }

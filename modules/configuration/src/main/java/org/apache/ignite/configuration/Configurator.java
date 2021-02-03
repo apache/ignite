@@ -29,10 +29,11 @@ import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.configuration.internal.DynamicProperty;
 import org.apache.ignite.configuration.internal.Modifier;
 import org.apache.ignite.configuration.internal.selector.Selector;
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.configuration.internal.validation.MemberKey;
+import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.FieldValidator;
-import org.apache.ignite.configuration.internal.validation.MemberKey;
+import org.apache.ignite.configuration.validation.ValidationIssue;
 
 /**
  * Convenient wrapper for configuration root. Provides access to configuration tree, stores validators, performs actions
@@ -40,9 +41,6 @@ import org.apache.ignite.configuration.internal.validation.MemberKey;
  * @param <T> Type of configuration root.
  */
 public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
-    /** Storage for the configuration tree. */
-    private final ConfigurationStorage storage;
-
     /** Root of the configuration tree. */
     private final T root;
 
@@ -51,7 +49,6 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
 
     /**
      *
-     * @param storage
      * @param rootBuilder
      * @param <VIEW>
      * @param <INIT>
@@ -60,15 +57,13 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
      * @return
      */
     public static <VIEW, INIT, CHANGE, CONF extends DynamicConfiguration<VIEW, INIT, CHANGE>> Configurator<CONF> create(
-        ConfigurationStorage storage,
         Function<Configurator<CONF>, CONF> rootBuilder
     ) {
-        return new Configurator<>(storage, rootBuilder, null);
+        return new Configurator<>(rootBuilder, null);
     }
 
     /**
      *
-     * @param storage
      * @param rootBuilder
      * @param init
      * @param <VIEW>
@@ -78,25 +73,20 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
      * @return
      */
     public static <VIEW, INIT, CHANGE, CONF extends DynamicConfiguration<VIEW, INIT, CHANGE>> Configurator<CONF> create(
-        ConfigurationStorage storage,
         Function<Configurator<CONF>, CONF> rootBuilder,
         INIT init
     ) {
-        return new Configurator<>(storage, rootBuilder, init);
+        return new Configurator<>(rootBuilder, init);
     }
 
     /**
      * Constructor.
-     * @param storage Configuration storage.
      * @param rootBuilder Function, that creates configuration root.
      */
     private <VIEW, INIT, CHANGE, CONF extends DynamicConfiguration<VIEW, INIT, CHANGE>> Configurator(
-        ConfigurationStorage storage,
         Function<Configurator<CONF>, CONF> rootBuilder,
         INIT init
     ) {
-        this.storage = storage;
-
         final CONF built = rootBuilder.apply((Configurator<CONF>) this);
 
         if (init != null)
@@ -121,7 +111,7 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
     }
 
     /**
-     * 
+     *
      */
     public Class<?> getChangeType() {
         Type sClass = root.getClass().getGenericSuperclass();
@@ -154,6 +144,7 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
         final TARGET select = selector.select(copy);
         select.changeWithoutValidation(newValue);
         copy.validate(root);
+
         selector.select(root).changeWithoutValidation(newValue);
     }
 
@@ -210,13 +201,16 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
      * @param <PROP> Type of the property.
      */
     public <PROP extends Serializable> void onAttached(DynamicProperty<PROP> property) {
-        final String key = property.key();
         property.addListener(new PropertyListener<PROP, PROP>() {
             /** {@inheritDoc} */
             @Override public void update(PROP newValue, ConfigurationProperty<PROP, PROP> modifier) {
-                storage.save(key, newValue);
+//                storage.save(key, newValue);
             }
         });
-        storage.listen(key, property::setSilently);
+//        storage.listen(key, property::setSilently);
+    }
+
+    public List<ValidationIssue> validateChanges(TraversableTreeNode changes) {
+        return Collections.emptyList();
     }
 }

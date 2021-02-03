@@ -17,14 +17,10 @@
 
 package org.apache.ignite.configuration.sample;
 
-import java.io.Serializable;
 import java.util.Collections;
-import java.util.function.Consumer;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.Configurator;
 import org.apache.ignite.configuration.internal.NamedList;
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
-import org.apache.ignite.configuration.storage.StorageException;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -35,21 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Simple usage test of generated configuration schema.
  */
 public class UsageTest {
-    private final ConfigurationStorage storage = new ConfigurationStorage() {
-        @Override public <T extends Serializable> void save(String propertyName, T object) throws StorageException {
-
-        }
-
-        @Override public <T extends Serializable> T get(String propertyName) throws StorageException {
-            return null;
-        }
-
-        @Override
-        public <T extends Serializable> void listen(String key, Consumer<T> listener) throws StorageException {
-
-        }
-    };
-
     /**
      * Test creation of configuration and calling configuration API methods.
      */
@@ -66,7 +47,6 @@ public class UsageTest {
         );
 
         final Configurator<LocalConfigurationImpl> configurator = Configurator.create(
-            storage,
             LocalConfigurationImpl::new,
             initLocal
         );
@@ -111,13 +91,11 @@ public class UsageTest {
                     .withTimeout(autoAdjustTimeout))
         );
 
-        Configurator<LocalConfigurationImpl> localConf = Configurator.create(storage,
-            LocalConfigurationImpl::new, initLocal);
+        Configurator<LocalConfigurationImpl> localConf = Configurator.create(LocalConfigurationImpl::new, initLocal);
 
         sysConf.registerConfigurator(localConf);
 
-        Configurator<NetworkConfigurationImpl> networkConf = Configurator.create(storage,
-            NetworkConfigurationImpl::new, initNetwork);
+        Configurator<NetworkConfigurationImpl> networkConf = Configurator.create(NetworkConfigurationImpl::new, initNetwork);
 
         sysConf.registerConfigurator(networkConf);
 

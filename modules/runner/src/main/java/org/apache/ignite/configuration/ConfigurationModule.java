@@ -18,11 +18,9 @@
 package org.apache.ignite.configuration;
 
 import java.io.Reader;
-
 import org.apache.ignite.configuration.extended.InitLocal;
 import org.apache.ignite.configuration.extended.LocalConfigurationImpl;
 import org.apache.ignite.configuration.extended.Selectors;
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.rest.presentation.FormatConverter;
 import org.apache.ignite.rest.presentation.json.JsonConverter;
 
@@ -49,11 +47,11 @@ public class ConfigurationModule {
     private final ConfigurationRegistry confRegistry = new ConfigurationRegistry();
 
     /** */
-    public void bootstrap(Reader confReader, ConfigurationStorage storage) {
+    public void bootstrap(Reader confReader) {
         FormatConverter converter = new JsonConverter();
 
         Configurator<LocalConfigurationImpl> configurator =
-            Configurator.create(storage, LocalConfigurationImpl::new, converter.convertFrom(confReader, "local", InitLocal.class));
+            Configurator.create(LocalConfigurationImpl::new, converter.convertFrom(confReader, "local", InitLocal.class));
 
         localConfigurator = configurator;
 

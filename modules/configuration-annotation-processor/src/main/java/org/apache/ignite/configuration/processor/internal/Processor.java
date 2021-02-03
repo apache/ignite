@@ -966,7 +966,7 @@ public class Processor extends AbstractProcessor {
                     MethodSpec.Builder nodeChangeMtdBuilder = MethodSpec.methodBuilder(changeMtdName)
                         .addAnnotation(Override.class)
                         .addModifiers(PUBLIC)
-                        .returns(changeClsName);
+                        .returns(nodeClsName);
 
                     if (valAnnotation != null) {
                         nodeChangeMtdBuilder
@@ -1024,7 +1024,7 @@ public class Processor extends AbstractProcessor {
                     MethodSpec.Builder nodeInitMtdBuilder = MethodSpec.methodBuilder(initMtdName)
                         .addAnnotation(Override.class)
                         .addModifiers(PUBLIC)
-                        .returns(initClsName);
+                        .returns(nodeClsName);
 
                     if (valAnnotation != null) {
                         nodeInitMtdBuilder

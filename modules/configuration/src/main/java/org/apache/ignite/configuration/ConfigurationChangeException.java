@@ -14,28 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.configuration.validation;
-
-import java.util.List;
+package org.apache.ignite.configuration;
 
 /**
- * Configuration validation exception.
+ * Configuration change exception.
  */
-public class ConfigurationValidationException extends RuntimeException {
-    /** List of configuration validation issues. */
-    private List<ValidationIssue> issues;
-
-    /** Constructor. */
-    public ConfigurationValidationException(String message) {
+public class ConfigurationChangeException extends RuntimeException {
+    /**
+     * Constructor.
+     * @param message Error message.
+     */
+    public ConfigurationChangeException(String message) {
         super(message);
     }
 
-    public ConfigurationValidationException(List<ValidationIssue> issues) {
-        this.issues = issues;
-    }
-
-    public List<ValidationIssue> getIssues() {
-        return issues;
+    /**
+     * Constructor.
+     * @param message Error message.
+     * @param cause Cause.
+     */
+    public ConfigurationChangeException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -20,18 +20,17 @@ package org.apache.ignite.rest;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import java.io.Reader;
-import org.apache.ignite.configuration.Configurator;
 import org.apache.ignite.configuration.ConfigurationRegistry;
+import org.apache.ignite.configuration.Configurator;
 import org.apache.ignite.configuration.internal.selector.SelectorNotFoundException;
-import org.apache.ignite.rest.presentation.ConfigurationPresentation;
-import org.apache.ignite.rest.presentation.FormatConverter;
-import org.apache.ignite.rest.presentation.json.JsonConverter;
-import org.apache.ignite.rest.presentation.json.JsonPresentation;
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.rest.configuration.InitRest;
 import org.apache.ignite.rest.configuration.RestConfigurationImpl;
 import org.apache.ignite.rest.configuration.Selectors;
+import org.apache.ignite.rest.presentation.ConfigurationPresentation;
+import org.apache.ignite.rest.presentation.FormatConverter;
+import org.apache.ignite.rest.presentation.json.JsonConverter;
+import org.apache.ignite.rest.presentation.json.JsonPresentation;
 import org.slf4j.Logger;
 
 /**
@@ -65,7 +64,7 @@ public class RestModule {
     }
 
     /** */
-    public void prepareStart(ConfigurationRegistry sysConfig, Reader moduleConfReader, ConfigurationStorage storage) {
+    public void prepareStart(ConfigurationRegistry sysConfig, Reader moduleConfReader) {
         try {
             Class.forName(Selectors.class.getName());
         }
@@ -79,7 +78,7 @@ public class RestModule {
 
         FormatConverter converter = new JsonConverter();
 
-        Configurator<RestConfigurationImpl> restConf = Configurator.create(storage, RestConfigurationImpl::new,
+        Configurator<RestConfigurationImpl> restConf = Configurator.create(RestConfigurationImpl::new,
             converter.convertFrom(moduleConfReader, "rest", InitRest.class));
 
         sysConfig.registerConfigurator(restConf);

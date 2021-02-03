@@ -14,28 +14,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.configuration.storage;
 
-package org.apache.ignite.configuration.validation;
-
-import java.util.List;
+import java.io.Serializable;
+import java.util.Map;
 
 /**
- * Configuration validation exception.
+ * Represents data in configuration storage.
  */
-public class ConfigurationValidationException extends RuntimeException {
-    /** List of configuration validation issues. */
-    private List<ValidationIssue> issues;
+public class Data {
+    /** Values. */
+    private final Map<String, Serializable> values;
 
-    /** Constructor. */
-    public ConfigurationValidationException(String message) {
-        super(message);
+    /** Configuration storage version. */
+    private final int version;
+
+    /**
+     * Constructor.
+     * @param values Values.
+     * @param version Version.
+     */
+    public Data(Map<String, Serializable> values, int version) {
+        this.values = values;
+        this.version = version;
     }
 
-    public ConfigurationValidationException(List<ValidationIssue> issues) {
-        this.issues = issues;
+    /**
+     * Get values.
+     * @return Values.
+     */
+    public Map<String, Serializable> values() {
+        return values;
     }
 
-    public List<ValidationIssue> getIssues() {
-        return issues;
+    /**
+     * Get version.
+     * @return version.
+     */
+    public int version() {
+        return version;
     }
 }
