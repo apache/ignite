@@ -470,13 +470,19 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     // Changing from compact to full footer is safe, do it automatically.
                     _marsh.CompactFooter = false;
+
+                    if (_config.BinaryConfiguration == null)
+                    {
+                        _config.BinaryConfiguration = new BinaryConfiguration();
+                    }
+
                     _config.BinaryConfiguration.CompactFooter = false;
 
                     _logger.Debug("BinaryConfiguration.CompactFooter set to false on client " +
                                   "according to server configuration.");
                 }
 
-                // Warn if there is a mapper mismatch, but don't change
+                // TODO: Warn if there is a mapper mismatch, but don't change.
                 if (binaryCfg.NameMapperMode == BinaryNameMapperMode.Custom &&
                     (_config.BinaryConfiguration.NameMapper == null ||
                      _config.BinaryConfiguration.NameMapper is BinaryBasicNameMapper))
