@@ -25,6 +25,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
@@ -55,7 +56,7 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.Nu
 /**
  * BPlusTree where nodes stores inlined index keys.
  */
-public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
+public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
 
@@ -137,8 +138,8 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
         else
             setIos(
                 // -1 is required as payload starts with 1, and indexes in list of IOs are with 0.
-                (IOVersions<BPlusInnerIO<IndexSearchRow>>) PageIO.getInnerVersions(inlineSize - 1, false),
-                (IOVersions<BPlusLeafIO<IndexSearchRow>>) PageIO.getLeafVersions(inlineSize - 1, false));
+                (IOVersions<BPlusInnerIO<IndexRow>>) PageIO.getInnerVersions(inlineSize - 1, false),
+                (IOVersions<BPlusLeafIO<IndexRow>>) PageIO.getLeafVersions(inlineSize - 1, false));
 
         initTree(initNew, inlineSize);
 
@@ -148,17 +149,18 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<IndexSearchRow> io, long pageAddr, int idx, IndexSearchRow row)
+    @Override protected int compare(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow row)
         throws IgniteCheckedException {
+        IndexSearchRow r = (IndexSearchRow) row;
 
-        int searchKeysLength = row.getSearchKeysCount();
+        int searchKeysLength = r.getSearchKeysCount();
 
         if (inlineSize == 0)
             return compareFullRows(getRow(io, pageAddr, idx), row, 0, searchKeysLength);
 
         SortedIndexSchema schema = def.getSchema();
 
-        if ((schema.getKeyDefinitions().length != searchKeysLength) && row.isFullSchemaSearch())
+        if ((schema.getKeyDefinitions().length != searchKeysLength) && r.isFullSchemaSearch())
             throw new IgniteCheckedException("Find is configured for full schema search.");
 
         int fieldOff = 0;
@@ -232,7 +234,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
         if (lastIdxUsed < searchKeysLength) {
             recommender.recommend(row, inlineSize);
 
-            IndexSearchRow currRow = getRow(io, pageAddr, idx);
+            IndexRow currRow = getRow(io, pageAddr, idx);
 
             for (int i = lastIdxUsed; i < searchKeysLength; i++) {
                 // If a search key is null then skip other keys (consider that null shows that we should get all
@@ -240,7 +242,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 if (row.getKey(i) == null)
                     return 0;
 
-                int c = def.getRowComparator().compareKey(currRow, row, i);
+                int c = def.getRowComparator().compareKey((IndexSearchRow) currRow, (IndexSearchRow) row, i);
 
                 if (c != 0)
                     return applySortOrder(Integer.signum(c), schema.getKeyDefinitions()[i].getOrder().getSortOrder());
@@ -251,14 +253,14 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     }
 
     /** */
-    private int compareFullRows(IndexSearchRow currRow, IndexSearchRow row, int from, int searchKeysLength) throws IgniteCheckedException {
+    private int compareFullRows(IndexRow currRow, IndexRow row, int from, int searchKeysLength) throws IgniteCheckedException {
         for (int i = from; i < searchKeysLength; i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
             if (row.getKey(i) == null)
                 return 0;
 
-            int c = def.getRowComparator().compareKey(currRow, row, i);
+            int c = def.getRowComparator().compareKey((IndexSearchRow) currRow, (IndexSearchRow) row, i);
 
             if (c != 0)
                 return applySortOrder(Integer.signum(c), def.getSchema().getKeyDefinitions()[i].getOrder().getSortOrder());
@@ -279,7 +281,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexSearchRow getRow(BPlusIO<IndexSearchRow> io, long pageAddr, int idx, Object ignore)
+    @Override public IndexRow getRow(BPlusIO<IndexRow> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
 
         boolean cleanSchema = false;

@@ -19,7 +19,7 @@ package org.apache.ignite.cache.query.index.sorted;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +36,7 @@ public interface SortedIndex extends Index {
      * @param segment Number of tree segment to find.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> find(@Nullable IndexKey lower, @Nullable IndexKey upper, int segment) throws IgniteCheckedException;
+    public GridCursor<IndexRow> find(@Nullable IndexKey lower, @Nullable IndexKey upper, int segment) throws IgniteCheckedException;
 
     /**
      * Finds index rows by specified range in specifed tree segment with cache filtering. Range can be bound or unbound.
@@ -47,7 +47,7 @@ public interface SortedIndex extends Index {
      * @param filter Cache entry filter.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> find(IndexKey lower, IndexKey upper, int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment, IndexingQueryFilter filter)
         throws IgniteCheckedException;
 
     /**
@@ -58,7 +58,7 @@ public interface SortedIndex extends Index {
      * @param filter Cache entry filter.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> findFirstOrLast(boolean firstOrLast, int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> findFirstOrLast(boolean firstOrLast, int segment, IndexingQueryFilter filter)
         throws IgniteCheckedException;
 
     /**

@@ -34,7 +34,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.Index
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -365,7 +365,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         PageLockListener lockLsnr = ctx.cache().context().diagnostic()
             .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
 
-        BPlusTree<IndexSearchRow, IndexSearchRow> tree = new BPlusTree<IndexSearchRow, IndexSearchRow>(
+        BPlusTree<IndexRow, IndexRow> tree = new BPlusTree<IndexRow, IndexRow>(
             indexName,
             grpId,
             grpName,
@@ -380,11 +380,11 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             ctx.failure(),
             lockLsnr
         ) {
-            @Override protected int compare(BPlusIO io, long pageAddr, int idx, IndexSearchRow row) {
+            @Override protected int compare(BPlusIO io, long pageAddr, int idx, IndexRow row) {
                 throw new AssertionError();
             }
 
-            @Override public IndexSearchRow getRow(BPlusIO io, long pageAddr, int idx, Object x) {
+            @Override public IndexRow getRow(BPlusIO io, long pageAddr, int idx, Object x) {
                 throw new AssertionError();
             }
         };

@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 /**
  * Inner page to store index rows with inlined keys.
  */
-public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow> implements InlineIO {
+public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> implements InlineIO {
     /**
      * Amount of bytes to store inlined index keys.
      *
@@ -72,7 +72,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public final void storeByOffset(long pageAddr, int off, IndexSearchRow row) {
+    @Override public final void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.getLink() != 0 : row;
 
         int fieldOff = 0;
@@ -107,7 +107,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
     }
 
     /** {@inheritDoc} */
-    @Override public final IndexSearchRow getLookupRow(BPlusTree<IndexSearchRow, ?> tree, long pageAddr, int idx)
+    @Override public final IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
 
         long link = PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
@@ -124,7 +124,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
     }
 
     /** {@inheritDoc} */
-    @Override public final void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx) {
+    @Override public final void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
         int srcOff = srcIo.offset(srcIdx);
 
         byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, inlineSize);
@@ -152,12 +152,12 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
      * @param payload Payload size.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusInnerIO<IndexSearchRow>> getVersions(int payload) {
+    public static IOVersions<? extends BPlusInnerIO<IndexRow>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)
             return InnerIO.VERSIONS;
         else
-            return (IOVersions<BPlusInnerIO<IndexSearchRow>>)PageIO.getInnerVersions((short)(payload - 1), false);
+            return (IOVersions<BPlusInnerIO<IndexRow>>)PageIO.getInnerVersions((short)(payload - 1), false);
     }
 }

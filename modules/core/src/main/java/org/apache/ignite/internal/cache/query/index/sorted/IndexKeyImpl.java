@@ -19,8 +19,6 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.Arrays;
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Complex index key that represents a user index query.
@@ -35,13 +33,13 @@ public class IndexKeyImpl implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] keys() {
-        return keys;
+    @Override public Object getKey(int idx) {
+        return keys[idx];
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable CacheDataRow cacheRow() {
-        return null;
+    @Override public Object[] getKeys() {
+        return keys;
     }
 
     /** {@inheritDoc} */
@@ -52,7 +50,7 @@ public class IndexKeyImpl implements IndexKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IndexKeyImpl key = (IndexKeyImpl)o;
+        IndexKeyImpl key = (IndexKeyImpl) o;
 
         return Arrays.equals(keys, key.keys);
     }

@@ -49,6 +49,8 @@ public class IndexRowImpl implements IndexSearchRow {
      * Constructor with prefilling of keys cache.
      */
     public IndexRowImpl(SortedIndexSchema schema, CacheDataRow row, Object[] keys) {
+        assert keys.length == schema.getKeyDefinitions().length;
+
         this.schema = schema;
         cacheRow = row;
         keyCache = keys;
@@ -61,13 +63,6 @@ public class IndexRowImpl implements IndexSearchRow {
         return cacheRow.value();
     }
 
-    /**
-     * @return Index keys for this index row.
-     */
-    public Object[] keys() {
-        return keyCache;
-    }
-
     /** {@inheritDoc} */
     @Override public Object getKey(int idx) {
         if (keyCache[idx] != null)
@@ -78,6 +73,18 @@ public class IndexRowImpl implements IndexSearchRow {
         keyCache[idx] = key;
 
         return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object[] getKeys() {
+        int keysCnt = getSearchKeysCount();
+
+        Object[] keys = new Object[keysCnt];
+
+        for (int i = 0; i < keysCnt; ++i)
+            keys[i] = getKey(i);
+
+        return keys;
     }
 
     /** {@inheritDoc} */

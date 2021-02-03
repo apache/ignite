@@ -27,8 +27,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -167,9 +167,9 @@ public class IndexingDefragmentation {
                             : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
                             " Please implement copying of tree in a new format.";
 
-                        BPlusIO<IndexSearchRow> h2IO = DefragIndexFactory.wrap(io, idxDef.getSchema());
+                        BPlusIO<IndexRow> h2IO = DefragIndexFactory.wrap(io, idxDef.getSchema());
 
-                        IndexSearchRow row = theTree.getRow(h2IO, pageAddr, idx);
+                        IndexRow row = theTree.getRow(h2IO, pageAddr, idx);
 
                         if (row instanceof IndexRowImpl) {
                             IndexRowImpl r = (IndexRowImpl)row;
@@ -185,7 +185,7 @@ public class IndexingDefragmentation {
                             long newLink = map.get(link);
 
                             IndexRowImpl newRow = new IndexRowImpl(
-                                idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.keys());
+                                idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.getKeys());
 
                             newIdx.putx(newRow);
                         }

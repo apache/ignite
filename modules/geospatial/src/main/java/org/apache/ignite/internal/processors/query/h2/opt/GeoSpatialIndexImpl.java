@@ -31,8 +31,8 @@ import org.apache.ignite.cache.query.index.AbstractIndex;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.SingleCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -80,7 +80,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     private final MVRTreeMap<Long>[] segments;
 
     /** */
-    private final Map<Long, IndexSearchRow> idToRow = new HashMap<>();
+    private final Map<Long, IndexRow> idToRow = new HashMap<>();
 
     /** */
     private final Map<Object, Long> keyToId = new HashMap<>();
@@ -236,7 +236,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
             keyToId.put(key, rowId);
         }
 
-        IndexSearchRow old = idToRow.put(rowId, new IndexRowImpl(def.schema(), row));
+        IndexRow old = idToRow.put(rowId, new IndexRowImpl(def.schema(), row));
 
         segments[seg].put(getEnvelope(row, rowId), rowId);
 
@@ -258,7 +258,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
 
         assert rowId != null;
 
-        IndexSearchRow oldRow = idToRow.remove(rowId);
+        IndexRow oldRow = idToRow.remove(rowId);
 
         assert oldRow != null;
 
@@ -305,7 +305,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
      * @param filter Table filter.
      * @return Cursor.
      */
-    @Override public GridCursor<IndexSearchRow> find(int seg, TableFilter filter) {
+    @Override public GridCursor<IndexRow> find(int seg, TableFilter filter) {
         Lock l = lock.readLock();
 
         l.lock();
@@ -328,7 +328,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
      * @return Iterator over rows.
      */
     @SuppressWarnings("unchecked")
-    private GridCursor<IndexSearchRow> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
+    private GridCursor<IndexRow> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
             return IndexValueCursor.EMPTY;
 
@@ -344,10 +344,10 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ?
             qryFilter.forCache(def.schema().getTable().cacheName()) : null;
 
-        List<IndexSearchRow> rows = new ArrayList<>();
+        List<IndexRow> rows = new ArrayList<>();
 
         do {
-            IndexSearchRow row = idToRow.get(i.next().getId());
+            IndexRow row = idToRow.get(i.next().getId());
 
             CacheDataRow cacheRow = row.getCacheDataRow();
 
@@ -365,7 +365,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexSearchRow> findFirstOrLast(int seg, boolean first) {
+    @Override public GridCursor<IndexRow> findFirstOrLast(int seg, boolean first) {
         Lock l = lock.readLock();
 
         l.lock();
@@ -378,7 +378,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
 
             final MVRTreeMap<Long> segment = segments[seg];
 
-            GridCursor<IndexSearchRow> iter = rowIterator(segment.keySet().iterator(), null);
+            GridCursor<IndexRow> iter = rowIterator(segment.keySet().iterator(), null);
 
             return new SingleCursor<>(iter.next() ? iter.get() : null);
         }
@@ -396,7 +396,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexSearchRow> findByGeometry(int seg, TableFilter filter,Geometry intersection) {
+    @Override public GridCursor<IndexRow> findByGeometry(int seg, TableFilter filter, Geometry intersection) {
         Lock l = lock.readLock();
 
         l.lock();

@@ -20,33 +20,43 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a search row that used to find a place in a tree.
  */
-public class IndexSearchRowImpl extends IndexRowImpl {
+public class IndexSearchRowImpl implements IndexSearchRow {
     /**
-     * If {@code true} then length of {@link #keys()} must be equal to length of schema, so use full
+     * If {@code true} then length of {@link #keys} must be equal to length of schema, so use full
      * schema to search. If {@code false} then it's possible to use only part of schema for search.
      */
     private final boolean fullSchemaSearch;
 
-    /** Constructor. */
-    public IndexSearchRowImpl(Object[] idxKeys, @Nullable CacheDataRow row, SortedIndexSchema schema) {
-        super(schema, row, idxKeys);
+    /** */
+    private final Object[] keys;
 
+    /** */
+    private final SortedIndexSchema schema;
+
+    /** Constructor. */
+    public IndexSearchRowImpl(Object[] idxKeys, SortedIndexSchema schema) {
         fullSchemaSearch = isFullSchemaSearch(idxKeys, schema.getKeyDefinitions().length);
+        keys = idxKeys;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public Object getKey(int idx) {
-        return keys()[idx];
+        return keys[idx];
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object[] getKeys() {
+        return keys.clone();
     }
 
     /** {@inheritDoc} */
     @Override public int getSearchKeysCount() {
-        return keys().length;
+        return keys.length;
     }
 
     /** {@inheritDoc} */
@@ -57,6 +67,25 @@ public class IndexSearchRowImpl extends IndexRowImpl {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IndexSearchRowImpl.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLink() {
+        assert false : "Should not get link by IndexSearchRowImpl";
+
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SortedIndexSchema getSchema() {
+        return schema;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheDataRow getCacheDataRow() {
+        assert false : "Should not cache data row by IndexSearchRowImpl";
+
+        return null;
     }
 
     /** */

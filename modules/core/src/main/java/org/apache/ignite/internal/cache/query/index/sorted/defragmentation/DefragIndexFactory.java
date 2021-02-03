@@ -29,8 +29,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommen
 import org.apache.ignite.internal.cache.query.index.sorted.inline.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineLeafIO;
@@ -116,25 +116,25 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
     /** */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    static BPlusIO<IndexSearchRow> wrap(BPlusIO<IndexSearchRow> io, SortedIndexSchema schema) {
+    static BPlusIO<IndexRow> wrap(BPlusIO<IndexRow> io, SortedIndexSchema schema) {
         assert io instanceof InlineIO;
 
         if (io instanceof BPlusInnerIO) {
             assert io instanceof AbstractInlineInnerIO
                 || io instanceof InlineInnerIO;
 
-            return new BPlusInnerIoDelegate((BPlusInnerIO<IndexSearchRow>)io, schema);
+            return new BPlusInnerIoDelegate((BPlusInnerIO<IndexRow>)io, schema);
         }
         else {
             assert io instanceof AbstractInlineLeafIO
                 || io instanceof InlineLeafIO;
 
-            return new BPlusLeafIoDelegate((BPlusLeafIO<IndexSearchRow>)io, schema);
+            return new BPlusLeafIoDelegate((BPlusLeafIO<IndexRow>)io, schema);
         }
     }
 
     /** */
-    private static <T extends BPlusIO<IndexSearchRow> & InlineIO> IndexSearchRow lookupRow(
+    private static <T extends BPlusIO<IndexRow> & InlineIO> IndexRow lookupRow(
         SortedIndexSchema schema,
         long pageAddr,
         int idx,
@@ -164,8 +164,8 @@ public class DefragIndexFactory extends InlineIndexFactory {
     }
 
     /** */
-    private static class BPlusInnerIoDelegate<IO extends BPlusInnerIO<IndexSearchRow> & InlineIO>
-        extends BPlusInnerIO<IndexSearchRow> implements InlineIO {
+    private static class BPlusInnerIoDelegate<IO extends BPlusInnerIO<IndexRow> & InlineIO>
+        extends BPlusInnerIO<IndexRow> implements InlineIO {
         /** */
         private final IO io;
 
@@ -180,19 +180,19 @@ public class DefragIndexFactory extends InlineIndexFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, IndexSearchRow row) throws IgniteCheckedException {
+        @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
             io.storeByOffset(pageAddr, off, row);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx)
+        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx)
             throws IgniteCheckedException
         {
             io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
         }
 
         /** {@inheritDoc} */
-        @Override public IndexSearchRow getLookupRow(BPlusTree<IndexSearchRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
             return lookupRow(schema, pageAddr, idx, this);
         }
 
@@ -208,8 +208,8 @@ public class DefragIndexFactory extends InlineIndexFactory {
     }
 
     /** */
-    private static class BPlusLeafIoDelegate<IO extends BPlusLeafIO<IndexSearchRow> & InlineIO>
-        extends BPlusLeafIO<IndexSearchRow> implements InlineIO {
+    private static class BPlusLeafIoDelegate<IO extends BPlusLeafIO<IndexRow> & InlineIO>
+        extends BPlusLeafIO<IndexRow> implements InlineIO {
         /** */
         private final IO io;
 
@@ -224,19 +224,19 @@ public class DefragIndexFactory extends InlineIndexFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, IndexSearchRow row) throws IgniteCheckedException {
+        @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
             io.storeByOffset(pageAddr, off, row);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx)
+        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx)
             throws IgniteCheckedException
         {
             io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
         }
 
         /** {@inheritDoc} */
-        @Override public IndexSearchRow getLookupRow(BPlusTree<IndexSearchRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
             return lookupRow(schema, pageAddr, idx, this);
         }
 

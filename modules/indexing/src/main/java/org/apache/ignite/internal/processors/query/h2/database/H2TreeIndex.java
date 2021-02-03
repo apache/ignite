@@ -26,12 +26,9 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.cache.query.index.sorted.CacheIndexKeyImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
@@ -39,7 +36,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -206,11 +205,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         assert upper == null || upper instanceof H2Row : upper;
 
         try {
-            T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
+            T2<IndexSearchRow, IndexSearchRow> key = prepareIndexKeys(lower, upper);
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
 
-            GridCursor<IndexSearchRow> cursor = queryIndex.find(key.get1(), key.get2(), segment(qctx), filter(qctx));
+            GridCursor<IndexRow> cursor = queryIndex.find(key.get1(), key.get2(), segment(qctx), filter(qctx));
 
             GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -229,7 +228,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** */
-    private T2<IndexKey, IndexKey> prepareIndexKeys(SearchRow lower, SearchRow upper) {
+    private T2<IndexSearchRow, IndexSearchRow> prepareIndexKeys(SearchRow lower, SearchRow upper) {
         SortedIndexDefinition def = (SortedIndexDefinition) ctx.indexing().getIndexDefition(queryIndex.id());
 
         SortedIndexSchema schema = def.getSchema();
@@ -238,19 +237,19 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** */
-    private IndexKey prepareIndexKey(SearchRow row, SortedIndexSchema schema) {
+    private IndexSearchRow prepareIndexKey(SearchRow row, SortedIndexSchema schema) {
         if (row == null)
             return null;
 
         else if (row instanceof H2CacheRow)
-            return new CacheIndexKeyImpl(schema, (CacheDataRow) row);
+            return new IndexRowImpl(schema, (CacheDataRow) row);
 
         else
-            return preparePlainIndexKey(row);
+            return preparePlainIndexKey(row, schema);
     }
 
     /** */
-    private IndexKey preparePlainIndexKey(SearchRow row) {
+    private IndexSearchRow preparePlainIndexKey(SearchRow row, SortedIndexSchema schema) {
         int idxColsLen = indexColumns.length;
 
         Object[] keys = row == null ? null : new Object[idxColsLen];
@@ -270,7 +269,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 keys[i] = v.getObject();
         }
 
-        return new IndexKeyImpl(keys);
+        return new IndexSearchRowImpl(keys, schema);
     }
 
     /** */
@@ -298,7 +297,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
-            GridCursor<IndexSearchRow> cursor = queryIndex.findFirstOrLast(b, segment(qctx), filter(qctx));
+            GridCursor<IndexRow> cursor = queryIndex.findFirstOrLast(b, segment(qctx), filter(qctx));
 
             return new H2Cursor(new IndexValueCursor<>(cursor, this::mapIndexRow));
         }
@@ -568,10 +567,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
         SearchRow lower = toSearchRow(bounds.first());
         SearchRow upper = toSearchRow(bounds.last());
 
-        T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
+        T2<IndexSearchRow, IndexSearchRow> key = prepareIndexKeys(lower, upper);
 
         try {
-            GridCursor<IndexSearchRow> range = queryIndex.find(key.get1(), key.get2(), segment, filter);
+            GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), segment, filter);
 
             if (range == null)
                 range = IndexValueCursor.EMPTY;

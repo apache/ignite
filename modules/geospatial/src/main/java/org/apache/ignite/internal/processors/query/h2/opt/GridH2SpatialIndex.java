@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.util.HashSet;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -94,7 +93,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        GridCursor<IndexSearchRow> cursor = delegate.find(segment(H2Utils.context(filter.getSession())), filter);
+        GridCursor<IndexRow> cursor = delegate.find(segment(H2Utils.context(filter.getSession())), filter);
 
         GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -103,7 +102,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        GridCursor<IndexSearchRow> cursor = delegate.find(segment(H2Utils.context(ses)), null);
+        GridCursor<IndexRow> cursor = delegate.find(segment(H2Utils.context(ses)), null);
 
         GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -117,7 +116,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        GridCursor<IndexSearchRow> cursor = delegate.findFirstOrLast(H2Utils.context(ses).segment(), first);
+        GridCursor<IndexRow> cursor = delegate.findFirstOrLast(H2Utils.context(ses).segment(), first);
 
         GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -148,7 +147,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         int seg = segmentsCount() == 1 ? 0 : H2Utils.context(filter.getSession()).segment();
 
-        GridCursor<IndexSearchRow> cursor = delegate.findByGeometry(seg, filter, g);
+        GridCursor<IndexRow> cursor = delegate.findByGeometry(seg, filter, g);
 
         GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 

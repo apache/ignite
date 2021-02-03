@@ -25,6 +25,7 @@ import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -72,18 +73,18 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexSearchRow> find(IndexKey lower, IndexKey upper, int segment) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexSearchRow> find(IndexKey lower, IndexKey upper, int segment,
+    @Override public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment,
         IndexingQueryFilter filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexSearchRow> findFirstOrLast(boolean firstOrLast, int segment,
+    @Override public GridCursor<IndexRow> findFirstOrLast(boolean firstOrLast, int segment,
         IndexingQueryFilter filter) throws IgniteCheckedException {
         throw unsupported();
     }

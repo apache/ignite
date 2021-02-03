@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.h2.table.TableFilter;
 import org.locationtech.jts.geom.Geometry;
@@ -35,7 +35,7 @@ public interface GeoSpatialIndex extends Index {
      * @param filter Table filter.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> find(int segment, TableFilter filter);
+    public GridCursor<IndexRow> find(int segment, TableFilter filter);
 
     /**
      * Finds index rows in specifed segment with table filtering.
@@ -45,7 +45,7 @@ public interface GeoSpatialIndex extends Index {
      * @param intersection Intersection geometry to find rows within it.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> findByGeometry(int segment, TableFilter filter, Geometry intersection);
+    public GridCursor<IndexRow> findByGeometry(int segment, TableFilter filter, Geometry intersection);
 
     /**
      * Finds first or last index row for specified segment.
@@ -54,7 +54,7 @@ public interface GeoSpatialIndex extends Index {
      * @param segment     Number of segment to find.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> findFirstOrLast(int segment, boolean firstOrLast);
+    public GridCursor<IndexRow> findFirstOrLast(int segment, boolean firstOrLast);
 
     /**
      * Counts index rows for all segments.

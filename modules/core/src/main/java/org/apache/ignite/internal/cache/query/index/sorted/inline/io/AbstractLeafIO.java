@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 /**
  * Leaf page to store index rows.
  */
-public abstract class AbstractLeafIO extends BPlusLeafIO<IndexSearchRow> implements InlineIO {
+public abstract class AbstractLeafIO extends BPlusLeafIO<IndexRow> implements InlineIO {
     /**
      * @param type Page type.
      * @param ver Page format version.
@@ -41,14 +41,14 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexSearchRow> impleme
 
 
     /** {@inheritDoc} */
-    @Override public void storeByOffset(long pageAddr, int off, IndexSearchRow row) {
+    @Override public void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.getLink() != 0;
 
         PageUtils.putLong(pageAddr, off, row.getLink());
     }
 
     /** {@inheritDoc} */
-    @Override public IndexSearchRow getLookupRow(BPlusTree<IndexSearchRow, ?> tree, long pageAddr, int idx)
+    @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
@@ -64,7 +64,7 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexSearchRow> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx) {
+    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
         long link = ((InlineIO) srcIo).getLink(srcPageAddr, srcIdx);
 
         PageUtils.putLong(dstPageAddr, offset(dstIdx), link);
