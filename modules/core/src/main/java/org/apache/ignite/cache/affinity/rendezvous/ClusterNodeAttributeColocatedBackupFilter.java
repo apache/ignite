@@ -46,7 +46,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * attributes.
  *
  * Note: All nodes should have not an empty co-location attribute value. The absence of the attribute on some nodes
- * can lead to improper partitions co-location.
+ * will trigger the failure handler.
  *
  * Note: Node attributes persisted in baseline topology at the time of baseline topology change. If the co-location
  * attribute of some node was updated, but the baseline topology wasn't changed, the outdated attribute value can be
@@ -117,6 +117,9 @@ public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredic
         String primaryAttrVal = previouslySelected.get(0).attribute(attrName);
         String candidateAttrVal = candidate.attribute(attrName);
 
-        return (primaryAttrVal == null || candidateAttrVal == null) || primaryAttrVal.equals(candidateAttrVal);
+        if (primaryAttrVal == null || candidateAttrVal == null)
+            throw new IllegalStateException("Empty co-location attribute value");
+
+        return primaryAttrVal.equals(candidateAttrVal);
     }
 }

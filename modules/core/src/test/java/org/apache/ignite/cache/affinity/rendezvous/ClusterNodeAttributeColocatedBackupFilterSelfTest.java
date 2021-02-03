@@ -19,11 +19,11 @@ package org.apache.ignite.cache.affinity.rendezvous;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionBackupFilterAbstractSelfTest;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,9 +33,14 @@ import org.junit.Test;
 import static org.junit.Assert.assertNotEquals;
 
 /**
- * Partitioned affinity test.
+ * Tests of {@link AffinityFunction} implementations with {@link ClusterNodeAttributeColocatedBackupFilter}.
  */
 public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityFunctionBackupFilterAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setFailureHandler((i, f) -> true);
+    }
+
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction() {
         return affinityFunctionWithAffinityBackupFilter(SPLIT_ATTRIBUTE_NAME);
@@ -161,24 +166,58 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
 
     /** */
     @Test
-    public void testBackupFilterWithNullAttribute() throws Exception {
+    public void testBackupFilterNullAttributeBltChange() throws Exception {
         backups = 1;
 
         try {
             startGrid(0, "A");
             startGrid(1, "A");
-            startGrid(2, (String)null);
-            startGrid(3, (String)null);
 
             awaitPartitionMapExchange();
 
-            AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
+            grid(0).cluster().baselineAutoAdjustEnabled(false);
 
-            Map<Integer, String> partToAttr = partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions());
+            // Join of non-BLT node with the empty attribute should not trigger failure handler.
+            startGrid(2, (String)null);
 
-            assertTrue(F.exist(partToAttr.values(), Objects::isNull));
-            assertTrue(F.exist(partToAttr.values(), "A"::equals));
-            assertFalse(F.exist(partToAttr.values(), v -> !(v == null) && !"A".equals(v)));
+            assertNull(grid(0).context().failure().failureContext());
+            assertNull(grid(1).context().failure().failureContext());
+            assertNull(grid(2).context().failure().failureContext());
+
+            // Include node with the empty attribute to the BLT should trigger failure handler on all nodes.
+            resetBaselineTopology();
+
+            assertNotNull(grid(0).context().failure().failureContext());
+            assertNotNull(grid(1).context().failure().failureContext());
+            assertNotNull(grid(2).context().failure().failureContext());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    @Test
+    public void testBackupFilterNullAttributeBltNodeJoin() throws Exception {
+        backups = 1;
+
+        try {
+            startGrid(0, "A");
+            startGrid(1, "A");
+
+            awaitPartitionMapExchange();
+
+            grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+            stopGrid(1);
+
+            awaitPartitionMapExchange();
+
+            // Join of BLT node with the empty attribute should trigger failure handler on this node.
+            startGrid(1, (String)null);
+
+            assertNull(grid(0).context().failure().failureContext());
+            assertNotNull(grid(1).context().failure().failureContext());
         }
         finally {
             stopAllGrids();
