@@ -347,6 +347,11 @@ include::{sourceCodeFile}[tag=client-authentication,indent=0]
 
 Most network-bound thin client APIs have an async counterpart, for example, `ClientCache.get` and `ClientCache.getAsync`.
 
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=async-api,indent=0]
+-------------------------------------------------------------------------------
+
 * Async methods do not block the calling thread
 * Async methods return `IgniteClientFuture<T>` which is a combination of `Future<T>` and `CompletionStage<T>`.
-* Async continuations are executed using `ClientConfiguration.AsyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool()` when null. For example, `cache.getAsync(1).thenAccept(val -> System.out.println(val))` will execute the `println` call using a thread from the `commonPool`.
+* Async continuations are executed using `ClientConfiguration.AsyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool()`. For example, `cache.getAsync(1).thenAccept(val -> System.out.println(val))` will execute the `println` call using a thread from the `commonPool`.
