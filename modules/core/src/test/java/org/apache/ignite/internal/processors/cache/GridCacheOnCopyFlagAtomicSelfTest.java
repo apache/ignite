@@ -27,7 +27,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-// GG-11141.
 @Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheOnCopyFlagAtomicSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */

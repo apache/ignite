@@ -86,12 +86,14 @@ public class OrphanedTestCollection {
             if (curPath.resolve("modules").toFile().exists()) {
                 Path targetPath = curPath.resolve("target");
 
-                if (!targetPath.toFile().exists())
+                if (!targetPath.toFile().exists()) {
                     try {
                         Files.createDirectory(targetPath);
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                         throw new RuntimeException("Failed to create target directory.", e);
                     }
+                }
 
                 return curPath.resolve("target").resolve("orphaned_tests.txt");
             }
