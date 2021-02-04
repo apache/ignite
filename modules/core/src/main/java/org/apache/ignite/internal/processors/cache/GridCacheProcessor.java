@@ -27,8 +27,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -217,7 +219,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  * to that activity like validation of cache configuration, restoring configuration from persistence, etc.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
-public class GridCacheProcessor extends GridProcessorAdapter {
+public class GridCacheProcessor<E> extends GridProcessorAdapter {
     /** */
     public static final String CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT =
         "Failed to perform %s operation (cluster is in read-only mode) [cacheGrp=%s, cache=%s]";
@@ -252,6 +254,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** MBean group for cache group metrics */
     private static final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
+
+    /**
+     * Initial timeout (in milliseconds) for output the progress of restoring partitions status.
+     * After the first output, the next ones will be output after value/5.
+     * It is recommended to change this property only in tests.
+     */
+    static long TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = TimeUnit.MINUTES.toMillis(5);
 
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
@@ -5461,13 +5470,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /**
+         * Restoring the state of partitions for cache groups.
+         *
          * @param forGroups Cache groups.
-         * @param partitionStates Partition states.
+         * @param partStates Partition states.
          * @throws IgniteCheckedException If failed.
          */
         private void restorePartitionStates(
             Collection<CacheGroupContext> forGroups,
-            Map<GroupPartitionId, Integer> partitionStates
+            Map<GroupPartitionId, Integer> partStates
         ) throws IgniteCheckedException {
             long startRestorePart = U.currentTimeMillis();
 
@@ -5482,12 +5493,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
 
+            AtomicReference<NavigableMap<Long, List<GroupPartitionId>>> topRef = new AtomicReference<>();
+
+            long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
+
             for (CacheGroupContext grp : forGroups) {
                 sysPool.execute(() -> {
                     try {
-                        long processed = grp.offheap().restorePartitionStates(partitionStates);
+                        Map<Integer, Long> processed = grp.offheap().restorePartitionStates(partStates);
 
-                        totalProcessed.addAndGet(processed);
+                        totalProcessed.addAndGet(processed.size());
+
+                        if (log.isInfoEnabled()) {
+                            NavigableMap<Long, List<GroupPartitionId>> top =
+                                topProcessingPartitions(processed, 5, p -> new GroupPartitionId(grp.groupId(), p));
+
+                            topRef.updateAndGet(
+                                top0 -> top0 == null ? top : mergeTopProcessingPartitions(top0, top, 5));
+                        }
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         U.error(log, "Failed to restore partition state for " +
@@ -5507,8 +5530,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             try {
+                // TODO: 03.02.2021 Вот тут можно переодически выводить!
+                // TODO: 03.02.2021 Вот тут можно выводить статистику по группам и партициям
+                // TODO: 03.02.2021 Первый раз через минуту, последующие каждую минуту
+                // TODO: 03.02.2021 Возможно еще будет выводить тут топ 5 с размерами
+
                 // Await completion restore state tasks in all stripes.
-                completionLatch.await();
+                if (!log.isInfoEnabled())
+                    completionLatch.await();
+                else {
+                    long timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
+
+                    while (!completionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
+                        if (log.isInfoEnabled()) {
+                            @Nullable NavigableMap<Long, List<GroupPartitionId>> top = topRef.get();
+
+                            log.info("Restore partitions state progress [grpCnt=" +
+                                (forGroups.size() - completionLatch.getCount()) + '/' + forGroups.size() +
+                                ", partitionCnt=" + (totalPart - totalProcessed.get()) + '/' + totalPart +
+                                (top == null ? "" : ", topProcessedPartitions=" + )
+                                + ']');
+                        }
+
+                        timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS / 5;
+                    }
+                }
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);
@@ -5518,11 +5564,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (restoreStateError.get() != null)
                 throw restoreStateError.get();
 
-            if (log.isInfoEnabled())
+            if (log.isInfoEnabled()) {
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
                     ", partitionsProcessed=" + totalProcessed.get() +
                     ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
+            }
         }
 
         /**
@@ -5777,5 +5824,115 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public void removeNode(UUID nodeId) {
             DELEGATE.removeNode(nodeId);
         }
+    }
+
+    /**
+     * Getting the top (ascending) of the partitions that took the longest processing time.
+     *
+     * @param partDurations Mapping: partition id -> processing time in millis.
+     * @param max Maximum total number of partitions.
+     * @param partFun Partition conversion function.
+     * @return Mapping: processing time in millis -> partition ids.
+     * @see #mergeTopProcessingPartitions
+     */
+    private <E> NavigableMap<Long, List<E>> topProcessingPartitions(
+        Map<Integer, Long> partDurations,
+        int max,
+        Function<Integer, E> partFun
+    ) {
+        if (partDurations.isEmpty() || max <= 0)
+            return Collections.emptyNavigableMap();
+
+        TreeMap<Long, List<E>> res = new TreeMap<>();
+
+        int size = 0;
+
+        for (Map.Entry<Integer, Long> e : partDurations.entrySet()) {
+            if (size < max || res.floorEntry(e.getValue()) != null) {
+                res.compute(e.getValue(), (d, p0) -> {
+                    if (p0 == null)
+                        return Collections.singletonList(partFun.apply(e.getKey()));
+                    else {
+                        List<E> p1 = p0.size() == 1 ? new ArrayList<>() : p0;
+
+                        p1.add(partFun.apply(e.getKey()));
+
+                        return p1;
+                    }
+                });
+
+                if (++size == max) {
+                    Map.Entry<Long, List<E>> firstEntry = res.firstEntry();
+
+                    if (firstEntry.getValue().size() == 1)
+                        res.remove(firstEntry.getKey());
+                    else
+                        firstEntry.getValue().remove(0);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Merging the tops (ascending) of the partitions that took the longest processing time.
+     *
+     * @param top0 Top (ascending) processed partitions.
+     * @param top1 Top (ascending) processed partitions.
+     * @param max Maximum total number of partitions.
+     * @see #topProcessingPartitions
+     */
+    private <E> NavigableMap<Long, List<E>> mergeTopProcessingPartitions(
+        NavigableMap<Long, List<E>> top0,
+        NavigableMap<Long, List<E>> top1,
+        int max
+    ) {
+        if (max <= 0 || (top0.isEmpty() && top1.isEmpty()))
+            return Collections.emptyNavigableMap();
+
+        TreeMap<Long, List<E>> res = new TreeMap<>();
+
+        Iterator<Map.Entry<Long, List<E>>> top0Iter = top0.descendingMap().entrySet().iterator();
+        Iterator<Map.Entry<Long, List<E>>> top1Iter = top1.descendingMap().entrySet().iterator();
+
+        int size = 0;
+
+        while (size < max && (top0Iter.hasNext() || top1Iter.hasNext())) {
+            @Nullable Map.Entry<Long, List<E>> e0 = top0Iter.hasNext() ? top0Iter.next() : null;
+            @Nullable Map.Entry<Long, List<E>> e1 = top1Iter.hasNext() ? top1Iter.next() : null;
+
+            for (Map.Entry<Long, List<E>> e : F.asArray(e0, e1)) {
+                if (e != null && size < max) {
+                    List<E> v = e.getValue().size() <= max - size ? e.getValue() : e.getValue().subList(0, max - size);
+
+                    res.compute(e.getKey(), (t, p0) -> {
+                        if (p0 == null)
+                            return v.size() == 1 ? Collections.singletonList(v.get(0)) : new ArrayList<>(v);
+                        else {
+                            List<E> p1 = p0.size() == 1 ? new ArrayList<>(p0) : p0;
+
+                            p1.addAll(v);
+
+                            return p1;
+                        }
+                    });
+
+                    size += v.size();
+                }
+            }
+        }
+
+        return res;
+    }
+
+    private String toStringTopProcessingPartitions(
+        NavigableMap<Long, List<GroupPartitionId>> top,
+        Collection<CacheGroupContext> groups
+    ) {
+        if (top.isEmpty() || groups.isEmpty())
+            return "[]";
+
+        // TODO: 04.02.2021
     }
 }
