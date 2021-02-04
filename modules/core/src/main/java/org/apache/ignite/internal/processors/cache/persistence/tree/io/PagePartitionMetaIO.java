@@ -119,6 +119,19 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
+     * @param buff Page buffer.
+     * @return Partition update counter.
+     */
+    public boolean setUpdateCounter(ByteBuffer buff, long cntr) {
+        if (getUpdateCounter(buff) == cntr)
+            return false;
+
+        buff.putLong(UPDATE_CNTR_OFF, cntr);
+
+        return true;
+    }
+
+    /**
      * @param pageAddr Page address.
      * @param cntr Partition update counter.
      *

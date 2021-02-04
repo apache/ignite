@@ -216,7 +216,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         if (results.size() != ex.size())
             return checkConflicts(clusterHashes, ex);
         else
-            return new IdleVerifyResultV2(emptyMap(), emptyMap(), emptyMap(), emptyMap(), ex);
+            return new IdleVerifyResultV2(ex);
     }
 
     /**

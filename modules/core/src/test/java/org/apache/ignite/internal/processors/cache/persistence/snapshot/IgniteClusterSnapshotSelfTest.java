@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -65,8 +67,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
@@ -94,6 +100,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
@@ -1260,12 +1267,79 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
-        System.out.println(">>>>>> " + b);
         assertFalse(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache groups");
+        assertContains(log, b.toString(), "Some metadata is missing from the snapshot");
     }
 
-    // TODO check snapshot must work for data regions with different page sizes.
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckWithNodeFilter() throws Exception {
+        IgniteEx ig0 = startGridsWithoutCache(3);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
+            ig0.getOrCreateCache(txCacheConfig(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
+                .setNodeFilter(node -> node.consistentId().toString().endsWith("0"))).put(i, i);
+        }
+
+        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertTrue(F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "idle_verify check has finished, no conflicts have been found");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckPartitionCounters() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
+            setAffinity(new RendezvousAffinityFunction(false, 1)),
+            CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+            getPartitionFileName(0));
+
+        assertNotNull(part0);
+        assertTrue(part0.toString(), part0.toFile().exists());
+
+        FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
+            .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
+            .createPageStore(getTypeByPartId(0),
+                () -> part0,
+                val -> {
+                });
+
+        ByteBuffer buff = ByteBuffer.allocate(ignite.configuration().getDataStorageConfiguration().getPageSize())
+            .order(ByteOrder.nativeOrder());
+
+        buff.clear();
+        pageStore.read(0, buff, false);
+
+        PagePartitionMetaIO io = PageIO.getPageIO(buff);
+        io.setUpdateCounter(buff, CACHE_KEYS_RANGE * 2);
+
+        pageStore.beginRecover();
+
+        buff.flip();
+        pageStore.write(PageIO.getPageId(buff), buff, 0, true);
+        pageStore.finishRecover();
+
+        pageStore.close();
+
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertTrue(F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "idle_verify check has finished, found 1 conflict partitions");
+    }
 
     /**
      * @param ignite Ignite instance.

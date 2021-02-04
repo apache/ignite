@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -552,18 +551,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             parts.put(grpId, null);
         }
 
+        IgniteInternalFuture<Set<GroupPartitionId>> task0;
+
         if (parts.isEmpty())
-            return new GridFinishedFuture<>();
+            task0 = new GridFinishedFuture<>(Collections.emptySet());
+        else {
+            task0 = registerSnapshotTask(req.snpName,
+                req.srcNodeId,
+                parts,
+                locSndrFactory.apply(req.snpName));
 
-        SnapshotFutureTask task0 = registerSnapshotTask(req.snpName,
-            req.srcNodeId,
-            parts,
-            locSndrFactory.apply(req.snpName));
-
-        clusterSnpReq = req;
+            clusterSnpReq = req;
+        }
 
         return task0.chain(fut -> {
-            if (fut.error() == null) {
+            if (fut.error() != null)
+                throw F.wrap(fut.error());
+
+            try {
                 Set<String> blts = req.bltNodes.stream()
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
@@ -572,6 +577,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (smf.exists())
                     throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
+
+                smf.getParentFile().mkdirs();
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
@@ -586,13 +593,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
                 }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new GridClosureException(e);
-                }
 
                 return new SnapshotOperationResponse();
-            } else
-                throw new GridClosureException(fut.error());
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw F.wrap(e);
+            }
         });
     }
 
@@ -807,25 +813,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // TODO check NodeFilter works correct. SnapshotMetadata must be created on empty cluster node too.
 
-        CompletableFuture.supplyAsync(() -> {
-            kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-
-            return new IgniteFutureImpl<>(kctx0.task()
-                .execute(SnapshotMetadataCollectorTask.class, name))
-                .get();
-        })
-            .thenApplyAsync(metas -> {
-                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-
-                return new IgniteFutureImpl<>(kctx0.task()
-                    .execute(SnapshotPartitionsVerifyTask.class, metas))
-                    .get();
-            })
-            .whenComplete((r, ex) -> {
-                if (ex == null)
-                    res.onDone(r);
-                else
-                    res.onDone(ex);
+        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name)
+            .listen(f0 -> {
+                if (f0.error() == null) {
+                    kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, f0.result())
+                        .listen(f1 -> {
+                            if (f1.error() == null)
+                                res.onDone(f1.result());
+                            else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                                res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
+                            else
+                                res.onDone(f1.error());
+                        });
+                }
+                else {
+                    if (f0.error() instanceof IgniteSnapshotVerifyException)
+                        res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions()));
+                    else
+                        res.onDone(f0.error());
+                }
             });
 
         return res;
@@ -865,6 +873,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             long updateCntr = io.getUpdateCounter(pageBuff);
             long size = io.getSize(pageBuff);
+
+            updCntr.accept(updateCntr);
+            partSize.accept(size);
 
             if (log.isDebugEnabled()) {
                 log.debug("Partition [grpId=" + grpId

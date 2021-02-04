@@ -56,15 +56,20 @@ public class SnapshotPartitionsVerifyTask
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private IgniteEx ignite;
+
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
     ) throws IgniteException {
         if (!subgrid.containsAll(clusterMetas.keySet())) {
-            throw new IgniteException("Some of Ignite nodes left the cluster during execution " +
+            throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
+                new IgniteException("Some of Ignite nodes left the cluster during the snapshot verification " +
                 "[curr=" + F.viewReadOnly(subgrid, F.node2id()) +
-                ", init=" + F.viewReadOnly(clusterMetas.keySet(), F.node2id()) + ']');
+                ", init=" + F.viewReadOnly(clusterMetas.keySet(), F.node2id()) + ']')));
         }
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
@@ -83,8 +88,10 @@ public class SnapshotPartitionsVerifyTask
                 break;
         }
 
-        if (!missed.isEmpty())
-            throw new IgniteException("Some snapshot parts are missed in the snapshot [missed=" + missed + ", all=" + allParts);
+        if (!missed.isEmpty()) {
+            throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
+                new IgniteException("Some metadata is missing from the snapshot: " + missed)));
+        }
 
         for (int idx = 0; !allParts.isEmpty(); idx++) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
@@ -158,7 +165,7 @@ public class SnapshotPartitionsVerifyTask
             ByteBuffer pageBuf = ByteBuffer.allocate(meta.pageSize())
                 .order(ByteOrder.nativeOrder());
 
-            Set<Integer> grps = new HashSet<>(meta.cacheGroupIds());
+            Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
                 String grpName = cacheGroupName(dir);

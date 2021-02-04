@@ -69,13 +69,15 @@ public class SnapshotMetadataCollectorTask
         List<ComputeJobResult> results
     ) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
+        Map<ClusterNode, Exception> exs = new HashMap<>();
 
         SnapshotMetadata first = null;
 
         for (ComputeJobResult res: results) {
             if (res.getException() != null) {
-                throw new IgniteException("An error occurred while getting snapshot metadata " +
-                    "from baseline nodes: " + res.getNode().id(), res.getException());
+                exs.put(res.getNode(), res.getException());
+
+                continue;
             }
 
             List<SnapshotMetadata> metas = res.getData();
@@ -85,8 +87,11 @@ public class SnapshotMetadataCollectorTask
                     first = meta;
 
                 if (!sameSnapshotMetadata(first, meta)) {
-                    throw new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
-                        "[first=" + first + ", meta=" + meta + ", nodeId=" + res.getNode().id() + ']');
+                    exs.put(res.getNode(),
+                        new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
+                            "[first=" + first + ", meta=" + meta + ", nodeId=" + res.getNode().id() + ']'));
+
+                    continue;
                 }
 
                 reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
@@ -94,7 +99,10 @@ public class SnapshotMetadataCollectorTask
             }
         }
 
-        return reduceRes;
+        if (exs.isEmpty())
+            return reduceRes;
+        else
+            throw new IgniteSnapshotVerifyException(exs);
     }
 
     /** {@inheritDoc} */

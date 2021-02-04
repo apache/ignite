@@ -56,9 +56,12 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private Set<String> bltNodes;
 
-    /** Map of cache group partitions from which snapshot has been taken on local node. */
+    /**
+     * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
+     * since for instance, due to the node filter there is no cache data on node.
+     */
     @GridToStringInclude
-    private Map<Integer, Set<Integer>> parts = new HashMap<>();
+    private Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
     /**
      * No-arg constructor.
@@ -92,7 +95,7 @@ public class SnapshotMetadata implements Serializable {
         this.bltNodes = bltNodes;
 
         pairs.forEach(p ->
-            parts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
+            locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
                 .add(p.getPartitionId()));
     }
 
@@ -184,14 +187,14 @@ public class SnapshotMetadata implements Serializable {
      * @return Map of cache group partitions from which snapshot has been taken on local node.
      */
     public Map<Integer, Set<Integer>> partitions() {
-        return parts;
+        return locParts;
     }
 
     /**
      * @param parts Map of cache group partitions from which snapshot has been taken on local node.
      */
     public void partitions(Map<Integer, Set<Integer>> parts) {
-        this.parts = parts;
+        this.locParts = parts;
     }
 
     /** {@inheritDoc} */

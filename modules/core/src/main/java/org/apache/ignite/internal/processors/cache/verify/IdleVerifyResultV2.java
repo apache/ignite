@@ -91,6 +91,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /**
+     * @param exceptions Occurred exceptions.
+     */
+    public IdleVerifyResultV2(Map<ClusterNode, Exception> exceptions) {
+        this(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), exceptions);
+    }
+
+    /**
      * Default constructor for Externalizable.
      */
     public IdleVerifyResultV2() {
