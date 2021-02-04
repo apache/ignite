@@ -69,5 +69,27 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 // TODO: Check log message.
             }
         }
+
+        /// <summary>
+        /// Tests that with default configuration on server and client there is no warnings and no changes at runtime.
+        /// </summary>
+        [Test]
+        public void TestDefaultConfigurationDoesNotChangeClientSettingsOrLogWarnings()
+        {
+            var logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace});
+            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString());
+
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            using (var client = Ignition.StartClient(clientCfg))
+            {
+                var resCfg = client.GetConfiguration();
+
+                Assert.IsNull(resCfg.BinaryConfiguration);
+
+                // TODO: Create a binary object to verify the behavior.
+                // TODO: Check log message.
+            }
+        }
     }
 }
