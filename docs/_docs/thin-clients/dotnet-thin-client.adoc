@@ -237,7 +237,7 @@ include::{sourceCodeFile}[tag=client-compute-task,indent=0]
 
 == Executing Ignite Services
 
-You can use the `IServicesClient` APIs to invoke an link:services/services[Ignite Service] that
+You can use the `IServicesClient` API to invoke an link:services/services[Ignite Service] that
 is *already deployed* in the cluster.
 
 The example below shows how to invoke the service named `MyService`:
