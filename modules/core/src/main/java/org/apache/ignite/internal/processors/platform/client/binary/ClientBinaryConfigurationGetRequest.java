@@ -49,7 +49,7 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         BinaryConfiguration cfg = ctx.kernalContext().config().getBinaryConfiguration();
-        boolean compactFooter = cfg != null && cfg.isCompactFooter();
+        boolean compactFooter = cfg == null ? BinaryConfiguration.DFLT_COMPACT_FOOTER : cfg.isCompactFooter();
         byte nameMapperType = getNameMapperType(cfg);
 
         return new ClientBinaryConfigurationGetResponse(requestId(), compactFooter, nameMapperType);
@@ -63,7 +63,7 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
      */
     private static byte getNameMapperType(BinaryConfiguration cfg) {
         if (cfg == null || cfg.getNameMapper() == null)
-            return NAME_MAPPER_BASIC_FULL;
+            return BinaryBasicNameMapper.DFLT_SIMPLE_NAME ? NAME_MAPPER_BASIC_SIMPLE : NAME_MAPPER_BASIC_FULL;
 
         if (!(cfg.getNameMapper() instanceof BinaryBasicNameMapper))
             return NAME_MAPPER_CUSTOM;
