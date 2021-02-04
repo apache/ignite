@@ -17,41 +17,36 @@
 
 package org.apache.ignite.cdc;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 
-import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
-import static org.apache.ignite.cdc.KafkaUtils.TIMEOUT_MIN;
-import static org.apache.ignite.cdc.Utils.fromSystemOrProperty;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -66,16 +61,10 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  */
 public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAware {
     /** */
-    public static final String PARTITIONS = "kafka.to.ignite.consumer.partitions";
-
-    /** */
     private final PluginContext ctx;
 
     /** */
     private final IgniteEx ign;
-
-    /** Properties. */
-    private final Properties props;
 
     /** */
     private final IgniteLogger log;
@@ -83,12 +72,13 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
     /** Executor service. */
     private ExecutorService execSvc;
 
-    /** Topic name. */
-    private final String topic;
+    /** */
+    private final int thCnt = 10;
 
-    /** Kafka partitions count. */
-    private int kafkaPartitionsNum;
+    /** */
+    private final int kafkaPartitionCnt = 100;
 
+    /** Replicated groups. */
     private Set<Integer> grps;
 
     /** Map to cache ids. */
@@ -100,16 +90,16 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
     public KafkaToIgnitePlugin(PluginContext ctx, Properties props, Set<Integer> groups) {
         this.ctx = ctx;
         this.ign = (IgniteEx)ctx.grid();
-        this.props = props;
-        this.topic = fromSystemOrProperty(IGNITE_TO_KAFKA_TOPIC, props);
-        this.log = ign.log();
+        this.log = ign.log().getLogger(KafkaToIgnitePlugin.class);
         this.grps = groups;
+
+        execSvc = Executors.newFixedThreadPool(thCnt);
     }
 
     /** Start the plugin. */
     public void start() throws Exception {
         if (log.isInfoEnabled())
-            log.warning("Starting KafkaToIgnitePlugin[" + ign.configuration().getIgniteInstanceName() + ']' + "[grps=" + grps + ']');
+            log.warning("Starting KafkaToIgnitePlugin[grps=" + grps + ']');
 
         ign.context().cache().context().exchange().registerExchangeAwareComponent(this);
     }
@@ -117,20 +107,15 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
     /** Start the plugin. */
     public void stop() {
         if (log.isInfoEnabled())
-            log.warning("KafkaToIgnitePlugin.stop[" + ign.configuration().getIgniteInstanceName() + ']');
+            log.warning("KafkaToIgnitePlugin.stop");
     }
 
     /** {@inheritDoc} */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-        boolean destroyWorkers = workersDestroyed(fut);
+        boolean destroyWorkers = needToDestroyWorkers(fut);
 
-        if (log.isInfoEnabled()) {
-            log.warning("KafkaToIgnitePlugin.onInitBeforeTopologyLock" +
-                "[" + ign.configuration().getIgniteInstanceName() + "]" +
-                "[destroyWorkers=" + destroyWorkers + ']');
-        }
-
-        // TODO: stop and destroy kafka readers(assignments will be changed).
+        if (log.isInfoEnabled())
+            log.warning("KafkaToIgnitePlugin.onInitBeforeTopologyLock[destroyWorkers=" + destroyWorkers + ']');
     }
 
     /** {@inheritDoc} */
@@ -138,11 +123,10 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
         try {
             AffinityTopologyVersion topVer = fut.get();
 
-            boolean workersDestroyed = workersDestroyed(fut);
+            boolean workersDestroyed = needToDestroyWorkers(fut);
 
             if (log.isInfoEnabled()) {
                 log.warning("KafkaToIgnitePlugin.onDoneAfterTopologyUnlock" +
-                    "[" + ign.configuration().getIgniteInstanceName() + "]" +
                     "[workersDestroyed=" + workersDestroyed + ", topVer=" + topVer + ']');
             }
 
@@ -158,39 +142,87 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
     private void switchGroupsPartitions(AffinityTopologyVersion topVer) {
         log.warning("KafkaToIgnitePlugin.switchGroupsPartitions " + topVer);
 
+        List<Applier> appliers = new ArrayList<>();
+        Map<Integer, Applier> kafkaPartApplier = new HashMap<>();
+        AtomicInteger cntr = new AtomicInteger();
+
+        final boolean[] replicationEnabled = {false};
+
         grps.forEach(grpId -> {
             try {
-                switchGroupPartitions(grpId, topVer);
+                boolean grpExists = switchGroupPartitions(grpId, topVer, kafkaPartApplier, appliers, cntr);
+
+                replicationEnabled[0] |= grpExists;
             }
             catch (IgniteCheckedException e) {
                 e.printStackTrace();
             }
         });
+
+        if (!replicationEnabled[0])
+            return;
+
+        for (int i=0; i<appliers.size(); i++)
+            log.warning(i + " = " + appliers.get(i));
     }
 
     /** */
-    public void switchGroupPartitions(int grpId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    public boolean switchGroupPartitions(
+        int grpId,
+        AffinityTopologyVersion topVer,
+        Map<Integer, Applier> applier4partition,
+        List<Applier> appliers,
+        AtomicInteger cntr
+    ) throws IgniteCheckedException {
         GridAffinityAssignmentCache aff = ign.context().cache().context().affinity().groupAffinity(grpId);
 
         if (aff == null) {
             log.warning("Group not started or removed[grpId=" + grpId + ']');
 
-            return;
+            return false;
         }
+
+        Map<Integer, List<Integer>> kafkaPartsToIgnite = new TreeMap<>();
 
         List<List<ClusterNode>> assignments = aff.assignments(topVer);
 
         Set<Integer> primaryParts = IntStream.range(0, assignments.size())
             .filter(i -> assignments.get(i).get(0).id().equals(ign.localNode().id()))
+            .peek(ignPart -> kafkaPartsToIgnite
+                .computeIfAbsent(ignPart % kafkaPartitionCnt, key -> new ArrayList<>())
+                .add(ignPart))
             .boxed()
             .collect(Collectors.toSet());
 
+        for (Map.Entry<Integer, List<Integer>> kafka2ignite : kafkaPartsToIgnite.entrySet()) {
+            Integer kafkaPart = kafka2ignite.getKey();
+
+            if (applier4partition.containsKey(kafkaPart))
+                applier4partition.get(kafkaPart).addGroupPartition(kafkaPart, grpId, kafka2ignite.getValue());
+
+            Applier applier;
+
+            if (appliers.size() < thCnt) {
+                applier = new Applier();
+
+                appliers.add(applier);
+            }
+            else
+                applier = appliers.get(cntr.getAndIncrement() % thCnt);
+
+            applier.addGroupPartition(kafkaPart, grpId, kafka2ignite.getValue());
+
+            applier4partition.put(kafkaPart, applier);
+        }
+
         if (log.isInfoEnabled())
-            log.warning("KafkaToIgnitePlugin.switchPartitions[" + ign.configuration().getIgniteInstanceName() + ']' + primaryParts);
+            log.warning("KafkaToIgnitePlugin.switchPartitions " + primaryParts);
+
+        return true;
     }
 
     /** */
-    private boolean workersDestroyed(GridDhtPartitionsExchangeFuture fut) {
+    private boolean needToDestroyWorkers(GridDhtPartitionsExchangeFuture fut) {
         boolean isCacheAffinityChangeMessage = fut.events().events().stream().anyMatch(evt ->
             evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
                 ((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage);
@@ -242,147 +274,37 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
         return grpRemoved;
     }
 
-    /**
-     * Single Kafka partition consumer.
-     */
-    private static class KafkaPartitionToIgnite implements Runnable {
-        /** Kafka partition to read. */
-        private final int kafkaPartition;
+    /** */
+    private static class Applier implements Runnable {
+        /** */
+        private final Map<Integer, Set<Integer>> grpParts = new HashMap<>();
 
-        /** Properties. */
-        private final Properties props;
-
-        /** Ignite. */
-        private final IgniteEx ign;
-
-        /**
-         * @param kafkaPartition Kafka partition to read.
-         */
-        public KafkaPartitionToIgnite(int kafkaPartition, Properties props, IgniteEx ign) {
-            this.kafkaPartition = kafkaPartition;
-            this.props = props;
-            this.ign = ign;
-        }
+        /** */
+        private final Set<Integer> kafkaParts = new HashSet<>();
 
         /** {@inheritDoc} */
         @Override public void run() {
 
         }
-    }
-
-    /** Kafka to Ignite worker. */
-    private class KafkaToIgniteWorker implements Runnable {
-        public static final int RETRY_CNT = 3;
-
-        /** */
-        private boolean stoped;
-
-        /** */
-        private int retryCnt = RETRY_CNT;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            KafkaConsumer<BinaryObject, EntryEvent<BinaryObject, BinaryObject>> consumer = new KafkaConsumer<>(props);
-
-            while (retryCnt > 0 && !stoped) {
-                ConsumerRecords<BinaryObject, EntryEvent<BinaryObject, BinaryObject>> recs;
-
-                try {
-                    recs = consumer.poll(Duration.ofMinutes(TIMEOUT_MIN));
-
-                    retryCnt = RETRY_CNT;
-                }
-                catch (Exception e) {
-                    retryCnt--;
-
-                    e.printStackTrace();
-
-                    try {
-                        Thread.sleep(Duration.ofMillis(TIMEOUT_MIN).toMillis());
-                    }
-                    catch (InterruptedException err) {
-                        throw new RuntimeException(err);
-                    }
-
-                    continue;
-                }
-
-                for (ConsumerRecord<BinaryObject, EntryEvent<BinaryObject, BinaryObject>> rec : recs)
-                    apply(rec.value());
-            }
-        }
-
-        /** Applies single event to Ignite. */
-        private void apply(EntryEvent<BinaryObject, BinaryObject> evt) {
-            IgniteCache<BinaryObject, BinaryObject> cache = cc.computeIfAbsent(evt.cacheId(), cacheId -> {
-                for (String cacheName : ign.cacheNames()) {
-                    if (CU.cacheId(cacheName) == cacheId)
-                        return ign.cache(cacheName).withKeepBinary();
-                }
-
-                throw new IllegalStateException("Cache with id not found[cacheId=" + cacheId + ']');
-            });
-
-            CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(evt.key());
-
-            GridCacheVersion rmvVer = null;
-
-            if (entry == null) {
-                GridCacheContext<Object, Object> cctx = ign.context().cache().context().cacheContext(evt.cacheId());
-
-                GridDhtLocalPartition part = cctx.topology().localPartition(evt.partition());
-
-                rmvVer = part.findRemoveVersion(evt.key());
-            }
-
-            if (needToUpdate(evt.order(), entry == null ? null : (GridCacheVersion)entry.version(), rmvVer)) {
-                switch (evt.operation()) {
-                    case UPDATE:
-                        cache.put(evt.key(), evt.value()); //TODO: add version from event to entry.
-
-                    case DELETE:
-                        cache.remove(evt.key()); //TODO: add version from event to entry.
-
-                    default:
-                        throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
-                }
-            }
-        }
 
         /**
-         * TODO: add tombstone to Ignite.
-         *
-         * @param kafkaOrd Entry version from Kafka.
-         * @param curVer Current entry version.
-         * @param rmvVer Entry version from remove operation.
-         * @return {@code True} if entry should be updated. {@code False} if this update should be skipped.
+         * @param grpId
+         * @param parts
          */
-        private boolean needToUpdate(EntryEventOrder kafkaOrd, GridCacheVersion curVer, GridCacheVersion rmvVer) {
-            if (curVer == null && rmvVer == null)
-                return true;
+        public void addGroupPartition(int kafkaPart, int grpId, List<Integer> parts) {
+            grpParts
+                .computeIfAbsent(grpId, key -> new HashSet<>())
+                .addAll(parts);
 
-            GridCacheVersion kafkaVer =
-                new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order());
+            kafkaParts.add(kafkaPart);
+        }
 
-            if (rmvVer != null)
-                return kafkaVer.compareTo(rmvVer) > 0;
-
-            return kafkaVer.compareTo(curVer) > 0;
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "Applier{" +
+                "kafkaParts=" + kafkaParts +
+                ", grpParts=" + grpParts +
+                '}';
         }
     }
 }
-/*
-        kafkaPartitionsNum = KafkaUtils.initTopic(topic, props);
-
-        int thNum = Integer.parseInt(fromSystemOrProperty(KAFKA_TO_IGNITE_THREAD_COUNT, props));
-
-        ExecutorService execSvc = Executors.newFixedThreadPool(thNum);
-
-        for (int i = 0; i < thNum; i++)
-            execSvc.submit(new KafkaToIgniteWorker());
-
-        execSvc.shutdown();
-
-        execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MINUTES);
-*/
-
