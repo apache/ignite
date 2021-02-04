@@ -112,6 +112,61 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         }
 
         /// <summary>
+        /// Tests that with explicit default configuration on client there is no warnings and no changes at runtime.
+        /// </summary>
+        [Test]
+        public void TestExplicitDefaultConfigurationDoesNotChangeClientSettingsOrLogWarnings()
+        {
+            var logger = GetLogger();
+            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
+            {
+                Logger = logger,
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = true,
+                    NameMapper = new BinaryBasicNameMapper
+                    {
+                        IsSimpleName = false
+                    }
+                }
+            };
+
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            using (var client = Ignition.StartClient(clientCfg))
+            {
+                // TODO
+                var resCfg = client.GetConfiguration();
+                Assert.IsNull(resCfg.BinaryConfiguration);
+
+                AssertCompactFooter(client, true);
+
+                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "Server binary configuration " +
+                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=True, NameMapperMode=BasicFull]"));
+
+                Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
+            }
+        }
+
+        [Test]
+        public void TestBasicNameMapperSettingsMismatchProducesLogWarning()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestCustomNameMapperOnServerProducesLogWarning()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestCustomNameMapperOnServerAndClientProducesNoLogWarning()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Checks the actual compact footer behavior.
         /// </summary>
         private static void AssertCompactFooter(IIgniteClient client, bool expected)
