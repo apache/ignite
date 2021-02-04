@@ -46,7 +46,7 @@
         <plugins>
             <!--
               This plugin is used for checking that all files in project are compliant with target licenses headers.
-              Exlusions are possible, but every exclusion should have it's own motivated comment and/or issue key.
+              Exclusions are possible, but every exclusion should have it's own motivated comment and/or issue key.
             -->
             <plugin>
                 <groupId>org.apache.rat</groupId>

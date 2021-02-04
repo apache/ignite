@@ -99,7 +99,7 @@ public class MavenArtifactResolver {
      * @param mavenRoot Path where artifacts will be copied to.
      * @param grpId Maven group id of the artifact.
      * @param artifactId Maven artifact id of the artifact.
-     * @param ver Manve version of the artifact.
+     * @param ver Maven version of the artifact.
      * @param customRepositories Urls with custom maven repositories to resolve artifact.
      * @return Result of resolving with files' paths of resolved artifact + dependencies.
      * @throws IOException if connection issues occurred during resolving
@@ -175,15 +175,15 @@ public class MavenArtifactResolver {
      * <p>
      * Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging
      *
-     * @param artfactId Maven artifact id.
+     * @param artifactId Maven artifact id.
      * @param ver Maven version
      * @return File name
      */
     public static String fileNameByArtifactPattern(
-        String artfactId,
+        String artifactId,
         String ver) {
         return FILE_ARTIFACT_PATTERN
-            .replace("[artifact]", artfactId)
+            .replace("[artifact]", artifactId)
             .replace("(-[classifier])", "")
             .replace("[revision]", ver)
             .replace("[ext]", "jar");

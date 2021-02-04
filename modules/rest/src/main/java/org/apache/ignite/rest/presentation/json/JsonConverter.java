@@ -48,7 +48,7 @@ public class JsonConverter implements FormatConverter {
     @Override public String rootName(String source) {
         Map<String, Object> map = gson.fromJson(source, Map.class);
 
-        // Peek only first root for simplicite. See comment in ConfigurationPresentation#update for more context.
+        // Peek only first root for simplicity. See comment in ConfigurationPresentation#update for more context.
         Optional<String> firstOpt = map.keySet().stream().findFirst();
 
         return firstOpt.isPresent() ? firstOpt.get() : null;
