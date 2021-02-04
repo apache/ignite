@@ -118,7 +118,6 @@ public class IgniteCacheMvccTestSuite5 {
         ignoredTests.add(GridExchangeFreeCellularSwitchTxContinuationTest.class);
         ignoredTests.add(GridExchangeFreeCellularSwitchTxCountersTest.class);
 
-
         ignoredTests.add(IgniteCachePartitionLossPolicySelfTest.class);
         ignoredTests.add(IgniteCacheGroupsPartitionLossPolicySelfTest.class);
 
