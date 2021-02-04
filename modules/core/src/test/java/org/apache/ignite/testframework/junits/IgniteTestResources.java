@@ -107,13 +107,11 @@ public class IgniteTestResources {
     public IgniteTestResources(IgniteConfiguration cfg) {
         this.cfg = cfg;
 
-        if (cfg.getGridLogger() != null)
-            this.log = cfg.getGridLogger().getLogger(getClass());
-        else
-            this.log = rootLog.getLogger(getClass());
+        this.log = cfg.getGridLogger() != null
+            ? cfg.getGridLogger().getLogger(getClass())
+            : rootLog.getLogger(getClass());
 
         this.jmx = prepareMBeanServer();
-        this.cfg.setMBeanServer(jmx);
         this.ctx = new GridTestKernalContext(log, this.cfg);
         this.rsrcProc = new GridResourceProcessor(ctx);
     }

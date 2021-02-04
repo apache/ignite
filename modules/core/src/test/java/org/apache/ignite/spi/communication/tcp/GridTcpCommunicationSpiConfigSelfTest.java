@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -37,6 +38,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
@@ -70,9 +72,30 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
      */
     private String locHost = "0.0.0.0";
 
+    /** */
+    private final Collection<IgniteTestResources> resourcesToClean = new ArrayList<>();
+
+    /** */
+    private final Collection<CommunicationSpi> spisToStop = new ArrayList<>();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        for (IgniteTestResources itr : resourcesToClean) {
+            itr.stopThreads();
+        }
+
+        for (CommunicationSpi commSpi : spisToStop) {
+            commSpi.onContextDestroyed();
+
+            commSpi.setListener(null);
+
+            commSpi.spiStop();
+        }
+
+        resourcesToClean.clear();
+        spisToStop.clear();
 
         super.afterTest();
     }
@@ -145,6 +168,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         GridSpiTestContext sendingCtx = initSpiContext();
 
         TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLogger, false);
+        spisToStop.add(sendingSpi);
 
         sendingSpi.onContextInitialized(sendingCtx);
 
@@ -153,20 +177,19 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         GridSpiTestContext receiverCtx = initSpiContext();
 
         /*
-        * This is a dirty hack to intervene into TcpCommunicationSpi#onContextInitialized0 method
-        * and add a delay before injecting metrics listener into its clients (like InboundConnectionHandler).
-        * The purpose of the delay is to make race between sending a message and initializing TcpCommSpi visible.
-        *
-        * This solution heavily depends on current code structure of onContextInitialized0 method.
-        * If any modifications are made to it, this logic could break and the test starts failing.
-        *
-        * In that case try to rewrite the test or delete it as this race is really hard to test.
-        */
+         * This is a dirty hack to intervene into TcpCommunicationSpi#onContextInitialized0 method
+         * and add a delay before injecting metrics listener into its clients (like InboundConnectionHandler).
+         * The purpose of the delay is to make race between sending a message and initializing TcpCommSpi visible.
+         *
+         * This solution heavily depends on current code structure of onContextInitialized0 method.
+         * If any modifications are made to it, this logic could break and the test starts failing.
+         *
+         * In that case try to rewrite the test or delete it as this race is really hard to test.
+         */
         receiverCtx.metricsRegistryProducer((name) -> {
             try {
                 Thread.sleep(100);
-            }
-            catch (Exception ignored) {
+            } catch (Exception ignored) {
                 // No-op.
             }
 
@@ -174,6 +197,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         });
 
         TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLogger, true);
+        spisToStop.add(receiverSpi);
 
         receiverCtx.remoteNodes().add(sendingNode);
         sendingCtx.remoteNodes().add(receiverNode);
@@ -211,9 +235,15 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(2000);
 
-        IgniteTestResources rsrcs = new IgniteTestResources(new IgniteConfiguration()
+        IgniteConfiguration cfg = new IgniteConfiguration()
             .setGridLogger(log)
-            .setClientMode(clientMode));
+            .setClientMode(clientMode);
+
+        IgniteTestResources rsrcs = new IgniteTestResources(cfg);
+
+        resourcesToClean.add(rsrcs);
+
+        cfg.setMBeanServer(rsrcs.getMBeanServer());
 
         node.setId(rsrcs.getNodeId());
 
