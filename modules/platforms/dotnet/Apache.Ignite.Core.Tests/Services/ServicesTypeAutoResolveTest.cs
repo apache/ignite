@@ -309,17 +309,22 @@ namespace Apache.Ignite.Core.Tests.Services
                 return true;
             });
 
-            msgng.LocalListen(lsnr, "test-topic");
+            try
+            {
+                msgng.LocalListen(lsnr, "test-topic");
 
-            svc.testSendMessage();
+                svc.testSendMessage();
 
-            TestUtils.WaitForTrueCondition(() => rcvd.Count == 3, timeout: 2500);
+                TestUtils.WaitForTrueCondition(() => rcvd.Count == 3, timeout: 2500);
 
-            Assert.IsNotNull(rcvd.Find(v => v.Name == "1"));
-            Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
-            Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
-
-            msgng.StopLocalListen(lsnr, "test-topic");
+                Assert.IsNotNull(rcvd.Find(v => v.Name == "1"));
+                Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
+                Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
+            }
+            finally
+            {
+                msgng.StopLocalListen(lsnr, "test-topic");
+            }
 
             svc.startReceiveMessage();
 
