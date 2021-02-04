@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Binary
 {
-    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary.IO;
 

@@ -32,10 +32,10 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
     public class BinaryConfigurationRetrievalTest
     {
         /// <summary>
-        /// Tears down the fixture.
+        /// Tears down the test.
         /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
         }
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 AssertCompactFooter(client, false);
 
                 var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
-                                  "[CompactFooter=True, NameMapperMode=BasicFull]";
+                                  "[CompactFooter=False, NameMapperMode=BasicFull]";
 
                 Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
