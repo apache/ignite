@@ -70,8 +70,13 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 Assert.IsNotNull(resCfg.BinaryConfiguration);
                 Assert.IsFalse(resCfg.BinaryConfiguration.CompactFooter);
 
-                // TODO: Create a binary object to verify the behavior.
-                // TODO: Check log message.
+                AssertCompactFooter(client, false);
+
+                var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
+                                  "[CompactFooter=True, NameMapperMode=BasicFull]";
+
+                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
+                Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
             }
         }
 
@@ -94,8 +99,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 var resCfg = client.GetConfiguration();
                 Assert.IsNull(resCfg.BinaryConfiguration);
 
-                var binObj = (BinaryObject)client.GetBinary().GetBuilder("foo").Build();
-                Assert.IsTrue(binObj.Header.Flags.HasFlag(BinaryObjectHeader.Flag.CompactFooter));
+                AssertCompactFooter(client, true);
 
                 var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
                                   "[CompactFooter=True, NameMapperMode=BasicFull]";
@@ -103,6 +107,15 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
             }
+        }
+
+        /// <summary>
+        /// Checks the actual compact footer behavior.
+        /// </summary>
+        private static void AssertCompactFooter(IIgniteClient client, bool expected)
+        {
+            var binObj = (BinaryObject) client.GetBinary().GetBuilder("foo").Build();
+            Assert.AreEqual(expected, binObj.Header.Flags.HasFlag(BinaryObjectHeader.Flag.CompactFooter));
         }
     }
 }
