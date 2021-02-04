@@ -126,42 +126,49 @@
                     </execution>
                 </executions>
             </plugin>
+        </plugins>
+    </build>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.ignite</groupId>
-                        <artifactId>ignite-tools</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>scaladoc-postprocessing</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <target>
-                                <copy todir="target/site/scaladocs">
-                                    <fileset dir="../../assembly/docfiles">
-                                        <include name="img/**" />
-                                        <include name="*.js" />
-                                    </fileset>
-                                </copy>
+    <profiles>
+        <profile>
+            <id>javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>scaladoc-postprocessing</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <target>
+                                        <copy todir="target/site/scaladocs">
+                                            <fileset dir="../../assembly/docfiles">
+                                                <include name="img/**" />
+                                                <include name="*.js" />
+                                            </fileset>
+                                        </copy>
 
-                                <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
+                                        <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
-                                <doctask css="dotted" dir="target/site/scaladocs" verify="false">
-                                    <include name="**/*.html" />
-                                </doctask>
+                                        <doctask css="dotted" dir="target/site/scaladocs" verify="false">
+                                            <include name="**/*.html" />
+                                        </doctask>
 
-                                <property name="footer">
-                                    <![CDATA[
+                                        <property name="footer">
+                                            <![CDATA[
                                                 <table style="padding: 0px 10px 10px 10px; width: 100%" border="0">
                                                 <tr>
                                                     <td>
@@ -172,43 +179,44 @@
                                                 </tr>
                                                 </table>
                                             ]]>
-                                </property>
+                                        </property>
 
-                                <replace dir="target/site/scaladocs" token="&lt;!--FOOTER--&gt;" value="${footer}">
-                                    <include name="**/*.html" />
-                                </replace>
+                                        <replace dir="target/site/scaladocs" token="&lt;!--FOOTER--&gt;" value="${footer}">
+                                            <include name="**/*.html" />
+                                        </replace>
 
-                                <replace dir="target/site/scaladocs">
-                                    <replacetoken>src="package.html"</replacetoken>
-                                    <replacevalue>src=org/apache/ignite/scalar/scalar$.html</replacevalue>
-                                    <include name="**/index.html" />
-                                </replace>
+                                        <replace dir="target/site/scaladocs">
+                                            <replacetoken>src="package.html"</replacetoken>
+                                            <replacevalue>src=org/apache/ignite/scalar/scalar$.html</replacevalue>
+                                            <include name="**/index.html" />
+                                        </replace>
 
-                                <replace dir="target/site/scaladocs">
-                                    <replacetoken>location.replace("package.html")</replacetoken>
-                                    <replacevalue>location.replace("org/apache/ignite/scalar/scalar$.html")</replacevalue>
-                                    <include name="**/index.js" />
-                                </replace>
+                                        <replace dir="target/site/scaladocs">
+                                            <replacetoken>location.replace("package.html")</replacetoken>
+                                            <replacevalue>location.replace("org/apache/ignite/scalar/scalar$.html")</replacevalue>
+                                            <include name="**/index.js" />
+                                        </replace>
 
-                                <replace dir="target/site/scaladocs">
-                                    <replacetoken>docs.scala-lang.org/overviews/scaladoc/usage.html#members</replacetoken>
-                                    <replacevalue>docs.scala-lang.org/overviews/scaladoc/interface.html</replacevalue>
-                                    <fileset dir="target/site/scaladocs" />
-                                </replace>
+                                        <replace dir="target/site/scaladocs">
+                                            <replacetoken>docs.scala-lang.org/overviews/scaladoc/usage.html#members</replacetoken>
+                                            <replacevalue>docs.scala-lang.org/overviews/scaladoc/interface.html</replacevalue>
+                                            <fileset dir="target/site/scaladocs" />
+                                        </replace>
 
-                                <replaceregexp byline="true" flags="im" encoding="UTF-8">
-                                    <regexp pattern="(&lt;dt&gt;Attributes&lt;/dt&gt;&lt;dd&gt;protected\[)&lt;a.+&gt;(.+)&lt;/a&gt;(\]\s+&lt;/dd&gt;)" />
-                                    <substitution expression="\1\2\3" />
-                                    <fileset dir="target/site/scaladocs" />
-                                </replaceregexp>
+                                        <replaceregexp byline="true" flags="im" encoding="UTF-8">
+                                            <regexp pattern="(&lt;dt&gt;Attributes&lt;/dt&gt;&lt;dd&gt;protected\[)&lt;a.+&gt;(.+)&lt;/a&gt;(\]\s+&lt;/dd&gt;)" />
+                                            <substitution expression="\1\2\3" />
+                                            <fileset dir="target/site/scaladocs" />
+                                        </replaceregexp>
 
-                                <zip destfile="target/ignite-scalar-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
-                            </target>
-                            <skip>${maven.javadoc.skip}</skip>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+                                        <zip destfile="target/ignite-scalar-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
