@@ -44,29 +44,27 @@ esac
 includeToClassPath() {
     SAVEIFS=$IFS
     IFS=$(echo -en "\n\b")
+    file=${1}
 
-    for file in $1/*
-    do
-        if [[ -z "${EXCLUDE_MODULES:-}" ]] || [[ ${EXCLUDE_MODULES:-} != *"`basename $file`"* ]]; then
-            if [ -d ${file} ] && [ -d "${file}/target" ]; then
-                if [ -d "${file}/target/classes" ]; then
-                    IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
-                fi
-
-                if [[ -z "${EXCLUDE_TEST_CLASSES:-}" ]]; then
-                  if [ -d "${file}/target/test-classes" ]; then
-                      IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
-                  fi
-                fi
-
-                if [ -d "${file}/target/libs" ]; then
-                    IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
-                fi
+    if [[ -z "${EXCLUDE_MODULES:-}" ]] || [[ ${EXCLUDE_MODULES:-} != *"`basename $file`"* ]]; then
+        if [ -d ${file} ] && [ -d "${file}/target" ]; then
+            if [ -d "${file}/target/classes" ]; then
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
-        else
-          echo "$file excluded by EXCLUDE_MODULES settings"
+
+            if [[ -z "${EXCLUDE_TEST_CLASSES:-}" ]]; then
+              if [ -d "${file}/target/test-classes" ]; then
+                  IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
+              fi
+            fi
+
+            if [ -d "${file}/target/libs" ]; then
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
+            fi
         fi
-    done
+    else
+      echo "$file excluded by EXCLUDE_MODULES settings"
+      fi
 
     IFS=$SAVEIFS
 }
@@ -74,9 +72,21 @@ includeToClassPath() {
 #
 # Include target libraries for enterprise modules to classpath.
 #
-includeToClassPath modules
+includeToClassPath modules/aws
+includeToClassPath modules/core
+includeToClassPath modules/spring
+includeToClassPath modules/ducktest
+includeToClassPath modules/indexing
+includeToClassPath modules/log4j
+includeToClassPath modules/control-utility
 
 #
 # Include target libraries for opensourse modules to classpath.
 #
-includeToClassPath "${IGNITE_HOME}"/modules
+includeToClassPath "${IGNITE_HOME}"/modules/aws
+includeToClassPath "${IGNITE_HOME}"/modules/core
+includeToClassPath "${IGNITE_HOME}"/modules/spring
+includeToClassPath "${IGNITE_HOME}"/modules/ducktest
+includeToClassPath "${IGNITE_HOME}"/modules/indexing
+includeToClassPath "${IGNITE_HOME}"/modules/log4j
+includeToClassPath "${IGNITE_HOME}"/modules/control-utility
