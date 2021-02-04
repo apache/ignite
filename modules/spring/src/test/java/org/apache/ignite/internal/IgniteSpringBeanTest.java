@@ -33,7 +33,7 @@ public class IgniteSpringBeanTest extends GridCommonAbstractTest {
         try (IgniteSpringBean bean = new IgniteSpringBean()) {
             bean.setConfiguration(getConfiguration("test"));
 
-            bean.afterSingletonsInstantiated();
+            bean.start();
 
             bean.compute();
         }

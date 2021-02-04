@@ -45,6 +45,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.event.ContextRefreshedEvent;
 
+import static org.apache.ignite.IgniteSpringLifecyclePhase.IGNITE_LIFECYCLE_PHASE;
+
 /**
  * Ignite Spring bean allows to bypass {@link Ignition} methods.
  * In other words, this bean class allows to inject new grid instance from
@@ -93,8 +95,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * </pre>
  * <p>
  */
-public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializingSingleton,
-    ApplicationContextAware, Externalizable {
+public class IgniteSpringBean extends AbstractLifecycleBean implements Ignite, ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -158,15 +159,17 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() throws Exception {
+    @Override public void stop() {
         if (g != null) {
             // Do not cancel started tasks, wait for them.
             G.stop(g.name(), false);
         }
+
+        super.stop();
     }
 
     /** {@inheritDoc} */
-    @Override public void afterSingletonsInstantiated() {
+    @Override public void start() {
         if (cfg == null)
             cfg = new IgniteConfiguration();
 
@@ -176,6 +179,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to start IgniteSpringBean", e);
         }
+
+        super.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPhase() {
+        return IGNITE_LIFECYCLE_PHASE;
     }
 
     /** {@inheritDoc} */
@@ -507,6 +517,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         return g.atomicLong(name, initVal, create);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
         checkIgnite();
@@ -543,6 +554,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         return g.atomicStamped(name, initVal, initStamp, create);
     }
 
+    /** {@inheritDoc} */
     @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
         @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         checkIgnite();

@@ -50,7 +50,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
         bean.setConfiguration(cfg);
 
-        bean.afterSingletonsInstantiated();
+        bean.start();
     }
 
     /**
@@ -74,7 +74,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        bean.destroy();
+        bean.stop();
 
         bean = null;
         marsh = null;
