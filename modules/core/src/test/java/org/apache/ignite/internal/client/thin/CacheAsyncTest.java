@@ -371,7 +371,8 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     public void testAsyncCacheOperations() throws Exception {
         // Get.
         strCache.put(1, "1");
-        assertTrue(strCache.getAsync(1).thenApply("1"::equals).toCompletableFuture().get());
+        strCache.getAsync(1).thenAccept(o -> System.out.println(o));
+        assertTrue(strCache.getAsync(1).thenApply(o -> System.out.println(o)).toCompletableFuture().get());
         assertTrue(strCache.getAsync(2).thenApply(Objects::isNull).toCompletableFuture().get());
 
         // Put.

@@ -157,7 +157,7 @@ To start a transaction, obtain the `ClientTransactions` object from `IgniteClien
 `ClientTransactions` has a number of  `txStart(...)` methods, each of which starts a new transaction and returns an object (`ClientTransaction`) that represents the transaction.
 Use this object to commit or rollback the transaction.
 
-[source, ruby]
+[source, java]
 ----
 include::{sourceCodeFile}[tags=tx,indent=0]
 ----
@@ -342,3 +342,11 @@ Configure link:security/authentication[authentication on the cluster side] and p
 include::{sourceCodeFile}[tag=client-authentication,indent=0]
 -------------------------------------------------------------------------------
 
+
+== Async APIs
+
+Most network-bound thin client APIs have an async counterpart, for example, `ClientCache.get` and `ClientCache.getAsync`.
+
+* Async methods do not block the calling thread
+* Async methods return `IgniteClientFuture<T>` which is a combination of `Future<T>` and `CompletionStage<T>`.
+* Async continuations are executed using `ClientConfiguration.AsyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool()` when null. For example, `cache.getAsync(1).thenAccept(val -> System.out.println(val))` will execute the `println` call using a thread from the `commonPool`.
