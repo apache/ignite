@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Binary
 {
+    using System;
     using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Binary;
@@ -55,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 }
             };
 
-            var logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace});
+            var logger = GetLogger();
             var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
             {
                 Logger = logger
@@ -72,10 +73,12 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
                 AssertCompactFooter(client, false);
 
-                var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
-                                  "[CompactFooter=False, NameMapperMode=BasicFull]";
+                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "Server binary configuration " +
+                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=False, NameMapperMode=BasicFull]"));
 
-                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
+                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "BinaryConfiguration.CompactFooter " +
+                    "set to false on client according to server configuration."));
+
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
             }
         }
@@ -86,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         [Test]
         public void TestDefaultConfigurationDoesNotChangeClientSettingsOrLogWarnings()
         {
-            var logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace});
+            var logger = GetLogger();
             var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
             {
                 Logger = logger
@@ -101,10 +104,9 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
                 AssertCompactFooter(client, true);
 
-                var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
-                                  "[CompactFooter=True, NameMapperMode=BasicFull]";
+                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "Server binary configuration " +
+                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=True, NameMapperMode=BasicFull]"));
 
-                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
             }
         }
@@ -116,6 +118,20 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         {
             var binObj = (BinaryObject) client.GetBinary().GetBuilder("foo").Build();
             Assert.AreEqual(expected, binObj.Header.Flags.HasFlag(BinaryObjectHeader.Flag.CompactFooter));
+        }
+
+        /// <summary>
+        /// Gets the logger for tests.
+        /// </summary>
+        private static ListLogger GetLogger()
+        {
+            return new ListLogger(new ConsoleLogger
+            {
+                MinLevel = LogLevel.Trace
+            })
+            {
+                EnabledLevels = Enum.GetValues(typeof(LogLevel)).Cast<LogLevel>().ToArray()
+            };
         }
     }
 }

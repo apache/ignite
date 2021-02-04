@@ -478,7 +478,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     _config.BinaryConfiguration.CompactFooter = false;
 
-                    _logger.Debug("BinaryConfiguration.CompactFooter set to false on client " +
+                    _logger.Info("BinaryConfiguration.CompactFooter set to false on client " +
                                   "according to server configuration.");
                 }
 
