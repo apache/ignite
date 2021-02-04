@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Binary
 {
+    using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
@@ -54,7 +55,10 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             };
 
             var logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace});
-            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString());
+            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
+            {
+                Logger = logger
+            };
 
             Ignition.Start(serverCfg);
 
@@ -77,7 +81,10 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         public void TestDefaultConfigurationDoesNotChangeClientSettingsOrLogWarnings()
         {
             var logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace});
-            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString());
+            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
+            {
+                Logger = logger
+            };
 
             Ignition.Start(TestUtils.GetTestConfiguration());
 
@@ -86,6 +93,12 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 var resCfg = client.GetConfiguration();
 
                 Assert.IsNull(resCfg.BinaryConfiguration);
+
+                var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
+                                  "[CompactFooter=True, NameMapperMode=BasicFull]";
+                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
+
+                Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
 
                 // TODO: Create a binary object to verify the behavior.
                 // TODO: Check log message.
