@@ -44,7 +44,7 @@ esac
 includeToClassPath() {
     SAVEIFS=$IFS
     IFS=$(echo -en "\n\b")
-    file=${1}
+    file="${1}"
 
     if [[ -z "${EXCLUDE_MODULES:-}" ]] || [[ ${EXCLUDE_MODULES:-} != *"`basename $file`"* ]]; then
         if [ -d ${file} ] && [ -d "${file}/target" ]; then
