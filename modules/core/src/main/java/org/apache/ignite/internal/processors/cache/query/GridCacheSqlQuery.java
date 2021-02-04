@@ -412,6 +412,4 @@ public class GridCacheSqlQuery implements Message {
 
         return this;
     }
-
-
 }

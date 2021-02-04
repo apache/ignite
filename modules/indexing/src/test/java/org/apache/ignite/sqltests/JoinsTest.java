@@ -39,6 +39,24 @@ public class JoinsTest extends AbstractIndexingCommonTest {
 
     /** */
     @Test
+    public void joins() {
+        execute(new SqlFieldsQuery(
+            "CREATE TABLE A (ID INT PRIMARY KEY, TITLE VARCHAR) WITH \"affinity_key=id\";"));
+
+//        execute(new SqlFieldsQuery(
+//            "CREATE TABLE B (ID INT PRIMARY KEY, TITLE VARCHAR);"));
+
+        for (int i = 0; i < 10; i++)
+            execute(new SqlFieldsQuery(
+                "INSERT INTO A (id, title) VALUES (" + i + ", 'Val" + i + "');"));
+
+        Object result = execute(new SqlFieldsQuery(
+            "SELECT a1.* FROM A a1 INNER JOIN A a2 on a1.ID = 1;")
+            .setDistributedJoins(true)).values();
+    }
+
+    /** */
+    @Test
     public void explain() {
         execute(new SqlFieldsQuery(
             "CREATE TABLE TEST (ID INT PRIMARY KEY, TITLE VARCHAR);"));
