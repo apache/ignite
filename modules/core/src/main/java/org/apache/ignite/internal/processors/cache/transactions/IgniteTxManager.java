@@ -2468,14 +2468,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else if (!tx.local())
-            // remote (backup) transaction sends partition counters to other backup transaction on recovery rollback
-            // in order to keep counters consistent
-            neighborcastPartitionCountersAndRollback(tx);
-        else
+        else {
+            if (!tx.local())
+                // Remote (backup) transaction discards update counters in case it was rolled back because of partially
+                // prepared stare. Keeping this counter will cause inconsistency between the nodes counters because
+                // other backup (where preparation missed) will finalize it's counters based only on txs it aware of.
+                tx.txCounters(false).updateCounters().clear();
+
             tx.rollbackAsync();
+        }
     }
 
+    // TODO remove
     /** */
     private void neighborcastPartitionCountersAndRollback(IgniteInternalTx tx) {
         TxCounters txCounters = tx.txCounters(false);

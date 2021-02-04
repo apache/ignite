@@ -2177,6 +2177,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws IgniteException If none caches or node found.
      */
     protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
+        log.info("Starting idleVerify ...");
+
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
@@ -2391,15 +2393,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param partId Partition.
      * @param withReserveCntr {@code True} to compare reserve counters. Because reserve counters are synced during
+     * @param cacheName Cache name.
      * PME invoking with {@code true} makes sense only after PME was finished.
      */
-    protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
+    protected void assertCountersSame(int partId, boolean withReserveCntr, String cacheName) throws AssertionFailedError {
         PartitionUpdateCounter cntr0 = null;
 
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
-            new T3<>(ignite.name(), counter(partId, ignite.name()),
-                ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
 
         for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
             if (cntr.get2() == null)
@@ -2416,6 +2419,35 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             cntr0 = cntr.get2();
+        }
+    }
+
+    /**
+     * @param partId Partition.
+     * @param withReserveCntr {@code True} to compare reserve counters. Because reserve counters are synced during
+     * @param cacheName Cache name.
+     * @param cnt Counter.
+     * @param reserved Reserved counter.
+     * PME invoking with {@code true} makes sense only after PME was finished.
+     */
+    protected void assertCountersAsExpected(int partId, boolean withReserveCntr, String cacheName, long cnt,
+        long reserved) throws AssertionFailedError {
+        List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
+            !ignite.configuration().isClientMode()).map(ignite ->
+            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+
+        for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
+            if (cntr.get2() == null)
+                continue;
+
+            assertEquals("Expecting same counters [partId=" + partId +
+                ", cntrs=" + cntrMap + ']', cnt, cntr.get2().get());
+
+            if (withReserveCntr)
+                assertEquals("Expecting same reservation counters [partId=" + partId +
+                        ", cntrs=" + cntrMap + ']',
+                    reserved, cntr.get2().reserved());
         }
     }
 
