@@ -89,7 +89,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+            load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
@@ -102,7 +102,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
+    @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT])
     def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout):
         """
@@ -118,7 +118,7 @@ class DiscoveryTest(IgniteTest):
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+            load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
@@ -132,7 +132,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
+    @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT])
     def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
         """
