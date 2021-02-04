@@ -291,6 +291,8 @@ The example below shows how to invoke the service named `MyService`:
 include::{sourceCodeFile}[tag=client-services,indent=0]
 -------------------------------------------------------------------------------
 
+The deployed service can be implemented using Java or .NET.
+
 == Handling Exceptions
 
 === Handling Node Failures

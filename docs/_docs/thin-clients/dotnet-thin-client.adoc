@@ -235,6 +235,20 @@ task named `org.foo.bar.AddOneTask` passing `1` as an input parameter:
 include::{sourceCodeFile}[tag=client-compute-task,indent=0]
 -------------------------------------------------------------------------------
 
+== Executing Ignite Services
+
+You can use the `IServicesClient` APIs to invoke an link:services/services[Ignite Service] that
+is *already deployed* in the cluster.
+
+The example below shows how to invoke the service named `MyService`:
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-services,indent=0]
+-------------------------------------------------------------------------------
+
+The deployed service can be implemented using Java or .NET.
+
+
 == Security
 
 === SSL/TLS
@@ -257,4 +271,3 @@ Configure link:security/authentication[authentication on the cluster side] and p
 ----
 include::{sourceCodeFile}[tag=auth,indent=0]
 ----
-
