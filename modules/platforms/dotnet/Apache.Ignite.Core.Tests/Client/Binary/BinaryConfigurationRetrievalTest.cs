@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
@@ -91,17 +92,16 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             using (var client = Ignition.StartClient(clientCfg))
             {
                 var resCfg = client.GetConfiguration();
-
                 Assert.IsNull(resCfg.BinaryConfiguration);
+
+                var binObj = (BinaryObject)client.GetBinary().GetBuilder("foo").Build();
+                Assert.IsTrue(binObj.Header.Flags.HasFlag(BinaryObjectHeader.Flag.CompactFooter));
 
                 var expectedLog = "Server binary configuration retrieved: BinaryConfigurationClientInternal " +
                                   "[CompactFooter=True, NameMapperMode=BasicFull]";
+
                 Assert.AreEqual(1, logger.Entries.Count(e => e.Message == expectedLog));
-
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
-
-                // TODO: Create a binary object to verify the behavior.
-                // TODO: Check log message.
             }
         }
     }
