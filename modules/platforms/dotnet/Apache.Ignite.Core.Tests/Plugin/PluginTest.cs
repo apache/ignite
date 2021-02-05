@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.IsNotNull(javaEx);
             Assert.AreEqual("Baz", javaEx.JavaMessage);
             Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", javaEx.JavaClassName);
-            Assert.IsTrue(javaEx.StackTrace.Contains(
+            Assert.IsTrue(javaEx.Message.Contains(
                 "at org.apache.ignite.platform.plugin.PlatformTestPluginTarget.processInLongOutLong"));
         }
 

@@ -1018,9 +1018,10 @@ namespace Apache.Ignite.Core.Tests.Services
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
             ex = ex.InnerException;
             Assert.IsInstanceOf<IgniteException>(ex);
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<JavaException>(ex);
-            Assert.AreEqual("Test", ex.Message);
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Test", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
@@ -1173,9 +1174,10 @@ namespace Apache.Ignite.Core.Tests.Services
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
             ex = ex.InnerException;
             Assert.IsInstanceOf<IgniteException>(ex);
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<JavaException>(ex);
-            Assert.AreEqual("Test", ex.Message);
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Test", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
         }
 
         /// <summary>

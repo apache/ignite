@@ -64,9 +64,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(e.InnerException);
 
-            Assert.AreEqual("Cluster group is empty.", e.InnerException.Message);
-
-            Assert.IsTrue(e.InnerException.StackTrace.StartsWith(
+            Assert.IsTrue(e.InnerException.Message.StartsWith(
                 "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
             // Check all exceptions mapping.
@@ -105,7 +103,7 @@ namespace Apache.Ignite.Core.Tests
             var javaEx = ex.InnerException as JavaException;
 
             Assert.IsNotNull(javaEx);
-            Assert.IsTrue(javaEx.StackTrace.Contains("at " + ExceptionTask));
+            Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
             Assert.AreEqual(name, javaEx.JavaMessage);
             Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
 
@@ -307,8 +305,7 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.IsTrue(ex.GetBaseException().StackTrace.Contains(
-                "Spring XML configuration path is invalid: z:\\invalid.xml"));
+            Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
         }
 
         /// <summary>

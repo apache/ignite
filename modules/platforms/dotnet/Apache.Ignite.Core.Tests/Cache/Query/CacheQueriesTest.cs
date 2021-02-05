@@ -823,8 +823,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).ToArray());
-            Assert.IsTrue(ex.GetBaseException().StackTrace.Contains(
-                "QueryCancelledException: The query was cancelled while executing."));
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
         /// <summary>
@@ -844,8 +843,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             var ex = Assert.Throws<CacheException>(() => cache.Query(fieldsQry).ToArray());
-            Assert.IsTrue(ex.GetBaseException().StackTrace.Contains(
-                "QueryCancelledException: The query was cancelled while executing."));
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
         /// <summary>
