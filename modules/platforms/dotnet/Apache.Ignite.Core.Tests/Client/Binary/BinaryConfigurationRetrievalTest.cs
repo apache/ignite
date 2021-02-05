@@ -165,16 +165,63 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             }
         }
 
+        /// <summary>
+        /// Tests that custom mapper on server and default mapper on client results in a warning.
+        /// </summary>
         [Test]
         public void TestCustomNameMapperOnServerProducesLogWarning()
         {
-            // TODO
+            var logger = GetLogger();
+
+            var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    // TODO: This should be set in Spring.
+                    NameMapper = new TestNameMapper()
+                }
+            };
+
+            Ignition.Start(serverCfg);
+
+            using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
+            {
+                Assert.IsNull(client.GetConfiguration().BinaryConfiguration);
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "Binary name mapper mismatch: local=BasicFull, server=Custom" &&
+                    e.Level == LogLevel.Warn));
+            }
         }
 
         [Test]
         public void TestCustomNameMapperOnServerAndClientProducesNoLogWarning()
         {
-            // TODO
+            var logger = GetLogger();
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration(logger))
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new TestNameMapper()
+                }
+            };
+
+            var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new TestNameMapper()
+                }
+            };
+
+            Ignition.Start(serverCfg);
+
+            using (var client = Ignition.StartClient(clientCfg))
+            {
+                var resCfg = client.GetConfiguration().BinaryConfiguration;
+                Assert.IsNotNull(resCfg);
+                Assert.IsInstanceOf<TestNameMapper>(resCfg.NameMapper);
+                Assert.AreEqual(0, logger.Entries.Count(e => e.Level > LogLevel.Info));
+            }
         }
 
         /// <summary>
@@ -209,6 +256,22 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             {
                 Logger = logger
             };
+        }
+
+        /** */
+        private class TestNameMapper : IBinaryNameMapper
+        {
+            /** */
+            public string GetTypeName(string name)
+            {
+                return name + "_";
+            }
+
+            /** */
+            public string GetFieldName(string name)
+            {
+                return name;
+            }
         }
     }
 }
