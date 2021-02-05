@@ -101,8 +101,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                     CompactFooter = false
                 }
             };
-"Server binary configuration " +
-                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=True, NameMapperMode=BasicFull]"
+
             using (var client = Ignition.StartClient(clientConfiguration))
             {
                 var resCfg = client.GetConfiguration();
