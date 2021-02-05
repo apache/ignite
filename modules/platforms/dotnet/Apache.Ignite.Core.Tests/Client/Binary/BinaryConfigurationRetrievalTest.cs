@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Binary
 {
     using System;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Binary;
@@ -175,11 +176,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    // TODO: This should be set in Spring.
-                    NameMapper = new TestNameMapper()
-                }
+                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper.xml")
             };
 
             Ignition.Start(serverCfg);
@@ -207,10 +204,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    NameMapper = new TestNameMapper()
-                }
+                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper.xml")
             };
 
             Ignition.Start(serverCfg);
