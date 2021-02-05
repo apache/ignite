@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -105,11 +106,21 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** */
     private GridTimeoutProcessor timeoutProcessor;
 
+    /** */
+    private volatile Function<String, ReadOnlyMetricRegistry> metricsRegistryProducer;
+
     /**
      * @param timeoutProcessor Timeout processor.
      */
     public void timeoutProcessor(GridTimeoutProcessor timeoutProcessor) {
         this.timeoutProcessor = timeoutProcessor;
+    }
+
+    /**
+     * @param producer Producer to create {@link ReadOnlyMetricRegistry} objects.
+     */
+    public void metricsRegistryProducer(Function<String, ReadOnlyMetricRegistry> producer) {
+        this.metricsRegistryProducer = producer;
     }
 
     /** {@inheritDoc} */
@@ -618,6 +629,9 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+        if (metricsRegistryProducer != null)
+            return metricsRegistryProducer.apply(name);
+
         return new MetricRegistry(name, null, null, new NullLogger());
     }
 

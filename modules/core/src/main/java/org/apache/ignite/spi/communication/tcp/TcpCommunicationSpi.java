@@ -940,8 +940,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         spiCtx.addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ctxInitLatch.countDown();
-
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
 
         registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
@@ -952,6 +950,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         if (shmemAcceptWorker != null)
             shmemAcceptWorker.metricsListener(metricsLsnr);
+
+        ctxInitLatch.countDown();
     }
 
     /** {@inheritDoc} */
