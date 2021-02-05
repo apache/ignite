@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary configuration retrieval request.
@@ -61,7 +62,7 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
      *
      * @return Mapper type code.
      */
-    private static byte getNameMapperType(BinaryConfiguration cfg) {
+    private static byte getNameMapperType(@Nullable BinaryConfiguration cfg) {
         if (cfg == null || cfg.getNameMapper() == null)
             return BinaryBasicNameMapper.DFLT_SIMPLE_NAME ? NAME_MAPPER_BASIC_SIMPLE : NAME_MAPPER_BASIC_FULL;
 
