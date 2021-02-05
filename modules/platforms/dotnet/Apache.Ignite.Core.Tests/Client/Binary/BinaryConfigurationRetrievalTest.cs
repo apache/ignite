@@ -135,15 +135,10 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
             using (var client = Ignition.StartClient(clientCfg))
             {
-                // TODO
-                var resCfg = client.GetConfiguration();
-                Assert.IsNull(resCfg.BinaryConfiguration);
-
-                AssertCompactFooter(client, true);
-
-                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "Server binary configuration " +
-                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=True, NameMapperMode=BasicFull]"));
-
+                var resCfg = client.GetConfiguration().BinaryConfiguration;
+                Assert.IsNotNull(resCfg);
+                Assert.IsTrue(resCfg.CompactFooter);
+                Assert.IsFalse(((BinaryBasicNameMapper)resCfg.NameMapper).IsSimpleName);
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
             }
         }
