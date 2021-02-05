@@ -205,6 +205,9 @@ namespace Apache.Ignite.Core.Tests.Services
         void testLocalDateFromCache();
 
         /** */
+        void testException(string exceptionClass);
+
+        /** */
         void sleep(long delayMs);
 
         /** */
