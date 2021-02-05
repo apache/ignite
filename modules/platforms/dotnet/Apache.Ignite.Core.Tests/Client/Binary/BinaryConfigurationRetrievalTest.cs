@@ -56,15 +56,11 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 }
             };
 
-            var logger = GetLogger();
-            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
-            {
-                Logger = logger
-            };
-
             Ignition.Start(serverCfg);
 
-            using (var client = Ignition.StartClient(clientCfg))
+            var logger = GetLogger();
+
+            using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
             {
                 var resCfg = client.GetConfiguration();
 
@@ -90,14 +86,10 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         public void TestDefaultConfigurationDoesNotChangeClientSettingsOrLogWarnings()
         {
             var logger = GetLogger();
-            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
-            {
-                Logger = logger
-            };
 
             Ignition.Start(TestUtils.GetTestConfiguration());
 
-            using (var client = Ignition.StartClient(clientCfg))
+            using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
             {
                 var resCfg = client.GetConfiguration();
                 Assert.IsNull(resCfg.BinaryConfiguration);
@@ -143,6 +135,9 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             }
         }
 
+        /// <summary>
+        /// Tests that simple/full name mapping mismatch produces a warning.
+        /// </summary>
         [Test]
         public void TestBasicNameMapperSettingsMismatchProducesLogWarning()
         {
@@ -181,6 +176,17 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             })
             {
                 EnabledLevels = Enum.GetValues(typeof(LogLevel)).Cast<LogLevel>().ToArray()
+            };
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private static IgniteClientConfiguration GetClientConfiguration(ListLogger logger)
+        {
+            return new IgniteClientConfiguration(IPAddress.Loopback.ToString())
+            {
+                Logger = logger
             };
         }
     }
