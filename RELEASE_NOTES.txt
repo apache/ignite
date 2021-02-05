@@ -63,7 +63,7 @@ Ignite:
 * Fixed CLI command to execute maintenance action in corrupted PDS scenario
 * Fixed ComputeScheduleExample
 * Fixed Continuous Query buffers to reduce heap usage
-* Fixed DurableBackgroundTask can abandon incomplete task
+* Fixed DurableBackgroundTask that could abandon incomplete task
 * Fixed FileWriteAheadLogManager creates 0-length WAL segments and cannot start later
 * Fixed GridCacheOffheapManager which ignored candidate pages count for index partition
 * Fixed IgniteCache#isClosed() returns false on server node even if the cache had been closed before
