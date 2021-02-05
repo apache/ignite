@@ -94,4 +94,27 @@ public interface PerformanceStatisticsHandler {
      * @param timedOut {@code True} if job is timed out.
      */
     void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
+
+    /**
+     * @param nodeId Node id.
+     * @param routineId Routine id.
+     * @param cacheId Cache id.
+     * @param startTime Start time in milliseconds.
+     * @param lsnrCls Local listener class name.
+     * @param rmtFilterCls Remote filter factory class name.
+     * @param rmtTransCls Remote transformer factory class name.
+     */
+    void continuousQuery(UUID nodeId, UUID routineId, int cacheId, long startTime, String lsnrCls, String rmtFilterCls,
+        String rmtTransCls);
+
+    /**
+     * @param nodeId Node id.
+     * @param type Operation type.
+     * @param routineId Routine id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param entCnt Entries count.
+     */
+    void continuousQueryOperation(UUID nodeId, OperationType type, UUID routineId, long startTime, long duration,
+        int entCnt);
 }

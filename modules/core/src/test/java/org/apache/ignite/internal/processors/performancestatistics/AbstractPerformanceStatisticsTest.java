@@ -178,6 +178,18 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             boolean timedOut) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void continuousQuery(UUID nodeId, UUID routineId, int cacheId, long startTime, String lsnrCls,
+            String rmtFilterCls, String rmtTransCls) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void continuousQueryOperation(UUID nodeId, OperationType type, UUID routineId, long startTime,
+            long duration, int entCnt) {
+            // No-op.
+        }
     }
 
     /** Client type to run load from. */

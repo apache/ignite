@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -314,6 +315,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (ctx.service() instanceof GridServiceProcessor)
             ((GridServiceProcessor)ctx.service()).onContinuousProcessorStarted(ctx);
+
+        ctx.performanceStatistics().registerStateListener(
+            () -> locInfos.forEach((uuid, info) -> writeStatistics(uuid, info.hnd)));
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor started.");
@@ -877,6 +881,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         locInfos.put(routineId,
             new LocalRoutineInfo(ctx.localNodeId(), prjPred, hnd, bufSize, interval, autoUnsubscribe));
 
+        if (ctx.performanceStatistics().enabled())
+            writeStatistics(routineId, hnd);
+
         if (locOnly) {
             try {
                 registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
@@ -1296,6 +1303,32 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 ", locInfos=" + locInfos +
                 ", clientInfos=" + clientInfos + ']');
         }
+    }
+
+    /**
+     * Writes cache continuous query performance statistics.
+     *
+     * @param routineId Routine id.
+     * @param queryHnd Continuous query handler.
+     */
+    public void writeStatistics(UUID routineId, GridContinuousHandler queryHnd) {
+        if (!(queryHnd instanceof CacheContinuousQueryHandler))
+            return;
+
+        CacheContinuousQueryHandler<?, ?> hnd = (CacheContinuousQueryHandler<?, ?>)queryHnd;
+
+        String lsnr = hnd.localTransformedEventListener() != null ?
+            hnd.localTransformedEventListener().getClass().getName() :
+            hnd.localListener() != null ? hnd.localListener().getClass().getName() : "";
+
+        String rmtFilter = hnd.getRemoteFilterFactory() != null ? hnd.getRemoteFilterFactory().getClass().getName() :
+            hnd.getEventFilter0() != null ? hnd.getEventFilter0().getClass().getName() : "";
+
+        String rmtTrans = hnd.getRemoteTransformerFactory() != null ?
+            hnd.getRemoteTransformerFactory().getClass().getName() : "";
+
+        ctx.performanceStatistics().continuousQuery(routineId, CU.cacheId(hnd.cacheName()),
+            hnd.startTime(), lsnr, rmtFilter, rmtTrans);
     }
 
     /**
