@@ -24,8 +24,7 @@ from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
-from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern,\
-    node_id, exec_command
+from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -92,10 +91,10 @@ class DiscoveryTest(IgniteTest):
         self.netfilter_store_path = None
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[False, True],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @ignite_versions(str(LATEST))
+    @matrix(nodes_to_kill=[2], disable_conn_recovery=[False],
+            net_part=[IgniteService.NetPart.ALL],
+            load_type=[ClusterLoad.NONE])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, disable_conn_recovery: bool,
                                            net_part: IgniteService.NetPart):
         """
@@ -206,7 +205,7 @@ class DiscoveryTest(IgniteTest):
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [node_id(n) for n in failed_nodes] \
+            tran_nodes = [servers.node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -233,7 +232,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = []
 
         for node in failed_nodes:
-            ids_to_wait.append(node_id(node))
+            ids_to_wait.append(servers.node_id(node))
 
             self.logger.info("Simulating failure of node '%s' (ID: %s)." % (node.name, ids_to_wait[-1]))
 
@@ -265,14 +264,14 @@ class DiscoveryTest(IgniteTest):
         """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
-        failed_cnt = int(exec_command(survived_node, cmd))
+        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd))
 
         # Cache survivor id, do not read each time.
-        surv_id = node_id(survived_node)
+        surv_id = IgniteApplicationService.node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
-            failed = exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
-                                                                   survived_node.log_file))
+            failed = IgniteApplicationService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
+                                                                                            survived_node.log_file))
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
                              (survived_node.name, surv_id, os.linesep, failed))
@@ -286,7 +285,7 @@ class DiscoveryTest(IgniteTest):
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
                 cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", node.log_file)
 
-                failed = exec_command(node, cmd)
+                failed = IgniteApplicationService.exec_command(node, cmd)
 
                 if int(failed) > 0:
                     raise AssertionError(
