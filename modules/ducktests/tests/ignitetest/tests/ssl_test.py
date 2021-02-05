@@ -24,7 +24,7 @@ from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfi
 from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATEST_2_8
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
 
 
 # pylint: disable=W0223
@@ -33,7 +33,7 @@ class SslTest(IgniteTest):
     Ssl test.
     """
     @cluster(num_nodes=3)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_ssl_connection(self, ignite_version):
         """
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
