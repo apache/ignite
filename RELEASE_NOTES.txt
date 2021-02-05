@@ -22,7 +22,7 @@ Ignite:
 * Added TDE cache key rotation
 * Added a metric for processed keys when rebuilding indexes
 * Added an ability to check driver metrics in Cassandra store
-* Added cluster performance profiling
+* Added a cluster performance profiling
 * Added cluster performance tool to build cluster performance report
 * Added cluster snapshot security permissions
 * Added command to control.sh to get an arbitrary Metric
