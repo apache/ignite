@@ -38,21 +38,23 @@ class ControlUtility:
     def __init__(self, cluster,
                  key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
-                 login: str = None, password: str = None):
+                 login: str = None, password: str = DEFAULT_AUTH_PASSWORD):
         self._cluster = cluster
         self.logger = cluster.context.logger
 
         if cluster.context.globals.get("use_ssl", False):
             admin_dict = cluster.globals.get("admin", dict())
-            if admin_dict is not None and "ssl" in admin_dict:
-                admin_dict = admin_dict.get("ssl")
-
-            self.key_store_path = admin_dict.get("key_store_path",
-                                                 self.jks_path(admin_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
-            self.key_store_password = admin_dict.get('key_store_password', DEFAULT_PASSWORD)
-            self.trust_store_path = admin_dict.get("trust_store_path",
-                                                   self.jks_path(admin_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
-            self.trust_store_password = admin_dict.get('trust_store_password', DEFAULT_PASSWORD)
+            if admin_dict is not None:
+                ssl_dict = admin_dict.get('ssl', {})
+                self.key_store_path = ssl_dict.get("key_store_path",
+                                                         self.jks_path(admin_dict.get('key_store_jks',
+                                                                                      DEFAULT_ADMIN_KEYSTORE)))
+                self.key_store_password = ssl_dict.get('key_store_password', DEFAULT_PASSWORD)
+                self.trust_store_path = ssl_dict.get("trust_store_path",
+                                                       self.jks_path(admin_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
+                self.trust_store_password = ssl_dict.get('trust_store_password', DEFAULT_PASSWORD)
+                self.login = admin_dict.get("login", None)
+                self.admin_password = admin_dict.get("password", DEFAULT_AUTH_PASSWORD)
 
         elif key_store_jks is not None:
             self.key_store_path = self.jks_path(key_store_jks)
@@ -60,13 +62,10 @@ class ControlUtility:
             self.trust_store_path = self.jks_path(trust_store_jks)
             self.trust_store_password = trust_store_password
 
-        if cluster.context.globals.get("use_auth", False):
-            admin_dict = cluster.globals.get("admin", dict())
-            self.admin_login = admin_dict.get("login", DEFAULT_AUTH_LOGIN)
-            self.admin_password = admin_dict.get("password", DEFAULT_AUTH_PASSWORD)
-        elif login is not None:
+        if login is not None:
             self.admin_login = login
             self.admin_password = password
+
 
     def jks_path(self, jks_name: str):
         """
