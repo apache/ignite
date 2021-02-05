@@ -203,7 +203,7 @@ Ignite .NET:
 * Fixed CachePartialUpdateException: failed to update keys (using Cache.PutAsync)
 * Fixed DateTime usage as a cache key or value
 * Fixed GetAffinity failure with NullPointerException on client node
-* Fixed LINQ provider emits incorrect table alias for queries with JOIN and GROUP BY combined
+* Fixed LINQ provider emited incorrect table alias for queries with JOIN and GROUP BY combined
 * Fixed Service could not assign correct type to passed array parameters (.Net -> .Net call)
 * Fixed Service lost returned array type information
 * Fixed binary configuration for Compute API invocation
