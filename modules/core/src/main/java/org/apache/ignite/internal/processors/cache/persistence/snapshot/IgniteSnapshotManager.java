@@ -811,8 +811,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         kctx0.security().authorize(ADMIN_SNAPSHOT);
 
-        // TODO check NodeFilter works correct. SnapshotMetadata must be created on empty cluster node too.
-
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, name)
             .listen(f0 -> {
