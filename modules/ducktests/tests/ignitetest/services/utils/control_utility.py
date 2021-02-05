@@ -35,37 +35,10 @@ class ControlUtility:
     BASE_COMMAND = "control.sh"
 
     # pylint: disable=R0913
-    def __init__(self, cluster,
-                 key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
-                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
-                 login: str = None, password: str = DEFAULT_AUTH_PASSWORD):
+    def __init__(self, cluster, **kwargs):
         self._cluster = cluster
         self.logger = cluster.context.logger
-
-        if cluster.context.globals.get("use_ssl", False):
-            admin_dict = cluster.globals.get("admin", dict())
-            if admin_dict is not None:
-                ssl_dict = admin_dict.get('ssl', {})
-                self.key_store_path = ssl_dict.get("key_store_path",
-                                                         self.jks_path(admin_dict.get('key_store_jks',
-                                                                                      DEFAULT_ADMIN_KEYSTORE)))
-                self.key_store_password = ssl_dict.get('key_store_password', DEFAULT_PASSWORD)
-                self.trust_store_path = ssl_dict.get("trust_store_path",
-                                                       self.jks_path(admin_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
-                self.trust_store_password = ssl_dict.get('trust_store_password', DEFAULT_PASSWORD)
-                self.login = admin_dict.get("login", None)
-                self.admin_password = admin_dict.get("password", DEFAULT_AUTH_PASSWORD)
-
-        elif key_store_jks is not None:
-            self.key_store_path = self.jks_path(key_store_jks)
-            self.key_store_password = key_store_password
-            self.trust_store_path = self.jks_path(trust_store_jks)
-            self.trust_store_password = trust_store_password
-
-        if login is not None:
-            self.admin_login = login
-            self.admin_password = password
-
+        self.creds = self._get_creds_from_globals("admin", cluster.context.globals, **kwargs)
 
     def jks_path(self, jks_name: str):
         """
@@ -303,12 +276,15 @@ class ControlUtility:
 
     def __form_cmd(self, node, cmd):
         ssl = ""
-        if hasattr(self, 'key_store_path'):
-            ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_password} " \
-                  f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_password}"
+        if self.creds.get('key_store_path', False):
+            ssl = f" --keystore {self.creds['key_store_path']} " \
+                  f"--keystore-password {self.creds['key_store_password']} " \
+                  f"--truststore {self.creds['trust_store_path']} " \
+                  f"--truststore-password {self.creds['trust_store_password']}"
         auth = ""
-        if hasattr(self, 'admin_login'):
-            auth = f" --user {self.admin_login} --password {self.admin_password} "
+        if self.creds.get('login', False):
+            auth = f" --user {self.creds['login']} " \
+                   f"--password {self.creds['password']} "
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
                                     f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
@@ -326,6 +302,39 @@ class ControlUtility:
 
     def __alives(self):
         return [node for node in self._cluster.nodes if self._cluster.alive(node)]
+
+    def _get_creds_from_globals(self, user, globals_dict, **kwargs):
+
+        creds = dict()
+
+        if globals_dict.get("use_ssl", False):
+            admin_dict = globals_dict.get(user, {})
+            creds = self._get_ssl_from_dict(admin_dict.get('ssl', {}))
+        elif kwargs.get('key_store_jks') is not None or kwargs.get('key_store_path') is not None:
+            creds = self._get_ssl_from_dict(kwargs)
+
+        if globals_dict.get("use_auth", False):
+            admin_dict = globals_dict.get(user, {})
+            creds['login'] = admin_dict.get("login", DEFAULT_AUTH_LOGIN)
+            creds['password'] = admin_dict.get("password", DEFAULT_AUTH_PASSWORD)
+        elif kwargs.get('login') is not None:
+            creds['login'] = kwargs.get("login", DEFAULT_AUTH_LOGIN)
+            creds['password'] = kwargs.get("password", DEFAULT_AUTH_PASSWORD)
+
+        return creds
+
+    def _get_ssl_from_dict(self, ssl_dict):
+
+        creds = {}
+
+        creds['key_store_path'] = ssl_dict.get("key_store_path",
+                                               self.jks_path(ssl_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
+        creds['key_store_password'] = ssl_dict.get('key_store_password', DEFAULT_PASSWORD)
+        creds['trust_store_path'] = ssl_dict.get("trust_store_path",
+                                                 self.jks_path(ssl_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
+        creds['trust_store_password'] = ssl_dict.get('trust_store_password', DEFAULT_PASSWORD)
+
+        return creds
 
 
 class BaselineNode(NamedTuple):
@@ -388,6 +397,7 @@ class ControlUtilityError(RemoteCommandError):
     """
     Error is raised when control utility failed.
     """
+
     def __init__(self, account, cmd, exit_status, output):
         super().__init__(account, cmd, exit_status, "".join(output))
 

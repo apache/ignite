@@ -57,16 +57,7 @@ class AuthenticationTests(IgniteTest):
 
         control_utility = ControlUtility(cluster=servers, login="ignite", password="ignite")
         control_utility.activate()
-
-        state, _, _ = control_utility.cluster_state()
-
-        assert state.lower() == 'active', 'Unexpected state %s' % state
-
         control_utility.deactivate()
-
-        state, _, _ = control_utility.cluster_state()
-
-        assert state.lower() == 'inactive', 'Unexpected state %s' % state
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
