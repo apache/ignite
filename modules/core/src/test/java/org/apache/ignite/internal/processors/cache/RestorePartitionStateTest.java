@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -53,6 +56,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.mergeTopProcessingPartitions;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.toStringTopProcessingPartitions;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.topProcessingPartitions;
 
 /**
@@ -104,6 +108,51 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
                 new DataStorageConfiguration()
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
             );
+    }
+
+    /**
+     * Checking the correctness of obtaining the top partitions by their processing time and merging them.
+     */
+    @Test
+    public void testTopPartitions() {
+        for (int i = 0; i < 1_000; i++) {
+            Map<Integer, Long> processed0 = generateProcessedPartitions(32);
+            Map<Integer, Long> processed1 = generateProcessedPartitions(32);
+
+            NavigableMap<Long, List<Integer>> expTop0 = expTopProcessingPartitions(processed0, 5);
+            NavigableMap<Long, List<Integer>> expTop1 = expTopProcessingPartitions(processed1, 5);
+
+            NavigableMap<Long, List<Integer>> actTop0 = topProcessingPartitions(processed0, 5, identity());
+            NavigableMap<Long, List<Integer>> actTop1 = topProcessingPartitions(processed1, 5, identity());
+
+            assertEquals(expTop0, actTop0);
+            assertEquals(expTop1, actTop1);
+
+            NavigableMap<Long, List<Integer>> expMerged = expMergeTopProcessingPartitions(expTop0, expTop1, 5);
+            NavigableMap<Long, List<Integer>> actMerged = mergeTopProcessingPartitions(actTop0, actTop1, 5);
+
+            assertEquals(expMerged, actMerged);
+        }
+    }
+
+    /**
+     * Checking the correctness of the string representation of the top.
+     */
+    @Test
+    public void testTopToString() {
+        TreeMap<Long, List<GroupPartitionId>> m = new TreeMap<>();
+
+        m.put(10L, F.asList(new GroupPartitionId(0, 0), new GroupPartitionId(0, 1), new GroupPartitionId(1, 1)));
+        m.put(20L, F.asList(new GroupPartitionId(2, 0), new GroupPartitionId(2, 1)));
+
+        String exp = "[[time=20ms [[grp=2, part=[0, 1]]]], [time=10ms [[grp=0, part=[0, 1]], [grp=1, part=[1]]]]]";
+
+        assertEquals(exp, toStringTopProcessingPartitions(m, Collections.emptyList()));
+    }
+
+    @Test
+    public void test0() {
+        
     }
 
     @Test
@@ -162,36 +211,6 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
         System.out.println();
     }
 
-    @Test
-    public void test0() {
-        for (int i = 0; i < 1_000; i++) {
-            Map<Integer, Long> processed0 = generateProcessedPartitions(32);
-            Map<Integer, Long> processed1 = generateProcessedPartitions(32);
-
-            NavigableMap<Long, List<Integer>> expTop0 = expTopProcessingPartitions(processed0, 5);
-            NavigableMap<Long, List<Integer>> expTop1 = expTopProcessingPartitions(processed1, 5);
-
-            NavigableMap<Long, List<Integer>> actTop0 = topProcessingPartitions(processed0, 5, identity());
-            NavigableMap<Long, List<Integer>> actTop1 = topProcessingPartitions(processed1, 5, identity());
-
-            assertEquals(expTop0, actTop0);
-            assertEquals(expTop1, actTop1);
-
-            NavigableMap<Long, List<Integer>> expMerged = expMergeTopProcessingPartitions(expTop0, expTop1, 5);
-            NavigableMap<Long, List<Integer>> actMerged = mergeTopProcessingPartitions(actTop0, actTop1, 5);
-
-            System.out.println("act0=" + actTop0);
-            System.out.println("act1="+ actTop1);
-            System.out.println("res=" + actMerged);
-
-            try {
-                assertEquals(expMerged, actMerged);
-            } catch (AssertionError e) {
-                throw e;
-            }
-        }
-    }
-
     /**
      * Generation of partitions with their processing time.
      *
@@ -208,12 +227,13 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
      *
      * @param processed Mapping: partition id -> processing time in millis.
      * @param max Maximum total number of partitions.
+     * @return Mapping: processing time in millis -> partition ids.
      */
     private NavigableMap<Long, List<Integer>> expTopProcessingPartitions(Map<Integer, Long> processed, int max) {
         TreeMap<Long, List<Integer>> res = processed.entrySet().stream()
             .collect(groupingBy(Map.Entry::getValue, TreeMap::new, mapping(Map.Entry::getKey, toList())));
 
-        a(res, max);
+        formatTop(res, max, true);
 
         return res;
     }
@@ -239,45 +259,64 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Getting the expected merged tops (ascending) of the partitions that took the longest processing time.
+     *
+     * @param m0 Top (ascending) processed partitions.
+     * @param m1 Top (ascending) processed partitions.
+     * @param max Maximum total number of partitions.
+     * @return Mapping: processing time in millis -> partition ids.
+     */
     private NavigableMap<Long, List<Integer>> expMergeTopProcessingPartitions(
         NavigableMap<Long, List<Integer>> m0,
         NavigableMap<Long, List<Integer>> m1,
         int max
     ) {
-        TreeMap<Long, List<Integer>> res = new TreeMap<>(
-            m0.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> new ArrayList<>(e.getValue()))));
+        TreeMap<Long, List<Integer>> res = new TreeMap<>();
 
-        System.out.println("m0=" + m0);
-        System.out.println("m1=" + m1);
+        for (NavigableMap<Long, List<Integer>> m : F.asArray(m0, m1)) {
+            for (Map.Entry<Long, List<Integer>> e : m.descendingMap().entrySet()) {
+                res.merge(e.getKey(), new ArrayList<>(e.getValue()), (p0, p1) -> {
+                    List<Integer> p = new ArrayList<>(p0);
 
-        for (Map.Entry<Long, List<Integer>> e1 : m1.entrySet()) {
-            res.merge(e1.getKey(), e1.getValue(), (p0, p1) -> {
-                p0.addAll(p1);
+                    p.addAll(p1);
 
-                return p0;
-            });
+                    return p;
+                });
+            }
         }
 
-        a(res, max);
-
-        System.out.println("res=" + res);
+        formatTop(res, max, false);
 
         return res;
     }
 
-    private void a(NavigableMap<Long, List<Integer>> m, int max) {
+    /**
+     * Top formatting.
+     *
+     * @param m Mapping: processing time in millis -> partition ids.
+     * @param max Maximum total number of partitions.
+     * @param cleanFromBegin Delete flag from the beginning of the list.
+     */
+    private void formatTop(NavigableMap<Long, List<Integer>> m, int max, boolean cleanFromBegin) {
         int size = 0;
 
         Set<Long> toRmv = new HashSet<>();
 
         for (Map.Entry<Long, List<Integer>> e : m.descendingMap().entrySet()) {
-            if (e.getValue().size() > max - size)
-                e.getValue().subList(0, e.getValue().size() - (max - size)).clear();
+            List<Integer> v = e.getValue();
 
-            if (e.getValue().isEmpty())
+            if (v.size() > max - size) {
+                int from = cleanFromBegin ? 0 : v.size() - (v.size() - (max - size));
+                int to = cleanFromBegin ? v.size() - (max - size) : v.size();
+
+                v.subList(from, to).clear();
+            }
+
+            if (v.isEmpty())
                 toRmv.add(e.getKey());
             else
-                size += e.getValue().size();
+                size += v.size();
         }
 
         toRmv.forEach(m::remove);

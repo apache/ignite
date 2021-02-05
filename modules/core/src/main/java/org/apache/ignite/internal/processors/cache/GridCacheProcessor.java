@@ -5831,7 +5831,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Mapping: processing time in millis -> partition ids.
      * @see #mergeTopProcessingPartitions
      */
-    static <E> NavigableMap<Long, List<E>> topProcessingPartitions(
+    static <E extends Comparable<? super E>> NavigableMap<Long, List<E>> topProcessingPartitions(
         Map<Integer, Long> partDurations,
         int max,
         Function<Integer, E> partFun
@@ -5879,9 +5879,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param top0 Top (ascending) processed partitions.
      * @param top1 Top (ascending) processed partitions.
      * @param max Maximum total number of partitions.
+     * @return Mapping: processing time in millis -> partition ids.
      * @see #topProcessingPartitions
      */
-    static <E> NavigableMap<Long, List<E>> mergeTopProcessingPartitions(
+    static <E extends Comparable<? super E>> NavigableMap<Long, List<E>> mergeTopProcessingPartitions(
         NavigableMap<Long, List<E>> top0,
         NavigableMap<Long, List<E>> top1,
         int max
@@ -5894,32 +5895,41 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Iterator<Map.Entry<Long, List<E>>> top0Iter = top0.descendingMap().entrySet().iterator();
         Iterator<Map.Entry<Long, List<E>>> top1Iter = top1.descendingMap().entrySet().iterator();
 
+        @Nullable Map.Entry<Long, List<E>> e0 = top0Iter.hasNext() ? top0Iter.next() : null;
+        @Nullable Map.Entry<Long, List<E>> e1 = top1Iter.hasNext() ? top1Iter.next() : null;
+
+        Map.Entry<Long, List<E>> e;
         int size = 0;
 
-        while (size < max && (top0Iter.hasNext() || top1Iter.hasNext())) {
-            @Nullable Map.Entry<Long, List<E>> e0 = top0Iter.hasNext() ? top0Iter.next() : null;
-            @Nullable Map.Entry<Long, List<E>> e1 = top1Iter.hasNext() ? top1Iter.next() : null;
+        while (size < max && (e0 != null || e1 != null)) {
+            if (e0 != null && (e1 == null || e0.getKey().compareTo(e1.getKey()) >= 0)) {
+                e = e0;
 
-            for (Map.Entry<Long, List<E>> e : F.asArray(e0, e1)) {
-                if (e != null && size < max) {
-                    List<E> v = e.getValue().size() <= max - size ? e.getValue() :
-                        e.getValue().subList(0, e.getValue().size() - (max - size));
-
-                    res.compute(e.getKey(), (t, p0) -> {
-                        if (p0 == null)
-                            return v.size() == 1 ? Collections.singletonList(v.get(0)) : new ArrayList<>(v);
-                        else {
-                            List<E> p1 = p0.size() == 1 ? new ArrayList<>(p0) : p0;
-
-                            p1.addAll(v);
-
-                            return p1;
-                        }
-                    });
-
-                    size += v.size();
-                }
+                e0 = top0Iter.hasNext() ? top0Iter.next() : null;
             }
+            else {
+                e = e1;
+
+                e1 = top1Iter.hasNext() ? top1Iter.next() : null;
+            }
+
+            List<E> v0 = e.getValue();
+
+            List<E> v1 = v0.size() <= max - size ? v0 : v0.subList(0, v0.size() - (v0.size() - (max - size)));
+
+            res.compute(e.getKey(), (t, p0) -> {
+                if (p0 == null)
+                    return v1.size() == 1 ? Collections.singletonList(v1.get(0)) : new ArrayList<>(v1);
+                else {
+                    List<E> p1 = p0.size() == 1 ? new ArrayList<>(p0) : p0;
+
+                    p1.addAll(v1);
+
+                    return p1;
+                }
+            });
+
+            size += v1.size();
         }
 
         return res;
@@ -5934,7 +5944,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @see #topProcessingPartitions
      * @see #mergeTopProcessingPartitions
      */
-    String toStringTopProcessingPartitions(
+    static String toStringTopProcessingPartitions(
         NavigableMap<Long, List<GroupPartitionId>> top,
         Collection<CacheGroupContext> groups
     ) {
@@ -5947,7 +5957,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Map<Integer, List<GroupPartitionId>> byCacheGrpId =
                 e0.getValue().stream().collect(Collectors.groupingBy(GroupPartitionId::getGroupId));
 
-            StringJoiner sj1 = new StringJoiner(", ");
+            StringJoiner sj1 = new StringJoiner(", ", "[", "]");
 
             for (Map.Entry<Integer, List<GroupPartitionId>> e1 : byCacheGrpId.entrySet()) {
                 @Nullable CacheGroupContext grp =
@@ -5957,7 +5967,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     .map(p -> grp == null ? p.toString() : p + ":" + grp.topology().localPartition(p).fullSize())
                     .collect(Collectors.joining(", ", "[", "]"));
 
-                sj1.add("[grp=" + (grp == null ? e1.getKey() : grp.cacheOrGroupName()) + "part=" + parts + ']');
+                sj1.add("[grp=" + (grp == null ? e1.getKey() : grp.cacheOrGroupName()) + ", part=" + parts + ']');
             }
 
             sj0.add("[time=" + U.humanReadableDuration(e0.getKey()) + ' ' + sj1.toString() + ']');
