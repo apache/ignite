@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         /// on the server.
         /// </summary>
         [Test]
-        public void TestCompactFooterDisablesOnClientWhenDisabledOnServer()
+        public void TestCompactFooterDisabledOnServerAutomaticallyDisablesOnClient()
         {
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -70,11 +70,57 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
                 AssertCompactFooter(client, false);
 
-                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "Server binary configuration " +
-                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=False, NameMapperMode=BasicFull]"));
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "Server binary configuration retrieved: " +
+                    "BinaryConfigurationClientInternal [CompactFooter=False, NameMapperMode=BasicFull]"
+                    && e.Level == LogLevel.Debug));
 
-                Assert.AreEqual(1, logger.Entries.Count(e => e.Message == "BinaryConfiguration.CompactFooter " +
-                    "set to false on client according to server configuration."));
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "BinaryConfiguration.CompactFooter set to false on client " +
+                    "according to server configuration."));
+
+                Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
+            }
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BinaryConfiguration.CompactFooter"/> sets to false on the client when it is false
+        /// on the server.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterEnabledOnServerDisabledOnClientProducesWarning()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var logger = GetLogger();
+
+            var clientConfiguration = new IgniteClientConfiguration(GetClientConfiguration(logger))
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = false
+                }
+            };
+"Server binary configuration " +
+                    "retrieved: BinaryConfigurationClientInternal [CompactFooter=True, NameMapperMode=BasicFull]"
+            using (var client = Ignition.StartClient(clientConfiguration))
+            {
+                var resCfg = client.GetConfiguration();
+
+                Assert.IsNotNull(resCfg.BinaryConfiguration);
+                Assert.IsFalse(resCfg.BinaryConfiguration.CompactFooter);
+
+                AssertCompactFooter(client, false);
+
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "Server binary configuration retrieved: " +
+                    "BinaryConfigurationClientInternal [CompactFooter=True, NameMapperMode=BasicFull]"
+                    && e.Level == LogLevel.Debug));
+
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "BinaryConfiguration.CompactFooter is true on the server, but false on the client." +
+                    "Consider enabling this setting to reduce cache entry size."
+                    && e.Level == LogLevel.Info));
 
                 Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
             }
