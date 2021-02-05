@@ -2375,16 +2375,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Removes idle_verify log files created in tests.
-     */
-    public static void cleanIdleVerifyLogFiles() {
-        File dir = new File(".");
-
-        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
-            f.delete();
-    }
-
-    /**
      * @param grid Node.
      * @param grp Group name.
      * @param name Object name.
