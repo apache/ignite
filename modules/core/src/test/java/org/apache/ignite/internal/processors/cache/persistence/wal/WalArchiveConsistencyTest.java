@@ -138,7 +138,7 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDecreaseWalSegmentsWitTruncate0() throws Exception {
+    public void testDecreaseWalSegmentsWithTruncate0() throws Exception {
         checkRecoveryWithWalTruncate(5);
     }
 
@@ -150,7 +150,7 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDecreaseWalSegmentsWitTruncate1() throws Exception {
+    public void testDecreaseWalSegmentsWithTruncate1() throws Exception {
         checkRecoveryWithWalTruncate(6);
     }
 
@@ -161,7 +161,7 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNotChangeWalSegmentsWitTruncate() throws Exception {
+    public void testNotChangeWalSegmentsWithTruncate() throws Exception {
         checkRecoveryWithWalTruncate(10);
     }
 

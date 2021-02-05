@@ -3269,8 +3269,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         toMove.addAll(F.asList(scan(walWorkDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER))));
 
         if (!toMove.isEmpty()) {
-            log.warning("Invalid WAL working directory contents found, for archiving to work, will need move WAL " +
-                "segments to archive, this may take some time: " + F.viewReadOnly(toMove, fd -> fd.file().getName()));
+            log.warning("Content of WAL working directory needs rearrangement, some WAL segments will be moved to " +
+                "archive: " + walArchiveDir.getAbsolutePath() + ". Segments from " + toMove.get(0).file().getName() +
+                " to " + toMove.get(toMove.size() - 1).file().getName() + " will be moved, total number of files: " +
+                toMove.size() + ". This operation may take some time.");
 
             for (int i = 0, j = 0; i < toMove.size(); i++) {
                 FileDescriptor fd = toMove.get(i);
@@ -3319,9 +3321,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (workSegments.length == 1 && workSegments[0].idx() != workSegments[0].idx() % dsCfg.getWalSegments()) {
             FileDescriptor toRen = workSegments[0];
 
-            log.warning("Invalid WAL working directory contents found, for archiving to work, will need rename last " +
-                "WAL segment, this may take some time: " + toRen.file().getName() + " -> " +
-                fileName(toRen.idx() % dsCfg.getWalSegments()));
+            if (log.isInfoEnabled()) {
+                log.info("Last WAL segment file has to be renamed from " + toRen.file().getName() + " to " +
+                    fileName(toRen.idx() % dsCfg.getWalSegments()) + '.');
+            }
 
             String toRenFileName = fileName(toRen.idx() % dsCfg.getWalSegments());
 
@@ -3360,6 +3363,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 .filter(fd -> fd.file().length() < dsCfg.getWalSegmentSize()).collect(toList());
 
             if (!toFormat.isEmpty()) {
+                if (log.isInfoEnabled()) {
+                    log.info("WAL segments in working directory should have the same size: '" +
+                        U.humanReadableByteCount(dsCfg.getWalSegmentSize()) + "'. Segments that need reformat " +
+                        "found: " + F.viewReadOnly(toFormat, fd -> fd.file().getName()) + '.');
+                }
+
                 log.warning("Invalid WAL working directory contents found, for archiving to work, will need to " +
                     "format WAL segments to configured size, this may take some time [toFormat=" +
                     F.viewReadOnly(toFormat, fd -> fd.file().getName()) + ", cfgSize=" +
