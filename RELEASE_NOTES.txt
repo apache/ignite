@@ -184,7 +184,7 @@ Java thin-client:
 * Fixed connect/disconnect during topology update may lead to partition divergence in ignite-sys-cache
 * Fixed exception type is lost on rethrow
 * Fixed message not fully read by client after SECURITY_VIOLATION error
-* Fixed thin client silently closes channel after inactivity
+* Fixed thin client silently closed channel after inactivity
 * Fixed thin clients could not access the Ignite Service deployed through UriDeploymentSpi
 * Fixed unsupported protocol version exception when getting cache configuration from Java thin client
 
