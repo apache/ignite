@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class IgniteCacheConcurrentPutGetRemove extends GridCommonAbstractTest {
+public class IgniteCacheConcurrentPutGetRemoveTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 4;
 
