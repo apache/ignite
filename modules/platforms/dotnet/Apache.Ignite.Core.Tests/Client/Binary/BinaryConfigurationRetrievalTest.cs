@@ -159,7 +159,9 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 var resCfg = client.GetConfiguration().BinaryConfiguration;
                 Assert.IsNotNull(resCfg);
                 Assert.IsTrue(((BinaryBasicNameMapper)resCfg.NameMapper).IsSimpleName);
-                Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "Binary name mapper mismatch: local=BasicSimple, server=BasicFull" &&
+                    e.Level == LogLevel.Warn));
             }
         }
 
