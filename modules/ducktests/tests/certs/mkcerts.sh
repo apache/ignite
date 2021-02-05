@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -13,10 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module contains convenient utils for test.
-"""
+CERTS_DIR="$(dirname "$0")"
 
-from ._mark import ignore_if, ignite_versions, cluster
+cd "${CERTS_DIR}" || exit 1
 
-__all__ = ['ignore_if', 'ignite_versions', 'cluster']
+source ./functions.sh
+
+PSWD=123456
+
+makeRoot root "CN=Ignite Root" "${PSWD}"
+
+makeCA root ca "CN=Ignite CA" "${PSWD}"
+
+makeTruststore root ca
+
+mkCert ca server "CN=Ignite Server" "${PSWD}"
+mkCert ca client "CN=Ignite Client" "${PSWD}"
+mkCert ca admin "CN=Ignite Admin" "${PSWD}"
+
+cd - || exit 1

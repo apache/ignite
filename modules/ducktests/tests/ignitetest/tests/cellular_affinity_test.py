@@ -29,7 +29,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_zookeeper_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
-from ignitetest.utils import ignite_versions, version_if, cluster
+from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_8
@@ -104,7 +104,7 @@ class CellularAffinity(IgniteTest):
             cacheName=CellularAffinity.CACHE_NAME)
 
     @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
-    @version_if(lambda version: version >= DEV_BRANCH)
+    @ignore_if(lambda version, globals: version < DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
         """
@@ -121,7 +121,7 @@ class CellularAffinity(IgniteTest):
         for cell in [cell1, cell2, cell3]:
             cell.await_started()
 
-        ControlUtility(cell1, self.test_context).activate()
+        ControlUtility(cell1).activate()
 
         checker = IgniteApplicationService(
             self.test_context,
@@ -203,8 +203,8 @@ class CellularAffinity(IgniteTest):
         for streamer in streamers:
             streamer.await_started()
 
-        ControlUtility(cell0, self.test_context).disable_baseline_auto_adjust()  # baseline set.
-        ControlUtility(cell0, self.test_context).activate()
+        ControlUtility(cell0).disable_baseline_auto_adjust()  # baseline set.
+        ControlUtility(cell0).activate()
 
         for loader in loaders:
             loader.await_event("ALL_TRANSACTIONS_PREPARED", 180, from_the_beginning=True)

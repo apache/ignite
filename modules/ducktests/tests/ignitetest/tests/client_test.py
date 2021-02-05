@@ -91,7 +91,7 @@ class ClientTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
 
-        control_utility = ControlUtility(ignite, self.test_context)
+        control_utility = ControlUtility(ignite)
 
         client_cfg = server_cfg._replace(client_mode=True)
 

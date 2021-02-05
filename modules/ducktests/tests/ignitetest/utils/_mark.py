@@ -26,9 +26,9 @@ from ducktape.mark._mark import Ignore, Mark, _inject
 from ignitetest.utils.version import IgniteVersion
 
 
-class VersionIf(Ignore):
+class IgnoreIf(Ignore):
     """
-    Ignore test if version doesn't corresponds to condition.
+    Ignore test if version or global parameters correspond to condition.
     """
     def __init__(self, condition, variable_name):
         super().__init__()
@@ -36,13 +36,13 @@ class VersionIf(Ignore):
         self.variable_name = variable_name
 
     def apply(self, seed_context, context_list):
-        assert len(context_list) > 0, "ignore_if decorator is not being applied to any test cases"
+        assert len(context_list) > 0, "ignore if decorator is not being applied to any test cases"
 
         for ctx in context_list:
             if self.variable_name in ctx.injected_args:
                 version = ctx.injected_args[self.variable_name]
                 assert isinstance(version, str), "'%s'n injected args must be a string" % (self.variable_name,)
-                ctx.ignore = ctx.ignore or not self.condition(IgniteVersion(version))
+                ctx.ignore = ctx.ignore or self.condition(IgniteVersion(version), ctx.globals)
 
         return context_list
 
@@ -192,15 +192,15 @@ def ignite_versions(*args, version_prefix="ignite_version"):
     return parametrizer
 
 
-def version_if(condition, *, variable_name='ignite_version'):
+def ignore_if(condition, *, variable_name='ignite_version'):
     """
-    Mark decorated test method as IGNORE if version doesn't corresponds to condition.
+    Mark decorated test method as IGNORE if version or global parameters correspond to condition.
 
-    :param condition: function(IgniteVersion) -> bool
+    :param condition: function(IgniteVersion, Globals) -> bool
     :param variable_name: version variable name
     """
     def ignorer(func):
-        Mark.mark(func, VersionIf(condition, variable_name))
+        Mark.mark(func, IgnoreIf(condition, variable_name))
         return func
 
     return ignorer

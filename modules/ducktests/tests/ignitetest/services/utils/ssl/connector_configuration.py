@@ -11,12 +11,21 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
+# limitations under the License
 
 """
-This module contains convenient utils for test.
+This module contains classes and utilities for Ignite ConnectorConfiguration.
 """
 
-from ._mark import ignore_if, ignite_versions, cluster
+from typing import NamedTuple
 
-__all__ = ['ignore_if', 'ignite_versions', 'cluster']
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
+
+
+class ConnectorConfiguration(NamedTuple):
+    """
+    Ignite ConnectorConfiguration.
+    Used to connect from ControlUtility (control.sh).
+    """
+    ssl_enabled: bool = False
+    ssl_context_factory: SslContextFactory = None
