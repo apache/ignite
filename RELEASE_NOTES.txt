@@ -59,7 +59,7 @@ Ignite:
 * Added warming up strategy
 * Fixed AuthenticationContext did not contain subject address when subject is IgniteClient
 * Fixed BPlus tree lock retried limit reached with sqlOnHeapCacheEnabled
-* Fixed BinaryMarshaller needs to use context class loader for deserialization
+* Fixed BinaryMarshaller needed to use context class loader for deserialization
 * Fixed CLI command to execute maintenance action in corrupted PDS scenario
 * Fixed ComputeScheduleExample
 * Fixed Continuous Query buffers to reduce heap usage
