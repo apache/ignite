@@ -35,7 +35,7 @@ Ignite:
 * Added defragmentation parallelism implementation
 * Added events for snapshot operation state
 * Added explicit command.sh option to enable experimental commands
-* Added extension of tracing of communication socket write with number of sent bytes
+* Added an extension for tracing the communication socket write with a number of sent bytes
 * Added fallback to full partition rebalancing in case historical supplier failed to read all necessary data updates from WAL
 * Added generic to maintenance mode feature
 * Added implementation readiness probe REST endpoint
