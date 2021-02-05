@@ -160,7 +160,7 @@ SQL:
 * Added lazy flag to synthetic SELECT used by first step of DML query
 * Added tracing of SQL queries
 * Added unification of fallback properties for SSL settings as per Java standard
-* Fixed REPLICATED cache cannot be left-joined to PARTITIONED
+* Fixed REPLICATED cache could not be left-joined to PARTITIONED
 * Fixed decimal columns in SQL result set had invalid precision and scale
 * Fixed exception occured on SQL caches during the client reconnection
 * Fixed tracing of SELECT queries caused incorrect span inheritance
