@@ -213,7 +213,7 @@ Ignite .NET:
 * Fixed dispose hangs when continuous query is active on .NET Core 3.x
 * Fixed incorrect GetTotalPhysicalMemory result in Docker
 * Fixed interoperable DateTime
-* Fixed misleading LINQ exception when expression can't be translated
+* Fixed misleading LINQ exception when expression could not be translated
 * Fixed service that could not assign correct type to passed array parameters
 * Fixed slow enum serialization
 * Fixed wrong affinity key registration with AffinityKeyMapped attribute
