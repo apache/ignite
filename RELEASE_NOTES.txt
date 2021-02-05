@@ -65,7 +65,7 @@ Ignite:
 * Fixed Continuous Query buffers to reduce heap usage
 * Fixed DurableBackgroundTask can abandon incomplete task
 * Fixed FileWriteAheadLogManager creates 0-length WAL segments and cannot start later
-* Fixed GridCacheOffheapManager which ignores candidate pages count for index partition
+* Fixed GridCacheOffheapManager which ignored candidate pages count for index partition
 * Fixed IgniteCache#isClosed() returns false on server node even if the cache had been closed before
 * Fixed IgniteScheduler has to run inside the Ignite Sandbox with appropriate security context
 * Fixed NullPointerException at dumping long running operations
