@@ -217,9 +217,10 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, load_config, params, modules)
 
-        # Minimal detection timeout is failure_detection_timeout * 2. Let's more to capture also 'bad' results.
-        results.update(self._simulate_and_detect_failure(servers, failed_nodes,
-                                                         0.004 * ignite_config.failure_detection_timeout,
+        # Detection timeout is 4 * failure_detection_timeout in seconds.
+        detection_timeout_sec = 4 * ignite_config.failure_detection_timeout // 1000
+
+        results.update(self._simulate_and_detect_failure(servers, failed_nodes, detection_timeout_sec,
                                                          test_config.net_part))
 
         return results
