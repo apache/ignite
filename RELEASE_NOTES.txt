@@ -214,7 +214,7 @@ Ignite .NET:
 * Fixed incorrect GetTotalPhysicalMemory result in Docker
 * Fixed interoperable DateTime
 * Fixed misleading LINQ exception when expression can't be translated
-* Fixed service can't assign correct type to passed array parameters
+* Fixed service that could not assign correct type to passed array parameters
 * Fixed slow enum serialization
 * Fixed wrong affinity key registration with AffinityKeyMapped attribute
 
