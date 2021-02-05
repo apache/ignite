@@ -73,20 +73,22 @@ includeToClassPath() {
 # Include target libraries for enterprise modules to classpath.
 #
 includeToClassPath modules/aws
+includeToClassPath modules/control-utility
 includeToClassPath modules/core
-includeToClassPath modules/spring
 includeToClassPath modules/ducktest
 includeToClassPath modules/indexing
 includeToClassPath modules/log4j
-includeToClassPath modules/control-utility
+includeToClassPath modules/spring
+includeToClassPath modules/zookeeper
 
 #
 # Include target libraries for opensourse modules to classpath.
 #
 includeToClassPath "${IGNITE_HOME}"/modules/aws
+includeToClassPath "${IGNITE_HOME}"/modules/control-utility
 includeToClassPath "${IGNITE_HOME}"/modules/core
-includeToClassPath "${IGNITE_HOME}"/modules/spring
 includeToClassPath "${IGNITE_HOME}"/modules/ducktest
 includeToClassPath "${IGNITE_HOME}"/modules/indexing
 includeToClassPath "${IGNITE_HOME}"/modules/log4j
-includeToClassPath "${IGNITE_HOME}"/modules/control-utility
+includeToClassPath "${IGNITE_HOME}"/modules/spring
+includeToClassPath "${IGNITE_HOME}"/modules/zookeeper
