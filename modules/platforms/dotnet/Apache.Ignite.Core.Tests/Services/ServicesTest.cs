@@ -1647,13 +1647,15 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (date.Kind == DateTimeKind.Local)
                     date = date.ToUniversalTime();
 
-                BinaryUtils.ToJavaDate(date, out high, out low);
+                Impl.Binary.BinaryUtils.ToJavaDate(date, out high, out low);
             }
 
             /** <inheritdoc /> */
             public DateTime FromJavaTicks(long high, int low)
             {
-                return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+                return new DateTime(
+                    Impl.Binary.BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                    DateTimeKind.Utc);
             }
         }
 #endif
