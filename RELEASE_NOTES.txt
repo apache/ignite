@@ -185,7 +185,7 @@ Java thin-client:
 * Fixed exception type is lost on rethrow
 * Fixed message not fully read by client after SECURITY_VIOLATION error
 * Fixed thin client silently closes channel after inactivity
-* Fixed thin clients cannot access the Ignite Service deployed through UriDeploymentSpi
+* Fixed thin clients could not access the Ignite Service deployed through UriDeploymentSpi
 * Fixed unsupported protocol version exception when getting cache configuration from Java thin client
 
 Thin-client:
