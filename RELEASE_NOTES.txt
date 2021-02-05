@@ -169,7 +169,7 @@ SQL:
 JDBC/ODBC:
 * Added ODBC SQLNumResultCols for prepared statement
 * Added ODBC driver assigns SQL_BINARY type to DATE fields
-* Added ODBC driver shows real nullability info
+* Added ODBC driver showed real nullability info
 * Added ODBC implementation of SQLRowCount for select queries
 * Added ODBC support of SQL_ATTR_ROW_ARRAY_SIZE with value more than one
 * Fixed thin driver reported incorrect property names
