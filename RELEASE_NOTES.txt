@@ -205,7 +205,7 @@ Ignite .NET:
 * Fixed GetAffinity failure with NullPointerException on client node
 * Fixed LINQ provider emits incorrect table alias for queries with JOIN and GROUP BY combined
 * Fixed Service can't assign correct type to passed array parameters (.Net -> .Net call)
-* Fixed Service loses returned array type information
+* Fixed Service lost returned array type information
 * Fixed binary configuration for Compute API invocation
 * Fixed binary configurations of Ignite Java service params and result when calling it from Ignite.NET
 * Fixed child processes became zombies when persistence was used with direct-io on Linux
