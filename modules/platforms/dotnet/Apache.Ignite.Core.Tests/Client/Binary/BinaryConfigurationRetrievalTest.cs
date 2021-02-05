@@ -110,9 +110,8 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         public void TestExplicitDefaultConfigurationDoesNotChangeClientSettingsOrLogWarnings()
         {
             var logger = GetLogger();
-            var clientCfg = new IgniteClientConfiguration(IPAddress.Loopback.ToString())
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration(logger))
             {
-                Logger = logger,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = true,
@@ -141,7 +140,27 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         [Test]
         public void TestBasicNameMapperSettingsMismatchProducesLogWarning()
         {
-            // TODO
+            var logger = GetLogger();
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration(logger))
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper
+                    {
+                        IsSimpleName = true
+                    }
+                }
+            };
+
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            using (var client = Ignition.StartClient(clientCfg))
+            {
+                var resCfg = client.GetConfiguration().BinaryConfiguration;
+                Assert.IsNotNull(resCfg);
+                Assert.IsTrue(((BinaryBasicNameMapper)resCfg.NameMapper).IsSimpleName);
+                Assert.IsEmpty(logger.Entries.Where(e => e.Level > LogLevel.Info));
+            }
         }
 
         [Test]

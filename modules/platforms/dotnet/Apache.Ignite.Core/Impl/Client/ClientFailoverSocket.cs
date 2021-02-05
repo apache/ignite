@@ -451,14 +451,14 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (_socket.Features.HasFeature(ClientBitmaskFeature.BinaryConfiguration))
             {
-                var binaryCfg = _socket.DoOutInOp(
+                var serverBinaryCfg = _socket.DoOutInOp(
                     ClientOp.BinaryConfigurationGet,
                     ctx => { },
                     ctx => new BinaryConfigurationClientInternal(ctx.Reader.Stream));
 
-                _logger.Debug("Server binary configuration retrieved: " + binaryCfg);
+                _logger.Debug("Server binary configuration retrieved: " + serverBinaryCfg);
 
-                if (binaryCfg.CompactFooter && !_marsh.CompactFooter)
+                if (serverBinaryCfg.CompactFooter && !_marsh.CompactFooter)
                 {
                     // Changing from full to compact is not safe: some clients do not support compact footers.
                     // Log information, but don't change the configuration.
@@ -466,7 +466,7 @@ namespace Apache.Ignite.Core.Impl.Client
                                  "Consider enabling this setting to reduce cache entry size.");
                 }
 
-                if (!binaryCfg.CompactFooter && _marsh.CompactFooter)
+                if (!serverBinaryCfg.CompactFooter && _marsh.CompactFooter)
                 {
                     // Changing from compact to full footer is safe, do it automatically.
                     _marsh.CompactFooter = false;
@@ -482,12 +482,12 @@ namespace Apache.Ignite.Core.Impl.Client
                                   "according to server configuration.");
                 }
 
-                // TODO: Warn if there is a mapper mismatch, but don't change.
-                if (binaryCfg.NameMapperMode == BinaryNameMapperMode.Custom &&
-                    (_config.BinaryConfiguration.NameMapper == null ||
-                     _config.BinaryConfiguration.NameMapper is BinaryBasicNameMapper))
+                var localNameMapperMode = GetLocalNameMapperMode();
+
+                if (localNameMapperMode != serverBinaryCfg.NameMapperMode)
                 {
-                    _logger.Warn("TODO");
+                    _logger.Warn("Binary name mapper mismatch: local={0}, server={1}",
+                        localNameMapperMode, serverBinaryCfg.NameMapperMode);
                 }
             }
         }
@@ -896,6 +896,25 @@ namespace Apache.Ignite.Core.Impl.Client
             var ver = _affinityTopologyVersion;
 
             return ver == null ? UnknownTopologyVersion : ((AffinityTopologyVersion) ver).Version;
+        }
+
+        /// <summary>
+        /// Gets the local binary name mapper mode.
+        /// </summary>
+        private BinaryNameMapperMode GetLocalNameMapperMode()
+        {
+            if (_config.BinaryConfiguration == null || _config.BinaryConfiguration.NameMapper == null)
+            {
+                return BinaryNameMapperMode.BasicFull;
+            }
+
+            var basicMapper = _config.BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+
+            return basicMapper == null
+                ? BinaryNameMapperMode.Custom
+                : basicMapper.IsSimpleName
+                    ? BinaryNameMapperMode.BasicSimple
+                    : BinaryNameMapperMode.BasicFull;
         }
     }
 }
