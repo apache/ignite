@@ -5494,7 +5494,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
 
-            AtomicReference<NavigableMap<Long, List<GroupPartitionId>>> topRef = new AtomicReference<>();
+            AtomicReference<NavigableMap<Long, List<GroupPartitionId>>> topPartRef = new AtomicReference<>();
 
             long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
 
@@ -5509,7 +5509,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             NavigableMap<Long, List<GroupPartitionId>> top =
                                 topProcessingPartitions(processed, 5, p -> new GroupPartitionId(grp.groupId(), p));
 
-                            topRef.updateAndGet(
+                            topPartRef.updateAndGet(
                                 top0 -> top0 == null ? top : mergeTopProcessingPartitions(top0, top, 5));
                         }
                     }
@@ -5530,6 +5530,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 });
             }
 
+            boolean printTop = false;
+
             try {
                 // Await completion restore state tasks in all stripes.
                 if (!log.isInfoEnabled())
@@ -5539,16 +5541,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     while (!completionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
                         if (log.isInfoEnabled()) {
-                            @Nullable NavigableMap<Long, List<GroupPartitionId>> top = topRef.get();
+                            @Nullable NavigableMap<Long, List<GroupPartitionId>> top = topPartRef.get();
 
                             log.info("Restore partitions state progress [grpCnt=" +
                                 (forGroups.size() - completionLatch.getCount()) + '/' + forGroups.size() +
-                                ", partitionCnt=" + (totalPart - totalProcessed.get()) + '/' + totalPart +
-                                (top == null ? "" : ", topProcessedPartitions=" +
-                                    toStringTopProcessingPartitions(top, forGroups)) + ']');
+                                ", partitionCnt=" + totalProcessed.get() + '/' + totalPart + (top == null ? "" :
+                                ", topProcessedPartitions=" + toStringTopProcessingPartitions(top, forGroups)) + ']');
                         }
 
                         timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS / 5;
+                        printTop = true;
                     }
                 }
             }
@@ -5561,10 +5563,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw restoreStateError.get();
 
             if (log.isInfoEnabled()) {
+                NavigableMap<Long, List<GroupPartitionId>> t = printTop ? topPartRef.get() : null;
+
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
                     ", partitionsProcessed=" + totalProcessed.get() +
-                    ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
+                    ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startRestorePart) +
+                    (t == null ? "" : ", topProcessedPartitions=" + toStringTopProcessingPartitions(t, forGroups)) +
+                    "]");
             }
         }
 

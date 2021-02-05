@@ -38,8 +38,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.function.Function.identity;
@@ -55,6 +52,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.mergeTopProcessingPartitions;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.toStringTopProcessingPartitions;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.topProcessingPartitions;
@@ -64,7 +62,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.top
  */
 public class RestorePartitionStateTest extends GridCommonAbstractTest {
     /** Timeout for displaying the progress of restoring the status of partitions. */
-    @Nullable private Long timeoutOutputRestoreProgress;
+    private long timeoutOutputRestoreProgress;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -73,13 +71,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
         stopAllGrids();
         cleanPersistenceDir();
 
-        if (timeoutOutputRestoreProgress != null) {
-            long val = GridCacheProcessor.TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
-
-            GridCacheProcessor.TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = timeoutOutputRestoreProgress;
-
-            timeoutOutputRestoreProgress = val;
-        }
+        timeoutOutputRestoreProgress = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
     }
 
     /** {@inheritDoc} */
@@ -89,8 +81,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
         stopAllGrids();
         cleanPersistenceDir();
 
-        if (timeoutOutputRestoreProgress != null)
-            GridCacheProcessor.TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = timeoutOutputRestoreProgress;
+        TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = timeoutOutputRestoreProgress;
     }
 
     /** {@inheritDoc} */
@@ -114,7 +105,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
      * Checking the correctness of obtaining the top partitions by their processing time and merging them.
      */
     @Test
-    public void testTopPartitions() {
+    public void testTopRestorePartitions() {
         for (int i = 0; i < 1_000; i++) {
             Map<Integer, Long> processed0 = generateProcessedPartitions(32);
             Map<Integer, Long> processed1 = generateProcessedPartitions(32);
@@ -139,7 +130,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
      * Checking the correctness of the string representation of the top.
      */
     @Test
-    public void testTopToString() {
+    public void testTopRestorePartitionsToString() {
         TreeMap<Long, List<GroupPartitionId>> m = new TreeMap<>();
 
         m.put(10L, F.asList(new GroupPartitionId(0, 0), new GroupPartitionId(0, 1), new GroupPartitionId(1, 1)));
@@ -150,49 +141,36 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
         assertEquals(exp, toStringTopProcessingPartitions(m, Collections.emptyList()));
     }
 
+    /**
+     * Check that the progress of restoring partitions with the top partitions is displayed in the log.
+     *
+     * @throws Exception If fail.
+     */
     @Test
-    public void test0() {
-        
-    }
-
-    @Test
-    public void test() throws Exception {
-        timeoutOutputRestoreProgress = 50L;
-
+    public void testLogTopPartitions() throws Exception {
         IgniteEx n = startGrid(0);
 
         n.cluster().state(ClusterState.ACTIVE);
         awaitPartitionMapExchange();
 
-        GridCacheProcessor cacheProcessor = n.context().cache();
+        ((GridCacheDatabaseSharedManager)n.context().cache().context().database())
+            .enableCheckpoints(false).get(getTestTimeout());
 
-        Map<Integer, Long> processed1 = IntStream.range(0, 10).boxed().collect(toMap(identity(), p -> 10L + ThreadLocalRandom.current().nextLong(10)));
-        Map<Integer, Long> processed2 = IntStream.range(0, 10).boxed().collect(toMap(identity(), p -> 10L + ThreadLocalRandom.current().nextLong(10)));
-
-        ((GridCacheDatabaseSharedManager)cacheProcessor.context().database()).enableCheckpoints(false).get(getTestTimeout());
-
-        for (IgniteInternalCache cache : cacheProcessor.caches()) {
-            for (int i = 0; i < 10_000; i++)
+        for (IgniteInternalCache cache : n.context().cache().caches()) {
+            for (int i = 0; i < 1_000; i++)
                 cache.put(i, cache.name() + i);
         }
 
         stopAllGrids();
+        awaitPartitionMapExchange();
 
-        LogListener beforeRestore = LogListener.matches(logStr -> {
-            if (logStr.startsWith("Restoring partition state for local groups.")) {
-                for (CacheGroupContext grp : cacheProcessor.cacheGroups()) {
-                    ((GridDhtPartitionTopologyImpl)grp.topology()).partitionFactory((ctx, grp1, id, recovery) -> {
-                        if (recovery) {
-                            try {
-                                U.sleep(15);
-                            }
-                            catch (IgniteInterruptedCheckedException e) {
-                                throw new IgniteException(e);
-                            }
-                        }
-
-                        return new GridDhtLocalPartition(ctx, grp1, id, recovery);
-                    });
+        LogListener startPartRestore = LogListener.matches(logStr -> {
+            if (logStr.startsWith("Started restoring partition state [grp=")) {
+                try {
+                    U.sleep(15);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
                 }
 
                 return true;
@@ -201,14 +179,25 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
             return false;
         }).build();
 
+        LogListener progressPartRestore = LogListener.matches("Restore partitions state progress")
+            .andMatches("topProcessedPartitions").build();
+
+        LogListener finishPartRestore = LogListener.matches("Finished restoring partition state for local groups")
+            .andMatches("topProcessedPartitions").build();
+
+        TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = 150L;
+
+        setRootLoggerDebugLevel();
+
         startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> {
-            cfg.setGridLogger(new ListeningTestLogger(cfg.getGridLogger(), beforeRestore));
+            cfg.setGridLogger(new ListeningTestLogger(log, startPartRestore, progressPartRestore, finishPartRestore));
 
             return cfg;
         });
 
-
-        System.out.println();
+        assertTrue(startPartRestore.check());
+        assertTrue(progressPartRestore.check());
+        assertTrue(finishPartRestore.check());
     }
 
     /**

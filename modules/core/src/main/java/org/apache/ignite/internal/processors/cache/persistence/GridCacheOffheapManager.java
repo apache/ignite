@@ -622,6 +622,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             long startTime = U.currentTimeMillis();
 
+            if (log.isDebugEnabled())
+                log.debug("Started restoring partition state [grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
+
             if (ctx.pageStore().exists(grp.groupId(), p)) {
                 ctx.pageStore().ensure(grp.groupId(), p);
 
@@ -721,7 +724,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (log.isDebugEnabled()) {
                 log.debug("Finished restoring partition state " +
                     "[grp=" + grp.cacheOrGroupName() + ", p=" + p +
-                    ", time=" + (U.currentTimeMillis() - startTime) + " ms]");
+                    ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startTime) + ']');
             }
         }
 
