@@ -2034,7 +2034,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "idle_verify failed");
+        assertContains(log, out, "The check procedure failed");
         assertContains(log, out, "See log for additional information.");
 
         String logFileName = (out.split("See log for additional information. ")[1]).split(".txt")[0];
@@ -2138,7 +2138,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "idle_verify failed on 1 node.");
+        assertContains(log, out, "The check procedure failed on 1 node.");
         assertContains(log, out, "See log for additional information.");
     }
 
@@ -2158,8 +2158,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String outputStr = testOut.toString();
 
-        assertContains(log,outputStr, "idle_verify failed on 1 node.");
-        assertContains(log, outputStr, "idle_verify check has finished, no conflicts have been found.");
+        assertContains(log,outputStr, "The check procedure failed on 1 node.");
+        assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
     }
 
     /** */
@@ -2221,7 +2221,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "Idle verify failed on nodes:");
+            assertContains(log, dumpWithConflicts, "The check procedure failed on nodes:");
 
             assertContains(log, dumpWithConflicts, "Node ID: " + unstableNodeId);
         }
@@ -3109,7 +3109,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
 
-        assertContains(log, sb.toString(), "idle_verify check has finished, no conflicts have been found");
+        assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
 

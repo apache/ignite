@@ -92,6 +92,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
@@ -1195,7 +1196,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         assertTrue(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "idle_verify check has finished, no conflicts have been found");
+        assertPartitionsSame(res);
+        assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
     /** @throws Exception If fails. */
@@ -1289,7 +1291,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         assertTrue(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "idle_verify check has finished, no conflicts have been found");
+        assertPartitionsSame(res);
+        assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
     /** @throws Exception If fails. */
@@ -1337,8 +1340,41 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
+        System.out.println(">>>>>> " + b);
         assertTrue(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "idle_verify check has finished, found 1 conflict partitions");
+        assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckOtherCluster() throws Exception {
+        IgniteEx ig0 = startGridsWithCache(3, dfltCacheCfg.
+                setAffinity(new RendezvousAffinityFunction(false, 1)),
+            CACHE_KEYS_RANGE);
+
+        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        stopAllGrids();
+
+        // Cleanup persistence directory except created snapshots.
+        Arrays.stream(new File(U.defaultWorkDirectory()).listFiles())
+            .filter(f -> !f.getName().equals(DFLT_SNAPSHOT_DIRECTORY))
+            .forEach(U::delete);
+
+        for (int i = 4; i < 6; i++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+
+        IgniteEx ignite = grid(4);
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+        ignite.cluster().state(ACTIVE);
+
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertTrue(F.isEmpty(res.exceptions()));
+        assertPartitionsSame(res);
+        assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
     /**
