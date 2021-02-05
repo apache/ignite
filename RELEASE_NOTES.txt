@@ -163,7 +163,7 @@ SQL:
 * Fixed REPLICATED cache cannot be left-joined to PARTITIONED
 * Fixed decimal columns in SQL result set have invalid precision and scale
 * Fixed exception which occurs on SQL caches when client reconnect
-* Fixed tracing of SELECT queries causes incorrect span inheritance
+* Fixed tracing of SELECT queries caused incorrect span inheritance
 * Fixed transformation of sub-queries to JOINs when possible
 
 JDBC/ODBC:
