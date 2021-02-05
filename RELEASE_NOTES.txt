@@ -210,7 +210,7 @@ Ignite .NET:
 * Fixed binary configurations of Ignite Java service params and result when calling it from Ignite.NET
 * Fixed child processes become zombies when persistence is used with direct-io on Linux
 * Fixed client should have peerClassLoading property in the IgniteConfiguration class
-* Fixed dispose hangs when continuous query is active on .NET Core 3.x
+* Fixed dispose hangs when continuous query was active on .NET Core 3.x
 * Fixed incorrect GetTotalPhysicalMemory result in Docker
 * Fixed interoperable DateTime
 * Fixed misleading LINQ exception when expression could not be translated
