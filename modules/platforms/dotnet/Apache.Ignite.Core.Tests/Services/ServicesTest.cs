@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -299,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check err method
             Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
- 
+
             Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
             Assert.AreEqual(3, svc.TestOverload(1, 2));
             Assert.AreEqual(5, svc.TestOverload(3, 2));
@@ -365,7 +364,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Exception in service.
             ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
             Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
- 
+
             Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
             Assert.AreEqual(3, svc.TestOverload(1, 2));
             Assert.AreEqual(5, svc.TestOverload(3, 2));
@@ -1635,7 +1634,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public int Field { get; set; }
         }
-        
+
 #if NETCOREAPP
         /// <summary>
         /// Adds support of the local dates to the Ignite timestamp serialization.
