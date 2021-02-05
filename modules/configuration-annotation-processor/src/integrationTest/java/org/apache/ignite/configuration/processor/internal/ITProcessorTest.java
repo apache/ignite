@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test for basic code generation scenarios.
  */
-public class ProcessorTest extends AbstractProcessorTest {
+public class ITProcessorTest extends AbstractProcessorTest {
     /**
      * The simplest test for code generation.
      */
@@ -80,7 +80,7 @@ public class ProcessorTest extends AbstractProcessorTest {
         );
 
         String initTypeName = Types.typeName(packageName, "InitTest");
-        
+
         MatcherAssert.assertThat(
             classSet.getInitClass(),
             hasMethods(
