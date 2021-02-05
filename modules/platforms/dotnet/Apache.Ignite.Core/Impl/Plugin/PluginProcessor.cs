@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             foreach (var mapping in _patternExceptionMappings)
             {
-                if (className.StartsWith(mapping.Key))
+                if (className.StartsWith(mapping.Key, StringComparison.Ordinal))
                 {
                     return mapping.Value;
                 }
@@ -175,9 +175,9 @@ namespace Apache.Ignite.Core.Impl.Plugin
             Debug.Assert(className != null);
             Debug.Assert(factory != null);
 
-            if (className.EndsWith("*"))
+            if (className.EndsWith("*", StringComparison.Ordinal))
             {
-                _patternExceptionMappings.GetOrAdd(className.TrimEnd('*'), _ => factory);
+                _patternExceptionMappings.GetOrAdd(className.Substring(0, className.Length - 1), _ => factory);
             }
             else
             {
