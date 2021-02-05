@@ -25,7 +25,7 @@ Ignite:
 * Added a cluster performance profiling
 * Added a cluster performance tool to build cluster performance report
 * Added cluster snapshot security permissions
-* Added command to control.sh to get an arbitrary Metric
+* Added a command to control.sh to get an arbitrary Metric
 * Added command to control.sh to get an arbitrary SystemView
 * Added control.sh API - schedule & cancel
 * Added control.sh API - status
