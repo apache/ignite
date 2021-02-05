@@ -181,7 +181,7 @@ Java thin-client:
 * Added thin client Java API - async API
 * Added thin client Kubernetes discovery
 * Fixed CHM get/remove on each request to server
-* Fixed connect/disconnect during topology update may lead to partition divergence in ignite-sys-cache
+* Fixed connect/disconnect during topology update might lead to partition divergence in ignite-sys-cache
 * Fixed exception type was lost on rethrow
 * Fixed message not fully read by client after SECURITY_VIOLATION error
 * Fixed thin client silently closed channel after inactivity
