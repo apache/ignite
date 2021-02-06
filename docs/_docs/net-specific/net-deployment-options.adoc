@@ -17,34 +17,28 @@
 == Overview
 
 Apache Ignite.NET consists of .NET assemblies and Java jar files. The .NET assemblies are referenced by your project and
-are copied to an output folder during the build automatically. The JAR files should be copied manually.
+are copied to an output folder during the build automatically. The JAR files can be handled automatically or manually, depending on the approach.
 Ignite.NET discovers them via the `IgniteHome` or `JvmClasspath` settings.
 
 This page introduces several most-commonly used deployment options of Ignite.NET nodes.
 
-== Full Binary Package Deployment
-
-* Copy the https://ignite.apache.org[whole Ignite distribution package, window=_blank] along with your application
-* Set the `IGNITE_HOME` environment variable or `IgniteConfiguration.IgniteHome` setting to point to that folder
-
 == NuGet Deployment
 
-The post-build event is updated automatically during the Ignite.NET NuGet package installation to copy jar files to
-`Libs` folder in the output directory (see link:quick-start/dotnet[Getting Started]).
-Make sure to include that `Libs` folder when distributing your binaries.
+`Apache.Ignite` NuGet package includes a `lib` folder with all the required jar files. This folder has 
+`<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` build action, and is copied automatically to the output directory
+during the build or publish process.
 
 Make sure `IGNITE_HOME` is not set globally. Normally you don't need to set `IGNITE_HOME` with NuGet, except for
 ASP.NET deployments (see below).
 
-[tabs]
---
-tab:Post-Build Event[]
-[source,shell]
-----
-if not exist "$(TargetDir)Libs" md "$(TargetDir)Libs"
-xcopy /s /y "$(SolutionDir)packages\Apache.Ignite.1.6.0\Libs\*.*" "$(TargetDir)Libs"
-----
---
+To disable this default build action, add `<ApacheIgniteNoLibs>True</ApacheIgniteNoLibs>` property to a `<PropertyGroup>` in your `.csproj` file.
+Alternatively, add or update `Directory.Build.props` file to do that for multiple projects.
+This can be useful for thin client only use cases and custom deployments.
+
+== Full Binary Package Deployment
+
+* Copy the https://ignite.apache.org/download.cgi#binaries[whole Ignite distribution package, window=_blank] along with your application
+* Set the `IGNITE_HOME` environment variable or `IgniteConfiguration.IgniteHome` setting to point to that folder
 
 == Custom Deployment
 
@@ -58,7 +52,7 @@ The minimum set of jars for Ignite.NET is:
 
 === Deploying JARs to a default location:
 
-* Copy the JAR files to the `Libs` folder next to Apache.Ignite.Core.dll
+* Copy the JAR files to the `libs` folder next to Apache.Ignite.Core.dll
 * Do not set the `IgniteConfiguration.JvmClasspath`, `IgniteConfiguration.IgniteHome` properties and `IGNITE_HOME` environment variable
 
 === Deploying jar files to an arbitrary location:
