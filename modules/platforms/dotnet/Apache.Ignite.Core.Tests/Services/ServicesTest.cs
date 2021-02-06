@@ -987,6 +987,42 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+            // Test standard java checked exception.
+            Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<ThreadInterruptedException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test standard java unchecked exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<ArgumentException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test user defined exception mapping by pattern.
+            ((IIgniteInternal)Grid1).PluginProcessor.RegisterExceptionMapping(
+                "org.apache.ignite.platform.PlatformDeployServiceTask$TestMapped*",
+                (c, m, e, i) => new TestServiceException(m, e));
+
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test user defined unmapped exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<IgniteException>(ex);
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Test", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
+
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
             DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
@@ -1106,6 +1142,42 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
+
+            // Test standard java checked exception.
+            Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<ThreadInterruptedException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test standard java unchecked exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<ArgumentException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test user defined exception mapping by pattern.
+            ((IIgniteInternal)Grid1).PluginProcessor.RegisterExceptionMapping(
+                "org.apache.ignite.platform.PlatformDeployServiceTask$TestMapped*",
+                (c, m, e, i) => new TestServiceException(m, e));
+
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test user defined unmapped exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
+            ex = ex.InnerException;
+            Assert.IsInstanceOf<IgniteException>(ex);
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Test", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
         }
 
         /// <summary>
@@ -1635,7 +1707,21 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public int Field { get; set; }
         }
-        
+
+        /// <summary>
+        /// Test exception.
+        /// </summary>
+        private class TestServiceException : Exception
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public TestServiceException(string message, Exception cause) : base(message, cause)
+            {
+                // No-op.
+            }
+        }
+
 #if NETCOREAPP
         /// <summary>
         /// Adds support of the local dates to the Ignite timestamp serialization.
