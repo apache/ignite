@@ -34,6 +34,25 @@ ASP.NET deployments (see below).
 To disable this default build action, add `<ExcludeAssets>build</ExcludeAssets>` https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets[property] to the corresponding `<PackageReference>` in your `.csproj` file.
 This can be useful for thin client use cases and custom deployments.
 
+[tabs]
+--
+tab:MyApp.csproj[]
+[source,xml]
+----
+<Project Sdk="Microsoft.NET.Sdk">
+    ...
+
+    <ItemGroup>
+      <PackageReference Include="Apache.Ignite" Version="2.9.1">
+          <ExcludeAssets>build</ExcludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>
+----
+--
+
+
 == Full Binary Package Deployment
 
 * Copy the https://ignite.apache.org/download.cgi#binaries[whole Ignite distribution package, window=_blank] along with your application
