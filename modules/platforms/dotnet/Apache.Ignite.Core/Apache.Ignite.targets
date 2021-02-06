@@ -16,7 +16,8 @@
 -->
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <ItemGroup Condition="$(ApacheIgniteNoLibs) != 'True'"> <!-- TODO: Can we use ExcludeAssets instead? https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files -->
+    <!-- TODO: Can we use <ExcludeAssets>build</ExcludeAssets> instead? Yes! https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files -->
+    <ItemGroup Condition="$(ApacheIgniteNoLibs) != 'True'"> 
         <None Include="$(MSBuildThisFileDirectory)output\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
