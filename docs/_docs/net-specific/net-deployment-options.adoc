@@ -31,9 +31,8 @@ during the build or publish process.
 Make sure `IGNITE_HOME` is not set globally. Normally you don't need to set `IGNITE_HOME` with NuGet, except for
 ASP.NET deployments (see below).
 
-To disable this default build action, add `<ApacheIgniteNoLibs>True</ApacheIgniteNoLibs>` property to a `<PropertyGroup>` in your `.csproj` file.
-Alternatively, add or update `Directory.Build.props` file to do that for multiple projects.
-This can be useful for thin client only use cases and custom deployments.
+To disable this default build action, add `<ExcludeAssets>build</ExcludeAssets>` https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets[property] to the corresponding `<PackageReference>` in your `.csproj` file.
+This can be useful for thin client use cases and custom deployments.
 
 == Full Binary Package Deployment
 
