@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
+import java.util.TreeMap;
 import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -115,6 +119,32 @@ public class TransactionValidationTest extends GridCommonAbstractTest {
                         X.hasCause(e, "cache topology is not valid", CacheInvalidStateException.class));
             }
         }
+    }
+
+    @Test
+    public void testPutAll() throws Exception {
+        Ignition.start(getConfiguration("server1"));
+        Ignition.start(getConfiguration("server2"));
+        Ignite ignite = Ignition.start(getConfiguration("client").setClientMode(true));
+
+        IgniteCache<Integer, Integer> cache = ignite.createCache(
+            new CacheConfiguration<Integer, Integer>("c")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        int count = 50000;
+
+        Map<Integer, Integer> data = new TreeMap<>();
+        for (int i = 0; i < count; i++)
+            data.put(i, i);
+
+        long begin = System.nanoTime();
+
+        cache.putAll(data);
+
+        long dur = System.nanoTime() - begin;
+        System.out.println(">>>>> " + dur / 1000000);
+
+        assertEquals(10, (int)cache.get(10));
     }
 
     /** {@inheritDoc} */

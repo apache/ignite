@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -347,7 +348,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
+        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap, new HashMap<>());
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -400,6 +401,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         Map<Object, GridDistributedTxMapping> map = new HashMap<>();
 
+        Map<UUID, GridDistributedTxMapping> mOut = new HashMap<>();
+
         // Assign keys to primary nodes.
         GridDistributedTxMapping cur = null;
 
@@ -410,7 +413,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
-            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
+            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap, mOut);
 
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
@@ -420,7 +423,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 hasNearCache = true;
 
             if (cur != updated) {
-                mappings.offer(updated);
+/*                mappings.offer(updated);
 
                 updated.last(true);
 
@@ -435,7 +438,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 GridDistributedTxMapping prev = map.put(key, updated);
 
                 if (prev != null)
-                    prev.last(false);
+                    prev.last(false);*/
 
                 if (updated.primary().isLocal()) {
                     if (write.context().isNear())
@@ -447,6 +450,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 cur = updated;
             }
         }
+
+        mappings.clear();
+
+        for (GridDistributedTxMapping ent : mOut.values())
+            mappings.add(ent);
+
+        System.err.println("!!!mappings: " + mappings.size());
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -613,7 +623,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         AffinityTopologyVersion topVer,
         @Nullable GridDistributedTxMapping cur,
         boolean topLocked,
-        boolean remap
+        boolean remap,
+        Map<UUID, GridDistributedTxMapping> mOut
     ) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -674,9 +685,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
             boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
 
-            cur = new GridDistributedTxMapping(primary);
+            clientFirst = !topLocked && cctx.kernalContext().clientNode();
+            cur = mOut.computeIfAbsent(primary.id(), k -> new GridDistributedTxMapping(primary));
+            cur.clientFirst(clientFirst); cur.last(true);
 
-            cur.clientFirst(clientFirst);
+/*            cur = new GridDistributedTxMapping(primary);
+            cur.clientFirst(clientFirst);*/
         }
 
         cur.add(entry);
