@@ -1838,7 +1838,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                     TransactionIsolation isolation = testType == TestType.OPTIMISTIC_SERIALIZABLE_TX ?
                                         SERIALIZABLE : REPEATABLE_READ;
 
-                                    try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                                    try (Transaction tx = txs.txStart(concurrency, isolation, 1000, 10)) {
                                         cache.putAll(map);
 
                                         tx.commit();

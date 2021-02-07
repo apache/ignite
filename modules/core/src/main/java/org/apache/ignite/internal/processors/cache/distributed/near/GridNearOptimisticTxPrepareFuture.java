@@ -456,8 +456,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         for (GridDistributedTxMapping ent : mOut.values())
             mappings.add(ent);
 
-        System.err.println("!!!mappings: " + mappings.size());
-
         if (isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Abandoning (re)map because future is done: " + this);
