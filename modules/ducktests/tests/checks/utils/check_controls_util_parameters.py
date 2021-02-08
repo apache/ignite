@@ -92,6 +92,7 @@ class CheckControlUtility:
 
     globals_nil = {}
 
+    @staticmethod
     @pytest.mark.parametrize("test_globals, test_kwargs, expected",
                              [(globals_full, {}, {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
                                                   'trust_store_path': 'truststore.jks',
@@ -140,7 +141,7 @@ class CheckControlUtility:
                                 'trust_store_path': 'truststore.jks', 'trust_store_password': '123456',
                                 'login': 'admin1',
                                 'password': 'qwe123'})])
-    def check_parse(self, test_globals, test_kwargs, expected):
+    def check_parse(test_globals, test_kwargs, expected):
         """
         Check that control_utulity.py correctly parse globals
         """
