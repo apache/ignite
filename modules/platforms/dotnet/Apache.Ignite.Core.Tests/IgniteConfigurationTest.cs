@@ -421,6 +421,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the static ip finder.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
         public void TestStaticIpFinder()
         {
             TestIpFinders(new TcpDiscoveryStaticIpFinder
@@ -436,6 +437,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the multicast ip finder.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
         public void TestMulticastIpFinder()
         {
             TestIpFinders(
