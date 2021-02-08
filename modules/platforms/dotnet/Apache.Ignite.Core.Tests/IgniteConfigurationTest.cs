@@ -372,6 +372,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the default spi.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
         public void TestDefaultSpi()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
