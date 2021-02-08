@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,7 +41,9 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
@@ -161,15 +164,11 @@ public class SnapshotPartitionsVerifyTask
             }
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
-            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
-            ByteBuffer pageBuf = ByteBuffer.allocate(meta.pageSize())
-                .order(ByteOrder.nativeOrder());
-
             Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
+            Set<T2<File, File>> pairs = new HashSet<>();
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
-                String grpName = cacheGroupName(dir);
-                int grpId = CU.cacheId(grpName);
+                int grpId = CU.cacheId(cacheGroupName(dir));
 
                 if (!grps.remove(grpId))
                     continue;
@@ -182,20 +181,12 @@ public class SnapshotPartitionsVerifyTask
                     if (!parts.remove(partId))
                         continue;
 
-                    PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
-
-                    // Snapshot partitions must always be in OWNING state.
-                    // There is no `primary` partitions for snapshot.
-                    PartitionHashRecordV2 rec = new PartitionHashRecordV2(key, false, consId,
-                        PartitionHashRecordV2.PartitionState.OWNING);
-
-                    snpMgr.readSnapshotPartitionMeta(part, grpId, partId, pageBuf, rec::updateCounter, rec::size);
-                    res.put(key, rec);
+                    pairs.add(new T2<>(dir, part));
                 }
 
                 if (!parts.isEmpty()) {
                     throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
-                        "[grpName=" + grpName + ", snpName=" + snpName + ", consId=" + consId +
+                        "[grpId=" + grpId + ", snpName=" + snpName + ", consId=" + consId +
                         ", missed=" + parts + ", meta=" + meta + ']');
                 }
             }
@@ -204,6 +195,37 @@ public class SnapshotPartitionsVerifyTask
                 throw new IgniteException("Snapshot data doesn't contain required cache groups " +
                     "[grps=" + grps + ", snpName=" + snpName + ", consId=" + consId +
                     ", meta=" + meta + ']');
+            }
+
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
+            ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
+                .order(ByteOrder.nativeOrder()));
+
+            try {
+                U.doInParallel(
+                    ignite.context().getSystemExecutorService(),
+                    pairs,
+                    pair -> {
+                        String grpName = pair.get1().getName();
+                        int grpId = CU.cacheId(grpName);
+                        int partId = partId(pair.get2().getName());
+
+                        PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+
+                        // Snapshot partitions must always be in OWNING state.
+                        // There is no `primary` partitions for snapshot.
+                        PartitionHashRecordV2 rec = new PartitionHashRecordV2(key, false, consId,
+                            PartitionHashRecordV2.PartitionState.OWNING);
+
+                        snpMgr.readSnapshotPartitionMeta(pair.get2(), grpId, partId, buff.get(), rec::updateCounter, rec::size);
+                        res.put(key, rec);
+
+                        return null;
+                    }
+                );
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
 
             return res;
