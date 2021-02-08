@@ -246,7 +246,7 @@ The example below shows how to invoke the service named `MyService`:
 include::{sourceCodeFile}[tag=client-services,indent=0]
 -------------------------------------------------------------------------------
 
-The deployed service can be implemented using Java or .NET.
+The thin client allows to execute services implemented in Java or .NET.
 
 
 == Security
