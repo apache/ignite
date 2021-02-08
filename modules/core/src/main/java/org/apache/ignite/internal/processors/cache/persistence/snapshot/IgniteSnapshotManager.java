@@ -1266,6 +1266,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Iterator over partition.
      * @throws IgniteCheckedException If fails.
      */
+    public GridCloseableIterator<CacheDataRow> partitionRows(
+        File partFile,
+        int grpId,
+        int partId
+    ) throws IgniteCheckedException {
+        FilePageStore pageStore = (FilePageStore)storeFactory
+            .apply(grpId, false)
+            .createPageStore(getTypeByPartId(partId),
+                partFile::toPath,
+                val -> {
+                });
+
+        return new PageScanIterator(cctx, grpId, pageStore, partId, true);
+    }
+
+    /**
+     * @param partFile Partition file to read.
+     * @param grpId Group id.
+     * @param partId Partition id.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If fails.
+     */
     public GridCloseableIterator<CacheDataRow> getPartitionDataRows(
         File partFile,
         int grpId,
@@ -1279,7 +1301,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 val -> {
                 });
 
-        return new SerialPageStoreIterator(cctx, pageStore, partId, checkCrc);
+        return new PageScanIterator(cctx, grpId, pageStore, partId, checkCrc);
     }
 
     /**
@@ -1456,7 +1478,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    private static class SerialPageStoreIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+    private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
         /** Shared context. */
         @GridToStringExclude
         private final GridCacheSharedContext<?, ?> sctx;
@@ -1467,6 +1489,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Page store partition id. */
         private final int partId;
+
+        /** Cache group id. */
+        private final int grpId;
 
         /** Read FULL row by default. */
         @GridToStringExclude
@@ -1505,8 +1530,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param partId Partition id.
          * @throws IgniteCheckedException If fails.
          */
-        public SerialPageStoreIterator(
+        public PageScanIterator(
             GridCacheSharedContext<?, ?> sctx,
+            int grpId,
             PageStore store,
             int partId,
             boolean checkCrc
@@ -1514,6 +1540,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             assert flags == CacheDataRowAdapter.RowData.FULL;
 
             this.sctx = sctx;
+            this.grpId = grpId;
             this.store = store;
             this.partId = partId;
             this.checkCrc = checkCrc;
@@ -1611,7 +1638,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             locBuff,
                             fragmentBuff,
                             itemId,
-                            null,
+                            sctx.cache().cacheGroup(grpId),
                             sctx,
                             flags,
                             false);
@@ -1640,7 +1667,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SerialPageStoreIterator.class, this, super.toString());
+            return S.toString(PageScanIterator.class, this, super.toString());
         }
     }
 

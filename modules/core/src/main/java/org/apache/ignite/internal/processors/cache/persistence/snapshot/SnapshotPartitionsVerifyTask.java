@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -36,6 +37,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
@@ -52,8 +54,13 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitions;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 
-/** */
+/**
+ * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
+ * Since a snapshot partitions already stored apart on disk the is no requirement for a cluster upcoming updates
+ * to be hold on.
+ */
 public class SnapshotPartitionsVerifyTask
     extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
     /** Serial version uid. */
@@ -210,21 +217,35 @@ public class SnapshotPartitionsVerifyTask
                         int grpId = CU.cacheId(grpName);
                         int partId = partId(pair.get2().getName());
 
-                        PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
-
                         // Snapshot partitions must always be in OWNING state.
                         // There is no `primary` partitions for snapshot.
-                        PartitionHashRecordV2 rec = new PartitionHashRecordV2(key, false, consId,
-                            PartitionHashRecordV2.PartitionState.OWNING);
+                        AtomicLong updCntr = new AtomicLong();
+                        AtomicLong partSize = new AtomicLong();
 
-                        snpMgr.readSnapshotPartitionMeta(pair.get2(), grpId, partId, buff.get(), rec::updateCounter, rec::size);
-                        res.put(key, rec);
+                        snpMgr.readSnapshotPartitionMeta(pair.get2(),
+                            grpId,
+                            partId,
+                            buff.get(),
+                            updCntr::set,
+                            partSize::set);
+
+                        res.putAll(calculatePartitionHash(updCntr.get(),
+                            grpId,
+                            partId,
+                            grpName,
+                            consId,
+                            GridDhtPartitionState.OWNING,
+                            false,
+                            partSize.get(),
+                            snpMgr.getPartitionDataRows(pair.get2(), grpId, partId, true)));
 
                         return null;
                     }
                 );
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
+                log.error("Partition verify job threw an exception", e);
+
                 throw new IgniteException(e);
             }
 

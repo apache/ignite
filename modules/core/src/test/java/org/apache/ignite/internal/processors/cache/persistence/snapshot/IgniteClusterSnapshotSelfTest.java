@@ -1195,6 +1195,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
+        System.out.println(">>>>>> " + b);
+
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
