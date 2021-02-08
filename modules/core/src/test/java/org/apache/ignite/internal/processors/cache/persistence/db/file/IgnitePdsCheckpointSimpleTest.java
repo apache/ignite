@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
-import java.util.concurrent.TimeUnit;
 import com.google.common.base.Strings;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,22 +29,30 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_THREADS;
+
 /**
  * Puts data into grid, waits for checkpoint to start and then verifies data
  */
 public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
+    /** Checkpoint threads. */
+    public int cpThreads = DFLT_CHECKPOINT_THREADS;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setPageSize(4 * 1024)
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true))
+                .setCheckpointFrequency(TimeUnit.SECONDS.toMillis(10)));
 
-        DataRegionConfiguration regCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+        if (cpThreads != DFLT_CHECKPOINT_THREADS) {
+            cfg.getDataStorageConfiguration()
+                .setCheckpointThreads(cpThreads);
+        }
 
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setPageSize(4 * 1024)
-            .setDefaultDataRegionConfiguration(regCfg)
-            .setCheckpointFrequency(TimeUnit.SECONDS.toMillis(10));
-
-        return cfg.setDataStorageConfiguration(dsCfg);
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -61,14 +70,67 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStartNodeWithDefaultCpThreads() throws Exception {
+        checkCheckpointThreads();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStartNodeWithNonDefaultCpThreads() throws Exception {
+        cpThreads = 10;
+
+        checkCheckpointThreads();
+    }
+
+    /**
+     * Checks that all checkpoint threads are present in JVM.
+     *
+     * @throws Exception If failed.
+     */
+    public void checkCheckpointThreads() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
+
+        cache.put(1, 1);
+
+        forceCheckpoint();
+
+        int dbCpThread = 0, ioCpRunner = 0, cpuCpRunner = 0;
+
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            if (t.getName().contains("db-checkpoint-thread"))
+                dbCpThread++;
+
+            else if (t.getName().contains("checkpoint-runner-IO"))
+                ioCpRunner++;
+
+            else if (t.getName().contains("checkpoint-runner-cpu"))
+                cpuCpRunner++;
+        }
+
+        assertEquals(1, dbCpThread);
+        assertEquals(cpThreads, ioCpRunner);
+        assertEquals(cpThreads, cpuCpRunner);
+    }
+
+    /**
      * Checks if same data can be loaded after checkpoint.
+     *
      * @throws Exception if failed.
      */
     @Test
     public void testRecoveryAfterCpEnd() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
 
@@ -80,7 +142,8 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         IgniteEx igniteRestart = startGrid(0);
-        igniteRestart.active(true);
+
+        igniteRestart.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cacheRestart = igniteRestart.getOrCreateCache("cache");
 
