@@ -215,9 +215,12 @@ public final class PageIdUtils {
      * @param pageId Page id.
      */
     public static String toDetailString(long pageId) {
+        byte flag = flag(pageId);
+        String s1 = String.format("%8s", Integer.toBinaryString(flag & 0xFF)).replace(' ', '0');
+
         return "pageId=" + pageId +
             "(offset=" + itemId(pageId) +
-            ", flags=" + Integer.toBinaryString(flag(pageId)) +
+            ", flags=" + s1 +
             ", partId=" + partId(pageId) +
             ", index=" + pageIndex(pageId) +
             ")";

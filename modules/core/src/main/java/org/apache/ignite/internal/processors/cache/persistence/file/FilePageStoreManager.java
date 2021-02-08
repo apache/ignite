@@ -964,39 +964,103 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (cctx.kernalContext().clientNode())
             return Collections.emptyMap();
 
-        File[] files = storeWorkDir.listFiles();
-
-        if (files == null)
-            return Collections.emptyMap();
-
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
-        Arrays.sort(files);
+        for (File file : cacheDirectories(storeWorkDir)) {
+            if (isSharedGroup(file))
+                readCacheGroupCaches(file, ccfgs);
+            else {
+                File conf = new File(file, CACHE_DATA_FILENAME);
 
-        for (File file : files) {
-            if (file.isDirectory()) {
-                if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
-                    File conf = new File(file, CACHE_DATA_FILENAME);
+                if (conf.exists() && conf.length() > 0) {
+                    StoredCacheData cacheData = readCacheData(conf);
 
-                    if (conf.exists() && conf.length() > 0) {
-                        StoredCacheData cacheData = readCacheData(conf);
+                    String cacheName = cacheData.config().getName();
 
-                        String cacheName = cacheData.config().getName();
-
-                        if (!ccfgs.containsKey(cacheName))
-                            ccfgs.put(cacheName, cacheData);
-                        else {
-                            U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                                    + file.getName());
-                        }
+                    if (!ccfgs.containsKey(cacheName))
+                        ccfgs.put(cacheName, cacheData);
+                    else {
+                        U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                            + file.getName());
                     }
                 }
-                else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
-                    readCacheGroupCaches(file, ccfgs);
             }
         }
 
         return ccfgs;
+    }
+
+    /**
+     * @param dir Directory to check.
+     * @return Files that match cache or cache group pattern.
+     */
+    public static List<File> cacheDirectories(File dir) {
+        File[] files = dir.listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(dir.listFiles())
+            .sorted()
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param partFileName Partition file name.
+     * @return Partition id.
+     */
+    public static int partId(String partFileName) {
+        if (partFileName.equals(INDEX_FILE_NAME))
+            return PageIdAllocator.INDEX_PARTITION;
+
+        if (partFileName.startsWith(PART_FILE_PREFIX))
+            return Integer.parseInt(partFileName.substring(PART_FILE_PREFIX.length(), partFileName.indexOf('.')));
+
+        throw new IllegalStateException("Illegal partition file name: " + partFileName);
+    }
+
+    /**
+     * @param cacheDir Cache directory to check.
+     * @return List of cache partitions in given directory.
+     */
+    public static List<File> cachePartitions(File cacheDir) {
+        File[] files = cacheDir.listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .filter(File::isFile)
+            .filter(f -> f.getName().startsWith(PART_FILE_PREFIX))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param file Directory to check.
+     * @return {@code true} if given directory is shared.
+     * @throws IgniteException If given directory doesn't match the cache pattern.
+     */
+    public static boolean isSharedGroup(File file) {
+        String name = file.getName();
+
+        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
+            return true;
+        else if (name.startsWith(CACHE_DIR_PREFIX))
+            return false;
+        else
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + file);
+    }
+
+    /**
+     * @param dir Cache directory on disk.
+     * @return Cache or cache group name.
+     */
+    public static String cacheGroupName(File dir) {
+        return isSharedGroup(dir) ?
+            dir.getName().replaceFirst("^" + CACHE_GRP_DIR_PREFIX, "") :
+            dir.getName().replaceFirst("^" + CACHE_DIR_PREFIX, "");
     }
 
     /**

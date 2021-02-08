@@ -1050,6 +1050,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
+     * @return Collection of available baseline nodes.
+     */
+    public Collection<UUID> onlineBaselineNodes() {
+        List<ClusterNode> srvNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        return F.viewReadOnly(srvNodes,
+            F.node2id(),
+            (node) -> CU.baselineNode(node, globalState));
+    }
+
+    /**
      * @param state New cluster state.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param baselineNodes New baseline nodes.

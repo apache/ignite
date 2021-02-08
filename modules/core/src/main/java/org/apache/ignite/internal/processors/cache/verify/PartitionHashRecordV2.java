@@ -66,6 +66,21 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param partKey Partition key.
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
+     * @param partitionState Partition state.
+     */
+    public PartitionHashRecordV2(
+        PartitionKeyV2 partKey,
+        boolean isPrimary,
+        Object consistentId,
+        PartitionState partitionState
+    ) {
+        this(partKey, isPrimary, consistentId, 0, 0, 0, partitionState);
+    }
+
+    /**
+     * @param partKey Partition key.
+     * @param isPrimary Is primary.
+     * @param consistentId Consistent id.
      * @param partHash Partition hash.
      * @param updateCntr Update counter.
      * @param size Size.
@@ -131,10 +146,24 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     }
 
     /**
+     * @param updCntr Update counter.
+     */
+    public void updateCounter(long updCntr) {
+        updateCntr = updCntr;
+    }
+
+    /**
      * @return Size.
      */
     public long size() {
         return size;
+    }
+
+    /**
+     * @param size Size.
+     */
+    public void size(long size) {
+        this.size = size;
     }
 
     /**
