@@ -47,7 +47,7 @@ public class FilePageStoreV2 extends FilePageStore {
 
     /** {@inheritDoc} */
     @Override public int headerSize() {
-        return getPageSize();
+        return pageSize;
     }
 
     /** {@inheritDoc} */
