@@ -235,6 +235,31 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
             }
         }
 
+        /// <summary>
+        /// Tests that custom mapper that extends basic name mapper on server and default mapper on client
+        /// results in a warning.
+        /// </summary>
+        [Test]
+        public void TestCustomNameMapperExtendingBasicMapperOnServerProducesLogWarning()
+        {
+            var logger = GetLogger();
+
+            var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper2.xml")
+            };
+
+            Ignition.Start(serverCfg);
+
+            using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
+            {
+                Assert.IsNull(client.GetConfiguration().BinaryConfiguration);
+                Assert.AreEqual(1, logger.Entries.Count(e =>
+                    e.Message == "Binary name mapper mismatch: local=BasicFull, server=Custom" &&
+                    e.Level == LogLevel.Warn));
+            }
+        }
+
         [Test]
         public void TestCustomNameMapperOnServerAndClientProducesNoLogWarning()
         {
