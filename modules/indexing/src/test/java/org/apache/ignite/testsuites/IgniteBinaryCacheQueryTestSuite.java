@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAnd
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAndReplicatedTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinQueryWithAffinityKeyTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLargeResultSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheMergeSqlQueryFailingTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheMergeSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheMultipleIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheNoClassQuerySelfTest;
@@ -131,6 +132,7 @@ import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
 import org.apache.ignite.internal.processors.cache.index.BasicJavaTypesIndexTest;
 import org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ComplexPrimaryKeyUnwrapSelfTest;
+import org.apache.ignite.internal.processors.cache.index.ComplexSecondaryKeyUnwrapSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasicSelfTest;
@@ -171,6 +173,7 @@ import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSe
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.SqlTransactionCommandsWithMvccDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.index.SqlTransactionsSelfTest;
 import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
@@ -247,6 +250,7 @@ import org.apache.ignite.internal.processors.query.h2.QueryDataPageScanTest;
 import org.apache.ignite.internal.processors.query.h2.QueryParserMetricsHolderSelfTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsSurvivesNodeRestartTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsUsageTest;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
@@ -295,6 +299,7 @@ import org.junit.runners.Suite;
     AffinityKeyNameAndValueFieldNameConflictTest.class,
     DmlInsideTransactionTest.class,
     ComplexPrimaryKeyUnwrapSelfTest.class,
+    ComplexSecondaryKeyUnwrapSelfTest.class,
     SqlNestedQuerySelfTest.class,
     ExplainSelfTest.class,
     RunningQueriesTest.class,
@@ -414,6 +419,7 @@ import org.junit.runners.Suite;
 
     // DML.
     IgniteCacheMergeSqlQuerySelfTest.class,
+    IgniteCacheMergeSqlQueryFailingTest.class,
     IgniteCacheInsertSqlQuerySelfTest.class,
     IgniteCacheUpdateSqlQuerySelfTest.class,
     IgniteCacheDeleteSqlQuerySelfTest.class,
@@ -553,6 +559,7 @@ import org.junit.runners.Suite;
     CheckIndexesInlineSizeOnNodeJoinMultiJvmTest.class,
 
     SqlTransactionCommandsWithMvccDisabledSelfTest.class,
+    SqlTransactionsSelfTest.class,
 
     IgniteSqlDefaultValueTest.class,
     IgniteDecimalSelfTest.class,
@@ -572,6 +579,8 @@ import org.junit.runners.Suite;
     IgniteCacheReplicatedAtomicColumnConstraintsTest.class,
     IgniteCacheReplicatedTransactionalColumnConstraintsTest.class,
     IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest.class,
+
+    ThreadLocalObjectPoolSelfTest.class,
 
     // H2 Rows on-heap cache
     H2RowCacheSelfTest.class,
