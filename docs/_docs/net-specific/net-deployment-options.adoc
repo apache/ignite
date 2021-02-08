@@ -31,7 +31,7 @@ during the build or publish process.
 Make sure `IGNITE_HOME` is not set globally. Normally you don't need to set `IGNITE_HOME` with NuGet, except for
 ASP.NET deployments (see below).
 
-To disable this default build action, add `<ExcludeAssets>build</ExcludeAssets>` https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets[property] to the corresponding `<PackageReference>` in your `.csproj` file.
+To disable this default build action, add the `<ExcludeAssets>build</ExcludeAssets>` https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets[property] to the corresponding `<PackageReference>` in your `.csproj` file.
 This can be useful for thin client use cases and custom deployments.
 
 [tabs]
