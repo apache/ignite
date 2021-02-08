@@ -258,8 +258,12 @@ public class ServicesTest extends AbstractThinClientTest {
             TestService.latch = new CountDownLatch(1);
 
             GridTestUtils.assertThrowsAnyCause(log, svc::waitLatch, ClientException.class, "timed out");
-
-            TestService.latch.countDown();
+        }
+        finally {
+            if (TestService.latch != null) {
+                TestService.latch.countDown();
+                TestService.latch = null;
+            }
         }
     }
 
