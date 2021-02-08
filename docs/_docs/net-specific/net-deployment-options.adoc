@@ -25,7 +25,7 @@ This page introduces several most-commonly used deployment options of Ignite.NET
 == NuGet Deployment
 
 `Apache.Ignite` NuGet package includes a `lib` folder with all the required jar files. This folder has 
-`<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` build action, and is copied automatically to the output directory
+the `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` build action, and is copied automatically to the output directory
 during the build or publish process.
 
 Make sure `IGNITE_HOME` is not set globally. Normally you don't need to set `IGNITE_HOME` with NuGet, except for
