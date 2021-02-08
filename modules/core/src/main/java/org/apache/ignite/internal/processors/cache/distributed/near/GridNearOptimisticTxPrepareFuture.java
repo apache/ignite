@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
@@ -398,21 +402,17 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        Map<Object, GridDistributedTxMapping> map = new HashMap<>();
-
-        Map<UUID, GridDistributedTxMapping> mOut = new HashMap<>();
+        Map<UUID, GridDistributedTxMapping> preNodeMapping = new LinkedHashMap<>();
 
         // Assign keys to primary nodes.
         GridDistributedTxMapping cur = null;
-
-        Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>();
 
         boolean hasNearCache = false;
 
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
-            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap, mOut);
+            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap, preNodeMapping);
 
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
@@ -422,22 +422,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 hasNearCache = true;
 
             if (cur != updated) {
-/*                mappings.offer(updated);
-
                 updated.last(true);
 
                 ClusterNode primary = updated.primary();
 
                 assert !primary.isLocal() || !cctx.kernalContext().clientNode() || write.context().isLocal();
-
-                // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
-                Object key = cctx.kernalContext().clientNode() ? primary.id() :
-                    new MappingKey(primary.id(), primary.isLocal() && updated.hasNearCacheEntries());
-
-                GridDistributedTxMapping prev = map.put(key, updated);
-
-                if (prev != null)
-                    prev.last(false);*/
 
                 if (updated.primary().isLocal()) {
                     if (write.context().isNear())
@@ -450,10 +439,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             }
         }
 
-        mappings.clear();
-
-        for (GridDistributedTxMapping ent : mOut.values())
-            mappings.add(ent);
+        Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>(preNodeMapping.values());
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -682,9 +668,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
             boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
 
-            clientFirst = !topLocked && cctx.kernalContext().clientNode();
             cur = mOut.computeIfAbsent(primary.id(), k -> new GridDistributedTxMapping(primary));
-            cur.clientFirst(clientFirst); cur.last(true);
+            if (clientFirst)
+                cur.clientFirst(clientFirst);
 
 /*            cur = new GridDistributedTxMapping(primary);
             cur.clientFirst(clientFirst);*/

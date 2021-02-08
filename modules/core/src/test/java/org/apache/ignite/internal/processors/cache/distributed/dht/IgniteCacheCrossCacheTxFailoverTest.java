@@ -210,7 +210,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
             final AtomicInteger threadIdx = new AtomicInteger();
 
             IgniteInternalFuture<?> fut = runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override public Void call() {
                     int idx = threadIdx.getAndIncrement();
 
                     Ignite ignite = ignite(idx % GRID_CNT);
