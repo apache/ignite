@@ -472,12 +472,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13729")
     public void testNotExistsConditionWithSubquery() throws Exception {
         populateTables();
 
         List<List<?>> rows = sql(
-            "EXPLAIN PLAN FOR SELECT name FROM Orders o WHERE NOT EXISTS (" +
+            "SELECT name FROM Orders o WHERE NOT EXISTS (" +
                 "   SELECT 1" +
                 "   FROM Account a" +
                 "   WHERE o.name = a.name)");

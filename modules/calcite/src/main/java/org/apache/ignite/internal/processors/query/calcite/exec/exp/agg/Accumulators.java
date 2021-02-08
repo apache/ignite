@@ -281,7 +281,10 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            cnt++;
+            assert F.isEmpty(args) || args.length == 1;
+
+            if (F.isEmpty(args) || args[0] != null)
+                cnt++;
         }
 
         /** {@inheritDoc} */
@@ -297,7 +300,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), false));
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), false));
         }
 
         /** {@inheritDoc} */

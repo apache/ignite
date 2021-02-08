@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.calcite.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
@@ -52,7 +53,8 @@ import org.junit.runners.Suite;
     QueryCheckerTest.class,
     DateTimeTest.class,
     LimitOffsetTest.class,
-    SqlFieldsQueryUsageTest.class
+    SqlFieldsQueryUsageTest.class,
+    AggregatesIntegrationTest.class
 })
 public class IgniteCalciteTestSuite {
 }
