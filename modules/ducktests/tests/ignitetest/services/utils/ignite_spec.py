@@ -73,7 +73,6 @@ class IgniteSpec(metaclass=ABCMeta):
                 self._add_jvm_opts(jvm_opts)
         else:
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
-                                                gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
                                                 oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
         self.config = config
         self.version = config.version
