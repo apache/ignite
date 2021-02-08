@@ -1896,7 +1896,7 @@ public final class IgniteSystemProperties {
      * read from wal every time. Should be used for test purposes only.
      */
     @SystemProperty(value = "Disable group state lazy store. It means that group state won't be cached " +
-        "and will be read from wal every time.", defaults = "false")
+        "and will be read from wal every time", defaults = "false")
     public static final String IGNITE_DISABLE_GRP_STATE_LAZY_STORE = "IGNITE_DISABLE_GRP_STATE_LAZY_STORE";
 
     /**
