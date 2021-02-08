@@ -257,7 +257,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                 @Override public void run() {
                     stop.set(true);
                 }
-            }, 10, TimeUnit.SECONDS);
+            }, 5, TimeUnit.SECONDS);
 
             fut.get();
         } finally {

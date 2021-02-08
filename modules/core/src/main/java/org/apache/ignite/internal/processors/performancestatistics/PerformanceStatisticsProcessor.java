@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -232,7 +233,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Starts or stops collecting statistics on metastorage update. */
     private void onMetastorageUpdate(boolean start) {
-        ctx.closure().runLocalSafe(() -> {
+        ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
             if (start)
                 startWriter();
             else
