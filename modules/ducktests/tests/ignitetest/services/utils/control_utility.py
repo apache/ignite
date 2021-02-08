@@ -39,9 +39,11 @@ class ControlUtility:
     # pylint: disable=R0913
     def __init__(self, cluster,
                  key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
-                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
+                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
+                 envs=None):
         self._cluster = cluster
         self.logger = cluster.context.logger
+        self.exports = "; ".join(["export %s=%s" % (key, envs[key]) for key in envs]) + " ;" if envs is not None else ""
 
         if cluster.context.globals.get("use_ssl", False):
             admin_dict = cluster.globals.get("admin", dict())
@@ -344,7 +346,7 @@ class ControlUtility:
 
         node_ip = socket.gethostbyname(node.account.hostname)
 
-        raw_output = node.account.ssh_capture(self.__form_cmd(node_ip, cmd), allow_fail=True)
+        raw_output = node.account.ssh_capture(f'{self.exports} {self.__form_cmd(node_ip, cmd)}', allow_fail=True)
         code, output = self.__parse_output(raw_output)
 
         self.logger.debug(f"Output of command {cmd} on node {node.name}, exited with code {code}, is {output}")

@@ -183,6 +183,8 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
             'USER_LIBS': ":".join(libs)
         }
 
+        # self.envs.update(envs)
+        #
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
                             "-Dlog4j.configDebug=true"])
@@ -210,6 +212,8 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
             "IGNITE_LOG_DIR": self.path_aware.persistent_root,
             "USER_LIBS": ":".join(libs)
         }
+        #
+        # self.envs.update(envs)
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
