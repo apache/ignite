@@ -159,7 +159,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (!F.isEmpty(inboxes)) {
             for (Inbox<?> inbox : inboxes) {
                 inbox.context().cancel();
-                inbox.context().execute(inbox::close);
+                inbox.context().execute(inbox::close, inbox::onError);
             }
         }
         else if (log.isDebugEnabled()) {
@@ -177,7 +177,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (!F.isEmpty(outboxes)) {
             for (Outbox<?> outbox : outboxes) {
                 outbox.context().cancel();
-                outbox.context().execute(outbox::close);
+                outbox.context().execute(outbox::close, outbox::onError);
             }
         }
         else if (log.isDebugEnabled()) {
@@ -193,8 +193,14 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     protected void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
         Outbox<?> outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
 
-        if (outbox != null)
-            outbox.onAcknowledge(nodeId, msg.batchId());
+        if (outbox != null) {
+            try {
+                outbox.onAcknowledge(nodeId, msg.batchId());
+            }
+            catch (Throwable t) {
+                outbox.onError(t);
+            }
+        }
         else if (log.isDebugEnabled()) {
             log.debug("Stale acknowledge message received: [" +
                 "nodeId=" + nodeId + ", " +
@@ -218,8 +224,14 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             inbox = mailboxRegistry().register(newInbox);
         }
 
-        if (inbox != null)
-            inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
+        if (inbox != null) {
+            try {
+                inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
+            }
+            catch (Throwable t) {
+                inbox.onError(t);
+            }
+        }
         else if (log.isDebugEnabled()) {
             log.debug("Stale batch message received: [" +
                 "nodeId=" + nodeId + ", " +

@@ -45,46 +45,31 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            source().request(rowsCnt);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        source().request(rowsCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
 
-        try {
-            checkState();
+        checkState();
 
-            downstream().push(prj.apply(row));
-        }
-        catch (Throwable e) {
-            onError(e);
-        }
+        downstream().push(prj.apply(row));
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
 
-        try {
-            checkState();
+        checkState();
 
-            downstream().end();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        downstream().end();
     }
 
     /** {@inheritDoc} */

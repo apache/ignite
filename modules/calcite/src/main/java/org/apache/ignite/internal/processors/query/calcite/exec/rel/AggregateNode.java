@@ -25,9 +25,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -98,62 +98,47 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
         assert waiting <= 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-            else if (!inLoop)
-                context().execute(this::doFlush);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
+        else if (!inLoop)
+            context().execute(this::doFlush, this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            for (Grouping grouping : groupings)
-                grouping.add(row);
+        for (Grouping grouping : groupings)
+            grouping.add(row);
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            flush();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flush();
     }
 
     /** {@inheritDoc} */
@@ -172,19 +157,14 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     }
 
     /** */
-    private void doFlush() {
-        try {
-            checkState();
+    private void doFlush() throws Exception {
+        checkState();
 
-            flush();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flush();
     }
 
     /** */
-    private void flush() throws IgniteCheckedException {
+    private void flush() throws Exception {
         assert waiting == -1;
 
         int processed = 0;
@@ -208,7 +188,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
                 if (processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::doFlush);
+                    context().execute(this::doFlush, this::onError);
 
                     return;
                 }

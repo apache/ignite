@@ -121,11 +121,11 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void closeInternal() {
-        context().execute(() -> sources().forEach(U::closeQuiet));
+        context().execute(() -> sources().forEach(U::closeQuiet), this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert waiting > 0;
 
         lock.lock();
@@ -139,16 +139,13 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             if (inBuff.size() == IN_BUFFER_SIZE)
                 cond.signalAll();
         }
-        catch (Exception e) {
-            onError(e);
-        }
         finally {
             lock.unlock();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert waiting > 0;
 
         lock.lock();
@@ -158,9 +155,6 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             waiting = -1;
 
             cond.signalAll();
-        }
-        catch (Exception e) {
-            onError(e);
         }
         finally {
             lock.unlock();
@@ -240,7 +234,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                     close();
                 else if (inBuff.isEmpty() && waiting == 0) {
                     int req = waiting = IN_BUFFER_SIZE;
-                    context().execute(() -> source().request(req));
+                    context().execute(() -> source().request(req), this::onError);
                 }
 
                 if (!outBuff.isEmpty() || waiting == -1)
@@ -250,7 +244,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             }
         }
         catch (InterruptedException e) {
-            onError(new IgniteInterruptedException(e));
+            throw new IgniteInterruptedException(e);
         }
         finally {
             lock.unlock();

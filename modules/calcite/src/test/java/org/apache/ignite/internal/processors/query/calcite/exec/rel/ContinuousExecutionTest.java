@@ -155,7 +155,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             outbox.register(filter);
             registry.register(outbox);
 
-            outbox.context().execute(outbox::init);
+            outbox.context().execute(outbox::init, outbox::onError);
         }
 
         UUID locNodeId = nodes.get(0);

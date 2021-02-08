@@ -124,21 +124,16 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert srcNodeIds != null;
         assert rowsCnt > 0 && requested == 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (!inLoop)
-                context().execute(this::doPush);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (!inLoop)
+            context().execute(this::doPush, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -171,36 +166,26 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      * @param last Last batch flag.
      * @param rows Rows.
      */
-    public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
-        try {
-            Buffer buf = getOrCreateBuffer(src);
+    public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) throws Exception {
+        Buffer buf = getOrCreateBuffer(src);
 
-            boolean waitingBefore = buf.check() == State.WAITING;
+        boolean waitingBefore = buf.check() == State.WAITING;
 
-            buf.offer(batchId, last, rows);
+        buf.offer(batchId, last, rows);
 
-            if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
-                push();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
-    }
-
-    /** */
-    private void doPush() {
-        try {
-            checkState();
-
+        if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
             push();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
     }
 
     /** */
-    private void push() throws IgniteCheckedException {
+    private void doPush() throws Exception {
+        checkState();
+
+        push();
+    }
+
+    /** */
+    private void push() throws Exception {
         if (buffers == null) {
             for (UUID node : srcNodeIds)
                 checkNode(node);
@@ -219,7 +204,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     }
 
     /** */
-    private void pushOrdered() throws IgniteCheckedException {
+    private void pushOrdered() throws Exception {
          PriorityQueue<Pair<Row, Buffer>> heap =
             new PriorityQueue<>(Math.max(buffers.size(), 1), Map.Entry.comparingByKey(comp));
 
@@ -281,7 +266,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     }
 
     /** */
-    private void pushUnordered() throws IgniteCheckedException {
+    private void pushUnordered() throws Exception {
         int idx = 0, noProgress = 0;
 
         inLoop = true;
@@ -341,22 +326,17 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     public void onNodeLeft(UUID nodeId) {
         if (context().originatingNodeId().equals(nodeId) && srcNodeIds == null)
-            context().execute(this::close);
+            context().execute(this::close, this::onError);
         else if (srcNodeIds != null && srcNodeIds.contains(nodeId))
-            context().execute(() -> onNodeLeft0(nodeId));
+            context().execute(() -> onNodeLeft0(nodeId), this::onError);
     }
 
     /** */
-    private void onNodeLeft0(UUID nodeId) {
-        try {
-            checkState();
+    private void onNodeLeft0(UUID nodeId) throws Exception {
+        checkState();
 
-            if (getOrCreateBuffer(nodeId).check() != State.END)
-                onError(new ClusterTopologyCheckedException("Failed to execute query, node left [nodeId=" + nodeId + ']'));
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (getOrCreateBuffer(nodeId).check() != State.END)
+            throw new ClusterTopologyCheckedException("Failed to execute query, node left [nodeId=" + nodeId + ']');
     }
 
     /** */
