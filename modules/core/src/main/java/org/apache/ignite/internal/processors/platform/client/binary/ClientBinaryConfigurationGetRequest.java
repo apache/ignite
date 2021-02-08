@@ -66,7 +66,7 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
         if (cfg == null || cfg.getNameMapper() == null)
             return BinaryBasicNameMapper.DFLT_SIMPLE_NAME ? NAME_MAPPER_BASIC_SIMPLE : NAME_MAPPER_BASIC_FULL;
 
-        if (!(cfg.getNameMapper() instanceof BinaryBasicNameMapper))
+        if (!cfg.getNameMapper().getClass().equals(BinaryBasicNameMapper.class))
             return NAME_MAPPER_CUSTOM;
 
         BinaryBasicNameMapper basicNameMapper = (BinaryBasicNameMapper)cfg.getNameMapper();
