@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -299,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check err method
             Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
- 
+
             Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
             Assert.AreEqual(3, svc.TestOverload(1, 2));
             Assert.AreEqual(5, svc.TestOverload(3, 2));
@@ -365,7 +364,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Exception in service.
             ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
             Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
- 
+
             Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
             Assert.AreEqual(3, svc.TestOverload(1, 2));
             Assert.AreEqual(5, svc.TestOverload(3, 2));
@@ -990,12 +989,14 @@ namespace Apache.Ignite.Core.Tests.Services
             // Test standard java checked exception.
             Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<ThreadInterruptedException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
             // Test standard java unchecked exception.
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<ArgumentException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
@@ -1006,17 +1007,20 @@ namespace Apache.Ignite.Core.Tests.Services
 
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<TestServiceException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<TestServiceException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
             // Test user defined unmapped exception.
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<IgniteException>(ex);
             var javaEx = ex.InnerException as JavaException;
             Assert.IsNotNull(javaEx);
@@ -1146,12 +1150,14 @@ namespace Apache.Ignite.Core.Tests.Services
             // Test standard java checked exception.
             Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<ThreadInterruptedException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
             // Test standard java unchecked exception.
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<ArgumentException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
@@ -1162,17 +1168,20 @@ namespace Apache.Ignite.Core.Tests.Services
 
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<TestServiceException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<TestServiceException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
             // Test user defined unmapped exception.
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
             ex = ex.InnerException;
+            Assert.IsNotNull(ex);
             Assert.IsInstanceOf<IgniteException>(ex);
             var javaEx = ex.InnerException as JavaException;
             Assert.IsNotNull(javaEx);
@@ -1721,7 +1730,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // No-op.
             }
         }
-
+        
 #if NETCOREAPP
         /// <summary>
         /// Adds support of the local dates to the Ignite timestamp serialization.
@@ -1734,13 +1743,15 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (date.Kind == DateTimeKind.Local)
                     date = date.ToUniversalTime();
 
-                BinaryUtils.ToJavaDate(date, out high, out low);
+                Impl.Binary.BinaryUtils.ToJavaDate(date, out high, out low);
             }
 
             /** <inheritdoc /> */
             public DateTime FromJavaTicks(long high, int low)
             {
-                return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+                return new DateTime(
+                    Impl.Binary.BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                    DateTimeKind.Utc);
             }
         }
 #endif

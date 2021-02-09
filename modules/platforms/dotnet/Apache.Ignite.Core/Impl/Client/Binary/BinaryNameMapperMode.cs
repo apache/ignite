@@ -15,8 +15,28 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains implementation of Spring transaction manager.
- */
-package org.apache.ignite.transactions.spring;
+namespace Apache.Ignite.Core.Impl.Client.Binary
+{
+    using Apache.Ignite.Core.Binary;
+
+    /// <summary>
+    /// Represents the binary name mapper mode.
+    /// </summary>
+    internal enum BinaryNameMapperMode
+    {
+        /// <summary>
+        /// Default full name mapper, see <see cref="BinaryBasicNameMapper.FullNameInstance"/>.
+        /// </summary>
+        BasicFull = 0,
+
+        /// <summary>
+        /// Simple name mapper, see <see cref="BinaryBasicNameMapper.SimpleNameInstance"/>.
+        /// </summary>
+        BasicSimple = 1,
+
+        /// <summary>
+        /// Custom user-defined mapper.
+        /// </summary>
+        Custom = 2
+    }
+}
