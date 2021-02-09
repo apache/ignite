@@ -38,6 +38,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -1193,6 +1194,48 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
 
         assertEquals(null, cache.get(key));
+    }
+
+    /**
+     * Tests IgniteCache#ttl() method
+     *
+     * @throws Exception if failed
+     */
+    @Test
+    public void testTtlMethods() throws Exception {
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 2));
+
+        disableEagerTtl = true;
+
+        startGridsMultiThreaded(gridCount());
+
+        IgniteCache<Integer, Object> cache = jcache();
+
+        Integer key1 = 1;
+        Integer key2 = 2;
+        cache.put(key1, 1);
+        cache.withExpiryPolicy(new EternalExpiryPolicy()).put(key2, 2);
+
+        GridTestUtils.sleepAndIncrement(500, 1);
+        cache.get(key1);
+        cache.get(key2);
+        GridTestUtils.sleepAndIncrement(500, 1);
+        cache.get(key1);
+        cache.get(key2);
+
+        Long ttl1 = cache.ttl(key1);
+        Long ttl2 = cache.ttl(key2);
+
+        assertNotNull(ttl1);
+        assertTrue("ttl is " + ttl1, ttl1 > 800 && ttl1 < 1200);
+
+        assertNull(ttl2);
+
+        waitExpired(key1);
+
+        assertNull(cache.get(key1));
+
+        cache.destroy();
     }
 
     /**
