@@ -25,6 +25,7 @@ class Cluster:
     """
     Need this to initialise ControlUtility
     """
+
     def __init__(self, globals_dict):
         self.context = Context(globals_dict)
         self.certificate_dir = ''
@@ -34,6 +35,7 @@ class Context:
     """
     Need this to initialise ControlUtility
     """
+
     def __init__(self, globals_dict):
         self.logger = ''
         self.globals = globals_dict
@@ -58,65 +60,71 @@ class CheckControlUtility:
         'use_auth': True,
         'admin': test_admin_data_full
     }
+    creds_full = {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
+                  'trust_store_path': 'truststore.jks',
+                  'trust_store_password': 'qwe123',
+                  'login': 'admin1', 'password': 'qwe123'}
 
     globals_auth = {
         'use_ssl': True,
         'use_auth': True,
         'admin': test_admin_data_auth
     }
+    creds_auth = {'key_store_path': 'admin.jks', 'key_store_password': '123456',
+                  'trust_store_path': 'truststore.jks',
+                  'trust_store_password': '123456',
+                  'login': 'admin1', 'password': 'qwe123'}
 
     globals_ssl = {
         'use_ssl': True,
         'use_auth': True,
         'admin': test_admin_data_ssl
     }
+    creds_ssl = {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
+                 'trust_store_path': 'truststore.jks', 'trust_store_password': 'qwe123',
+                 'login': 'ignite', 'password': 'ignite'}
 
     globals_no_ssl = {
         'use_auth': True,
         'admin': test_admin_data_full
     }
+    creds_no_ssl = {'login': 'admin1', 'password': 'qwe123'}
 
     globals_no_auth = {
         'use_ssl': True,
         'admin': test_admin_data_full
     }
+    creds_no_auth = {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
+                     'trust_store_path': 'truststore.jks',
+                     'trust_store_password': 'qwe123'}
 
     globals_no_ssl_no_auth = {
         'admin': test_admin_data_full
     }
+    creds_no_ssl_no_auth = {}
 
     globals_ssl_auth = {
         'use_ssl': True,
         'use_auth': True
     }
+    creds_ssl_auth = {'key_store_path': 'admin.jks', 'key_store_password': '123456',
+                      'trust_store_path': 'truststore.jks',
+                      'trust_store_password': '123456', 'login': 'ignite',
+                      'password': 'ignite'}
 
     globals_nil = {}
+    creds_nil = {}
 
     @staticmethod
     @pytest.mark.parametrize("test_globals, test_kwargs, expected",
-                             [(globals_full, {}, {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
-                                                  'trust_store_path': 'truststore.jks',
-                                                  'trust_store_password': 'qwe123',
-                                                  'login': 'admin1', 'password': 'qwe123'}),
-                              (globals_no_auth, {}, {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
-                                                     'trust_store_path': 'truststore.jks',
-                                                     'trust_store_password': 'qwe123'}),
-                              (globals_auth, {}, {'key_store_path': 'admin.jks', 'key_store_password': '123456',
-                                                  'trust_store_path': 'truststore.jks',
-                                                  'trust_store_password': '123456',
-                                                  'login': 'admin1', 'password': 'qwe123'}),
-                              (globals_ssl, {}, {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
-                                                 'trust_store_path': 'truststore.jks', 'trust_store_password': 'qwe123',
-                                                 'login': 'ignite', 'password': 'ignite'}),
-                              (globals_no_ssl, {}, {'login': 'admin1', 'password': 'qwe123'}),
-                              (globals_no_auth, {}, {'key_store_path': 'admin1.jks', 'key_store_password': 'qwe123',
-                                                     'trust_store_path': 'truststore.jks',
-                                                     'trust_store_password': 'qwe123'}),
+                             [(globals_full, {}, creds_full),
+                              (globals_nil, {}, creds_nil),
+                              (globals_auth, {}, creds_auth),
+                              (globals_ssl, {}, creds_ssl),
+                              (globals_no_ssl, {}, creds_no_ssl),
+                              (globals_no_auth, {}, creds_no_auth),
                               (globals_no_ssl_no_auth, {}, {}),
-                              (globals_ssl_auth, {}, {'key_store_path': 'admin.jks', 'key_store_password': '123456',
-                                                      'trust_store_path': 'truststore.jks',
-                                                      'trust_store_password': '123456', 'login': 'ignite',
-                                                      'password': 'ignite'}),
+                              (globals_ssl_auth, {}, creds_ssl_auth),
                               (globals_no_ssl_no_auth, {'key_store_jks': 'admin5', 'key_store_password': 'qwe123'},
                                {'key_store_path': 'admin5', 'key_store_password': 'qwe123',
                                 'trust_store_path': 'truststore.jks', 'trust_store_password': '123456'}),
@@ -145,4 +153,4 @@ class CheckControlUtility:
         """
         Check that control_utulity.py correctly parse globals
         """
-        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds == expected
+        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__dict__ == expected

@@ -276,15 +276,15 @@ class ControlUtility:
 
     def __form_cmd(self, node, cmd):
         ssl = ""
-        if self.creds.get('key_store_path', False):
+        if hasattr(self.creds, 'key_store_path'):
             ssl = f" --keystore {self.creds['key_store_path']} " \
                   f"--keystore-password {self.creds['key_store_password']} " \
                   f"--truststore {self.creds['trust_store_path']} " \
                   f"--truststore-password {self.creds['trust_store_password']}"
         auth = ""
-        if self.creds.get('login', False):
-            auth = f" --user {self.creds['login']} " \
-                   f"--password {self.creds['password']} "
+        if hasattr(self.creds, 'login'):
+            auth = f" --user {self.creds.login} " \
+                   f"--password {self.creds.password} "
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
                                     f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
@@ -305,34 +305,32 @@ class ControlUtility:
 
     def _get_creds_from_globals(self, user, globals_dict, **kwargs):
 
-        creds = dict()
+        creds = Creds()
 
         if globals_dict.get("use_ssl", False):
-            admin_dict = globals_dict.get(user, {})
-            creds = self._get_ssl_from_dict(admin_dict.get('ssl', {}))
+            user_dict = globals_dict.get(user, {})
+            creds = self._get_ssl_from_dict(creds, user_dict.get('ssl', {}))
         elif kwargs.get('key_store_jks') is not None or kwargs.get('key_store_path') is not None:
-            creds = self._get_ssl_from_dict(kwargs)
+            creds = self._get_ssl_from_dict(creds, kwargs)
 
         if globals_dict.get("use_auth", False):
-            admin_dict = globals_dict.get(user, {})
-            creds['login'] = admin_dict.get("login", DEFAULT_AUTH_LOGIN)
-            creds['password'] = admin_dict.get("password", DEFAULT_AUTH_PASSWORD)
+            user_dict = globals_dict.get(user, {})
+            creds.login = user_dict.get("login", DEFAULT_AUTH_LOGIN)
+            creds.password = user_dict.get("password", DEFAULT_AUTH_PASSWORD)
         elif kwargs.get('login') is not None:
-            creds['login'] = kwargs.get("login", DEFAULT_AUTH_LOGIN)
-            creds['password'] = kwargs.get("password", DEFAULT_AUTH_PASSWORD)
+            creds.login = kwargs.get("login", DEFAULT_AUTH_LOGIN)
+            creds.password = kwargs.get("password", DEFAULT_AUTH_PASSWORD)
 
         return creds
 
-    def _get_ssl_from_dict(self, ssl_dict):
+    def _get_ssl_from_dict(self, creds, ssl_dict):
 
-        creds = {}
-
-        creds['key_store_path'] = ssl_dict.get("key_store_path",
-                                               self.jks_path(ssl_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
-        creds['key_store_password'] = ssl_dict.get('key_store_password', DEFAULT_PASSWORD)
-        creds['trust_store_path'] = ssl_dict.get("trust_store_path",
-                                                 self.jks_path(ssl_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
-        creds['trust_store_password'] = ssl_dict.get('trust_store_password', DEFAULT_PASSWORD)
+        creds.key_store_path = ssl_dict.get("key_store_path",
+                                            self.jks_path(ssl_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
+        creds.key_store_password = ssl_dict.get('key_store_password', DEFAULT_PASSWORD)
+        creds.trust_store_path = ssl_dict.get("trust_store_path",
+                                              self.jks_path(ssl_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
+        creds.trust_store_password = ssl_dict.get('trust_store_password', DEFAULT_PASSWORD)
 
         return creds
 
@@ -400,6 +398,19 @@ class ControlUtilityError(RemoteCommandError):
 
     def __init__(self, account, cmd, exit_status, output):
         super().__init__(account, cmd, exit_status, "".join(output))
+
+
+class Creds():
+    """
+    POJO for SSL and Authentication params
+    """
+
+    key_store_path: str
+    key_store_password: str
+    trust_store_path: str
+    trust_store_password: str
+    login: str
+    password: str
 
 
 def parse_dict(raw):
