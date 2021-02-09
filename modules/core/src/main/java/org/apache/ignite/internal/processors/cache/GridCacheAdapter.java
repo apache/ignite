@@ -3319,8 +3319,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     protected IgniteInternalFuture<Long> ttlAsync0(K key) {
         return ctx.closures().callLocalSafe(new GridPlainCallable<Long>() {
-            @Override
-            public Long call() {
+            @Override public Long call() {
                 return ttl0(key);
             }
         }, false);
