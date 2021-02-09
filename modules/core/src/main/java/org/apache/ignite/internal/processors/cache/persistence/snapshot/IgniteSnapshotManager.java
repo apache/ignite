@@ -1421,6 +1421,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** */
     private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Page store to iterate over. */
         @GridToStringExclude
         private final PageStore store;
