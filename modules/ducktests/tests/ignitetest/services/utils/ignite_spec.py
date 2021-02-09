@@ -116,7 +116,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     def _jvm_opts(self):
         """
-        :return: line with extra JVM params for ignite.sh script: -J-Dparam=value -J-ea
+        :return: line with extra JVM params for ignite.sh script: -J-Dparam=value
         """
         opts = ["-J%s" % o for o in self.jvm_opts]
         return " ".join(opts)
@@ -216,7 +216,6 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
                             "-Dlog4j.configDebug=true",
                             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
                             "-Xmx1G",
-                            "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
         self.args = [

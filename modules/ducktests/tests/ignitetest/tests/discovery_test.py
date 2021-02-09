@@ -92,8 +92,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[False, True],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
+    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[False, True], net_part=[IgniteService.NetPart.ALL],
             load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, disable_conn_recovery: bool,
                                            net_part: IgniteService.NetPart):
@@ -108,8 +107,8 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT], disable_conn_recovery=[False, True])
+    @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], net_part=[IgniteService.NetPart.ALL],
+            disable_conn_recovery=[False, True])
     def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, disable_conn_recovery: bool,
                                          net_part: IgniteService.NetPart):
         """
@@ -308,7 +307,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
                             # mute spam in log.
-                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false", "-da"])
+                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
     start = monotonic()
     servers.start()
@@ -325,7 +324,7 @@ def start_load_app(test_context, ignite_config, params, modules=None):
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
-        jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false", "-da"],
+        jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
         params=params).start()
 
 
