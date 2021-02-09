@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallerTxAbstractTest;
-import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -28,7 +27,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test transaction with wrong marshalling.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheReplicatedMarshallerTxTest extends GridCacheMarshallerTxAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

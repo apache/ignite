@@ -70,8 +70,7 @@ import org.junit.runners.Suite;
     StaticCacheDdlKeepStaticConfigurationTest.class,
     MemLeakOnSqlWithClientReconnectTest.class,
     CacheContinuousQueryFilterDeploymentFailedTest.class,
-    PerformanceStatisticsQueryTest.class,
-    CacheContinuousQueryFilterDeploymentFailedTest.class
+    PerformanceStatisticsQueryTest.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

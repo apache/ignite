@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCachePutAllFailoverTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCacheRemoveFailoverTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -54,8 +52,8 @@ import org.junit.runners.Suite;
 
     CachePutAllFailoverAtomicTest.class,
     CachePutAllFailoverTxTest.class,
-    IgniteStableBaselineCachePutAllFailoverTest.class,
-    IgniteStableBaselineCacheRemoveFailoverTest.class,
+    //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCachePutAllFailoverTest.class,
+    //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCacheRemoveFailoverTest.class,
     IgniteChangingBaselineDownCachePutAllFailoverTest.class,
     IgniteChangingBaselineUpCachePutAllFailoverTest.class
 })

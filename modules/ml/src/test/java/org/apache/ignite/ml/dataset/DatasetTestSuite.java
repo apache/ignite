@@ -18,12 +18,10 @@
 package org.apache.ignite.ml.dataset;
 
 import org.apache.ignite.ml.dataset.feature.ObjectHistogramTest;
-import org.apache.ignite.ml.dataset.feature.extractor.VectorizerTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilderTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetTest;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtilsTest;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapperTest;
-import org.apache.ignite.ml.dataset.impl.cache.util.IteratorWithConcurrentModificationCheckerTest;
 import org.apache.ignite.ml.dataset.impl.cache.util.PartitionDataStorageTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilderTest;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapperTest;
@@ -39,7 +37,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     DatasetWrapperTest.class,
     DatasetAffinityFunctionWrapperTest.class,
-    IteratorWithConcurrentModificationCheckerTest.class,
     PartitionDataStorageTest.class,
     LocalDatasetBuilderTest.class,
     SimpleDatasetTest.class,
@@ -48,8 +45,7 @@ import org.junit.runners.Suite;
     ObjectHistogramTest.class,
     ComputeUtilsTest.class,
     CacheBasedDatasetBuilderTest.class,
-    CacheBasedDatasetTest.class,
-    VectorizerTest.class
+    CacheBasedDatasetTest.class
 })
 public class DatasetTestSuite {
 }

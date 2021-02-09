@@ -64,7 +64,6 @@ import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
 import org.apache.ignite.util.GridTransientTest;
-import org.apache.ignite.util.mbeans.GridMBeanBaselineTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
@@ -89,7 +88,6 @@ import org.junit.runners.Suite;
     GridByteArrayListSelfTest.class,
     GridMBeanSelfTest.class,
     GridMBeanDisableSelfTest.class,
-    GridMBeanBaselineTest.class,
     GridMBeanExoticNamesSelfTest.class,
     GridLongListSelfTest.class,
     GridThreadTest.class,

@@ -18,14 +18,11 @@
 package org.apache.ignite.spark
 
 import org.apache.spark.sql.ignite.IgniteSparkSessionSpec
-import org.junit.runner.RunWith
 import org.scalatest.Suites
-import org.scalatest.junit.JUnitRunner
 
 /**
   * Test suite for Spark DataFrame API implementation.
   */
-@RunWith(classOf[JUnitRunner])
 class IgniteDataFrameSuite extends Suites (
     new IgniteDataFrameSchemaSpec,
     new IgniteSQLDataFrameSpec,
@@ -41,6 +38,5 @@ class IgniteDataFrameSuite extends Suites (
     new IgniteOptimizationJoinSpec,
     new IgniteOptimizationDateFuncSpec,
     new IgniteOptimizationDisableEnableSpec,
-    new IgniteSparkSessionSpec,
-    new IgniteRDDSpec
+    new IgniteSparkSessionSpec
 )

@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDow
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresCreateDeniedInClusterReadOnlyMode;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresNoClassOnServerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteQueueClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteSequenceInternalCleanupTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteSetClusterReadOnlyTest;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueRotativeMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicReferenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicReferenceMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSequenceMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSequenceTxSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSetFailoverSelfTest;
@@ -83,12 +81,10 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithNodeFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedAtomicLongApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedCountDownLatchSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedLockSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSetNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicStampedApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedDataStructuresFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
@@ -161,7 +157,8 @@ import org.junit.runners.Suite;
     IgnitePartitionedSemaphoreSelfTest.class,
     SemaphoreFailoverSafeReleasePermitsTest.class,
     SemaphoreFailoverNoWaitingAcquirerTest.class,
-    IgnitePartitionedLockSelfTest.class,
+    // TODO IGNITE-3141, enabled when fixed.
+    // suite.addTest(new JUnit4TestAdapter(IgnitePartitionedLockSelfTest.class,
 
     GridCachePartitionedSetFailoverSelfTest.class,
     GridCachePartitionedAtomicSetFailoverSelfTest.class,
@@ -188,14 +185,14 @@ import org.junit.runners.Suite;
     GridCachePartitionedAtomicReferenceApiSelfTest.class,
     GridCacheReplicatedAtomicReferenceApiSelfTest.class,
 
-    GridCachePartitionedAtomicReferenceMultiNodeTest.class,
-    GridCacheReplicatedAtomicReferenceMultiNodeTest.class,
+    //suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicReferenceMultiNodeTest.class,
+    //suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedAtomicReferenceMultiNodeTest.class,
 
     GridCachePartitionedNodeRestartTxSelfTest.class,
     GridCachePartitionedQueueJoinedNodeSelfTest.class,
 
     IgniteDataStructureUniqueNameTest.class,
-    IgniteDataStructuresNoClassOnServerTest.class,
+    //suite.addTest(new JUnit4TestAdapter(IgniteDataStructuresNoClassOnServerTest.class,
 
     IgniteClientDataStructuresTest.class,
     IgniteClientDiscoveryDataStructuresTest.class,
