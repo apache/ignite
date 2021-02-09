@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
-import org.apache.ignite.cache.RemoveAllDeadlockTest;
 import org.apache.ignite.events.ClusterActivationStartedEventTest;
 import org.apache.ignite.failure.ExchangeWorkerWaitingForTaskTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -66,9 +65,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRende
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
-import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
-import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
@@ -262,7 +259,6 @@ import org.junit.runners.Suite;
     RebalanceWithDifferentThreadPoolSizeTest.class,
 
     ListeningTestLoggerTest.class,
-    GridLongRunningInitNewCrdFutureDiagnosticsTest.class,
 
     MessageOrderLogListenerTest.class,
 
@@ -304,10 +300,6 @@ import org.junit.runners.Suite;
     IgniteThreadGroupNodeRestartTest.class,
 
     LinkMapTest.class,
-
-    // Other tests
-    CacheLockCandidatesThreadTest.class,
-    RemoveAllDeadlockTest.class
 })
 public class IgniteBasicTestSuite {
 }

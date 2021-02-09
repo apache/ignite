@@ -23,13 +23,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9081")
 public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbstractTest {
     /**
      *

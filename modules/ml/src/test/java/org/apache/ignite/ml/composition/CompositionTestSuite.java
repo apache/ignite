@@ -19,8 +19,6 @@ package org.apache.ignite.ml.composition;
 
 import org.apache.ignite.ml.composition.bagging.BaggingTest;
 import org.apache.ignite.ml.composition.boosting.GDBTrainerTest;
-import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerTest;
-import org.apache.ignite.ml.composition.boosting.convergence.median.MedianOfMedianConvergenceCheckerTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregatorTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregatorTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregatorTest;
@@ -37,9 +35,7 @@ import org.junit.runners.Suite;
     OnMajorityPredictionsAggregatorTest.class,
     BaggingTest.class,
     StackingTest.class,
-    WeightedPredictionsAggregatorTest.class,
-    MedianOfMedianConvergenceCheckerTest.class,
-    MeanAbsValueConvergenceCheckerTest.class
+    WeightedPredictionsAggregatorTest.class
 })
 public class CompositionTestSuite {
 }

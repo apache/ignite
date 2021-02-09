@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
-import org.junit.Ignore;
-
-/**
- * Test for binary objects stored in cache with enabled on-heap cacheg.
- */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheBinaryObjectsAtomicOnheapSelfTest extends GridCacheBinaryObjectsAtomicSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {
