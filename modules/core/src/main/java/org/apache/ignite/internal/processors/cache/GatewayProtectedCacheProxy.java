@@ -1089,7 +1089,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override  public Long ttl(K key) {
+    @Override public Long ttl(K key) {
         CacheOperationGate opGate = onEnter();
 
         try {
