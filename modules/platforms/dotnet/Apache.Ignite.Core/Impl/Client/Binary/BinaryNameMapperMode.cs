@@ -15,22 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Impl.Client.Binary
 {
+    using Apache.Ignite.Core.Binary;
+
     /// <summary>
-    /// Client feature ids. Values represent the index in the bit array.
-    /// Unsupported flags must be commented out.
+    /// Represents the binary name mapper mode.
     /// </summary>
-    internal enum ClientBitmaskFeature
+    internal enum BinaryNameMapperMode
     {
-        // UserAttributes = 0,
-        ExecuteTaskByName = 1,
-        // ClusterStates = 2,
-        ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4,
-        ServiceInvoke = 5, // The flag is not necessary and exists for legacy reasons
-        // DefaultQueryTimeout = 6, // IGNITE-13692
-        QueryPartitionsBatchSize = 7,
-        BinaryConfiguration = 8
+        /// <summary>
+        /// Default full name mapper, see <see cref="BinaryBasicNameMapper.FullNameInstance"/>.
+        /// </summary>
+        BasicFull = 0,
+
+        /// <summary>
+        /// Simple name mapper, see <see cref="BinaryBasicNameMapper.SimpleNameInstance"/>.
+        /// </summary>
+        BasicSimple = 1,
+
+        /// <summary>
+        /// Custom user-defined mapper.
+        /// </summary>
+        Custom = 2
     }
 }

@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
-{
-    /// <summary>
-    /// Client feature ids. Values represent the index in the bit array.
-    /// Unsupported flags must be commented out.
-    /// </summary>
-    internal enum ClientBitmaskFeature
-    {
-        // UserAttributes = 0,
-        ExecuteTaskByName = 1,
-        // ClusterStates = 2,
-        ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4,
-        ServiceInvoke = 5, // The flag is not necessary and exists for legacy reasons
-        // DefaultQueryTimeout = 6, // IGNITE-13692
-        QueryPartitionsBatchSize = 7,
-        BinaryConfiguration = 8
+package org.apache.ignite.platform;
+
+import org.apache.ignite.binary.BinaryNameMapper;
+
+/**
+ * Custom name mapper for tests.
+ */
+public class PlatformCustomBinaryNameMapper implements BinaryNameMapper {
+    /** {@inheritDoc} */
+    @Override public String typeName(String clsName) {
+        return clsName + "_";
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fieldName(String fieldName) {
+        return fieldName;
     }
 }
