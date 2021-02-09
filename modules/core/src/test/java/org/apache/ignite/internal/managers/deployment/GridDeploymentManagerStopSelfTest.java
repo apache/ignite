@@ -94,6 +94,11 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public String getName() { return getClass().getSimpleName(); }
 
         /** {@inheritDoc} */
+        @Override public DeploymentResource findResource(String rsrcName) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public DeploymentResource findResource(String rsrcName, ClassLoader ldr) { return null; }
 
         /** {@inheritDoc} */

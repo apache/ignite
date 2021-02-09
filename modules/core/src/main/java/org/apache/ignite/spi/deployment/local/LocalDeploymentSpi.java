@@ -109,6 +109,51 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             log.debug(stopInfo());
     }
 
+    /**
+     * Finds class loader for the given class.
+     *
+     * @param rsrcName Class name or class alias to find class loader for.
+     * @return Deployed class loader, or {@code null} if not deployed.
+     *
+     * @deprecated It is recommended to use {@link DeploymentSpi#findResource(String, ClassLoader)} instead.
+     * This method can return incorrect resource.
+     */
+    @Deprecated
+    @Nullable @Override public DeploymentResource findResource(String rsrcName) {
+        assert rsrcName != null;
+
+        // Last updated class loader has highest priority in search.
+        for (Entry<ClassLoader, ConcurrentMap<String, String>> e : ldrRsrcs.descendingEntrySet()) {
+            ClassLoader ldr = e.getKey();
+            ConcurrentMap<String, String> rsrcs = e.getValue();
+
+            String clsName = rsrcs.get(rsrcName);
+
+            // Return class if it was found in resources map.
+            if (clsName != null) {
+                // Recalculate resource name in case if access is performed by
+                // class name and not the resource name.
+                rsrcName = getResourceName(clsName, rsrcs);
+
+                assert clsName != null;
+
+                try {
+                    Class<?> cls = Class.forName(clsName, true, ldr);
+
+                    assert cls != null;
+
+                    // Return resource.
+                    return new DeploymentResourceAdapter(rsrcName, cls, ldr);
+                }
+                catch (ClassNotFoundException ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public DeploymentResource findResource(String rsrcName, @Nullable ClassLoader clsLdr) {
         assert rsrcName != null;
@@ -122,6 +167,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             return findResource0(rsrcs, rsrcName, clsLdr);
         }
 
+        // we can remove this stub after deprecated IgniteCompute.localDeployTask was deleted.
         for (Entry<ClassLoader, ConcurrentMap<String, String>> e : ldrRsrcs.entrySet()) {
             ClassLoader ldr = e.getKey();
             ConcurrentMap<String, String> rsrcs = e.getValue();
@@ -155,7 +201,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             assert clsName != null;
 
             try {
-                Class<?> cls = Class.forName(clsName, true, clsLdr);
+                Class<?> cls = U.forName(clsName, clsLdr);
 
                 assert cls != null;
 

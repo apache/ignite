@@ -705,13 +705,8 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
         return -1;
     }
 
-    /**
-     * Finds the resource for the given class.
-     *
-     * @param rsrcName Class name or class alias to find class loader for.
-     * @return Appropriate resource, or {@code null} if not deployed.
-     */
-    @Nullable public DeploymentResource findResource(String rsrcName) {
+    /** {@inheritDoc} */
+    @Nullable @Override public DeploymentResource findResource(String rsrcName) {
         return findResource(rsrcName, null);
     }
 

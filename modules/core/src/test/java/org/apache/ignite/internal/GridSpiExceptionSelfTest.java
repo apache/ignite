@@ -143,6 +143,11 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public DeploymentResource findResource(String rsrcName) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Nullable @Override public DeploymentResource findResource(String rsrcName, ClassLoader ldr) {
             // No-op.
             return null;

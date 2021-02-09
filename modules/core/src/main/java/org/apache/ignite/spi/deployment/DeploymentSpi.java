@@ -63,6 +63,14 @@ public interface DeploymentSpi extends IgniteSpi {
      * Finds class loader for the given class.
      *
      * @param rsrcName Class name or class alias to find class loader for.
+     * @return Deployed class loader, or {@code null} if not deployed.
+     */
+    public DeploymentResource findResource(String rsrcName);
+
+    /**
+     * Finds class loader for the given class.
+     *
+     * @param rsrcName Class name or class alias to find class loader for.
      * @param clsLdr desired class loader.
      * @return Deployed class loader, or {@code null} if not deployed.
      */
