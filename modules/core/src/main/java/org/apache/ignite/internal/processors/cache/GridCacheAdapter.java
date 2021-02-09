@@ -3281,13 +3281,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             // if the data isn't loaded in, we don't get expiry date
             entry.unswap(false);
+
             // ...and ttl is always(?) empty, so use expireTime()
             long expriryTime = entry.expireTime();
-            if (expriryTime == 0) {
-                return null;
-            } else {
-                return expriryTime - U.currentTimeMillis();
-            }
+            return (expriryTime == 0) ? null : expriryTime - U.currentTimeMillis();
         }
         catch (GridCacheEntryRemovedException | IgniteCheckedException e) {
             return null;
