@@ -39,7 +39,10 @@ class SnapshotTest(IgniteTest):
     CACHE_NAME = "TEST_CACHE"
 
     @cluster(num_nodes=4)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9))
+    @ignite_versions(
+        str(DEV_BRANCH),
+        # str(LATEST_2_9)
+    )
     def snapshot_test(self, ignite_version):
         """
         Basic snapshot test.
@@ -67,7 +70,7 @@ class SnapshotTest(IgniteTest):
                                 envs=envs)
         service.start()
 
-        control_utility = ControlUtility(service, envs=envs)
+        control_utility = ControlUtility(service)
         control_utility.activate()
 
         client_config = IgniteConfiguration(
