@@ -39,24 +39,23 @@ class SnapshotTest(IgniteTest):
     CACHE_NAME = "TEST_CACHE"
 
     @cluster(num_nodes=4)
-    @ignite_versions(
-        str(DEV_BRANCH),
-        # str(LATEST_2_9)
-    )
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9))
     def snapshot_test(self, ignite_version):
         """
         Basic snapshot test.
         """
-        exclude_modules = ["aop", "apache-license-gen", "benchmarks", "camel", "cassandra", "clients", "cloud",
-                           "codegen", "compatibility", "compress", "dev-utils", "direct-io", "extdata", "flink",
-                           "flume", "gce", "geospatial", "hadoop", "hibernate-4.2", "hibernate-5.1", "hibernate-5.3",
-                           "ignored-tests", "jcl", "jms11", "jta", "kafka", "kubernetes",
-                           "log4j2", "mesos", "ml", "mqtt", "opencensus", "osgi", "osgi-karaf", "osgi-paxlogging",
-                           "platforms", "rest-http", "rocketmq", "scalar", "scalar-2.10", "schedule", "slf4j", "spark",
-                           "spark-2.4", "sqlline", "ssh", "storm",
-                           "tools", "twitter", "urideploy", "visor-console", "visor-console-2.10", "visor-plugins",
-                           "web", "yardstick", "yarn", "zeromq"
-                           ]
+        exclude_modules = [
+            "aop", "apache-license-gen", "benchmarks", "camel", "cassandra", "clients", "cloud",
+            "codegen", "compatibility", "compress", "dev-utils", "direct-io", "extdata", "flink",
+            "flume", "gce", "geospatial", "hadoop", "hibernate-4.2", "hibernate-5.1", "hibernate-5.3",
+            "ignored-tests", "jcl", "jms11", "jta", "kafka", "kubernetes", "log4j2", "mesos", "ml",
+            "mqtt", "opencensus", "osgi", "osgi-karaf", "osgi-paxlogging", "platforms", "rest-http",
+            "rocketmq", "scalar", "scalar-2.10", "schedule", "slf4j", "spark", "spark-2.4", "sqlline",
+            "ssh", "storm", "tools", "twitter", "urideploy", "visor-console", "visor-console-2.10",
+            "visor-plugins", "web", "yardstick", "yarn", "zeromq"
+        ]
+
+        envs = {'EXCLUDE_MODULES': ','.join(exclude_modules)}
 
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
@@ -65,14 +64,10 @@ class SnapshotTest(IgniteTest):
         )
 
         service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1,
-                                startup_timeout_sec=180
-                                # envs={'EXCLUDE_MODULES': ','.join(exclude_modules)}
-                                )
+                                envs=envs)
         service.start()
 
-        control_utility = ControlUtility(service,
-                                         envs={'EXCLUDE_MODULES': ','.join(exclude_modules)}
-                                         )
+        control_utility = ControlUtility(service, envs=envs)
         control_utility.activate()
 
         client_config = IgniteConfiguration(
@@ -85,14 +80,13 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
-            startup_timeout_sec=180,
             shutdown_timeout_sec=300,
+            envs=envs,
             params={
                 "cacheName": self.CACHE_NAME,
                 "interval": 500_000,
                 "dataSizeKB": 1
-            },
-            # envs={'EXCLUDE_MODULES': ','.join(exclude_modules)}
+            }
         )
 
         loader.run()
