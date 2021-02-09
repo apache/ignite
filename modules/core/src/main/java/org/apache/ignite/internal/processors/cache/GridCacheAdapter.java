@@ -3308,16 +3308,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     protected IgniteInternalFuture<Long> ttlAsync0(K key) {
-        return asyncOp(new AsyncOp<Long>() {
-            @Override public IgniteInternalFuture<Long> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
-                return null; //tx.entryTtl(ctx.toCacheKeyObject(key));
+        return ctx.closures().callLocalSafe(new GridPlainCallable<Long>() {
+            @Override
+            public Long call() {
+                return ttl0(key);
             }
-
-            @Override public String toString() {
-                return S.toString("ttlAsync0",
-                        "key", key, true);
-            }
-        });
+        }, false);
     }
 
     /** {@inheritDoc} */

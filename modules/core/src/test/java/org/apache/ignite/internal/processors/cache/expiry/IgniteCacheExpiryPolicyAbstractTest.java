@@ -1224,16 +1224,25 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cache.get(key2);
 
         Long ttl1 = cache.ttl(key1);
+        Long ttl1a = cache.ttlAsync(key1).get();
         Long ttl2 = cache.ttl(key2);
+        Long ttl2a = cache.ttlAsync(key2).get();
 
         assertNotNull(ttl1);
+        assertNotNull(ttl1a);
         assertTrue("ttl is " + ttl1, ttl1 > 800 && ttl1 < 1200);
+        assertTrue("ttl is " + ttl1a, ttl1a > 800 && ttl1a < 1200);
 
         assertNull(ttl2);
+        assertNull(ttl2a);
 
         waitExpired(key1);
 
+        // key1 is null because it expired
         assertNull(cache.get(key1));
+
+        // returns null for missing keys
+        assertNull(cache.ttl(3));
 
         cache.destroy();
     }
