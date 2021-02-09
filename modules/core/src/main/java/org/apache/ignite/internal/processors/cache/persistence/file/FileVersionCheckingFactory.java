@@ -74,13 +74,13 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         Path filePath = pathProvider.apply();
 
         if (!Files.exists(filePath))
-            return createPageStore(type, pathProvider, latestVersion(), pageSize.getAsInt(), allocatedTracker);
+            return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker);
 
         try (FileIO fileIO = fileIOFactoryStoreV1.create(filePath.toFile())) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, pathProvider, latestVersion(), pageSize.getAsInt(), allocatedTracker);
+                return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker);
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.nativeOrder());
 
@@ -92,7 +92,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, pathProvider, ver, pageSize.getAsInt(), allocatedTracker);
+            return createPageStore(type, pathProvider, pageSize.getAsInt(), ver, allocatedTracker);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Error while creating file page store [file=" + filePath.toAbsolutePath() + "]:", e);
