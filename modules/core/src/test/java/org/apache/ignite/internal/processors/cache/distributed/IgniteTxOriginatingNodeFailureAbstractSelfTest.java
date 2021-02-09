@@ -179,6 +179,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 try {
                     txEx.prepareNearTxLocal().get(3, TimeUnit.SECONDS);
+                    info("Ok to wait for prepare future completion");
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
                     info("Failed to wait for prepare future completion: " + partial);

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -406,10 +408,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         boolean hasNearCache = false;
 
+        boolean reInit = false;
+
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
-            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap, preNodeMapping);
+            T2<GridDistributedTxMapping, Boolean> upd = map0(write, topVer, cur, topLocked, remap, preNodeMapping);
+            GridDistributedTxMapping updated = upd.getKey();
 
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
@@ -436,7 +441,21 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             }
         }
 
-        Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>(preNodeMapping.values());
+        Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>(preNodeMapping.size());
+
+        Map<UUID, GridDistributedTxMapping> preNodeMappingTree = new TreeMap<>();
+
+        preNodeMappingTree.putAll(preNodeMapping);
+
+        if (!reInit)
+            mappings.addAll(preNodeMappingTree.values());
+        else {
+            for (GridDistributedTxMapping ent : preNodeMappingTree.values()) {
+                ent.clientFirst(reInit);
+                reInit = false;
+                mappings.add(ent);
+            }
+        }
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -699,6 +718,108 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         return cur;
+    }
+
+    private T2<GridDistributedTxMapping, Boolean> map0(
+        IgniteTxEntry entry,
+        AffinityTopologyVersion topVer,
+        @Nullable GridDistributedTxMapping cur,
+        boolean topLocked,
+        boolean remap,
+        Map<UUID, GridDistributedTxMapping> mOut
+    ) {
+        GridCacheContext cacheCtx = entry.context();
+
+        List<ClusterNode> nodes;
+
+        GridCacheEntryEx cached0 = entry.cached();
+
+        boolean reInit = false;
+
+        if (cached0.isDht())
+            nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
+        else
+            nodes = cacheCtx.isLocal() ?
+                cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
+                cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
+
+        if (F.isEmpty(nodes)) {
+            ClusterTopologyServerNotFoundException e = new ClusterTopologyServerNotFoundException("Failed to map " +
+                "keys to nodes (partition is not mapped to any node) [key=" + entry.key() +
+                ", partition=" + cacheCtx.affinity().partition(entry.key()) + ", topVer=" + topVer + ']');
+
+            onDone(e);
+
+            return new T2<>(null, false);
+        }
+
+        txMapping.addMapping(nodes);
+
+        ClusterNode primary = F.first(nodes);
+
+        assert primary != null;
+
+        if (log.isDebugEnabled()) {
+            log.debug("Mapped key to primary node [key=" + entry.key() +
+                ", part=" + cacheCtx.affinity().partition(entry.key()) +
+                ", primary=" + U.toShortString(primary) + ", topVer=" + topVer + ']');
+        }
+
+        // Must re-initialize cached entry while holding topology lock.
+        if (cacheCtx.isNear())
+            entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer));
+        else if (!cacheCtx.isLocal())
+            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true));
+        else
+            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
+
+        if (cacheCtx.isNear() || cacheCtx.isLocal()) {
+            if (entry.explicitVersion() == null && !remap) {
+                if (keyLockFut == null) {
+                    keyLockFut = new KeyLockFuture();
+
+                    add((IgniteInternalFuture)keyLockFut);
+                }
+
+                keyLockFut.addLockKey(entry.txKey());
+            }
+        }
+
+        if (cur == null || !cur.primary().id().equals(primary.id()) ||
+            (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
+            boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
+
+            cur = mOut.computeIfAbsent(primary.id(), k -> new GridDistributedTxMapping(primary));
+            if (clientFirst)
+                reInit = true;
+        }
+
+        cur.add(entry);
+
+        if (entry.explicitVersion() != null) {
+            tx.markExplicit(primary.id());
+
+            cur.markExplicitLock();
+        }
+
+        entry.nodeId(primary.id());
+
+        if (cacheCtx.isNear()) {
+            while (true) {
+                try {
+                    GridNearCacheEntry cached = (GridNearCacheEntry)entry.cached();
+
+                    cached.dhtNodeId(tx.xidVersion(), primary.id());
+
+                    break;
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    entry.cached(cacheCtx.near().entryEx(entry.key(), topVer));
+                }
+            }
+        }
+
+        return new T2<>(cur, reInit);
     }
 
     /**
