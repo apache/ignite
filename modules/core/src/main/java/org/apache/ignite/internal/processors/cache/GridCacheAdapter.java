@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -105,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAda
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
@@ -3273,16 +3275,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return ttlVal;
     }
 
+    /** {@inheritDoc} */
     protected Long ttl0(final K key) {
         GridCacheEntryEx entry = entryEx(key);
         try {
-            return entry.ttl();
+            // if the data isn't loaded in, we don't get expiry date
+            entry.unswap(false);
+            // ...and ttl is always(?) empty, so use expireTime()
+            long expriryTime = entry.expireTime();
+            if (expriryTime == 0) {
+                return null;
+            } else {
+                return expriryTime - U.currentTimeMillis();
+            }
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException | IgniteCheckedException e) {
             return null;
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Long> ttlAsync(K key) {
