@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -213,7 +212,7 @@ public class SnapshotPartitionsVerifyTask
                     ignite.context().getSystemExecutorService(),
                     pairs,
                     pair -> {
-                        String grpName = pair.get1().getName();
+                        String grpName = cacheGroupName(pair.get1());
                         int grpId = CU.cacheId(grpName);
                         int partId = partId(pair.get2().getName());
 
@@ -237,7 +236,7 @@ public class SnapshotPartitionsVerifyTask
                             GridDhtPartitionState.OWNING,
                             false,
                             partSize.get(),
-                            snpMgr.getPartitionDataRows(pair.get2(), grpId, partId, true)));
+                            snpMgr.partitionRows(snpName, consId, grpName, partId)));
 
                         return null;
                     }

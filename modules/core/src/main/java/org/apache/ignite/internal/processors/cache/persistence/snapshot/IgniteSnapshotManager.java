@@ -80,16 +80,14 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowPersistenceAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -107,8 +105,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -132,7 +130,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
@@ -154,12 +151,14 @@ import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
+import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -1198,110 +1197,53 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    // TODO Global - id meta file, snapshot name, baseline nodes, cache groups, global partition distribution, partition hashes
-
-    /**
-     * @param name Snapshot name to check.
-     * @param checkCrc Check page CRC sum on idle verify flag.
-     * @param skipZeros Skip zeros partitions(size == 0) in result.
-     * @return Future which will be completed when check operation finished.
-     */
-    public IgniteFuture<IdleVerifyResultV2> checkSnapshot(String name, boolean checkCrc, boolean skipZeros) {
-        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
-
-        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
-
-        if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
-            throw new IgniteException("Check snapshot request has been rejected. Check snapshot on an in-memory " +
-                "clusters are not allowed.");
-        }
-
-        if (!cctx.kernalContext().state().clusterState().state().active())
-            throw new IgniteException("Check snapshot operation has been rejected. The cluster is inactive.");
-
-        DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
-
-        List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
-
-        // TODO if snapshot belongs to different cluster, we must collect all consistent ids locally first
-
-        return cctx.kernalContext()
-            .grid()
-            .compute(cctx.kernalContext()
-                .grid()
-                .cluster()
-                .forNodes(F.view(srvNodes, (node) -> CU.baselineNode(node, clusterState))))
-            .executeAsync(VerifyBackupPartitionsTaskV2.class, new VisorIdleVerifyTaskArg());
-
-//        return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
-//            .callAsyncNoFailover(BALANCE,
-//                new CreateSnapshotCallable(name),
-//                Collections.singletonList(crd),
-//                false,
-//                0,
-//                true));
-    }
-
     /**
      * @param snpName Snapshot name.
-     * @param grpId Group id.
+     * @param grpName Cache group name.
      * @param partId Partition id.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If fails.
      */
-    public GridCloseableIterator<CacheDataRow> getPartitionDataRows(String snpName, int grpId, int partId)
-        throws IgniteCheckedException {
-        CacheGroupContext grp = cctx.kernalContext().cache().cacheGroup(grpId);
-
-        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(pdsSettings.folderName())),
-            cacheDirName(grp.config()), partId);
-
-        return getPartitionDataRows(snpPart, grpId, partId, true);
-    }
-
-    /**
-     * @param partFile Partition file to read.
-     * @param grpId Group id.
-     * @param partId Partition id.
-     * @return Iterator over partition.
-     * @throws IgniteCheckedException If fails.
-     */
-    public GridCloseableIterator<CacheDataRow> partitionRows(
-        File partFile,
-        int grpId,
+    public GridCloseableIterator<CacheDataRow> partitionRows(String snpName,
+        String consId,
+        String grpName,
         int partId
     ) throws IgniteCheckedException {
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!snpDir.exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
+
+        GridKernalContext kctx = new StandaloneGridKernalContext(log,
+            resolveBinaryWorkDir(snpDir.getAbsolutePath(), U.maskForFileName(consId)),
+            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
+
+        File nodePath = new File(snpDir, databaseRelativePath(U.maskForFileName(consId)));
+
+        if (!nodePath.exists())
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + nodePath.getAbsolutePath());
+
+        File[] grps = nodePath.listFiles(path -> path.isDirectory() &&
+            (path.getName().equalsIgnoreCase(cacheDirName(true, grpName)) ||
+                path.getName().equalsIgnoreCase(cacheDirName(false, grpName))));
+
+        if (grps == null || grps.length == 0)
+            throw new IgniteCheckedException("Snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+
+        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(U.maskForFileName(consId))),
+            grps[0].getName(), partId);
+
         FilePageStore pageStore = (FilePageStore)storeFactory
-            .apply(grpId, false)
+            .apply(CU.cacheId(grpName), false)
             .createPageStore(getTypeByPartId(partId),
-                partFile::toPath,
+                snpPart::toPath,
                 val -> {
                 });
 
-        return new PageScanIterator(cctx, grpId, pageStore, partId, true);
-    }
+        CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
+            false, false, false, false);
 
-    /**
-     * @param partFile Partition file to read.
-     * @param grpId Group id.
-     * @param partId Partition id.
-     * @return Iterator over partition.
-     * @throws IgniteCheckedException If fails.
-     */
-    public GridCloseableIterator<CacheDataRow> getPartitionDataRows(
-        File partFile,
-        int grpId,
-        int partId,
-        boolean checkCrc
-    ) throws IgniteCheckedException {
-        FilePageStore pageStore = (FilePageStore)storeFactory
-            .apply(grpId, false)
-            .createPageStore(getTypeByPartId(partId),
-                partFile::toPath,
-                val -> {
-                });
-
-        return new PageScanIterator(cctx, grpId, pageStore, partId, checkCrc);
+        return new PageScanIterator(coctx, pageStore, partId);
     }
 
     /**
@@ -1479,10 +1421,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** */
     private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
-        /** Shared context. */
-        @GridToStringExclude
-        private final GridCacheSharedContext<?, ?> sctx;
-
         /** Page store to iterate over. */
         @GridToStringExclude
         private final PageStore store;
@@ -1490,12 +1428,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Page store partition id. */
         private final int partId;
 
-        /** Cache group id. */
-        private final int grpId;
-
-        /** Read FULL row by default. */
-        @GridToStringExclude
-        private final CacheDataRowAdapter.RowData flags = asRowData(null);
+        /** Cache object context for key/value deserialization. */
+        private final CacheObjectContext coctx;
 
         /** Buffer to read pages. */
         private final ByteBuffer locBuff;
@@ -1512,9 +1446,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Batch of rows read through iteration. */
         private final Deque<CacheDataRow> rows = new LinkedList<>();
 
-        /** {@code true} if CRC must be checked for each page read. */
-        private final boolean checkCrc;
-
         /** {@code true} if the iteration reached its end. */
         private boolean finished;
 
@@ -1525,25 +1456,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private int currIdx = -1;
 
         /**
-         * @param sctx Shared context.
          * @param store Page store to read.
          * @param partId Partition id.
          * @throws IgniteCheckedException If fails.
          */
-        public PageScanIterator(
-            GridCacheSharedContext<?, ?> sctx,
-            int grpId,
-            PageStore store,
-            int partId,
-            boolean checkCrc
-        ) throws IgniteCheckedException {
-            assert flags == CacheDataRowAdapter.RowData.FULL;
-
-            this.sctx = sctx;
-            this.grpId = grpId;
+        public PageScanIterator(CacheObjectContext coctx, PageStore store, int partId) throws IgniteCheckedException {
+            // CacheGroupContext may be null. It means that this cache group is under eviction for now.
+            // Since the persisted cache groups and their partitions are guarded by external machinery we
+            // can avoid it here.
             this.store = store;
             this.partId = partId;
-            this.checkCrc = checkCrc;
+            this.coctx = coctx;
 
             store.sync();
             pages = store.pages();
@@ -1579,7 +1502,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     locBuff.clear();
 
                     long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx);
-                    boolean success = store.read(pageId, locBuff, checkCrc);
+                    boolean success = store.read(pageId, locBuff, true);
 
                     assert success : PageIdUtils.toDetailString(pageId);
 
@@ -1634,13 +1557,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     skipPages.touch(PageIdUtils.pageIndex(nextPageId));
                                 }
                             },
-                            io,
+                            coctx,
                             locBuff,
                             fragmentBuff,
+                            io,
                             itemId,
-                            sctx.cache().cacheGroup(grpId),
-                            sctx,
-                            flags,
+                            asRowData(null),
+                            false,
                             false);
 
                         rows.add(row);

@@ -399,11 +399,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        int grpId = ignite.cachex(dfltCacheCfg.getName()).context().groupId();
-
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getPartitionDataRows(SNAPSHOT_NAME, grpId, 0)) {
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            dfltCacheCfg.getName(),
+            0)
+        ) {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
@@ -436,17 +438,17 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        int grpId = ignite.cachex(DEFAULT_CACHE_NAME).context().groupId();
-
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getPartitionDataRows(SNAPSHOT_NAME, grpId, 0)) {
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            dfltCacheCfg.getName(),
+            0)
+        ) {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
                 row.value().finishUnmarshal(ignite.context()
                         .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
                     U.resolveClassLoader(ignite.configuration()));
-
-                System.out.println("row = " + row);
             }
         }
     }

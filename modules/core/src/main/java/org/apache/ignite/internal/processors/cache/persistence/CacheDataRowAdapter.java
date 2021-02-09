@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
@@ -353,7 +354,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         boolean keyOnly = rowData == RowData.KEY_ONLY;
 
-        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete, skipVer);
+        // coctx can be null only when grp is null too, this means that
+        // we are in process of eviction and cacheId is mandatory part of data.
+        assert coctx != null || cacheId != 0;
+
+        incomplete = readFragment(() -> coctx == null ? sharedCtx.cacheContext(cacheId).cacheObjectContext() : coctx,
+            buf, keyOnly, readCacheId, incomplete, skipVer);
 
         if (incomplete != null)
             incomplete.setNextLink(nextLink);
@@ -376,8 +382,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param sharedCtx Cache shared context.
-     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param keyOnly {@code true} If need to read only key object.
      * @param readCacheId {@code true} If need to read cache ID.
@@ -387,8 +391,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Read object.
      */
     protected IncompleteObject<?> readFragment(
-        GridCacheSharedContext<?, ?> sharedCtx,
-        CacheObjectContext coctx,
+        Supplier<CacheObjectContext> coctxSup,
         ByteBuffer buf,
         boolean keyOnly,
         boolean readCacheId,
@@ -406,13 +409,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = null;
         }
 
-        if (coctx == null) {
-            // coctx can be null only when grp is null too, this means that
-            // we are in process of eviction and cacheId is mandatory part of data.
-            assert cacheId != 0;
+        CacheObjectContext coctx = coctxSup.get();
 
-            coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
-        }
+        assert coctx != null;
 
         // Read key.
         if (key == null) {
