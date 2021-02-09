@@ -115,3 +115,32 @@ Configure link:security/authentication[authentication on the cluster side] and p
 include::code-snippets/cpp/src/thin_authentication.cpp[tag=thin-authentication,indent=0]
 ----
 
+=== Executing Transactions
+
+The C++ thin client supports the transactional API. You can execute distributed transactions in various configuration
+modes by selecting required isolation levels and concurrency modes.
+
+[source,cpp]
+----
+#include <ignite/thin/ignite_client.h>
+
+using namespace ignite;
+
+void Example(IgniteClient client) {
+cache::CacheClient<int, int> cache = client.GetOrCreateCache<int, int>("example");
+
+    transactions::ClientTransactions transactions = client.ClientTransactions();
+
+    cache.Put(1, 1);
+    assert(1 == cache.Get(1));
+
+    transactions::ClientTransaction tx = transactions.TxStart();
+
+    cache.Put(1, 10);
+    assert(10 == cache.Get(1));
+
+    tx.Rollback();
+    assert(1 == cache.Get(1));
+}
+----
+--
