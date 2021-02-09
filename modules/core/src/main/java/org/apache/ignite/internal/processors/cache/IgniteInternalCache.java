@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
@@ -1098,17 +1097,18 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<V> getAndRemoveAsync(K key);
 
     /**
+     * Returns the remaining time to live of the specified key.
      *
      * @param key Key
-     * @return
+     * @return remaining TTL in milliseconds, null if there is no expiry policy or EternalExpiryPolicy.
      */
-    @IgniteAsyncSupported
     public Long ttl(K key);
 
     /**
+     * Asynchronously returns the remaining time to live of the specified key.
      *
      * @param key
-     * @return
+     * @return remaining TTL in milliseconds, null if there is no expiry policy or EternalExpiryPolicy.
      */
     public IgniteInternalFuture<Long> ttlAsync(K key);
 
