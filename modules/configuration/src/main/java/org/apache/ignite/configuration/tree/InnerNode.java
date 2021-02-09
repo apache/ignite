@@ -20,7 +20,7 @@ package org.apache.ignite.configuration.tree;
 import java.util.NoSuchElementException;
 
 /** */
-public abstract class InnerNode implements TraversableTreeNode, Cloneable {
+public abstract class InnerNode implements TraversableTreeNode, ConstructableTreeNode, Cloneable {
     /** {@inheritDoc} */
     @Override public final void accept(String key, ConfigurationVisitor visitor) {
         visitor.visitInnerNode(key, this);
@@ -79,10 +79,41 @@ public abstract class InnerNode implements TraversableTreeNode, Cloneable {
      */
     public abstract void traverseChild(String key, ConfigurationVisitor visitor) throws NoSuchElementException;
 
+    /**
+     * Method with auto-generated implementation. Must look like this:
+     * <pre>{@code
+     * @Override public abstract void construct(String key, ConfigurationSource src) throws NoSuchElementException {
+     *     switch (key) {
+     *         case "namedList":
+     *             if (src == null)
+     *                 namedList = new NamedListNode<>(Foo::new);
+     *             else
+     *                 src.descend(namedList = namedList.copy());
+     *             break;
+     *
+     *         case "innerNode":
+     *             if (src == null)
+     *                 innerNode = null;
+     *             else
+     *                 src.descend(innerNode = (innerNode == null ? new Bar() : (Bar)innerNode.copy()));
+     *             break;
+     *
+     *         case "leaf":
+     *             leaf = src == null ? null : src.unwrap(Integer.class);
+     *             break;
+     *
+     *         default: throw new NoSuchElementException(key);
+     *     }
+     * }
+     * }</pre>
+     * {@inheritDoc}
+     */
+    @Override public abstract void construct(String key, ConfigurationSource src) throws NoSuchElementException;
+
     /** {@inheritDoc} */
-    @Override protected Object clone() {
+    @Override public InnerNode copy() {
         try {
-            return super.clone();
+            return (InnerNode)clone();
         }
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);

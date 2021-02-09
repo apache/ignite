@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration.util;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
@@ -25,7 +26,10 @@ import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.util.impl.ParentNode;
 import org.junit.jupiter.api.Test;
 
+import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -95,9 +99,7 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void findSuccessfully() {
-        var parent = new ParentNode();
-
-        parent.changeElements(elements ->
+        var parent = new ParentNode().changeElements(elements ->
             elements.put("name", element ->
                 element.changeChild(child ->
                     child.changeStr("value")
@@ -170,5 +172,94 @@ public class ConfigurationUtilTest {
             KeyNotFoundException.class,
             () -> ConfigurationUtil.find(List.of("elements", "name", "child", "str", "foo"), parent)
         );
+    }
+
+    /** */
+    @Test
+    public void fillFromSuffixMapSuccessfully() {
+        var parentNode = new ParentNode();
+
+        ConfigurationUtil.fillFromSuffixMap(parentNode, Map.of(
+            "elements", Map.of(
+                "name1", Map.of(
+                    "child", Map.of("str", "value1")
+                ),
+                "name2", Map.of(
+                    "child", Map.of("str", "value2")
+                )
+            )
+        ));
+
+        assertEquals("value1", parentNode.elements().get("name1").child().str());
+        assertEquals("value2", parentNode.elements().get("name2").child().str());
+    }
+
+    /** */
+    @Test
+    public void fillFromSuffixMapSuccessfullyWithRemove() {
+        var parentNode = new ParentNode().changeElements(elements ->
+            elements.put("name", element ->
+                element.changeChild(child -> {})
+            )
+        );
+
+        ConfigurationUtil.fillFromSuffixMap(parentNode, Map.of(
+            "elements", singletonMap("name", null)
+        ));
+
+        assertNull(parentNode.elements().get("node"));
+    }
+
+    /** */
+    @Test
+    public void patch() {
+        var originalRoot = new ParentNode().initElements(elements ->
+            elements.put("name1", element ->
+                element.initChild(child -> child.initStr("value1"))
+            )
+        );
+
+        // Updating config.
+        ParentNode updatedRoot = ConfigurationUtil.patch(originalRoot, new ParentNode().changeElements(elements ->
+            elements.put("name1", element ->
+                element.changeChild(child -> child.changeStr("value2"))
+            )
+        ));
+
+        assertNotSame(originalRoot, updatedRoot);
+        assertNotSame(originalRoot.elements(), updatedRoot.elements());
+        assertNotSame(originalRoot.elements().get("name1"), updatedRoot.elements().get("name1"));
+        assertNotSame(originalRoot.elements().get("name1").child(), updatedRoot.elements().get("name1").child());
+
+        assertEquals("value1", originalRoot.elements().get("name1").child().str());
+        assertEquals("value2", updatedRoot.elements().get("name1").child().str());
+
+        // Expanding config.
+        ParentNode expandedRoot = ConfigurationUtil.patch(originalRoot, new ParentNode().changeElements(elements ->
+            elements.put("name2", element ->
+                element.changeChild(child -> child.changeStr("value2"))
+            )
+        ));
+
+        assertNotSame(originalRoot, expandedRoot);
+        assertNotSame(originalRoot.elements(), expandedRoot.elements());
+
+        assertSame(originalRoot.elements().get("name1"), expandedRoot.elements().get("name1"));
+        assertNull(originalRoot.elements().get("name2"));
+        assertNotNull(expandedRoot.elements().get("name2"));
+
+        assertEquals("value2", expandedRoot.elements().get("name2").child().str());
+
+        // Shrinking config.
+        ParentNode shrinkedRoot = ConfigurationUtil.patch(expandedRoot, new ParentNode().changeElements(elements ->
+            elements.remove("name1")
+        ));
+
+        assertNotSame(expandedRoot, shrinkedRoot);
+        assertNotSame(expandedRoot.elements(), shrinkedRoot.elements());
+
+        assertNotNull(expandedRoot.elements().get("name1"));
+        assertNull(shrinkedRoot.elements().get("name1"));
+        assertNotNull(shrinkedRoot.elements().get("name2"));
     }
 }

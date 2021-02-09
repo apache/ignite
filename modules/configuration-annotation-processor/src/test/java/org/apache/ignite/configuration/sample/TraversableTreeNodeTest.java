@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** */
-public class TraversableNodesTest {
+public class TraversableTreeNodeTest {
     /** */
     @Config
     public static class ParentConfigurationSchema {
@@ -165,9 +165,7 @@ public class TraversableNodesTest {
      */
     @Test
     public void initLeaf() {
-        var childNode = new ChildNode();
-
-        childNode.initStrCfg("value");
+        var childNode = new ChildNode().initStrCfg("value");
 
         assertEquals("value", childNode.strCfg());
     }
@@ -177,9 +175,7 @@ public class TraversableNodesTest {
      */
     @Test
     public void initInnerChild() {
-        var parentNode = new ParentNode();
-
-        parentNode.initChild(child -> {});
+        var parentNode = new ParentNode().initChild(child -> {});
 
         ChildNode childNode = parentNode.child();
 

@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** */
-public final class NamedListNode<N extends InnerNode> implements NamedListView<N>, NamedListChange<N>, TraversableTreeNode, Cloneable {
+public final class NamedListNode<N extends InnerNode> implements NamedListView<N>, NamedListChange<N>, TraversableTreeNode, ConstructableTreeNode {
     /** */
     private final Supplier<N> valSupplier;
 
@@ -95,13 +95,23 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
         return this;
     }
 
-    /** */
-    public void delete(String key) {
-        map.remove(key);
+    /** {@inheritDoc} */
+    @Override public void construct(String key, ConfigurationSource src) {
+        if (src == null)
+            map.remove(key);
+        else {
+            N val = map.get(key);
+
+            val = val == null ? valSupplier.get() : (N)val.copy();
+
+            map.put(key, val);
+
+            src.descend(val);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public Object clone() {
+    @Override public NamedListNode<N> copy() {
         return new NamedListNode<>(this);
     }
 }
