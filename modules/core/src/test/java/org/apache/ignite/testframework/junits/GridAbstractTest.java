@@ -1038,6 +1038,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Starts new grid with given index.
      *
      * @param idx Index of the grid to start.
+     * @param cfgC Configuration mutator. Can be used to avoid oversimplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, Consumer<IgniteConfiguration> cfgC) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfg -> {
+            cfgC.accept(cfg);
+
+            return cfg;
+        });
+    }
+
+    /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
      * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
      * @return Started grid.
      * @throws Exception If anything failed.
