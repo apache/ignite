@@ -44,6 +44,8 @@ class SnapshotTest(IgniteTest):
         """
         Basic snapshot test.
         """
+        # Long execution of index validation in the presence of all modules in classpath on DEV_BRANCH version.
+        # https://issues.apache.org/jira/browse/IGNITE-14147
         exclude_modules = [
             "aop", "apache-license-gen", "benchmarks", "camel", "cassandra", "clients", "cloud",
             "codegen", "compatibility", "compress", "dev-utils", "direct-io", "extdata", "flink",
