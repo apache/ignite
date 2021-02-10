@@ -39,7 +39,9 @@ import org.apache.ignite.internal.processors.security.client.ThinClientSecurityC
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckGridClientTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.DistributedAffinityClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
@@ -85,7 +87,9 @@ import org.junit.runners.Suite;
     IgniteClientContainSubjectAddressTest.class,
     SnapshotPermissionCheckTest.class,
 
+    DistributedAffinityClosureRemoteSecurityContextCheckTest.class,
     DistributedClosureRemoteSecurityContextCheckTest.class,
+    ComputeTaskRemoteSecurityContextCheckGridClientTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
     ComputeTaskCancelRemoteSecurityContextCheckTest.class,
     ExecutorServiceRemoteSecurityContextCheckTest.class,

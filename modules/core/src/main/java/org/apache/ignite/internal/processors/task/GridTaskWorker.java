@@ -67,6 +67,7 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -103,6 +104,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 
 /**
  * Grid task worker. Handles full task life cycle.
@@ -470,7 +472,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     @Override protected void body() {
         evtLsnr.onTaskStarted(this);
 
-        try {
+        UUID subjId = ctx.task().getThreadContext(TC_SUBJ_ID);
+
+        if (subjId == null)
+            subjId = ses.subjectId();
+
+        try (OperationSecurityContext c = subjId != null && ctx.security().enabled() ?
+            ctx.security().withContext(subjId) :
+            null
+        ) {
             // Use either user task or deployed one.
             if (task == null) {
                 assert taskCls != null;
@@ -1146,7 +1156,17 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
                     @Nullable @Override public R call() {
-                        return task.reduce(results);
+                        UUID subjId = ctx.task().getThreadContext(TC_SUBJ_ID);
+
+                        if (subjId == null)
+                            subjId = ses.subjectId();
+
+                        try (OperationSecurityContext c = subjId != null && ctx.security().enabled() ?
+                            ctx.security().withContext(subjId) :
+                            null
+                        ) {
+                            return task.reduce(results);
+                        }
                     }
                 });
             }
