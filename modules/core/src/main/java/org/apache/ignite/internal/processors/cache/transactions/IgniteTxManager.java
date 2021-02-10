@@ -2468,15 +2468,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else {
-            if (!tx.local())
-                // Remote (backup) transaction discards update counters in case it was rolled back because of partially
-                // prepared stare. Keeping this counter will cause inconsistency between the nodes counters because
-                // other backup (where preparation missed) will finalize it's counters based only on txs it aware of.
-                tx.txCounters(false).updateCounters().clear();
-
+        else
             tx.rollbackAsync();
-        }
     }
 
     // TODO remove
