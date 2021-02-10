@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import org.junit.Test;
+
 /**
  *
  */
@@ -24,5 +28,13 @@ public class IgniteCrossCacheTxNearEnabledSelfTest extends IgniteCrossCacheTxSel
     /** {@inheritDoc} */
     @Override protected boolean nearEnabled() {
         return true;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOptimisticReadCommitted() throws Exception {
+        checkTxsSingleOp(OPTIMISTIC, READ_COMMITTED);
     }
 }
