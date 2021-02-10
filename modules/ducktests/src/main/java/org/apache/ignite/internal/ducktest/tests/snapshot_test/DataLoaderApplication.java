@@ -37,7 +37,7 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         int interval = jNode.get("interval").asInt();
 
-        int dataSize = jNode.get("dataSizeKB").asInt() * 1024;
+        int valueSize = jNode.get("valueSizeKb").asInt() * 1024;
 
         markInitialized();
 
@@ -57,7 +57,7 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         long start = ThreadLocalRandom.current().nextLong();
 
-        byte[] data = new byte[dataSize];
+        byte[] data = new byte[valueSize];
 
         try (IgniteDataStreamer<Long, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
             dataStreamer.autoFlushFrequency(1000);

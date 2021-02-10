@@ -89,7 +89,7 @@ class SnapshotTest(IgniteTest):
             params={
                 "cacheName": self.CACHE_NAME,
                 "interval": 500_000,
-                "dataSizeKB": 1
+                "valueSizeKb": 1
             }
         )
 
