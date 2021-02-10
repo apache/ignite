@@ -23,7 +23,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/** */
+/**
+ * Test for cache with custom groupId created.
+ * Test for one cache of groupId.
+ */
 public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     /** */
     private static File props;
@@ -36,7 +39,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             KafkaToIgnitePluginProvider provider = new KafkaToIgnitePluginProvider();
 
             provider.setPropertiesPath(props.getAbsolutePath());
-            provider.setGroups("my-cache-2");
+            provider.setCaches("my-cache-2");
 
             cfg.setPluginProviders(provider);
         }

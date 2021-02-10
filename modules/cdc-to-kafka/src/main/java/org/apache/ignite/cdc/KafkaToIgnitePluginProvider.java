@@ -52,7 +52,7 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
     private String propertiesPath;
 
     /** Cache namest to handle. */
-    private String[] groups;
+    private String[] caches;
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -77,12 +77,12 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
         try {
-            Set<Integer> grps = Arrays.stream(requireNonNull(this.groups, "Please, provide group names to handle!"))
+            Set<Integer> caches = Arrays.stream(requireNonNull(this.caches, "Please, provide cache names to handle!"))
                 .mapToInt(CU::cacheId)
                 .boxed()
                 .collect(Collectors.toSet());
 
-            plugin = new KafkaToIgnitePlugin(ctx, Utils.properties(propertiesPath, ERR_MSG), grps);
+            plugin = new KafkaToIgnitePlugin(ctx, Utils.properties(propertiesPath, ERR_MSG), caches);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -109,9 +109,9 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
         this.propertiesPath = propertiesPath;
     }
 
-    /** @param groups Cache names to handle. */
-    public void setGroups(String... groups) {
-        this.groups = groups;
+    /** @param caches Cache names to handle. */
+    public void setCaches(String... caches) {
+        this.caches = caches;
     }
 
     /** {@inheritDoc} */

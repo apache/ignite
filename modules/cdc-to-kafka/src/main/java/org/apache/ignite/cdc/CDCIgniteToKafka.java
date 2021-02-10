@@ -36,7 +36,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
-import static org.apache.ignite.cdc.Utils.fromSystemOrProperty;
+import static org.apache.ignite.cdc.Utils.property;
 import static org.apache.ignite.cdc.Utils.properties;
 
 /**
@@ -63,7 +63,7 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     public static final int TIMEOUT_MIN = 1;
 
     /** Kafka producer to stream events. */
-    private KafkaProducer<BinaryObject, EntryEvent<BinaryObject, BinaryObject>> producer;
+    private KafkaProducer<int[], EntryEvent<BinaryObject, BinaryObject>> producer;
 
     /** Handle only primary entry flag. */
     private boolean onlyPrimary;
@@ -75,7 +75,7 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     private int kafkaPartitionsNum;
 
     /** */
-    private Set<Long> cachesIds;
+    private Set<Integer> cachesIds;
 
     /** {@inheritDoc} */
     @Override public boolean onChange(Iterable<EntryEvent<BinaryObject, BinaryObject>> evts) {
@@ -85,12 +85,13 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
             if (onlyPrimary && !evt.primary())
                 continue;
 
-            if (cachesIds.isEmpty() || cachesIds.contains(evt.cacheId()))
+            if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
+                continue;
 
             futs.add(producer.send(new ProducerRecord<>(
                 topic,
                 evt.partition() % kafkaPartitionsNum,
-                evt.key(),
+                new int[] { evt.cacheId(), evt.partition() },
                 evt
             )));
         }
@@ -110,11 +111,11 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     public void startx() throws Exception {
         Properties props = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
 
-        topic = fromSystemOrProperty(IGNITE_TO_KAFKA_TOPIC, props);
+        topic = property(IGNITE_TO_KAFKA_TOPIC, props);
 
         kafkaPartitionsNum = KafkaUtils.initTopic(topic, props);
 
-        onlyPrimary = Boolean.parseBoolean(fromSystemOrProperty(IGNITE_TO_KAFKA_ONLY_PRIMARY, props));
+        onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, props));
 
         producer = new KafkaProducer<>(props);
 
@@ -132,14 +133,14 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     }
 
     /** */
-    private Set<Long> cachesIds(Properties props) {
-        String cacheNames = fromSystemOrProperty(IGNITE_TO_KAFKA_CACHES, props);
+    private Set<Integer> cachesIds(Properties props) {
+        String cacheNames = property(IGNITE_TO_KAFKA_CACHES, props);
 
         if (cacheNames == null || cacheNames.isEmpty())
             return Collections.emptySet();
 
         return Arrays.stream(cacheNames.split(","))
-            .mapToLong(CU::cacheId)
+            .mapToInt(CU::cacheId)
             .boxed()
             .collect(Collectors.toSet());
     }

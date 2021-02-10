@@ -28,7 +28,7 @@ import java.util.Set;
 
 public class Utils {
     /** @return Kafka topic name. */
-    public static String fromSystemOrProperty(String propName, Properties props) {
+    public static String property(String propName, Properties props) {
         String val = System.getProperty(propName);
 
         return val != null ? val : props.getProperty(propName);

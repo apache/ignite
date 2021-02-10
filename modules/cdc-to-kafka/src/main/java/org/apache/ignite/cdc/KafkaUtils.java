@@ -29,7 +29,7 @@ import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
 
-import static org.apache.ignite.cdc.Utils.fromSystemOrProperty;
+import static org.apache.ignite.cdc.Utils.property;
 
 /** */
 public class KafkaUtils {
@@ -57,9 +57,9 @@ public class KafkaUtils {
 
             int kafkaPartitionsNum = Integer.parseInt(
                 Objects.requireNonNull(
-                    fromSystemOrProperty(IGNITE_TO_KAFKA_NUM_PARTITIONS, props)));
+                    property(IGNITE_TO_KAFKA_NUM_PARTITIONS, props)));
 
-            String replicationFactorStr = fromSystemOrProperty(IGNITE_TO_KAFKA_REPLICATION_FACTOR, props);
+            String replicationFactorStr = property(IGNITE_TO_KAFKA_REPLICATION_FACTOR, props);
 
             adminCli.createTopics(Collections.singleton(new NewTopic(
                 topic,
