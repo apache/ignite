@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,6 +34,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class CacheQueriesCodeConfigurationTest
     {
         const string CacheName = "personCache";
+
+        /// <summary>
+        /// Tears down the test fixture.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+        }
 
         /// <summary>
         /// Tests the SQL query.
@@ -147,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(-1, idx[1].InlineSize);
             Assert.AreEqual(513, idx[2].InlineSize);
             Assert.AreEqual(-1, idx[3].InlineSize);
-            
+
             Assert.AreEqual(3, idxField.Precision);
             Assert.AreEqual(4, idxField.Scale);
         }
@@ -212,6 +222,92 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests query entity validation when no <see cref="QuerySqlFieldAttribute"/> has been set.
+        /// </summary>
+        [Test]
+        public void TestQueryEntityValidationWithMissingQueryAttributes()
+        {
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cfg = new CacheConfiguration(
+                    TestUtils.TestName,
+                    new QueryEntity(typeof(string), typeof(MissingAttributesTest)));
+
+                var cache = ignite.GetOrCreateCache<string, MissingAttributesTest>(cfg);
+
+                cache["1"] = new MissingAttributesTest {Foo = "Bar"};
+            }
+        }
+
+        /// <summary>
+        /// Tests that key and value types can be generic.
+        /// </summary>
+        [Test]
+        public void TestGenericQueryTypes()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(GenericTest<int>), typeof(GenericTest2<string>))}
+            };
+
+            var cache = ignite.GetOrCreateCache<GenericTest<int>, GenericTest2<string>>(cfg);
+            var key = new GenericTest<int>(1);
+            var value = new GenericTest2<string>("foo");
+            cache[key] = value;
+
+            var binType = ignite.GetBinary().GetBinaryType(value.GetType());
+            var expectedTypeName = BinaryBasicNameMapper.FullNameInstance.GetTypeName(value.GetType().FullName);
+            var expectedTypeId = BinaryUtils.GetStringHashCodeLowerCase(expectedTypeName);
+
+            Assert.AreEqual(expectedTypeName, binType.TypeName);
+            Assert.AreEqual(expectedTypeId, binType.TypeId);
+
+            var queryEntity = cache.GetConfiguration().QueryEntities.Single();
+            Assert.AreEqual(expectedTypeName, queryEntity.ValueTypeName);
+
+            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT Foo, Bar from GENERICTEST2")).Single();
+
+            Assert.AreEqual(key.Foo, sqlRes[0]);
+            Assert.AreEqual(value.Bar, sqlRes[1]);
+        }
+
+        /// <summary>
+        /// Tests that query types can be nested generic.
+        /// </summary>
+        [Test]
+        public void TestNestedGenericQueryTypes()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest<GenericTest2<string>>))}
+            };
+
+            var cache = ignite.GetOrCreateCache<int, GenericTest<GenericTest2<string>>>(cfg);
+            var value = new GenericTest<GenericTest2<string>>(new GenericTest2<string>("foobar"));
+            cache[1] = value;
+
+            var sqlRes = cache.Query(new SqlFieldsQuery("SELECT Bar from GENERICTEST")).Single().Single();
+
+            Assert.AreEqual(value.Foo.Bar, sqlRes);
+
+            var valTypeName = value.GetType().FullName;
+            Assert.IsNotNull(valTypeName);
+        }
+
+        /// <summary>
+        /// Class without any <see cref="QuerySqlFieldAttribute"/> attributes.
+        /// </summary>
+        private class MissingAttributesTest
+        {
+            /** */
+            public string Foo { get; set; }
         }
 
         /// <summary>
@@ -361,6 +457,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             /// </value>
             [QuerySqlField]
             public string Foo { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest<T>
+        {
+            /** */
+            public GenericTest(T foo)
+            {
+                Foo = foo;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Foo { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest2<T>
+        {
+            /** */
+            public GenericTest2(T bar)
+            {
+                Bar = bar;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Bar { get; set; }
         }
     }
 }

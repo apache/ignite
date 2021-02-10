@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** String mode. */
         public static readonly bool UseStringSerializationVer2 =
             (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
-        
+
         /** Cached maps of enum members per type. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>> EnumValues = 
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>> EnumValues =
             new CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>>();
 
         /// <summary>
@@ -926,7 +926,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/>
         /// is laid out in memory sequentially and without gaps between fields.
         /// </summary>
         /// <param name="val">The value.</param>
@@ -974,7 +974,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/>
         /// is laid out in memory sequentially and without gaps between fields.
         /// </summary>
         /// <param name="stream">The stream.</param>
@@ -1084,7 +1084,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             stream.WriteInt(val.Length);
 
             for (int i = 0; i < val.Length; i++)
-                ctx.Write(val.GetValue(i));
+                ctx.WriteObjectDetached(val.GetValue(i), parentCollection: val);
         }
 
         /// <summary>
@@ -1103,8 +1103,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static int GetArrayElementTypeId(Type elemType, Marshaller marsh)
         {
-            return elemType == typeof(object) 
-                ? ObjTypeId 
+            return elemType == typeof(object)
+                ? ObjTypeId
                 : marsh.GetDescriptor(elemType).TypeId;
         }
 
@@ -1171,6 +1171,38 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Read string array.
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String array.</returns>
+        public static string[] ReadStringArray(IBinaryStream stream)
+        {
+            var len = stream.ReadInt();
+            var res = new string[len];
+
+            for (var i = 0; i < len; i++)
+                res[i] = stream.ReadByte() == HdrNull ? null : ReadString(stream);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Read string array.
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String array.</returns>
+        public static Guid?[] ReadGuidArray(IBinaryStream stream)
+        {
+            var len = stream.ReadInt();
+            var res = new Guid?[len];
+
+            for (var i = 0; i < len; i++)
+                res[i] = stream.ReadByte() == HdrNull ? (Guid?) null : ReadGuid(stream);
+
+            return res;
+        }
+
+        /// <summary>
         /// Read timestamp array.
         /// </summary>
         /// <param name="stream">Stream.</param>
@@ -1229,7 +1261,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(colType);
 
             foreach (object elem in val)
-                ctx.Write(elem);
+                ctx.WriteObjectDetached(elem, parentCollection: val);
         }
 
         /**
@@ -1310,8 +1342,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (DictionaryEntry entry in val)
             {
-                ctx.Write(entry.Key);
-                ctx.Write(entry.Value);
+                ctx.WriteObjectDetached(entry.Key, parentCollection: val);
+                ctx.WriteObjectDetached(entry.Value, parentCollection: val);
             }
         }
 
@@ -1498,8 +1530,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static string GetSqlTypeName(Type type)
         {
-            // SQL always uses simple type name without namespace, parent class, etc.
-            return type.FullName;
+            // Ignite SQL engine always uses simple type name without namespace, parent class, etc -
+            // see QueryUtils.typeName.
+            // GridQueryProcessor.store uses this type name to ensure that we put correct data to the cache:
+            // cacheObjects().typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId.
+            // Additionally, this type name is passed back to UnmanagedCallbacks.BinaryTypeGet to register the
+            // query types on cache start.
+            return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
         /**
@@ -1596,7 +1633,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             err = null;
 
             if (reader.ReadBoolean()) // success indication
-                return reader.ReadObject<object>(); 
+                return reader.ReadObject<object>();
 
             err = reader.ReadBoolean() // native error indication
                 ? reader.ReadObject<object>()
@@ -1746,7 +1783,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var enumType = Enum.GetUnderlyingType(type);
 
-            return enumType == typeof(int) || enumType == typeof(byte) || enumType == typeof(sbyte) 
+            return enumType == typeof(int) || enumType == typeof(byte) || enumType == typeof(sbyte)
                 || enumType == typeof(short) || enumType == typeof(ushort) || enumType == typeof(uint);
         }
 
@@ -1763,7 +1800,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return TimeSpan.FromMilliseconds(ms);
         }
-        
+
         /// <summary>
         /// Gets the enum values.
         /// </summary>
@@ -1771,7 +1808,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(enumType != null);
             Debug.Assert(enumType.IsEnum);
-            
+
             Dictionary<string,int> res;
             if (EnumValues.TryGetValue(enumType, out res))
             {
@@ -1792,10 +1829,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             EnumValues.Set(enumType, res);
-            
+
             return res;
         }
-        
+
         /// <summary>
         /// Gets the enum value as int.
         /// </summary>

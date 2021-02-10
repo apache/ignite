@@ -58,15 +58,15 @@ public class IgniteBinaryCacheTestSuite {
      * @return Test suite.
      */
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite.suite(ignoredTests));
+
         // Tests below have a special version for Binary Marshaller
-        ignoredTests.add(GridCacheAffinityRoutingSelfTest.class);
-        ignoredTests.add(IgniteCacheAtomicLocalExpiryPolicyTest.class);
-        ignoredTests.add(GridCacheEntryMemorySizeSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityRoutingSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicLocalExpiryPolicyTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEntryMemorySizeSelfTest.class, ignoredTests);
 
         // Tests that are not ready to be used with BinaryMarshaller
-        ignoredTests.add(GridCacheMvccSelfTest.class);
-
-        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite.suite(ignoredTests));
+        GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class, ignoredTests);

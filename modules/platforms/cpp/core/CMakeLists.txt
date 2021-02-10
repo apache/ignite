@@ -17,7 +17,8 @@
 
 project(ignite)
 
-include_directories(${JNI_INCLUDE_DIRS} include)
+include_directories(SYSTEM ${JNI_INCLUDE_DIRS})
+include_directories(include)
 
 set(TARGET ${PROJECT_NAME})
 

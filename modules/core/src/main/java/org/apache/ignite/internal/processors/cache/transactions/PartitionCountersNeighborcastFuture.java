@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -174,7 +175,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             MiniFuture mini = (MiniFuture)fut;
 
             if (mini.nodeId.equals(nodeId)) {
-                cctx.kernalContext().closure().runLocalSafe(mini::onDone);
+                cctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)mini::onDone);
 
                 return;
             }
