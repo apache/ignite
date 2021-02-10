@@ -41,7 +41,7 @@ class SnapshotTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(
         str(DEV_BRANCH),
-        # str(LATEST_2_9)
+        str(LATEST_2_9)
     )
     def snapshot_test(self, ignite_version):
         """
