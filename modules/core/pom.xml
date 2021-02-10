@@ -492,7 +492,7 @@
                                 <IGNITE_QUIET>false</IGNITE_QUIET>
                             </systemPropertyVariables>
                             <excludes>
-                                <exclude>**/org/apache/ignite/**/*Test.java</exclude>
+                                <exclude>**/org/apache/ignite/**/*.java</exclude>
                                 <exclude>**/annotation/*Test.java</exclude>
                                 <exclude>**/ClientServerTest.java</exclude>
                             </excludes>

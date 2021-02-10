@@ -33,6 +33,9 @@ import java.util.Set;
  * Represents a persisted list of orphaned tests.
  */
 public class OrphanedTestCollection {
+    /** This line marks {@link #getOrphanedTests()} to ignore content of the file. */
+    private static final String IGNORE_MARK = "---";
+
     /** File to persist orphaned tests. */
     private final Path path = initPath();
 
@@ -46,6 +49,9 @@ public class OrphanedTestCollection {
         ) {
             String testClsName = testReader.readLine();
 
+            if (IGNORE_MARK.equals(testClsName))
+                return new HashSet<>();
+
             Set<String> testClasses = new HashSet<>();
 
             while (testClsName != null) {
@@ -58,11 +64,19 @@ public class OrphanedTestCollection {
         }
     }
 
-    /** */
-    public void persistOrphanedTests(Collection<String> testClasses) throws Exception {
+    /**
+     * @param testClasses Collection of test classes names.
+     * @param last Whether it's the last call within whole project.
+     */
+    public void persistOrphanedTests(Collection<String> testClasses, boolean last) throws Exception {
         try (
             BufferedWriter testWriter = new BufferedWriter(new FileWriter(path.toFile()))
         ) {
+            if (last) {
+                testWriter.write(IGNORE_MARK);
+                testWriter.newLine();
+            }
+
             for (String cls: testClasses) {
                 testWriter.write(cls);
                 testWriter.newLine();
