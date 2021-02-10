@@ -276,13 +276,13 @@ class ControlUtility:
 
     def __form_cmd(self, node, cmd):
         ssl = ""
-        if hasattr(self.creds, 'key_store_path'):
+        if self.creds.key_store_path is not None:
             ssl = f" --keystore {self.creds['key_store_path']} " \
                   f"--keystore-password {self.creds['key_store_password']} " \
                   f"--truststore {self.creds['trust_store_path']} " \
                   f"--truststore-password {self.creds['trust_store_password']}"
         auth = ""
-        if hasattr(self.creds, 'login'):
+        if self.creds.login is not None:
             auth = f" --user {self.creds.login} " \
                    f"--password {self.creds.password} "
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
@@ -405,12 +405,22 @@ class Creds():
     POJO for SSL and Authentication params
     """
 
-    key_store_path: str
-    key_store_password: str
-    trust_store_path: str
-    trust_store_password: str
-    login: str
-    password: str
+    # pylint: disable=R0913
+    def __init__(self, key_store_path=None, key_store_password=None,
+                 trust_store_path=None, trust_store_password=None,
+                 login=None, password=None):
+        self.key_store_path = key_store_path
+        self.key_store_password = key_store_password
+        self.trust_store_path = trust_store_path
+        self.trust_store_password = trust_store_password
+        self.login = login
+        self.password = password
+
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Creds):
+            return self.__dict__ == other.__dict__
+        return False
 
 
 def parse_dict(raw):
