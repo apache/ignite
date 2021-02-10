@@ -17,8 +17,11 @@
 
 package org.apache.ignite.sqltests;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -62,6 +65,10 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
 
     private static final String GROUP_IDX = "id_val_idx";
 
+    private static final String ID_IDX = "_idx_idx";
+
+    private static final String VAL_IDX = "_val_idx";
+
     private static IgniteEx igniteClient;
 
     @Parameter
@@ -104,7 +111,8 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
         createComplexEntityTableWithIndices();
 
         String tableName = ComplexIndexEntity.class.getSimpleName();
-        String query = formInitialQueryPart(tableName, GROUP_IDX) + String.format(QUERY_COMPLEX_WHERE, -5, "-5");
+        String query = formInitialQueryPart(tableName, Collections.singleton(GROUP_IDX)) +
+                String.format(QUERY_COMPLEX_WHERE, -5, "-5");
 
         runQuery(query);
     }
@@ -114,7 +122,7 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
         createComplexEntityTableWithIndices();
 
         String tableName = ComplexIndexEntity.class.getSimpleName();
-        String query = formInitialQueryPart(tableName, GROUP_IDX) +
+        String query = formInitialQueryPart(tableName, Collections.singleton(GROUP_IDX)) +
                 String.format(QUERY_COMPLEX_EXISTS, tableName, -5, "-5");
 
         runQuery(query);
@@ -140,6 +148,32 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
         runQuery(query);
     }
 
+    @Test
+    public void testDoubleIndexComplexExistsClause() {
+        createEntityTableWithIndices();
+
+        String tableName = DoubleIndexTestEntity.class.getSimpleName();
+        String query = formInitialQueryPart(tableName, new HashSet<String>() {{
+            add(tableName + ID_IDX);
+            add(tableName + VAL_IDX);
+        }}) + String.format(QUERY_COMPLEX_EXISTS, tableName, -5, "-5");
+
+        runQuery(query);
+    }
+
+    @Test
+    public void testDoubleIndexComplexWhereClause() {
+        createEntityTableWithIndices();
+
+        String tableName = DoubleIndexTestEntity.class.getSimpleName();
+        String query = formInitialQueryPart(tableName, new HashSet<String>() {{
+            add(tableName + ID_IDX);
+            add(tableName + VAL_IDX);
+        }}) + String.format(QUERY_COMPLEX_WHERE, -5, "-5");
+
+        runQuery(query);
+    }
+
     public void runQuery(String query) {
 
         List<List<?>> explained = getQueryResult(query);
@@ -152,14 +186,14 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
     }
 
     @NotNull
-    private String formInitialQueryPart(String tableName, String index) {
-        return String.format(EXPLAIN_SELECT, tableName) +
-                (hint ? String.format(USE_INDEX, index) : "");
+    private String formInitialQueryPart(String tableName) {
+        return formInitialQueryPart(tableName, Collections.singleton(tableName + ID_IDX));
     }
 
     @NotNull
-    private String formInitialQueryPart(String tableName) {
-        return formInitialQueryPart(tableName, tableName + "_idx_idx");
+    private String formInitialQueryPart(String tableName, Set<String> indices) {
+        return String.format(EXPLAIN_SELECT, tableName) +
+                (hint ? String.format(USE_INDEX, String.join(",", indices)) : "");
     }
 
     private List<List<?>> getQueryResult(String query) {
@@ -187,6 +221,17 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
         );
 
         populateTable(cache, ComplexIndexEntity::new);
+    }
+
+    private void createEntityTableWithIndices() {
+        IgniteCache<Object, Object> cache = igniteClient.getOrCreateCache(
+                new CacheConfiguration<>(DoubleIndexTestEntity.class.getSimpleName())
+                        .setIndexedTypes(Integer.class, DoubleIndexTestEntity.class)
+                        .setIndexedTypes(String.class, DoubleIndexTestEntity.class)
+                        .setSqlSchema(SQL_SCHEMA)
+        );
+
+        populateTable(cache, DoubleIndexTestEntity::new);
     }
 
     private void populateTable(IgniteCache<Object, Object> cache, Function<Integer, ?> function) {
@@ -263,6 +308,38 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
                     "idx=" + idx +
                     ", val='" + val + '\'' +
                     ", someObject=" + someObject +
+                    '}';
+        }
+    }
+
+    private static class DoubleIndexTestEntity {
+
+        @QuerySqlField(index = true)
+        private final int idx;
+
+        @QuerySqlField(index = true)
+        private final String val;
+
+        private DoubleIndexTestEntity(int idx) {
+            this.idx = idx;
+            val = Integer.toString(idx);
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SingleIndexTestEntity)) return false;
+            SingleIndexTestEntity that = (SingleIndexTestEntity) o;
+            return idx == that.idx && Objects.equals(val, that.val);
+        }
+
+        @Override public int hashCode() {
+            return Objects.hash(idx, val);
+        }
+
+        @Override public String toString() {
+            return "SingleIndexTestEntity{" +
+                    "idx=" + idx +
+                    ", val=" + val +
                     '}';
         }
     }
