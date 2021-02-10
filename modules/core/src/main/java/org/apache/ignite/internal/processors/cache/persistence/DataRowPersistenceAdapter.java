@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 
 /**
@@ -51,9 +49,7 @@ public class DataRowPersistenceAdapter extends DataRow {
      * @param incomplete Incomplete object.
      * @param coctx Cache object context.
      * @param io Page IO.
-     * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
-     * @param skipVer Whether version read should be skipped.
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
@@ -63,9 +59,7 @@ public class DataRowPersistenceAdapter extends DataRow {
         ByteBuffer buff,
         int itemId,
         DataPageIO io,
-        RowData rowData,
-        boolean readCacheId,
-        boolean skipVer
+        boolean readCacheId
     ) throws IgniteCheckedException {
         assert coctx != null;
 
@@ -75,13 +69,10 @@ public class DataRowPersistenceAdapter extends DataRow {
         if (incomplete == null) {
             if (nextLink == 0) {
                 // Fast path for a single page row.
-                readFullRow(coctx, buff, data.offset(), rowData, readCacheId, skipVer);
+                readFullRow(coctx, buff, data.offset(), readCacheId);
 
                 return null;
             }
-
-            if (rowData == LINK_WITH_HEADER)
-                return null;
         }
 
         int off = data.offset();
@@ -90,9 +81,7 @@ public class DataRowPersistenceAdapter extends DataRow {
         buff.position(off);
         buff.limit(off + payloadSize);
 
-        boolean keyOnly = rowData == RowData.KEY_ONLY;
-
-        incomplete = readFragment(() -> coctx, buff, keyOnly, readCacheId, incomplete, skipVer);
+        incomplete = readFragment(() -> coctx, buff, false, readCacheId, incomplete, false);
 
         if (incomplete != null)
             incomplete.setNextLink(nextLink);
@@ -103,8 +92,6 @@ public class DataRowPersistenceAdapter extends DataRow {
     /**
      * @param io Data page IO.
      * @param itemId Row item Id.
-     * @param rowData Required row data.
-     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromPageBuffer(
@@ -114,14 +101,9 @@ public class DataRowPersistenceAdapter extends DataRow {
         ByteBuffer fragmentBuff,
         DataPageIO io,
         int itemId,
-        RowData rowData,
-        boolean readCacheId,
-        boolean skipVer
+        boolean readCacheId
     ) throws IgniteCheckedException {
-        assert rowData == CacheDataRowAdapter.RowData.FULL;
-
-        IncompleteObject<?> incomplete = readIncomplete(null, coctx, pageBuff, itemId, io,
-            rowData, readCacheId, skipVer);
+        IncompleteObject<?> incomplete = readIncomplete(null, coctx, pageBuff, itemId, io, readCacheId);
 
         if (incomplete == null)
             return;
@@ -141,9 +123,9 @@ public class DataRowPersistenceAdapter extends DataRow {
             try {
                 DataPageIO io2 = PageIO.getPageIO(T_DATA, PageIO.getVersion(fragmentBuff));
 
-                incomplete = readIncomplete(incomplete, coctx, fragmentBuff, itemId(nextLink), io2, rowData, readCacheId, skipVer);
+                incomplete = readIncomplete(incomplete, coctx, fragmentBuff, itemId(nextLink), io2, readCacheId);
 
-                if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                if (incomplete == null)
                     return;
 
                 nextLink = incomplete.getNextLink();
@@ -159,23 +141,16 @@ public class DataRowPersistenceAdapter extends DataRow {
 
     /**
      * @param coctx Cache object context.
-     * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
-     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      */
     protected void readFullRow(
         CacheObjectContext coctx,
         ByteBuffer buff,
         int offset,
-        RowData rowData,
-        boolean readCacheId,
-        boolean skipVer
+        boolean readCacheId
     ) throws IgniteCheckedException {
         buff.position(offset);
-
-        if (rowData == LINK_WITH_HEADER)
-            return;
 
         if (readCacheId)
             cacheId = buff.getInt();
@@ -183,15 +158,10 @@ public class DataRowPersistenceAdapter extends DataRow {
         int len = buff.getInt();
         byte type = buff.get();
 
-        if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
-            byte[] bytes = new byte[len];
-            buff.get(bytes);
+        byte[] bytes0 = new byte[len];
+        buff.get(bytes0);
 
-            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
-
-            if (rowData == RowData.KEY_ONLY)
-                return;
-        }
+        key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes0);
 
         len = buff.getInt();
         type = buff.get();
@@ -201,14 +171,7 @@ public class DataRowPersistenceAdapter extends DataRow {
 
         val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
-        if (skipVer) {
-            ver = null;
-
-            int verLen = CacheVersionIO.readSize(buff, false);
-            buff.position(buff.position() + verLen);
-        }
-        else
-            ver = CacheVersionIO.read(buff, false);
+        ver = CacheVersionIO.read(buff, false);
 
         verReady = true;
 

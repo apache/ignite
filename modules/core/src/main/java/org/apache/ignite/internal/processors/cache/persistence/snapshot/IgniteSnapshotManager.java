@@ -169,7 +169,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
-import static org.apache.ignite.internal.processors.cache.tree.CacheDataTree.asRowData;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
@@ -1565,8 +1564,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             fragmentBuff,
                             io,
                             itemId,
-                            asRowData(null),
-                            false,
                             false);
 
                         rows.add(row);
