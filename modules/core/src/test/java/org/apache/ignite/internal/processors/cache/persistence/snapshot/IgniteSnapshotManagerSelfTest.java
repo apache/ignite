@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -395,7 +396,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testClusterSnapshotIterator() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        int keys = 127;
+
+        IgniteEx ignite = startGridsWithCache(2,
+            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)), keys);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
@@ -406,6 +410,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             dfltCacheCfg.getName(),
             0)
         ) {
+            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
@@ -413,12 +419,15 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                         .cache().cache(dfltCacheCfg.getName()).context().cacheObjectContext(),
                     U.resolveClassLoader(ignite.configuration()));
 
+                // Invariant for cache: cache key always equals to cache value.
+                assertTrue("Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']',
+                    row.key().value(coctx, false, null) == row.value().value(coctx, false));
+
                 rows++;
             }
         }
 
-        assertTrue("Invalid number of rows: " + rows,
-            rows == (CACHE_KEYS_RANGE / dfltCacheCfg.getAffinity().partitions()));
+        assertEquals("Invalid number of rows: " + rows, keys, rows);
     }
 
     /**
