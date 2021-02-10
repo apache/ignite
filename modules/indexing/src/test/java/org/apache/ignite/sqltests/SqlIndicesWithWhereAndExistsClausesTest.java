@@ -69,7 +69,7 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
 
     @Parameters(name = "{index}: hint - {0} ")
     public static Object[] data() {
-        return new Object[] {true, false};
+        return new Object[] {false, true};
     }
 
     @Override protected void beforeTestsStarted() throws Exception {
@@ -147,7 +147,7 @@ public class SqlIndicesWithWhereAndExistsClausesTest extends AbstractIndexingCom
         Assert.assertEquals(2, explained.size());
         String explainedString = (String) explained.get(0).get(0);
 
-        Assert.assertTrue(explainedString, explainedString.contains("_IDX: "));
+        Assert.assertTrue(explainedString, explainedString.contains("_IDX"));
         Assert.assertFalse(explainedString, explainedString.contains("SCAN"));
     }
 
