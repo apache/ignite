@@ -196,6 +196,23 @@ To run tests locally use:
 
 For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
 
+Test suites
+=========
+All unit tests must be included in any test suite. Travis runs a check for that. To check it locally run for the root project:
+
+        mvn test -Pcheck-test-suites
+
+If you want to check a single module only:
+
+1) Add ignite-tools dependency to the test scope of the module.
+
+2) Install ignite-tools with command:
+
+    mvn install -Pcheck-test-suites
+
+3) Run tests in the module:
+
+    mvn test
 
 Apache RAT Instructions
 =======================

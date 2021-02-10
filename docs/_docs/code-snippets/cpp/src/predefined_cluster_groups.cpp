@@ -14,9 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/**
- * <!-- Package description. -->
- * Contains implementation of Spring transaction manager.
- */
-package org.apache.ignite.transactions.spring;
+//tag::cluster-groups[]
+Ignite ignite = Ignition::Get();
+ClusterGroup cluster = ignite.GetCluster().AsClusterGroup();
+// All nodes on which cache with name "myCache" is deployed,
+// either in client or server mode.
+ClusterGroup cacheGroup = cluster.ForCacheNodes("myCache");
+// All data nodes responsible for caching data for "myCache".
+ClusterGroup dataGroup = cluster.ForDataNodes("myCache");
+// All client nodes that access "myCache".
+ClusterGroup clientGroup = cluster.ForClientNodes("myCache");
+//end::cluster-groups[]
