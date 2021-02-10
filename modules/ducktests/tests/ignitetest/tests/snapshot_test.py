@@ -67,7 +67,7 @@ class SnapshotTest(IgniteTest):
                                 envs=envs)
         service.start()
 
-        control_utility = ControlUtility(service, envs=envs)
+        control_utility = ControlUtility(service)
         control_utility.activate()
 
         client_config = IgniteConfiguration(
