@@ -18,25 +18,56 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics;
+    using System.Linq.Expressions;
     using System.Reflection;
     using System.Runtime.InteropServices;
 
     /// <summary>
-    /// TODO
+    /// Native library call utilities.
     /// </summary>
     public static class NativeLibraryUtils
     {
+        /// <summary>
+        /// Sets dll import resolvers.
+        /// </summary>
         public static void SetDllImportResolvers()
         {
             // Init custom resolver for .NET 5+ single-file apps.
-            // TODO: Do it with Reflection
-            // TODO: DllImportSearchPath is not available on .NET 4.
-            // Type.GetType("System.Runtime.InteropServices.NativeLibrary")
-            // NativeLibrary.SetDllImportResolver(typeof(NativeLibraryUtils).Assembly,
-            //     (string libraryName, Assembly assembly, DllImportSearchPath searchPath) =>
-            //         Resolve(libraryName, assembly, searchPath));
+            // Do it with Reflection, because SetDllImportResolver is not available on some frameworks,
+            // and multi-targeting is not yet implemented.
+            // TODO: Cache all of this.
+            var dllImportResolverType = Type.GetType("System.Runtime.InteropServices.DllImportResolver");
+            var dllImportSearchPathType = Type.GetType("System.Runtime.InteropServices.DllImportSearchPath");
+            var nativeLibraryType = Type.GetType("System.Runtime.InteropServices.NativeLibrary");
+
+            if (dllImportResolverType == null || dllImportSearchPathType == null || nativeLibraryType == null)
+            {
+                return;
+            }
+
+            var setDllImportResolverMethod = nativeLibraryType.GetMethod("SetDllImportResolver");
+
+            if (setDllImportResolverMethod == null)
+            {
+                return;
+            }
+
+            var resolveMethod = typeof(NativeLibraryUtils).GetMethod("Resolve", BindingFlags.Static | BindingFlags.NonPublic);
+            Debug.Assert(resolveMethod != null);
+
+            var libraryNameArg = Expression.Parameter(typeof(string), "libraryName");
+            var asmArg = Expression.Parameter(typeof(Assembly), "asm");
+            var searchPathArg = Expression.Parameter(typeof(Nullable<>).MakeGenericType(dllImportSearchPathType), "searchPath");
+
+            var invokeImplExpr = Expression.Call(resolveMethod, libraryNameArg);
+            var dllImportResolver = Expression.Lambda(dllImportResolverType, invokeImplExpr, libraryNameArg, asmArg, searchPathArg);
+            var resolveDelegate = dllImportResolver.Compile();
+
+            setDllImportResolverMethod.Invoke(null, new object[] {typeof(Ignition).Assembly, resolveDelegate});
         }
 
+        // ReSharper disable once UnusedMember.Local (reflection).
         private static IntPtr Resolve(string libraryName)
         {
             return libraryName == "libcoreclr.so"
