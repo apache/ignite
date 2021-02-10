@@ -947,6 +947,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
                 cctx.tm().rollbackTx(this, false, skipCompletedVersions());
 
+                TxCounters counters = txCounters(false);
+
+                if (counters != null)
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), true, false);
+
                 state(ROLLED_BACK);
 
                 cctx.mvccCaching().onTxFinished(this, false);
