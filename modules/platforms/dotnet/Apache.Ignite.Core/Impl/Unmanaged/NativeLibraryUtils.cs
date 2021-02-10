@@ -30,13 +30,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             // Init custom resolver for .NET 5+ single-file apps.
             // TODO: Do it with Reflection
+            // TODO: DllImportSearchPath is not available on .NET 4.
             // Type.GetType("System.Runtime.InteropServices.NativeLibrary")
             // NativeLibrary.SetDllImportResolver(typeof(NativeLibraryUtils).Assembly,
             //     (string libraryName, Assembly assembly, DllImportSearchPath searchPath) =>
             //         Resolve(libraryName, assembly, searchPath));
         }
 
-        private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath searchPath)
+        private static IntPtr Resolve(string libraryName)
         {
             return libraryName == "libcoreclr.so"
                 ? (IntPtr) (-1)  // Self-referencing binary.
