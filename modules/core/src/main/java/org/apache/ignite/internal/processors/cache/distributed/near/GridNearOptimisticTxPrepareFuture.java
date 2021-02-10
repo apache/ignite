@@ -416,14 +416,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
+            if (write.context().isNear())
+                hasNearCache = true;
+
             GridDistributedTxMapping updated = map0(write, topVer, cur, topLocked, remap, perPriNodesMapping, hasNearCache);
 
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
                 break;
-
-            if (write.context().isNear())
-                hasNearCache = true;
 
             if (cur != updated) {
                 if (!perPriNodesMapping.values().contains(updated)) // todo !!!
