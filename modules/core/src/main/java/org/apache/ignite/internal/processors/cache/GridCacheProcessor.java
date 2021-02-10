@@ -5837,7 +5837,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Mapping: processing time in millis -> partition ids.
      * @see #mergeTopProcessingPartitions
      */
-    static <E extends Comparable<? super E>> NavigableMap<Long, List<E>> topProcessingPartitions(
+    static <E> NavigableMap<Long, List<E>> topProcessingPartitions(
         Map<Integer, Long> partDurations,
         int max,
         Function<Integer, E> partFun
@@ -5888,7 +5888,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Mapping: processing time in millis -> partition ids.
      * @see #topProcessingPartitions
      */
-    static <E extends Comparable<? super E>> NavigableMap<Long, List<E>> mergeTopProcessingPartitions(
+    static <E> NavigableMap<Long, List<E>> mergeTopProcessingPartitions(
         NavigableMap<Long, List<E>> top0,
         NavigableMap<Long, List<E>> top1,
         int max
