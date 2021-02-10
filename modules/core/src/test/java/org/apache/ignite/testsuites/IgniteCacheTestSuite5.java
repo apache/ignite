@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroups
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
@@ -153,7 +154,7 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTopologyChangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTransactionRemapTest.class, ignoredTests);
 
-        //GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
 
         return suite;
     }

@@ -19,14 +19,34 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.testframework.GridSpiTestContext;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
@@ -36,6 +56,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.IgniteUtils.spiAttribute;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_HOST_NAMES;
 import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
@@ -51,9 +72,30 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
      */
     private String locHost = "0.0.0.0";
 
+    /** */
+    private final Collection<IgniteTestResources> resourcesToClean = new ArrayList<>();
+
+    /** */
+    private final Collection<CommunicationSpi> spisToStop = new ArrayList<>();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        for (IgniteTestResources itr : resourcesToClean) {
+            itr.stopThreads();
+        }
+
+        for (CommunicationSpi commSpi : spisToStop) {
+            commSpi.onContextDestroyed();
+
+            commSpi.setListener(null);
+
+            commSpi.spiStop();
+        }
+
+        resourcesToClean.clear();
+        spisToStop.clear();
 
         super.afterTest();
     }
@@ -103,6 +145,122 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         cfg.setCommunicationSpi(commSpi);
 
         startGrid(cfg);
+    }
+
+    /**
+     * Verifies that TcpCommunicationSpi starts messaging protocol only when fully initialized.
+     *
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-12982">IGNITE-12982</a>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK", value = "true")
+    public void testSendToNonInitializedTcpCommSpi() throws Exception {
+        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
+        LogListener npeLsnr = LogListener.matches("NullPointerException")
+            .andMatches("InboundConnectionHandler.onMessageSent").build();
+
+        listeningLogger.registerListener(npeLsnr);
+
+        GridTestNode sendingNode = new GridTestNode();
+        sendingNode.order(0);
+        GridSpiTestContext sendingCtx = initSpiContext();
+
+        TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLogger, false);
+        spisToStop.add(sendingSpi);
+
+        sendingSpi.onContextInitialized(sendingCtx);
+
+        GridTestNode receiverNode = new GridTestNode();
+        receiverNode.order(1);
+        GridSpiTestContext receiverCtx = initSpiContext();
+
+        /*
+         * This is a dirty hack to intervene into TcpCommunicationSpi#onContextInitialized0 method
+         * and add a delay before injecting metrics listener into its clients (like InboundConnectionHandler).
+         * The purpose of the delay is to make race between sending a message and initializing TcpCommSpi visible.
+         *
+         * This solution heavily depends on current code structure of onContextInitialized0 method.
+         * If any modifications are made to it, this logic could break and the test starts failing.
+         *
+         * In that case try to rewrite the test or delete it as this race is really hard to test.
+         */
+        receiverCtx.metricsRegistryProducer((name) -> {
+            try {
+                Thread.sleep(100);
+            } catch (Exception ignored) {
+                // No-op.
+            }
+
+            return new MetricRegistry(name, null, null, new NullLogger());
+        });
+
+        TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLogger, true);
+        spisToStop.add(receiverSpi);
+
+        receiverCtx.remoteNodes().add(sendingNode);
+        sendingCtx.remoteNodes().add(receiverNode);
+
+        IgniteInternalFuture sendFut = GridTestUtils.runAsync(() -> {
+            Message msg = new GridTestMessage(sendingNode.id(), 0, 0);
+
+            sendingSpi.sendMessage(receiverNode, msg);
+        });
+
+        IgniteInternalFuture initFut = GridTestUtils.runAsync(() -> {
+            try {
+                receiverSpi.onContextInitialized(receiverCtx);
+            } catch (Exception ignored) {
+                // No-op.
+            }
+        });
+
+        assertFalse("Check test logs, NPE was found",
+            GridTestUtils.waitForCondition(npeLsnr::check, 3_000));
+
+        initFut.get();
+        sendFut.get();
+    }
+
+    /**
+     * Initializes TcpCommunicationSpi with given context, node, logger and clientMode flag.
+     */
+    private TcpCommunicationSpi initializeSpi(GridSpiTestContext ctx,
+                                              GridTestNode node,
+                                              IgniteLogger log,
+                                              boolean clientMode) throws Exception {
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
+
+        spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
+        spi.setIdleConnectionTimeout(2000);
+
+        IgniteConfiguration cfg = new IgniteConfiguration()
+            .setGridLogger(log)
+            .setClientMode(clientMode);
+
+        IgniteTestResources rsrcs = new IgniteTestResources(cfg);
+
+        resourcesToClean.add(rsrcs);
+
+        cfg.setMBeanServer(rsrcs.getMBeanServer());
+
+        node.setId(rsrcs.getNodeId());
+
+        MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+
+        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory(), testMsgFactory}));
+
+        ctx.setLocalNode(node);
+
+        rsrcs.inject(spi);
+
+        spi.spiStart(getTestIgniteInstanceName() + node.order());
+
+        node.setAttributes(spi.getNodeAttributes());
+        node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
+
+        return spi;
     }
 
     /**

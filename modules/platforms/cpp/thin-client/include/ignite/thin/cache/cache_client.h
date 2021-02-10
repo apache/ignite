@@ -25,10 +25,13 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/thin/cache/query/query_fields_cursor.h>
+#include <ignite/thin/cache/query/query_sql_fields.h>
+
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/writable_key.h>
-#include <ignite/impl/thin/readable.h>
 
+#include <ignite/impl/thin/readable.h>
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
 
 namespace ignite
@@ -45,9 +48,9 @@ namespace ignite
              * Both key and value types should be default-constructable, copy-constructable and assignable. Also
              * BinaryType class  template should be specialized for both types, if they are not one of the basic types.
              *
-             * This class implemented as a reference to an implementation so copying of this class instance will only
-             * create another reference to the same underlying object. Underlying object released automatically once all
-             * the instances are destructed.
+             * This class is implemented as a reference to an implementation so copying of this class instance will only
+             * create another reference to the same underlying object. Underlying object will be released automatically
+             * once all the instances are destructed.
              *
              * @tparam K Cache key type.
              * @tparam V Cache value type.
@@ -535,7 +538,7 @@ namespace ignite
                  * its turn may load the value from the swap storage, and consecutively, if it's not in swap, from
                  * the underlying persistent storage.
                  *
-                 *  If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
+                 * If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
                  * avoid the overhead associated with returning of the previous value.
                  *
                  * If write-through is enabled, the stored value will be persisted to store.
@@ -560,10 +563,10 @@ namespace ignite
                  * If cache previously contained value for the given key, then this value is returned.
                  *
                  * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node, which in
-                 * its turn may load the value from the swap storage, and consecutively, if it's not in swap, from
-                 * the underlying persistent storage.
+                 * its turn may load the value from the swap storage, and consecutively, if it's not in swap, from the
+                 * underlying persistent storage.
                  *
-                 *  If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
+                 * If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
                  * avoid the overhead associated with returning of the previous value.
                  *
                  * If write-through is enabled, the stored value will be persisted to store.
@@ -580,6 +583,17 @@ namespace ignite
                     GetAndPutIfAbsent(key, valIn, valOut);
 
                     return valOut;
+                }
+
+                /**
+                 * Perform SQL fields query.
+                 *
+                 * @param qry Query.
+                 * @return Query fields cursor.
+                 */
+                query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry)
+                {
+                    return proxy.Query(qry);
                 }
 
                 /**

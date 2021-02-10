@@ -21,7 +21,8 @@ set(TARGET ${PROJECT_NAME})
 
 find_package(ODBC REQUIRED)
 
-include_directories(include ${ODBC_INCLUDE_DIRS})
+include_directories(SYSTEM ${ODBC_INCLUDE_DIRS})
+include_directories(include)
 
 set(SOURCES src/app/application_data_buffer.cpp
         src/app/parameter.cpp

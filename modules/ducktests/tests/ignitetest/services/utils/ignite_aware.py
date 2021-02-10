@@ -430,3 +430,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
         self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
             ssl_enabled=True, ssl_context_factory=ssl_context_factory))
+
+    @staticmethod
+    def exec_command(node, cmd):
+        """Executes the command passed on the given node and returns result as string."""
+        return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+
+    @staticmethod
+    def node_id(node):
+        """
+        Returns node id from its log if started.
+        This is a remote call. Reuse its results if possible.
+        """
+        regexp = "^>>> Local node \\[ID=([^,]+),.+$"
+        cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
+
+        return IgniteAwareService.exec_command(node, cmd).strip().lower()

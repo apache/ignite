@@ -722,7 +722,7 @@ public class GridReduceQueryExecutor {
             Reducer reducer;
 
             if (skipMergeTbl)
-                reducer = UnsortedReducer.createDummy(ctx);
+                reducer = UnsortedOneWayReducer.createDummy(ctx);
             else {
                 ReduceTable tbl;
 
@@ -775,7 +775,7 @@ public class GridReduceQueryExecutor {
 
         return GridH2QueryRequest.queryFlags(qry.distributedJoins(),
             enforceJoinOrder, lazy, qry.isReplicatedOnly(),
-            qry.explain(), dataPageScanEnabled);
+            qry.explain(), dataPageScanEnabled, qry.treatReplicatedAsPartitioned());
     }
 
     /**
