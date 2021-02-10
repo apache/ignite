@@ -49,7 +49,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -453,18 +452,6 @@ public class PlatformConfigurationUtils {
                 f.setPartitions(partitions);
                 f.setExcludeNeighbors(exclNeighbours);
                 baseFunc = f;
-
-                int attrCnt = in.readInt();
-                if (attrCnt > 0) {
-                    String[] attrs = new String[attrCnt];
-
-                    for (int i = 0; i < attrCnt; i++) {
-                        attrs[i] = in.readString();
-                    }
-
-                    f.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(attrs));
-                }
-
                 break;
             }
             default:
@@ -505,23 +492,17 @@ public class PlatformConfigurationUtils {
             out.writeBoolean(f0.isExcludeNeighbors());
             out.writeByte((byte) 0);  // override flags
             out.writeObject(null);  // user func
-
-            writeAffinityBackupFilter(out, f0.getAffinityBackupFilter());
         }
         else if (f instanceof PlatformAffinityFunction) {
             PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
             AffinityFunction baseFunc = f0.getBaseFunc();
 
             if (baseFunc instanceof RendezvousAffinityFunction) {
-                RendezvousAffinityFunction rendezvous = (RendezvousAffinityFunction) baseFunc;
-
                 out.writeByte((byte) 2);
                 out.writeInt(f0.partitions());
-                out.writeBoolean(rendezvous.isExcludeNeighbors());
+                out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
                 out.writeByte(f0.getOverrideFlags());
                 out.writeObject(f0.getUserFunc());
-
-                writeAffinityBackupFilter(out, rendezvous.getAffinityBackupFilter());
             }
             else {
                 out.writeByte((byte) 3);
@@ -533,26 +514,6 @@ public class PlatformConfigurationUtils {
         }
         else
             out.writeByte((byte)0);
-    }
-
-    /**
-     * Writes affinity backup filter.
-     *
-     * @param out Stream.
-     * @param filter Filter.
-     */
-    private static void writeAffinityBackupFilter(BinaryRawWriter out, Object filter) {
-        if (filter instanceof ClusterNodeAttributeAffinityBackupFilter) {
-            ClusterNodeAttributeAffinityBackupFilter backupFilter = (ClusterNodeAttributeAffinityBackupFilter) filter;
-
-            String[] attrs = backupFilter.getAttributeNames();
-            out.writeInt(attrs.length);
-
-            for (String attr : attrs)
-                out.writeString(attr);
-        }
-        else
-            out.writeInt(-1);
     }
 
     /**
@@ -758,8 +719,6 @@ public class PlatformConfigurationUtils {
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setSqlQueryHistorySize(in.readInt());
-        if (in.readBoolean())
-            cfg.setPeerClassLoadingEnabled(in.readBoolean());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1364,8 +1323,6 @@ public class PlatformConfigurationUtils {
         }
         w.writeBoolean(true);
         w.writeInt(cfg.getSqlQueryHistorySize());
-        w.writeBoolean(true);
-        w.writeBoolean(cfg.isPeerClassLoadingEnabled());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(0);

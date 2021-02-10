@@ -17,23 +17,32 @@
 
 package org.apache.ignite.transactions.spring;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.transactions.proxy.IgniteTransactionProxyFactory;
-import org.apache.ignite.internal.transactions.proxy.TransactionProxyFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.transaction.CannotCreateTransactionException;
+import org.springframework.transaction.InvalidIsolationLevelException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.ResourceTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Implementation of Spring transaction abstraction based on Ignite transaction.
@@ -190,29 +199,71 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * }
  * </pre>
  */
-public class SpringTransactionManager extends AbstractSpringTransactionManager implements ApplicationContextAware,
-    DisposableBean
-{
-    /** Grid configuration file path. */
+public class SpringTransactionManager extends AbstractPlatformTransactionManager
+    implements ResourceTransactionManager, PlatformTransactionManager, ApplicationListener<ContextRefreshedEvent>, ApplicationContextAware {
+    /**
+     * Logger.
+     */
+    private IgniteLogger log;
+
+    /**
+     * Transaction concurrency level.
+     */
+    private TransactionConcurrency transactionConcurrency;
+
+    /**
+     * Grid configuration file path.
+     */
     private String cfgPath;
 
-    /** Ignite configuration. */
+    /**
+     * Ignite configuration.
+     */
     private IgniteConfiguration cfg;
 
-    /** Ignite instance name. */
+    /**
+     * Ignite instance name.
+     */
     private String igniteInstanceName;
 
-    /** Ignite instance. */
+    /**
+     * Ignite instance.
+     */
     private Ignite ignite;
-
-    /** Flag indicating that Ignite instance was not created inside current transaction manager. */
-    private boolean externalIgniteInstance;
-
-    /** Ignite transactions configuration. */
-    private TransactionConfiguration txCfg;
 
     /** Spring context */
     private ApplicationContext springCtx;
+
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) {
+        this.springCtx = ctx;
+    }
+
+    /**
+     * Constructs the transaction manager with no target Ignite instance. An
+     * instance must be set before use.
+     */
+    public SpringTransactionManager() {
+        setNestedTransactionAllowed(false);
+    }
+
+    /**
+     * Gets transaction concurrency level.
+     *
+     * @return Transaction concurrency level.
+     */
+    public TransactionConcurrency getTransactionConcurrency() {
+        return transactionConcurrency;
+    }
+
+    /**
+     * Sets transaction concurrency level.
+     *
+     * @param transactionConcurrency transaction concurrency level.
+     */
+    public void setTransactionConcurrency(TransactionConcurrency transactionConcurrency) {
+        this.transactionConcurrency = transactionConcurrency;
+    }
 
     /**
      * Gets configuration file path.
@@ -291,69 +342,220 @@ public class SpringTransactionManager extends AbstractSpringTransactionManager i
     }
 
     /** {@inheritDoc} */
-    @Override public void onApplicationEvent(ContextRefreshedEvent evt) {
+    @Override public void onApplicationEvent(ContextRefreshedEvent event) {
         if (ignite == null) {
             if (cfgPath != null && cfg != null) {
                 throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                     "provided. Set only one of these properties if you need to start a Ignite node inside of " +
-                    "SpringTransactionManager. If you already have a node running, omit both of them and set" +
+                    "SpringCacheManager. If you already have a node running, omit both of them and set" +
                     "'igniteInstanceName' property.");
             }
 
             try {
-                if (cfgPath != null)
+                if (cfgPath != null) {
                     ignite = IgniteSpring.start(cfgPath, springCtx);
+                }
                 else if (cfg != null)
                     ignite = IgniteSpring.start(cfg, springCtx);
-                else {
+                else
                     ignite = Ignition.ignite(igniteInstanceName);
-
-                    externalIgniteInstance = true;
-                }
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
-
-            txCfg = ignite.configuration().getTransactionConfiguration();
         }
 
-        super.onApplicationEvent(evt);
+        if (transactionConcurrency == null)
+            transactionConcurrency = ignite.configuration().getTransactionConfiguration().getDefaultTxConcurrency();
+
+        log = ignite.log();
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
-        this.springCtx = ctx;
+    @Override protected Object doGetTransaction() throws TransactionException {
+        IgniteTransactionObject txObj = new IgniteTransactionObject();
+
+        txObj.setTransactionHolder(
+            (IgniteTransactionHolder)TransactionSynchronizationManager.getResource(this.ignite), false);
+
+        return txObj;
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionIsolation defaultTransactionIsolation() {
-        return txCfg.getDefaultTxIsolation();
+    @Override protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
+        if (definition.getIsolationLevel() == TransactionDefinition.ISOLATION_READ_UNCOMMITTED)
+            throw new InvalidIsolationLevelException("Ignite does not support READ_UNCOMMITTED isolation level.");
+
+        IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
+        Transaction tx = null;
+
+        try {
+            if (txObj.getTransactionHolder() == null || txObj.getTransactionHolder().isSynchronizedWithTransaction()) {
+                long timeout = ignite.configuration().getTransactionConfiguration().getDefaultTxTimeout();
+
+                if (definition.getTimeout() > 0)
+                    timeout = TimeUnit.SECONDS.toMillis(definition.getTimeout());
+
+                Transaction newTx = ignite.transactions().txStart(transactionConcurrency,
+                    convertToIgniteIsolationLevel(definition.getIsolationLevel()), timeout, 0);
+
+                if (log.isDebugEnabled())
+                    log.debug("Started Ignite transaction: " + newTx);
+
+                txObj.setTransactionHolder(new IgniteTransactionHolder(newTx), true);
+            }
+
+            txObj.getTransactionHolder().setSynchronizedWithTransaction(true);
+            txObj.getTransactionHolder().setTransactionActive(true);
+
+            tx = txObj.getTransactionHolder().getTransaction();
+
+            // Bind the session holder to the thread.
+            if (txObj.isNewTransactionHolder())
+                TransactionSynchronizationManager.bindResource(this.ignite, txObj.getTransactionHolder());
+        }
+        catch (Exception ex) {
+            if (tx != null)
+                tx.close();
+
+            throw new CannotCreateTransactionException("Could not create Ignite transaction", ex);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected long defaultTransactionTimeout() {
-        return txCfg.getDefaultTxTimeout();
+    @Override protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
+
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Committing Ignite transaction: " + tx);
+
+        try {
+            tx.commit();
+        }
+        catch (IgniteException e) {
+            throw new TransactionSystemException("Could not commit Ignite transaction", e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteLogger log() {
-        return ignite.log();
+    @Override protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
+
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Rolling back Ignite transaction: " + tx);
+
+        try {
+            tx.rollback();
+        }
+        catch (IgniteException e) {
+            throw new TransactionSystemException("Could not rollback Ignite transaction", e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionConcurrency defaultTransactionConcurrency() {
-        return txCfg.getDefaultTxConcurrency();
+    @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
+
+        assert tx != null;
+
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Setting Ignite transaction rollback-only: " + tx);
+
+        tx.setRollbackOnly();
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionProxyFactory createTransactionFactory() {
-        return new IgniteTransactionProxyFactory(ignite.transactions());
+    @Override protected void doCleanupAfterCompletion(Object transaction) {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
+
+        // Remove the transaction holder from the thread, if exposed.
+        if (txObj.isNewTransactionHolder()) {
+            Transaction tx = txObj.getTransactionHolder().getTransaction();
+            TransactionSynchronizationManager.unbindResource(this.ignite);
+
+            if (log.isDebugEnabled())
+                log.debug("Releasing Ignite transaction: " + tx);
+        }
+
+        txObj.getTransactionHolder().clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
-        if (!externalIgniteInstance)
-            ignite.close();
+    @Override protected boolean isExistingTransaction(Object transaction) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
+
+        return (txObj.getTransactionHolder() != null && txObj.getTransactionHolder().isTransactionActive());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getResourceFactory() {
+        return this.ignite;
+    }
+
+    /**
+     * @param isolationLevel Spring isolation level.
+     * @return Ignite isolation level.
+     */
+    private TransactionIsolation convertToIgniteIsolationLevel(int isolationLevel) {
+        TransactionIsolation isolation = ignite.configuration().getTransactionConfiguration().getDefaultTxIsolation();
+        switch (isolationLevel) {
+            case TransactionDefinition.ISOLATION_READ_COMMITTED:
+                isolation = TransactionIsolation.READ_COMMITTED;
+                break;
+            case TransactionDefinition.ISOLATION_REPEATABLE_READ:
+                isolation = TransactionIsolation.REPEATABLE_READ;
+                break;
+            case TransactionDefinition.ISOLATION_SERIALIZABLE:
+                isolation = TransactionIsolation.SERIALIZABLE;
+        }
+        return isolation;
+    }
+
+    /**
+     * An object representing a managed Ignite transaction.
+     */
+    private static class IgniteTransactionObject {
+        /** */
+        private IgniteTransactionHolder transactionHolder;
+
+        /** */
+        private boolean newTransactionHolder;
+
+        /**
+         * Sets the resource holder being used to hold Ignite resources in the
+         * transaction.
+         *
+         * @param transactionHolder the transaction resource holder
+         * @param newHolder         true if the holder was created for this transaction,
+         *                          false if it already existed
+         */
+        private void setTransactionHolder(IgniteTransactionHolder transactionHolder, boolean newHolder) {
+            this.transactionHolder = transactionHolder;
+            this.newTransactionHolder = newHolder;
+        }
+
+        /**
+         * Returns the resource holder being used to hold Ignite resources in the
+         * transaction.
+         *
+         * @return the transaction resource holder
+         */
+        private IgniteTransactionHolder getTransactionHolder() {
+            return transactionHolder;
+        }
+
+        /**
+         * Returns true if the transaction holder was created for the current
+         * transaction and false if it existed prior to the transaction.
+         *
+         * @return true if the holder was created for this transaction, false if it
+         * already existed
+         */
+        private boolean isNewTransactionHolder() {
+            return newTransactionHolder;
+        }
     }
 }

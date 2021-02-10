@@ -33,29 +33,6 @@ namespace ignite
     {
         namespace meta
         {
-            /**
-             * Nullability type.
-             */
-            struct Nullability
-            {
-                enum Type
-                {
-                    NO_NULL = 0,
-
-                    NULLABLE = 1,
-
-                    NULLABILITY_UNKNOWN = 2
-                };
-
-                /**
-                 * Convert to SQL constant.
-                 *
-                 * @param nullability Nullability.
-                 * @return SQL constant.
-                 */
-                static SqlLen ToSql(int32_t nullability);
-            };
-
             using namespace ignite::odbc;
 
             /**
@@ -92,7 +69,7 @@ namespace ignite
                 ColumnMeta(const std::string& schemaName, const std::string& tableName,
                            const std::string& columnName, int8_t dataType) :
                     schemaName(schemaName), tableName(tableName), columnName(columnName), dataType(dataType),
-                    precision(-1), scale(-1), nullability(Nullability::NULLABILITY_UNKNOWN)
+                    precision(-1), scale(-1)
                 {
                     // No-op.
                 }
@@ -114,8 +91,7 @@ namespace ignite
                     columnName(other.columnName),
                     dataType(other.dataType),
                     precision(other.precision),
-                    scale(other.scale),
-                    nullability(other.nullability)
+                    scale(other.scale)
                 {
                     // No-op.
                 }
@@ -131,7 +107,6 @@ namespace ignite
                     dataType = other.dataType;
                     precision = other.precision;
                     scale = other.scale;
-                    nullability = other.nullability;
 
                     return *this;
                 }
@@ -198,15 +173,6 @@ namespace ignite
                 }
 
                 /**
-                 * Get column nullability.
-                 * @return Column nullability.
-                 */
-                int32_t GetNullability() const
-                {
-                    return nullability;
-                }
-
-                /**
                  * Try to get attribute of a string type.
                  *
                  * @param fieldId Field ID.
@@ -242,9 +208,6 @@ namespace ignite
 
                 /** Column scale. */
                 int32_t scale;
-
-                /** Column nullability. */
-                int32_t nullability;
             };
 
             /** Column metadata vector alias. */

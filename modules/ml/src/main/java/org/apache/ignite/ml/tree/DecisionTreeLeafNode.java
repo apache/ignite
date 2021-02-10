@@ -22,12 +22,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Decision tree leaf node which contains value.
  */
-public final class DecisionTreeLeafNode extends DecisionTreeNode {
+public final class DecisionTreeLeafNode implements DecisionTreeNode {
     /** */
     private static final long serialVersionUID = -472145568088482206L;
 
     /** Value of the node. */
-    private double val;
+    private final double val;
 
     /**
      * Constructs a new decision tree leaf node.
@@ -36,10 +36,6 @@ public final class DecisionTreeLeafNode extends DecisionTreeNode {
      */
     public DecisionTreeLeafNode(double val) {
         this.val = val;
-    }
-
-    /** For jackson serialization needs. */
-    public DecisionTreeLeafNode() {
     }
 
     /** {@inheritDoc} */
@@ -59,6 +55,6 @@ public final class DecisionTreeLeafNode extends DecisionTreeNode {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return DecisionTreeTrainer.printTree(this, pretty);
+        return DecisionTree.printTree(this, pretty);
     }
 }

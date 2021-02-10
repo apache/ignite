@@ -50,7 +50,7 @@ public class RowStore {
     private final boolean persistenceEnabled;
 
     /** Row cache cleaner. */
-    private volatile GridQueryRowCacheCleaner rowCacheCleaner;
+    private GridQueryRowCacheCleaner rowCacheCleaner;
 
     /** */
     protected final CacheGroupContext grp;

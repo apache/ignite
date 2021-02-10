@@ -355,10 +355,9 @@ public class CheckpointEntry {
 
                         grpStates = remap(stateRec);
                     }
-                    else {
-                        throw new IgniteCheckedException(
+                    else
+                        initEx = new IgniteCheckedException(
                             "Failed to find checkpoint record at the given WAL pointer: " + ptr);
-                    }
                 }
                 catch (IgniteCheckedException e) {
                     initEx = e;

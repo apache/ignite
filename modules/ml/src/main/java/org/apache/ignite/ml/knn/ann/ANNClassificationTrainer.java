@@ -24,7 +24,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
@@ -140,7 +139,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             .withEpsilon(epsilon);
 
         KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
-        return Arrays.asList(mdl.centers());
+        return Arrays.asList(mdl.getCenters());
     }
 
     /** */
@@ -325,21 +324,16 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /** Service class used for statistics. */
     public static class CentroidStat implements Serializable {
         /** Serial version uid. */
-        @JsonIgnore
         private static final long serialVersionUID = 7624883170532045144L;
 
-        /** */
-        public CentroidStat() {
-        }
+        /** Count of points closest to the center with a given index. */
+        ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
 
         /** Count of points closest to the center with a given index. */
-        public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
-
-        /** Count of points closest to the center with a given index. */
-        public ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
 
         /** Set of unique labels. */
-        public ConcurrentSkipListSet<Double> clsLblsSet = new ConcurrentSkipListSet<>();
+        ConcurrentSkipListSet<Double> clsLblsSet = new ConcurrentSkipListSet<>();
 
         /** Merge current */
         CentroidStat merge(CentroidStat other) {

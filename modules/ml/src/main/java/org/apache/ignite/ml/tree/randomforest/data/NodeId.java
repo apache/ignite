@@ -29,10 +29,10 @@ public class NodeId implements Serializable {
     private static final long serialVersionUID = 4400852013136423333L;
 
     /** Tree id. */
-    private int treeId;
+    private final int treeId;
 
     /** Node id. */
-    private long nodeId;
+    private final long nodeId;
 
     /**
      * Create an instance of NodeId.
@@ -45,14 +45,11 @@ public class NodeId implements Serializable {
         this.nodeId = nodeId;
     }
 
-    public NodeId() {
-    }
-
     /**
      *
      * @return Tree id.
      */
-    public int getTreeId() {
+    public int treeId() {
         return treeId;
     }
 
@@ -60,7 +57,7 @@ public class NodeId implements Serializable {
      *
      * @return Node id.
      */
-    public long getNodeId() {
+    public long nodeId() {
         return nodeId;
     }
 

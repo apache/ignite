@@ -401,7 +401,7 @@ public abstract class AbstractWalRecordsIterator
         SegmentIO fileIO = null;
 
         try {
-            fileIO = desc.toReadOnlyIO(ioFactory);
+            fileIO = desc.toIO(ioFactory);
 
             SegmentHeader segmentHeader;
 
@@ -513,6 +513,6 @@ public abstract class AbstractWalRecordsIterator
          * @return One of implementation of {@link FileIO}.
          * @throws IOException if creation of fileIo was not success.
          */
-        SegmentIO toReadOnlyIO(FileIOFactory fileIOFactory) throws IOException;
+        SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException;
     }
 }

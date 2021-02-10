@@ -33,8 +33,5 @@ public enum EncoderType {
     FREQUENCY_ENCODER,
 
     /** Label encoder. */
-    LABEL_ENCODER,
-
-    /** Target encoder. */
-    TARGET_ENCODER,
+    LABEL_ENCODER
 }

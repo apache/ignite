@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -55,7 +55,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -102,8 +101,8 @@ public class TcpIgniteClient implements IgniteClient {
      * Constructor with custom channel factory.
      */
     TcpIgniteClient(
-            BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
-            ClientConfiguration cfg
+        Function<ClientChannelConfiguration, ClientChannel> chFactory,
+        ClientConfiguration cfg
     ) throws ClientException {
         final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
 
@@ -117,24 +116,18 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch = new ReliableChannel(chFactory, cfg, binary);
 
-        try {
-            ch.channelsInit();
+        ch.channelsInit();
 
-            ch.addChannelFailListener(() -> metadataHandler.onReconnect());
+        ch.addChannelFailListener(() -> metadataHandler.onReconnect());
 
-            transactions = new TcpClientTransactions(ch, marsh,
-                    new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
+        transactions = new TcpClientTransactions(ch, marsh,
+            new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
 
-            cluster = new ClientClusterImpl(ch, marsh);
+        cluster = new ClientClusterImpl(ch, marsh);
 
-            compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+        compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
-            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
-        }
-        catch (Exception e) {
-            ch.close();
-            throw e;
-        }
+        services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
     }
 
     /** {@inheritDoc} */

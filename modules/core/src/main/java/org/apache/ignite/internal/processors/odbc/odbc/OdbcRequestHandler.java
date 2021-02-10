@@ -69,8 +69,6 @@ import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 
-import static java.sql.ResultSetMetaData.columnNoNulls;
-import static java.sql.ResultSetMetaData.columnNullable;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_RESULTSET;
@@ -698,8 +696,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         GridQueryProperty prop = table.property(field.getKey());
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue(), prop.precision(), prop.scale(),
-                            prop.notNull() ? columnNoNulls : columnNullable);
+                            field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -805,7 +802,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
             List<GridQueryFieldMetadata> columns = ctx.query().getIndexing().resultMetaData(schema, qry);
-            Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns);
+            Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns, ver);
 
             OdbcQueryGetResultsetMetaResult res = new OdbcQueryGetResultsetMetaResult(meta);
 

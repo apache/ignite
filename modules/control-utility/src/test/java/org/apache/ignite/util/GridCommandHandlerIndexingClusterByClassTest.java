@@ -17,8 +17,6 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -42,11 +40,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
         super.beforeTest();
 
         createAndFillCache(client, CACHE_NAME, GROUP_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new StopNodeFailureHandler();
     }
 
     /**

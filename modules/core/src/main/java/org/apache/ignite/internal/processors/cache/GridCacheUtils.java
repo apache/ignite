@@ -1052,6 +1052,22 @@ public class GridCacheUtils {
     }
 
     /**
+     * Validates that cache key object has overridden equals and hashCode methods.
+     * Will also check that a BinaryObject has a hash code set.
+     *
+     * @param key Key.
+     * @throws IllegalArgumentException If equals or hashCode is not implemented.
+     */
+    public static void validateCacheKey(@Nullable Object key) {
+        if (key == null)
+            return;
+
+        if (!U.overridesEqualsAndHashCode(key))
+            throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
+                key.getClass().getName());
+    }
+
+    /**
      * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */

@@ -31,7 +31,7 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeModel;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
 
 /**
  * Example that shows how to use Label Encoder preprocessor to encode labels presented as a strings.
@@ -79,7 +79,7 @@ public class LabelEncoderExample {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 // Train decision tree model.
-                DecisionTreeModel mdl = trainer.fit(
+                DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
                     lbEncoderPreprocessor

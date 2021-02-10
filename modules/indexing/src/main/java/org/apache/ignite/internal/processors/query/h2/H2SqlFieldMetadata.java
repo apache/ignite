@@ -51,9 +51,6 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     /** Scale. */
     private int scale;
 
-    /** Nullability. See {@link java.sql.ResultSetMetaData#isNullable(int)} */
-    private int nullability;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -70,7 +67,7 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
      * @param scale Scale.
      */
     H2SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type,
-        int precision, int scale, int nullability) {
+        int precision, int scale) {
         assert name != null && type != null : schemaName + " | " + typeName + " | " + name + " | " + type;
 
         this.schemaName = schemaName;
@@ -79,7 +76,6 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
         this.type = type;
         this.precision = precision;
         this.scale = scale;
-        this.nullability = nullability;
     }
 
     /** {@inheritDoc} */
@@ -110,11 +106,6 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     /** {@inheritDoc} */
     @Override public int scale() {
         return scale;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int nullability() {
-        return nullability;
     }
 
     /** {@inheritDoc} */

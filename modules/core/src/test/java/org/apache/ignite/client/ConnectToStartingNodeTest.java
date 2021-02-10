@@ -71,20 +71,14 @@ public class ConnectToStartingNodeTest extends AbstractThinClientTest {
         IgniteInternalFuture<IgniteClient> futStartClient = GridTestUtils.runAsync(
             () -> startClient(grid()));
 
-        try {
-            // Server doesn't accept connection before discovery SPI started.
-            assertFalse(GridTestUtils.waitForCondition(futStartClient::isDone, 500L));
+        // Server doesn't accept connection before discovery SPI started.
+        assertFalse(GridTestUtils.waitForCondition(futStartClient::isDone, 500L));
 
-            barrier.await();
+        barrier.await();
 
-            futStartGrid.get();
+        futStartGrid.get();
 
-            // Server accept connection after discovery SPI started.
-            assertTrue(GridTestUtils.waitForCondition(futStartClient::isDone, 500L));
-        }
-        finally {
-            if (futStartClient.isDone())
-                futStartClient.get().close();
-        }
+        // Server accept connection after discovery SPI started.
+        assertTrue(GridTestUtils.waitForCondition(futStartClient::isDone, 500L));
     }
 }

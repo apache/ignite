@@ -1829,14 +1829,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int checkpointBufferPagesCount() {
-        return checkpointPool == null ? 0 : checkpointPool.size();
+        return checkpointPool.size();
     }
 
     /**
      * Number of used pages in checkpoint buffer.
      */
     public int checkpointBufferPagesSize() {
-        return checkpointPool == null ? 0 : checkpointPool.pages();
+        return checkpointPool.pages();
     }
 
     /**

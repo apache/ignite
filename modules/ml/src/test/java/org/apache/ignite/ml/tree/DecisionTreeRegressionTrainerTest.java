@@ -74,11 +74,11 @@ public class DecisionTreeRegressionTrainerTest {
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0)
             .withUsingIdx(useIdx == 1);
 
-        DecisionTreeNode treeNode = trainer.fit(data, parts, new DoubleArrayVectorizer<Integer>().labeled(1)).getRootNode();
+        DecisionTreeNode tree = trainer.fit(data, parts, new DoubleArrayVectorizer<Integer>().labeled(1));
 
-        assertTrue(treeNode instanceof DecisionTreeConditionalNode);
+        assertTrue(tree instanceof DecisionTreeConditionalNode);
 
-        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) treeNode;
+        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) tree;
 
         assertEquals(0, node.getThreshold(), 1e-3);
 

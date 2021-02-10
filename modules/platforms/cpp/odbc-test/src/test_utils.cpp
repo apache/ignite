@@ -40,7 +40,7 @@ namespace ignite_test
             std::string(reinterpret_cast<char*>(message), reallen));
     }
 
-    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle, int idx)
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SQLCHAR sqlstate[7] = {};
         SQLINTEGER nativeCode;
@@ -48,12 +48,12 @@ namespace ignite_test
         SQLCHAR message[ODBC_BUFFER_SIZE];
         SQLSMALLINT reallen = 0;
 
-        SQLGetDiagRec(handleType, handle, idx, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
 
         return std::string(reinterpret_cast<char*>(sqlstate));
     }
 
-    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle, int idx)
+    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SQLCHAR sqlstate[7] = {};
         SQLINTEGER nativeCode;
@@ -61,7 +61,7 @@ namespace ignite_test
         SQLCHAR message[ODBC_BUFFER_SIZE];
         SQLSMALLINT reallen = 0;
 
-        SQLGetDiagRec(handleType, handle, idx, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
 
         std::string res(reinterpret_cast<char*>(sqlstate));
 
@@ -75,28 +75,7 @@ namespace ignite_test
 
     std::string GetTestConfigDir()
     {
-        using namespace ignite;
-
-        std::string cfgPath = common::GetEnv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        if (!cfgPath.empty())
-            return cfgPath;
-
-        std::string home = jni::ResolveIgniteHome();
-
-        if (home.empty())
-            return home;
-
-        std::stringstream path;
-
-        path << home << common::Fs
-             << "modules" << common::Fs
-             << "platforms" << common::Fs
-             << "cpp" << common::Fs
-             << "odbc-test" << common::Fs
-             << "config";
-
-        return path.str();
+        return ignite::common::GetEnv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
     }
 
     void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
@@ -130,16 +109,11 @@ namespace ignite_test
         cfg.jvmMaxMem = 4096;
 #endif
 
-        std::string cfgDir = GetTestConfigDir();
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
 
-        if (cfgDir.empty())
-            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to resolve test config directory");
+        assert(cfgPath != 0);
 
-        std::stringstream path;
-
-        path << cfgDir << common::Fs << cfgFile;
-
-        cfg.springCfgPath = path.str();
+        cfg.springCfgPath = std::string(cfgPath).append("/").append(cfgFile);
     }
 
     ignite::Ignite StartNode(const char* cfgFile)

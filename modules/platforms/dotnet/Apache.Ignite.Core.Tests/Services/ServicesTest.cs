@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -957,45 +956,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
                 .Select(x => x.GetField<int>("Field")));
 
-            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-            Assert.AreEqual(dt2, svc.testDate(dt1));
-
-            svc.testDateArray(new DateTime?[] {dt1, dt2});
-
-            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
-
-            cache.Put(1, dt1);
-            cache.Put(2, dt2);
-
-            svc.testUTCDateFromCache();
-
-            Assert.AreEqual(dt1, cache.Get(3));
-            Assert.AreEqual(dt2, cache.Get(4));
-
-#if NETCOREAPP
-            //This Date in Europe/Moscow have offset +4.
-            DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
-            //This Date in Europe/Moscow have offset +3.
-            DateTime dt4 = new DateTime(1982, 3, 31, 22, 0, 0, 0, DateTimeKind.Local);
-
-            cache.Put(5, dt3);
-            cache.Put(6, dt4);
-
-            Assert.AreEqual(dt3.ToUniversalTime(), cache.Get(5).ToUniversalTime());
-            Assert.AreEqual(dt4.ToUniversalTime(), cache.Get(6).ToUniversalTime());
-
-            svc.testLocalDateFromCache();
-
-            Assert.AreEqual(dt3, cache.Get(7).ToLocalTime());
-            Assert.AreEqual(dt4, cache.Get(8).ToLocalTime());
-
-            var now = DateTime.Now;
-            cache.Put(9, now);
-            Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
-#endif
-
             Services.Cancel(javaSvcName);
         }
 
@@ -1078,21 +1038,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
-
-            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-            Assert.AreEqual(dt2, svc.testDate(dt1));
-
-            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
-
-            cache.Put(1, dt1);
-            cache.Put(2, dt2);
-
-            svc.testUTCDateFromCache();
-
-            Assert.AreEqual(dt1, cache.Get(3));
-            Assert.AreEqual(dt2, cache.Get(4));
         }
 
         /// <summary>
@@ -1178,11 +1123,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
-                    ForceTimestamp = true
-#if NETCOREAPP
-                    , TimestampConverter = new TimestampConverter()
-#endif
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 }
             };
         }
@@ -1565,28 +1506,5 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public int Field { get; set; }
         }
-        
-#if NETCOREAPP
-        /// <summary>
-        /// Adds support of the local dates to the Ignite timestamp serialization.
-        /// </summary>
-        class TimestampConverter : ITimestampConverter
-        {
-            /** <inheritdoc /> */
-            public void ToJavaTicks(DateTime date, out long high, out int low)
-            {
-                if (date.Kind == DateTimeKind.Local)
-                    date = date.ToUniversalTime();
-
-                BinaryUtils.ToJavaDate(date, out high, out low);
-            }
-
-            /** <inheritdoc /> */
-            public DateTime FromJavaTicks(long high, int low)
-            {
-                return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
-            }
-        }
-#endif
     }
 }

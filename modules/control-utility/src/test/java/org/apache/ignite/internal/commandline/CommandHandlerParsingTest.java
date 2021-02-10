@@ -1033,7 +1033,6 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.WARM_UP ||
             cmd == CommandList.PROPERTY ||
             cmd == CommandList.SYSTEM_VIEW ||
-            cmd == CommandList.METRIC ||
-            cmd == CommandList.DEFRAGMENTATION;
+            cmd == CommandList.METRIC;
     }
 }

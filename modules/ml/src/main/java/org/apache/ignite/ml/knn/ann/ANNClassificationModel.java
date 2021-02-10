@@ -17,47 +17,33 @@
 
 package org.apache.ignite.ml.knn.ann;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.json.JSONModel;
-import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.knn.NNClassificationModel;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.util.ModelTrace;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public final class ANNClassificationModel extends NNClassificationModel implements JSONWritable, DeployableObject {
+public final class ANNClassificationModel extends NNClassificationModel {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 
     /** The labeled set of candidates. */
-    private LabeledVectorSet<LabeledVector> candidates;
+    private final LabeledVectorSet<LabeledVector> candidates;
 
     /** Centroid statistics. */
-    private ANNClassificationTrainer.CentroidStat centroindsStat;
+    private final ANNClassificationTrainer.CentroidStat centroindsStat;
 
     /**
      * Build the model based on a candidates set.
@@ -68,10 +54,6 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         ANNClassificationTrainer.CentroidStat centroindsStat) {
        this.candidates = centers;
        this.centroindsStat = centroindsStat;
-    }
-
-    /** */
-    private ANNClassificationModel() {
     }
 
     /** */
@@ -112,7 +94,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    private LabeledVector[] getKClosestVectors(
+    @NotNull private LabeledVector[] getKClosestVectors(
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res;
 
@@ -147,7 +129,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
+    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < candidates.rowSize(); i++) {
@@ -220,105 +202,5 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
             .addField("weighted", String.valueOf(weighted))
             .addField("amount of candidates", String.valueOf(candidates.rowSize()))
             .toString();
-    }
-
-    /** {@inheritDoc} */
-    @JsonIgnore
-    @Override public List<Object> getDependencies() {
-        return Collections.emptyList();
-    }
-
-    /** Loads ANNClassificationModel from JSON file. */
-    public static ANNClassificationModel fromJSON(Path path) {
-        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-
-        ANNJSONExportModel exportModel;
-        try {
-            exportModel = mapper
-                .readValue(new File(path.toAbsolutePath().toString()), ANNJSONExportModel.class);
-
-            return exportModel.convert();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void toJSON(Path path) {
-        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-
-        try {
-            ANNJSONExportModel exportModel = new ANNJSONExportModel(System.currentTimeMillis(), "ann_" + UUID.randomUUID().toString(), ANNClassificationModel.class.getSimpleName());
-            List<double[]> listOfCandidates = new ArrayList<>();
-            ProbableLabel[] labels = new ProbableLabel[candidates.rowSize()];
-            for (int i = 0; i < candidates.rowSize(); i++) {
-                labels[i] = (ProbableLabel) candidates.getRow(i).getLb();
-                listOfCandidates.add(candidates.features(i).asArray());
-            }
-
-            exportModel.candidateFeatures = listOfCandidates;
-            exportModel.distanceMeasure = distanceMeasure;
-            exportModel.k = k;
-            exportModel.weighted = weighted;
-            exportModel.candidateLabels = labels;
-            exportModel.centroindsStat = centroindsStat;
-
-            File file = new File(path.toAbsolutePath().toString());
-            mapper.writeValue(file, exportModel);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /** */
-    public static class ANNJSONExportModel extends JSONModel {
-        /** Centers of clusters. */
-        public List<double[]> candidateFeatures;
-
-        public ProbableLabel[] candidateLabels;
-
-        /** Distance measure. */
-        public DistanceMeasure distanceMeasure;
-
-        /** Amount of nearest neighbors. */
-        public int k;
-
-        /** kNN strategy. */
-        public boolean weighted;
-
-        /** Centroid statistics. */
-        public ANNClassificationTrainer.CentroidStat centroindsStat;
-
-        /** */
-        public ANNJSONExportModel(Long timestamp, String uid, String modelClass) {
-            super(timestamp, uid, modelClass);
-        }
-
-        /** */
-        @JsonCreator
-        public ANNJSONExportModel() {
-        }
-
-        /** {@inheritDoc} */
-        @Override public ANNClassificationModel convert() {
-            if (candidateFeatures == null || candidateFeatures.isEmpty())
-                throw new IllegalArgumentException("Loaded list of candidates is empty. It should be not empty.");
-
-            double[] firstRow = candidateFeatures.get(0);
-            LabeledVectorSet<LabeledVector> candidatesForANN = new LabeledVectorSet<>(candidateFeatures.size(), firstRow.length);
-            LabeledVector<Double>[] data = new LabeledVector[candidateFeatures.size()];
-            for (int i = 0; i < candidateFeatures.size(); i++) {
-                data[i] = new LabeledVector(VectorUtils.of(candidateFeatures.get(i)), candidateLabels[i]);
-            }
-            candidatesForANN.setData(data);
-
-            ANNClassificationModel mdl = new ANNClassificationModel(candidatesForANN, centroindsStat);
-
-            mdl.withDistanceMeasure(distanceMeasure);
-            mdl.withK(k);
-            mdl.withWeighted(weighted);
-            return mdl;
-        }
     }
 }

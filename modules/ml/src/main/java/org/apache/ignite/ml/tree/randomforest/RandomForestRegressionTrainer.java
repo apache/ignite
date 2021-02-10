@@ -18,9 +18,10 @@
 package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.List;
+import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
+import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogramComputer;
@@ -48,8 +49,8 @@ public class RandomForestRegressionTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected RandomForestModel buildComposition(List<RandomForestTreeModel> models) {
-        return new RandomForestModel(models, new MeanValuePredictionsAggregator());
+    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
+        return new ModelsComposition(models, new MeanValuePredictionsAggregator());
     }
 
     /** {@inheritDoc} */

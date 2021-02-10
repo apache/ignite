@@ -61,9 +61,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** */
     private final boolean inMemoryMode;
 
-    /** */
-    private volatile boolean maintenanceMode;
-
     /**
      * @param ctx Kernal context.
      */
@@ -102,7 +99,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             log.info(
                 "Maintenance Task with name " + task.name() +
                     " is already registered" +
-                    (oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : ".") +
+                    oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : "" + "." +
                     " It will be replaced with new task" +
                     task.parameters() != null ? " with parameters " + task.parameters() : "" + "."
             );
@@ -137,8 +134,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             fileStorage.init();
 
             activeTasks.putAll(fileStorage.getAllTasks());
-
-            maintenanceMode = !activeTasks.isEmpty();
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
@@ -195,7 +190,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      */
     private void proceedWithMaintenance() {
         for (Map.Entry<String, MaintenanceWorkflowCallback> cbE : workflowCallbacks.entrySet()) {
-            MaintenanceAction<?> mntcAct = cbE.getValue().automaticAction();
+            MaintenanceAction mntcAct = cbE.getValue().automaticAction();
 
             if (mntcAct != null) {
                 try {
@@ -218,20 +213,18 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public boolean isMaintenanceMode() {
-        return maintenanceMode;
+        return !activeTasks.isEmpty();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean unregisterMaintenanceTask(String maintenanceTaskName) {
+    @Override public void unregisterMaintenanceTask(String maintenanceTaskName) {
         if (inMemoryMode)
-            return false;
-
-        boolean deleted;
+            return;
 
         if (isMaintenanceMode())
-            deleted = activeTasks.remove(maintenanceTaskName) != null;
+            activeTasks.remove(maintenanceTaskName);
         else
-            deleted = requestedTasks.remove(maintenanceTaskName) != null;
+            requestedTasks.remove(maintenanceTaskName);
 
         try {
             fileStorage.deleteMaintenanceTask(maintenanceTaskName);
@@ -244,8 +237,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             fileStorage.clear();
         }
-
-        return deleted;
     }
 
     /** {@inheritDoc} */
@@ -256,14 +247,14 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         List<MaintenanceAction<?>> actions = cb.allActions();
 
         if (actions == null || actions.isEmpty())
-            throw new IgniteException("Maintenance workflow callback should provide at least one maintenance action");
+            throw new IgniteException("Maintenance workflow callback should provide at least one mainetance action");
 
         int size = actions.size();
-        long distinctSize = actions.stream().map(MaintenanceAction::name).distinct().count();
+        long distinctSize = actions.stream().map(a -> a.name()).distinct().count();
 
         if (distinctSize < size)
             throw new IgniteException("All actions of a single workflow should have unique names: " +
-                actions.stream().map(MaintenanceAction::name).collect(Collectors.joining(", ")));
+                actions.stream().map(a -> a.name()).collect(Collectors.joining(", ")));
 
         Optional<String> wrongActionName = actions
             .stream()

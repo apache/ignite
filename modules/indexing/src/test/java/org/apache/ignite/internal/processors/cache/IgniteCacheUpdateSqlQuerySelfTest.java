@@ -400,7 +400,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
-    public static final class AllTypes implements Serializable {
+    static final class AllTypes implements Serializable {
         /**
          * Data Long.
          */
@@ -602,7 +602,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         }
 
         /** */
-        public AllTypes(Long key) {
+        AllTypes(Long key) {
             this.init(key, Long.toString(key));
         }
 

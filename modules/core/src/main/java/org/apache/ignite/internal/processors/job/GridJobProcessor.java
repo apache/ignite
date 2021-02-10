@@ -2039,14 +2039,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                 }
             }
-
-            if (ctx.performanceStatistics().enabled()) {
-                ctx.performanceStatistics().job(ses.getId(),
-                    worker.getQueuedTime(),
-                    worker.getStartTime(),
-                    worker.getExecuteTime(),
-                    worker.isTimedOut());
-            }
         }
     }
 

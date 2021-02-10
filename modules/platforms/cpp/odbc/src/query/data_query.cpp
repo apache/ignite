@@ -189,11 +189,7 @@ namespace ignite
             int64_t DataQuery::AffectedRows() const
             {
                 int64_t affected = rowsAffectedIdx < rowsAffected.size() ? rowsAffected[rowsAffectedIdx] : 0;
-
-                if (affected >= 0)
-                    return affected;
-
-                return connection.GetConfiguration().GetPageSize();
+                return affected < 0 ? 0 : affected;
             }
 
             SqlResult::Type DataQuery::NextResultSet()

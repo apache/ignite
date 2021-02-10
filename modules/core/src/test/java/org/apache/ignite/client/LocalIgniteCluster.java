@@ -35,7 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
  */
 public class LocalIgniteCluster implements AutoCloseable {
     /** Host. */
-    private static String host = "127.0.0.1";
+    private static final String HOST = "127.0.0.1";
 
     /** Randomizer. */
     private static final Random rnd = new Random();
@@ -68,17 +68,9 @@ public class LocalIgniteCluster implements AutoCloseable {
     }
 
     /**
-     * Create and start start the cluster with default host.
+     * Create and start start the cluster.
      */
     public static LocalIgniteCluster start(int initSize) {
-        return new LocalIgniteCluster(initSize);
-    }
-
-    /**
-     * Create and start start the cluster with custom host.
-     */
-    public static LocalIgniteCluster start(int initSize, String host) {
-        LocalIgniteCluster.host = host;
         return new LocalIgniteCluster(initSize);
     }
 
@@ -163,7 +155,7 @@ public class LocalIgniteCluster implements AutoCloseable {
         IgniteConfiguration igniteCfg = Config.getServerConfiguration();
 
         igniteCfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-            .setHost(host)
+            .setHost(HOST)
             .setPort(nodeCfg.getClientPort())
         );
 

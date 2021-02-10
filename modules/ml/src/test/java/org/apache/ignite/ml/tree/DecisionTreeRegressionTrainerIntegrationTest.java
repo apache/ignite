@@ -78,15 +78,15 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
 
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0);
 
-        DecisionTreeNode treeNode = trainer.fit(
+        DecisionTreeNode tree = trainer.fit(
             ignite,
             data,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-        ).getRootNode();
+        );
 
-        assertTrue(treeNode instanceof DecisionTreeConditionalNode);
+        assertTrue(tree instanceof DecisionTreeConditionalNode);
 
-        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) treeNode;
+        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) tree;
 
         assertEquals(0, node.getThreshold(), 1e-3);
 

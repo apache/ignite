@@ -56,8 +56,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.util.StringUtils;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-
 /**
  * Tests for correct distributed partitioned queries.
  */
@@ -96,7 +94,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setWriteSynchronizationMode(FULL_SYNC)
             .setBackups(1)
             .setIndexedTypes(idxTypes);
     }

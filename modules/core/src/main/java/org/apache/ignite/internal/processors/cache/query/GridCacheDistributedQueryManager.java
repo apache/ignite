@@ -36,8 +36,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -59,7 +57,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 
 /**
  * Distributed query manager (for cache in REPLICATED / PARTITIONED cache mode).
@@ -600,11 +597,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
-        boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
-
-        long startTime = performanceStatsEnabled ? System.currentTimeMillis() : 0;
-        long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0;
-
         GridCloseableIterator locIter0 = null;
 
         for (ClusterNode node : nodes) {
@@ -635,12 +627,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             /** */
             private Object cur;
 
-            /** Logical reads. */
-            private long logicalReads;
-
-            /** Physical reads. */
-            private long physicalReads;
-
             @Override protected Object onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
@@ -656,23 +642,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (cur != null)
                     return true;
 
-                if (locIter != null) {
-                    if (performanceStatsEnabled)
-                        IoStatisticsQueryHelper.startGatheringQueryStatistics();
-
-                    try {
-                        if (locIter.hasNextX())
-                            cur = locIter.nextX();
-
-                    } finally {
-                        if (performanceStatsEnabled) {
-                            IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
-
-                            logicalReads += stat.logicalReads();
-                            physicalReads += stat.physicalReads();
-                        }
-                    }
-                }
+                if (locIter != null && locIter.hasNextX())
+                    cur = locIter.nextX();
 
                 return cur != null || (cur = convert(fut.next())) != null;
             }
@@ -698,25 +669,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 if (fut != null)
                     fut.cancel();
-
-                if (performanceStatsEnabled) {
-                    cctx.kernalContext().performanceStatistics().query(
-                        SCAN,
-                        cctx.name(),
-                        ((GridCacheDistributedQueryFuture)fut).requestId(),
-                        startTime,
-                        System.nanoTime() - startTimeNanos,
-                        true);
-
-                    if (logicalReads > 0 || physicalReads > 0) {
-                        cctx.kernalContext().performanceStatistics().queryReads(
-                            SCAN,
-                            cctx.localNodeId(),
-                            ((GridCacheDistributedQueryFuture)fut).requestId(),
-                            logicalReads,
-                            physicalReads);
-                    }
-                }
             }
         };
     }

@@ -325,7 +325,7 @@ namespace ignite
 
         LOG_MSG("DSN: " << dsn);
 
-        odbc::ReadDsnConfiguration(dsn.c_str(), config, &connection->GetDiagnosticRecords());
+        odbc::ReadDsnConfiguration(dsn.c_str(), config);
 
         connection->Establish(config);
 
@@ -1144,7 +1144,6 @@ namespace ignite
         using odbc::Environment;
 
         LOG_MSG("SQLSetEnvAttr called");
-        LOG_MSG("Attribute: " << attr << ", Value: " << (size_t)value);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 
@@ -1175,7 +1174,7 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_SIGNED_LONG, valueBuf,
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_DEFAULT, valueBuf,
             static_cast<int32_t>(valueBufLen), &outResLen);
 
         environment->GetAttribute(attr, outBuffer);

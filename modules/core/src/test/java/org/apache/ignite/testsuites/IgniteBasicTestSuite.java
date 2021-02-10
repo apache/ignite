@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadP
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMapTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
@@ -296,8 +295,6 @@ import org.junit.runners.Suite;
     ClusterActivationStartedEventTest.class,
 
     IgniteThreadGroupNodeRestartTest.class,
-
-    LinkMapTest.class,
 })
 public class IgniteBasicTestSuite {
 }

@@ -130,6 +130,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         warnIfUnordered(keys, BulkOperation.GET);
 
         GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);

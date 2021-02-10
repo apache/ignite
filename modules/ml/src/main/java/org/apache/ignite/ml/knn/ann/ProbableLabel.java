@@ -25,10 +25,7 @@ import java.util.TreeMap;
  */
 public class ProbableLabel {
     /** Key is label, value is probability to be this class */
-    public TreeMap<Double, Double> clsLbls;
-
-    public ProbableLabel() {
-    }
+    TreeMap<Double, Double> clsLbls;
 
     /**
      * The key is class label,

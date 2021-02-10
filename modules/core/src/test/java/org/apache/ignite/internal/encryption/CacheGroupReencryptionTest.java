@@ -385,7 +385,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     @Test
     public void testPartitionFileDestroy() throws Exception {
         backups = 1;
-        pageScanRate = 0.2;
+        pageScanRate = 1;
         pageScanBatchSize = 10;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
@@ -408,10 +408,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         forceCheckpoint();
 
         assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
-
-        // Set unlimited re-encryption rate.
-        nodes.get1().context().encryption().setReencryptionRate(0);
-        nodes.get2().context().encryption().setReencryptionRate(0);
 
         checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
@@ -518,12 +514,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         for (long segment = startIdx1; segment <= endIdx1; segment++)
             grid(GRID_0).context().encryption().onWalSegmentRemoved(segment);
 
-        checkKeysCount(grid(GRID_0), grpId, 1, MAX_AWAIT_MILLIS);
+        assertEquals(1, grid(GRID_0).context().encryption().groupKeyIds(grpId).size());
 
         for (long segment = startIdx2; segment <= endIdx2; segment++)
             grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
 
-        checkKeysCount(grid(GRID_1), grpId, 1, MAX_AWAIT_MILLIS);
+        assertEquals(1, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
     }
 
     /**
@@ -762,12 +758,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         MetricRegistry registry =
             node.context().metric().registry(metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheName()));
 
-        LongMetric bytesLeft = registry.findMetric("ReencryptionBytesLeft");
+        LongMetric pagesLeft = registry.findMetric("ReencryptionPagesLeft");
 
         if (finished)
-            assertEquals(0, bytesLeft.value());
+            assertEquals(0, pagesLeft.value());
         else
-            assertTrue(bytesLeft.value() > 0);
+            assertTrue(pagesLeft.value() > 0);
 
         BooleanMetric reencryptionFinished = registry.findMetric("ReencryptionFinished");
 

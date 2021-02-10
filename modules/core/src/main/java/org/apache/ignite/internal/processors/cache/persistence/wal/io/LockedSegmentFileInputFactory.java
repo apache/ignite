@@ -63,7 +63,7 @@ public class LockedSegmentFileInputFactory implements SegmentFileInputFactory {
             id -> {
                 FileDescriptor segment = segmentRouter.findSegment(id);
 
-                return segment.toReadOnlyIO(fileIOFactory);
+                return segment.toIO(fileIOFactory);
             }
         );
     }

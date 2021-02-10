@@ -22,20 +22,20 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Decision tree conditional (non-leaf) node.
  */
-public final class DecisionTreeConditionalNode extends DecisionTreeNode {
+public final class DecisionTreeConditionalNode implements DecisionTreeNode {
     /** */
     private static final long serialVersionUID = 981630737007982172L;
 
     /** Column of the value to be tested. */
-    private int col;
+    private final int col;
 
     /** Threshold. */
-    private double threshold;
+    private final double threshold;
 
-    /** Right node that will be used in case tested value is greater then threshold. */
+    /** Node that will be used in case tested value is greater then threshold. */
     private DecisionTreeNode thenNode;
 
-    /** Left node that will be used in case tested value is not greater then threshold. */
+    /** Node that will be used in case tested value is not greater then threshold. */
     private DecisionTreeNode elseNode;
 
     /** Node that will be used in case tested value is not presented. */
@@ -57,10 +57,6 @@ public final class DecisionTreeConditionalNode extends DecisionTreeNode {
         this.thenNode = thenNode;
         this.elseNode = elseNode;
         this.missingNode = missingNode;
-    }
-
-    /** For jackson serialization needs. */
-    public DecisionTreeConditionalNode() {
     }
 
     /** {@inheritDoc} */
@@ -124,6 +120,6 @@ public final class DecisionTreeConditionalNode extends DecisionTreeNode {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return DecisionTreeTrainer.printTree(this, pretty);
+        return DecisionTree.printTree(this, pretty);
     }
 }

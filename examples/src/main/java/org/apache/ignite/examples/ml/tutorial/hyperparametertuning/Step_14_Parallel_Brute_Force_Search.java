@@ -45,7 +45,7 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeModel;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
 
 /**
  * To choose the best hyper-parameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -126,7 +126,7 @@ public class Step_14_Parallel_Brute_Force_Search {
 
                 DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
-                CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator
+                CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
@@ -168,7 +168,7 @@ public class Step_14_Parallel_Brute_Force_Search {
                     -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
                 // Train decision tree model.
-                DecisionTreeModel bestMdl = trainer.fit(
+                DecisionTreeNode bestMdl = trainer.fit(
                     ignite,
                     dataCache,
                     split.getTrainFilter(),

@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -151,6 +150,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
 import org.apache.ignite.internal.util.InitializationProtector;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -192,6 +192,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -2293,9 +2294,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.onCacheStarted(cacheCtx);
 
         onKernalStart(cache);
-
-        if (ctx.performanceStatistics().enabled() && U.isLocalNodeCoordinator(ctx.discovery()))
-            ctx.performanceStatistics().cacheStart(cacheCtx.cacheId(), cfg.getName());
     }
 
     /**
@@ -3109,7 +3107,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!cachesInfo.isMergeConfigSupports(node))
             return null;
 
-        String validationRes = cachesInfo.validateJoiningNodeData(discoData, node.isClient());
+        String validationRes = cachesInfo.validateJoiningNodeData(discoData);
 
         if (validationRes != null)
             return new IgniteNodeValidationResult(node.id(), validationRes, validationRes);
@@ -4416,13 +4414,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache.
      */
     private <K, V> IgniteInternalCache<K, V> internalCacheEx(String name) {
-        try {
-            awaitStarted();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         if (ctx.discovery().localNode().isClient()) {
             IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jcacheProxy(name, true);
 
@@ -5474,12 +5465,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
 
-            ExecutorService sysPool = ctx.getSystemExecutorService();
+            StripedExecutor stripedExec = ctx.getStripedExecutorService();
 
-            CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
+            int roundRobin = 0;
 
             for (CacheGroupContext grp : forGroups) {
-                sysPool.execute(() -> {
+                stripedExec.execute(roundRobin % stripedExec.stripesCount(), () -> {
                     try {
                         long processed = grp.offheap().restorePartitionStates(partitionStates);
 
@@ -5496,15 +5487,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 : new IgniteCheckedException(e)
                         );
                     }
-                    finally {
-                        completionLatch.countDown();
-                    }
                 });
+
+                roundRobin++;
             }
 
             try {
                 // Await completion restore state tasks in all stripes.
-                completionLatch.await();
+                stripedExec.awaitComplete();
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);

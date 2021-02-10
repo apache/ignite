@@ -16,13 +16,8 @@
  */
 package org.apache.ignite.ml.math.distances;
 
-import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
@@ -34,18 +29,13 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
    */
   private static final long serialVersionUID = 1771556549784040096L;
 
-  private int p = 1;
+  private final int p;
 
-  private final double[] weights;
+  private final Vector weight;
 
-  @JsonIgnore
-  private final Vector internalWeights;
-
-  @JsonCreator
-  public WeightedMinkowskiDistance(@JsonProperty("p")int p, @JsonProperty("weights")double[] weights) {
+  public WeightedMinkowskiDistance(int p, Vector weight) {
     this.p = p;
-    this.weights = weights.clone();
-    internalWeights = VectorUtils.of(weights).copy().map(x -> Math.pow(Math.abs(x), p));
+    this.weight = weight.copy().map(x -> Math.pow(Math.abs(x), p));
   }
 
   /**
@@ -57,19 +47,11 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
     return Math.pow(
         MatrixUtil.localCopyOf(a).minus(b)
             .map(x -> Math.pow(Math.abs(x), p))
-            .times(internalWeights)
+            .times(weight)
             .sum(),
         1 / (double) p
     );
   }
-
-  /** Returns p-norm. */
-  public int getP() {
-    return p;
-  }
-
-  /** Returns weights. */
-  public double[] getWeights() { return weights.clone(); }
 
   /**
    * {@inheritDoc}
@@ -87,12 +69,5 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
    */
   @Override public int hashCode() {
     return getClass().hashCode();
-  }
-
-  @Override public String toString() {
-    return "WeightedMinkowskiDistance{" +
-        "p=" + p +
-        ", weights=" + Arrays.toString(weights) +
-        '}';
   }
 }

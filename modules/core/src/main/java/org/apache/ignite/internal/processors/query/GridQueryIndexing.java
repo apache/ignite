@@ -33,26 +33,20 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -493,26 +487,4 @@ public interface GridQueryIndexing {
     default Map<String, Integer> secondaryIndexesInlineSize() {
         return Collections.emptyMap();
     }
-
-    /**
-     * Defragment index partition.
-     *
-     * @param grpCtx Old group context.
-     * @param newCtx New group context.
-     * @param partPageMem Partition page memory.
-     * @param mappingByPart Mapping page memory.
-     * @param cpLock Defragmentation checkpoint read lock.
-     * @param cancellationChecker Cancellation checker.
-     * @param defragmentationThreadPool Thread pool for defragmentation.
-     * @throws IgniteCheckedException If failed.
-     */
-    void defragment(
-        CacheGroupContext grpCtx,
-        CacheGroupContext newCtx,
-        PageMemoryEx partPageMem,
-        IntMap<LinkMap> mappingByPart,
-        CheckpointTimeoutLock cpLock,
-        Runnable cancellationChecker,
-        IgniteThreadPoolExecutor defragmentationThreadPool
-    ) throws IgniteCheckedException;
 }

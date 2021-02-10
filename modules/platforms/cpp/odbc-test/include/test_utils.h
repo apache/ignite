@@ -121,20 +121,18 @@ namespace ignite_test
      *
      * @param handleType Type of the handle.
      * @param handle Handle.
-     * @param idx Error record index.
      * @return Error state.
      */
-    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle, int idx = 1);
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle);
 
     /**
      * Extract error message.
      *
      * @param handleType Type of the handle.
      * @param handle Handle.
-     * @param idx Error record index.
      * @return Error message.
      */
-    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle, int idx = 1);
+    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle);
 
     /**
      * @return Test config directory path.

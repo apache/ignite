@@ -501,7 +501,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode())
+        if (dataBag.isJoiningNodeClient())
             return;
 
         Set<Integer> grpIds = grpKeys.groupIds();
@@ -824,20 +824,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
-     */
-    public double getReencryptionRate() {
-        return pageScanner.getRate();
-    }
-
-    /**
-     * @param rate Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
-     */
-    public void setReencryptionRate(double rate) {
-        pageScanner.setRate(rate);
-    }
-
-    /**
      * Removes encryption key(s).
      *
      * @param grpId Cache group ID.
@@ -924,16 +910,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        if (grpKeys.isReleaseWalKeysRequired(segmentIdx))
-            ctx.getSystemExecutorService().submit(() -> releaseWalKeys(segmentIdx));
-    }
-
-    /**
-     * Cleanup keys reserved for WAL reading.
-     *
-     * @param segmentIdx WAL segment index.
-     */
-    private void releaseWalKeys(long segmentIdx) {
         withMasterKeyChangeReadLock(() -> {
             synchronized (metaStorageMux) {
                 Map<Integer, Set<Integer>> rmvKeys = grpKeys.releaseWalKeys(segmentIdx);
@@ -1140,14 +1116,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @param grpId Cache group ID.
-     * @return The number of bytes left for re-ecryption.
-     */
-    public long getBytesLeftForReencryption(int grpId) {
-        return pageScanner.remainingPagesCount(grpId) * ctx.config().getDataStorageConfiguration().getPageSize();
-    }
-
-    /**
      * @param keyCnt Count of keys to generate.
      * @return Future that will contain results of generation.
      */
@@ -1189,32 +1157,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         fut.nodeId(rndNode.id());
 
         ctx.io().sendToGridTopic(rndNode.id(), TOPIC_GEN_ENC_KEY, req, SYSTEM_POOL);
-    }
-
-    /**
-     * Suspend re-encryption of the cache group.
-     *
-     * @param grpId Cache group ID.
-     */
-    public boolean suspendReencryption(int grpId) throws IgniteCheckedException {
-        return reencryptionFuture(grpId).cancel();
-    }
-
-    /**
-     * Forces re-encryption of the cache group.
-     *
-     * @param grpId Cache group ID.
-     */
-    public boolean resumeReencryption(int grpId) throws IgniteCheckedException {
-        if (!reencryptionFuture(grpId).isDone())
-            return false;
-
-        if (!reencryptionInProgress(grpId))
-            throw new IgniteCheckedException("Re-encryption completed or not required [grpId=" + grpId + "]");
-
-        startReencryption(Collections.singleton(grpId));
-
-        return true;
     }
 
     /**

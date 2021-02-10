@@ -28,16 +28,13 @@ public class NodeSplit implements Serializable {
     private static final long serialVersionUID = 1331311529596106124L;
 
     /** Feature id in feature vector. */
-    private int featureId;
+    private final int featureId;
 
     /** Feature split value. */
-    private double val;
+    private final double val;
 
     /** Impurity at this split point. */
-    private double impurity;
-
-    public NodeSplit() {
-    }
+    private final double impurity;
 
     /**
      * Creates an instance of NodeSplit.

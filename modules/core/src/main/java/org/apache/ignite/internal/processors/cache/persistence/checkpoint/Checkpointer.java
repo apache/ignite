@@ -456,12 +456,16 @@ public class Checkpointer extends GridWorker {
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                 if (log.isInfoEnabled()) {
+                    String walSegsCoveredMsg = chp.walSegsCoveredRange == null ? "" : prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
+
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                            "walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
+                            "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
+                            "total=%dms]",
                         chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                         chp.pagesSize,
                         chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
-                        walRangeStr(chp.walSegsCoveredRange),
+                        chp.walFilesDeleted,
+                        walSegsCoveredMsg,
                         tracker.markDuration(),
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
@@ -587,15 +591,9 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
-     * Creates a string of a range WAL segments.
-     *
-     * @param walRange Range of WAL segments.
      * @return The message about how many WAL segments was between previous checkpoint and current one.
      */
-    private String walRangeStr(@Nullable IgniteBiTuple<Long, Long> walRange) {
-        if (walRange == null)
-            return "";
-
+    private String prepareWalSegsCoveredMsg(IgniteBiTuple<Long, Long> walRange) {
         String res;
 
         long startIdx = walRange.get1();

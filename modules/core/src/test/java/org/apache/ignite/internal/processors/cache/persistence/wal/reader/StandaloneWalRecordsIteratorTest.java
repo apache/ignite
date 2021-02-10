@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -264,8 +261,6 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            assertEquals(Collections.singletonList(StandardOpenOption.READ), Arrays.asList(modes));
-
             return new CountedFileIO(file, modes);
         }
     }

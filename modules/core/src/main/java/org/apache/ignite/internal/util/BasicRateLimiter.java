@@ -65,11 +65,6 @@ public class BasicRateLimiter {
     private long nextFreeTicketMicros;
 
     /**
-     * The flag indicates that the rate is not limited.
-     */
-    private volatile boolean unlimited;
-
-    /**
      * @param permitsPerSecond Estimated number of permits per second.
      */
     public BasicRateLimiter(double permitsPerSecond) {
@@ -79,14 +74,11 @@ public class BasicRateLimiter {
     /**
      * Updates the stable rate.
      *
-     * @param permitsPerSecond The new stable rate of this {@code RateLimiter}, set {@code 0} for unlimited rate.
+     * @param permitsPerSecond The new stable rate of this {@code RateLimiter}.
      * @throws IllegalArgumentException If {@code permitsPerSecond} is negative or zero.
      */
     public void setRate(double permitsPerSecond) {
-        A.ensure(permitsPerSecond >= 0, "Requested permits (" + permitsPerSecond + ") must be non-negative.");
-
-        if (unlimited = (permitsPerSecond == 0))
-            return;
+        A.ensure(permitsPerSecond > 0, "Requested permits (" + permitsPerSecond + ") must be positive");
 
         synchronized (mux) {
             resync();
@@ -96,12 +88,9 @@ public class BasicRateLimiter {
     }
 
     /**
-     * @return The stable rate as {@code permits per seconds} ({@code 0} means that the rate is unlimited).
+     * @return The stable rate (as {@code permits per seconds}).
      */
     public double getRate() {
-        if (unlimited)
-            return 0;
-
         synchronized (mux) {
             return SECONDS.toMicros(1L) / stableIntervalMicros;
         }
@@ -115,9 +104,6 @@ public class BasicRateLimiter {
      * @throws IllegalArgumentException If the requested number of permits is negative or zero.
      */
     public void acquire(int permits) throws IgniteInterruptedCheckedException {
-        if (unlimited)
-            return;
-
         long microsToWait = reserve(permits);
 
         try {

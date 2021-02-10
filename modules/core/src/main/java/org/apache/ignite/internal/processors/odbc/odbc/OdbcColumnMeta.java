@@ -35,19 +35,19 @@ public class OdbcColumnMeta {
     private final String tableName;
 
     /** Column name. */
-    private final String columnName;
+    public final String columnName;
 
     /** Data type. */
     private final Class<?> dataType;
 
     /** Precision. */
-    private final int precision;
+    public final int precision;
 
     /** Scale. */
-    private final int scale;
+    public final int scale;
 
-    /** Nullability. See {@link java.sql.ResultSetMetaData#isNullable(int)} for more info. */
-    private final int nullability;
+    /** Client version. */
+    private final ClientListenerProtocolVersion ver;
 
     /**
      * @param schemaName Cache name.
@@ -56,30 +56,30 @@ public class OdbcColumnMeta {
      * @param dataType Data type.
      * @param precision Precision.
      * @param scale Scale.
-     * @param nullability Nullability.
+     * @param ver Client version.
      */
     public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType,
-        int precision, int scale, int nullability) {
+        int precision, int scale, ClientListenerProtocolVersion ver) {
         this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
         this.dataType = dataType;
         this.precision = precision;
         this.scale = scale;
-        this.nullability = nullability;
+        this.ver = ver;
     }
 
     /**
-     * Constructor for result set column.
      * @param info Field metadata.
+     * @param ver Client version.
      */
-    public OdbcColumnMeta(GridQueryFieldMetadata info) {
-        schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
-        tableName = info.typeName();
-        columnName = info.fieldName();
-        precision = info.precision();
-        scale = info.scale();
-        nullability = info.nullability();
+    public OdbcColumnMeta(GridQueryFieldMetadata info, ClientListenerProtocolVersion ver) {
+        this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
+        this.tableName = info.typeName();
+        this.columnName = info.fieldName();
+        this.precision = info.precision();
+        this.scale = info.scale();
+        this.ver = ver;
 
         Class<?> type;
 
@@ -123,9 +123,8 @@ public class OdbcColumnMeta {
      * Write in a binary format.
      *
      * @param writer Binary writer.
-     * @param ver Client version.
      */
-    public void write(BinaryRawWriter writer, ClientListenerProtocolVersion ver) {
+    public void write(BinaryRawWriter writer) {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
@@ -137,10 +136,6 @@ public class OdbcColumnMeta {
         if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0) {
             writer.writeInt(precision);
             writer.writeInt(scale);
-        }
-
-        if (ver.compareTo(OdbcConnectionContext.VER_2_8_0) >= 0) {
-            writer.writeByte((byte)nullability);
         }
     }
 

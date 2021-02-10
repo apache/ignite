@@ -32,13 +32,13 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  */
 public abstract class DistributionMixture<C extends Distribution> implements Distribution {
     /** Component probabilities. */
-    private Vector componentProbs;
+    private final Vector componentProbs;
 
     /** Distributions. */
-    private List<C> distributions;
+    private final List<C> distributions;
 
     /** Dimension. */
-    private int dimension;
+    private final int dimension;
 
     /**
      * Creates an instance of DistributionMixture.
@@ -59,9 +59,6 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
         this.distributions = distributions;
         this.componentProbs = componentProbs;
         this.dimension = dimension;
-    }
-
-    public DistributionMixture() {
     }
 
     /** {@inheritDoc} */

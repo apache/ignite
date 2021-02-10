@@ -17,7 +17,6 @@
 
 package org.apache.ignite.transactions.spring;
 
-import org.apache.ignite.internal.transactions.proxy.TransactionProxy;
 import org.apache.ignite.transactions.Transaction;
 import org.springframework.transaction.support.ResourceHolderSupport;
 
@@ -27,7 +26,7 @@ import org.springframework.transaction.support.ResourceHolderSupport;
  */
 class IgniteTransactionHolder extends ResourceHolderSupport {
     /** */
-    private TransactionProxy transaction;
+    private Transaction transaction;
 
     /** */
     private boolean transactionActive;
@@ -37,7 +36,7 @@ class IgniteTransactionHolder extends ResourceHolderSupport {
      *
      * @param transaction the transaction to hold
      */
-    IgniteTransactionHolder(TransactionProxy transaction) {
+    IgniteTransactionHolder(Transaction transaction) {
         this.transaction = transaction;
     }
 
@@ -55,7 +54,7 @@ class IgniteTransactionHolder extends ResourceHolderSupport {
      *
      * @param transaction the transaction
      */
-    void setTransaction(TransactionProxy transaction) {
+    void setTransaction(Transaction transaction) {
         this.transaction = transaction;
     }
 
@@ -64,7 +63,7 @@ class IgniteTransactionHolder extends ResourceHolderSupport {
      *
      * @return the transaction or null
      */
-    TransactionProxy getTransaction() {
+    Transaction getTransaction() {
         return this.transaction;
     }
 

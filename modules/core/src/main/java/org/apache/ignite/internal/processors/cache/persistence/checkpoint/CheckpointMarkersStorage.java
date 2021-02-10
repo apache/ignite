@@ -141,28 +141,24 @@ public class CheckpointMarkersStorage {
     }
 
     /**
-     * Wal truncate callback.
+     * Wal truncate callBack.
      *
-     * @param highBound Upper bound.
-     * @throws IgniteCheckedException If failed.
+     * @param highBound WALPointer.
      */
-    public void removeCheckpointsUntil(@Nullable WALPointer highBound) throws IgniteCheckedException {
-        List<CheckpointEntry> rmvFromHist = history().onWalTruncated(highBound);
+    public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
+        List<CheckpointEntry> removedFromHistory = history().onWalTruncated(highBound);
 
-        for (CheckpointEntry cp : rmvFromHist)
+        for (CheckpointEntry cp : removedFromHistory)
             removeCheckpointFiles(cp);
     }
 
     /**
      * Logs and clears checkpoint history after checkpoint finish.
-     *
-     * @param chp Finished checkpoint.
-     * @throws IgniteCheckedException If failed.
      */
     public void onCheckpointFinished(Checkpoint chp) throws IgniteCheckedException {
-        List<CheckpointEntry> rmvFromHist = history().onCheckpointFinished(chp);
+        List<CheckpointEntry> removedFromHistory = history().onCheckpointFinished(chp);
 
-        for (CheckpointEntry cp : rmvFromHist)
+        for (CheckpointEntry cp : removedFromHistory)
             removeCheckpointFiles(cp);
     }
 
@@ -332,7 +328,9 @@ public class CheckpointMarkersStorage {
 
         Map<Integer, CacheState> cacheGrpStates = null;
 
-        if (rec != null)
+        // Do not hold groups state in-memory if there is no space in the checkpoint history to prevent possible OOM.
+        // In this case the actual group states will be readed from WAL by demand.
+        if (rec != null && cpHistory.hasSpace())
             cacheGrpStates = rec.cacheGroupStates();
 
         return new CheckpointEntry(cpTs, ptr, cpId, cacheGrpStates);
@@ -428,7 +426,7 @@ public class CheckpointMarkersStorage {
         );
 
         if (type == CheckpointEntryType.START)
-            cpHistory.addCheckpoint(entry, rec.cacheGroupStates());
+            cpHistory.addCheckpoint(entry);
 
         writeCheckpointEntry(tmpWriteBuf, entry, type, skipSync);
 

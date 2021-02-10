@@ -263,18 +263,6 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="timestampConverter" minOccurs="0">
-                                <xs:annotation>
-                                    <xs:documentation>Default date time converter.</xs:documentation>
-                                </xs:annotation>
-                                <xs:complexType>
-                                    <xs:attribute name="type" type="xs:string" use="required">
-                                        <xs:annotation>
-                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                </xs:complexType>
-                            </xs:element>
                         </xs:all>
                         <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
@@ -284,11 +272,6 @@
                         <xs:attribute name="compactFooter" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Compact footer flag.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="forceTimestamp" type="xs:boolean">
-                            <xs:annotation>
-                                <xs:documentation>Force timestamp flag.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -611,32 +594,6 @@
                                                 <xs:documentation>Affinity function to provide mapping from keys to nodes.</xs:documentation>
                                             </xs:annotation>
                                             <xs:complexType>
-                                                <xs:all>
-                                                    <xs:element name="affinityBackupFilter" minOccurs="0">
-                                                        <xs:annotation>
-                                                            <xs:documentation>Optional backup filter. If provided, then backups will be selected from all nodes that pass this filter.</xs:documentation>
-                                                        </xs:annotation>
-                                                        <xs:complexType>
-                                                            <xs:all>
-                                                                <xs:element name="attributeNames" minOccurs="0">
-                                                                    <xs:annotation>
-                                                                        <xs:documentation>Attribute names for the backup filter.</xs:documentation>
-                                                                    </xs:annotation>
-                                                                    <xs:complexType>
-                                                                        <xs:sequence>
-                                                                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
-                                                                        </xs:sequence>
-                                                                    </xs:complexType>
-                                                                </xs:element>
-                                                            </xs:all>
-                                                            <xs:attribute name="type" type="xs:string" use="required">
-                                                                <xs:annotation>
-                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
-                                                                </xs:annotation>
-                                                            </xs:attribute>
-                                                        </xs:complexType>
-                                                    </xs:element>
-                                                </xs:all>
                                                 <xs:attribute name="partitions" type="xs:int">
                                                     <xs:annotation>
                                                         <xs:documentation>Number of partitions.</xs:documentation>
@@ -2497,11 +2454,6 @@
                 <xs:annotation>
                     <xs:documentation>Number of SQL query history elements to keep in memory.</xs:documentation>
                 </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="javaPeerClassLoadingEnabled" type="xs:boolean">
-              <xs:annotation>
-                <xs:documentation>Indicates whether Java peer class loading is enabled.</xs:documentation>
-              </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
                 <xs:annotation>

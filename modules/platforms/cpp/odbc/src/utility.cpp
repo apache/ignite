@@ -111,18 +111,10 @@ namespace ignite
 
             unscaled.MagnitudeToBytes(magnitude);
 
-            int8_t addBit = unscaled.GetSign() == -1 ? -0x80 : 0;
+            if (unscaled.GetSign() == -1)
+                magnitude[0] |= -0x80;
 
-            if (magnitude[0] < 0)
-            {
-                writer.WriteInt32(magnitude.GetSize() + 1);
-                writer.WriteInt8(addBit);
-            }
-            else
-            {
-                writer.WriteInt32(magnitude.GetSize());
-                magnitude[0] |= addBit;
-            }
+            writer.WriteInt32(magnitude.GetSize());
 
             impl::binary::BinaryUtils::WriteInt8Array(writer.GetStream(), magnitude.GetData(), magnitude.GetSize());
         }

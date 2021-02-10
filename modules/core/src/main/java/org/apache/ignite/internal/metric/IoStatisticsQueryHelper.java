@@ -28,13 +28,15 @@ public class IoStatisticsQueryHelper {
     /**
      * Start gathering IO statistics for query. Should be used together with {@code finishGatheringQueryStatistics}
      * method.
+     *
+     * @param qryId Identifier of query.
      */
-    public static void startGatheringQueryStatistics() {
+    public static void startGatheringQueryStatistics(String qryId) {
         IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder == null : currQryStatisticsHolder;
 
-        CUR_QRY_STATS.set(new IoStatisticsHolderQuery());
+        CUR_QRY_STATS.set(new IoStatisticsHolderQuery(qryId));
     }
 
     /**

@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoRes
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.InsertLast;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -103,9 +104,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** Wrapper for tree pages operations. Noop by default. Override for test purposes. */
     public static PageHandlerWrapper<Result> testHndWrapper = null;
-
-    /** */
-    public static final ThreadLocal<Boolean> suspendFailureDiagnostic = ThreadLocal.withInitial(() -> false);
 
     /** Destroy msg. */
     public static final String CONC_DESTROY_MSG = "Tree is being concurrently destroyed: ";
@@ -152,9 +150,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
-
-    /** Flag for enabling single-threaded append-only tree creation. */
-    private boolean sequentialWriteOptsEnabled;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -886,11 +881,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         return name;
     }
 
-    /** Flag for enabling single-threaded append-only tree creation. */
-    public void enableSequentialWriteMode() {
-        sequentialWriteOptsEnabled = true;
-    }
-
     /**
      * Initialize new tree.
      *
@@ -1405,8 +1395,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     private void doFind(Get g) throws IgniteCheckedException {
-        assert !sequentialWriteOptsEnabled;
-
         for (;;) { // Go down with retries.
             g.init();
 
@@ -2063,8 +2051,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     private T doRemove(L row, boolean needOld) throws IgniteCheckedException {
-        assert !sequentialWriteOptsEnabled;
-
         checkDestroyed();
 
         Remove r = new Remove(row, needOld);
@@ -2722,8 +2708,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long pageId, long page, long pageAddr, BPlusIO io, long fwdId, long fwdBuf, int idx
     ) throws IgniteCheckedException {
         int cnt = io.getCount(pageAddr);
-
-        int mid = sequentialWriteOptsEnabled ? (int)(cnt * 0.85) : cnt >>> 1;
+        int mid = cnt >>> 1;
 
         boolean res = false;
 
@@ -2779,7 +2764,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
-    private Result putDown(final Put p, final long pageId, final long fwdId, int lvl)
+    private Result putDown(final Put p, final long pageId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
@@ -5314,11 +5299,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         throws IgniteCheckedException {
         assert row != null;
 
-        if (sequentialWriteOptsEnabled) {
-            assert io.getForward(buf) == 0L;
-
+        if (row instanceof InsertLast)
             return -cnt - 1;
-        }
 
         int high = cnt - 1;
 
@@ -6148,7 +6130,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param e Exception.
      */
     protected void processFailure(FailureType failureType, Throwable e) {
-        if (failureProcessor != null && !suspendFailureDiagnostic.get())
+        if (failureProcessor != null)
             failureProcessor.process(new FailureContext(failureType, e));
     }
 

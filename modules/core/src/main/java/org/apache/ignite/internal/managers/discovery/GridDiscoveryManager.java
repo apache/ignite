@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -100,7 +101,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2740,19 +2740,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 try {
                     body0();
                 }
+                catch (InterruptedException e) {
+                    if (!isCancelled)
+                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+
+                    throw e;
+                }
                 catch (Throwable t) {
-                    boolean isInterruptedException = X.hasCause(t, InterruptedException.class)
-                        || X.hasCause(t, IgniteInterruptedException.class)
-                        || X.hasCause(t, IgniteInterruptedCheckedException.class);
+                    U.error(log, "Exception in discovery notyfier worker thread.", t);
 
-                    if (!isInterruptedException)
-                        U.error(log, "Exception in discovery notifier worker thread.", t);
+                    FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
-                    if (!isInterruptedException || !isCancelled) {
-                        FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
-
-                        ctx.failure().process(new FailureContext(type, t));
-                    }
+                    ctx.failure().process(new FailureContext(type, t));
 
                     throw t;
                 }
