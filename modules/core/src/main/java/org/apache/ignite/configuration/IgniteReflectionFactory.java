@@ -164,7 +164,7 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
 
     /**
      * Gets a map of properties. Map contains entries of component class field name
-     * to value of the filed which will be used as initial value.
+     * to value of the field which will be used as initial value.
      *
      * @return Properties.
      */
@@ -174,7 +174,7 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
 
     /**
      * Sets a map of properties. Map contains entries of component class field name
-     * to a value of the filed which will be used as initial value.
+     * to a value of the field which will be used as initial value.
      *
      * @param props Properties.
      */

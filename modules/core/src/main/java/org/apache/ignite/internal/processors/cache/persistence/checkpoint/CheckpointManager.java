@@ -300,11 +300,12 @@ public class CheckpointManager {
     }
 
     /**
-     * Wal truncate callBack.
+     * Wal truncate callback.
      *
-     * @param highBound WALPointer.
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
      */
-    public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
+    public void removeCheckpointsUntil(@Nullable WALPointer highBound) throws IgniteCheckedException {
         checkpointMarkersStorage.removeCheckpointsUntil(highBound);
     }
 

@@ -19,6 +19,8 @@
 
 #include <cassert>
 
+#include <fstream>
+
 #include <ignite/common/platform_utils.h>
 
 #include "test_utils.h"
@@ -27,7 +29,28 @@ namespace ignite_test
 {
     std::string GetTestConfigDir()
     {
-        return ignite::common::GetEnv("IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH");
+        using namespace ignite;
+
+        std::string cfgPath = common::GetEnv("IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH");
+
+        if (!cfgPath.empty())
+            return cfgPath;
+
+        std::string home = jni::ResolveIgniteHome();
+
+        if (home.empty())
+            return home;
+
+        std::stringstream path;
+
+        path << home << common::Fs
+             << "modules" << common::Fs
+             << "platforms" << common::Fs
+             << "cpp" << common::Fs
+             << "thin-client-test" << common::Fs
+             << "config";
+
+        return path.str();
     }
 
     void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
@@ -61,7 +84,16 @@ namespace ignite_test
         cfg.jvmMaxMem = 4096;
 #endif
 
-        cfg.springCfgPath = GetTestConfigDir().append("/").append(cfgFile);
+        std::string cfgDir = GetTestConfigDir();
+
+        if (cfgDir.empty())
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to resolve test config directory");
+
+        std::stringstream path;
+
+        path << cfgDir << common::Fs << cfgFile;
+
+        cfg.springCfgPath = path.str();
     }
 
     ignite::Ignite StartServerNode(const char* cfgFile, const char* name)
@@ -105,5 +137,20 @@ namespace ignite_test
         std::string workDir = AppendPath(home, "work");
 
         ignite::common::DeletePath(workDir);
+    }
+
+    size_t GetLineOccurrencesInFile(const std::string& filePath, const std::string& line)
+    {
+        std::ifstream file(filePath.c_str());
+
+        size_t cnt = 0;
+        std::string current;
+        while (std::getline(file, current))
+        {
+            if (current.find(line) != std::string::npos)
+                ++cnt;
+        }
+
+        return cnt;
     }
 }

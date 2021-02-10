@@ -326,7 +326,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         SegmentHeader segmentHeader;
         while (true) {
             try {
-                fileIO = fd.toIO(ioFactory);
+                fileIO = fd.toReadOnlyIO(ioFactory);
 
                 segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
 
@@ -510,6 +510,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
+
+        sharedCtx.kernalContext().cacheObjects().stop(true);
     }
 
     /** {@inheritDoc} */

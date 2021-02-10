@@ -34,7 +34,6 @@ import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -85,11 +84,11 @@ public class FilePageStore implements PageStore {
      */
     private volatile Boolean fileExists;
 
-    /** */
+    /**
+     * The type of stored pages into given page storage. The field can take the following values:
+     * {@link PageStore#TYPE_DATA} for regular affinity partition files or {@link PageStore#TYPE_IDX} for index pages.
+     */
     private final byte type;
-
-    /** Database configuration. */
-    protected final DataStorageConfiguration dbCfg;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -124,20 +123,27 @@ public class FilePageStore implements PageStore {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** */
+    /**
+     * @param type Type of stored pages.
+     * @param pathProvider Store path.
+     * @param factory Factory producing an IO accessor.
+     * @param pageSize Page size.
+     * @param allocatedTracker Allocation tracker.
+     */
     public FilePageStore(
         byte type,
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
-        DataStorageConfiguration cfg,
+        int pageSize,
         LongConsumer allocatedTracker
     ) {
+        assert type == PageStore.TYPE_DATA || type == PageStore.TYPE_IDX : type;
+
         this.type = type;
         this.pathProvider = pathProvider;
-        this.dbCfg = cfg;
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
-        this.pageSize = dbCfg.getPageSize();
+        this.pageSize = pageSize;
         this.allocatedTracker = allocatedTracker;
     }
 
@@ -248,12 +254,12 @@ public class FilePageStore implements PageStore {
      */
     private long initFile(FileIO fileIO) throws IOException {
         try {
-            ByteBuffer hdr = header(type, dbCfg.getPageSize());
+            ByteBuffer hdr = header(type, pageSize);
 
             fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
-            return headerSize() + dbCfg.getPageSize();
+            return headerSize() + pageSize;
         }
         catch (ClosedByInterruptException e) {
             // If thread was interrupted written header can be inconsistent.
@@ -310,9 +316,9 @@ public class FilePageStore implements PageStore {
 
         int pageSize = hdr.getInt();
 
-        if (dbCfg.getPageSize() != pageSize)
+        if (this.pageSize != pageSize)
             throw new IOException(prefix + "(invalid page size)" +
-                " [expectedPageSize=" + dbCfg.getPageSize() +
+                " [expectedPageSize=" + this.pageSize +
                 ", filePageSize=" + pageSize + "]");
 
         long fileSize = cfgFile.length();

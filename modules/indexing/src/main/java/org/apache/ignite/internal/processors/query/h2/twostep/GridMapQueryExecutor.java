@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -44,10 +43,13 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
@@ -71,6 +73,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanType;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -211,6 +214,7 @@ public class GridMapQueryExecutor {
         boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        boolean treatReplicatedAsPartitioned = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED_AS_PARTITIONED);
 
         Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
@@ -233,30 +237,32 @@ public class GridMapQueryExecutor {
             Span span = MTC.span();
 
             ctx.closure().callLocal(
-                (Callable<Void>)() -> {
+                (GridPlainCallable<Void>)() -> {
                     try (TraceSurroundings ignored = MTC.supportContinual(span)) {
-                        onQueryRequest0(node,
-                            req.requestId(),
-                            segment,
-                            req.schemaName(),
-                            req.queries(),
-                            cacheIds,
-                            req.topologyVersion(),
-                            partsMap,
-                            parts,
-                            req.pageSize(),
-                            distributedJoins,
-                            enforceJoinOrder,
-                            false,
-                            timeout,
-                            params,
-                            lazy,
-                            req.mvccSnapshot(),
-                            dataPageScanEnabled);
+                            onQueryRequest0(node,
+                                req.requestId(),
+                                segment,
+                                req.schemaName(),
+                                req.queries(),
+                                cacheIds,
+                                req.topologyVersion(),
+                                partsMap,
+                                parts,
+                                req.pageSize(),
+                                distributedJoins,
+                                enforceJoinOrder,
+                                false,
+                                timeout,
+                                params,
+                                lazy,
+                                req.mvccSnapshot(),
+                                dataPageScanEnabled,
+                                treatReplicatedAsPartitioned
+                            );
 
-                        return null;
-                    }
-                },
+                            return null;
+                        }
+                    },
                 QUERY_POOL);
         }
 
@@ -277,7 +283,9 @@ public class GridMapQueryExecutor {
             params,
             lazy,
             req.mvccSnapshot(),
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            treatReplicatedAsPartitioned
+        );
     }
 
     /**
@@ -318,8 +326,14 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy,
         @Nullable final MvccSnapshot mvccSnapshot,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        boolean treatReplicatedAsPartitioned
     ) {
+        boolean performanceStatsEnabled = ctx.performanceStatistics().enabled();
+
+        if (performanceStatsEnabled)
+            IoStatisticsQueryHelper.startGatheringQueryStatistics();
+
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
@@ -371,7 +385,7 @@ public class GridMapQueryExecutor {
 
             qctx = new QueryContext(
                 segmentId,
-                h2.backupFilter(topVer, parts),
+                h2.backupFilter(topVer, parts, treatReplicatedAsPartitioned),
                 distributedJoinCtx,
                 mvccSnapshot,
                 reserved,
@@ -555,6 +569,19 @@ public class GridMapQueryExecutor {
 
             if (trace != null)
                 trace.close();
+
+            if (performanceStatsEnabled) {
+                IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+
+                if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
+                    ctx.performanceStatistics().queryReads(
+                        GridCacheQueryType.SQL_FIELDS,
+                        node.id(),
+                        reqId,
+                        stat.logicalReads(),
+                        stat.physicalReads());
+                }
+            }
         }
     }
 

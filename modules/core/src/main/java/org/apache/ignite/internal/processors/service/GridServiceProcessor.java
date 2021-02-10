@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -257,7 +258,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
                 assert !ctx.isDaemon();
 
-                ctx.closure().runLocalSafe(new Runnable() {
+                ctx.closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         try {
                             Iterable<CacheEntryEvent<?, ?>> entries =
