@@ -55,10 +55,12 @@ class SnapshotTest(IgniteTest):
             "visor-plugins", "web", "yardstick", "yarn", "zeromq"
         ]
 
-        envs = {'EXCLUDE_MODULES': ','.join(exclude_modules)}
+        version = IgniteVersion(ignite_version)
+
+        envs = {'EXCLUDE_MODULES': ','.join(exclude_modules)} if version == DEV_BRANCH else None
 
         ignite_config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
+            version=version,
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
@@ -72,7 +74,7 @@ class SnapshotTest(IgniteTest):
 
         client_config = IgniteConfiguration(
             client_mode=True,
-            version=IgniteVersion(ignite_version),
+            version=version,
             discovery_spi=from_ignite_cluster(service)
         )
 
