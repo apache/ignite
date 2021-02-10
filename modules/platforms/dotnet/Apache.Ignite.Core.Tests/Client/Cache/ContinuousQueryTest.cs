@@ -138,6 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// - Update cache and verify that continuous query listeners receive correct events
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestComputeWorksWhenContinuousQueryIsActive()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
@@ -541,6 +542,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// - Versify that results are correct
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestMultipleQueriesMultithreaded()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);

@@ -42,10 +42,6 @@ import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
 import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
 import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
-import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
-import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
-import org.apache.ignite.transactions.spring.IgniteClientSpringTransactionManagerTest;
-import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -79,17 +75,12 @@ import org.junit.runners.Suite;
     CachePojoStoreXmlSelfTest.class,
     CachePojoStoreXmlWithSqlEscapeSelfTest.class,
 
-    GridSpringTransactionManagerSelfTest.class,
-    GridSpringTransactionManagerSpringBeanSelfTest.class,
-    IgniteClientSpringTransactionManagerTest.class,
-
     GridServiceInjectionSpringResourceTest.class,
     IgniteSpringBeanSpringResourceInjectionTest.class,
 
     GridTransformSpringInjectionSelfTest.class,
 
     SpringCacheManagerContextInjectionTest.class,
-    SpringTransactionManagerContextInjectionTest.class,
 
     SpringCacheTest.class,
 

@@ -39,7 +39,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Simple cache test.
  */
-public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
+public abstract class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
 

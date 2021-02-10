@@ -512,6 +512,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
+
+        sharedCtx.kernalContext().cacheObjects().stop(true);
     }
 
     /** {@inheritDoc} */
