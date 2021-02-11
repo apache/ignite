@@ -277,10 +277,10 @@ class ControlUtility:
     def __form_cmd(self, node, cmd):
         ssl = ""
         if self.creds.key_store_path is not None:
-            ssl = f" --keystore {self.creds['key_store_path']} " \
-                  f"--keystore-password {self.creds['key_store_password']} " \
-                  f"--truststore {self.creds['trust_store_path']} " \
-                  f"--truststore-password {self.creds['trust_store_password']}"
+            ssl = f" --keystore {self.creds.key_store_path} " \
+                  f"--keystore-password {self.creds.key_store_password} " \
+                  f"--truststore {self.creds.trust_store_path} " \
+                  f"--truststore-password {self.creds.trust_store_password}"
         auth = ""
         if self.creds.login is not None:
             auth = f" --user {self.creds.login} " \
