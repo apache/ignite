@@ -420,8 +420,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                     U.resolveClassLoader(ignite.configuration()));
 
                 // Invariant for cache: cache key always equals to cache value.
-                assertTrue("Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']',
-                    row.key().value(coctx, false, null) == row.value().value(coctx, false));
+                assertEquals("Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']',
+                    row.key().value(coctx, false, null),
+                    row.value().value(coctx, false));
 
                 rows++;
             }
@@ -435,31 +436,43 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testClusterSnapshotIteratorLargeRows() throws Exception {
+        int keys = 2;
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
 
         IgniteEx ignite = startGridsWithoutCache(2);
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[12008]));
 
         forceCheckpoint();
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
+        int rows = 0;
+
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)
         ) {
+            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
                 row.value().finishUnmarshal(ignite.context()
                         .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
                     U.resolveClassLoader(ignite.configuration()));
+
+                assertEquals(12008, ((Value)row.value().value(coctx, false)).arr.length);
+                assertTrue((Integer)row.key().value(coctx, false, null) < 2);
+
+                rows++;
             }
         }
+
+        assertEquals("Invalid number of rows: " + rows, keys, rows);
     }
 
     /** */
