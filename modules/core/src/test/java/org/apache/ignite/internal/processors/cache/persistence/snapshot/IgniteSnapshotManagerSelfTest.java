@@ -465,7 +465,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                         .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
                     U.resolveClassLoader(ignite.configuration()));
 
-                assertEquals(12008, ((Value)row.value().value(coctx, false)).arr.length);
+                assertEquals(12008, ((Value)row.value().value(coctx, false)).arr().length);
                 assertTrue((Integer)row.key().value(coctx, false, null) < 2);
 
                 rows++;
@@ -473,19 +473,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         }
 
         assertEquals("Invalid number of rows: " + rows, keys, rows);
-    }
-
-    /** */
-    private static class Value {
-        /** */
-        private final byte[] arr;
-
-        /**
-         * @param arr Test array.
-         */
-        public Value(byte[] arr) {
-            this.arr = arr;
-        }
     }
 
     /**

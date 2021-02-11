@@ -495,6 +495,24 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected static class Value {
+        /** */
+        private final byte[] arr;
+
+        /**
+         * @param arr Test array.
+         */
+        public Value(byte[] arr) {
+            this.arr = arr;
+        }
+
+        /** */
+        public byte[] arr() {
+            return arr;
+        }
+    }
+
+    /** */
     protected static class DelegateSnapshotSender extends SnapshotSender {
         /** Delegate call to. */
         protected final SnapshotSender delegate;

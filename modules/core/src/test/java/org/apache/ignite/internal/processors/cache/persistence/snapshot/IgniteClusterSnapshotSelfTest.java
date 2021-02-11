@@ -58,7 +58,10 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -1195,8 +1198,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
-        System.out.println(">>>>>> " + b);
-
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
@@ -1342,7 +1343,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
-        System.out.println(">>>>>> " + b);
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
     }
@@ -1377,6 +1377,43 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckMissedHashes() throws Exception {
+        int keys = 127;
+
+        IgniteEx ignite = startGridsWithCache(3,
+            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)),
+            keys);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+            getPartitionFileName(0));
+
+        assertNotNull(part0);
+        assertTrue(part0.toString(), part0.toFile().exists());
+
+//        FilePageStore pageStore = new FilePageStore(PageStore.TYPE_DATA, part0,
+//            ((FilePageStoreManager)ignite.context().cache().context().pageStore()).getPageStoreFileIoFactory(),
+//            )
+//
+//            (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
+//            .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
+//            .createPageStore(getTypeByPartId(0),
+//                () -> part0,
+//                val -> {
+//                });
+//
+
+        CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
+        try (IgniteSnapshotManager.PageScanIterator iter =
+                new IgniteSnapshotManager.PageScanIterator(coctx, null, 0)) {
+
+        }
     }
 
     /**

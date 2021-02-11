@@ -1201,7 +1201,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @return Iterator over partition.
-     * @throws IgniteCheckedException If fails.
      */
     public GridCloseableIterator<CacheDataRow> partitionRows(String snpName,
         String consId,
@@ -1212,10 +1211,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (!snpDir.exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
-
-        GridKernalContext kctx = new StandaloneGridKernalContext(log,
-            resolveBinaryWorkDir(snpDir.getAbsolutePath(), U.maskForFileName(consId)),
-            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
 
         File nodePath = new File(snpDir, databaseRelativePath(U.maskForFileName(consId)));
 
@@ -1238,6 +1233,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpPart::toPath,
                 val -> {
                 });
+
+        GridKernalContext kctx = new StandaloneGridKernalContext(log,
+            resolveBinaryWorkDir(snpDir.getAbsolutePath(), U.maskForFileName(consId)),
+            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
 
         CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
             false, false, false, false);
@@ -1419,7 +1418,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+    static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -1458,6 +1457,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private int currIdx = -1;
 
         /**
+         * @param coctx Cache object context.
          * @param store Page store to read.
          * @param partId Partition id.
          * @throws IgniteCheckedException If fails.
