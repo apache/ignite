@@ -17,46 +17,32 @@
 
 package org.apache.ignite.cdc;
 
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -94,16 +80,10 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
     private Set<Integer> caches;
 
     /** */
-    private volatile boolean appliersStopped;
-
-    /** */
-    private final List<Future<?>> appliersFuts = new ArrayList<>();
-
-    /** */
     private final List<Applier> appliers = new ArrayList<>();
 
     /** */
-    private ConcurrentMap<Integer, IgniteCache<BinaryObject, BinaryObject>> ignCaches = new ConcurrentHashMap<>();
+    private final Properties props;
 
     /**
      * @param ctx Plugin context.
@@ -113,6 +93,7 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
         this.ign = (IgniteEx)ctx.grid();
         this.log = ign.log().getLogger(KafkaToIgnitePlugin.class);
         this.caches = caches;
+        this.props = props;
 
         execSvc = Executors.newFixedThreadPool(thCnt, new ThreadFactory() {
             AtomicInteger cntr = new AtomicInteger();
@@ -145,12 +126,17 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
 
     /** {@inheritDoc} */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-        boolean destroyWorkers = needToDestroyWorkers(fut);
+        boolean needToDestroy = needToDestroyWorkers(fut);
 
         if (log.isInfoEnabled())
-            log.warning("KafkaToIgnitePlugin.onInitBeforeTopologyLock[destroyWorkers=" + destroyWorkers + ']');
+            log.warning("KafkaToIgnitePlugin.onInitBeforeTopologyLock[needToDestroy=" + needToDestroy + ']');
 
-        stopAppliers(destroyWorkers);
+        if (needToDestroy) {
+            stopAppliers(needToDestroy);
+
+            log.warning("Appliers stoped!");
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -165,10 +151,11 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
                     "[workersDestroyed=" + workersDestroyed + ", topVer=" + topVer + ']');
             }
 
-            if (workersDestroyed)
+            if (workersDestroyed) {
                 switchCachePartitions(topVer);
 
-            startAppliers();
+                startAppliers();
+            }
         }
         catch (IgniteCheckedException e) {
             log.error("Fail to get topology version.", e);
@@ -197,43 +184,26 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
             }
         });
 
-        if (!replicationEnabled[0]) {
+        if (!replicationEnabled[0])
             return;
-        }
     }
 
     /** */
     private void startAppliers() {
-        appliersStopped = false;
+        appliers.forEach(execSvc::submit);
 
         for (int i=0; i< appliers.size(); i++) {
             log.warning(i + " = " + appliers.get(i));
 
-            appliersFuts.add(execSvc.submit(appliers.get(i)));
+            execSvc.submit(appliers.get(i));
         }
     }
 
     /** */
     private void stopAppliers(boolean destroy) {
-        appliersStopped = true;
-
-        for (Future<?> afut : appliersFuts) {
-            assert !afut.isCancelled();
-
-            afut.cancel(true);
-        }
-
         if (destroy) {
-            appliers.forEach(applier -> {
-                try {
-                    applier.close();
-                }
-                catch (Throwable e) {
-                    log.warning("Close error!", e);
-                }
-            });
-
-            appliersFuts.clear();
+            appliers.forEach(Applier::close);
+            appliers.clear();
         }
     }
 
@@ -245,7 +215,15 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
         List<Applier> appliers,
         AtomicInteger cntr
     ) throws IgniteCheckedException {
-        int grpId = ign.context().cache().cacheDescriptor(cacheId).groupId();
+        DynamicCacheDescriptor cacheDesc = ign.context().cache().cacheDescriptor(cacheId);
+
+        if (cacheDesc == null) {
+            log.warning("Cache not started or removed[cacheId=" + cacheId + ']');
+
+            return false;
+        }
+
+        int grpId = cacheDesc.groupId();
 
         GridAffinityAssignmentCache aff = ign.context().cache().context().affinity().groupAffinity(grpId);
 
@@ -279,7 +257,7 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
             Applier applier;
 
             if (appliers.size() < thCnt) {
-                applier = new Applier(log);
+                applier = new Applier(ign, props);
 
                 appliers.add(applier);
             }
@@ -295,171 +273,6 @@ public class KafkaToIgnitePlugin implements IgnitePlugin, PartitionsExchangeAwar
             log.warning("KafkaToIgnitePlugin.switchPartitions " + primaryParts);
 
         return true;
-    }
-
-    /** */
-    private class Applier implements Runnable, AutoCloseable {
-        /** cacheId -> kafkaPart -> List<ignitePart> */
-        private final Map<Integer, Map<Integer, Set<Integer>>> cacheParts = new HashMap<>();
-
-        /** */
-        private final IgniteLogger log;
-
-        /** */
-        private Map<int[], KafkaConsumer<int[], byte[]>> consumers;
-
-        /** */
-        public Applier(IgniteLogger log) {
-            this.log = log.getLogger(Applier.class);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                initConsumers();
-
-                assert !consumers.isEmpty();
-
-                Iterator<Map.Entry<int[], KafkaConsumer<int[], byte[]>>> consumerIter = Collections.emptyIterator();
-
-                while (!appliersStopped) {
-                    log.warning("Fetching data from " + Thread.currentThread().getName() + '!');
-
-                    if (!consumerIter.hasNext())
-                        consumerIter = consumers.entrySet().iterator();
-
-                    Map.Entry<int[], KafkaConsumer<int[], byte[]>> entry = consumerIter.next();
-
-                    poll(entry.getKey()[0], entry.getKey()[1], entry.getValue());
-                }
-            }
-            catch (InterruptedException e) {
-                Thread.interrupted();
-            }
-
-            log.warning(Thread.currentThread().getName() + " - stoped!");
-        }
-
-        /**
-         * @param cacheId Cache id.
-         * @param partitionId Partition id.
-         * @param consumer Data consumer.
-         */
-        private void poll(int cacheId, int partitionId, KafkaConsumer<int[], byte[]> consumer) throws InterruptedException {
-            Thread.sleep(100);
-
-            ConsumerRecords<int[], byte[]> records = consumer.poll(Duration.ofSeconds(3));
-
-            for (ConsumerRecord<int[], byte[]> rec : records) {
-                int[] cacheAndPart = rec.key();
-
-                if (cacheId != cacheAndPart[0] || partitionId != cacheAndPart[1])
-                    continue;
-
-                apply(toEvent(rec.value()));
-            }
-        }
-
-        /**
-         * @param evt Applies event to Ignite.
-         */
-        private void apply(EntryEvent<BinaryObject, BinaryObject> evt) {
-            // Group id here!!!
-            IgniteCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
-                for (String cacheName : ign.cacheNames()) {
-                    if (CU.cacheId(cacheName) == cacheId)
-                        return ign.cache(cacheName).withKeepBinary();
-                }
-
-                throw new IllegalStateException("Cache with id not found[cacheId=" + cacheId + ']');
-            });
-
-            CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(evt.key());
-
-            GridCacheVersion rmvVer = null;
-
-            if (entry == null)
-                //TODO: implement me.
-                rmvVer = new GridCacheVersion(0, 0, 0);
-
-            if (needToUpdate(evt.order(), entry == null ? null : (GridCacheVersion)entry.version(), rmvVer)) {
-                switch (evt.operation()) {
-                    case UPDATE:
-                        cache.put(evt.key(), evt.value()); //TODO: add version from event to entry.
-
-                    case DELETE:
-                        cache.remove(evt.key()); //TODO: add version from event to entry.
-
-                    default:
-                        throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
-                }
-            }
-        }
-
-        private boolean needToUpdate(EntryEventOrder kafkaOrd, GridCacheVersion curVer, GridCacheVersion rmvVer) {
-            if (curVer == null && rmvVer == null)
-                return true;
-
-            GridCacheVersion kafkaVer =
-                new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order());
-
-            if (rmvVer != null)
-                return kafkaVer.compareTo(rmvVer) > 0;
-
-            return kafkaVer.compareTo(curVer) > 0;
-        }
-
-        /**
-         * @param cacheId Group id.
-         * @param parts Ignite partitions.
-         * @param kafkaPart Kafka partition.
-         */
-        public void addCachePartition(int cacheId, List<Integer> parts, int kafkaPart) {
-            cacheParts
-                .computeIfAbsent(cacheId, key -> new HashMap<>())
-                .computeIfAbsent(kafkaPart, key -> new HashSet<>())
-                .addAll(parts);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Applier{, cacheParts=" + cacheParts + '}';
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws Exception {
-            log.warning("Close applier!");
-
-            for (KafkaConsumer<int[], byte[]> consumer : consumers.values())
-                consumer.close(Duration.ofSeconds(3));
-
-            consumers.clear();
-        }
-
-        /** */
-        private void initConsumers() {
-            for (Map.Entry<Integer, Map<Integer, Set<Integer>>> cacheEntry : cacheParts.entrySet()) {
-                int cacheId = cacheEntry.getKey();
-                Map<Integer, Set<Integer>> cacheParts = cacheEntry.getValue();
-
-                for (Map.Entry<Integer, Set<Integer>> kafkaToIgniteParts : cacheParts.entrySet()) {
-                    for (Integer ignitePart : kafkaToIgniteParts.getValue()) {
-                        KafkaConsumer<int[], byte[]> consumer = new KafkaConsumer(new Properties());
-
-                        consumers.put(new int[] {cacheId, ignitePart}, consumer);
-                    }
-                }
-
-            }
-        }
-    }
-
-    /**
-     * @param value
-     * @return
-     */
-    private EntryEvent<BinaryObject, BinaryObject> toEvent(byte[] value) {
-        return null;
     }
 
     /** */

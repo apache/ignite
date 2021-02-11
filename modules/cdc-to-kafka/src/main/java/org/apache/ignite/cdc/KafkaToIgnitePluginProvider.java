@@ -20,10 +20,12 @@ package org.apache.ignite.cdc;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.CachePluginContext;
@@ -49,7 +51,7 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
     private KafkaToIgnitePlugin plugin;
 
     /** Path to the plugin properties file. */
-    private String propertiesPath;
+    private Properties props;
 
     /** Cache namest to handle. */
     private String[] caches;
@@ -76,17 +78,12 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-        try {
-            Set<Integer> caches = Arrays.stream(requireNonNull(this.caches, "Please, provide cache names to handle!"))
-                .mapToInt(CU::cacheId)
-                .boxed()
-                .collect(Collectors.toSet());
+        Set<Integer> caches = Arrays.stream(requireNonNull(this.caches, "Please, provide cache names to handle!"))
+            .mapToInt(CU::cacheId)
+            .boxed()
+            .collect(Collectors.toSet());
 
-            plugin = new KafkaToIgnitePlugin(ctx, Utils.properties(propertiesPath, ERR_MSG), caches);
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
+        plugin = new KafkaToIgnitePlugin(ctx, props, caches);
     }
 
     /** {@inheritDoc} */
@@ -106,7 +103,22 @@ public class KafkaToIgnitePluginProvider implements PluginProvider<PluginConfigu
 
     /** @param propertiesPath Sets path to the property. */
     public void setPropertiesPath(String propertiesPath) {
-        this.propertiesPath = propertiesPath;
+        try {
+            if (props != null)
+                throw new IllegalStateException("Properties already initialized.");
+
+            props = Utils.properties(propertiesPath, ERR_MSG);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    public void setProperties(Properties props) {
+        if (this.props != null)
+            throw new IllegalStateException("Properties already initialized.");
+
+        this.props = props;
     }
 
     /** @param caches Cache names to handle. */

@@ -17,11 +17,17 @@
 
 package org.apache.ignite.cdc;
 
-import java.io.File;
+import java.util.Properties;
+import org.apache.ignite.cdc.serde.KafkaIntArrayDeserializer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Test for cache with custom groupId created.
@@ -29,7 +35,10 @@ import org.junit.Test;
  */
 public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     /** */
-    private static File props;
+    private static Properties props;
+
+    @ClassRule
+    public static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"));
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -38,7 +47,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         if (!cfg.isClientMode()) {
             KafkaToIgnitePluginProvider provider = new KafkaToIgnitePluginProvider();
 
-            provider.setPropertiesPath(props.getAbsolutePath());
+            provider.setProperties(props);
             provider.setCaches("my-cache-2");
 
             cfg.setPluginProviders(provider);
@@ -49,10 +58,17 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (props == null) {
-            props = File.createTempFile("kafka", "properties");
+        kafka.start();
 
-            props.deleteOnExit();
+        if (props == null) {
+            props = new Properties();
+
+            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KafkaIntArrayDeserializer.class.getName());
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+            props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+            props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+            props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 1_000);
         }
     }
 
