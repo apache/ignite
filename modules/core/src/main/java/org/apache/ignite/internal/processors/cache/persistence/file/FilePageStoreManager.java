@@ -703,7 +703,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
             pageStoreFileIoFactory,
             pageStoreV1FileIoFactory,
-            igniteCfg.getDataStorageConfiguration()
+            igniteCfg.getDataStorageConfiguration()::getPageSize
         );
 
         if (encrypted) {
