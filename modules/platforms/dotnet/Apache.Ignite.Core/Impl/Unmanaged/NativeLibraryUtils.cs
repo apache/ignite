@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Runtime.InteropServices;
 
     /// <summary>
     /// Native library call utilities.
@@ -36,7 +35,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             // Init custom resolver for .NET 5+ single-file apps.
             // Do it with Reflection, because SetDllImportResolver is not available on some frameworks,
             // and multi-targeting is not yet implemented.
-            // TODO: Cache all of this.
+            //
+            // The code below is equivalent to:
+            // NativeLibrary.SetDllImportResolver(typeof(Ignition).Assembly, (libName, _, _) => Resolve(libName);
             var dllImportResolverType = Type.GetType("System.Runtime.InteropServices.DllImportResolver");
             var dllImportSearchPathType = Type.GetType("System.Runtime.InteropServices.DllImportSearchPath");
             var nativeLibraryType = Type.GetType("System.Runtime.InteropServices.NativeLibrary");
