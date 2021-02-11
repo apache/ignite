@@ -53,6 +53,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
         Ignite orig = cluster.orig;
         Ignite failed = cluster.failed;
         List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
+        List<Ignite> aliveCellNodes = cluster.aliveCellNodes;
 
         List<Integer> keys;
         List<Integer> putKeys;
@@ -119,38 +120,25 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
 
         awaitPartitionMapExchange();
 
-//        for (Ignite ignite : G.allGrids()) {
-//            IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(PART_CACHE_NAME);
-//
-//            for (Integer key : putKeys)
-//                assertEquals(key, cache.get(key));
-//
-//            for (Integer key : partialPreparedKeys1)
-//                assertEquals(null, cache.get(key));
-//
-//            for (Integer key : preparedKeys)
-//                assertEquals(key, cache.get(key));
-//
-//            for (Integer key : partialPreparedKeys2)
-//                assertEquals(null, cache.get(key));
-//        }
+        for (Ignite ignite : G.allGrids()) {
+            IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(PART_CACHE_NAME);
 
-        Throwable th = null;
+            for (Integer key : putKeys)
+                assertEquals(key, cache.get(key));
 
-        for (int i = 0; i < 100; i++)
-            try {
-                assertPartitionsSame(idleVerify(brokenCellNodes.get(0), PART_CACHE_NAME));
-            }
-            catch (Throwable t) {
-                log.error("Happen " + i, t);
+            for (Integer key : partialPreparedKeys1)
+                assertEquals(null, cache.get(key));
 
-                th = t;
-            }
+            for (Integer key : preparedKeys)
+                assertEquals(key, cache.get(key));
+
+            for (Integer key : partialPreparedKeys2)
+                assertEquals(null, cache.get(key));
+        }
 
         assertCountersAsExpected(part, true, PART_CACHE_NAME, 30, 30);
 
-        if (th != null)
-            throw new RuntimeException(th);
+        assertPartitionsSame(idleVerify(aliveCellNodes.get(0), PART_CACHE_NAME));
     }
 
     /**
