@@ -32,12 +32,16 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -81,7 +85,7 @@ class Applier implements Runnable, AutoCloseable {
     });
 
     /** */
-    private final Map<Integer, IgniteCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
+    private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
 
     /** */
     private final Properties commonProps;
@@ -194,38 +198,44 @@ class Applier implements Runnable, AutoCloseable {
     /**
      * @param evt Applies event to Ignite.
      */
-    private void apply(EntryEvent<BinaryObject, BinaryObject> evt) {
-        IgniteCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
+    private void apply(EntryEvent<BinaryObject, BinaryObject> evt) throws IgniteCheckedException {
+        IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
             for (String cacheName : ign.cacheNames()) {
                 if (CU.cacheId(cacheName) == cacheId)
-                    return ign.cache(cacheName).withKeepBinary();
+                    return ign.cachex(cacheName);
             }
 
             throw new IllegalStateException("Cache with id not found[cacheId=" + cacheId + ']');
         });
 
-        CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(evt.key());
+        EntryEventOrder kafkaOrd = evt.order();
 
-        GridCacheVersion rmvVer = null;
+        CacheObject cacheObj = new CacheObjectImpl(evt.value(), null);
 
-        if (entry == null)
-            //TODO: implement me.
-            rmvVer = new GridCacheVersion(0, 0, 0);
+        KeyCacheObject keyCacheObj = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
 
-        if (needToUpdate(evt.order(), entry == null ? null : (GridCacheVersion)entry.version(), rmvVer)) {
-            switch (evt.operation()) {
-                case UPDATE:
-                    cache.put(evt.key(), evt.value()); //TODO: add version from event to entry.
+        switch (evt.operation()) {
+            case UPDATE:
+                cache.putAllConflict(Collections.singletonMap(keyCacheObj,
+                    new GridCacheDrInfo(cacheObj,
+                        new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order()))));
 
-                case DELETE:
-                    cache.remove(evt.key()); //TODO: add version from event to entry.
+            case DELETE:
+                cache.removeAllConflict(Collections.singletonMap(keyCacheObj,
+                        new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order())));
 
-                default:
-                    throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
-            }
+            default:
+                throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
         }
     }
 
+    /**
+     *
+     * @param kafkaOrd
+     * @param curVer
+     * @param rmvVer
+     * @return
+     */
     private boolean needToUpdate(EntryEventOrder kafkaOrd, GridCacheVersion curVer, GridCacheVersion rmvVer) {
         if (curVer == null && rmvVer == null)
             return true;
