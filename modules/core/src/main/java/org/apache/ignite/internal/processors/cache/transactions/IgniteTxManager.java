@@ -2485,21 +2485,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         tx.rollbackAsync();
     }
 
-    // TODO remove
-    /** */
-    private void neighborcastPartitionCountersAndRollback(IgniteInternalTx tx) {
-        TxCounters txCounters = tx.txCounters(false);
-
-        if (txCounters == null || txCounters.updateCounters() == null)
-            tx.rollbackAsync();
-
-        PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(tx, cctx);
-
-        fut.listen(fut0 -> tx.rollbackAsync());
-
-        fut.init();
-    }
-
     /**
      * Commits transaction in case when node started transaction failed, but all related
      * transactions were prepared (invalidates transaction if it is not fully prepared).
