@@ -164,21 +164,12 @@ class CheckCaseGlobalsSetKwargsSet:
 
     test_kwargs_full_jks = TestParams.test_kwargs_full_jks
     test_kwargs_full_path = TestParams.test_kwargs_full_path
-    test_kwargs_auth = TestParams.test_kwargs_auth
-    test_kwargs_ssl = TestParams.test_ssl_jks
 
     creds_full_jks = TestParams.creds_full_jks
     creds_full_path = TestParams.creds_full_path
-    creds_auth = TestParams.creds_auth
-    creds_jks = TestParams.creds_jks
-    creds_none = TestParams.creds_none
 
     test_globals_full_jks = TestParams.test_globals_full_jks
     test_globals_full_path = TestParams.test_globals_full_path
-    test_globals_auth = TestParams.test_globals_auth
-    test_globals_ssl = TestParams.test_globals_ssl
-    test_globals_ssl = TestParams.test_ssl_jks
-    test_globals_none = TestParams.test_globals_none
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_kwargs, expected',
