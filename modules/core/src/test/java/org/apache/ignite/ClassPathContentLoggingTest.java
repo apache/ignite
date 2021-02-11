@@ -20,6 +20,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -28,11 +29,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  *
  */
 @WithSystemProperty(key = IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, value = "true")
+@WithSystemProperty(key = IGNITE_QUIET, value = "false")
 public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
@@ -80,6 +83,8 @@ public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClassPathContentLogging() throws Exception {
+        String javaClassPath = System.getProperty("java.class.path", ".");
+
         LogListener lsnr = LogListener
             .matches("List of files containing in classpath")
             .build();
@@ -92,7 +97,7 @@ public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
             .matches("Could not log class path entry")
             .build();
 
-        LogListener.Builder jarLsnrBuilder = LogListener.builder();
+        LogListener.Builder contenLsnrBuilder = LogListener.builder();
 
         String jarPath = new StringBuilder(javaHome)
             .append(javaHome.endsWith(File.separator) ? "" : File.separator)
@@ -103,20 +108,24 @@ public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
         Iterable<Path> jars = Files.newDirectoryStream(Paths.get(jarPath), "*.jar");
 
         for (Path jar : jars)
-            jarLsnrBuilder.andMatches(jar.getFileName().toString());
+            contenLsnrBuilder.andMatches(jar.getFileName().toString());
 
-        LogListener jarLsnr = jarLsnrBuilder.build();
+        Arrays.stream(javaClassPath.split(File.separator))
+            .filter(fileName -> new File(fileName).isDirectory())
+            .forEach(contenLsnrBuilder::andMatches);
+
+        LogListener contentLsnr = contenLsnrBuilder.build();
 
         listeningLog.registerListener(lsnr);
         listeningLog.registerListener(clsPathValuelsnr);
         listeningLog.registerListener(errLsnr);
-        listeningLog.registerListener(jarLsnr);
+        listeningLog.registerListener(contentLsnr);
 
         startGrid(0);
 
         assertTrue(lsnr.check());
         assertTrue(clsPathValuelsnr.check());
-        assertTrue(jarLsnr.check());
+        assertTrue(contentLsnr.check());
 
         assertFalse(errLsnr.check());
     }

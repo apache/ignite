@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static javax.cache.Cache.Entry;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.includeSensitive;
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
@@ -848,7 +849,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private boolean updateStore(
         StoreOperation operation,
-        Map<K, Entry<? extends K, ? extends  V>> vals,
+        Map<K, Entry<? extends K, ? extends V>> vals,
         boolean initSes,
         Flusher flusher
     ) {
@@ -890,7 +891,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
         }
         catch (Exception e) {
-            LT.error(log, e, "Unable to update underlying store: " + store);
+            LT.warn(log, e, "Unable to update underlying store: " + store, false, false);
 
             boolean overflow;
 
@@ -900,12 +901,13 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 overflow = flusher.isOverflowed() || stopping.get();
 
             if (overflow) {
-                for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
+                for (Map.Entry<K, Entry<? extends K, ? extends V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
-                    log.warning("Failed to update store (value will be lost as current buffer size is greater " +
-                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
-                        entry.getKey() + ", val=" + val + ", op=" + operation + "]");
+                    log.error("Failed to update store (value will be lost as current buffer size is greater " +
+                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [" +
+                        (includeSensitive() ? "key=" + entry.getKey() + ", val=" + val + ", " : "") +
+                        "op=" + operation + "]");
                 }
 
                 return true;
@@ -963,7 +965,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteLogger log) {
             super(igniteInstanceName, name, log);
 
-            flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+            flusherCacheCriticalSize = cacheCriticalSize / flushThreadCnt;
 
             assert flusherCacheCriticalSize > batchSize;
 
@@ -1216,7 +1218,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteBiTuple<K, StatefulValue<K, V>> tuple;
             boolean applied;
 
-            while(!queue.isEmpty()) {
+            while (!queue.isEmpty()) {
                 pending = U.newLinkedHashMap(batchSize);
                 prevOperation = null;
                 boolean needNewBatch = false;
@@ -1340,7 +1342,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     Map<K, StatefulValue<K,V>>[] flusherMaps() {
         Map<K, StatefulValue<K,V>>[] result = new Map[flushThreadCnt];
 
-        for (int i=0; i < flushThreadCnt; i++)
+        for (int i = 0; i < flushThreadCnt; i++)
             result[i] = flushThreads[i].flusherWriteMap;
 
         return result;

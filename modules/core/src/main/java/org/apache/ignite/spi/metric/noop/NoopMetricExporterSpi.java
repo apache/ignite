@@ -21,8 +21,8 @@ import java.util.function.Predicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,12 +42,12 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(ReadOnlyMetricRegistry registry) {
+    @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
+    @Override public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter) {
         // No-op.
     }
 }

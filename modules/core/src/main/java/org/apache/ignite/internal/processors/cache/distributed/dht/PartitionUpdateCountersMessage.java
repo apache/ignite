@@ -100,7 +100,7 @@ public class PartitionUpdateCountersMessage implements Message {
      * @param idx Item number.
      * @return Partition number.
      */
-    public long initialCounter(int idx){
+    public long initialCounter(int idx) {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
@@ -113,7 +113,7 @@ public class PartitionUpdateCountersMessage implements Message {
      * @param idx Item number.
      * @param value Initial partition counter.
      */
-    public void initialCounter(int idx, long value){
+    public void initialCounter(int idx, long value) {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
@@ -126,7 +126,7 @@ public class PartitionUpdateCountersMessage implements Message {
      * @param idx Item number.
      * @return Update counter delta.
      */
-    public long updatesCount(int idx){
+    public long updatesCount(int idx) {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 

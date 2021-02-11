@@ -86,7 +86,7 @@ public class PageLockLogSnapshot implements PageLockDump {
     private List<PageLockLogSnapshot.LogEntry> toList(PageMetaInfoStore pages) {
         List<PageLockLogSnapshot.LogEntry> lockLog = new ArrayList<>(pages.capacity());
 
-        for (int itemIdx = 0; itemIdx < headIdx; itemIdx ++) {
+        for (int itemIdx = 0; itemIdx < headIdx; itemIdx++) {
             int metaOnLock = pages.getOperation(itemIdx);
 
             assert metaOnLock != 0;

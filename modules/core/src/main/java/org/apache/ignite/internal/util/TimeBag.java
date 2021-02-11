@@ -33,13 +33,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class TimeBag {
     /** Initial global stage. */
-    private final CompositeStage INITIAL_STAGE = new CompositeStage("", 0, new HashMap<>());
+    private final CompositeStage initStage;
 
     /** Lock. */
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock;
 
     /** Global stopwatch. */
-    private final IgniteStopwatch globalStopwatch = IgniteStopwatch.createStarted();
+    private final IgniteStopwatch globalStopwatch;
 
     /** Measurement unit. */
     private final TimeUnit measurementUnit;
@@ -48,30 +48,51 @@ public class TimeBag {
     private final List<CompositeStage> stages;
 
     /** List of current local stages separated by threads (guarded by {@code lock}). */
-    private Map<String, List<Stage>> localStages;
+    private Map<String, List<Stage>> locStages;
 
     /** Last seen global stage by thread. */
-    private final ThreadLocal<CompositeStage> tlLastSeenStage = ThreadLocal.withInitial(() -> INITIAL_STAGE);
+    private final ThreadLocal<CompositeStage> tlLastSeenStage;
 
     /** Thread-local stopwatch. */
-    private final ThreadLocal<IgniteStopwatch> tlStopwatch = ThreadLocal.withInitial(IgniteStopwatch::createUnstarted);
+    private final ThreadLocal<IgniteStopwatch> tlStopwatch;
+
+    /** Record flag. */
+    private final boolean record;
 
     /**
      * Default constructor.
      */
-    public TimeBag() {
-        this(TimeUnit.MILLISECONDS);
+    public TimeBag(boolean record) {
+        this(TimeUnit.MILLISECONDS, record);
     }
 
     /**
      * @param measurementUnit Measurement unit.
      */
-    public TimeBag(TimeUnit measurementUnit) {
-        this.stages = new ArrayList<>();
-        this.localStages = new ConcurrentHashMap<>();
-        this.measurementUnit = measurementUnit;
+    public TimeBag(TimeUnit measurementUnit, boolean record) {
+        if (record) {
+            initStage = new CompositeStage("", 0, new HashMap<>());
+            lock = new ReentrantReadWriteLock();
+            tlLastSeenStage = ThreadLocal.withInitial(() -> initStage);
+            globalStopwatch = IgniteStopwatch.createStarted();
+            tlStopwatch = ThreadLocal.withInitial(IgniteStopwatch::createUnstarted);
+            stages = new ArrayList<>();
+            locStages = new ConcurrentHashMap<>();
 
-        this.stages.add(INITIAL_STAGE);
+            stages.add(initStage);
+        }
+        else {
+            initStage = null;
+            lock = null;
+            tlLastSeenStage = null;
+            globalStopwatch = null;
+            tlStopwatch = null;
+            stages = null;
+            locStages = null;
+        }
+
+        this.measurementUnit = measurementUnit;
+        this.record = record;
     }
 
     /**
@@ -87,14 +108,17 @@ public class TimeBag {
      * @param description Description.
      */
     public void finishGlobalStage(String description) {
+        if (!record)
+            return;
+
         lock.writeLock().lock();
 
         try {
             stages.add(
-                new CompositeStage(description, globalStopwatch.elapsed(measurementUnit), Collections.unmodifiableMap(localStages))
+                new CompositeStage(description, globalStopwatch.elapsed(measurementUnit), Collections.unmodifiableMap(locStages))
             );
 
-            localStages = new ConcurrentHashMap<>();
+            locStages = new ConcurrentHashMap<>();
 
             globalStopwatch.reset().start();
         }
@@ -107,6 +131,9 @@ public class TimeBag {
      * @param description Description.
      */
     public void finishLocalStage(String description) {
+        if (!record)
+            return;
+
         lock.readLock().lock();
 
         try {
@@ -130,7 +157,7 @@ public class TimeBag {
             // Associate local stage with current thread name.
             String threadName = Thread.currentThread().getName();
 
-            localStages.computeIfAbsent(threadName, t -> new ArrayList<>()).add(stage);
+            locStages.computeIfAbsent(threadName, t -> new ArrayList<>()).add(stage);
         }
         finally {
             lock.readLock().unlock();
@@ -165,6 +192,8 @@ public class TimeBag {
      * @return List of string representation of all stage timings.
      */
     public List<String> stagesTimings() {
+        assert record;
+
         lock.readLock().lock();
 
         try {
@@ -196,6 +225,8 @@ public class TimeBag {
      * @return List of string represenation of longest local stages per each composite stage.
      */
     public List<String> longestLocalStagesTimings(int maxPerCompositeStage) {
+        assert record;
+
         lock.readLock().lock();
 
         try {

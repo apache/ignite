@@ -102,7 +102,7 @@ public class TrainTestDatasetSplitter<K, V> implements Serializable {
          */
         DatasetSplitFilter(UniformMapper<K, V> mapper, double from, double to) {
             assert from >= 0 && from <= 1 : "Point 'from' should be in interval (0, 1)";
-            assert to >= 0 && to <= 1: "Point 'to' should be in interval (0, 1)";
+            assert to >= 0 && to <= 1 : "Point 'to' should be in interval (0, 1)";
             assert from <= to : "Point 'from' should be less of equal to point 'to'";
 
             this.mapper = mapper;

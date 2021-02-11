@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -35,7 +31,7 @@ public class GridMetadataAwareAdapter {
     /**
      * Enum stored predefined keys.
      */
-    public enum EntryKey {//keys sorted by usage rate, descending.
+    public enum EntryKey { //keys sorted by usage rate, descending.
         /** Predefined key. */
         CACHE_STORE_MANAGER_KEY(0),
 
@@ -329,42 +325,6 @@ public class GridMetadataAwareAdapter {
             }
 
             return false;
-        }
-    }
-
-    /**
-     * Convenience way for super-classes which implement {@link Externalizable} to serialize metadata. Super-classes
-     * must call this method explicitly from within {@link Externalizable#writeExternal(ObjectOutput)} methods
-     * implementation.
-     *
-     * @param out Output to write to.
-     * @throws IOException If I/O error occurred.
-     */
-    protected void writeExternalMeta(ObjectOutput out) throws IOException {
-        Object[] cp;
-
-        // Avoid code warning (suppressing is bad here, because we need this warning for other places).
-        synchronized (this) {
-            cp = Arrays.copyOf(this.data, this.data.length);
-        }
-
-        out.writeObject(cp);
-    }
-
-    /**
-     * Convenience way for super-classes which implement {@link Externalizable} to serialize metadata. Super-classes
-     * must call this method explicitly from within {@link Externalizable#readExternal(ObjectInput)} methods
-     * implementation.
-     *
-     * @param in Input to read from.
-     * @throws IOException If I/O error occurred.
-     * @throws ClassNotFoundException If some class could not be found.
-     */
-    protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
-        Object[] cp = (Object[])in.readObject();
-
-        synchronized (this) {
-            this.data = cp;
         }
     }
 

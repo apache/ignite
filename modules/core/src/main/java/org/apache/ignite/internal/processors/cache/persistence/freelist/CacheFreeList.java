@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -37,32 +38,37 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
      * @param name Name.
      * @param regionMetrics Region metrics.
      * @param dataRegion Data region.
-     * @param reuseList Reuse list.
      * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public CacheFreeList(
         int cacheId,
         String name,
         DataRegionMetricsImpl regionMetrics,
         DataRegion dataRegion,
-        ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        GridKernalContext ctx,
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             cacheId,
             name,
             regionMetrics,
             dataRegion,
-            reuseList,
+            null,
             wal,
             metaPageId,
             initNew,
-            lockLsnr
+            lockLsnr,
+            ctx,
+            pageListCacheLimit,
+            pageFlag
         );
     }
 

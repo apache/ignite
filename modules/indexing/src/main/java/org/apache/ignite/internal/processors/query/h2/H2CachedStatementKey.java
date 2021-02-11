@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -35,36 +34,16 @@ class H2CachedStatementKey {
     private final byte flags;
 
     /**
-     * Constructor.
-     *
-     * @param schemaName Schema name.
-     * @param sql SQL.
-     */
-    public H2CachedStatementKey(String schemaName, String sql) {
-        this(schemaName, sql, null);
-    }
-
-    /**
      * Full-fledged constructor.
      *
      * @param schemaName Schema name.
      * @param sql SQL.
-     * @param fieldsQry Query with flags.
+     * @param flags Query flags.
      */
-    public H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry) {
+    public H2CachedStatementKey(String schemaName, String sql, byte flags) {
         this.schemaName = schemaName;
         this.sql = sql;
-
-        if (fieldsQry == null)
-            this.flags = 0; // flags only relevant for server side updates.
-        else {
-            this.flags = (byte)(1 +
-                (fieldsQry.isDistributedJoins() ? 2 : 0) +
-                (fieldsQry.isEnforceJoinOrder() ? 4 : 0) +
-                (fieldsQry.isCollocated() ? 8 : 0) +
-                (fieldsQry.isLocal() ? 8 : 0)
-            );
-        }
+        this.flags = flags;
     }
 
     /** {@inheritDoc} */

@@ -19,12 +19,14 @@
 package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Cache statistics holder to gather statistics related to concrete cache.
@@ -37,36 +39,36 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     public static final String LOGICAL_READS = "LOGICAL_READS";
 
     /** */
-    private final LongAdderMetricImpl logicalReadCtr;
+    private final LongAdderMetric logicalReadCtr;
 
     /** */
-    private final LongAdderMetricImpl physicalReadCtr;
+    private final LongAdderMetric physicalReadCtr;
 
     /** */
-    private final String cacheName;
+    private final String grpName;
 
     /** */
     private final int grpId;
 
     /**
-     * @param cacheName Name of cache.
+     * @param grpName Name of the group.
      * @param grpId Group id.
-     * @param mreg Metric registry.
+     * @param mmgr Metric manager.
      */
-    public IoStatisticsHolderCache(String cacheName, int grpId, MetricRegistry mreg) {
-        assert cacheName != null;
+    public IoStatisticsHolderCache(String grpName, int grpId, GridMetricManager mmgr) {
+        assert grpName != null;
 
-        this.cacheName = cacheName;
+        this.grpName = grpName;
         this.grpId = grpId;
 
-        MetricRegistry mset = mreg.withPrefix(CACHE_GROUP.metricGroupName(), cacheName);
+        MetricRegistry mreg = mmgr.registry(metricRegistryName());
 
-        mset.metric("startTime", null).value(U.currentTimeMillis());
-        mset.objectMetric("name", String.class, null).value(cacheName);
-        mset.intMetric("grpId", null).value(grpId);
+        mreg.longMetric("startTime", null).value(U.currentTimeMillis());
+        mreg.objectMetric("name", String.class, null).value(grpName);
+        mreg.intMetric("grpId", null).value(grpId);
 
-        this.logicalReadCtr = mset.longAdderMetric(LOGICAL_READS, null);
-        this.physicalReadCtr = mset.longAdderMetric(PHYSICAL_READS, null);
+        this.logicalReadCtr = mreg.longAdderMetric(LOGICAL_READS, null);
+        this.physicalReadCtr = mreg.longAdderMetric(PHYSICAL_READS, null);
     }
 
     /** {@inheritDoc} */
@@ -95,18 +97,23 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadCtr.longValue();
+        return logicalReadCtr.value();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadCtr.longValue();
+        return physicalReadCtr.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String metricRegistryName() {
+        return metricName(CACHE_GROUP.metricGroupName(), grpName);
     }
 
     /**
      * @return Cache group id.
      */
-    public int cacheGroupId(){
+    public int cacheGroupId() {
         return grpId;
     }
 
@@ -115,6 +122,6 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         return S.toString(IoStatisticsHolderCache.class, this,
             "logicalReadCtr", logicalReadCtr,
             "physicalReadCtr", physicalReadCtr,
-            "cacheName", cacheName);
+            "grpName", grpName);
     }
 }

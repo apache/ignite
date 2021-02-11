@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.io.Serializable;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -123,6 +124,9 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /** @serial Query entities. */
     private QueryEntity[] qryEntities = null;
+
+    /** @serial Expiry policy. */
+    private ExpiryPolicy expiryPlc;
 
     /**
      * @return Cache name.
@@ -644,6 +648,22 @@ public final class ClientCacheConfiguration implements Serializable {
      */
     public ClientCacheConfiguration setQueryEntities(QueryEntity... newVal) {
         qryEntities = newVal;
+
+        return this;
+    }
+
+    /**
+     * @return Expire policy.
+     */
+    public ExpiryPolicy getExpiryPolicy() {
+        return expiryPlc;
+    }
+
+    /**
+     * @param expiryPlc Expiry policy.
+     */
+    public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
+        this.expiryPlc = expiryPlc;
 
         return this;
     }

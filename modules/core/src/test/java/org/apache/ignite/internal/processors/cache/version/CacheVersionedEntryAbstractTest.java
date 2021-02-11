@@ -48,7 +48,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
 
         Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0 ; i < ENTRIES_NUM; i++)
+        for (int i = 0; i < ENTRIES_NUM; i++)
             cache.put(i, "value_" + i);
     }
 

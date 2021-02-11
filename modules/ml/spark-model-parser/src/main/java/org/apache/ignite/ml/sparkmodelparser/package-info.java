@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for Spark model parser.
  */
+
 package org.apache.ignite.ml.sparkmodelparser;

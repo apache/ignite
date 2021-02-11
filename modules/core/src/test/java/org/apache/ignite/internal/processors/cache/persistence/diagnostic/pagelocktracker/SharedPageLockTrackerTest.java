@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,43 +34,66 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_STACK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_STACK;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor.toStringDump;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class SharedPageLockTrackerTest extends AbstractPageLockTest {
+
+    /** Tracker types. */
+    @Parameterized.Parameter(0)
+    public int trackerType;
+
+    /** */
+    private final int defaultType = LockTrackerFactory.DEFAULT_TYPE;
+
     /**
-     *
+     * @return Test parameters.
      */
+    @Parameterized.Parameters(name = "trackerType={0}")
+    public static Collection<Object[]> getParameters() {
+        Collection<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[]{HEAP_STACK});
+        params.add(new Object[]{HEAP_LOG});
+        params.add(new Object[]{OFF_HEAP_STACK});
+        params.add(new Object[]{OFF_HEAP_LOG});
+
+        return params;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+        LockTrackerFactory.DEFAULT_TYPE = defaultType;
+    }
+
+    /** */
     @Test
     public void testTakeDumpByCount() throws Exception {
-        int[] trackerTypes = new int[] {HEAP_STACK, HEAP_LOG, OFF_HEAP_STACK, OFF_HEAP_LOG};
-
         LockTrackerFactory.DEFAULT_CAPACITY = 512;
 
-        for (int i = 0; i < trackerTypes.length; i++) {
-            LockTrackerFactory.DEFAULT_TYPE = trackerTypes[i];
+        LockTrackerFactory.DEFAULT_TYPE = trackerType;
 
-            doTestTakeDumpByCount(5, 1, 10, 1);
+        int dumps = SF.apply(5, 2, 10);
+        doTestTakeDumpByCount(5, 1, dumps, 1);
 
-            doTestTakeDumpByCount(5, 2, 10, 2);
+        doTestTakeDumpByCount(5, 2, dumps, 2);
 
-            doTestTakeDumpByCount(10, 3, 20, 4);
+        doTestTakeDumpByCount(10, 3, dumps, 4);
 
-            doTestTakeDumpByCount(20, 6, 40, 8);
-        }
+        doTestTakeDumpByCount(20, 6, dumps, 8);
     }
 
     /**
@@ -77,21 +101,19 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
      */
     @Test
     public void testTakeDumpByTime() throws Exception {
-        int[] trackerTypes = new int[] {HEAP_STACK, HEAP_LOG, OFF_HEAP_STACK, OFF_HEAP_LOG};
-
         LockTrackerFactory.DEFAULT_CAPACITY = 512;
 
-        for (int i = 0; i < trackerTypes.length; i++) {
-            LockTrackerFactory.DEFAULT_TYPE = trackerTypes[i];
+        LockTrackerFactory.DEFAULT_TYPE = trackerType;
 
-            doTestTakeDumpByTime(5, 1, 40_000, 1);
+        int time = SF.apply(3_000, 1_000, 5_000);
 
-            doTestTakeDumpByTime(5, 2, 20_000, 2);
+        doTestTakeDumpByTime(5, 1, time, 1);
 
-            doTestTakeDumpByTime(10, 3, 10_000, 4);
+        doTestTakeDumpByTime(5, 2, time, 2);
 
-            doTestTakeDumpByTime(20, 6, 10_000, 8);
-        }
+        doTestTakeDumpByTime(10, 3, time, 4);
+
+        doTestTakeDumpByTime(20, 6, time, 8);
     }
 
     /**
@@ -127,6 +149,8 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
             pages.addAll(pageMetas);
 
+            boolean latchDown = false;
+
             while (!stop.get()) {
                 Collections.shuffle(locks);
                 Collections.shuffle(pages);
@@ -156,8 +180,11 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                     }
                 }
 
-                if (awaitThreadStartLatch.getCount() > 0)
+                if (!latchDown) {
                     awaitThreadStartLatch.countDown();
+
+                    latchDown = true;
+                }
             }
         }, threads, "PageLocker");
 
@@ -167,8 +194,6 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             awaitRandom(1000);
 
             ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
-            System.out.println(toStringDump(dump));
 
             assertEquals(threads, dump.threadStates.size());
             assertEquals(0, dump.threadStates.stream().filter(e -> e.invalidContext != null).count());
@@ -212,17 +237,19 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
             pages.addAll(pageMetas);
 
+            boolean latchDown = false;
+
             while (!stop.get()) {
                 Collections.shuffle(locks);
                 Collections.shuffle(pages);
 
                 for (PageLockListener lsnr : locks) {
                     for (PageMeta pageMeta : pages) {
-                        //awaitRandom(5);
+                        awaitRandom(5);
 
                         lsnr.onBeforeReadLock(pageMeta.structureId, pageMeta.pageId, pageMeta.page);
 
-                        //awaitRandom(5);
+                        awaitRandom(5);
 
                         lsnr.onReadLock(pageMeta.structureId, pageMeta.pageId, pageMeta.page, pageMeta.pageAddr);
                     }
@@ -233,14 +260,17 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
                 for (PageLockListener lsnr : locks) {
                     for (PageMeta pageMeta : pages) {
-                        // awaitRandom(5);
+                        awaitRandom(5);
 
                         lsnr.onReadUnlock(pageMeta.structureId, pageMeta.pageId, pageMeta.page, pageMeta.pageAddr);
                     }
                 }
 
-                if (awaitThreadStartLatch.getCount() > 0)
+                if (!latchDown) {
                     awaitThreadStartLatch.countDown();
+
+                    latchDown = true;
+                }
             }
         }, threads, "PageLocker");
 
@@ -257,8 +287,6 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                 awaitRandom(20);
 
                 ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
-                System.out.println(toStringDump(dump));
 
                 assertEquals(threads, dump.threadStates.size());
                 assertEquals(0, dump.threadStates.stream().filter(e -> e.invalidContext != null).count());

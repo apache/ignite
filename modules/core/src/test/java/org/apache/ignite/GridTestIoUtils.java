@@ -173,7 +173,7 @@ public final class GridTestIoUtils {
 
             // i1 == bufSize => compare buffers.
             // i1 <  bufSize => Compare part of buffers, rest of buffers are equal from previous iteration.
-            assertTrue("Expects the same data [pos=" + pos +  ", i1=" + i1 + ", i2=" + i2 + ']',
+            assertTrue("Expects the same data [pos=" + pos + ", i1=" + i1 + ", i2=" + i2 + ']',
                 Arrays.equals(buf1, buf2));
 
             pos += i1;

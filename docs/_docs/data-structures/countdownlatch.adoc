@@ -1,0 +1,39 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= CountDownLatch
+
+:javaFile: {javaCodeDir}/DataStructures.java
+
+`IgniteCountDownLatch` provides functionality that is similar to that of `java.util.concurrent.CountDownLatch` and allows you to synchronize operations accross cluster nodes.
+
+A distributed CountDownLatch can be created as follows:
+
+[source, java]
+----
+include::{javaFile}[tags=count-down-latch, indent=0]
+----
+
+
+After the above code is executed, all nodes in the specified cache will be able to synchronize on the latch named `latchName`.
+Below is a code example of such synchronization:
+
+
+[source, java]
+----
+include::{javaFile}[tags=sync-on-latch, indent=0]
+
+----
+
+

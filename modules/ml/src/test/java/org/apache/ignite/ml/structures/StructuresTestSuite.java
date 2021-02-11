@@ -25,7 +25,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    DatasetStructureTest.class
+    DatasetStructureTest.class,
+    LabeledVectorSetTest.class
 })
 public class StructuresTestSuite {
 }

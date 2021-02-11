@@ -170,7 +170,7 @@ public abstract class AbstractPageCompressionIntegrationTest extends GridCommonA
         UUID id;
 
         TestVal(int i) {
-            this.str =  i + "bla bla bla!";
+            this.str = i + "bla bla bla!";
             this.i = -i;
             this.x = 0xffaabbccdd773311L + i;
             this.id = new UUID(i,-i);

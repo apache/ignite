@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
+import java.security.PermissionCollection;
+import java.security.cert.Certificate;
 import java.util.UUID;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -41,6 +43,12 @@ public class TestSecuritySubject implements SecuritySubject {
 
     /** Permissions. */
     private SecurityPermissionSet perms;
+
+    /** Permissions for Sandbox checks. */
+    private PermissionCollection sandboxPerms;
+
+    /** Client certificates. */
+    private Certificate[] certs;
 
     /**
      * Default constructor.
@@ -134,6 +142,33 @@ public class TestSecuritySubject implements SecuritySubject {
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public PermissionCollection sandboxPermissions() {
+        return sandboxPerms;
+    }
+
+    /** */
+    public TestSecuritySubject sandboxPermissions(PermissionCollection perms) {
+        sandboxPerms = perms;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Certificate[] certificates() {
+        return certs;
+    }
+
+    /**
+     * @param perms Permissions.
+     */
+    public TestSecuritySubject setCerts(Certificate[] certs) {
+        this.certs = certs;
+
+        return this;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

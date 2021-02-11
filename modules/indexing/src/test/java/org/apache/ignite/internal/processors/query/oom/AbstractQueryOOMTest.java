@@ -68,7 +68,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     private static final int RMT_NODES_CNT = 3;
 
     /** */
-    private static final long HANG_TIMEOUT =  15 * 60 * 1000;
+    private static final long HANG_TIMEOUT = 15 * 60 * 1000;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -105,8 +105,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
                     .addQueryField("VAL", Long.class.getName(), null)
                     .addQueryField("STR", String.class.getName(), null)
                     .setIndexes(Collections.singleton(new QueryIndex("INDEXED"))))))
-            .setUserAttributes(igniteInstanceName.startsWith("remote") ? F.asMap(HAS_CACHE, true) : null)
-            .setClientMode(igniteInstanceName.startsWith("client"));
+            .setUserAttributes(igniteInstanceName.startsWith("remote") ? F.asMap(HAS_CACHE, true) : null);
     }
 
     /**

@@ -96,7 +96,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
      *
      * @param err Error.
      */
-    public void onError(IgniteCheckedException err){
+    public void onError(IgniteCheckedException err) {
         if (errs == null)
             errs = new UpdateErrors();
 

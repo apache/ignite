@@ -144,7 +144,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         final String topic = "testTopic";
 
-        MessageListener locLsnr  = new MessageListener();
+        MessageListener locLsnr = new MessageListener();
 
         UUID opId = client.message().remoteListen(topic, new RemoteMessageListener());
 

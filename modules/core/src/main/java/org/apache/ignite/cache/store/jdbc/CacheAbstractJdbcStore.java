@@ -681,6 +681,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         throws CacheLoaderException {
         ExecutorService pool = null;
 
+        int fetchSz = dialect.getFetchSize();
+
         String cacheName = session().cacheName();
 
         try {
@@ -774,7 +776,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                 for (int i = 0; i < keyCnt; i++)
                                     upperBound[i] = rs.getObject(i + 1);
 
-                                futs.add(pool.submit(loadCacheRange(em, clo, null, upperBound, 0)));
+                                futs.add(pool.submit(loadCacheRange(em, clo, null, upperBound, fetchSz)));
 
                                 while (rs.next()) {
                                     Object[] lowerBound = upperBound;
@@ -784,10 +786,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                     for (int i = 0; i < keyCnt; i++)
                                         upperBound[i] = rs.getObject(i + 1);
 
-                                    futs.add(pool.submit(loadCacheRange(em, clo, lowerBound, upperBound, 0)));
+                                    futs.add(pool.submit(loadCacheRange(em, clo, lowerBound, upperBound, fetchSz)));
                                 }
 
-                                futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null, 0)));
+                                futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null, fetchSz)));
 
                                 continue;
                             }

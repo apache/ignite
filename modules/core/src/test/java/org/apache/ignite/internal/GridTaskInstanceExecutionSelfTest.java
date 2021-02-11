@@ -60,7 +60,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         assert task.getState() != null;
         assert task.getState() == testState;
 
-        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(task,  "testArg");
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(task, "testArg");
 
         assert fut != null;
 

@@ -183,7 +183,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     private String runAndGetExchangeLog(boolean testClientNode) throws Exception {
         assert nodes > 1;
 
-        IgniteEx ignite = (IgniteEx)startGrids(nodes - 1);
+        IgniteEx ignite = startGrids(nodes - 1);
 
         awaitPartitionMapExchange();
 
@@ -197,13 +197,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(aff, "log", log);
 
-        if (testClientNode) {
-            IgniteConfiguration cfg = getConfiguration("client");
-
-            cfg.setClientMode(true);
-
-            startGrid(cfg);
-        }
+        if (testClientNode)
+            startClientGrid(getConfiguration("client"));
         else
             startGrid(nodes);
 

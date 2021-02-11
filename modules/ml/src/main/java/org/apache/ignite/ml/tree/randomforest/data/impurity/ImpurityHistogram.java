@@ -17,12 +17,11 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
-
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 
 /**
  * Helper class for ImpurityHistograms.

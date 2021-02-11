@@ -59,7 +59,7 @@ public class VisorBinaryMetadataCollectorTask
 
         /** {@inheritDoc} */
         @Override protected VisorBinaryMetadataCollectorTaskResult run(VisorBinaryMetadataCollectorTaskArg arg) {
-            Marshaller marsh =  ignite.configuration().getMarshaller();
+            Marshaller marsh = ignite.configuration().getMarshaller();
 
             IgniteBinary binary = marsh == null || marsh instanceof BinaryMarshaller ? ignite.binary() : null;
 

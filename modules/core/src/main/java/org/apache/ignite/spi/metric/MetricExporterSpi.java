@@ -17,20 +17,19 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * Exporter of monitoring information to the external recepient.
+ * Exporter of metric information to the external recipient.
  * Expected, that each implementation would support some specific protocol.
  *
  * Implementation of this Spi should work by pull paradigm.
  * So after start SPI should respond to some incoming request.
  * HTTP servlet or JMX bean are good examples of expected implementations.
  *
+ * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
  * @see Metric
  * @see BooleanMetric
@@ -38,26 +37,22 @@ import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
  * @see IntMetric
  * @see LongMetric
  * @see ObjectMetric
- * @see JmxExporterSpi
+ * @see JmxMetricExporterSpi
  */
 public interface MetricExporterSpi extends IgniteSpi {
     /**
      * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
      *
-     * Registry should be empty in the time this method called.
-     * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link MetricRegistry#addMetricCreationListener(Consumer)}.
-     *
      * @param registry Metric registry.
      */
-    public void setMetricRegistry(ReadOnlyMetricRegistry registry);
+    public void setMetricRegistry(ReadOnlyMetricManager registry);
 
     /**
      * Sets export filter.
-     * Metrics that not satisfy {@code filter} shouldn't be exported by this filter.
+     * Metric registry that not satisfy {@code filter} shouldn't be exported.
      *
      * @param filter Filter.
      */
-    public void setExportFilter(Predicate<Metric> filter);
+    public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter);
 }

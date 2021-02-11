@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Services
             TotalCount = reader.ReadInt();
             OriginNodeId = reader.ReadGuid() ?? Guid.Empty;
             AffinityKey = reader.ReadObject<object>();
-            Platform = (Platform) reader.ReadByte();
+            PlatformType = (PlatformType) reader.ReadByte();
 
             var mapSize = reader.ReadInt();
             var snap = new Dictionary<Guid, int>(mapSize);
@@ -87,8 +87,10 @@ namespace Apache.Ignite.Core.Impl.Services
             }
         }
 
-        /** <inheritdoc /> */
-        public Platform Platform { get; private set; }
+        /// <summary>
+        /// Gets or sets the platform of this service.
+        /// </summary>
+        public PlatformType PlatformType { get; private set; }
 
         /** <inheritdoc /> */
         public int TotalCount { get; private set; }

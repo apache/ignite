@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache clear request.
  */
-public class ClientCacheClearRequest extends ClientCacheRequest {
+public class ClientCacheClearRequest extends ClientCacheDataRequest {
     /**
      * Constructor.
      *

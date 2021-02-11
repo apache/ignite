@@ -20,11 +20,10 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 /**
  * Implementation of {@link DistributedProperty} for {@link Boolean}.
  */
-public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
-
+public class DistributedBooleanProperty extends SimpleDistributedProperty<Boolean> {
     /** {@inheritDoc} */
     DistributedBooleanProperty(String name) {
-        super(name);
+        super(name, Boolean::parseBoolean);
     }
 
     /**

@@ -155,7 +155,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
             @Override public void run() {
                 try {
                     try (Connection c = c(true, NestedTxMode.ERROR)) {
-                        try (Statement s = c.createStatement())  {
+                        try (Statement s = c.createStatement()) {
                             s.execute("BEGIN");
 
                             s.execute("COMMIT");

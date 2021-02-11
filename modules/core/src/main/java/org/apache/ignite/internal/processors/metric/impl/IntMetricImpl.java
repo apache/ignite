@@ -35,10 +35,10 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      */
-    public IntMetricImpl(String name, @Nullable String descr) {
-        super(name, descr);
+    public IntMetricImpl(String name, @Nullable String desc) {
+        super(name, desc);
     }
 
     /**
@@ -48,6 +48,11 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
      */
     public void add(int x) {
         updater.addAndGet(this, x);
+    }
+
+    /** Adds 1 to the metric. */
+    public void increment() {
+        add(1);
     }
 
     /**

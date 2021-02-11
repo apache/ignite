@@ -17,25 +17,25 @@
 
 package org.apache.ignite.platform;
 
+import java.lang.management.ManagementFactory;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.management.ManagementFactory;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Task to get max Java heap memory for node.
  */
 public class PlatformMaxMemoryTask extends ComputeTaskAdapter<Object, Long> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         return Collections.singletonMap(new MaxMemoryJob(), F.first(subgrid));
     }

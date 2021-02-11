@@ -259,8 +259,7 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
         sb.a("PagesListNode [\n\tpreviousPageId=").appendHex(getPreviousId(addr))
             .a(",\n\tnextPageId=").appendHex(getNextId(addr))
             .a(",\n\tcount=").a(getCount(addr))
-            .a(",\n\tpages={")
-        ;
+            .a(",\n\tpages={");
 
         for (int i = 0; i < getCount(addr); i++)
             sb.a("\n\t\t").a(getAt(addr, i));

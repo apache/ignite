@@ -112,7 +112,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
 
         ccfg.setName(CACHE_NAME);
 
-        switch (tmConfigurationType){
+        switch (tmConfigurationType) {
             case CACHE_LOOKUP:
                 ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
                 break;
@@ -192,5 +192,6 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         GLOBAL_LOOKUP,
 
         /** */
-        FACTORY}
+        FACTORY
+    }
 }

@@ -31,7 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -115,9 +115,9 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
-        List<FileWALPointer> pointers = WalTestUtils.getPointers(lastWalFile, iterFactory, LOGICAL);
+        List<WALPointer> pointers = WalTestUtils.getPointers(lastWalFile, iterFactory, LOGICAL);
 
-        WalTestUtils.corruptWalSegmentFile(lastWalFile, pointers.get(pointers.size()-1));
+        WalTestUtils.corruptWalSegmentFile(lastWalFile, pointers.get(pointers.size() - 1));
 
         IgniteEx ex = startGrid(0);
 
@@ -145,13 +145,13 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
-        List<FileWALPointer> checkpoints = WalTestUtils.getPointers(lastWalFile, iterFactory, CHECKPOINT_RECORD);
+        List<WALPointer> checkpoints = WalTestUtils.getPointers(lastWalFile, iterFactory, CHECKPOINT_RECORD);
 
-        List<FileWALPointer> binary = WalTestUtils.getPointers(lastWalFile, iterFactory, PHYSICAL).stream()
+        List<WALPointer> binary = WalTestUtils.getPointers(lastWalFile, iterFactory, PHYSICAL).stream()
             .filter(p -> p.fileOffset() < checkpoints.get(checkpoints.size() - 1).fileOffset())
             .collect(Collectors.toList());
 
-        FileWALPointer pointer = binary.get(binary.size() - 1);
+        WALPointer pointer = binary.get(binary.size() - 1);
 
         WalTestUtils.corruptWalSegmentFile(lastWalFile, pointer);
 

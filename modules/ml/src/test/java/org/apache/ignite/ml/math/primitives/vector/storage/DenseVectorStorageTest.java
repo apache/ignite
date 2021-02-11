@@ -26,7 +26,6 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  * Tests for DenseVectorStorage.
  */
 public class DenseVectorStorageTest extends AbstractStorageTest {
-
     /** {@inheritDoc} */
     @Override protected boolean isNumericVector(VectorStorage storage) {
         try {

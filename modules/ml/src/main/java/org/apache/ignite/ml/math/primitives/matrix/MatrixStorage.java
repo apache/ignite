@@ -74,7 +74,7 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     }
 
     /** {@inheritDoc} */
-    @Override default boolean isNumeric() {
+    @Override public default boolean isNumeric() {
         return true;
     }
 }

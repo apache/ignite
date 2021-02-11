@@ -78,7 +78,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> IgniteModel<I, List<O>> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
         List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
             .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder, preprocessor)))
@@ -95,6 +95,8 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     @Override public <K, V> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
+        learningEnvironment().initDeployingContext(preprocessor);
+
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.submodels().size() == trainers.size();

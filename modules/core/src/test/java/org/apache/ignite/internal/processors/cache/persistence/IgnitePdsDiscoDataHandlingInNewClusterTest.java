@@ -50,9 +50,6 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
     private static final String NODE_CONS_ID_1 = "node1";
 
     /** */
-    private static final String CLIENT_CONS_ID = "client0";
-
-    /** */
     private static final String STATIC_CACHE_NAME_0 = "staticCache0";
 
     /** */
@@ -102,24 +99,20 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.equals(CLIENT_CONS_ID))
-            cfg.setClientMode(true);
-        else {
-            cfg.setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)
-                    )
-            );
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                )
+        );
 
-            cfg.setCacheConfiguration(
-                new CacheConfiguration(STATIC_CACHE_NAME_0)
-                    .setGroupName(MIXED_CACHES_GROUP_NAME_0)
-                    .setAffinity(AFFINITY)
-                    .setNodeFilter(nodeFilter)
-            );
-        }
+        cfg.setCacheConfiguration(
+            new CacheConfiguration(STATIC_CACHE_NAME_0)
+                .setGroupName(MIXED_CACHES_GROUP_NAME_0)
+                .setAffinity(AFFINITY)
+                .setNodeFilter(nodeFilter)
+        );
 
         if (igniteInstanceName.equals(NODE_CONS_ID_0)) {
             failingOnNodeJoinSpi.setIpFinder(sharedStaticIpFinder);

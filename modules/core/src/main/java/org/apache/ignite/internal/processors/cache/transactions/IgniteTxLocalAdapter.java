@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpda
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -110,9 +109,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Transaction adapter for cache transactions.
  */
 public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Commit error updater. */
     protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
@@ -157,13 +153,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     protected volatile boolean qryEnlisted;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    protected IgniteTxLocalAdapter() {
-        // No-op.
-    }
 
     /**
      * @param cctx Cache registry.
@@ -453,7 +442,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * pair (init, delta) values, where init - initial update counter, and delta - updates count made
      * by current transaction for a given partition.
      */
-    public void calculatePartitionUpdateCounters() {
+    public void calculatePartitionUpdateCounters() throws IgniteTxRollbackCheckedException {
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
@@ -491,11 +480,31 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
+                        // Verify primary tx mapping.
                         // LOST state is possible if tx is started over LOST partition.
-                        assert part != null && (part.state() == OWNING || part.state() == LOST):
-                            part == null ?
-                                "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
-                                "part=" + part.toString();
+                        boolean valid = part != null &&
+                            (part.state() == OWNING || part.state() == LOST) &&
+                            part.primary(top.readyTopologyVersion());
+
+                        if (!valid) {
+                            // Local node is no longer primary for the partition, need to rollback a transaction.
+                            if (part != null && !part.primary(top.readyTopologyVersion())) {
+                                log.warning("Failed to prepare a transaction on outdated topology, rolling back " +
+                                    "[tx=" + CU.txString(this) +
+                                    ", readyTopVer=" + top.readyTopologyVersion() +
+                                    ", lostParts=" + top.lostPartitions() +
+                                    ", part=" + part.toString() + ']');
+
+                                throw new IgniteTxRollbackCheckedException("Failed to prepare a transaction on outdated " +
+                                    "topology, please try again [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+                            }
+
+                            // Trigger error.
+                            throw new AssertionError("Invalid primary mapping [tx=" + CU.txString(this) +
+                                ", readyTopVer=" + top.readyTopologyVersion() +
+                                ", lostParts=" + top.lostPartitions() +
+                                ", part=" + (part == null ? "NULL" : part.toString()) + ']');
+                        }
 
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
@@ -1086,13 +1095,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            if (!txState.mvccEnabled()) {
-                TxCounters txCounters = txCounters(false);
-
-                if (txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
-            }
-
             cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
 
             cctx.mvccCaching().onTxFinished(this, false);
@@ -1172,7 +1174,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx cached = txEntry.cached();
 
                 try {
-                    assert cached.detached() || cached.lockedByThread(threadId) || isRollbackOnly() :
+                    assert cached.detached() || cached.lockedLocally(xidVersion()) || isRollbackOnly() :
                         "Transaction lock is not acquired [entry=" + cached + ", tx=" + this +
                             ", nodeId=" + cctx.localNodeId() + ", threadId=" + threadId + ']';
 
@@ -1238,8 +1240,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 addInvokeResult(txEntry, v, ret, ver);
                             }
                         }
-                        else
-                            ret.value(cacheCtx, v, txEntry.keepBinary());
+                        else {
+                            ret.value(
+                                cacheCtx,
+                                v,
+                                txEntry.keepBinary(),
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                            );
+                        }
                     }
 
                     boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
@@ -1309,6 +1317,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object val0 = null;
 
         IgniteThread.onEntryProcessorEntered(true);
+
+        if (cctx.kernalContext().deploy().enabled() && deploymentLdrId != null)
+            U.restoreDeploymentContext(cctx.kernalContext(), deploymentLdrId);
 
         try {
             Object res = null;
@@ -1554,7 +1565,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 else if (explicitCand.dhtLocal())
                     locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
 
-                if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
+                if (!explicitVer.equals(xidVer) && explicitCand.isHeldByThread(threadId) && !explicitCand.tx() && locCand) {
                     txEntry.explicitVersion(explicitVer);
 
                     if (explicitVer.isLess(minVer))

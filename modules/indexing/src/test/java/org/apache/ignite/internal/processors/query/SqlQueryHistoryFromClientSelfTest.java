@@ -18,26 +18,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
  * Check query history metrics from client node.
  */
 public class SqlQueryHistoryFromClientSelfTest extends SqlQueryHistorySelfTest {
-
-    private int idx;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (idx++ == 2)
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteEx queryNode() {
         IgniteEx node = grid(2);
@@ -49,7 +35,8 @@ public class SqlQueryHistoryFromClientSelfTest extends SqlQueryHistorySelfTest {
 
     /** {@inheritDoc} */
     @Override protected void startTestGrid() throws Exception {
-        startGrids(3);
+        startGrids(2);
+        startClientGrid(2);
     }
 
 }

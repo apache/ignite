@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.jetbrains.annotations.Nullable;
 
@@ -211,6 +212,22 @@ public interface ConnectionProperties {
      * @param sslProtocol SSL protocol name.
      */
     public void setSslProtocol(String sslProtocol);
+
+    /**
+     * Gets cipher suites.
+     *
+     * @return SSL cipher suites.
+     */
+    public String getSslCipherSuites();
+
+    /**
+     * Override default cipher suites.
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
+     * @param sslCipherSuites SSL cipher suites.
+     */
+     public void setSslCipherSuites(String sslCipherSuites);
 
     /**
      * Gets algorithm that will be used to create a key manager.
@@ -407,16 +424,16 @@ public interface ConnectionProperties {
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
 
     /**
-     * @return {@code true} if jdbc thin affinity awareness is enabled for this connection,
+     * @return {@code true} if jdbc thin partition awareness is enabled for this connection,
      * {@code false} if it's disabled.
      */
-    public boolean isAffinityAwareness();
+    public boolean isPartitionAwareness();
 
     /**
-     * @param affinityAwareness {@code true} if jdbc thin affinity awareness is enabled
+     * @param partitionAwareness {@code true} if jdbc thin partition awareness is enabled
      * for this connection, if {@code false} then it's disabled.
      */
-    public void setAffinityAwareness(boolean affinityAwareness);
+    public void setPartitionAwareness(boolean partitionAwareness);
 
     /**
      * Note: Batch size of 1 prevents deadlock on update where keys sequence are different in several concurrent updates.
@@ -432,4 +449,113 @@ public interface ConnectionProperties {
      * @throws SQLException On error.
      */
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
+
+    /**
+     * @return SQL cache size that is used within partition awareness optimizations.
+     */
+    public int getPartitionAwarenessSqlCacheSize();
+
+    /**
+     * Sets SQL cache size that is used within partition awareness optimizations.
+     *
+     * @param partitionAwarenessSqlCacheSize SQL cache size.
+     * @throws SQLException On error.
+     */
+    public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSqlCacheSize) throws SQLException;
+
+    /**
+     * @return Partition distributions cache size that is used within partition awareness optimizations.
+     */
+    public int getPartitionAwarenessPartitionDistributionsCacheSize();
+
+    /**
+     * Sets partition distributions cache size that is used within partition awareness optimizations.
+     *
+     * @param partitionAwarenessPartDistributionsCacheSize Partition distributions cache size.
+     * @throws SQLException On error.
+     */
+    public void setPartitionAwarenessPartitionDistributionsCacheSize(
+        int partitionAwarenessPartDistributionsCacheSize) throws SQLException;
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @return Query timeout in seconds.
+     */
+    @Nullable public Integer getQueryTimeout();
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @param qryTimeout Query timeout in seconds.
+     */
+    public void setQueryTimeout(@Nullable Integer qryTimeout) throws SQLException;
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @return Connection timeout in milliseconds.
+     */
+    @Nullable public int getConnectionTimeout();
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @param connTimeout Connection timeout in milliseconds.
+     */
+    public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
+
+    /**
+     * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * This factory should return user attributes which can be used on server node.
+     *
+     * @return Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
+     */
+    public String getUserAttributesFactory();
+
+    /**
+     * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * This factory should return user attributes which can be used on server node.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
+     *
+     * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
+     */
+    public void setUserAttributesFactory(String sslFactory);
+
+    /**
+     * Any JDBC features could be force disabled.
+     * See {@link JdbcThinFeature}.
+     * The string should contain enumeration of feature names, separated by the comma.
+     *
+     * @return disabled features.
+     */
+    public String disabledFeatures();
+
+    /**
+     * @param features Disabled features. See {@link JdbcThinFeature}.
+     *      The string should contain enumeration of feature names, separated by the comma.
+     */
+    public void disabledFeatures(String features);
+
+    /**
+     * Get keep binary configuration flag.
+     *
+     * @return Keep binary configuration flag.
+     */
+    public boolean isKeepBinary();
+
+    /**
+     * Set to {@code true} to keep binary objects in binary form.
+     *
+     * <p> Defaults is {@code false}.
+     **
+     * @param keepBinary Whether to keep binary objects in binary form.
+     */
+    public void setKeepBinary(boolean keepBinary);
 }

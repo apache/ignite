@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains update calculators.
  */
+
 package org.apache.ignite.ml.optimization.updatecalculators;

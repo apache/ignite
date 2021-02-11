@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -31,10 +32,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+
+import static java.lang.Thread.currentThread;
+import static org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager.LONG_QUERY_EXEC_MSG;
 
 /**
  * Tests for log print for long running query.
@@ -45,6 +51,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** Local query mode. */
     private boolean local;
+
+    /** Lazy query mode. */
+    private boolean lazy;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -82,6 +91,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testLongDistributed() {
         local = false;
+        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
@@ -93,9 +103,52 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testLongLocal() {
         local = true;
+        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
+    }
+
+    /**
+     * Test checks the correctness of thread name when displaying errors
+     * about long queries.
+     */
+    @Test
+    public void testCorrectThreadName() {
+        GridWorker checkWorker = GridTestUtils.getFieldValue(longRunningQueryManager(), "checkWorker");
+
+        LogListener logLsnr = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(logStr -> currentThread().getName().startsWith(checkWorker.name()))
+            .build();
+
+        testLog().registerListener(logLsnr);
+
+        sqlCheckLongRunning();
+
+        assertTrue(logLsnr.check());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBigResultSetLocal() throws Exception {
+        local = true;
+        lazy = true;
+
+        checkBigResultSet();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBigResultDistributed() throws Exception {
+        local = false;
+        lazy = true;
+
+        checkBigResultSet();
     }
 
     /**
@@ -106,7 +159,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ListeningTestLogger testLog = testLog();
 
         LogListener lsnr = LogListener
-            .matches(Pattern.compile("Query execution is too long"))
+            .matches(Pattern.compile(LONG_QUERY_EXEC_MSG))
             .build();
 
         testLog.registerListener(lsnr);
@@ -126,22 +179,50 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ListeningTestLogger testLog = testLog();
 
         LogListener lsnr = LogListener
-            .matches("Query execution is too long")
+            .matches(LONG_QUERY_EXEC_MSG)
             .build();
 
         testLog.registerListener(lsnr);
 
-        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
+        sqlCheckLongRunning();
 
         assertTrue(lsnr.check());
+    }
+
+    /**
+     */
+    private void checkBigResultSet() throws Exception {
+        ListeningTestLogger testLog = testLog();
+
+        LogListener lsnr = LogListener
+            .matches("Query produced big result set")
+            .build();
+
+        testLog.registerListener(lsnr);
+
+        try (FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
+            Iterator it = cur.iterator();
+
+            while (it.hasNext())
+                it.next();
+        }
+
+        assertTrue(lsnr.check(1_000));
     }
 
     /**
      * @param sql SQL query.
      * @param args Query parameters.
      */
-    private void sqlCheckLongRunning(String sql, Object ... args) {
+    private void sqlCheckLongRunning(String sql, Object... args) {
         GridTestUtils.assertThrowsAnyCause(log, () -> sql(sql, args).getAll(), QueryCancelledException.class, "");
+    }
+
+    /**
+     * Execute long running sql with a check for errors.
+     */
+    private void sqlCheckLongRunning() {
+        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
     }
 
     /**
@@ -149,10 +230,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
+            .setLazy(lazy)
             .setSchema("TEST")
             .setArgs(args), false);
     }
@@ -189,6 +271,20 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries(),
             "log", testLog);
 
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).mapQueryExecutor(),
+            "log", testLog);
+
+        GridTestUtils.setFieldValue(grid().context().query().getIndexing(), "log", testLog);
+
         return testLog;
+    }
+
+    /**
+     * Getting {@link LongRunningQueryManager} from the node.
+     *
+     * @return LongRunningQueryManager.
+     */
+    private LongRunningQueryManager longRunningQueryManager() {
+        return ((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries();
     }
 }

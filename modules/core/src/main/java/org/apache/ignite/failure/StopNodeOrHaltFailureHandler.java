@@ -66,7 +66,7 @@ public class StopNodeOrHaltFailureHandler extends AbstractFailureHandler {
                     @Override public void run() {
                         U.error(log, "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, true);
+                        IgnitionEx.stop(ignite.name(), true, null, true);
 
                         latch.countDown();
                     }

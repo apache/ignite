@@ -81,7 +81,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
         }
 
         // Test property file load.
-        byte [] bytes = new byte[20];
+        byte[] bytes = new byte[20];
 
         try {
             in.read(bytes);

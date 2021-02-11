@@ -22,8 +22,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -84,9 +87,17 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
 
-                            startGrid(grid);
+                            IgniteEx g = startGrid(grid);
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
+
+                            // Avoid data loss on random restarts.
+                            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                                @Override public boolean apply() {
+                                    return !g.cachex("cl").context().topology().hasMovingPartitions() ||
+                                        !g.cachex("de").context().topology().hasMovingPartitions();
+                                }
+                            }, 30_000));
                         } finally {
                             states.set(grid, 0);
                         }
@@ -98,7 +109,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
         }, RESTART_THREADS_CNT);
 
         // Test duration.
-        U.sleep(60_000);
+        U.sleep(GridTestUtils.SF.applyLB(60_000, 20_000));
 
         stop.set(true);
 

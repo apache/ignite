@@ -37,6 +37,11 @@ import org.jetbrains.annotations.Nullable;
 public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
     /** {@inheritDoc} */
     @Override public byte[] masterKeyDigest() {
+        return masterKeyDigest(null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] masterKeyDigest(String masterKeyName) {
         return null;
     }
 
@@ -67,11 +72,21 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public byte[] encryptKey(Serializable key) {
+        return encryptKey(key, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] encryptKey(Serializable key, String masterKeyName) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
     @Override public Serializable decryptKey(byte[] key) {
+        return decryptKey(key, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Serializable decryptKey(byte[] key, String masterKeyName) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
@@ -85,8 +100,19 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
         return dataSize;
     }
 
+    /** {@inheritDoc} */
     @Override public int blockSize() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getMasterKeyName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMasterKeyName(String masterKeyName) {
+        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */

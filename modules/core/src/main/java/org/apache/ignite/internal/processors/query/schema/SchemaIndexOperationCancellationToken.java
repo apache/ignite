@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Index operation cancellation token.

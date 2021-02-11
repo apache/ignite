@@ -17,49 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- *
- */
-public class MetastorageDataRow extends SimpleDataRow implements MetastorageSearchRow {
-    /** */
-    private String key;
+/** */
+public class MetastorageDataRow implements MetastorageRow {
+    /** Link to the data. */
+    private final long link;
+
+    /** Key. */
+    private final String key;
+
+    /** Link to the key if the key itself is too long to be inlined into the page. */
+    private final long keyLink;
 
     /** */
-    public MetastorageDataRow(long link, String key, byte[] val) {
-        super(link, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
-            PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION, val);
+    public MetastorageDataRow(long link, String key, long keyLink) {
+        this.link = link;
         this.key = key;
+        this.keyLink = keyLink;
     }
 
-    /** */
-    public MetastorageDataRow(String key, byte[] val) {
-        this(0, key, val);
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return link;
     }
 
-    /**
-     * @return Key.
-     */
+    /** {@inheritDoc} */
     @Override public String key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int hash() {
-        return key.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IOVersions<? extends AbstractDataPageIO> ioVersions() {
-        return MetastoreDataPageIO.VERSIONS;
+    @Override public long keyLink() {
+        return keyLink;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "key=" + key;
+        return S.toString(MetastorageDataRow.class, this);
     }
 }

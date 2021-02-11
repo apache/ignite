@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import com.sun.management.ThreadMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +30,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Function;
+import com.sun.management.ThreadMXBean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -41,8 +43,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.compact;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.identity;
 
 /**
@@ -62,7 +67,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         log.info(obj.toStringManual());
         log.info(obj.toStringAutomatic());
 
-        assertEquals (obj.toStringManual(), obj.toStringAutomatic());
+        assertEquals(obj.toStringManual(), obj.toStringAutomatic());
     }
 
     /**
@@ -322,8 +327,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         // Simulate overflow
         StringBuilder resultSB = new StringBuilder(arrStr);
-            resultSB.deleteCharAt(resultSB.length()-1);
-            resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
+        resultSB.deleteCharAt(resultSB.length() - 1);
+        resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
 
         arrStr = resultSB.toString();
 
@@ -424,7 +429,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             GridToStringBuilder.arrayToString(cArr).contains("... and 1 more"));
 
         Map<String, String> strMap = new TreeMap<>();
-        List<String> strList = new ArrayList<>(limit+1);
+        List<String> strList = new ArrayList<>(limit + 1);
 
         TestClass1 testCls = new TestClass1();
 
@@ -446,7 +451,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToStringColAndMapLimitWithRecursion() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
         Map strMap = new TreeMap<>();
-        List strList = new ArrayList<>(limit+1);
+        List strList = new ArrayList<>(limit + 1);
 
         TestClass1 testClass = new TestClass1();
         testClass.strMap = strMap;
@@ -586,6 +591,80 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             allocated1 - allocated0 < 1_000_000);
     }
 
+
+
+    /**
+     * Checking that method
+     * {@link GridToStringBuilder#compact(Collection, Function) compact} works
+     * correctly for {@link Integer}.
+     */
+    @Test
+    public void testCompactIntegers() {
+        List<Integer> emptyList = emptyList();
+        List<Integer> intList = asList(1, 2, 3, 9, 8, 7, 12);
+
+        String compactStr = "[1-3, 7-9, 12]";
+
+        Function<Integer, Integer> nextVal = i -> i + 1;
+
+        checkCompact(emptyList, intList, nextVal, compactStr);
+
+        assertEquals("[]", compact(emptyList));
+        assertEquals(compactStr, compact(intList));
+    }
+
+    /**
+     * Checking that method
+     * {@link GridToStringBuilder#compact(Collection, Function) compact} works
+     * correctly for {@link Double}.
+     */
+    @Test
+    public void testCompactDoubles() {
+        checkCompact(
+            emptyList(),
+            asList(1.0, 2.0, 3.0, 9.0, 8.0, 7.0, 12.0),
+            i -> i + 1.0,
+            "[1.0-3.0, 7.0-9.0, 12.0]"
+        );
+    }
+
+    /**
+     * Checking that method
+     * {@link GridToStringBuilder#compact(Collection, Function) compact} works
+     * correctly for {@link Long}.
+     */
+    @Test
+    public void testCompactLongs() {
+        checkCompact(
+            emptyList(),
+            asList(1L, 2L, 3L, 9L, 8L, 7L, 12L),
+            i -> i + 1L,
+            "[1-3, 7-9, 12]"
+        );
+    }
+
+    /**
+     * Checking the correct operation of method
+     * {@link GridToStringBuilder#compact(Collection, Function) compact}.
+     * For an empty collection of numbers, "[] " is expected, and for a
+     * non-empty collection, the value of the parameter {@code numCol} is
+     * expected.
+     *
+     * @param emptyCol Empty collection.
+     * @param numCol Not an empty collection of numbers.
+     * @param nextNum Function for getting the next number.
+     * @param compactStr Expected compact string for param {@code numCol}.
+     */
+    private <T extends Number & Comparable<? super T>> void checkCompact(
+        Collection<T> emptyCol,
+        Collection<T> numCol,
+        Function<T, T> nextNum,
+        String compactStr
+    ) {
+        assertEquals("[]", compact(emptyCol, nextNum));
+        assertEquals(compactStr, compact(numCol, nextNum));
+    }
+
     /**
      * @param exp Expected.
      * @param w Wrapper.
@@ -671,7 +750,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             buf.append("id=").append(id).append(", ");
             buf.append("uuidVar=").append(uuidVar).append(", ");
             buf.append("intVar=").append(intVar).append(", ");
-            if (S.INCLUDE_SENSITIVE)
+            if (S.includeSensitive())
                 buf.append("longVar=").append(longVar).append(", ");
             buf.append("boolVar=").append(boolVar).append(", ");
             buf.append("byteVar=").append(byteVar).append(", ");
@@ -706,7 +785,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             StringBuilder s = new StringBuilder(toStringManual());
             s.setLength(s.length() - 1);
             s.append(", newParam1=").append(1);
-            if (S.INCLUDE_SENSITIVE)
+            if (S.includeSensitive())
                 s.append(", newParam2=").append(2);
             s.append(']');
             return s.toString();
@@ -716,7 +795,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestClass2{
+    private static class TestClass2 {
         /** */
         @SuppressWarnings("unused")
         @GridToStringInclude

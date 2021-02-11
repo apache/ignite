@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// Binary tests.
     /// </summary>
     [TestFixture]
-    public class BinarySelfTest { 
+    public class BinarySelfTest {
         /** */
         private Marshaller _marsh;
 
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         };
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [TestFixtureSetUp]
         public void BeforeTest()
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             return BinaryBasicNameMapper.FullNameInstance;
         }
-        
+
         /**
          * <summary>Check write of primitive boolean.</summary>
          */
@@ -627,7 +627,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(vals, newVals);
         }
-        
+
         /// <summary>
         /// Test object with dates.
         /// </summary>
@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             DateTimeType otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
 
             Assert.AreEqual(obj.Utc, otherObj.Utc);
-            Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);            
+            Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);
             Assert.AreEqual(obj.UtcArr, otherObj.UtcArr);
 
             Assert.AreEqual(obj.UtcRaw, otherObj.UtcRaw);
@@ -723,7 +723,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 },
                 Objects = new object[] {1, 2, "3", 4.4}
             };
-            
+
             var data = marsh.Marshal(obj);
 
             var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, SerializableObject>>(data);
@@ -786,7 +786,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestProperty()
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
+            ICollection<BinaryTypeConfiguration> typeCfgs =
                 new List<BinaryTypeConfiguration>();
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(PropertyType)));
@@ -1080,7 +1080,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 },
                 CompactFooter = GetCompactFooter()
             });
-            
+
             var obj = new CollectionsType
             {
                 Hashtable = new Hashtable {{1, 2}, {3, 4}},
@@ -1571,7 +1571,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             PropertyType[,] objs = {{new PropertyType {Field1 = 123}}};
             Assert.AreEqual(123, TestUtils.SerializeDeserialize(objs)[0, 0].Field1);
-            
+
             var obj = new MultidimArrays { MultidimInt = ints, MultidimUInt = uints };
             var resObj = TestUtils.SerializeDeserialize(obj);
             Assert.AreEqual(obj.MultidimInt, resObj.MultidimInt);
@@ -1615,7 +1615,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             };
 
             var res = TestUtils.SerializeDeserialize(ptrs, raw);
-            
+
             Assert.IsTrue(ptrs.ByteP == res.ByteP);
             Assert.IsTrue(ptrs.IntP == res.IntP);
             Assert.IsTrue(ptrs.VoidP == res.VoidP);
@@ -1633,6 +1633,49 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestCompactFooterSetting()
         {
             Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
+        }
+
+        /// <summary>
+        /// Tests serializing/deserializing objects with IBinaryObject fields.
+        /// </summary>
+        [Test]
+        public void TestBinaryField()
+        {
+            byte[] dataInner = _marsh.Marshal(new BinaryObjectWrapper());
+
+            IBinaryObject innerObject = _marsh.Unmarshal<IBinaryObject>(dataInner, BinaryMode.ForceBinary);
+            BinaryObjectWrapper inner = innerObject.Deserialize<BinaryObjectWrapper>();
+
+            Assert.NotNull(inner);
+
+            byte[] dataOuter = _marsh.Marshal(new BinaryObjectWrapper() { Val = innerObject });
+
+            IBinaryObject outerObject = _marsh.Unmarshal<IBinaryObject>(dataOuter, BinaryMode.ForceBinary);
+            BinaryObjectWrapper outer = outerObject.Deserialize<BinaryObjectWrapper>();
+
+            Assert.NotNull(outer);
+            Assert.IsTrue(outer.Val.Equals(innerObject));
+        }
+
+        /// <summary>
+        /// Tests serializing/deserializing object lists with nested lists.
+        /// </summary>
+        [Test]
+        public void TestNestedLists()
+        {
+            var list = new[]
+            {
+                new NestedList {Inner = new List<object>()},
+                new NestedList {Inner = new List<object>()}
+            };
+
+            var bytes = _marsh.Marshal(list);
+            var res = _marsh.Unmarshal<NestedList[]>(bytes);
+
+            Assert.AreEqual(2, res.Length);
+            Assert.AreEqual(0, res[0].Inner.Count);
+            Assert.AreEqual(0, res[1].Inner.Count);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
@@ -1659,7 +1702,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(expKeep, deserialized1 == deserialized2);
         }
 
-        private void CheckHandlesConsistency(HandleOuter outer, HandleInner inner, HandleOuter newOuter, 
+        private void CheckHandlesConsistency(HandleOuter outer, HandleInner inner, HandleOuter newOuter,
             HandleInner newInner)
         {
             Assert.True(newOuter != null);
@@ -1676,7 +1719,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(inner.After, newInner.After);
             Assert.AreEqual(inner.RawBefore, newInner.RawBefore);
             Assert.True(newInner.RawOuter == newOuter);
-            Assert.AreEqual(inner.RawAfter, newInner.RawAfter);            
+            Assert.AreEqual(inner.RawAfter, newInner.RawAfter);
         }
 
         private static void CheckObject(Marshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
@@ -1706,7 +1749,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     return true;
 
                 var type = obj as OuterObjectType;
-                
+
                 return type != null && Equals(InObj, type.InObj);
             }
 
@@ -1753,7 +1796,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             public ICollection Col1 { get; set; }
 
             public ArrayList Col2 { get; set; }
-            
+
             public TestList Col3 { get; set; }
 
             public Hashtable Hashtable { get; set; }
@@ -1776,8 +1819,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 var that = obj as CollectionsType;
 
-                return that != null 
-                    && CompareCollections(Col1, that.Col1) 
+                return that != null
+                    && CompareCollections(Col1, that.Col1)
                     && CompareCollections(Col2, that.Col2)
                     && CompareCollections(Hashtable, that.Hashtable)
                     && CompareCollections(Dict, that.Dict)
@@ -1950,7 +1993,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         [Serializable]
-        public class PrimitiveFieldType 
+        public class PrimitiveFieldType
         {
             public PrimitiveFieldType()
             {
@@ -2434,7 +2477,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteString("before", Before);
 
                 writer0.WriteObject("inner", Inner);
-                
+
                 writer.WriteString("after", After);
 
                 IBinaryRawWriter rawWriter = writer.GetRawWriter();
@@ -2716,7 +2759,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public int[,] MultidimInt { get; set; }
             public uint[,,] MultidimUInt { get; set; }
-            
+
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteObject("JaggedInt", JaggedInt);
@@ -2745,6 +2788,17 @@ namespace Apache.Ignite.Core.Tests.Binary
             public byte* ByteP { get; set; }
             public int* IntP { get; set; }
             public void* VoidP { get; set; }
+        }
+
+        private class BinaryObjectWrapper
+        {
+            public IBinaryObject Val;
+        }
+
+        private class NestedList
+        {
+            // ReSharper disable once CollectionNeverUpdated.Local
+            public IList<object> Inner { get; set; }
         }
     }
 }

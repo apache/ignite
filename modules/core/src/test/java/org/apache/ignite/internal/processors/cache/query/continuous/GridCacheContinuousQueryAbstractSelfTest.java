@@ -88,6 +88,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.CONTINUOUS;
@@ -132,8 +133,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             cfg.setCacheConfiguration(cacheCfg);
         }
-        else
-            cfg.setClientMode(true);
+
+        cfg.setIncludeEventTypes(EVTS_ALL);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -203,7 +204,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 for (int i = 0; i < gridCount(); i++) {
                     GridContinuousProcessor proc = grid(i).context().continuous();
 
-                    if(!((Map)U.field(proc, "rmtInfos")).isEmpty())
+                    if (!((Map)U.field(proc, "rmtInfos")).isEmpty())
                         return false;
                 }
 
@@ -1048,7 +1049,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
 
         try {
-            try (Ignite ignite = startGrid(NO_CACHE_IGNITE_INSTANCE_NAME)) {
+            try (Ignite ignite = startClientGrid(NO_CACHE_IGNITE_INSTANCE_NAME)) {
                 log.info("Started node without cache: " + ignite);
             }
 
@@ -1228,7 +1229,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception if failed.
      */
     @Test
-    public void testQueryWithRemoteTransformer() throws Exception{
+    public void testQueryWithRemoteTransformer() throws Exception {
         doQueryWithRemoteTransformer(true, true);
         doQueryWithRemoteTransformer(true, false);
         doQueryWithRemoteTransformer(false, true);

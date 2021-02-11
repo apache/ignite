@@ -43,7 +43,7 @@
                     <Array type="org.eclipse.jetty.server.ConnectionFactory">
                         <Item>
                             <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                                <Ref refid="httpCfg"/>
+                                <Arg><Ref refid="httpCfg"/></Arg>
                             </New>
                         </Item>
                     </Array>

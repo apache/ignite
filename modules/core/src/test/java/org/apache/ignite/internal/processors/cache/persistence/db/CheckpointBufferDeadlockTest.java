@@ -51,12 +51,15 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.SF;
 
 /**
  *
@@ -86,8 +89,8 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /** Checkpoint threads. */
     private int checkpointThreads;
 
-    /** String logger. */
-    private GridStringLogger strLog;
+    /** Test logger. */
+    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -107,9 +110,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
-        strLog = new GridStringLogger(false, new GridTestLog4jLogger());
-
-        cfg.setGridLogger(strLog);
+        cfg.setGridLogger(log);
 
         return cfg;
     }
@@ -143,7 +144,16 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     public void testFourCheckpointThreads() throws Exception {
         checkpointThreads = 4;
 
-        runDeadlockScenario();
+        for (int i = 0; i < SF.applyLB(10, 3); i++) {
+            beforeTest();
+
+            try {
+                runDeadlockScenario();
+            }
+            finally {
+                afterTest();
+            }
+        }
     }
 
     /**
@@ -160,6 +170,10 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
      *
      */
     private void runDeadlockScenario() throws Exception {
+        LogListener lsnr = LogListener.matches(s -> s.contains("AssertionError")).build();
+
+        log.registerListener(lsnr);
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
@@ -223,6 +237,17 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                             long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
 
+                            long page = pageMem.acquirePage(CU.cacheId(cacheName), pageId);
+
+                            try {
+                                // We do not know correct flag(FLAG_DATA or FLAG_AUX). Skip page if no luck.
+                                if (pageId != PageIO.getPageId(page + PageMemoryImpl.PAGE_OVERHEAD))
+                                    continue;
+                            }
+                            finally {
+                                pageMem.releasePage(CU.cacheId(cacheName), pageId, page);
+                            }
+
                             pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                         }
 
@@ -234,11 +259,11 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                         pickedPages.sort(new Comparator<FullPageId>() {
                             @Override public int compare(FullPageId o1, FullPageId o2) {
                                 int cmp = Long.compare(o1.groupId(), o2.groupId());
+
                                 if (cmp != 0)
                                     return cmp;
 
-                                return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
-                                        PageIdUtils.effectivePageId(o2.pageId()));
+                                return Long.compare(o1.effectivePageId(), o2.effectivePageId());
                             }
                         });
 
@@ -313,7 +338,9 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         //check that there is no problem with pinned pages
         ig.destroyCache(cacheName);
 
-        assertFalse(strLog.toString().contains("AssertionError"));
+        assertFalse(lsnr.check());
+
+        log.unregisterListener(lsnr);
     }
 
     /**

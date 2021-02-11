@@ -21,13 +21,10 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * SQL listener response.
@@ -118,20 +115,22 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         writer.writeInt(status());
 
         if (status() == STATUS_SUCCESS) {
             writer.writeBoolean(res != null);
 
             if (res != null)
-                res.writeBinary(writer, ver);
+                res.writeBinary(writer, protoCtx);
         }
         else
             writer.writeString(error());
 
-        if (ver.compareTo(VER_2_8_0) >= 0) {
+        if (protoCtx.isAffinityAwarenessSupported()) {
             writer.writeBoolean(activeTx);
 
             writer.writeBoolean(affinityVer != null);
@@ -144,18 +143,20 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         status(reader.readInt());
 
         if (status() == STATUS_SUCCESS) {
             if (reader.readBoolean())
-                res = JdbcResult.readResult(reader, ver);
+                res = JdbcResult.readResult(reader, protoCtx);
         }
         else
             error(reader.readString());
 
-        if (ver.compareTo(VER_2_8_0) >= 0) {
+        if (protoCtx.isAffinityAwarenessSupported()) {
             activeTx = reader.readBoolean();
 
             boolean affinityVerChanged = reader.readBoolean();

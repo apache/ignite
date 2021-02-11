@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Data storage configuration for Ignite page memory.
@@ -162,7 +161,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// The default concurrency level.
         /// </summary>
-        public const int DefaultConcurrencyLevel = 0;
+        public static readonly int DefaultConcurrencyLevel = Environment.ProcessorCount;
 
         /// <summary>
         /// Default value for <see cref="MaxWalArchiveSize"/>.
@@ -203,14 +202,14 @@ namespace Apache.Ignite.Core.Configuration
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
             WalPageCompression = DefaultWalPageCompression;
+            ConcurrencyLevel = DefaultConcurrencyLevel;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal DataStorageConfiguration(IBinaryRawReader reader, ClientProtocolVersion srvVer)
+        internal DataStorageConfiguration(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -251,13 +250,13 @@ namespace Apache.Ignite.Core.Configuration
             if (count > 0)
             {
                 DataRegionConfigurations = Enumerable.Range(0, count)
-                    .Select(x => new DataRegionConfiguration(reader, srvVer))
+                    .Select(x => new DataRegionConfiguration(reader))
                     .ToArray();
             }
 
             if (reader.ReadBoolean())
             {
-                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader, srvVer);
+                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
             }
         }
 
@@ -265,8 +264,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(IBinaryRawWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -314,7 +312,7 @@ namespace Apache.Ignite.Core.Configuration
                             "DataStorageConfiguration.DataRegionConfigurations must not contain null items.");
                     }
 
-                    region.Write(writer, srvVer);
+                    region.Write(writer);
                 }
             }
             else
@@ -325,7 +323,7 @@ namespace Apache.Ignite.Core.Configuration
             if (DefaultDataRegionConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DefaultDataRegionConfiguration.Write(writer, srvVer);
+                DefaultDataRegionConfiguration.Write(writer);
             }
             else
             {
@@ -494,7 +492,6 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the number of concurrent segments in Ignite internal page mapping tables.
         /// </summary>
-        [DefaultValue(DefaultConcurrencyLevel)]
         public int ConcurrencyLevel { get; set; }
 
         /// <summary>

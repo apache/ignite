@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,9 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -37,11 +33,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -52,11 +48,14 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
  * Tests for Zookeeper SPI discovery.
@@ -153,9 +152,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     public void testNodeAddresses() throws Exception {
         startGridsMultiThreaded(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         waitForTopology(6);
 
@@ -179,9 +176,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     public void testSetConsistentId() throws Exception {
         startGridsMultiThreaded(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         waitForTopology(6);
 
@@ -207,9 +202,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         startGridsMultiThreaded(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         waitForTopology(6);
 
@@ -228,20 +221,20 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
      */
     @Test
     public void testMbean() throws Exception {
-        startGrids(3);
+        int cnt = 3;
 
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+        startGrids(cnt);
 
         UUID crdNodeId = grid(0).localNode().id();
 
         try {
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                ObjectName spiName = U.makeMBeanName(grid.context().igniteInstanceName(), "SPIs",
-                    ZookeeperDiscoverySpi.class.getSimpleName());
+                ZookeeperDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
+                    ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
-                ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
                 assertNotNull(bean);
 
@@ -249,11 +242,48 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
                 assertEquals(String.valueOf(grid.cluster().localNode()), bean.getLocalNodeFormatted());
                 assertEquals(zkCluster.getConnectString(), bean.getZkConnectionString());
                 assertEquals((long)grid.configuration().getFailureDetectionTimeout(), bean.getZkSessionTimeout());
+
+                assertEquals(grid.cluster().topologyVersion(),
+                    discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
+
+                assertEquals(grid.cluster().node(crdNodeId).id(),
+                    discoReg.<ObjectMetric<UUID>>findMetric("Coordinator").value());
+
+                assertEquals(cnt - i - 1, bean.getNodesJoined());
+                assertEquals(cnt - i - 1, discoReg.<LongMetric>findMetric("JoinedNodes").value());
+
+                Arrays.asList("LeftNodes", "FailedNodes", "CommunicationErrors").forEach(name -> {
+                    assertEquals(0, discoReg.<LongMetric>findMetric(name).value());
+                });
+
+                assertEquals(0, bean.getNodesLeft());
+                assertEquals(0, bean.getNodesFailed());
+                assertEquals(0, bean.getCommErrorProcNum());
             }
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMbeanGetCoordinator() throws Exception {
+        startGrid(0);
+        startClientGrid(1);
+        IgniteEx srv2 = startGrid(2);
+
+        ZookeeperDiscoverySpiMBean mbean = getMxBean(srv2.context().igniteInstanceName(), "SPIs",
+                ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
+
+        stopGrid(0);
+
+        waitForTopology(2);
+
+        assertEquals(mbean.getCoordinator(), srv2.localNode().id());
+        assertEquals(mbean.getCoordinatorNodeFormatted(), String.valueOf(srv2.localNode()));
     }
 
     /**
@@ -268,22 +298,16 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        helper.clientMode(true);
-
-        startGrid(1);
+        startClientGrid(1);
 
         for (Ignite node : G.allGrids()) {
             assertEquals(1, node.cluster().forClients().nodes().size());
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        helper.clientMode(false);
-
         startGrid(2);
 
-        helper.clientMode(true);
-
-        startGrid(3);
+        startClientGrid(3);
 
         for (Ignite node : G.allGrids()) {
             assertEquals(2, node.cluster().forClients().nodes().size());
@@ -350,7 +374,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         ccfg = new CacheConfiguration("validate-test-cache");
         ccfg.setAffinity(new ValidationTestAffinity());
 
-        checkStartFail(1, "Failed to add node to topology because it has the same hash code");
+        checkStartFail(1, "Failed to add node to topology because it has the same hash code", false);
     }
 
     /**
@@ -368,13 +392,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         checkTestSecuritySubject(1);
 
         {
-            helper.clientMode(false);
-            checkStartFail(1, expErr);
-
-            helper.clientMode(true);
-            checkStartFail(1, expErr);
-
-            helper.clientMode(false);
+            checkStartFail(1, expErr, false);
+            checkStartFail(1, expErr, true);
         }
 
         startGrid(2);
@@ -393,39 +412,34 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         checkTestSecuritySubject(1);
 
-        checkStartFail(1, expErr);
-
-        helper.clientMode(false);
+        checkStartFail(1, expErr, false);
 
         startGrid(3);
 
-        helper.clientMode(true);
-
-        startGrid(4);
-
-        helper.clientMode(false);
+        startClientGrid(4);
 
         startGrid(0);
 
         checkTestSecuritySubject(4);
 
-        checkStartFail(1, expErr);
-        checkStartFail(5, expErr);
-
-        helper.clientMode(true);
-
-        checkStartFail(1, expErr);
-        checkStartFail(5, expErr);
+        checkStartFail(1, expErr, false);
+        checkStartFail(5, expErr, false);
+        checkStartFail(1, expErr, true);
+        checkStartFail(5, expErr, true);
     }
 
     /**
      * @param nodeIdx Node index.
      * @param expMsg Expected error message.
+     * @param client Client mode flag.
      */
-    private void checkStartFail(final int nodeIdx, String expMsg) {
+    private void checkStartFail(final int nodeIdx, String expMsg, boolean client) {
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startGrid(nodeIdx);
+                if (client)
+                    startClientGrid(nodeIdx);
+                else
+                    startGrid(nodeIdx);
 
                 return null;
             }
@@ -481,6 +495,21 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         startGrid(3);
 
         waitForTopology(5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testZkMbeansValidity() throws Exception {
+        try {
+            Ignite ignite = startGrid();
+
+            validateMbeans(ignite, "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi$ZookeeperDiscoverySpiMBeanImpl");
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

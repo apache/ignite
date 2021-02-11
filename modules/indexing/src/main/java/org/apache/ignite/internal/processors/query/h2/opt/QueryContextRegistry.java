@@ -17,49 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Registry of all currently available query contexts.
  */
 public class QueryContextRegistry {
-    /** Current local context. */
-    private final ThreadLocal<QueryContext> locCtx = new ThreadLocal<>();
-
     /** Shared contexts. */
     private final ConcurrentMap<QueryContextKey, QueryContext> sharedCtxs = new ConcurrentHashMap<>();
-
-    /**
-     * Access current thread local query context (if it was set).
-     *
-     * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
-     */
-    @Nullable public QueryContext getThreadLocal() {
-        return locCtx.get();
-    }
-
-    /**
-     * Sets current thread local context. This method must be called when all the non-volatile properties are
-     * already set to ensure visibility for other threads.
-     *
-     * @param x Query context.
-     */
-    public void setThreadLocal(QueryContext x) {
-        assert locCtx.get() == null;
-
-        locCtx.set(x);
-    }
-
-    /**
-     * Drops current thread local context.
-     */
-    public void clearThreadLocal() {
-        locCtx.remove();
-    }
 
     /**
      * Access query context from another thread.

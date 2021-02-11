@@ -226,7 +226,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, xid);
+        U.writeIgniteUuid(out, xid);
         out.writeLong(duration);
         U.writeEnum(out, isolation);
         U.writeEnum(out, concurrency);
@@ -235,7 +235,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
         U.writeCollection(out, primaryNodes);
         U.writeEnum(out, state);
         out.writeInt(size);
-        U.writeGridUuid(out, nearXid);
+        U.writeIgniteUuid(out, nearXid);
         U.writeCollection(out, masterNodeIds);
         out.writeLong(startTime);
         out.writeLong(topVer == null ? -1 : topVer.topologyVersion());
@@ -248,7 +248,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        xid = U.readGridUuid(in);
+        xid = U.readIgniteUuid(in);
         duration = in.readLong();
         isolation = TransactionIsolation.fromOrdinal(in.readByte());
         concurrency = TransactionConcurrency.fromOrdinal(in.readByte());
@@ -258,7 +258,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
         state = TransactionState.fromOrdinal(in.readByte());
         size = in.readInt();
         if (protoVer >= V2) {
-            nearXid = U.readGridUuid(in);
+            nearXid = U.readIgniteUuid(in);
             masterNodeIds = U.readCollection(in);
             startTime = in.readLong();
         }

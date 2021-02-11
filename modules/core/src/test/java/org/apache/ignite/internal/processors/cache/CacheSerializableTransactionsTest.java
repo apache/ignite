@@ -105,9 +105,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /** */
     private static final int CLIENTS = 3;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -115,8 +112,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -126,12 +121,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
-
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
-
-        client = false;
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
     }
 
     /** {@inheritDoc} */
@@ -4140,9 +4130,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger();
 
-            final int THREADS =  SF.applyLB(20, 5);
+            final int THREADS = SF.applyLB(20, 5);
 
-            final long testTime =  SF.applyLB(30_000, 5_000);
+            final long testTime = SF.applyLB(30_000, 5_000);
 
             final long stopTime = System.currentTimeMillis() + testTime;
 

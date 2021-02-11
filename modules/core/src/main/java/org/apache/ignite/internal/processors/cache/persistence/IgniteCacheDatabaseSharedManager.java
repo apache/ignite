@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,6 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
@@ -37,48 +42,70 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WarmUpConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
 /**
  *
@@ -87,6 +114,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
     public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
+
+    /** DataRegionConfiguration names reserved for various internal needs. */
+    public static Set<String> INTERNAL_DATA_REGION_NAMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList(SYSTEM_DATA_REGION_NAME, TX_LOG_CACHE_NAME, METASTORE_DATA_REGION_NAME)));
+
+    /** System view name for page lists. */
+    public static final String DATA_REGION_PAGE_LIST_VIEW = "dataRegionPageLists";
+
+    /** System view description for page lists. */
+    public static final String DATA_REGION_PAGE_LIST_VIEW_DESC = "Data region page lists";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
@@ -110,7 +147,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected final Map<String, DataRegionMetrics> memMetricsMap = new ConcurrentHashMap<>();
 
     /** */
-    private volatile boolean dataRegionsInitialized;
+    protected volatile boolean dataRegionsInitialized;
 
     /** */
     private volatile boolean dataRegionsStarted;
@@ -145,6 +182,22 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
+
+        cctx.kernalContext().systemView().registerView(
+            DATA_REGION_PAGE_LIST_VIEW,
+            DATA_REGION_PAGE_LIST_VIEW_DESC,
+            new PagesListViewWalker(),
+            () -> {
+                Map<String, CacheFreeList> freeLists = freeListMap;
+
+                if (freeLists == null)
+                    return Collections.emptyList();
+
+                return freeLists.values().stream().flatMap(fl -> IntStream.range(0, fl.bucketsCount()).mapToObj(
+                    bucket -> new PagesListView(fl, bucket))).collect(Collectors.toList());
+            },
+            Function.identity()
+        );
     }
 
     /**
@@ -258,11 +311,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 freeListName,
                 memMetrics,
                 memPlc,
-                null,
                 persistenceEnabled ? cctx.wal() : null,
                 0L,
                 true,
-                lsnr
+                lsnr,
+                cctx.kernalContext(),
+                null,
+                PageIdAllocator.FLAG_IDX
             );
 
             freeListMap.put(memPlcCfg.getName(), freeList);
@@ -312,6 +367,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
+        boolean persistenceEnabled = CU.isPersistenceEnabled(memCfg);
+
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
                 addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.isPersistenceEnabled());
@@ -328,9 +385,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             createSystemDataRegion(
                 memCfg.getSystemRegionInitialSize(),
                 memCfg.getSystemRegionMaxSize(),
-                CU.isPersistenceEnabled(memCfg)
+                persistenceEnabled
             ),
-            CU.isPersistenceEnabled(memCfg)
+            persistenceEnabled
+        );
+
+        addDataRegion(
+            memCfg,
+            createVolatileDataRegion(
+                memCfg.getSystemRegionInitialSize(),
+                memCfg.getSystemRegionMaxSize()
+            ),
+            false
         );
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
@@ -350,10 +416,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegionCfg Data region config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    public void addDataRegion(
+    public DataRegion addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable
+    ) throws IgniteCheckedException {
+        return addDataRegion(dataStorageCfg, dataRegionCfg, trackable, cctx.pageStore());
+    }
+
+    /**
+     * @param dataStorageCfg Database config.
+     * @param dataRegionCfg Data region config.
+     * @param pmPageMgr Page manager.
+     * @throws IgniteCheckedException If failed to initialize swap path.
+     */
+    protected DataRegion addDataRegion(
+        DataStorageConfiguration dataStorageCfg,
+        DataRegionConfiguration dataRegionCfg,
+        boolean trackable,
+        PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
         String dataRegionName = dataRegionCfg.getName();
 
@@ -364,10 +445,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(
             dataRegionCfg,
-            cctx.kernalContext().metric().registry(),
+            cctx.kernalContext().metric(),
             dataRegionMetricsProvider(dataRegionCfg));
 
-        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
+        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, pmPageMgr);
 
         dataRegionMap.put(dataRegionName, region);
 
@@ -378,6 +459,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
                     "Please, check Data Region configuration.");
+
+        return region;
     }
 
     /**
@@ -423,6 +506,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             private CacheFreeList freeList;
 
             private CacheFreeList getFreeList() {
+                if (freeListMap == null)
+                    return null;
+
                 if (freeList == null)
                     freeList = freeListMap.get(dataRegName);
 
@@ -479,28 +565,56 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param volatileCacheInitSize Initial size of PageMemory to be created for volatile cache.
+     * @param volatileCacheMaxSize Maximum size of PageMemory to be created for volatile cache.
+     *
+     * @return {@link DataRegionConfiguration configuration} of DataRegion for volatile cache.
+     */
+    private DataRegionConfiguration createVolatileDataRegion(long volatileCacheInitSize, long volatileCacheMaxSize) {
+        DataRegionConfiguration res = new DataRegionConfiguration();
+
+        res.setName(VOLATILE_DATA_REGION_NAME);
+        res.setInitialSize(volatileCacheInitSize);
+        res.setMaxSize(volatileCacheMaxSize);
+        res.setPersistenceEnabled(false);
+        res.setLazyMemoryAllocation(true);
+
+        return res;
+    }
+
+    /**
      * @param memCfg configuration to validate.
+     * @throws IgniteCheckedException In case of validation violation.
      */
     private void validateConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         checkPageSize(memCfg);
 
         DataRegionConfiguration[] regCfgs = memCfg.getDataRegionConfigurations();
 
-        Set<String> regNames = (regCfgs != null) ? U.<String>newHashSet(regCfgs.length) : new HashSet<String>(0);
+        Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
             memCfg.getSystemRegionInitialSize(),
             memCfg.getSystemRegionMaxSize()
         );
 
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
+            CU.warmUpStrategies(cctx.kernalContext());
+
         if (regCfgs != null) {
             for (DataRegionConfiguration regCfg : regCfgs)
-                checkDataRegionConfiguration(memCfg, regNames, regCfg);
+                checkDataRegionConfiguration(memCfg, regNames, regCfg, warmUpStrategies);
         }
 
-        checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration());
+        checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration(), warmUpStrategies);
 
         checkWalArchiveSizeConfiguration(memCfg);
+
+        checkExistenceWarmUpConfiguration(
+            memCfg.getDefaultWarmUpConfiguration(),
+            warmUpStrategies,
+            (warmUpCfg) -> "Unknown default warm-up configuration: " + warmUpCfg
+        );
     }
 
     /**
@@ -512,26 +626,37 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memCfg.getWalHistorySize() == DFLT_WAL_HISTORY_SIZE || memCfg.getWalHistorySize() == Integer.MAX_VALUE)
             LT.warn(log, "DataRegionConfiguration.maxWalArchiveSize instead DataRegionConfiguration.walHistorySize " +
             "would be used for removing old archive wal files");
-        else if(memCfg.getMaxWalArchiveSize() == DFLT_WAL_ARCHIVE_MAX_SIZE)
-            LT.warn(log, "walHistorySize was deprecated. maxWalArchiveSize should be used instead");
+        else if (memCfg.getMaxWalArchiveSize() == DFLT_WAL_ARCHIVE_MAX_SIZE)
+            LT.warn(log, "walHistorySize was deprecated and does not have any effect anymore. " +
+                "maxWalArchiveSize should be used instead");
         else
             throw new IgniteCheckedException("Should be used only one of wal history size or max wal archive size." +
                 "(use DataRegionConfiguration.maxWalArchiveSize because DataRegionConfiguration.walHistorySize was deprecated)"
             );
 
-        if(memCfg.getMaxWalArchiveSize() < memCfg.getWalSegmentSize())
+        if (memCfg.getMaxWalArchiveSize() != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE
+            && memCfg.getMaxWalArchiveSize() < memCfg.getWalSegmentSize())
             throw new IgniteCheckedException(
-                "DataRegionConfiguration.maxWalArchiveSize should be greater than DataRegionConfiguration.walSegmentSize"
+                "DataRegionConfiguration.maxWalArchiveSize should be greater than DataRegionConfiguration.walSegmentSize " +
+                    "or must be equal to " + DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE + "."
             );
     }
 
     /**
+     * Checking configuration of data region.
+     *
      * @param memCfg Mem config.
      * @param regNames Region names.
      * @param regCfg Reg config.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @throws IgniteCheckedException If config is invalid.
      */
-    private void checkDataRegionConfiguration(DataStorageConfiguration memCfg, Set<String> regNames,
-        DataRegionConfiguration regCfg) throws IgniteCheckedException {
+    private void checkDataRegionConfiguration(
+        DataStorageConfiguration memCfg,
+        Set<String> regNames,
+        DataRegionConfiguration regCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies
+    ) throws IgniteCheckedException {
         assert regCfg != null;
 
         checkDataRegionName(regCfg.getName(), regNames);
@@ -543,6 +668,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         checkRegionEvictionProperties(regCfg, memCfg);
 
         checkRegionMemoryStorageType(regCfg);
+
+        checkRegionWarmUpConfiguration(regCfg, warmUpStrategies);
     }
 
     /**
@@ -699,8 +826,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (observedNames.contains(regName))
             throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + regName);
 
-        if (SYSTEM_DATA_REGION_NAME.equals(regName))
-            throw new IgniteCheckedException("'" + SYSTEM_DATA_REGION_NAME + "' policy name is reserved for internal use.");
+        if (INTERNAL_DATA_REGION_NAMES.contains(regName))
+            throw new IgniteCheckedException("'" + regName + "' policy name is reserved for internal use.");
 
         observedNames.add(regName);
     }
@@ -716,10 +843,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return collection of all configured {@link DataRegion policies}.
+     * Getting registered data regions.
+     *
+     * @return Collection of all configured {@link DataRegion policies}.
      */
     public Collection<DataRegion> dataRegions() {
-        return dataRegionMap != null ? dataRegionMap.values() : null;
+        return dataRegionMap.values();
     }
 
     /**
@@ -762,11 +891,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName data region name.
-     * @return {@link DataRegion} instance associated with a given {@link DataRegionConfiguration}.
+     * Getting data region by name.
+     *
+     * @param memPlcName Data region name. In case of {@code null}, default data region will be returned.
+     * @return {@link DataRegion} instance associated with a given {@link DataRegionConfiguration},
+     *      or {@code null} if there are no registered data regions.
      * @throws IgniteCheckedException in case of request for unknown DataRegion.
      */
-    public DataRegion dataRegion(String memPlcName) throws IgniteCheckedException {
+    @Nullable public DataRegion dataRegion(@Nullable String memPlcName) throws IgniteCheckedException {
         if (memPlcName == null)
             return dfltDataRegion;
 
@@ -849,7 +981,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
+     * Clean checkpoint directory
+     * {@link CheckpointMarkersStorage#cpDir}. The operation
      * is necessary when local node joined to baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
@@ -873,16 +1006,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @return Last checkpoint mark WAL pointer.
      */
-    public WALPointer lastCheckpointMarkWalPointer() {
+    @Nullable public WALPointer lastCheckpointMarkWalPointer() {
         return null;
     }
 
     /**
-     * Allows to wait checkpoint finished.
+     * Schedule new checkpoint.
      *
      * @param reason Reason.
      */
-    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+    @Nullable public CheckpointProgress forceCheckpoint(String reason) {
         return null;
     }
 
@@ -892,6 +1025,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     public void waitForCheckpoint(String reason) throws IgniteCheckedException {
+        waitForCheckpoint(reason, null);
+    }
+
+    /**
+     * Waits until current state is checkpointed and execution listeners after finish.
+     *
+     * @param reason Reason for checkpoint wakeup if it would be required.
+     * @param lsnr Listeners which should be called in checkpoint thread after current checkpoint finished.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <R> void waitForCheckpoint(
+        String reason,
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr
+    ) throws IgniteCheckedException {
         // No-op
     }
 
@@ -906,9 +1053,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Perform memory restore before {@link GridDiscoveryManager} start.
      *
      * @param kctx Current kernal context.
+     * @param startTimer Holder of start time of stages.
      * @throws IgniteCheckedException If fails.
      */
-    public void startMemoryRestore(GridKernalContext kctx) throws IgniteCheckedException {
+    public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -921,10 +1069,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // No-op.
     }
 
-        /**
-         * @param fut Partition exchange future.
-         */
+    /**
+     * @param fut Partition exchange future.
+     */
     public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
+        // No-op.
+    }
+
+    /**
+     * Performs indexes rebuild for all cache contexts from {@code contexts}.
+     *
+     * @param contexts List of cache contexts.
+     */
+    public void forceRebuildIndexes(Collection<GridCacheContext> contexts) {
         // No-op.
     }
 
@@ -940,13 +1097,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
         // No-op.
-    }
-
-    /**
-     * @return Future that will be completed when indexes for given cache are restored.
-     */
-    @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
-        return null;
     }
 
     /**
@@ -967,12 +1117,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Reserve update history for preloading.
-     * @param grpId Cache group ID.
-     * @param partId Partition Id.
-     * @param cntr Update counter.
+     *
+     * @param reservationMap Map contains of counters for partitions of groups.
      * @return True if successfully reserved.
      */
-    public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
+    public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
         return false;
     }
 
@@ -984,7 +1133,79 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * See {@link GridCacheMapEntry#ensureFreeSpace()}
+     * Returns the latest WAL pointer that reserved for preloading or {@code null}.
+     *
+     * @return WAL pointer or {@code null} if nothing reserved.
+     */
+    public WALPointer latestWalPointerReservedForPreloading() {
+        return null;
+    }
+
+    /**
+     * Checks that the given {@code region} has enough space for putting a new entry.
+     *
+     * This method makes sense then and only then
+     * the data region is not persisted {@link DataRegionConfiguration#isPersistenceEnabled()}
+     * and page eviction is disabled {@link DataPageEvictionMode#DISABLED}.
+     *
+     * The non-persistent region should reserve a number of pages to support a free list {@link AbstractFreeList}.
+     * For example, removing a row from underlying store may require allocating a new data page
+     * in order to move a tracked page from one bucket to another one which does not have a free space for a new stripe.
+     * See {@link AbstractFreeList#removeDataRowByLink}.
+     * Therefore, inserting a new entry should be prevented in case of some threshold is exceeded.
+     *
+     * @param region Data region to be checked.
+     * @param dataRowSize Size of data row to be inserted.
+     * @throws IgniteOutOfMemoryException In case of the given data region does not have enough free space
+     * for putting a new entry.
+     */
+    public void ensureFreeSpaceForInsert(DataRegion region, int dataRowSize) throws IgniteOutOfMemoryException {
+        if (region == null)
+            return;
+
+        DataRegionConfiguration regCfg = region.config();
+
+        if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED || regCfg.isPersistenceEnabled())
+            return;
+
+        long memorySize = regCfg.getMaxSize();
+
+        PageMemory pageMem = region.pageMemory();
+
+        CacheFreeList freeList = freeListMap.get(regCfg.getName());
+
+        long nonEmptyPages = (pageMem.loadedPages() - freeList.emptyDataPages());
+
+        // The maximum number of pages that can be allocated (memorySize / systemPageSize)
+        // should be greater or equal to pages required for inserting a new entry plus
+        // the current number of non-empty pages plus the number of pages that may be required in order to move
+        // all pages to a reuse bucket, that is equal to nonEmptyPages * 8 / pageSize, where 8 is the size of a link.
+        // Note that not the whole page can be used to storing links,
+        // see PagesListNodeIO and PagesListMetaIO#getCapacity(), so we pessimistically multiply the result on 1.5,
+        // in any way, the number of required pages is less than 1 percent.
+        boolean oomThreshold = (memorySize / pageMem.systemPageSize()) <
+            ((double)dataRowSize / pageMem.pageSize() + nonEmptyPages * (8.0 * 1.5 / pageMem.pageSize() + 1) + 256 /*one page per bucket*/);
+
+        if (oomThreshold) {
+            IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
+                "name=" + regCfg.getName() +
+                ", initSize=" + U.readableSize(regCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(regCfg.getMaxSize(), false) +
+                ", persistenceEnabled=" + regCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                "  ^-- Enable eviction or expiration policies"
+            );
+
+            if (cctx.kernalContext() != null)
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
+    }
+
+    /**
+     * See {@code GridCacheMapEntry#ensureFreeSpace()}
      *
      * @param memPlc data region.
      */
@@ -992,35 +1213,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memPlc == null)
             return;
 
-        DataRegionConfiguration plcCfg = memPlc.config();
+        while (memPlc.evictionTracker().evictionRequired()) {
+            warnFirstEvict(memPlc.config());
 
-        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plcCfg.isPersistenceEnabled())
-            return;
+            memPlc.evictionTracker().evictDataPage();
 
-        long memorySize = plcCfg.getMaxSize();
-
-        PageMemory pageMem = memPlc.pageMemory();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        CacheFreeList freeList = freeListMap.get(plcCfg.getName());
-
-        for (;;) {
-            long allocatedPagesCnt = pageMem.loadedPages();
-
-            int emptyDataPagesCnt = freeList.emptyDataPages();
-
-            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
-                emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
-
-            if (shouldEvict) {
-                warnFirstEvict(plcCfg);
-
-                memPlc.evictionTracker().evictDataPage();
-
-                memPlc.memoryMetrics().updateEvictionRate();
-            } else
-                break;
+            memPlc.memoryMetrics().updateEvictionRate();
         }
     }
 
@@ -1028,6 +1226,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg memory configuration with common parameters.
      * @param plcCfg data region with PageMemory specific parameters.
      * @param memMetrics {@link DataRegionMetrics} object to collect memory usage metrics.
+     * @param pmPageMgr Page manager.
      * @return data region instance.
      *
      * @throws IgniteCheckedException If failed to initialize swap path.
@@ -1036,9 +1235,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
-        boolean trackable
+        boolean trackable,
+        PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
-        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable);
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1137,6 +1337,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg Memory configuartion.
      * @param memPlcCfg data region configuration.
      * @param memMetrics DataRegionMetrics to collect memory usage metrics.
+     * @param pmPageMgr Page manager.
      * @return PageMemory instance.
      */
     protected PageMemory createPageMemory(
@@ -1144,7 +1345,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg,
         DataRegionConfiguration memPlcCfg,
         DataRegionMetricsImpl memMetrics,
-        boolean trackable
+        boolean trackable,
+        PageReadWriteManager pmPageMgr
     ) {
         memMetrics.persistenceEnabled(false);
 
@@ -1154,7 +1356,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             cctx,
             memCfg.getPageSize(),
             memPlcCfg,
-            memMetrics,
+            memMetrics.totalAllocatedPages(),
             false
         );
 
@@ -1253,7 +1455,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionsStarted = true;
 
-        U.log(log, "Configured data regions started successfully [total=" + dataRegionMap.size() + ']');
+        if (log.isQuiet()) {
+            U.quiet(false, "Data Regions Started: " + dataRegionMap.size());
+
+            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, false));
+        }
+        else if (log.isInfoEnabled()) {
+            log.info("Data Regions Started: " + dataRegionMap.size());
+
+            log.info(IgniteKernal.dataStorageReport(this, false));
+        }
     }
 
     /** {@inheritDoc} */
@@ -1367,5 +1578,52 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         U.warn(log, "Page-based evictions started." +
                 " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
+    }
+
+    /**
+     * Checking existence of a warm-up configuration.
+     *
+     * @param warmUpCfg Warm-up configuration.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @param errMsgSupplier Supplier error message.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkExistenceWarmUpConfiguration(
+        @Nullable WarmUpConfiguration warmUpCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies,
+        IgniteClosure<WarmUpConfiguration, String> errMsgSupplier
+    ) throws IgniteCheckedException {
+        if (nonNull(warmUpCfg) && !warmUpStrategies.containsKey(warmUpCfg.getClass()))
+            throw new IgniteCheckedException(errMsgSupplier.apply(warmUpCfg));
+    }
+
+    /**
+     * Checking data region warm-up configuration.
+     *
+     * @param regCfg DataRegionConfiguration to validate.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkRegionWarmUpConfiguration(
+        DataRegionConfiguration regCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies
+    ) throws IgniteCheckedException {
+        WarmUpConfiguration warmUpCfg = regCfg.getWarmUpConfiguration();
+
+        if (isNull(warmUpCfg))
+            return;
+
+        Supplier<String> errPostfix = () -> "[name=" + regCfg.getName() + ", warmUpConfig=" + warmUpCfg + ']';
+
+        if (!regCfg.isPersistenceEnabled()) {
+            throw new IgniteCheckedException("Warm-up setting is not expected for a non-persistent data region: " +
+                errPostfix.get());
+        }
+
+        checkExistenceWarmUpConfiguration(
+            regCfg.getWarmUpConfiguration(),
+            warmUpStrategies,
+            (warmUpConfig) -> "Unknown data region warm-up configuration: " + errPostfix.get()
+        );
     }
 }

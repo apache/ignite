@@ -41,9 +41,6 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
     /** */
     private static final int FAILURE_DETECTION_TIMEOUT = 10_000;
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -52,9 +49,6 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
 
         cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
         cfg.setClientFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
-
-        if (clientMode)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -78,10 +72,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
     public void testClientDisconnect() throws Exception {
         try {
             Ignite server = startGrid(0);
-
-            clientMode = true;
-
-            Ignite client = startGrid(1);
+            Ignite client = startClientGrid(1);
 
             awaitPartitionMapExchange();
 

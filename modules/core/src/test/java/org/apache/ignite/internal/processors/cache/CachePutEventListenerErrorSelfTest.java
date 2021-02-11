@@ -21,7 +21,6 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,28 +55,21 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Ignition.setClientMode(true);
+        Ignite ignite = startClientGrid("client");
 
-        try {
-            Ignite ignite = startGrid("client");
-
-            ignite.events().remoteListen(
-                new IgniteBiPredicate<UUID, Event>() {
-                    @Override public boolean apply(UUID uuid, Event evt) {
-                        return true;
-                    }
-                },
-                new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        throw new NoClassDefFoundError("XXX");
-                    }
-                },
-                EventType.EVT_CACHE_OBJECT_PUT
-            );
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        ignite.events().remoteListen(
+            new IgniteBiPredicate<UUID, Event>() {
+                @Override public boolean apply(UUID uuid, Event evt) {
+                    return true;
+                }
+            },
+            new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    throw new NoClassDefFoundError("XXX");
+                }
+            },
+            EventType.EVT_CACHE_OBJECT_PUT
+        );
     }
 
     /**

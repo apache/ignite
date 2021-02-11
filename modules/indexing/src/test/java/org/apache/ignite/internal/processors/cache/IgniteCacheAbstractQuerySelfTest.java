@@ -46,6 +46,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -63,13 +65,18 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -83,6 +90,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -94,6 +102,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.FULL_TEXT;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -140,11 +149,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
-        if (igniteInstanceName.startsWith("client")) {
-            c.setClientMode(true);
-
+        if (igniteInstanceName.startsWith("client"))
             c.setDataStorageConfiguration(new DataStorageConfiguration());
-        }
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -261,7 +269,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for(String cacheName : ignite().cacheNames())
+        for (String cacheName : ignite().cacheNames())
             ignite().cache(cacheName).destroy();
     }
 
@@ -459,7 +467,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         U.sleep(300); // Less than minimal amount of time that must pass before a cache entry is considered expired.
 
-        qry =  cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
+        qry = cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 
         res = F.first(qry);
 
@@ -1092,7 +1100,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testScanQuery() throws Exception {
         IgniteCache<Integer, String> c1 = jcache(Integer.class, String.class);
 
-        Map<Integer, String> map = new HashMap<Integer, String>(){{
+        Map<Integer, String> map = new HashMap<Integer, String>() {{
             for (int i = 0; i < 5000; i++)
                 put(i, "str" + i);
         }};
@@ -1461,14 +1469,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testSqlQueryEvents() throws Exception {
-        checkSqlQueryEvents();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testFieldsQueryMetadata() throws Exception {
         IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
 
@@ -1491,7 +1491,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    private void checkSqlQueryEvents() throws Exception {
+    @Test
+    public void testSqlQueryEvents() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
         final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
         final CountDownLatch execLatch = new CountDownLatch(evtsDisabled ? 0 :
@@ -1542,6 +1543,75 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         finally {
             for (int i = 0; i < gridCount(); i++)
                 grid(i).events().stopLocalListen(lsnrs[i], EVT_CACHE_QUERY_EXECUTED);
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    public void testClientQueryExecutedEvents() throws Exception {
+        doTestClientQueryExecutedEvents(false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
+    public void testClientQueryExecutedEventsIncludeSensitive() throws Exception {
+        doTestClientQueryExecutedEvents(true);
+    }
+
+    /** */
+    public void doTestClientQueryExecutedEvents(boolean inclSens) throws Exception {
+        CountDownLatch execLatch = new CountDownLatch(9);
+
+        IgnitePredicate<SqlQueryExecutionEvent> lsnr = evt -> {
+            assertNotNull(evt.text());
+            if (inclSens)
+                assertTrue(evt.toString().contains("args="));
+            else
+                assertFalse(evt.toString().contains("args="));
+
+            execLatch.countDown();
+
+            return true;
+        };
+
+        ignite().events().localListen(lsnr, EVT_SQL_QUERY_EXECUTION);
+
+        ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
+
+        try (IgniteClient client = Ignition.startClient(cc)) {
+            client.query(new SqlFieldsQuery("create table TEST_TABLE(key int primary key, val int)"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("insert into TEST_TABLE values (?, ?)").setArgs(1, 1))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("update TEST_TABLE set val = ?2 where key = ?1").setArgs(1, 2))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("select * from TEST_TABLE"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("create index idx_1 on TEST_TABLE(key)"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("drop index idx_1"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("alter table TEST_TABLE add column val2 int"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("alter table TEST_TABLE drop val2"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("drop table TEST_TABLE"))
+                .getAll();
+
+            assert execLatch.await(3_000, MILLISECONDS);
+        }
+        finally {
+            ignite().events().stopLocalListen(lsnr, EVT_SQL_QUERY_EXECUTION);
         }
     }
 
@@ -1814,9 +1884,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testLocalSqlQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 10; i++)
@@ -1828,9 +1896,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             assertThrowsWithCause(() -> c.query(qry), CacheException.class);
         }
-        finally {
-            stopGrid("client");
-        }
     }
 
     /**
@@ -1838,9 +1903,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testLocalSqlFieldsQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
 
             Person p = new Person("Jon", 1500);
@@ -1852,9 +1915,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             qry.setLocal(true);
 
             assertThrowsWithCause(() -> c.query(qry), CacheException.class);
-        }
-        finally {
-            stopGrid("client");
         }
     }
 

@@ -116,9 +116,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
 
         cfg.setConsistentId(igniteInstanceName);
 
-        if (igniteInstanceName.contains("client"))
-            cfg.setClientMode(true);
-        else {
+        if (!igniteInstanceName.contains("client")) {
             cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDefaultDataRegionConfiguration(
@@ -174,7 +172,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
 
         verifyCachesAndGroups(ig2, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_3}));
 
-        IgniteEx client = startGrid("client01");
+        IgniteEx client = startClientGrid("client01");
 
         verifyCachesAndGroups(client, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_3}));
     }
@@ -193,7 +191,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
 
         verifyCachesAndGroups(ig1, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_2}));
 
-        IgniteEx client = startGrid(CLIENT_WITH_DIFF_CONFIG);
+        IgniteEx client = startClientGrid(CLIENT_WITH_DIFF_CONFIG);
 
         verifyCachesAndGroups(client, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_2}));
     }

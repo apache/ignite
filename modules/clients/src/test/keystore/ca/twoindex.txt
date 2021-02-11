@@ -1,2 +1,0 @@
-V	210823155541Z		01	unknown	/CN=node02
-V	210823155835Z		02	unknown	/CN=node03

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exception occurred on native side.
@@ -72,6 +71,6 @@ public class PlatformNativeException extends PlatformException implements Extern
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PlatformNativeException.class, this,
-            "cause", S.INCLUDE_SENSITIVE ? cause : (cause == null ? "null" : cause.getClass().getSimpleName()));
+            "cause", S.includeSensitive() ? cause : (cause == null ? "null" : cause.getClass().getSimpleName()));
     }
 }

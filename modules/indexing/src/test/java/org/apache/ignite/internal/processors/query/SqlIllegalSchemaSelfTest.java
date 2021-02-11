@@ -68,7 +68,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     @Test
     public void testBadCacheNameDynamic() throws Exception {
         doubleConsumerAccept(
-            (node)->{
+            (node) -> {
                 try {
                     node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
                 }

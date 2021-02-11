@@ -46,17 +46,15 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CLIENT_NODE = ">>> Number of client nodes";
 
+    /** */
+    public static final String COORDINATOR_CHANGED = "Coordinator changed";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.endsWith("client"))
-            cfg.setClientMode(true);
-
-        if (igniteInstanceName.endsWith("client_force_server")) {
-            cfg.setClientMode(true);
+        if (igniteInstanceName.endsWith("client_force_server"))
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
 
         return cfg;
     }
@@ -167,8 +165,8 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             setLogger(log, server);
 
             Ignite server1 = startGrid("server1");
-            Ignite client1 = startGrid("first client");
-            Ignite client2 = startGrid("second client");
+            Ignite client1 = startClientGrid("first client");
+            Ignite client2 = startClientGrid("second client");
 
             waitForDiscovery(server, server1, client1, client2);
         }
@@ -208,6 +206,27 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         doForceServerAndClientTest(log);
     }
 
+    @Test
+    public void checkMessageOnCoordinatorChangeTest() throws Exception {
+        startGrid(1);
+
+        startClientGrid("client");
+
+        Ignite server2 = startGrid(2);
+
+        MockLogger log = new MockLogger();
+
+        log.setLevel(Level.INFO);
+
+        setLogger(log, server2);
+
+        stopGrid(1);
+
+        stopGrid("client");
+
+        assertFalse(log.logs().stream().anyMatch(msg -> msg.contains("Coordinator changed") && msg.contains("isClient=true")));
+    }
+
     /**
      * @param log Log.
      * @throws Exception If failed.
@@ -223,9 +242,9 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             setLogger(log, server);
 
             Ignite server1 = startGrid("server1");
-            Ignite client1 = startGrid("first client");
-            Ignite client2 = startGrid("second client");
-            Ignite forceServClnt3 = startGrid("third client_force_server");
+            Ignite client1 = startClientGrid("first client");
+            Ignite client2 = startClientGrid("second client");
+            Ignite forceServClnt3 = startClientGrid("third client_force_server");
 
             waitForDiscovery(server, server1, client1, client2, forceServClnt3);
         }
@@ -278,7 +297,8 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             if ((msg != null && !msg.isEmpty()) && (
                 msg.contains(TOPOLOGY_SNAPSHOT)
                 || msg.contains(SERV_NODE)
-                || msg.contains(CLIENT_NODE)))
+                || msg.contains(CLIENT_NODE))
+                || msg.contains(COORDINATOR_CHANGED))
                 logs.add(msg);
 
             super.info(msg);

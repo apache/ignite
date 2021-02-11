@@ -17,37 +17,37 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using Knn model in Apache Ignite for iris class predicion.
- *
- * Description of model can be found in: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm .
- * Original dataset can be downloaded from: https://archive.ics.uci.edu/ml/datasets/Wholesale+customers .
- * Copy of dataset are stored in: https://archive.ics.uci.edu/ml/datasets/iris .
- * Score for classifier estimation: accuracy .
- * Description of score can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=accuracy .
+ * <p>
+ * Description of model can be found in: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm . Original dataset
+ * can be downloaded from: https://archive.ics.uci.edu/ml/datasets/Wholesale+customers . Copy of dataset are stored in:
+ * https://archive.ics.uci.edu/ml/datasets/iris . Score for classifier estimation: accuracy . Description of score can
+ * be found in: https://stattrek.com/statistics/dictionary.aspx?definition=accuracy .
  */
 public class IrisClassificationExample {
-    /** Runs example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Runs example.
+     */
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -55,8 +55,11 @@ public class IrisClassificationExample {
             try {
                 System.out.println(">>> Fill dataset cache.");
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.IRIS);
-                KNNClassificationTrainer trainer = new KNNClassificationTrainer()
-                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(0));
+                KNNClassificationTrainer trainer = ((KNNClassificationTrainer)new KNNClassificationTrainer()
+                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(0)))
+                    .withK(3)
+                    .withDistanceMeasure(new EuclideanDistance())
+                    .withWeighted(true);
 
                 // This vectorizer works with values in cache of Vector class.
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
@@ -66,14 +69,11 @@ public class IrisClassificationExample {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.6);
 
                 System.out.println(">>> Start traininig.");
-                NNClassificationModel mdl = trainer.fit(
+                KNNClassificationModel mdl = trainer.fit(
                     ignite, dataCache,
                     split.getTrainFilter(),
                     vectorizer
-                )
-                    .withK(3)
-                    .withDistanceMeasure(new EuclideanDistance())
-                    .withStrategy(NNStrategy.WEIGHTED);
+                );
 
                 System.out.println(">>> Perform scoring.");
                 double accuracy = Evaluator.evaluate(
@@ -85,9 +85,14 @@ public class IrisClassificationExample {
                 );
 
                 System.out.println(">> Model accuracy: " + accuracy);
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

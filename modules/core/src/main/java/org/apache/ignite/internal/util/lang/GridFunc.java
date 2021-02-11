@@ -364,6 +364,9 @@ public class GridFunc {
 
         int n = ThreadLocalRandom.current().nextInt(c.size());
 
+        if (c instanceof List)
+            return ((List<? extends T>)c).get(n);
+
         int i = 0;
 
         for (T t : c) {
@@ -519,7 +522,7 @@ public class GridFunc {
      * @return Single iterator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+    public static <T> Iterator<T> concat(Iterator<T>... iters) {
         if (iters.length == 1)
             return iters[0];
 
@@ -1763,7 +1766,7 @@ public class GridFunc {
      *      does not exist in the map. Return {@code null} if key is not found and
      *      closure is {@code null}.
      */
-    public static <K, V>  V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
+    public static <K, V> V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
         A.notNull(map, "map", key, "key");
 
         V v = map.get(key);
@@ -2789,6 +2792,60 @@ public class GridFunc {
     public static boolean contains(int[] arr, int val) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if key is contained in the map passed in. If the map
+     * is {@code null}, then {@code false} is returned.
+     *
+     * @param m Map to check.
+     * @param k Key to check for containment.
+     * @param <T> Key type.
+     * @return {@code true} if map is not {@code null} and contains given
+     *      key, {@code false} otherwise.
+     */
+    public static <T> boolean mapContainsKey(@Nullable final Map<T, ?> m, final T k) {
+        return m != null && m.containsKey(k);
+    }
+
+    /**
+     * Check's that {@code val} contains ignore case in collection {@code col}.
+     *
+     * @param col Collection of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code col} and {@code @val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable Collection<String> col, String val) {
+        if (F.isEmpty(col))
+            return false;
+
+        for (String v : col) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check's that {@code val} contains ignore case in array {@code arr}.
+     *
+     * @param arr Array of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code arr} and {@code val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable String[] arr, String val) {
+        if (F.isEmpty(arr))
+            return false;
+
+        for (String v : arr) {
+            if (v.equalsIgnoreCase(val))
                 return true;
         }
 

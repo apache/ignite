@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.internal.util.GridStringBuilder;
 import java.util.Arrays;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  *

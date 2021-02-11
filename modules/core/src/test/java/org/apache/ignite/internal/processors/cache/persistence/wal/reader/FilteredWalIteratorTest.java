@@ -25,13 +25,12 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,6 +45,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PART_META_UPDATE_STATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest.dummyPage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -65,7 +65,7 @@ public class FilteredWalIteratorTest {
     private static Random random = new Random();
 
     /** **/
-    private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
+    private static WALPointer ZERO_POINTER = new WALPointer(0, 0, 0);
 
     /** **/
     private static IgniteBiTuple<WALPointer, WALRecord> TEST_RECORD = new IgniteBiTuple<>(
@@ -179,9 +179,9 @@ public class FilteredWalIteratorTest {
             case 0:
                 return new IgniteBiTuple<>(ZERO_POINTER, new MetastoreDataRecord("key", new byte[0]));
             case 1:
-                return new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0)));
+                return new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new WALPointer(5738, 0, 0)));
             case 2:
-                return new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(1, 1), new byte[0], 10));
+                return new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(1, 1), dummyPage(1024, 1), 1024));
             case 3:
                 return new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(1, 1, OWNING, 1));
             case 4:

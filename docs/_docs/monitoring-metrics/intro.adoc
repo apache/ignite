@@ -1,0 +1,58 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Introduction: Monitoring and Metrics
+
+This chapter covers monitoring and metrics for Ignite. We'll start with an overview of the methods available for monitoring, and then we'll delve into the Ignite specifics, including a list of JMX metrics and MBeans.
+
+== Overview
+The basic task of monitoring in Ignite involves metrics. You have several approaches for accessing metrics:
+
+-  via link:monitoring-metrics/metrics[JMX]
+-  Programmatically
+-  link:monitoring-metrics/system-views[System views]
+
+
+== What to Monitor
+You can start by monitoring:
+
+  - Each node in isolation
+  - The Connection between nodes
+  - The system as a whole
+
+Note that a node consists of several layers: hardware, the operating system, the Virtual Machine (JVM, etc.), and the application. You need to check all of these levels, and the *network* surrounding it.
+
+  - Hardware (Hypervisor): CPU/Memory/Disk => System Logs/Cloud Provider's Logs
+  - Operating System
+  - JVM: GC Logs, JMX, Java Flight Recorder, Thread Dumps, Heap dumps, etc.
+  - Application: Logs, JMX, Throughput/Latency, Test queries
+      * For log based monitoring, the key is that you can act proactively, watch the logs for trends/etc., don't just wait to check the logs until something breaks.
+  - Network: ping monitoring, network hardware monitoring, TCP dumps
+
+This should give you a good place to start for setting up monitoring of your hardware, operating system, and network. To monitor the application layer (the nodes that make up your in-memory computing solution), you'll need to perform Ignite-specific monitoring via metrics you access with JMX/Beans or programmatically.
+
+
+== Global vs. Node-specific Metrics
+
+The information exposed through different metrics has different scope (applicability), and may be different depending on the node where you get the metrics.
+The following list explains different metric scopes.
+
+*Global metrics*:: Provide information about the cluster in general, for example: the number nodes, state of the cluster. This information is available on any node of the cluster.
+
+*Node-specific metrics*:: Provide information specific to the node on which you obtain the metrics, for example: memory consumption, data region metrics, WAL size, queue size, etc.
+
+Cache-related metrics can be global as well as node-specific.
+For example, the total number of entries in a cache is a global metric, and you can obtain it on any node.
+You can also get the number of entries of the cache that are stored on a specific node, in which case it will be a node-specific metric.
+

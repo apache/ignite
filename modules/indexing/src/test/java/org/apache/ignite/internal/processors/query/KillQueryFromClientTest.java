@@ -20,16 +20,15 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
 
 /**
  * Test KILL QUERY requested from client node.
  */
-
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public class KillQueryFromClientTest extends KillQueryTest {
     /** {@inheritDoc} */
-    @Override protected IgniteEx getKillRequestNode()  {
+    @Override protected IgniteEx getKillRequestNode() {
         IgniteEx clientNode = grid(NODES_COUNT - 1);
 
         assertTrue(clientNode.context().clientNode());

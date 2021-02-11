@@ -62,7 +62,8 @@ public class LSQROnHeapTest extends TrainerTest {
         LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor)
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
@@ -100,7 +101,8 @@ public class LSQROnHeapTest extends TrainerTest {
         LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor)
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
@@ -138,13 +140,13 @@ public class LSQROnHeapTest extends TrainerTest {
         try (LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor)))
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor), TestUtils.testEnvBuilder().buildForTrainer()))
         {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 
             assertEquals(8, res.getIterations());
 
-            assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
+            assertArrayEquals(new double[]{72.26948107, 15.95144674, 24.07403921, 66.73038781}, res.getX(), 1e-6);
         }
     }
 }

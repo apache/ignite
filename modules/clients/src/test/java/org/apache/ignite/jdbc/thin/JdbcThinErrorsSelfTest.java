@@ -119,7 +119,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * message.
      */
     @Test
-    public void testExplainUpdatesUnsupported() throws Exception{
+    public void testExplainUpdatesUnsupported() throws Exception {
         checkErrorState((conn) -> {
             try (Statement statement = conn.createStatement()) {
                 statement.executeUpdate("CREATE TABLE TEST_EXPLAIN (ID LONG PRIMARY KEY, VAL LONG)");

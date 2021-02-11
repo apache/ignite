@@ -130,7 +130,7 @@ public class GridIntList implements Message, Externalizable {
         int res = 1;
 
         for (int i = 0; i < idx; i++) {
-            int element  = arr[i];
+            int element = arr[i];
             res = 31 * res + element;
         }
 

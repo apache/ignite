@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -45,7 +46,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -55,10 +58,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -108,13 +111,10 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.startsWith(CLIENT_GRID_NAME)) {
-            // Intentionally skipping data storage in client configuration.
-            cfg.setClientMode(true);
-        }
-        else {
+        if (!igniteInstanceName.startsWith(CLIENT_GRID_NAME)) {
             cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration()
+                    .setWalSegmentSize(4 * 1024 * 1024)
                     .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration()
                             .setPersistenceEnabled(true)
@@ -157,20 +157,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
             IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -287,12 +273,13 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     private void testChangingBaselineDown(String cacheName, boolean lateActivation) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         IgniteEx client1 = null;
         IgniteEx client2 = null;
 
         if (lateActivation) {
-            client1 = (IgniteEx)startGrid("client1");
-            client2 = (IgniteEx)startGrid("client2");
+            client1 = startClientGrid("client1");
+            client2 = startClientGrid("client2");
         }
         else
             ig0.cluster().active(true);
@@ -319,8 +306,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         System.out.println("### Preloading is finished");
 
         if (!lateActivation) {
-            client1 = (IgniteEx)startGrid("client1");
-            client2 = (IgniteEx)startGrid("client2");
+            client1 = startClientGrid("client1");
+            client2 = startClientGrid("client2");
         }
 
         ConcurrentMap<Long, Long> threadProgressTracker = new ConcurrentHashMap<>();
@@ -381,8 +368,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         System.out.println("### Preloading is finished");
 
-        IgniteEx client1 = (IgniteEx)startGrid("client1");
-        IgniteEx client2 = (IgniteEx)startGrid("client2");
+        IgniteEx client1 = startClientGrid("client1");
+        IgniteEx client2 = startClientGrid("client2");
 
         ConcurrentMap<Long, Long> threadProgressTracker = new ConcurrentHashMap<>();
 
@@ -423,6 +410,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     public void testCrossCacheTxs() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().active(true);
 
         AtomicBoolean stopLoad = new AtomicBoolean(false);
@@ -449,8 +437,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         System.out.println("### Preloading is finished");
 
-        IgniteEx client1 = (IgniteEx)startGrid("client1");
-        IgniteEx client2 = (IgniteEx)startGrid("client2");
+        IgniteEx client1 = startClientGrid("client1");
+        IgniteEx client2 = startClientGrid("client2");
 
         ConcurrentMap<Long, Long> threadProgressTracker = new ConcurrentHashMap<>();
 
@@ -487,7 +475,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         ig0.cluster().active(true);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         CacheConfiguration<Integer, String> dynamicCacheCfg = cacheConfig(REPLICATED_TX_CACHE_NAME);
         dynamicCacheCfg.setName("dyn");
@@ -560,7 +548,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         ig0.cluster().active(true);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         CacheConfiguration<Integer, String> dynamicCacheCfg = new CacheConfiguration<Integer, String>()
             .setName("dyn")
@@ -641,7 +629,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         ig0.cluster().active(true);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         IgniteCache<Integer, String> clientJoinCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
 
@@ -928,12 +916,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                             threadProgressTracker.compute(Thread.currentThread().getId(),
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
-                        catch (CacheException e) {
-                            if (e.getCause() instanceof ClusterTopologyException)
-                                ((ClusterTopologyException)e.getCause()).retryReadyFuture().get();
-                        }
-                        catch (ClusterTopologyException e) {
-                            e.retryReadyFuture().get();
+                        catch (CacheException | ClusterTopologyException | TransactionRollbackException e) {
+                            awaitTopology(e);
                         }
                     }
                 }
@@ -944,6 +928,30 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                 }
             }
         });
+    }
+
+    /**
+     * Extract cause of type {@link ClusterTopologyException} (if exists) and awaits retry topology.
+     *
+     * @param e Original exception.
+     */
+    private void awaitTopology(Throwable e) throws IgniteCheckedException {
+        if (e instanceof TransactionRollbackException) {
+            TransactionRollbackException e0 = (TransactionRollbackException) e;
+
+            ClusterTopologyCheckedException e00 = X.cause(e0, ClusterTopologyCheckedException.class);
+            IgniteInternalFuture f;
+
+            if (e00 != null && (f = e00.retryReadyFuture()) != null)
+                f.get();
+        }
+
+        ClusterTopologyException ex = X.cause(e, ClusterTopologyException.class);
+        IgniteFuture f;
+
+        // For now in MVCC case the topology exception doesn't have a remap future.
+        if (ex != null && (f = ex.retryReadyFuture()) != null)
+            f.get();
     }
 
     /**

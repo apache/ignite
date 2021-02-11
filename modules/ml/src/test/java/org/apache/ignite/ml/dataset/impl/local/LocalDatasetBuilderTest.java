@@ -108,7 +108,8 @@ public class LocalDatasetBuilderTest {
         return builder.build(
             TestUtils.testEnvBuilder(),
             partCtxBuilder.andThen(x -> null),
-            partDataBuilder.andThen((x, y) -> x)
+            partDataBuilder.andThen((x, y) -> x),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
     }
 

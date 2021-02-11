@@ -52,9 +52,6 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     /** Test predicate. */
     private static final String TEST_PREDICATE = "org.apache.ignite.tests.p2p.GridEventConsumeFilter";
 
-    /** Client mode. */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -67,9 +64,6 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
             cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setPeerClassLoadingEnabled(true);
-
-        if (clientMode)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -135,9 +129,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
 
         ClassLoader extLdr = getExternalClassLoader();
 
-        clientMode = true;
-
-        Ignite client = startGrid(2);
+        Ignite client = startClientGrid(2);
 
         Class<?> cls = extLdr.loadClass(TEST_PREDICATE);
 
@@ -150,8 +142,6 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
             (IgnitePredicate<Event>) cls.newInstance(),
             EventType.EVT_CACHE_OBJECT_PUT
         );
-
-        clientMode = false;
 
         Ignite srv = startGrid(3);
 

@@ -259,7 +259,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    private  static CacheConfiguration cacheConfiguration(@NotNull final String cacheName) throws Exception {
+    private static CacheConfiguration cacheConfiguration(@NotNull final String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
@@ -386,7 +386,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
                 info("Expects '" + e.getKey() + "' fails with grid client exception.");
             }
-            catch (GridServerUnreachableException |GridClientClosedException ignore) {
+            catch (GridServerUnreachableException | GridClientClosedException ignore) {
                 // No op: compute projection is empty.
             }
         }

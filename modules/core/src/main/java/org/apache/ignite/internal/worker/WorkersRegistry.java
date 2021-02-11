@@ -178,7 +178,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
         Thread prevCheckerThread = lastChecker.get();
 
-        if (prevCheckerThread == null ||
+        if (prevCheckerThread == null || registeredWorkers.size() < 2 ||
             U.currentTimeMillis() - lastCheckTs <= checkInterval ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
@@ -221,14 +221,13 @@ public class WorkersRegistry implements GridWorkerListener {
                     long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
 
                     if (heartbeatDelay > sysWorkerBlockedTimeout) {
-                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
+                        GridWorker worker0 = registeredWorkers.get(runner.getName());
 
                         if (worker0 != null && worker0 == worker) {
                             log.error("Blocked system-critical thread has been detected. " +
-                                "This can lead to cluster-wide undefined behaviour " +
-                                "[threadName=" + worker.name() + ", blockedFor=" + heartbeatDelay / 1000 + "s]");
-
-                            U.dumpThread(worker.runner(), log);
+                                    "This can lead to cluster-wide undefined behaviour " +
+                                    "[workerName=" + worker.name() + ", threadName=" + runner.getName() +
+                                    ", blockedFor=" + heartbeatDelay / 1000 + "s]");
 
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
                         }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecover
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionTest;
 import org.apache.ignite.internal.processors.compress.CompressionConfigurationTest;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
+import org.apache.ignite.internal.processors.compress.DiskPageCompressionConfigValidationTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
 import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
@@ -49,6 +50,7 @@ public class IgnitePdsCompressionTestSuite {
         suite.add(CompressionProcessorTest.class);
         suite.add(FileSystemUtilsTest.class);
         suite.add(DiskPageCompressionIntegrationTest.class);
+        suite.add(DiskPageCompressionConfigValidationTest.class);
         suite.add(DiskPageCompressionIntegrationAsyncTest.class);
 
         // WAL page records compression.

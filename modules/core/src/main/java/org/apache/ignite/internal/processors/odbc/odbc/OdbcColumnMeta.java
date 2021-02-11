@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,19 +35,19 @@ public class OdbcColumnMeta {
     private final String tableName;
 
     /** Column name. */
-    public final String columnName;
+    private final String columnName;
 
     /** Data type. */
     private final Class<?> dataType;
 
     /** Precision. */
-    public final int precision;
+    private final int precision;
 
     /** Scale. */
-    public final int scale;
+    private final int scale;
 
-    /** Client version. */
-    private final ClientListenerProtocolVersion ver;
+    /** Nullability. See {@link java.sql.ResultSetMetaData#isNullable(int)} for more info. */
+    private final int nullability;
 
     /**
      * @param schemaName Cache name.
@@ -55,30 +56,30 @@ public class OdbcColumnMeta {
      * @param dataType Data type.
      * @param precision Precision.
      * @param scale Scale.
-     * @param ver Client version.
+     * @param nullability Nullability.
      */
     public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType,
-        int precision, int scale, ClientListenerProtocolVersion ver) {
+        int precision, int scale, int nullability) {
         this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
         this.dataType = dataType;
         this.precision = precision;
         this.scale = scale;
-        this.ver = ver;
+        this.nullability = nullability;
     }
 
     /**
+     * Constructor for result set column.
      * @param info Field metadata.
-     * @param ver Client version.
      */
-    public OdbcColumnMeta(GridQueryFieldMetadata info, ClientListenerProtocolVersion ver) {
-        this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
-        this.tableName = info.typeName();
-        this.columnName = info.fieldName();
-        this.precision = info.precision();
-        this.scale = info.scale();
-        this.ver = ver;
+    public OdbcColumnMeta(GridQueryFieldMetadata info) {
+        schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
+        tableName = info.typeName();
+        columnName = info.fieldName();
+        precision = info.precision();
+        scale = info.scale();
+        nullability = info.nullability();
 
         Class<?> type;
 
@@ -122,13 +123,14 @@ public class OdbcColumnMeta {
      * Write in a binary format.
      *
      * @param writer Binary writer.
+     * @param ver Client version.
      */
-    public void write(BinaryRawWriter writer) {
+    public void write(BinaryRawWriter writer, ClientListenerProtocolVersion ver) {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
 
-        byte typeId = BinaryUtils.typeByClass(dataType);
+        byte typeId = getTypeId(dataType);
 
         writer.writeByte(typeId);
 
@@ -136,6 +138,22 @@ public class OdbcColumnMeta {
             writer.writeInt(precision);
             writer.writeInt(scale);
         }
+
+        if (ver.compareTo(OdbcConnectionContext.VER_2_8_0) >= 0) {
+            writer.writeByte((byte)nullability);
+        }
+    }
+
+    /**
+     * Get ODBC type ID for the type.
+     * @param dataType Data type class.
+     * @return Type ID.
+     */
+    private static byte getTypeId(Class<?> dataType) {
+        if (dataType.equals(java.sql.Date.class))
+            return GridBinaryMarshaller.DATE;
+
+        return BinaryUtils.typeByClass(dataType);
     }
 
     /** {@inheritDoc} */

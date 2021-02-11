@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -83,6 +84,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -104,6 +107,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         ignite2 = startGrid(2);
 
         startGrid(3);
+
+        // Make sure topology is stable to avoid topology deadlocks on lock aquisiotion.
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -175,7 +181,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         assert !cache.isLocalLocked(key, true);
 
         if (partitioned()) {
-            for(int i = 0; i < 200; i++)
+            for (int i = 0; i < 200; i++)
                 if (cache.isLocalLocked(key, false)) {
                     try {
                         Thread.sleep(10);

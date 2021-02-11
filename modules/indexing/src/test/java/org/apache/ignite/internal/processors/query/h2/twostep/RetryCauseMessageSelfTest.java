@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -24,16 +26,20 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -64,6 +70,9 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     private static final String ORG_SQL = "select * from Organization";
 
     /** */
+    static final String UPDATE_SQL = "UPDATE Person SET name=lower(?) ";
+
+    /** */
     private static final String ORG = "org";
 
     /** */
@@ -87,10 +96,10 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     public void testSynthCacheWasNotFoundMessage() {
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
-        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
+        GridTestUtils.setFieldValue(h2Idx, "mapQryExec",
             new MockGridMapQueryExecutor() {
-                @Override
-                public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq) throws IgniteCheckedException {
+                @Override public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq)
+                    throws IgniteCheckedException {
                     qryReq.caches().add(Integer.MAX_VALUE);
 
                     startedExecutor.onQueryRequest(node, qryReq);
@@ -112,7 +121,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             return;
         }
         finally {
-            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
+            GridTestUtils.setFieldValue(h2Idx, "mapQryExec", mapQryExec);
         }
         fail();
     }
@@ -126,10 +135,10 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
 
         final ConcurrentMap<PartitionReservationKey, GridReservable> reservations = reservations(h2Idx);
 
-        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
+        GridTestUtils.setFieldValue(h2Idx, "mapQryExec",
             new MockGridMapQueryExecutor() {
-                @Override
-                public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq) throws IgniteCheckedException {
+                @Override public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq)
+                    throws IgniteCheckedException {
                     final PartitionReservationKey grpKey = new PartitionReservationKey(ORG, null);
 
                     reservations.put(grpKey, new GridReservable() {
@@ -157,7 +166,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             return;
         }
         finally {
-            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
+            GridTestUtils.setFieldValue(h2Idx, "mapQryExec", mapQryExec);
         }
         fail();
     }
@@ -172,7 +181,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
 
         final GridKernalContext ctx = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "ctx");
 
-        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
+        GridTestUtils.setFieldValue(h2Idx, "mapQryExec",
             new MockGridMapQueryExecutor() {
                 @Override public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq) throws IgniteCheckedException {
                     GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(qryReq.caches().get(0));
@@ -202,7 +211,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             return;
         }
         finally {
-            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
+            GridTestUtils.setFieldValue(h2Idx, "mapQryExec", mapQryExec);
         }
         fail();
     }
@@ -216,10 +225,10 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
 
         final GridKernalContext ctx = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "ctx");
 
-        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
+        GridTestUtils.setFieldValue(h2Idx, "mapQryExec",
             new MockGridMapQueryExecutor() {
-                @Override
-                public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq) throws IgniteCheckedException {
+                @Override public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq)
+                    throws IgniteCheckedException {
                     GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(qryReq.caches().get(0));
 
                     GridDhtLocalPartition part = cctx.topology().localPartition(0, NONE, false);
@@ -247,7 +256,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             return;
         }
         finally {
-            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
+            GridTestUtils.setFieldValue(h2Idx, "mapQryExec", mapQryExec);
         }
         fail();
     }
@@ -261,10 +270,10 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
 
         final ConcurrentMap<PartitionReservationKey, GridReservable> reservations = reservations(h2Idx);
 
-        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
+        GridTestUtils.setFieldValue(h2Idx, "mapQryExec",
             new MockGridMapQueryExecutor() {
-                @Override
-                public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq) throws IgniteCheckedException {
+                @Override public void onQueryRequest(ClusterNode node, GridH2QueryRequest qryReq)
+                    throws IgniteCheckedException {
                     final PartitionReservationKey grpKey = new PartitionReservationKey(ORG, null);
 
                     reservations.put(grpKey, new GridReservable() {
@@ -291,16 +300,92 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             return;
         }
         finally {
-            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
+            GridTestUtils.setFieldValue(h2Idx, "mapQryExec", mapQryExec);
         }
         fail();
+    }
+
+    /**
+     * Test query remap failure reason.
+     */
+    @Test
+    public void testQueryMappingFailureMessage() {
+        final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
+        final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
+
+        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
+
+        GridTestUtils.setFieldValue(rdcQryExec, "mapper",
+            new ReducePartitionMapper(ctx, logger) {
+                @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
+                    final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
+
+                    return new ReducePartitionMapResult(Collections.emptyList(), res.partitionsMap(), res.queryPartitionsMap());
+                }
+            });
+
+        try {
+            SqlFieldsQuery qry = new SqlFieldsQuery(JOIN_SQL).setArgs("Organization #0");
+
+            final Throwable throwable = GridTestUtils.assertThrows(log, () -> {
+                return personCache.query(qry).getAll();
+            }, CacheException.class, "Failed to map SQL query to topology during timeout:");
+
+            throwable.printStackTrace();
+        }
+        finally {
+            GridTestUtils.setFieldValue(rdcQryExec, "mapper", mapper);
+        }
+    }
+
+    /**
+     * Test update query remap failure reason.
+     */
+    @Test
+    public void testUpdateQueryMappingFailureMessage() {
+        final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
+        final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
+
+        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
+
+        GridTestUtils.setFieldValue(rdcQryExec, "mapper",
+            new ReducePartitionMapper(ctx, logger) {
+                @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
+                    final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
+
+                    return new ReducePartitionMapResult(Collections.emptyList(), res.partitionsMap(), res.queryPartitionsMap());
+                }
+            });
+
+        try {
+            final SqlFieldsQueryEx qry = new SqlFieldsQueryEx(UPDATE_SQL, false)
+                .setArgs("New Name");
+
+            GridTestUtils.assertThrows(log, () -> {
+                return personCache.query(qry).getAll();
+            }, CacheException.class, "Failed to map SQL query to topology during timeout");
+
+            qry.setArgs("Another Name");
+            qry.setSkipReducerOnUpdate(true);
+
+            GridTestUtils.assertThrows(log, () -> {
+                return personCache.query(qry).getAll();
+            }, CacheException.class, "Failed to determine nodes participating in the update. ");
+        }
+        finally {
+            GridTestUtils.setFieldValue(rdcQryExec, "mapper", mapper);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCommunicationSpi(new TcpCommunicationSpi(){
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
                 assert msg != null;

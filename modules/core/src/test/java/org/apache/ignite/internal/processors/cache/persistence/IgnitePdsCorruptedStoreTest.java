@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -44,6 +46,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -112,6 +116,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                     .setMaxSize(100 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             )
+            .setWalMode(WALMode.FSYNC)
             .setFileIOFactory(failingFileIOFactory);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -240,7 +245,8 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID,
+            PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
@@ -379,7 +385,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         fut.cancel();
     }
 
-
     /**
      * Test node invalidation due to checkpoint error.
      */
@@ -440,6 +445,46 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             fail.set(false);
             ref.get().close(); // Release file for any test outcome.
         }
+    }
+
+    /**
+     * Test node invalidation due to error on WAL write header.
+     */
+    @Test
+    public void testWalFsyncWriteHeaderFailure() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        ignite.cache(CACHE_NAME1).put(0, 0);
+
+        failingFileIOFactory.createClosure((file, options) -> {
+            FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
+
+            if (file.getName().endsWith(".wal")) {
+                return new FileIODecorator(delegate) {
+                    @Override public int write(ByteBuffer srcBuf) throws IOException {
+                        throw new IOException("No space left on device");
+                    }
+                };
+            }
+
+            return delegate;
+        });
+
+        ignite.context().cache().context().database().checkpointReadLock();
+
+        try {
+            ignite.context().cache().context().wal().log(new CheckpointRecord(null), RolloverType.NEXT_SEGMENT);
+        }
+        catch (StorageException expected) {
+            // No-op.
+        }
+        finally {
+            ignite.context().cache().context().database().checkpointReadUnlock();
+        }
+
+        waitFailure(StorageException.class);
     }
 
     /**

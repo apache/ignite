@@ -46,7 +46,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
 
         MBeanInfo info = mbean.getMBeanInfo();
 
-        assert info.getDescription().equals("MBeanDescription.") == true;
+        assert info.getDescription().equals("MBeanDescription.");
 
         assert info.getOperations().length == 2;
 
@@ -54,29 +54,29 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
             if (opInfo.getDescription().equals("MBeanOperation."))
                 assert opInfo.getSignature().length == 2;
             else {
-                assert opInfo.getDescription().equals("MBeanSuperOperation.") == true;
+                assert opInfo.getDescription().equals("MBeanSuperOperation.");
                 assert opInfo.getSignature().length == 1;
             }
         }
 
         for (MBeanParameterInfo paramInfo : info.getOperations()[0].getSignature()) {
             if (paramInfo.getName().equals("ignored"))
-                assert paramInfo.getDescription().equals("MBeanOperationParameter1.") == true;
+                assert paramInfo.getDescription().equals("MBeanOperationParameter1.");
             else {
-                assert paramInfo.getName().equals("someData") == true;
-                assert paramInfo.getDescription().equals("MBeanOperationParameter2.") == true;
+                assert paramInfo.getName().equals("someData");
+                assert paramInfo.getDescription().equals("MBeanOperationParameter2.");
             }
         }
 
         assert info.getAttributes().length == 4 : "Expected 4 attributes but got " + info.getAttributes().length;
 
         for (MBeanAttributeInfo attrInfo : info.getAttributes()) {
-            if (attrInfo.isWritable() == false) {
-                assert (attrInfo.getDescription().equals("MBeanReadonlyGetter.") == true ||
+            if (!attrInfo.isWritable()) {
+                assert (attrInfo.getDescription().equals("MBeanReadonlyGetter.") ||
                     attrInfo.getDescription().equals("MBeanROGetter."));
             }
             else {
-                assert (attrInfo.getDescription().equals("MBeanWritableGetter.") == true ||
+                assert (attrInfo.getDescription().equals("MBeanWritableGetter.") ||
                     attrInfo.getDescription().equals("MBeanWritableIsGetter."));
             }
         }

@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.management.ManagementFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -142,8 +138,8 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      */
     @Test
     public void testSetTxTimeoutOnClientDuringPartitionMapExchange() throws Exception {
-        IgniteEx ig = (IgniteEx) startGrids(2);
-        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+        IgniteEx ig = startGrids(2);
+        IgniteEx client = startClientGrid(getConfiguration("client"));
 
         checkSetTxTimeoutDuringPartitionMapExchange(client);
     }
@@ -202,7 +198,11 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      * @param txEx Atomic reference to transaction exception.
      * @param timeout Transaction timeout.
      */
-    private IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicReference<Exception> txEx, long timeout) {
+    private IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicReference<Exception> txEx, long timeout)
+        throws InterruptedException {
+        // Without the awaiting txs can map on different topology versions causing unexpected behavior.
+        awaitPartitionMapExchange();
+
         IgniteCache<Object, Object> cache = ig.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
@@ -274,19 +274,10 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
         U.sleep(5_000L);
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TransactionsMXBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 
     /**

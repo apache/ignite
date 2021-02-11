@@ -17,27 +17,26 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
-import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
-import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.regex.Pattern;
+import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
+import io.prometheus.client.exporter.HTTPServer;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.monitoring.opencensus.OpenCensusMetricExporterSpi.CONSISTENT_ID_TAG;
-import static org.apache.ignite.internal.processors.monitoring.opencensus.OpenCensusMetricExporterSpi.INSTANCE_NAME_TAG;
-import static org.apache.ignite.internal.processors.monitoring.opencensus.OpenCensusMetricExporterSpi.NODE_ID_TAG;
+import static org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi.CONSISTENT_ID_TAG;
+import static org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi.INSTANCE_NAME_TAG;
+import static org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi.NODE_ID_TAG;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -62,7 +61,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         OpenCensusMetricExporterSpi ocSpi = new OpenCensusMetricExporterSpi();
 
-        ocSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        ocSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
         ocSpi.setPeriod(EXPORT_TIMEOUT);
         ocSpi.setSendConsistentId(true);
         ocSpi.setSendInstanceName(true);
@@ -128,21 +127,66 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
     public void testFilterAndExport() throws Exception {
         createAdditionalMetrics(ignite);
 
-        Set<String> expectedMetrics = new GridConcurrentHashSet<>(Arrays.asList(
+        String[] expectedMetrics = new String[] {
             "other_prefix_test\\{.*\\} 42",
             "other_prefix_test2\\{.*\\} 43",
-            "other_prefix2_test3\\{.*\\} 44"
-        ));
+            "other_prefix2_test3\\{.*\\} 44"};
 
-        boolean res = waitForCondition(() -> {
+        assertTrue("Additional metrics should be exported via http", checkHttpMetrics(expectedMetrics));
+    }
+
+    /** */
+    @Test
+    public void testHistogram() throws Exception {
+        String registryName = "test_registry";
+        String histogramName = "test_histogram";
+        String histogramDesc = "Test histogram description.";
+
+        long[] bounds = new long[] {10, 100};
+        long[] testValues = new long[] {5, 50, 50, 500, 500, 500};
+
+        String[] expectedValuesPtrn = new String[] {
+            "test_registry_test_histogram_0_10.* 1",
+            "test_registry_test_histogram_10_100.* 2",
+            "test_registry_test_histogram_100_inf.* 3"};
+
+        HistogramMetricImpl histogramMetric =
+            ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
+
+        for (long value : testValues)
+            histogramMetric.value(value);
+
+        assertTrue("Histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
+
+        bounds = new long[] {50};
+
+        histogramMetric.reset(bounds);
+
+        for (long value : testValues)
+            histogramMetric.value(value);
+
+        expectedValuesPtrn = new String[] {
+            "test_registry_test_histogram_0_50.* 3",
+            "test_registry_test_histogram_50_inf.* 3"};
+
+        assertTrue("Updated histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
+    }
+
+    /**
+     * @param patterns Patterns to find.
+     * @return {@code True} if given patterns present in metrics from http.
+     * @throws Exception If failed.
+     */
+    private boolean checkHttpMetrics(String[] patterns) throws Exception {
+        return waitForCondition(() -> {
             try {
                 String httpMetrics = metricsFromHttp();
 
                 assertFalse("Filtered prefix shouldn't export.",
                     httpMetrics.contains(FILTERED_PREFIX.replaceAll("\\.", "_")));
 
-                for (String expMetric : expectedMetrics) {
-                    if (!Pattern.compile(expMetric).matcher(httpMetrics).find())
+                for (String exp : patterns) {
+                    if (!Pattern.compile(exp).matcher(httpMetrics).find())
                         return false;
                 }
 
@@ -152,8 +196,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                 return false;
             }
         }, EXPORT_TIMEOUT * 10);
-
-        assertTrue("Additional metrics should be exported via http", res);
     }
 
     /** */

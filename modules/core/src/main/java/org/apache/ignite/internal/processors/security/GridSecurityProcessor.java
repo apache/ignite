@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -29,7 +30,19 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
- * This interface defines a grid authentication processor.
+ * This interface is responsible for:
+ * <ul>
+ *     <li>Node authentication;</li>
+ *     <li>Thin client authentication;</li>
+ *     <li>Providing configuration info whether global node authentication is enabled;</li>
+ *     <li>Keeping and propagating all authenticated security subjects;</li>
+ *     <li>Providing configuration info whether security mode is enabled at all;</li>
+ *     <li>Handling expired sessions;</li>
+ *     <li>Providing configuration info whether sandbox is enabled;</li>
+ *     <li>Keeping and propagating authenticated security subject for thin clients;</li>
+ *     <li>Keeping and propagating authenticated security contexts for nodes and thin clients;</li>
+ *     <li>Authorizing specific operations (cache put, task execute, so on) when session security context is set.</li>
+ * </ul>
  */
 public interface GridSecurityProcessor extends GridProcessor {
     /**
@@ -76,6 +89,16 @@ public interface GridSecurityProcessor extends GridProcessor {
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
+     * Gets security context for authenticated nodes and thin clients.
+     *
+     * @param subjId Security subject id.
+     * @return Security context or null if not found.
+     */
+    public default SecurityContext securityContext(UUID subjId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Authorizes grid operation.
      *
      * @param name Cache name or task class name.
@@ -99,4 +122,15 @@ public interface GridSecurityProcessor extends GridProcessor {
      */
     @Deprecated
     public boolean enabled();
+
+    /**
+     * If this method returns true and {@link SecurityManager} is installed,
+     * then the user-defined code will be run inside the Sandbox.
+     *
+     * @return True if sandbox is enabled.
+     * @see IgniteSandbox
+     */
+    public default boolean sandboxEnabled() {
+        return false;
+    }
 }

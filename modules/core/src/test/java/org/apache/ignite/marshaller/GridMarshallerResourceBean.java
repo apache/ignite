@@ -34,6 +34,7 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerAdapter;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
@@ -73,7 +74,7 @@ class GridMarshallerResourceBean implements Serializable {
         marshaller = new JdkMarshaller();
         mbeanSrv = ManagementFactory.getPlatformMBeanServer();
         ses = new GridTestTaskSession();
-        execSvc = Executors.newSingleThreadExecutor();
+        execSvc = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "grid-marshaller"));
         appCtx = new GenericApplicationContext();
         jobCtx = new GridTestJobContext();
         balancer = new LoadBalancer();

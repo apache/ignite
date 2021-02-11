@@ -34,7 +34,7 @@ public class IdleVerifyException extends IgniteException {
 
     /** */
     public IdleVerifyException(Collection<IgniteException> exceptions) {
-        if(F.isEmpty(exceptions))
+        if (F.isEmpty(exceptions))
             throw new IllegalArgumentException("Exceptions can't be empty!");
 
         this.exceptions = exceptions;

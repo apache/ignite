@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -25,9 +26,9 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import java.util.Collection;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -36,9 +37,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Attribute validation self test.
  */
 public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** */
     private static final String WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME = "preloadModeCheckFails";
 
@@ -64,6 +62,10 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     /** */
     private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
             "reservedForDsCacheGroupNameCheckFails";
+
+    /** */
+    private static final String RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
+        "reservedForVolatileDsCacheGroupNameCheckFails";
 
     /** */
     private static final String CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED = "--№=+:(replicated)";
@@ -123,9 +125,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             cfg.setCacheConfiguration(dfltCacheCfg, dfltCacheCfg);
         else {
             // Normal configuration.
-            if (client)
-                cfg.setClientMode(true);
-            else
+            if (!cfg.isClientMode())
                 cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg, localCacheCfg);
         }
 
@@ -138,6 +138,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
         if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
             namedCacheCfg.setGroupName("default-ds-group");
+
+        if (igniteInstanceName.contains(RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setGroupName("default-volatile-ds-group@volatileDsMemPlc");
 
         return cfg;
     }
@@ -182,6 +185,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             // This grid should not start.
             startInvalidGrid(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
 
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
+
             // This grid will start normally.
             startGrid(1);
         }
@@ -207,9 +213,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
                         || name.equals(CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED)
                         || DEFAULT_CACHE_NAME.equals(name));
 
-            client = true;
-
-            Ignite client = startGrid(2);
+            Ignite client = startClientGrid(2);
 
             names = client.cacheNames();
 

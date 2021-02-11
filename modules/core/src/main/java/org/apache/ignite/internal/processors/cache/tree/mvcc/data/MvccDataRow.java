@@ -118,7 +118,7 @@ public class MvccDataRow extends DataRow {
         assert rowData == RowData.LINK_ONLY
             || mvccCoordinatorVersion() == crdVer && mvccCounter() == mvccCntr && mvccOperationCounter() == mvccOpCntr :
         "mvccVer=" + new MvccVersionImpl(crdVer, mvccCntr, mvccOpCntr) +
-            ", dataMvccVer=" + new MvccVersionImpl(mvccCoordinatorVersion(), mvccCounter(), mvccOperationCounter()) ;
+            ", dataMvccVer=" + new MvccVersionImpl(mvccCoordinatorVersion(), mvccCounter(), mvccOperationCounter());
 
         if (rowData == RowData.LINK_ONLY) {
             this.mvccCrd = crdVer;
@@ -126,7 +126,7 @@ public class MvccDataRow extends DataRow {
             this.mvccOpCntr = mvccOpCntr;
         }
 
-        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0: mvccOpCntr;
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : mvccOpCntr;
     }
 
     /**

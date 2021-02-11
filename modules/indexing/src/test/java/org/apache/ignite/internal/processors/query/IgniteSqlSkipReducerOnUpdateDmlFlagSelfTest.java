@@ -77,9 +77,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexin
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
-
         return c;
     }
 
@@ -157,7 +154,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexin
 
         startGrids(NODE_COUNT);
 
-        client = startGrid(NODE_CLIENT);
+        client = startClientGrid(NODE_CLIENT);
 
         awaitPartitionMapExchange();
     }

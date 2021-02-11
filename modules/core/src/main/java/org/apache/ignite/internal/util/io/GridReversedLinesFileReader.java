@@ -97,30 +97,30 @@ public class GridReversedLinesFileReader implements Closeable {
         // --- check & prepare encoding ---
         CharsetEncoder charsetEncoder = charset.newEncoder();
         float maxBytesPerChar = charsetEncoder.maxBytesPerChar();
-        if(maxBytesPerChar == 1f) {
+        if (maxBytesPerChar == 1f) {
             // all one byte encodings are no problem
             byteDecrement = 1;
-        } else if(charset == Charset.forName("UTF-8")) {
+        } else if (charset == Charset.forName("UTF-8")) {
             // UTF-8 works fine out of the box, for multibyte sequences a second UTF-8 byte can never be a newline byte
             // http://en.wikipedia.org/wiki/UTF-8
             byteDecrement = 1;
-        } else if(charset == Charset.forName("Shift_JIS")) {
+        } else if (charset == Charset.forName("Shift_JIS")) {
             // Same as for UTF-8
             // http://www.herongyang.com/Unicode/JIS-Shift-JIS-Encoding.html
             byteDecrement = 1;
-        } else if(charset == Charset.forName("UTF-16BE") || charset == Charset.forName("UTF-16LE")) {
+        } else if (charset == Charset.forName("UTF-16BE") || charset == Charset.forName("UTF-16LE")) {
             // UTF-16 new line sequences are not allowed as second tuple of four byte sequences,
             // however byte order has to be specified
             byteDecrement = 2;
-        } else if(charset == Charset.forName("UTF-16")) {
+        } else if (charset == Charset.forName("UTF-16")) {
             throw new UnsupportedEncodingException(
                 "For UTF-16, you need to specify the byte order (use UTF-16BE or UTF-16LE)");
         } else {
             throw new UnsupportedEncodingException(
-                "Encoding "+charset+" is not supported yet (feel free to submit a patch)");
+                "Encoding " + charset + " is not supported yet (feel free to submit a patch)");
         }
         // NOTE: The new line sequences are matched in the order given, so it is important that \r\n is BEFORE \n
-        newLineSequences = new byte[][] { "\r\n".getBytes(charset), "\n".getBytes(charset), "\r".getBytes(charset) };
+        newLineSequences = new byte[][] {"\r\n".getBytes(charset), "\n".getBytes(charset), "\r".getBytes(charset)};
 
         avoidNewlineSplitBufferSize = newLineSequences[0].length;
     }
@@ -164,7 +164,7 @@ public class GridReversedLinesFileReader implements Closeable {
         }
 
         // aligned behaviour wiht BufferedReader that doesn't return a last, emtpy line
-        if("".equals(line) && !trailingNewlineOfFileSkipped) {
+        if ("".equals(line) && !trailingNewlineOfFileSkipped) {
             trailingNewlineOfFileSkipped = true;
             line = readLine();
         }
@@ -273,7 +273,7 @@ public class GridReversedLinesFileReader implements Closeable {
                     int lineLengthBytes = currentLastBytePos - lineStart + 1;
 
                     if (lineLengthBytes < 0) {
-                        throw new IllegalStateException("Unexpected negative line length="+lineLengthBytes);
+                        throw new IllegalStateException("Unexpected negative line length=" + lineLengthBytes);
                     }
                     byte[] lineData = new byte[lineLengthBytes];
                     System.arraycopy(data, lineStart, lineData, 0, lineLengthBytes);

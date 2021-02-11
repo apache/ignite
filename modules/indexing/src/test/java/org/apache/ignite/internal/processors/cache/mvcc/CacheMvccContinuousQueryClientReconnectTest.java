@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 /**
  * Mvcc CQ client reconnect test.
  */
-public class CacheMvccContinuousQueryClientReconnectTest  extends IgniteCacheContinuousQueryClientReconnectTest {
+public class CacheMvccContinuousQueryClientReconnectTest extends IgniteCacheContinuousQueryClientReconnectTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicMode() {
         return TRANSACTIONAL_SNAPSHOT;

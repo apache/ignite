@@ -60,7 +60,7 @@ public class LabeledVectorSetTestTrainPair implements Serializable {
         int trainCntr = 0;
         int testCntr = 0;
 
-        for (Integer idx: sortedTestIndices){ // guarantee order as iterator
+        for (Integer idx: sortedTestIndices) { // guarantee order as iterator
             testVectors[testCntr] = (LabeledVector)dataset.getRow(idx);
             testCntr++;
 
@@ -71,7 +71,7 @@ public class LabeledVectorSetTestTrainPair implements Serializable {
 
             datasetCntr = idx + 1;
         }
-        if(datasetCntr < datasetSize){
+        if (datasetCntr < datasetSize) {
             for (int i = datasetCntr; i < datasetSize; i++) {
                 trainVectors[trainCntr] = (LabeledVector)dataset.getRow(i);
                 trainCntr++;

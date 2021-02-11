@@ -48,11 +48,9 @@ public class GridCountDownCallbackTest {
         ExecutorService es = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         for (int i = 1; i < 100; i++) {
-            final int fi = i;
-
             es.submit(() -> {
                 synchronized (es) {
-                    cntr.incrementAndGet();
+                    int fi = cntr.incrementAndGet();
 
                     if (fi % 5 == 0)
                         performedCntr.incrementAndGet();

@@ -58,9 +58,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /** Number of transactions. */
     private static final int TX_CNT = 1000;
 
-    /** Client flag. */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
@@ -72,13 +69,11 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(GRID_CNT - 2);
 
-        client = true;
-
-        Ignite grid = startGrid(GRID_CNT - 2);
+        Ignite grid = startClientGrid(GRID_CNT - 2);
 
         grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
-        grid = startGrid(GRID_CNT - 1);
+        grid = startClientGrid(GRID_CNT - 1);
 
         grid.cache(DEFAULT_CACHE_NAME);
     }
@@ -95,7 +90,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (!client) {
+        if (!c.isClientMode()) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
@@ -110,8 +105,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             c.setCacheConfiguration(cc);
         }
-        else
-            c.setClientMode(true);
 
         return c;
     }

@@ -59,6 +59,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -103,6 +104,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     </li>
  * </ol>
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@link Random} for test key generation. */
     private static final Random RANDOM = new Random();
@@ -118,8 +120,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isFirstGrid(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -271,7 +271,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEvents() throws Exception {
-        Ignite ignite = startGrid(0);
+        Ignite ignite = startClientGrid(0);
 
         ServerStarter srvStarter = startServers();
 

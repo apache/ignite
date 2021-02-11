@@ -87,9 +87,6 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
             .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME))
             .setDeploymentMode(depMode);
 
-        if (igniteInstanceName.startsWith("client"))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -129,7 +126,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
             awaitPartitionMapExchange();
 
             for (int i = 0; i < 10; i++) {
-                try (Ignite client = startGrid("client")) {
+                try (Ignite client = startClientGrid("client")) {
 
                     IgniteCache cache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -139,7 +136,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
                         assertTrue(key >= ENTRIES || res);
                     }
 
-                    scnaCacheData(cache);
+                    scanCacheData(cache);
                 }
             }
         }
@@ -186,7 +183,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void scnaCacheData(IgniteCache cache) throws Exception {
+    private void scanCacheData(IgniteCache cache) throws Exception {
         scanByCopositeFirstPredicate(cache);
         scanByCopositeSecondPredicate(cache);
         scanByCopositeFirstSecondPredicate(cache);

@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML linear regression examples.
+ * <!-- Package description. --> ML linear regression examples.
  */
 package org.apache.ignite.examples.ml.regression.linear;

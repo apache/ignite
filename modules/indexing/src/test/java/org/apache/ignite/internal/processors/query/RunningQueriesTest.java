@@ -64,8 +64,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -255,7 +255,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      */
     @SuppressWarnings("CodeBlock2Expr")
     @Test
-    public void testAutoCloseQueryAfterIteratorIsExhausted(){
+    public void testAutoCloseQueryAfterIteratorIsExhausted() {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++)

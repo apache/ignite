@@ -64,7 +64,7 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
 
     /** {@inheritDoc} */
     @Override public GDBBinaryClassifierOnTreesTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
-        return (GDBBinaryClassifierOnTreesTrainer)super.withEnvironmentBuilder(envBuilder);
+        return super.withEnvironmentBuilder(envBuilder);
     }
 
     /**

@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.security.cache.closure;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -56,34 +56,23 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(SRV_ENDPOINT, 2)
-            .expect(CLNT_ENDPOINT, 2);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
     @Test
     public void test() throws Exception {
         grid(SRV_INITIATOR).cache(CACHE_NAME)
-            .put(prmKey(grid(SRV_CHECK)), 1);
+            .put(primaryKey(grid(SRV_CHECK)), 1);
 
         awaitPartitionMapExchange();
 
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToCheck() {
-        return Collections.singletonList(nodeId(SRV_CHECK));
+    @Override protected Collection<String> nodesToCheck() {
+        return Collections.singletonList(SRV_CHECK);
     }
 
     /**
@@ -91,19 +80,8 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
-            () -> {
-                VERIFIER.register();
-
-                localIgnite().cache(CACHE_NAME).query(new ScanQuery<>(createRunner(SRV_CHECK))).getAll();
-            },
-            () -> {
-                VERIFIER.register();
-
-                localIgnite().cache(CACHE_NAME).query(
-                    new ScanQuery<>((k, v) -> true),
-                    createRunner(SRV_CHECK)
-                ).getAll();
-            }
+            () -> localIgnite().cache(CACHE_NAME).query(new ScanQuery<>(operationCheck(SRV_CHECK))).getAll(),
+            () -> localIgnite().cache(CACHE_NAME).query(new ScanQuery<>((k, v) -> true), operationCheck(SRV_CHECK)).getAll()
         );
     }
 }

@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.Collection;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.Collection;
 
 /**
  * Cache names response.

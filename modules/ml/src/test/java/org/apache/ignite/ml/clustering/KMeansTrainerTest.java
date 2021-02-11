@@ -88,7 +88,7 @@ public class KMeansTrainerTest extends TrainerTest {
         );
         KMeansModel updatedMdlOnEmptyDataset = trainer.update(
             originalMdl,
-            new LocalDatasetBuilder<>(new HashMap<Integer, double[]>(), parts),
+            new LocalDatasetBuilder<>(new HashMap<>(), parts),
             vectorizer
         );
 

@@ -58,9 +58,6 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /** Number of cache entries to insert into the test cache. */
     private static final int CACHE_ENTRIES_CNT = 60;
 
-    /** True if {@link #getConfiguration(String)} is expected to configure client node on next invocations. */
-    private boolean isClient;
-
     /** Client Ignite instance. */
     private IgniteEx client;
 
@@ -68,6 +65,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setActiveOnStart(false);
         cfg.setIncludeEventTypes(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
         cfg.setCacheConfiguration(
@@ -78,9 +76,6 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
                 .setAffinity(new RendezvousAffinityFunction(false, 50))
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
         );
-
-        if (isClient)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -98,9 +93,10 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
         for (Integer i : list)
             startGrid(i);
 
-        isClient = true;
+        grid(0).cluster().active(true);
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
 
-        client = startGrid(CLIENT_IDX);
+        client = startClientGrid(CLIENT_IDX);
 
         try (IgniteDataStreamer<Integer, Integer> dataStreamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
             dataStreamer.allowOverwrite(true);

@@ -65,9 +65,19 @@ namespace ignite
         return transactions::Transactions(txImpl);
     }
 
+    cluster::IgniteCluster Ignite::GetCluster()
+    {
+        return cluster::IgniteCluster(impl.Get()->GetCluster());
+    }
+
     compute::Compute Ignite::GetCompute()
     {
         return compute::Compute(impl.Get()->GetCompute());
+    }
+
+    compute::Compute Ignite::GetCompute(cluster::ClusterGroup grp)
+    {
+        return compute::Compute(impl.Get()->GetCompute(grp));
     }
 
     IgniteBinding Ignite::GetBinding()

@@ -23,5 +23,17 @@ public enum ImputingStrategy {
     MEAN,
 
     /** If this strategy is chosen, then replace missing using the most frequent value along the axis. */
-    MOST_FREQUENT
+    MOST_FREQUENT,
+
+    /** If this strategy is chosen, then replace missing using the minimal value along the axis. */
+    MIN,
+
+    /** If this strategy is chosen, then replace missing using the maximum value along the axis. */
+    MAX,
+
+    /** If this strategy is chosen, then replace missing using the amount of values along the axis. */
+    COUNT,
+
+    /** If this strategy is chosen, then replace missing using the least frequent value along the axis. */
+    LEAST_FREQUENT
 }

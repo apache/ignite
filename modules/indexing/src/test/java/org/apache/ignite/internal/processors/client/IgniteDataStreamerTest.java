@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,27 +40,14 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
 
     public static final long WAIT_TIMEOUT = 30_000L;
 
-    private boolean client = false;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (client)
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(2);
+        startClientGrid("client");
 
-        client = true;
-
-        startGrid("client");
+        awaitPartitionMapExchange();
     }
 
     @Override protected void afterTest() throws Exception {
@@ -91,14 +77,14 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
         IgniteCache<IgniteUuid, Integer> cache =
             client.createCache(cacheConfiguration(IgniteUuid.class, Integer.class));
 
-        try(IgniteDataStreamer<IgniteUuid, Integer> streamer = client.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<IgniteUuid, Integer> streamer = client.dataStreamer(CACHE_NAME)) {
             assertTrue("Expecting " + DataStreamerImpl.class.getName(), streamer instanceof DataStreamerImpl);
 
             ((DataStreamerImpl<IgniteUuid, Integer>)streamer).maxRemapCount(0);
 
             List<IgniteFuture> futs = new ArrayList<>();
 
-            for(int i=0; i<DATA_SIZE; i++) {
+            for (int i = 0; i < DATA_SIZE; i++) {
                 IgniteFuture<?> fut = streamer.addData(IgniteUuid.randomUuid(), i);
 
                 futs.add(fut);
@@ -110,8 +96,10 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
                 //This should not throw any exception.
                 Object res = fut.get(WAIT_TIMEOUT);
 
-                //Printing future result to log to prevent jvm optimization
-                log.debug(res == null ? null : res.toString());
+                if (log.isDebugEnabled()) {
+                    //Printing future result to log to prevent jvm optimization
+                    log.debug(String.valueOf(res));
+                }
             }
 
             assertTrue(cache.size(ALL) == DATA_SIZE);

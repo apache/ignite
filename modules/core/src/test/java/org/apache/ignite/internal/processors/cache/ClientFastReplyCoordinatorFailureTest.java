@@ -55,9 +55,6 @@ public class ClientFastReplyCoordinatorFailureTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.contains("client"))
-            cfg.setClientMode(true);
-
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
@@ -123,7 +120,7 @@ public class ClientFastReplyCoordinatorFailureTest extends GridCommonAbstractTes
         awaitPartitionMapExchange();
 
         // Client join will be hanging on local join exchange.
-        IgniteInternalFuture<Ignite> startFut = GridTestUtils.runAsync(() -> startGrid("client-1"));
+        IgniteInternalFuture<Ignite> startFut = GridTestUtils.runAsync(() -> startClientGrid("client-1"));
 
         clientSingleMesssageLatch.await();
 

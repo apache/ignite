@@ -36,6 +36,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -1083,7 +1085,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys())) {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -1102,7 +1104,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (tx == null) {
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
-                            req.topologyVersion(),
+                            topology().readyTopologyVersion(),
                             nearNode.id(),
                             req.version(),
                             req.futureId(),
@@ -1145,6 +1147,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         tx.topologyVersion(req.topologyVersion());
                     }
+
+                    GridDhtPartitionsExchangeFuture lastFinishedFut = ctx.shared().exchange().lastFinishedFuture();
+
+                    CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+                    CacheInvalidStateException validateCacheE = lastFinishedFut
+                            .validateCache(ctx, opCtx != null && opCtx.recovery(), req.txRead(), null, keys);
+
+                    if (validateCacheE != null)
+                        throw validateCacheE;
                 }
                 else {
                     fut = new GridDhtLockFuture(ctx,
@@ -1299,9 +1311,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            String err = "Failed to unmarshal at least one of the keys for lock request message: " + req;
-
-            U.error(log, err, e);
+            U.error(log, req, e);
 
             if (tx != null) {
                 try {
@@ -1327,7 +1337,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             return new GridDhtFinishedFuture<>(
-                new IgniteCheckedException(err, e));
+                new IgniteCheckedException(e));
         }
     }
 
@@ -1351,7 +1361,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             0,
             null,
             topVer,
-            ctx.deploymentEnabled());
+            ctx.deploymentEnabled(),
+            false);
 
         try {
             ctx.io().send(nearNode, res, ctx.ioPolicy());
@@ -1388,6 +1399,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert tx == null || tx.xidVersion().equals(mappedVer);
 
         try {
+            // All subsequent lock requests must use actual topology version to avoid mapping on invalid primaries.
+            AffinityTopologyVersion clienRemapVer = req.firstClientRequest() &&
+                tx != null &&
+                topology().readyTopologyVersion().after(req.topologyVersion()) ?
+                topology().readyTopologyVersion() : null;
+
             // Send reply back to originating near node.
             GridNearLockResponse res = new GridNearLockResponse(ctx.cacheId(),
                 req.version(),
@@ -1396,8 +1413,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 tx != null && tx.onePhaseCommit(),
                 entries.size(),
                 err,
-                null,
-                ctx.deploymentEnabled());
+                clienRemapVer,
+                ctx.deploymentEnabled(),
+                clienRemapVer != null);
 
             if (err == null) {
                 res.pending(localDhtPendingVersions(entries, mappedVer));
@@ -1443,7 +1461,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 assert e.lockedBy(mappedVer) ||
                                     ctx.mvcc().isRemoved(e.context(), mappedVer) ||
-                                    tx != null && tx.isRollbackOnly():
+                                    tx != null && tx.isRollbackOnly() :
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +
@@ -1508,7 +1526,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 e,
                 null,
-                ctx.deploymentEnabled());
+                ctx.deploymentEnabled(),
+                false);
         }
     }
 
@@ -1796,7 +1815,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             if (created) {
                                 if (obsoleteVer == null)
-                                    obsoleteVer = ctx.versions().next();
+                                    obsoleteVer = nextVersion();
 
                                 if (entry.markObsolete(obsoleteVer))
                                     removeEntry(entry);
@@ -1935,7 +1954,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
-            nearEntry.markObsolete(ctx.versions().next());
+            nearEntry.markObsolete(nextVersion());
     }
 
     /**
@@ -2096,7 +2115,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long timeout,
         UUID txSubjectId,
         int txTaskNameHash,
-        MvccSnapshot snapshot) throws IgniteException, IgniteCheckedException {
+        MvccSnapshot snapshot
+    ) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
 

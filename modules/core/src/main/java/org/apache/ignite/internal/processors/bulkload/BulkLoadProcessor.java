@@ -21,9 +21,17 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_BATCH_PROCESS;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
@@ -51,6 +59,15 @@ public class BulkLoadProcessor implements AutoCloseable {
     /** Query id. */
     private final Long qryId;
 
+    /** Exception, current load process ended with, or {@code null} if in progress or if succeded. */
+    private Exception failReason;
+
+    /** Tracing processor. */
+    private final Tracing tracing;
+
+    /** Span of the running query. */
+    private final Span qrySpan;
+
     /**
      * Creates bulk load processor.
      *
@@ -60,14 +77,21 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param outputStreamer Streamer that puts actual key/value into the cache.
      * @param runningQryMgr Running query manager.
      * @param qryId Running query id.
+     * @param tracing Tracing processor.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, Long qryId) {
+        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, Long qryId, Tracing tracing) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
         this.runningQryMgr = runningQryMgr;
         this.qryId = qryId;
+        this.tracing = tracing;
+
+        GridRunningQueryInfo qryInfo = runningQryMgr.runningQueryInfo(qryId);
+
+        qrySpan = qryInfo == null ? NoopSpan.INSTANCE : qryInfo.span();
+
         isClosed = false;
     }
 
@@ -88,16 +112,28 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @throws IgniteIllegalStateException when called after {@link #close()}.
      */
     public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
-        if (isClosed)
-            throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
+        try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_BATCH_PROCESS, qrySpan))) {
+            if (isClosed)
+                throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
 
-        Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
+            Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
-        for (List<Object> record : inputRecords) {
-            IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
+            for (List<Object> record : inputRecords) {
+                IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
 
-            outputStreamer.apply(kv);
+                outputStreamer.apply(kv);
+            }
         }
+    }
+
+    /**
+     * Is called to notify processor, that bulk load execution, this processor is performing, failed with specified
+     * exception.
+     *
+     * @param failReason why current load failed.
+     */
+    public void onError(Exception failReason) {
+        this.failReason = failReason;
     }
 
     /**
@@ -107,20 +143,19 @@ public class BulkLoadProcessor implements AutoCloseable {
         if (isClosed)
             return;
 
-        boolean failed = false;
-
         try {
             isClosed = true;
 
             outputStreamer.close();
         }
         catch (Exception e) {
-            failed = true;
+            if (failReason == null)
+                failReason = e;
 
             throw e;
         }
         finally {
-            runningQryMgr.unregister(qryId, failed);
+            runningQryMgr.unregister(qryId, failReason);
         }
     }
 }

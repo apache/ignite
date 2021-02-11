@@ -39,8 +39,8 @@ public class SimpleDatasetTest {
         Map<Integer, Vector> dataPoints = new HashMap<Integer, Vector>() {{
             put(5, VectorUtils.of(42, 10000));
             put(6, VectorUtils.of(32, 64000));
-            put(7,  VectorUtils.of(53, 120000));
-            put(8,  VectorUtils.of(24, 70000));
+            put(7, VectorUtils.of(53, 120000));
+            put(8, VectorUtils.of(24, 70000));
         }};
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>();

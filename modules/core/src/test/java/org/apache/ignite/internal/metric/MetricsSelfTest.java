@@ -21,72 +21,64 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Spliterators;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.StreamSupport;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertNull;
-import static junit.framework.TestCase.assertTrue;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertArrayEquals;
 
 /** */
-@RunWith(Parameterized.class)
-public class MetricsSelfTest {
-    /** Metrics prefix. */
-    @Parameterized.Parameters(name = "Prefix {0}")
-    public static Iterable<String[]> data() {
-        return asList(
-            new String[] {""},
-            new String[] {"test.prefix"});
-    }
-
-    /** Prefix. */
-    @Parameterized.Parameter
-    public String prefix;
-
+public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private MetricRegistry mreg;
 
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistryImpl();
-
-        if (!F.isEmpty(prefix))
-            mreg = mreg.withPrefix(prefix);
+        mreg = new MetricRegistry("group", name -> null, name -> null, null);
     }
 
     /** */
     @Test
     public void testLongCounter() throws Exception {
-        LongMetricImpl l = mreg.metric("ltest", "test");
+        AtomicLongMetric l = mreg.longMetric("ltest", "test");
 
         run(l::increment, 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -96,11 +88,11 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testLongAdderCounter() throws Exception {
-        LongAdderMetricImpl l = mreg.longAdderMetric("latest", "test");
+        LongAdderMetric l = mreg.longAdderMetric("latest", "test");
 
         run(l::increment, 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -114,7 +106,7 @@ public class MetricsSelfTest {
 
         run(() -> l.add(1), 100);
 
-        assertEquals(100*100f, l.value(), .000001);
+        assertEquals(100 * 100f, l.value(), .000001);
 
         l.reset();
 
@@ -128,7 +120,7 @@ public class MetricsSelfTest {
 
         run(() -> l.add(1), 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -138,7 +130,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        LongMetricImpl l = new LongMetricImpl(testMetricName("rtest"), "test");
+        AtomicLongMetric l = new AtomicLongMetric("rtest", "test");
 
         mreg.register(l);
 
@@ -156,7 +148,7 @@ public class MetricsSelfTest {
 
         mreg.register("bmtest", () -> v[0], "test");
 
-        BooleanMetric m = (BooleanMetric)mreg.findMetric("bmtest");
+        BooleanMetric m = mreg.findMetric("bmtest");
 
         assertEquals(v[0], m.value());
 
@@ -172,7 +164,7 @@ public class MetricsSelfTest {
 
         mreg.register("dmtest", () -> v[0], "test");
 
-        DoubleMetric m = (DoubleMetric)mreg.findMetric("dmtest");
+        DoubleMetric m = mreg.findMetric("dmtest");
 
         assertEquals(v[0], m.value(), 0);
 
@@ -188,7 +180,7 @@ public class MetricsSelfTest {
 
         mreg.register("imtest", () -> v[0], "test");
 
-        IntMetric m = (IntMetric)mreg.findMetric("imtest");
+        IntMetric m = mreg.findMetric("imtest");
 
         assertEquals(v[0], m.value());
 
@@ -204,7 +196,7 @@ public class MetricsSelfTest {
 
         mreg.register("lmtest", () -> v[0], "test");
 
-        LongMetric m = (LongMetric)mreg.findMetric("lmtest");
+        LongMetric m = mreg.findMetric("lmtest");
 
         assertEquals(v[0], m.value());
 
@@ -220,7 +212,7 @@ public class MetricsSelfTest {
 
         mreg.register("omtest", () -> v[0], String.class, "test");
 
-        ObjectMetric<String> m = (ObjectMetric<String>)mreg.findMetric("omtest");
+        ObjectMetric<String> m = mreg.findMetric("omtest");
 
         assertEquals(v[0], m.value());
 
@@ -246,7 +238,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testHistogram() throws Exception {
-        HistogramMetric h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetricImpl h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -258,17 +250,17 @@ public class MetricsSelfTest {
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*2; i++)
+            for (int i = 0; i < cnt * 2; i++)
                 h.value(99);
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*3; i++)
+            for (int i = 0; i < cnt * 3; i++)
                 h.value(500);
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*4; i++)
+            for (int i = 0; i < cnt * 4; i++)
                 h.value(501);
         }));
 
@@ -278,30 +270,26 @@ public class MetricsSelfTest {
         long[] res = h.value();
 
         assertEquals(cnt, res[0]);
-        assertEquals(cnt*2, res[1]);
-        assertEquals(cnt*3, res[2]);
-        assertEquals(cnt*4, res[3]);
+        assertEquals(cnt * 2, res[1]);
+        assertEquals(cnt * 3, res[2]);
+        assertEquals(cnt * 4, res[3]);
     }
 
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = newMetricRegistry();
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
-        mreg.metric("test1", "");
-        mreg.metric("test2", "");
-        mreg.metric("test3", "");
-        mreg.metric("test4", "");
-        mreg.metric("test5", "");
+        mreg.longMetric("test1", "");
+        mreg.longMetric("test2", "");
+        mreg.longMetric("test3", "");
+        mreg.longMetric("test4", "");
+        mreg.longMetric("test5", "");
 
-        Set<String> names = new HashSet<>(asList(
-            testMetricName("test1"),
-            testMetricName("test2"),
-            testMetricName("test3"),
-            testMetricName("test4"),
-            testMetricName("test5")));
+        Set<String> names = new HashSet<>(asList("group.test1", "group.test2", "group.test3", "group.test4",
+            "group.test5"));
 
-        Set<String> res = mreg.getMetrics().stream()
+        Set<String> res = StreamSupport.stream(Spliterators.spliteratorUnknownSize(mreg.iterator(), 0), false)
             .map(Metric::name)
             .collect(toSet());
 
@@ -310,38 +298,11 @@ public class MetricsSelfTest {
 
     /** */
     @Test
-    public void testCreationListener() throws Exception {
-        MetricRegistry mreg = newMetricRegistry();
-
-        mreg.metric("test0", "");
-
-        Set<String> res = new HashSet<>();
-
-        mreg.addMetricCreationListener(m -> res.add(m.name()));
-
-        mreg.metric("test1", null);
-        mreg.metric("test2", null);
-        mreg.metric("test3", null);
-        mreg.metric("test4", null);
-        mreg.metric("test5", null);
-
-        Set<String> names = new HashSet<>(asList(
-            testMetricName("test1"),
-            testMetricName("test2"),
-            testMetricName("test3"),
-            testMetricName("test4"),
-            testMetricName("test5")));
-
-        assertEquals(names, res);
-    }
-
-    /** */
-    @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = newMetricRegistry();
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
-        LongMetricImpl cntr = mreg.metric("my.name", null);
-        LongMetricImpl cntr2 = mreg.metric("my.name.x", null);
+        AtomicLongMetric cntr = mreg.longMetric("my.name", null);
+        AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);
 
         assertNotNull(cntr);
         assertNotNull(cntr2);
@@ -354,25 +315,146 @@ public class MetricsSelfTest {
         assertNull(mreg.findMetric("my.name"));
         assertNotNull(mreg.findMetric("my.name.x"));
 
-        cntr = mreg.metric("my.name", null);
+        cntr = mreg.longMetric("my.name", null);
 
         assertNotNull(mreg.findMetric("my.name"));
     }
 
     /** */
-    private MetricRegistry newMetricRegistry() {
-        MetricRegistry mreg = new MetricRegistryImpl();
+    @Test
+    public void testHitRateMetric() throws Exception {
+        long rateTimeInterval = 500;
 
-        if (!F.isEmpty(prefix))
-            mreg = mreg.withPrefix(prefix);
-        return mreg;
+        HitRateMetric metric = mreg.hitRateMetric("testHitRate", null, rateTimeInterval, 10);
+
+        assertEquals(0, metric.value());
+
+        long startTs = U.currentTimeMillis();
+
+        GridTestUtils.runMultiThreaded(metric::increment, 10, "test-thread");
+
+        assertTrue(metric.value() > 0 || U.currentTimeMillis() - startTs > rateTimeInterval);
+
+        U.sleep(rateTimeInterval * 2);
+
+        assertEquals(0, metric.value());
+
+        assertEquals(rateTimeInterval, metric.rateTimeInterval());
+
+        metric.reset(rateTimeInterval * 2, 10);
+
+        assertEquals(rateTimeInterval * 2, metric.rateTimeInterval());
+    }
+
+    /** */
+    @Test
+    public void testHistogramNames() throws Exception {
+        HistogramMetricImpl h = new HistogramMetricImpl("test", null, new long[]{10, 50, 500});
+
+        String[] names = histogramBucketNames(h);
+
+        assertArrayEquals(new String[] {
+            "test_0_10",
+            "test_10_50",
+            "test_50_500",
+            "test_500_inf"
+        }, names);
+    }
+
+    /** */
+    @Test
+    public void testFromFullName() {
+        assertEquals(new T2<>("org.apache", "ignite"), fromFullName("org.apache.ignite"));
+
+        assertEquals(new T2<>("org", "apache"), fromFullName("org.apache"));
+    }
+
+    /** */
+    @Test
+    public void testAddBeforeRemoveCompletes() throws Exception {
+        MetricExporterSpi checkSpi = new NoopMetricExporterSpi() {
+            private ReadOnlyMetricManager registry;
+
+            private Set<String> names = new HashSet<>();
+
+            @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+                registry.addMetricRegistryCreationListener(mreg -> {
+                    assertFalse(mreg.name() + " should be unique", names.contains(mreg.name()));
+
+                    names.add(mreg.name());
+                });
+
+                registry.addMetricRegistryRemoveListener(mreg -> names.remove(mreg.name()));
+            }
+
+            @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
+                this.registry = registry;
+            }
+        };
+
+        CountDownLatch rmvStarted = new CountDownLatch(1);
+        CountDownLatch rmvCompleted = new CountDownLatch(1);
+
+        MetricExporterSpi blockingSpi = new NoopMetricExporterSpi() {
+            private ReadOnlyMetricManager registry;
+
+            @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+                registry.addMetricRegistryRemoveListener(mreg -> {
+                    rmvStarted.countDown();
+                    try {
+                        rmvCompleted.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
+                this.registry = registry;
+            }
+        };
+
+        IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(blockingSpi, checkSpi);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log(), cfg);
+
+        ctx.start();
+
+        // Add metric registry.
+        ctx.metric().registry("test");
+
+        // Removes it async, blockingSpi will block remove procedure.
+        IgniteInternalFuture rmvFut = runAsync(() -> ctx.metric().remove("test"));
+
+        rmvStarted.await();
+
+        CountDownLatch addStarted = new CountDownLatch(1);
+
+        IgniteInternalFuture addFut = runAsync(() -> {
+            addStarted.countDown();
+
+            ctx.metric().registry("test");
+        });
+
+        // Waiting for creation to start.
+        addStarted.await();
+
+        Thread.sleep(100);
+
+        // Complete removal.
+        rmvCompleted.countDown();
+
+        rmvFut.get(getTestTimeout());
+
+        addFut.get(getTestTimeout());
     }
 
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
-        for (int i=0; i<cnt; i++) {
+        for (int i = 0; i < cnt; i++) {
             futs.add(runAsync(() -> {
                 for (int j = 0; j < cnt; j++)
                     r.run();
@@ -381,13 +463,5 @@ public class MetricsSelfTest {
 
         for (IgniteInternalFuture fut : futs)
             fut.get();
-    }
-
-    /** */
-    private String testMetricName(String name) {
-        if (prefix.isEmpty())
-            return name;
-
-        return metricName(prefix, name);
     }
 }

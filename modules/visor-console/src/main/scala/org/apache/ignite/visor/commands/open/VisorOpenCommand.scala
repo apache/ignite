@@ -149,9 +149,8 @@ class VisorOpenCommand extends VisorConsoleCommand {
 
                 val cfgs =
                     try
-                        // Cache, IGFS, indexing SPI configurations should be excluded from daemon node config.
-                        spring.loadConfigurations(url, "cacheConfiguration", "fileSystemConfiguration",
-                            "lifecycleBeans", "indexingSpi").get1()
+                        // Cache, indexing SPI configurations should be excluded from daemon node config.
+                        spring.loadConfigurations(url, "cacheConfiguration", "lifecycleBeans", "indexingSpi").get1()
                     finally {
                         if (log4jTup != null && !visor.quiet)
                             U.removeLog4jNoOpLogger(log4jTup)
@@ -179,17 +178,7 @@ class VisorOpenCommand extends VisorConsoleCommand {
                 // Setting up 'Config URL' for properly print in console.
                 System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)
 
-                var cpuCnt = Runtime.getRuntime.availableProcessors
-
-                if (cpuCnt < 4)
-                    cpuCnt = 4
-
                 cfg.setConnectorConfiguration(null)
-
-                // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setPublicThreadPoolSize(cpuCnt)
-                cfg.setSystemThreadPoolSize(cpuCnt)
-                cfg.setPeerClassLoadingThreadPoolSize(cpuCnt)
 
                 var ioSpi = cfg.getCommunicationSpi
 
@@ -230,10 +219,11 @@ class VisorOpenCommand extends VisorConsoleCommand {
         }
         catch {
             case e: IgniteException =>
-                warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
                 status("q")
+
+                throw e;
         }
     }
 

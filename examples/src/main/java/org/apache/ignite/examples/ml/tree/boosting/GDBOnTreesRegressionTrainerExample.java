@@ -22,21 +22,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.GDBModel;
+import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
-import org.apache.ignite.ml.inference.Model;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Example represents a solution for the task of regression learning based on
- * Gradient Boosting on trees implementation. It shows an initialization of {@link GDBRegressionOnTreesTrainer},
- * initialization of Ignite Cache, learning step and comparing of predicted and real values.
+ * Example represents a solution for the task of regression learning based on Gradient Boosting on trees implementation.
+ * It shows an initialization of {@link GDBRegressionOnTreesTrainer}, initialization of Ignite Cache, learning step and
+ * comparing of predicted and real values.
  * <p>
  * In this example dataset is created automatically by parabolic function {@code f(x) = x^2}.</p>
  */
@@ -60,11 +58,11 @@ public class GDBOnTreesRegressionTrainerExample {
                 trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
                 // Create regression trainer.
-                DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
+                GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
                     .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
 
                 // Train decision tree model.
-                Model<Vector, Double> mdl = trainer.fit(
+                GDBModel mdl = trainer.fit(
                     ignite,
                     trainingSet,
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
@@ -83,9 +81,13 @@ public class GDBOnTreesRegressionTrainerExample {
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> GDB regression trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
@@ -102,13 +104,13 @@ public class GDBOnTreesRegressionTrainerExample {
     /**
      * Fill parabolic training data.
      *
-     * @param ignite Ignite instance.
+     * @param ignite         Ignite instance.
      * @param trainingSetCfg Training set config.
      */
     @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
         CacheConfiguration<Integer, double[]> trainingSetCfg) {
         IgniteCache<Integer, double[]> trainingSet = ignite.getOrCreateCache(trainingSetCfg);
-        for(int i = -50; i <= 50; i++) {
+        for (int i = -50; i <= 50; i++) {
             double x = ((double)i) / 10.0;
             double y = Math.pow(x, 2);
             trainingSet.put(i, new double[] {x, y});

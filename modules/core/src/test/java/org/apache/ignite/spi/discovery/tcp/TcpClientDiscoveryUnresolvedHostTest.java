@@ -40,7 +40,7 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         spi = new TestTcpDiscoverySpi();
 
@@ -48,8 +48,6 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
             .setAddresses(Collections.singletonList("test:47500"))));
 
         cfg.setCacheConfiguration();
-
-        cfg.setClientMode(true);
 
         return cfg;
     }
@@ -62,7 +60,7 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
     @Test
     public void test() throws Exception {
         try {
-            startGrid(0);
+            startClientGrid(0);
         } catch (IgniteCheckedException e) {
             //Ignore.
         }

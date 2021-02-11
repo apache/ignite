@@ -122,11 +122,6 @@ public class DenseMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         data[idxMapper.apply(x, y)] = v;
     }

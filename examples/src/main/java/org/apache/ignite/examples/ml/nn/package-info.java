@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML neural network examples.
+ * <!-- Package description. --> ML neural network examples.
  */
 package org.apache.ignite.examples.ml.nn;

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.IgniteSystemProperties;
-
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRESHOLD;
 
@@ -27,15 +26,25 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRES
  * Throttling policy, encapsulates logic of delaying write operations.
  */
 public interface PagesWriteThrottlePolicy {
+    /** @see IgniteSystemProperties#IGNITE_THROTTLE_LOG_THRESHOLD */
+    static int DFLT_THROTTLE_LOG_THRESHOLD = 10;
+
     /** Max park time. */
-    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(IgniteSystemProperties.getInteger
-            (IGNITE_THROTTLE_LOG_THRESHOLD, 10));
+    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, DFLT_THROTTLE_LOG_THRESHOLD));
 
     /**
      * Callback to apply throttling delay.
      * @param isPageInCheckpoint flag indicating if current page is in scope of current checkpoint.
      */
     void onMarkDirty(boolean isPageInCheckpoint);
+
+    /**
+     * Callback to try wakeup throttled threads.
+     */
+    default void tryWakeupThrottledThreads() {
+        // No-op.
+    }
 
     /**
      * Callback to notify throttling policy checkpoint was started.
@@ -46,4 +55,11 @@ public interface PagesWriteThrottlePolicy {
      * Callback to notify throttling policy checkpoint was finished.
      */
     void onFinishCheckpoint();
+
+    /**
+     * @return {@code True} if throttling should be enabled, and {@code False} otherwise.
+     */
+    default boolean shouldThrottle() {
+        return false;
+    }
 }

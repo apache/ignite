@@ -52,7 +52,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
 
         logSpi.setPeriod(EXPORT_TIMEOUT);
 
-        logSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        logSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(logSpi);
 
@@ -87,7 +87,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(res);
 
         log.registerListener(s -> {
-            if(s.contains(FILTERED_PREFIX))
+            if (s.contains(FILTERED_PREFIX))
                 fail("Filtered prefix shouldn't export.");
         });
 

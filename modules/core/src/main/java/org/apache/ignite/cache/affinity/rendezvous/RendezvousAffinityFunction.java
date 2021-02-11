@@ -347,8 +347,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         if (nodes.size() <= 1)
             return nodes;
 
-        IgniteBiTuple<Long, ClusterNode> [] hashArr =
-            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
+        IgniteBiTuple<Long, ClusterNode>[] hashArr =
+            (IgniteBiTuple<Long, ClusterNode>[])new IgniteBiTuple[nodes.size()];
 
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.clustering;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -35,13 +36,11 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.GaussRandomProduce
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * Example of using GMM clusterization algorithm. Gaussian Mixture Algorithm (GMM, see {@link GmmModel}, {@link
- * GmmTrainer}) can be used for input dataset data distribution representation as mixture of multivariance gaussians.
+ * GmmTrainer}) can be used for input dataset data distribution representation as mixture of multivariate gaussians.
  * More info: https://en.wikipedia.org/wiki/Mixture_model#Gaussian_mixture_model .
- *
+ * <p>
  * In this example GMM are used for gaussians shape recovering - means and covariances of them.
  */
 public class GmmClusterizationExample {
@@ -107,9 +106,14 @@ public class GmmClusterizationExample {
                 }
 
                 System.out.println(">>>");
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

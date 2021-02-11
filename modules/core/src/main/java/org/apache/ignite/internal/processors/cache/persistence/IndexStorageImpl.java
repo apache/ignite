@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -192,18 +193,18 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public Collection<String> getIndexNames() throws IgniteCheckedException {
         assert metaTree != null;
-        
+
         GridCursor<IndexItem> cursor = metaTree.find(null, null);
 
         ArrayList<String> names = new ArrayList<>((int)metaTree.size());
 
         while (cursor.next()) {
             IndexItem item = cursor.get();
-            
+
             if (item != null)
                 names.add(new String(item.idxName));
         }
-        
+
         return names;
     }
 
@@ -259,6 +260,7 @@ public class IndexStorageImpl implements IndexStorage {
             super(
                 treeName("meta", "Meta"),
                 cacheId,
+                null,
                 pageMem,
                 wal,
                 globalRmvId,
@@ -266,6 +268,7 @@ public class IndexStorageImpl implements IndexStorage {
                 reuseList,
                 innerIos,
                 leafIos,
+                PageIdAllocator.FLAG_IDX,
                 failureProcessor,
                 lockLsnr
             );

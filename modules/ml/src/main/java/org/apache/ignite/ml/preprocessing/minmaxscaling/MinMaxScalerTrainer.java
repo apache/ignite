@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
@@ -53,8 +54,7 @@ public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     if (min == null) {
                         min = new double[row.size()];
-                        for (int i = 0; i < min.length; i++)
-                            min[i] = Double.MAX_VALUE;
+                        Arrays.fill(min, Double.MAX_VALUE);
                     }
                     else
                         assert min.length == row.size() : "Base preprocessor must return exactly " + min.length
@@ -62,8 +62,7 @@ public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     if (max == null) {
                         max = new double[row.size()];
-                        for (int i = 0; i < max.length; i++)
-                            max[i] = -Double.MAX_VALUE;
+                        Arrays.fill(max, -Double.MAX_VALUE);
                     }
                     else
                         assert max.length == row.size() : "Base preprocessor must return exactly " + min.length
@@ -78,7 +77,7 @@ public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 }
 
                 return new MinMaxScalerPartitionData(min, max);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
             double[][] minMax = dataset.compute(
                 data -> data.getMin() != null ? new double[][]{ data.getMin(), data.getMax() } : null,

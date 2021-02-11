@@ -17,12 +17,9 @@
 
 package org.apache.ignite.examples;
 
-import org.junit.Ignore;
-
 /**
  * Continuation example multi-node self test.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class ContinuationExamplesMultiNodeSelfTest extends ContinuationExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

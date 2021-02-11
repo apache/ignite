@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -33,25 +33,13 @@ import org.junit.Test;
  *
  */
 public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testJobRun() throws Exception {
         for (int i = 0; i < 5; i++) {
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
+            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, true);
 
             log.info("Iteration: " + i);
 
@@ -59,11 +47,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
 
             startGridsMultiThreaded(NODES);
 
-            client = true;
-
-            startGrid(NODES);
-
-            client = false;
+            startClientGrid(NODES);
 
             final IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {

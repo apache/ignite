@@ -55,9 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbstractTest {
     /** */
-    protected boolean client;
-
-    /** */
     protected boolean cache;
 
     /** */
@@ -78,8 +75,6 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         if (cache)
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -225,8 +220,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         }
 
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return !writeMap.isEmpty();
             }
         }, 1000);

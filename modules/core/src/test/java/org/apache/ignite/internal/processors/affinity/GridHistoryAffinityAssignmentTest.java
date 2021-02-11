@@ -54,7 +54,7 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
         List<List<ClusterNode>> curr = new ArrayList<>();
         List<List<ClusterNode>> ideal = new ArrayList<>();
 
-        for(int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++) {
             List<ClusterNode> nodes = Arrays.asList(new GridTestNode(UUID.randomUUID()), new GridTestNode(UUID.randomUUID()));
             curr.add(nodes);
             ideal.add(Arrays.asList(nodes.get(1), nodes.get(0)));

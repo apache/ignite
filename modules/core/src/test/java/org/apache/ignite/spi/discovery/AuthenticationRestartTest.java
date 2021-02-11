@@ -36,8 +36,6 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(igniteInstanceName.contains("client"));
-
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1120_000);
 
         cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
@@ -48,7 +46,7 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server");
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /**

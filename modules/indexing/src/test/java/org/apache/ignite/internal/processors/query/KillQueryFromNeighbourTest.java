@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
 
 /**
  * Test KILL QUERY requested from neighbour server node.
  */
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public class KillQueryFromNeighbourTest extends KillQueryTest {
     /** {@inheritDoc} */
     @Override protected IgniteEx getKillRequestNode() {

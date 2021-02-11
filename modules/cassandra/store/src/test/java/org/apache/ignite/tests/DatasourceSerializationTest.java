@@ -17,6 +17,13 @@
 
 package org.apache.ignite.tests;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Host;
@@ -25,20 +32,10 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.RoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
-
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.ignite.cache.store.cassandra.datasource.Credentials;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer;
 import org.apache.ignite.tests.utils.CassandraAdminCredentials;
-
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

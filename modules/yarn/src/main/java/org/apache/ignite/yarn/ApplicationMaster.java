@@ -110,6 +110,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     @Override public synchronized void onContainersAllocated(List<Container> conts) {
         for (Container c : conts) {
             if (checkContainer(c)) {
+                log.log(Level.INFO, "Container {0} allocated", c.getId());
+
                 try {
                     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
 
@@ -174,8 +176,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     log.log(Level.WARNING, "Error launching container " + c.getId(), ex);
                 }
             }
-            else
+            else {
+                log.log(Level.WARNING, "Container {0} check failed. Releasing...", c.getId());
+
                 rmClient.releaseAssignedContainer(c.getId());
+            }
         }
     }
 
@@ -185,20 +190,28 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      */
     private boolean checkContainer(Container cont) {
         // Check limit on running nodes.
-        if (props.instances() <= containers.size())
+        if (props.instances() <= containers.size()) {
+            log.log(Level.WARNING, "Limit on running nodes exceeded. ({0} of {1} max)",
+                new Object[] {containers.size(), props.instances()});
+
             return false;
+        }
 
         // Check host name
         if (props.hostnameConstraint() != null
-                && props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches())
+                && props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches()) {
+            log.log(Level.WARNING, "Wrong host name '{0}'. It didn't match to '{1}' pattern.",
+                new Object[] {cont.getNodeId().getHost(), props.hostnameConstraint().toString()});
+
             return false;
+        }
 
         // Check that slave satisfies min requirements.
         if (cont.getResource().getVirtualCores() < props.cpusPerNode()
             || cont.getResource().getMemory() < props.totalMemoryPerNode()) {
-            log.log(Level.FINE, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
-                new Object[]{cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
-                   cont.getResource().getMemory()});
+            log.log(Level.WARNING, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
+                new Object[] {cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
+                cont.getResource().getMemory()});
 
             return false;
         }

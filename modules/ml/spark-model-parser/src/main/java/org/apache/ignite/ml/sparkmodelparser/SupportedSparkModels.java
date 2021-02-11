@@ -61,10 +61,14 @@ public enum SupportedSparkModels {
     /** The separator between words. */
     private final String mdlClsNameInSpark;
 
+    /**
+     * @param mdlClsNameInSpark Model class name in Apache Spark.
+     */
     SupportedSparkModels(String mdlClsNameInSpark) {
         this.mdlClsNameInSpark = mdlClsNameInSpark;
     }
 
+    /** Get model class name in Apache Spark. */
     public String getMdlClsNameInSpark() {
         return mdlClsNameInSpark;
     }

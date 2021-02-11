@@ -69,11 +69,23 @@ public enum SecurityPermission {
     /** Cache create permission. */
     CACHE_CREATE,
 
-    /** Cache create permission. */
+    /** Cache destroy permission. */
     CACHE_DESTROY,
 
     /** Join as server node permission. */
-    JOIN_AS_SERVER;
+    JOIN_AS_SERVER,
+
+    /** Administration operation with cluster metadata (REMOVE, UPDATE). */
+    ADMIN_METADATA_OPS,
+
+    /** Administration operation: read distributed properties values. */
+    ADMIN_READ_DISTRIBUTED_PROPERTY,
+
+    /** Administration operation: write distributed properties values. */
+    ADMIN_WRITE_DISTRIBUTED_PROPERTY,
+
+    /** Administration operation with cluster snapshots (CREATE, CANCEL). */
+    ADMIN_SNAPSHOT;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

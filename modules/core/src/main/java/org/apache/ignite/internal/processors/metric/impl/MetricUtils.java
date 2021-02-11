@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.spi.metric.HistogramMetric;
+
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -30,27 +34,11 @@ public class MetricUtils {
     /** Metric name part separator. */
     public static final String SEPARATOR = ".";
 
-    /**
-     * Example - metric name - "io.statistics.PRIMARY_KEY_IDX.pagesCount".
-     * root = io - JMX tree root.
-     * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     * msetName = io.statistics.PRIMARY_KEY_IDX - prefix to search metrics for a bean.
-     * mname = pagesCount - metric name.
-     *
-     * @param name Metric name.
-     * @return Parsed names parts.
-     */
-    public static MetricName parse(String name) {
-        int firstDot = name.indexOf('.');
-        int lastDot = name.lastIndexOf('.');
+    /** Histogram metric last interval high bound. */
+    public static final String INF = "_inf";
 
-        String grp = name.substring(0, firstDot);
-        String beanName = name.substring(firstDot + 1, lastDot);
-        String msetName = name.substring(0, lastDot);
-        String mname = name.substring(lastDot + 1);
-
-        return new MetricName(grp, beanName, msetName, mname);
-    }
+    /** Histogram name divider. */
+    public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
     /**
      * Builds metric name. Each parameter will separated by '.' char.
@@ -66,7 +54,31 @@ public class MetricUtils {
             return names[0];
 
         return String.join(SEPARATOR, names);
+    }
 
+    /**
+     * Splits full metric name to registry name and metric name.
+     *
+     * @param name Full metric name.
+     * @return Array consist of registry name and metric name.
+     */
+    public static T2<String, String> fromFullName(String name) {
+        return new T2<>(
+            name.substring(0, name.lastIndexOf(SEPARATOR)),
+            name.substring(name.lastIndexOf(SEPARATOR) + 1)
+        );
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param isNear Is near flag.
+     * @return Cache metrics registry name.
+     */
+    public static String cacheMetricsRegistryName(String cacheName, boolean isNear) {
+        if (isNear)
+            return metricName(CACHE_METRICS, cacheName, "near");
+
+        return metricName(CACHE_METRICS, cacheName);
     }
 
     /**
@@ -79,8 +91,34 @@ public class MetricUtils {
      * @return {@code true} if successful. False return indicates that
      * the actual value was not equal to the expected value.
      */
-    public static boolean compareAndSet(LongMetricImpl m, long expect, long update) {
-        return LongMetricImpl.updater.compareAndSet(m, expect, update);
+    public static boolean compareAndSet(AtomicLongMetric m, long expect, long update) {
+        return AtomicLongMetric.updater.compareAndSet(m, expect, update);
+    }
+
+    /**
+     * Update metrics value only if current value if less then {@code update}.
+     *
+     * @param m Metric to update.
+     * @param update New value.
+     */
+    public static void setIfLess(AtomicLongMetric m, long update) {
+        long v = m.value();
+
+        while (v > update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
+            v = m.value();
+    }
+
+    /**
+     * Update metrics value only if current value if greater then {@code update}.
+     *
+     * @param m Metric to update.
+     * @param update New value.
+     */
+    public static void setIfGreater(AtomicLongMetric m, long update) {
+        long v = m.value();
+
+        while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
+            v = m.value();
     }
 
     /**
@@ -90,68 +128,55 @@ public class MetricUtils {
      * @return True.
      */
     private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i=0; i<names.length; i++)
+        for (int i = 0; i < names.length; i++)
             assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
 
         return true;
     }
 
     /**
-     * Parsed metric name parts.
+     * Generates histogram bucket names.
      *
-     * Example - metric name - "io.statistics.PRIMARY_KEY_IDX.pagesCount".
-     * root = io - JMX tree root.
-     * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     * msetName = io.statistics.PRIMARY_KEY_IDX - prefix to search metrics for a bean.
-     * mname = pagesCount - metric name.
+     * Example of metric names if bounds are 10,100:
+     *  histogram_0_10 (less than 10)
+     *  histogram_10_100 (between 10 and 100)
+     *  histogram_100_inf (more than 100)
+     *
+     * @param metric Histogram metric
+     * @return Histogram intervals names.
      */
-    public static class MetricName {
-        /** JMX group name. */
-        private String root;
+    public static String[] histogramBucketNames(HistogramMetric metric) {
+        String name = metric.name();
+        long[] bounds = metric.bounds();
 
-        /** JMX bean name. */
-        private String subName;
+        String[] names = new String[bounds.length + 1];
 
-        /** Prefix to search metrics that belongs to metric set. */
-        private String msetName;
+        long min = 0;
 
-        /** Metric name. */
-        private String mname;
+        for (int i = 0; i < bounds.length; i++) {
+            names[i] = name + HISTOGRAM_NAME_DIVIDER + min + HISTOGRAM_NAME_DIVIDER + bounds[i];
 
-        /** */
-        MetricName(String root, String subName, String msetName, String mname) {
-            this.root = root;
-            this.subName = subName;
-            this.msetName = msetName;
-            this.mname = mname;
+            min = bounds[i];
         }
 
-        /**
-         * @return JMX group name.
-         */
-        public String root() {
-            return root;
-        }
+        names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
-        /**
-         * @return JMX bean name.
-         */
-        public String subName() {
-            return subName;
-        }
+        return names;
+    }
 
-        /**
-         * @return Prefix to search other metrics for metric set represented by this prefix.
-         */
-        public String msetName() {
-            return msetName;
-        }
-
-        /**
-         * @return Metric name.
-         */
-        public String mname() {
-            return mname;
-        }
+    /**
+     * Build SQL-like name from Java code style name.
+     * Some examples:
+     *
+     * cacheName -> CACHE_NAME.
+     * affinitiKeyName -> AFFINITY_KEY_NAME.
+     *
+     * @param name Name to convert.
+     * @return SQL compatible name.
+     */
+    public static String toSqlName(String name) {
+        return name
+            .replaceAll("([A-Z])", "_$1")
+            .replaceAll('\\' + SEPARATOR, "_").toUpperCase();
     }
 }

@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -57,9 +56,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     private static final int NODES = 5;
 
     /** */
-    private boolean client;
-
-    /** */
     private static final int OP_UPDATE = 1;
 
     /** */
@@ -69,23 +65,12 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     private static final int OP_GET = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRV_CNT);
 
-        client = true;
-
-        Ignite client = startGrid(SRV_CNT);
+        Ignite client = startClientGrid(SRV_CNT);
 
         assertTrue(client.configuration().isClientMode());
     }

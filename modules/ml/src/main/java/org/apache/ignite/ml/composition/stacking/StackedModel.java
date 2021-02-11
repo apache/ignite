@@ -38,7 +38,7 @@ import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelCompo
  * @param <O> Type of aggregator model output.
  * @param <AM> Type of aggregator model.
  */
-public class StackedModel<IS, IA, O, AM extends IgniteModel<IA, O>> implements IgniteModel<IS, O> {
+public final class StackedModel<IS, IA, O, AM extends IgniteModel<IA, O>> implements IgniteModel<IS, O> {
     /** Model to wrap. */
     private IgniteModel<IS, O> mdl;
 

@@ -105,7 +105,7 @@ public class TxVerboseId extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, uuid);
+        U.writeIgniteUuid(out, uuid);
         out.writeObject(gridCacheVer);
     }
 
@@ -114,7 +114,7 @@ public class TxVerboseId extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        uuid = U.readGridUuid(in);
+        uuid = U.readIgniteUuid(in);
         gridCacheVer = (GridCacheVersion)in.readObject();
     }
 

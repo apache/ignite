@@ -117,7 +117,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (pstWalStoreCustomPath != null)
             ok &= U.delete(pstWalStoreCustomPath);
 
-        ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
 
         if (failIfDeleteNotCompleted)
             assertTrue(ok);
@@ -185,7 +185,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        assertDirectoryExist("binary_meta", subfolderName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subfolderName);
 
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
@@ -676,7 +676,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if IO error occur
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        assertDirectoryExist("binary_meta", subDirName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
         assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);

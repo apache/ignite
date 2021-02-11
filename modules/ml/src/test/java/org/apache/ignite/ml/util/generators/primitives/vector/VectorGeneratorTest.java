@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
@@ -127,7 +127,7 @@ public class VectorGeneratorTest {
             assertArrayEquals(v1.asArray(), v2.asArray(), 1e-7);
         }
         catch (ArrayComparisonFailure e) {
-            //this is valid situation - duplicater should get different features
+            //this is valid situation - duplicator should get different features
         }
     }
 

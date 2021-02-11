@@ -30,9 +30,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -59,16 +59,16 @@ public abstract class AbstractVector implements Vector {
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /** Cached value for length squared. */
-    private double lenSq = 0.0;
+    private double lenSq;
 
     /** Maximum cached element. */
-    private Element maxElm = null;
+    private Element maxElm;
 
     /** Minimum cached element. */
-    private Element minElm = null;
+    private Element minElm;
 
     /** Readonly flag (false by default). */
-    private boolean readOnly = false;
+    private boolean readOnly;
 
     /** Read-only error message. */
     private static final String RO_MSG = "Vector is read-only.";
@@ -152,7 +152,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     * Gets serializable value from storage and casts it to targe type T.
+     * Gets serializable value from storage and casts it to target type T.
      *
      * @param i Index.
      * @return Value.
@@ -407,7 +407,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Iterable<Element> all() {
         return new Iterable<Element>() {
-            private int idx = 0;
+            private int idx;
 
             /** {@inheritDoc} */
             @NotNull
@@ -469,7 +469,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Iterable<Element> nonZeroes() {
         return new Iterable<Element>() {
-            private int idx = 0;
+            private int idx;
             private int idxNext = -1;
 
             /** {@inheritDoc} */
@@ -683,11 +683,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return sto.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isNumeric() {
         return sto.isNumeric();
     }
@@ -884,7 +879,8 @@ public abstract class AbstractVector implements Vector {
             return nonZeroElements();
         else
             // Default case.
-            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power), 0d), 1.0 / power);
+            return Math.pow(foldMap(
+                Functions.PLUS, x -> Math.pow(Math.abs(x), power), 0d), 1.0 / power);
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -38,6 +37,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,10 +45,19 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Assume;
 import org.junit.Test;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
@@ -80,6 +89,13 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     protected IgnitePdsContinuousRestartTest(boolean cancel) {
         this.cancel = cancel;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11937", MvccFeatureChecker.forcedMvcc());
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -130,7 +146,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_1000_500_1_1() throws Exception {
-        checkRebalancingDuringLoad(1000, 500, 1, 1);
+        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(500), 1, 1);
     }
 
     /**
@@ -138,7 +154,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_8000_500_1_1() throws Exception {
-        checkRebalancingDuringLoad(8000, 500, 1, 1);
+        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(500), 1, 1);
     }
 
     /**
@@ -146,7 +162,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_1000_20000_1_1() throws Exception {
-        checkRebalancingDuringLoad(1000, 20000, 1, 1);
+        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(20000), 1, 1);
     }
 
     /**
@@ -154,7 +170,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_8000_8000_1_1() throws Exception {
-        checkRebalancingDuringLoad(8000, 8000, 1, 1);
+        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(8000), 1, 1);
     }
 
     /**
@@ -162,7 +178,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_1000_500_8_1() throws Exception {
-        checkRebalancingDuringLoad(1000, 500, 8, 1);
+        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(500), 8, 1);
     }
 
     /**
@@ -170,7 +186,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_8000_500_8_1() throws Exception {
-        checkRebalancingDuringLoad(8000, 500, 8, 1);
+        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(500), 8, 1);
     }
 
     /**
@@ -178,7 +194,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_1000_20000_8_1() throws Exception {
-        checkRebalancingDuringLoad(1000, 20000, 8, 1);
+        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(20000), 8, 1);
     }
 
     /**
@@ -186,7 +202,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_8000_8000_8_1() throws Exception {
-        checkRebalancingDuringLoad(8000, 8000, 8, 1);
+        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(8000), 8, 1);
     }
 
     /**
@@ -194,7 +210,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_1000_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(1000, 500, 8, 16);
+        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(500), 8, 16);
     }
 
     /**
@@ -202,7 +218,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_8000_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(8000, 500, 8, 16);
+        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(500), 8, 16);
     }
 
     /**
@@ -210,7 +226,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_1000_20000_8_16() throws Exception {
-        checkRebalancingDuringLoad(1000, 20000, 8, 16);
+        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(20000), 8, 16);
     }
 
     /**
@@ -218,7 +234,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_8000_8000_8_16() throws Exception {
-        checkRebalancingDuringLoad(8000, 8000, 8, 16);
+        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(8000), 8, 16);
     }
 
     /**
@@ -250,7 +266,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         startGrids(GRID_CNT);
 
-        final Ignite load = ignite(0);
+        final IgniteEx load = ignite(0);
 
         load.cluster().active(true);
 
@@ -270,6 +286,8 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                 Random rnd = ThreadLocalRandom.current();
 
                 while (!done.get()) {
+                    final int mode = rnd.nextInt(3);
+
                     Map<Integer, Person> map = new TreeMap<>();
 
                     for (int i = 0; i < batch; i++) {
@@ -280,12 +298,34 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
                     while (true) {
                         try {
-                            cache.putAll(map);
+                            switch (mode) {
+                                case 0: // Pessimistic tx.
+                                    try (Transaction tx = load.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                                        cache.putAll(map);
+
+                                        tx.commit();
+                                    }
+
+                                    break;
+
+                                case 1: // Optimistic serializable tx.
+                                    try (Transaction tx = load.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                                        cache.putAll(map);
+
+                                        tx.commit();
+                                    }
+
+                                    break;
+
+                                default: // Implicit tx.
+                                    cache.putAll(map);
+                            }
 
                             break;
                         }
                         catch (Exception e) {
                             if (X.hasCause(e,
+                                TransactionOptimisticException.class,
                                 TransactionRollbackException.class,
                                 ClusterTopologyException.class,
                                 NodeStoppingException.class))
@@ -300,12 +340,12 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
             }
         }, threads, "updater");
 
-        long end = System.currentTimeMillis() + 90_000;
+        long end = System.currentTimeMillis() + SF.apply(90000);
 
         Random rnd = ThreadLocalRandom.current();
 
         while (System.currentTimeMillis() < end) {
-            int idx = rnd.nextInt(GRID_CNT - 1) + 1;
+            int idx = rnd.nextInt(2) + 1; // Prevent data loss.
 
             stopGrid(idx, cancel);
 
@@ -319,6 +359,17 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         done.set(true);
 
         busyFut.get();
+
+        awaitPartitionMapExchange();
+
+        // Skip consistency check if expiration is on.
+        if (validatePartitions())
+            assertPartitionsSame(idleVerify(load, CACHE_NAME));
+    }
+
+    /** */
+    protected boolean validatePartitions() {
+        return true;
     }
 
     /**

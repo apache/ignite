@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -28,8 +29,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
 import org.junit.Test;
 
 /**
@@ -69,7 +68,6 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
                 1300));
         cc1.setBackups(2);
 
-        c.setIgfsThreadPoolSize(1);
         c.setSystemThreadPoolSize(2);
         c.setPublicThreadPoolSize(2);
         c.setManagementThreadPoolSize(1);

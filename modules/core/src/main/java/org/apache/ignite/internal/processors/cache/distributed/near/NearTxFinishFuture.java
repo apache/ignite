@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 /**
  *
  */
-public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalTx>  {
+public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalTx> {
     /**
      * @return Commit flag.
      */

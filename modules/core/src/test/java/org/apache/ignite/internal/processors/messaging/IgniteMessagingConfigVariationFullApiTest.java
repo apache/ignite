@@ -476,7 +476,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
         UUID opId = ignite.message(grp).remoteListen(MESSAGE_TOPIC, new OrderedMessageListener());
 
         try {
-            for (int i=0; i < messages; i++)
+            for (int i = 0; i < messages; i++)
                 ignite.message(grp).sendOrdered(MESSAGE_TOPIC, value(i), 2000);
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));

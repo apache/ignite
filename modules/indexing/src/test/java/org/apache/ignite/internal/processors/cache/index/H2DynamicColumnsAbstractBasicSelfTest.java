@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.h2.jdbc.JdbcSQLException;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
@@ -763,6 +764,42 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             assertEquals(1, res.get(0).get(0));
             assertEquals(11, res.get(0).get(1));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /** */
+    @Test
+    public void testDropColumnPriorToCompoundPkIndex() throws Exception {
+        try {
+            run("CREATE TABLE test (a INT, b INT, id1 INT, id2 INT, PRIMARY KEY (id1, id2))");
+
+            run("INSERT INTO test (a, b, id1, id2) VALUES (1, 2, 3, 4)");
+
+            String qry = "SELECT a, id1, id2 FROM test WHERE id1 = 3 AND id2 = 4";
+
+            List<List<?>> resBefore = run(qry);
+
+            Assert.assertEquals(1, resBefore.size());
+
+            run("ALTER TABLE test DROP COLUMN b");
+
+            run("SELECT * FROM test WHERE id1 = 3 AND id2 = 4");
+
+            List<List<?>> resAfter = run(qry);
+
+            Assert.assertEquals(1, resAfter.size());
+
+            Assert.assertEquals(resBefore, resAfter);
+
+            String plan = (String)run("EXPLAIN SELECT * FROM test WHERE id1 = 3 AND id2 = 4").get(0).get(0);
+
+            String pkIdxName = "PUBLIC.\"_key_PK\"";
+
+            Assert.assertTrue("Query plan does not contain index '" + pkIdxName + "': plan=" + plan,
+                plan.contains(pkIdxName));
         }
         finally {
             run("DROP TABLE IF EXISTS test");

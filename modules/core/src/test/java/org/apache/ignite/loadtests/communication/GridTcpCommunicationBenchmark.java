@@ -203,7 +203,7 @@ package org.apache.ignite.loadtests.communication;
 //            @Override public Object call() throws Exception {
 //                try {
 //                    while (!finish.get()) {
-//                        GridUuid msgId = GridUuid.randomUuid();
+//                        IgniteUuid msgId = IgniteUuid.randomUuid();
 //
 //                        sem.acquire();
 //
@@ -264,7 +264,7 @@ package org.apache.ignite.loadtests.communication;
 //
 //        final LongAdder8 msgCntr = new LongAdder8();
 //
-//        final Map<GridUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
+//        final Map<IgniteUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
 //
 //        rcvComm.setListener(new GridCommunicationListener() {
 //            @Override public void onMessage(UUID nodeId, byte[] msg, GridAbsClosure msgC) {
@@ -325,7 +325,7 @@ package org.apache.ignite.loadtests.communication;
 //                info("Test thread started.");
 //
 //                try {
-//                    GridUuid msgId = GridUuid.randomUuid();
+//                    IgniteUuid msgId = IgniteUuid.randomUuid();
 //
 //                    GridTuple2<byte[], Integer> t = getTestResources().getMarshaller().
 //                        marshalNoCopy(new GridTestMessage(msgId, testStr), 4);
@@ -394,7 +394,7 @@ package org.apache.ignite.loadtests.communication;
 //        final Semaphore sem = new Semaphore(CONCUR_MSGS);
 //        final LongAdder8 msgCntr = new LongAdder8();
 //
-//        final Map<GridUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+//        final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
 //
 //        rcvComm.setListener(new GridCommunicationListener() {
 //            @Override public void onMessage(UUID nodeId, byte[] msg, GridAbsClosure msgC) {
@@ -450,7 +450,7 @@ package org.apache.ignite.loadtests.communication;
 //                    if (latch != null)
 //                        U.await(latch);
 //
-//                    GridUuid msgId = GridUuid.randomUuid();
+//                    IgniteUuid msgId = IgniteUuid.randomUuid();
 //
 //                    sem.acquire();
 //
@@ -529,7 +529,7 @@ package org.apache.ignite.loadtests.communication;
 //                while (!finish.get()) {
 //                    U.sleep(1000);
 //
-//                    GridUuid msgId = GridUuid.randomUuid();
+//                    IgniteUuid msgId = IgniteUuid.randomUuid();
 //                    CountDownLatch latch = new CountDownLatch(1);
 //
 //                    latches.put(msgId, latch);

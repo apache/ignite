@@ -29,9 +29,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -42,13 +45,13 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents single class deployment.
@@ -454,7 +457,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
 
         if (cls == null) {
             try {
-                cls = Class.forName(clsName, true, clsLdr);
+                cls = U.forName(clsName, clsLdr);
 
                 Class<?> cur = clss.putIfAbsent(clsName, cls);
 
@@ -475,7 +478,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                         return cls;
                     else if (!a.equals(clsName)) {
                         try {
-                            cls = Class.forName(a, true, clsLdr);
+                            cls = U.forName(a, clsLdr);
                         }
                         catch (ClassNotFoundException ignored0) {
                             continue;
@@ -497,6 +500,10 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                         return cls;
                     }
                 }
+            }
+            catch (IgniteException e) {
+                if (!X.hasCause(e, TimeoutException.class))
+                    throw e;
             }
         }
 

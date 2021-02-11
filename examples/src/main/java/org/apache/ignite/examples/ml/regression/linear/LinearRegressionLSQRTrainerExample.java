@@ -17,19 +17,19 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -45,8 +45,10 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionLSQRTrainerExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
         // Start ignite grid.
@@ -63,31 +65,34 @@ public class LinearRegressionLSQRTrainerExample {
                 System.out.println(">>> Perform the training to get the model.");
 
                 // This object is used to extract features and vectors from upstream entities which are
-                // essentialy tuples of the form (key, value) (in our case (Integer, Vector)).
+                // essentially tuples of the form (key, value) (in our case (Integer, Vector)).
                 // Key part of tuple in our example is ignored.
                 // Label is extracted from 0th entry of the value (which is a Vector)
                 // and features are all remaining vector part. Alternatively we could use
                 // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
                 // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
                 // extracting features.
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST));
 
                 double rmse = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    vectorizer,
-                    new RegressionMetrics()
+                    dataCache, mdl,
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST),
+                    MetricName.RMSE
                 );
 
                 System.out.println("\n>>> Rmse = " + rmse);
 
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
@@ -34,7 +33,6 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
@@ -57,7 +55,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<GDBModel, Double> {
     /** Gradient step. */
     private final double gradientStep;
 
@@ -87,13 +85,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> GDBModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                   Preprocessor<K, V> preprocessor) {
         return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
+    @Override protected <K, V> GDBModel updateModel(GDBModel mdl,
                                                              DatasetBuilder<K, V> datasetBuilder,
                                                              Preprocessor<K, V> preprocessor) {
         if (!learnLabels(datasetBuilder, preprocessor))
@@ -121,7 +119,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
         List<IgniteModel<Vector, Double>> models;
         if (mdl != null)
-            models = stgy.update((GDBModel) mdl, datasetBuilder, preprocessor);
+            models = stgy.update(mdl, datasetBuilder, preprocessor);
         else
             models = stgy.learnModels(datasetBuilder, preprocessor);
 
@@ -136,7 +134,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUpdateable(ModelsComposition mdl) {
+    @Override public boolean isUpdateable(GDBModel mdl) {
         return mdl instanceof GDBModel;
     }
 
@@ -186,11 +184,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> builder,
         Preprocessor<K, V> preprocessor) {
+        learningEnvironment().initDeployingContext(preprocessor);
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(preprocessor, false)
+            new DecisionTreeDataBuilder<>(preprocessor, false),
+            learningEnvironment()
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
@@ -236,36 +236,5 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      */
     protected GDBLearningStrategy getLearningStrategy() {
         return new GDBLearningStrategy();
-    }
-
-    /**
-     * GDB model.
-     */
-    public static class GDBModel extends ModelsComposition {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 3476661240155508004L;
-
-        /** Internal to external lbl mapping. */
-        private final IgniteFunction<Double, Double> internalToExternalLblMapping;
-
-        /**
-         * Creates an instance of GDBModel.
-         *
-         * @param models Models.
-         * @param predictionsAggregator Predictions aggregator.
-         * @param internalToExternalLblMapping Internal to external lbl mapping.
-         */
-        public GDBModel(List<? extends IgniteModel<Vector, Double>> models,
-            WeightedPredictionsAggregator predictionsAggregator,
-            IgniteFunction<Double, Double> internalToExternalLblMapping) {
-
-            super(models, predictionsAggregator);
-            this.internalToExternalLblMapping = internalToExternalLblMapping;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Double predict(Vector features) {
-            return internalToExternalLblMapping.apply(super.predict(features));
-        }
     }
 }

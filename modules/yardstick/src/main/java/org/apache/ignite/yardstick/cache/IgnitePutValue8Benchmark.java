@@ -17,10 +17,9 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.cache.model.Person8;
-
-import java.util.Map;
 
 /**
  * Ignite benchmark that performs put operations for entity with primitive fields.

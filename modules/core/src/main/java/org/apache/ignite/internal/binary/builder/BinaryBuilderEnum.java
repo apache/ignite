@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -63,7 +63,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            this.typeId = reader.binaryContext().descriptorForClass(cls, false, false).typeId();
+            this.typeId = reader.binaryContext().registerClass(cls, true, false).typeId();
         }
         else {
             this.typeId = typeId;

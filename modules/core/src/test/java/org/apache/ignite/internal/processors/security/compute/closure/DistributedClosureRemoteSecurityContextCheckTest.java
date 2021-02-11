@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -54,25 +55,13 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(CLNT_CHECK, 2)
-            .expect(SRV_ENDPOINT, 4)
-            .expect(CLNT_ENDPOINT, 4);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /** */
@@ -86,33 +75,33 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
      * @return Stream of check cases.
      */
     private Stream<IgniteRunnable> operations() {
-        return Stream.<IgniteRunnable>of(
-            () -> compute(localIgnite(), nodesToCheck()).broadcast((IgniteRunnable) createRunner()),
-            () -> compute(localIgnite(), nodesToCheck()).broadcastAsync((IgniteRunnable) createRunner()).get(),
+        return Stream.of(
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) operationCheck()),
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) operationCheck()).get(),
             () -> {
-                for (UUID id : nodesToCheck())
-                    compute(id).call(createRunner());
+                for (UUID id : nodesToCheckIds())
+                    compute(id).call(operationCheck());
             },
             () -> {
-                for (UUID id : nodesToCheck())
-                    compute(id).callAsync(createRunner()).get();
+                for (UUID id : nodesToCheckIds())
+                    compute(id).callAsync(operationCheck()).get();
             },
             () -> {
-                for (UUID id : nodesToCheck())
-                    compute(id).run(createRunner());
+                for (UUID id : nodesToCheckIds())
+                    compute(id).run(operationCheck());
             },
             () -> {
-                for (UUID id : nodesToCheck())
-                    compute(id).runAsync(createRunner()).get();
+                for (UUID id : nodesToCheckIds())
+                    compute(id).runAsync(operationCheck()).get();
             },
             () -> {
-                for (UUID id : nodesToCheck())
-                    compute(id).apply(createRunner(), new Object());
+                for (UUID id : nodesToCheckIds())
+                    compute(id).apply(operationCheck(), new Object());
             },
             () -> {
-                for (UUID id : nodesToCheck())
-                    compute(id).applyAsync(createRunner(), new Object()).get();
+                for (UUID id : nodesToCheckIds())
+                    compute(id).applyAsync(operationCheck(), new Object()).get();
             }
-        ).map(RegisterExecAndForward::new);
+        );
     }
 }

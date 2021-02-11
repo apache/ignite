@@ -69,7 +69,7 @@ public class RowCountTableStatisticsSurvivesNodeRestartTest extends TableStatist
             runSql("INSERT INTO big(a, b, c) VALUES(" + i + "," + i + "," + i % 10 + ")");
 
         for (int i = 0; i < SMALL_SIZE; i++)
-            runSql("INSERT INTO small(a, b, c) VALUES(" + i + "," + i + ","+ i % 10 + ")");
+            runSql("INSERT INTO small(a, b, c) VALUES(" + i + "," + i + "," + i % 10 + ")");
     }
 
     /** {@inheritDoc} */
@@ -86,7 +86,7 @@ public class RowCountTableStatisticsSurvivesNodeRestartTest extends TableStatist
      */
     @Test
     public void statisticsSurvivesRestart() throws Exception {
-        String sql  = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
+        String sql = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
             "WHERE t1.b >= 0 AND t2.b >= 0";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "small", "big");

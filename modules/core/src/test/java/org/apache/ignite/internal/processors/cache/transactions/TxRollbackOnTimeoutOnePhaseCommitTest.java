@@ -57,11 +57,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = igniteInstanceName.startsWith("client");
-
-        cfg.setClientMode(client);
-
-        if (!client) {
+        if (!igniteInstanceName.startsWith("client")) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -81,7 +77,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         startGridsMultiThreaded(GRID_CNT);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */

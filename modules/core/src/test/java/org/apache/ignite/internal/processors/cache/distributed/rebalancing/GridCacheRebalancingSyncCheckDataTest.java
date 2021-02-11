@@ -70,7 +70,7 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
 
             GridTestUtils.runMultiThreaded(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try(Ignite ignite = startGrid(idx.getAndIncrement())) {
+                    try (Ignite ignite = startGrid(idx.getAndIncrement())) {
                         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         for (int i = 0; i < KEYS; i++)

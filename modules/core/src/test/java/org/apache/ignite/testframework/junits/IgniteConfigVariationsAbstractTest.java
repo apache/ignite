@@ -31,6 +31,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -176,14 +178,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected String testClassDescription() {
-        assert testsCfg != null: "Tests should be run using test suite.";
+        assert testsCfg != null : "Tests should be run using test suite.";
 
         return super.testClassDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 
     /** {@inheritDoc} */
     @Override protected String testDescription() {
-        assert testsCfg != null: "Tests should be run using test suite.";
+        assert testsCfg != null : "Tests should be run using test suite.";
 
         return super.testDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
@@ -198,6 +200,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (testsCfg.withClients())
             resCfg.setClientMode(expectedClient(igniteInstanceName));
+
+        resCfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setMaxSize(200L * 1024 * 1024)
+                ));
 
         return resCfg;
     }

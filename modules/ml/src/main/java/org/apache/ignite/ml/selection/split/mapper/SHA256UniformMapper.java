@@ -72,7 +72,7 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
         for (int i = 0; i < 8; i++)
             resByte = (byte)(resByte << 1 | ((hashByte >> shuffleStgy.get(i)) & 0x1));
 
-        return  1.0 * (resByte & 0xFF) / 256;
+        return 1.0 * (resByte & 0xFF) / 256;
     }
 
     /**

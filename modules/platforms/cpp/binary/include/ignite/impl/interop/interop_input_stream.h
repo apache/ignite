@@ -21,7 +21,7 @@
 #include "ignite/impl/interop/interop_memory.h"
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace interop
@@ -36,7 +36,7 @@ namespace ignite
                  *
                  * @param mem Memory.
                  */
-                InteropInputStream(InteropMemory* mem);
+                explicit InteropInputStream(InteropMemory* mem);
 
                 /**
                  * Read signed 8-byte int.
@@ -52,14 +52,14 @@ namespace ignite
                  * @return Value.
                  */
                 int32_t ReadInt8(int32_t pos);
-                    
+
                 /**
                  * Read signed 8-byte int array.
                  *
                  * @param res Allocated array.
-                 * @param len Length.                 
+                 * @param len Length.
                  */
-                void ReadInt8Array(int8_t* const res, const int32_t len);
+                void ReadInt8Array(int8_t* res, int32_t len);
 
                 /**
                  * Read bool.
@@ -74,7 +74,7 @@ namespace ignite
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadBoolArray(bool* const res, const int32_t len);
+                void ReadBoolArray(bool* res, int32_t len);
 
                 /**
                  * Read signed 16-byte int.
@@ -97,7 +97,7 @@ namespace ignite
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadInt16Array(int16_t* const res, const int32_t len);
+                void ReadInt16Array(int16_t* res, int32_t len);
 
                 /**
                  * Read unsigned 16-byte int.
@@ -112,7 +112,7 @@ namespace ignite
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadUInt16Array(uint16_t* const res, const int32_t len);
+                void ReadUInt16Array(uint16_t* res, int32_t len);
 
                 /**
                  * Read signed 32-byte int.
@@ -128,14 +128,14 @@ namespace ignite
                  * @return Value.
                  */
                 int32_t ReadInt32(int32_t pos);
-                    
+
                 /**
                  * Read signed 32-byte int array.
                  *
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadInt32Array(int32_t* const res, const int32_t len);
+                void ReadInt32Array(int32_t* res, int32_t len);
 
                 /**
                  * Read signed 64-byte int.
@@ -150,7 +150,7 @@ namespace ignite
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadInt64Array(int64_t* const res, const int32_t len);
+                void ReadInt64Array(int64_t* res, int32_t len);
 
                 /**
                  * Read float.
@@ -165,7 +165,7 @@ namespace ignite
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadFloatArray(float* const res, const int32_t len);
+                void ReadFloatArray(float* res, int32_t len);
 
                 /**
                  * Read double.
@@ -180,7 +180,7 @@ namespace ignite
                  * @param res Allocated array.
                  * @param len Length.
                  */
-                void ReadDoubleArray(double* const res, const int32_t len);
+                void ReadDoubleArray(double* res, int32_t len);
 
                 /**
                  * Get remaining bytes.
@@ -199,27 +199,44 @@ namespace ignite
                 /**
                  * Set position.
                  *
-                 * @param Position.
+                 * @param pos Position.
                  */
                 void Position(int32_t pos);
+
+                /**
+                 * Ignore some number of bytes.
+                 *
+                 * @param cnt Amount of bytes to be ignored.
+                 */
+                void Ignore(int32_t cnt);
 
                 /**
                  * Synchronize data from underlying memory.
                  */
                 void Synchronize();
+
+                /**
+                 * Get memory.
+                 * @return Underlying memory.
+                 */
+                InteropMemory* GetMemory()
+                {
+                    return mem;
+                }
+
             private:
                 /** Memory. */
                 InteropMemory* mem; 
-                
+
                 /** Pointer to data. */
-                int8_t* data;       
-                
+                int8_t* data;
+
                 /** Length. */
-                int len;            
-                
+                int len;
+
                 /** Current position. */
-                int pos;            
-                    
+                int pos;
+
                 /**
                  * Ensure there is enough data in the stream.
                  *
@@ -230,7 +247,7 @@ namespace ignite
                 /**
                  * Copy data from the stream shifting it along the way.
                  *
-                 * @param ptr Pointer to data.
+                 * @param dest Pointer to data.
                  * @param off Offset.
                  * @param cnt Amount of data to copy.
                  */
@@ -244,7 +261,7 @@ namespace ignite
                 void Shift(int32_t cnt);
             };
         }
-    }    
+    }
 }
 
 #endif //_IGNITE_IMPL_INTEROP_INTEROP_INPUT_STREAM

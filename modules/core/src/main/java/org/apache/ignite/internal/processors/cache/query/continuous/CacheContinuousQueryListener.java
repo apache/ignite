@@ -30,11 +30,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CacheContinuousQueryListener<K, V> {
     /**
-     * Query execution callback.
-     */
-    public void onExecution();
-
-    /**
      * Entry update callback.
      *
      * @param evt Event
@@ -46,8 +41,18 @@ public interface CacheContinuousQueryListener<K, V> {
         boolean recordIgniteEvt, @Nullable GridDhtAtomicAbstractUpdateFuture fut);
 
     /**
+     *
+     */
+    public void onBeforeRegister();
+
+    /**
+     *
+     */
+    public void onAfterRegister();
+
+    /**
      * Listener registration callback.
-     * NOTE: This method should be called under the {@link CacheGroupContext#listenerLock} write lock held.
+     * NOTE: This method should be called under the {@link CacheGroupContext#listenerLock()}} write lock held.
      */
     public void onRegister();
 
@@ -61,7 +66,7 @@ public interface CacheContinuousQueryListener<K, V> {
      *
      * @param updateCntrs Update indexes map.
      */
-    public void cleanupBackupQueue(Map<Integer, Long> updateCntrs);
+    public void cleanupOnAck(Map<Integer, Long> updateCntrs);
 
     /**
      * Flushes backup queue.
@@ -69,7 +74,7 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param ctx Context.
      * @param topVer Topology version.
      */
-    public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer);
+    public void flushOnExchangeDone(GridKernalContext ctx, AffinityTopologyVersion topVer);
 
     /**
      * @param ctx Context.

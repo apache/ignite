@@ -44,12 +44,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private String url = affinityAwareness ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" :
-        "jdbc:ignite:thin://127.0.0.1?affinityAwareness=false";
+    private String url = partitionAwareness ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true" :
+        "jdbc:ignite:thin://127.0.0.1?partitionAwareness=false";
 
     /** Nodes count. */
-    private int nodesCnt = affinityAwareness ? 4 : 3;
+    private int nodesCnt = partitionAwareness ? 4 : 3;
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -434,7 +434,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
 
         for (int i = 0; i < stmtCnt; ++i)
-            sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
+            sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i + "'); ");
 
         assertFalse(stmt0.execute(sql.toString()));
 
@@ -506,7 +506,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
                 int rowsCnt = 0;
 
-                while(rs.next())
+                while (rs.next())
                     rowsCnt++;
 
                 assertTrue(rowsCnt <= (i + 1) / 2);

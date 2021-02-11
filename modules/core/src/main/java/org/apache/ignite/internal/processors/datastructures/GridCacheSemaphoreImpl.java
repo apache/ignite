@@ -39,11 +39,11 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
@@ -215,7 +215,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         /** {@inheritDoc} */
         @Override protected final boolean tryReleaseShared(int releases) {
             // Fail-fast path.
-            if(broken)
+            if (broken)
                 return true;
 
             // Check if some other node updated the state.
@@ -361,7 +361,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
                                     name);
 
                             // Quit early if semaphore is already broken.
-                            if( val.isBroken()) {
+                            if (val.isBroken()) {
                                 tx.rollback();
 
                                 return false;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -43,10 +44,10 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerI
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.TestOnly;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -61,7 +62,7 @@ import static org.apache.ignite.internal.util.GridArrays.clearTail;
  */
 public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** */
-    private static CacheDataRow[] EMPTY_ROWS = {};
+    private static final CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
     private static Boolean lastFindWithDataPageScan;
@@ -83,6 +84,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param rowStore Row store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataTree(
@@ -92,11 +94,13 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         CacheDataRowStore rowStore,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             name,
             grp.groupId(),
+            grp.name(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),
@@ -104,6 +108,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             innerIO(grp),
             leafIO(grp),
+            pageFlag,
             grp.shared().kernalContext().failure(),
             lockLsnr
         );
@@ -136,6 +141,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /**
      * @return {@code true} If the last observed call to the method {@code find(...)} used data page scan.
      */
+    @TestOnly
     public static Boolean isLastFindWithDataPageScan() {
         Boolean res = lastFindWithDataPageScan;
         lastFindWithDataPageScan = null;
@@ -214,6 +220,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
              * @throws IgniteCheckedException If failed.
              */
             private boolean readNextDataPage() throws IgniteCheckedException {
+                checkDestroyed();
+
                 for (;;) {
                     if (++curPage >= pagesCnt) {
                         // Reread number of pages when we reach it (it may grow).
@@ -236,6 +244,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
+                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998.
+                            // Here we should also exclude fragmented pages that don't contain the head of the entry.
                             if (PageIO.getType(pageAddr) != T_DATA)
                                 continue; // Not a data page.
 
@@ -282,7 +292,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                             pageMem.readUnlock(grpId, pageId, page);
                         }
                     }
-                    finally{
+                    finally {
                         pageMem.releasePage(grpId, pageId, page);
                     }
                 }

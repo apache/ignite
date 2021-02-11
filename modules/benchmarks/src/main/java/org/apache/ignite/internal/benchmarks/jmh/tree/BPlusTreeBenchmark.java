@@ -30,7 +30,6 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
@@ -101,6 +101,11 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             Long pageId = deque.pollFirst();
 
             return pageId == null ? 0L : pageId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
+            return pageId;
         }
 
         /** {@inheritDoc} */
@@ -178,6 +183,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             super(
                 "test",
                 cacheId,
+                null,
                 pageMem,
                 null,
                 new AtomicLong(),
@@ -185,6 +191,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
                 reuseList,
                 new IOVersions<>(new LongInnerIO()),
                 new IOVersions<>(new LongLeafIO()),
+                PageIdAllocator.FLAG_IDX,
                 null,
                 null
             );
@@ -228,7 +235,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();

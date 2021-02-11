@@ -21,7 +21,9 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -122,7 +124,8 @@ public class GridMessageCollectionTest {
 
         assertEquals(m.directType(), type);
 
-        GridIoMessageFactory msgFactory = new GridIoMessageFactory(null);
+        IgniteMessageFactory msgFactory =
+                new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
 
         Message mx = msgFactory.create(type);
 

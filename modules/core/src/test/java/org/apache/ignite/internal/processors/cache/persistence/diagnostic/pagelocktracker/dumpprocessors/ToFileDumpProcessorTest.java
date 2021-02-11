@@ -21,13 +21,12 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Paths.get;
@@ -35,18 +34,15 @@ import static java.nio.file.Paths.get;
 /**
  *
  */
-public class ToFileDumpProcessorTest {
+public class ToFileDumpProcessorTest extends GridCommonAbstractTest {
     /** */
     private File file;
 
-    @Before
-    public void beforeTest() {
-        cleanFile();
-    }
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        super.beforeTest();
 
-    @After
-    public void afterTest() {
-        //  cleanFile();
+        cleanFile();
     }
 
     /**

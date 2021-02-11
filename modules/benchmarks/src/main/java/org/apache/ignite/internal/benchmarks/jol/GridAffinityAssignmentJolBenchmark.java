@@ -156,8 +156,8 @@ public class GridAffinityAssignmentJolBenchmark {
         long totalSize = GraphLayout.parseInstance(ga).totalSize();
 
         System.out.println("Optimized, parts " + parts
-            +" nodeCount " + nodeCnt
-            +" backups " + backups
+            + " nodeCount " + nodeCnt
+            + " backups " + backups
             + " " + totalSize);
 
         setOptimization(true);
@@ -173,8 +173,8 @@ public class GridAffinityAssignmentJolBenchmark {
         long totalSize2 = GraphLayout.parseInstance(ga2).totalSize();
 
         System.out.println("Deoptimized, parts " + parts
-            +" nodeCount " + nodeCnt
-            +" backups " + backups
+            + " nodeCount " + nodeCnt
+            + " backups " + backups
             + " " + totalSize2);
 
         if (totalSize > totalSize2)

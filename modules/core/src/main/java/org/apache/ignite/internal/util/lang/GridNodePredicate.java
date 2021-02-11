@@ -122,7 +122,7 @@ public class GridNodePredicate implements IgnitePredicate<ClusterNode>, Iterable
      *
      * @return Set of node IDs this predicate is based on.
      */
-    public Set<UUID> nodeIds(){
+    public Set<UUID> nodeIds() {
         return ids;
     }
 

@@ -19,7 +19,7 @@ package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
-import org.apache.ignite.ml.math.exceptions.IndexException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -265,7 +265,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++)
             testVal.append(data0[i] + data1[i]);
 
-        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal.toString());
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string + xi.toString(), Functions.PLUS, ""), testVal.toString());
     }
 
     /** */
@@ -399,11 +399,6 @@ public class AbstractVectorTest {
             @Override public Vector viewPart(int off, int len) {
                 return null;
             }
-
-            /** {@inheritDoc} */
-            @Override public boolean isDistributed() {
-                return false;
-            }
         };
     }
 
@@ -457,11 +452,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isDistributed() {
-                return false;
             }
         };
     }

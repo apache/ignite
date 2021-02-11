@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.spark;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,8 +30,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
-
-import java.util.List;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.spark.sql.functions.col;

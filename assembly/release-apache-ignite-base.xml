@@ -36,15 +36,9 @@
         </file>
 
         <file>
-            <source>modules/platforms/cpp/configure.acrel</source>
+            <source>modules/platforms/cpp/CMakeLists.txt</source>
             <outputDirectory>/platforms/cpp</outputDirectory>
-            <destName>configure.ac</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/cpp/Makefile.amrel</source>
-            <outputDirectory>/platforms/cpp</outputDirectory>
-            <destName>Makefile.am</destName>
+            <destName>CMakeLists.txt</destName>
         </file>
 
         <!-- Copy Node.js files. -->
@@ -150,6 +144,12 @@
                 <include>README.txt</include>
                 <include>DEVNOTES.txt</include>
             </includes>
+        </fileSet>
+
+        <!-- Move CMake modules. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/cmake</directory>
+            <outputDirectory>/platforms/cpp/cmake</outputDirectory>
         </fileSet>
 
         <!-- Move CPP "common" module. -->

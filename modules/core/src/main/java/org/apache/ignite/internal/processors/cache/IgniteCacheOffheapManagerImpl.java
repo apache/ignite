@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,7 +42,10 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
@@ -60,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -93,7 +99,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -102,24 +107,28 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntRWHashMap;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
@@ -143,9 +152,11 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** */
-    private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
-        IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
+    /** The maximum number of entries that can be preloaded under checkpoint read lock. */
+    public static final int PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK = 100;
+
+    /** Batch size for cache removals during destroy. */
+    private static final int BATCH_SIZE = 1000;
 
     /** */
     protected GridCacheSharedContext ctx;
@@ -172,9 +183,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** */
-    private int updateValSizeThreshold;
-
-    /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
     /** {@inheritDoc} */
@@ -187,8 +195,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         this.ctx = ctx;
         this.grp = grp;
         this.log = ctx.logger(getClass());
-
-        updateValSizeThreshold = ctx.database().pageSize() / 2;
 
         if (grp.affinityNode()) {
             ctx.database().checkpointReadLock();
@@ -231,7 +237,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 rootPage,
                 grp.reuseList(),
                 true,
-                lsnr
+                lsnr,
+                FLAG_IDX
             );
         }
     }
@@ -412,27 +419,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         else {
             final Iterator<GridDhtLocalPartition> it = grp.topology().currentLocalPartitions().iterator();
 
-            if (primary && backup) {
-                return F.iterator(it, new IgniteClosure<GridDhtLocalPartition, CacheDataStore>() {
-                    @Override public CacheDataStore apply(GridDhtLocalPartition part) {
-                        return part.dataStore();
-                    }
-                }, true);
-            }
+            if (primary && backup)
+                return F.iterator(it, GridDhtLocalPartition::dataStore, true);
 
-            final Set<Integer> parts = primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
-                grp.affinity().backupPartitions(ctx.localNodeId(), topVer);
+            final IntSet parts = ImmutableIntSet.wrap(primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
+                grp.affinity().backupPartitions(ctx.localNodeId(), topVer));
 
-            return F.iterator(it, new IgniteClosure<GridDhtLocalPartition, CacheDataStore>() {
-                    @Override public CacheDataStore apply(GridDhtLocalPartition part) {
-                        return part.dataStore();
-                    }
-                }, true,
-                new IgnitePredicate<GridDhtLocalPartition>() {
-                    @Override public boolean apply(GridDhtLocalPartition part) {
-                        return parts.contains(part.id());
-                    }
-                });
+            return F.iterator(it, GridDhtLocalPartition::dataStore, true, part -> parts.contains(part.id()));
         }
     }
 
@@ -733,7 +726,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     try {
                         if (obsoleteVer == null)
-                            obsoleteVer = ctx.versions().next();
+                            obsoleteVer = cctx.cache().nextVersion();
 
                         GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
@@ -807,8 +800,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     KeyCacheObject key = nextRow.key();
                     CacheObject val = nextRow.value();
 
-                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
-                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
 
                     next = new CacheEntryImplEx(key0, val0, nextRow.version());
 
@@ -927,39 +920,46 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return true;
 
                 while (true) {
-                    if (cur == null) {
-                        if (dataIt.hasNext()) {
-                            CacheDataStore ds = dataIt.next();
+                    try {
+                        if (cur == null) {
+                            if (dataIt.hasNext()) {
+                                CacheDataStore ds = dataIt.next();
 
-                            curPart = ds.partId();
+                                curPart = ds.partId();
 
-                            // Data page scan is disabled by default for scan queries.
-                            CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled == TRUE);
+                                // Data page scan is disabled by default for scan queries.
+                                // TODO https://issues.apache.org/jira/browse/IGNITE-11998
+                                CacheDataTree.setDataPageScanEnabled(false);
 
-                            try {
-                                if (mvccSnapshot == null)
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
-                                else {
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ?
-                                        ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                try {
+                                    if (mvccSnapshot == null)
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                                    else {
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ?
+                                            ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                    }
+                                }
+                                finally {
+                                    CacheDataTree.setDataPageScanEnabled(false);
                                 }
                             }
-                            finally {
-                                CacheDataTree.setDataPageScanEnabled(false);
-                            }
+                            else
+                                break;
+                        }
+
+                        if (cur.next()) {
+                            next = cur.get();
+                            next.key().partition(curPart);
+
+                            break;
                         }
                         else
-                            break;
+                            cur = null;
                     }
-
-                    if (cur.next()) {
-                        next = cur.get();
-                        next.key().partition(curPart);
-
-                        break;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteCheckedException("Failed to get next data row due to underlying cursor " +
+                            "invalidation", ex);
                     }
-                    else
-                        cur = null;
                 }
 
                 return next != null;
@@ -1140,13 +1140,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return null;
         }
 
-        CacheDataStore data = partitionData(part);
-
-        final GridCursor<? extends CacheDataRow> cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
+        final CacheDataStore data = partitionData(part);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private CacheDataRow next;
+
+            /** */
+            private GridCursor<? extends CacheDataRow> cur;
 
             @Override protected CacheDataRow onNext() {
                 CacheDataRow res = next;
@@ -1157,13 +1158,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (cur == null)
+                    cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
+
                 if (next != null)
                     return true;
 
                 if (cur.next())
                     next = cur.get();
 
-                return next != null;
+                boolean hasNext = next != null;
+
+                if (!hasNext)
+                    cur = null;
+
+                return hasNext;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
@@ -1171,6 +1180,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     : "Partition should be in OWNING state and has at least 1 reservation: " + loc;
 
                 loc.release();
+
+                cur = null;
             }
         };
     }
@@ -1218,6 +1229,40 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(partId);
+
+        List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
+
+        while (infos.hasNext()) {
+            GridCacheEntryInfo info = infos.next();
+
+            assert info.ttl() == TTL_ETERNAL : info.ttl();
+
+            batch.add(new DataRowCacheAware(info.key(),
+                info.value(),
+                info.version(),
+                partId,
+                info.expireTime(),
+                info.cacheId(),
+                grp.storeCacheIdInDataPage()));
+
+            if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK || !infos.hasNext()) {
+                ctx.database().checkpointReadLock();
+
+                try {
+                    dataStore.insertRows(batch, initPred);
+                } finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+
+                batch.clear();
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
         CacheDataStore dataStore;
 
@@ -1258,10 +1303,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rowStore,
             rootPage,
             true,
-            lsnr
+            lsnr,
+            FLAG_IDX
         );
 
-        return new CacheDataStoreImpl(p, rowStore, dataTree);
+        return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log);
     }
 
     /** {@inheritDoc} */
@@ -1283,9 +1329,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         partStoreLock.lock(p);
 
         try {
-            boolean removed = partDataStores.remove(p, store);
+            boolean rmv = partDataStores.remove(p, store);
 
-            assert removed;
+            if (!rmv)
+                return; // Already destroyed.
 
             destroyCacheDataStore0(store);
         }
@@ -1346,49 +1393,56 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         GridCursor<PendingRow> cur;
 
-        if (grp.sharedGroup())
-            cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-        else
-            cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-        if (!cur.next())
-            return 0;
-
-        if (!busyLock.enterBusy())
-            return 0;
+        cctx.shared().database().checkpointReadLock();
 
         try {
-            int cleared = 0;
+            if (grp.sharedGroup())
+                cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
+            else
+                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
 
-            do {
-                if (amount != -1 && cleared > amount)
-                    return cleared;
+            if (!cur.next())
+                return 0;
 
-                PendingRow row = cur.get();
+            if (!busyLock.enterBusy())
+                return 0;
 
-                if (row.key.partition() == -1)
-                    row.key.partition(cctx.affinity().partition(row.key));
+            try {
+                int cleared = 0;
 
-                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                do {
+                    if (amount != -1 && cleared > amount)
+                        return cleared;
 
-                if (pendingEntries.removex(row)) {
-                    if (obsoleteVer == null)
-                        obsoleteVer = ctx.versions().next();
+                    PendingRow row = cur.get();
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+                    if (row.key.partition() == -1)
+                        row.key.partition(cctx.affinity().partition(row.key));
 
-                    if (entry != null)
-                        c.apply(entry, obsoleteVer);
+                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+
+                    if (pendingEntries.removex(row)) {
+                        if (obsoleteVer == null)
+                            obsoleteVer = cctx.cache().nextVersion();
+
+                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+
+                        if (entry != null)
+                            c.apply(entry, obsoleteVer);
+                    }
+
+                    cleared++;
                 }
+                while (cur.next());
 
-                cleared++;
+                return cleared;
             }
-            while (cur.next());
-
-            return cleared;
+            finally {
+                busyLock.leaveBusy();
+            }
         }
         finally {
-            busyLock.leaveBusy();
+            cctx.shared().database().checkpointReadUnlock();
         }
     }
 
@@ -1400,7 +1454,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      *
      */
-    protected class CacheDataStoreImpl implements CacheDataStore {
+    public static class CacheDataStoreImpl implements CacheDataStore {
         /** */
         private final int partId;
 
@@ -1410,6 +1464,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final CacheDataTree dataTree;
 
+        /** */
+        private final Supplier<PendingEntriesTree> pendingEntries;
+
+        /** */
+        private final CacheGroupContext grp;
+
+        /** */
+        private final GridSpinBusyLock busyLock;
+
         /** Update counter. */
         protected final PartitionUpdateCounter pCntr;
 
@@ -1417,16 +1480,27 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final AtomicLong storageSize = new AtomicLong();
 
         /** */
-        private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
+        private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap();
 
         /** Mvcc remove handler. */
-        private final PageHandler<MvccUpdateDataRow, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
+        private final PageHandler<MvccUpdateDataRow, Boolean> mvccUpdateMarker;
 
         /** Mvcc update tx state hint handler. */
-        private final PageHandler<Void, Boolean> mvccUpdateTxStateHint = new MvccUpdateTxStateHintHandler();
+        private final PageHandler<Void, Boolean> mvccUpdateTxStateHint;
 
         /** */
-        private final PageHandler<MvccDataRow, Boolean> mvccApplyChanges = new MvccApplyChangesHandler();
+        private final PageHandler<MvccDataRow, Boolean> mvccApplyChanges;
+
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private final Boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
+            IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY
+        );
+
+        /** */
+        private final int updateValSizeThreshold;
 
         /**
          * @param partId Partition number.
@@ -1436,19 +1510,37 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         public CacheDataStoreImpl(
             int partId,
             CacheDataRowStore rowStore,
-            CacheDataTree dataTree
+            CacheDataTree dataTree,
+            Supplier<PendingEntriesTree> pendingEntries,
+            CacheGroupContext grp,
+            GridSpinBusyLock busyLock,
+            IgniteLogger log
         ) {
             this.partId = partId;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            if (grp.mvccEnabled())
-                pCntr = new PartitionMvccTxUpdateCounterImpl();
-            else if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
-                pCntr = new PartitionAtomicUpdateCounterImpl();
-            else {
-                pCntr = ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
-                    new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
-            }
+            this.pendingEntries = pendingEntries;
+            this.grp = grp;
+            this.busyLock = busyLock;
+            this.log = log;
+
+            PartitionUpdateCounter delegate = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl(grp) :
+                !grp.persistenceEnabled() || grp.hasAtomicCaches() ? new PartitionUpdateCounterVolatileImpl(grp) :
+                    new PartitionUpdateCounterTrackingImpl(grp);
+
+            pCntr = grp.shared().logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
+                new PartitionUpdateCounterDebugWrapper(partId, delegate) : delegate;
+
+            updateValSizeThreshold = grp.shared().database().pageSize() / 2;
+
+            mvccUpdateMarker = new MvccMarkUpdatedHandler(grp);
+            mvccUpdateTxStateHint = new MvccUpdateTxStateHintHandler(grp);
+            mvccApplyChanges = new MvccApplyChangesHandler(grp);
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheDataTree tree() {
+            return dataTree;
         }
 
         /**
@@ -1493,8 +1585,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             Map<Integer, Long> res = new HashMap<>();
 
-            for (Map.Entry<Integer, AtomicLong> e : cacheSizes.entrySet())
-                res.put(e.getKey(), e.getValue().longValue());
+            cacheSizes.forEach((key, val) -> res.put(key, val.longValue()));
 
             return res;
         }
@@ -1516,7 +1607,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to perform operation.", e);
+                U.error(grp.shared().logger(IgniteCacheOffheapManagerImpl.class), "Failed to perform operation.", e);
 
                 return false;
             }
@@ -1592,10 +1683,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 U.error(log, "Failed to update partition counter. " +
                     "Most probably a node with most actual data is out of topology or data streamer is used " +
                     "in preload mode (allowOverride=false) concurrently with cache transactions [grpName=" +
-                    grp.name() + ", partId=" + partId + ']', e);
+                    grp.cacheOrGroupName() + ", partId=" + partId + ']', e);
 
                 if (failNodeOnPartitionInconsistency)
-                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                    grp.shared().kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         }
 
@@ -1624,10 +1715,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
-            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
-            boolean sizeWithCacheId = grp.sharedGroup();
-
             int oldLen = oldRow.size();
+
+            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
+            if (!grp.storeCacheIdInDataPage() && grp.sharedGroup() && oldRow.cacheId() != CU.UNDEFINED_CACHE_ID)
+                oldLen -= 4;
 
             if (oldLen > updateValSizeThreshold)
                 return false;
@@ -1671,7 +1763,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     CacheDataRow oldRow = c.oldRow();
 
-                    finishUpdate(cctx, c.newRow(), oldRow);
+                    finishUpdate(cctx, c.newRow(), oldRow, c.oldRowExpiredFlag());
 
                     break;
                 }
@@ -1722,6 +1814,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void insertRows(Collection<DataRowCacheAware> rows,
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
+
+                boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
+
+                for (DataRowCacheAware row : rows) {
+                    row.storeCacheId(cacheIdAwareGrp);
+
+                    if (!initPred.applyx(row) && row.value() != null)
+                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /**
@@ -1959,7 +2074,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // Make sure value bytes initialized.
                 key.valueBytes(coCtx);
 
-                if(val != null)
+                if (val != null)
                     val.valueBytes(coCtx);
 
                  MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
@@ -2121,7 +2236,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 procRes = entryProc.process(invokeEntry, invokeArgs);
 
-                if(invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
+                if (invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
                     Object val = invokeEntry.getValue(true);
 
                     CacheObject val0 = cctx.toCacheObject(val);
@@ -2554,10 +2669,20 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
             throws IgniteCheckedException {
-            if (oldRow == null)
-                incrementSize(cctx.cacheId());
+            finishUpdate(cctx, newRow, oldRow, false);
+        }
 
-            KeyCacheObject key = newRow.key();
+        /**
+         * @param cctx Cache context.
+         * @param newRow New row.
+         * @param oldRow Old row if available.
+         * @param oldRowExpired Old row expiration flag
+         * @throws IgniteCheckedException If failed.
+         */
+        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow, boolean oldRowExpired)
+            throws IgniteCheckedException {
+            if (oldRow == null && !oldRowExpired)
+                incrementSize(cctx.cacheId());
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -2572,8 +2697,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (newRow.link() != oldRow.link())
                     rowStore.removeRow(oldRow.link(), grp.statisticsHolderData());
             }
-
-            updateIgfsMetrics(cctx, key, (oldRow != null ? oldRow.value() : null), newRow.value());
         }
 
         /**
@@ -2643,8 +2766,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             if (oldRow != null)
                 rowStore.removeRow(oldRow.link(), grp.statisticsHolderData());
-
-            updateIgfsMetrics(cctx, key, (oldRow != null ? oldRow.value() : null), null);
         }
 
         /**
@@ -2883,10 +3004,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             ex.addSuppressed(e);
                     }
                 }
-            });
+            }, false);
 
             if (exception.get() != null)
                 throw new IgniteCheckedException("Failed to destroy store", exception.get());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void markDestroyed() {
+            dataTree.markDestroyed();
         }
 
         /** {@inheritDoc} */
@@ -2901,7 +3027,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCursor<? extends CacheDataRow> cur =
                 cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY);
 
+            int rmv = 0;
+
             while (cur.next()) {
+                if (++rmv == BATCH_SIZE) {
+                    grp.shared().database().checkpointReadUnlock();
+
+                    rmv = 0;
+
+                    grp.shared().database().checkpointReadLock();
+                }
+
                 CacheDataRow row = cur.get();
 
                 assert row.link() != 0 : row;
@@ -2927,6 +3063,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             if (ex != null)
                 throw new IgniteCheckedException("Fail destroy store", ex);
+
+            // Allow checkpointer to progress if a partition contains less than BATCH_SIZE keys.
+            grp.shared().database().checkpointReadUnlock();
+
+            grp.shared().database().checkpointReadLock();
         }
 
         /** {@inheritDoc} */
@@ -2958,7 +3099,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
-            return pendingEntries;
+            return pendingEntries.get();
         }
 
         /** {@inheritDoc} */
@@ -2972,59 +3113,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            pCntr.resetInitialCounter();
+        }
+
+        /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
-        }
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param oldVal Old value.
-         * @param newVal New value.
-         */
-        private void updateIgfsMetrics(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject oldVal,
-            CacheObject newVal
-        ) {
-            GridCacheAdapter cache = cctx.cache();
-            if (cache == null)
-                return;
-
-            // In case we deal with IGFS cache, count updated data
-            if (cache.isIgfsDataCache() &&
-                !cctx.isNear() &&
-                ctx.kernalContext()
-                    .igfsHelper()
-                    .isIgfsBlockKey(key.value(cctx.cacheObjectContext(), false))) {
-                int oldSize = valueLength(cctx, oldVal);
-                int newSize = valueLength(cctx, newVal);
-
-                int delta = newSize - oldSize;
-
-                if (delta != 0)
-                    cache.onIgfsDataSizeChanged(delta);
-            }
-        }
-
-        /**
-         * Isolated method to get length of IGFS block.
-         *
-         * @param cctx Cache context.
-         * @param val Value.
-         * @return Length of value.
-         */
-        private int valueLength(GridCacheContext cctx, @Nullable CacheObject val) {
-            if (val == null)
-                return 0;
-
-            byte[] bytes = val.value(cctx.cacheObjectContext(), false);
-
-            if (bytes != null)
-                return bytes.length;
-            else
-                return 0;
         }
 
         /** */
@@ -3126,6 +3221,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return oldRow;
             }
 
+            /**
+            * Flag that indicates if oldRow was expired during invoke.
+            * @return {@code true} if old row was expired, {@code false} otherwise.
+            */
+            @Override public boolean oldRowExpiredFlag() {
+                return false;
+            }
+
             /** {@inheritDoc} */
             @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
                 this.oldRow = oldRow;
@@ -3194,16 +3297,26 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      * Mvcc remove handler.
      */
-    private final class MvccMarkUpdatedHandler extends PageHandler<MvccUpdateDataRow, Boolean> {
+    private static final class MvccMarkUpdatedHandler extends PageHandler<MvccUpdateDataRow, Boolean> {
+        /** */
+        private final CacheGroupContext grp;
+
+        private MvccMarkUpdatedHandler(CacheGroupContext grp) {
+            this.grp = grp;
+        }
+
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             MvccUpdateDataRow updateDataRow, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert grp.mvccEnabled();
 
+            PageMemory pageMem = grp.dataRegion().pageMemory();
+            IgniteWriteAheadLogManager wal = grp.shared().wal();
+
             DataPageIO iox = (DataPageIO)io;
 
             int off = iox.getPayloadOffset(pageAddr, itemId,
-                grp.dataRegion().pageMemory().realPageSize(grp.groupId()), MVCC_INFO_SIZE);
+                pageMem.realPageSize(grp.groupId()), MVCC_INFO_SIZE);
 
             long newCrd = iox.newMvccCoordinator(pageAddr, off);
             long newCntr = iox.newMvccCounter(pageAddr, off);
@@ -3216,8 +3329,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             iox.updateNewVersion(pageAddr, off, updateDataRow.mvccCoordinatorVersion(), updateDataRow.mvccCounter(),
                 updateDataRow.mvccOperationCounter() | keyAbsentBeforeFlag, TxState.NA);
 
-            if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                ctx.wal().log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
+            if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
+                wal.log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
                     updateDataRow.mvccCoordinatorVersion(), updateDataRow.mvccCounter(), updateDataRow.mvccOperationCounter()));
 
             return TRUE;
@@ -3227,15 +3340,26 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      * Mvcc update operation counter hints handler.
      */
-    private final class MvccUpdateTxStateHintHandler extends PageHandler<Void, Boolean> {
+    private static final class MvccUpdateTxStateHintHandler extends PageHandler<Void, Boolean> {
+        /** */
+        private final CacheGroupContext grp;
+
+        /** */
+        private MvccUpdateTxStateHintHandler(CacheGroupContext grp) {
+            this.grp = grp;
+        }
+
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io,
             Boolean walPlc, Void ignore, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
 
             DataPageIO iox = (DataPageIO)io;
 
+            PageMemory pageMem = grp.dataRegion().pageMemory();
+            IgniteWriteAheadLogManager wal = grp.shared().wal();
+
             int off = iox.getPayloadOffset(pageAddr, itemId,
-                grp.dataRegion().pageMemory().realPageSize(grp.groupId()), MVCC_INFO_SIZE);
+                pageMem.realPageSize(grp.groupId()), MVCC_INFO_SIZE);
 
             long crd = iox.mvccCoordinator(pageAddr, off);
             long cntr = iox.mvccCounter(pageAddr, off);
@@ -3248,8 +3372,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (state == TxState.COMMITTED || state == TxState.ABORTED) {
                     iox.rawMvccOperationCounter(pageAddr, off, opCntr | (state << MVCC_HINTS_BIT_OFF));
 
-                    if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                        ctx.wal().log(new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, state));
+                    if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
+                        wal.log(new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, state));
                 }
                 else
                     throw unexpectedStateException(grp, state, crd, cntr, opCntr);
@@ -3266,8 +3390,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (state == TxState.COMMITTED || state == TxState.ABORTED) {
                     iox.rawNewMvccOperationCounter(pageAddr, off, newOpCntr | (state << MVCC_HINTS_BIT_OFF));
 
-                    if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                        ctx.wal().log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, state));
+                    if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
+                        wal.log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, state));
                 }
 
                 // We do not throw an exception here because new version may be updated by active Tx at this moment.
@@ -3280,7 +3404,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      * Applies changes to the row.
      */
-    private final class MvccApplyChangesHandler extends PageHandler<MvccDataRow, Boolean> {
+    private static final class MvccApplyChangesHandler extends PageHandler<MvccDataRow, Boolean> {
+        /** */
+        private final CacheGroupContext grp;
+
+        /** */
+        private MvccApplyChangesHandler(CacheGroupContext grp) {
+            this.grp = grp;
+        }
+
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             MvccDataRow newRow, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
@@ -3288,8 +3420,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             DataPageIO iox = (DataPageIO)io;
 
+            PageMemory pageMem = grp.dataRegion().pageMemory();
+            IgniteWriteAheadLogManager wal = grp.shared().wal();
+
             int off = iox.getPayloadOffset(pageAddr, itemId,
-                grp.dataRegion().pageMemory().realPageSize(grp.groupId()), MVCC_INFO_SIZE);
+                pageMem.realPageSize(grp.groupId()), MVCC_INFO_SIZE);
 
             long crd = iox.mvccCoordinator(pageAddr, off);
             long cntr = iox.mvccCounter(pageAddr, off);
@@ -3314,8 +3449,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 iox.rawMvccOperationCounter(pageAddr, off, opCntr | (newRow.mvccTxState() << MVCC_HINTS_BIT_OFF));
 
-                if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                    ctx.wal().log(new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, newRow.mvccTxState()));
+                if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
+                    wal.log(new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, newRow.mvccTxState()));
             }
 
             if (compare(newCrd,
@@ -3325,13 +3460,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 newRow.newMvccCounter(),
                 newRow.newMvccOperationCounter()) != 0) {
 
-                assert newRow.newMvccTxState() == TxState.NA ||  newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
+                assert newRow.newMvccTxState() == TxState.NA || newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
 
                 iox.updateNewVersion(pageAddr, off, newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
                     newRow.newMvccOperationCounter(), newRow.newMvccTxState());
 
-                if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                    ctx.wal().log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
+                if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
+                    wal.log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
                         newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
                         newRow.newMvccOperationCounter() | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF)));
             }
@@ -3340,8 +3475,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 iox.rawNewMvccOperationCounter(pageAddr, off, newOpCntr | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF));
 
-                if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                    ctx.wal().log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newRow.newMvccTxState()));
+                if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
+                    wal.log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newRow.newMvccTxState()));
             }
 
             return TRUE;

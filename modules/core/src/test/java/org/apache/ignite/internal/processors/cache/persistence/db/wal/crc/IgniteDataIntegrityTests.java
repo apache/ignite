@@ -23,14 +23,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,7 +66,7 @@ public class IgniteDataIntegrityTests {
 
         ThreadLocalRandom curr = ThreadLocalRandom.current();
 
-        for (int i = 0; i < 1024; i+=16) {
+        for (int i = 0; i < 1024; i += 16) {
             buf.putInt(curr.nextInt());
             buf.putInt(curr.nextInt());
             buf.putInt(curr.nextInt());
@@ -208,7 +207,7 @@ public class IgniteDataIntegrityTests {
         fileInput.io().position(0);
 
         for (int i = 0; i < 1024 / 16; i++) {
-            try(FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
+            try (FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
                 in.readInt();
                 in.readInt();
                 in.readInt();

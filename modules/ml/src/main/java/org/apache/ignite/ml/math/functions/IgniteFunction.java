@@ -47,7 +47,7 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
      * @param <V> Type of value which result of {@code after} extends.
      * @return Functions composition.
      */
-    default <V> IgniteFunction<T, V> andThen(IgniteFunction<? super R, ? extends V> after) {
+    public default <V> IgniteFunction<T, V> andThen(IgniteFunction<? super R, ? extends V> after) {
         Objects.requireNonNull(after);
         return (T t) -> after.apply(apply(t));
     }

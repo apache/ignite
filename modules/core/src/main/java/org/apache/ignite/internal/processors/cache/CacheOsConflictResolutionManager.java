@@ -24,7 +24,7 @@ import org.apache.ignite.lang.IgniteFuture;
 /**
  * OS conflict resolver manager.
  */
-public class CacheOsConflictResolutionManager<K ,V> implements CacheConflictResolutionManager<K, V> {
+public class CacheOsConflictResolutionManager<K, V> implements CacheConflictResolutionManager<K, V> {
     /**
      * @return Cache conflict resolver.
      */

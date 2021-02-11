@@ -118,13 +118,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
-    @Override public void forceKeyCheck() {
-        super.forceKeyCheck();
-
-        dht().forceKeyCheck();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onReconnected() {
         map = new GridCacheLocalConcurrentMap(
             ctx,
@@ -381,27 +374,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return dht().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgfsDataSizeChanged(long delta) {
-        dht().onIgfsDataSizeChanged(delta);
-    }
-
-    /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,
         boolean readers) {
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {
-            GridCacheVersion obsoleteVer = ctx.versions().next();
+            GridCacheVersion obsoleteVer = nextVersion();
 
             List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally(srv, near, readers);
 

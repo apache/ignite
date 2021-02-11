@@ -105,7 +105,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      */
     @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
-        super(tbl);
+        super(tbl, idxName, cols, IndexType.createNonUnique(false, false, true));
 
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
@@ -118,8 +118,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         if ((cols[0].sortType & SortOrder.NULLS_LAST) != 0)
             throw DbException.getUnsupportedException("cannot do nulls last");
-
-        initBaseIndex(tbl, 0, idxName, cols, IndexType.createNonUnique(false, false, true));
 
         table = tbl;
 
@@ -322,7 +320,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            final int seg = threadLocalSegment();
+            final int seg = segment(H2Utils.context(filter.getSession()));
 
             final MVRTreeMap<Long> segment = segments[seg];
 
@@ -352,7 +350,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         IndexingQueryFilter qryFilter = null;
 
-        QueryContext qctx = queryContextRegistry().getThreadLocal();
+        QueryContext qctx = H2Utils.context(filter.getSession());
 
         if (qctx != null)
             qryFilter = qctx.filter();
@@ -389,7 +387,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (!first)
                 throw DbException.throwInternalError("Spatial Index can only be fetch by ascending order");
 
-            final int seg = threadLocalSegment();
+            final int seg = segment(H2Utils.context(ses));
 
             final MVRTreeMap<Long> segment = segments[seg];
 
@@ -431,7 +429,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (intersection == null)
                 return find(filter.getSession(), null, null);
 
-            final int seg = threadLocalSegment();
+            final int seg = segment(H2Utils.context(filter.getSession()));
 
             final MVRTreeMap<Long> segment = segments[seg];
 

@@ -17,147 +17,71 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.metric.Metric;
-import org.apache.ignite.ml.selection.scoring.metric.exceptions.UnknownClassLabelException;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.selection.scoring.evaluator.EvaluationResult;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link RegressionMetrics}.
+ * Tests for binary classification metrics.
  */
 public class BinaryClassificationMetricsTest {
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testDefaultBehaviour() {
-        Metric scoreCalculator = new BinaryClassificationMetrics();
+    public void testCalculation() {
+        Map<Vector, Double> xorset = new HashMap<Vector, Double>() {{
+            put(VectorUtils.of(0., 0.), 0.);
+            put(VectorUtils.of(0., 1.), 1.);
+            put(VectorUtils.of(1., 0.), 1.);
+            put(VectorUtils.of(1., 1.), 0.);
+        }};
 
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 1.0, 1.0, 1.0),
-            Arrays.asList(1.0, 1.0, 0.0, 1.0)
-        );
+        IgniteModel<Vector, Double> xorFunction = v -> {
+            if (Math.abs(v.get(0) - v.get(1)) < 0.01)
+                return 0.;
+            else
+                return 1.;
+        };
 
-        double score = scoreCalculator.score(cursor.iterator());
+        IgniteModel<Vector, Double> andFunction = v -> {
+            if (Math.abs(v.get(0) - v.get(1)) < 0.01 && v.get(0) > 0)
+                return 1.;
+            else
+                return 0.;
+        };
 
-        assertEquals(0.75, score, 1e-12);
-    }
+        IgniteModel<Vector, Double> orFunction = v -> {
+            if (v.get(0) > 0 || v.get(1) > 0)
+                return 1.;
+            else
+                return 0.;
+        };
 
-    /** */
-    @Test
-    public void testDefaultBehaviourForScoreAll() {
-        BinaryClassificationMetrics scoreCalculator = new BinaryClassificationMetrics();
+        EvaluationResult xorResult = Evaluator.evaluateBinaryClassification(xorset, xorFunction, Vector::labeled);
+        assertEquals(1., xorResult.get(MetricName.ACCURACY), 0.01);
+        assertEquals(1., xorResult.get(MetricName.PRECISION), 0.01);
+        assertEquals(1., xorResult.get(MetricName.RECALL), 0.01);
+        assertEquals(1., xorResult.get(MetricName.F_MEASURE), 0.01);
 
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 1.0, 1.0, 1.0),
-            Arrays.asList(1.0, 1.0, 0.0, 1.0)
-        );
+        EvaluationResult andResult = Evaluator.evaluateBinaryClassification(xorset, andFunction, Vector::labeled);
+        assertEquals(0.25, andResult.get(MetricName.ACCURACY), 0.01);
+        assertEquals(0., andResult.get(MetricName.PRECISION), 0.01); // there is no TP
+        assertEquals(0., andResult.get(MetricName.RECALL), 0.01); // there is no TP
+        assertEquals(Double.NaN, andResult.get(MetricName.F_MEASURE), 0.01); // // there is no TP and zero in denominator
 
-        BinaryClassificationMetricValues metricValues = scoreCalculator.scoreAll(cursor.iterator());
-
-        assertEquals(0.75, metricValues.accuracy(), 1e-12);
-    }
-
-    /** */
-    @Test
-    public void testAccuracy() {
-        Metric scoreCalculator = new BinaryClassificationMetrics()
-            .withNegativeClsLb(1.0)
-            .withPositiveClsLb(2.0);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals(0.75, score, 1e-12);
-    }
-
-    /** */
-    @Test
-    public void testCustomMetric() {
-        Metric scoreCalculator = new BinaryClassificationMetrics()
-            .withNegativeClsLb(1.0)
-            .withPositiveClsLb(2.0)
-            .withMetric(BinaryClassificationMetricValues::tp);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals(3, score, 1e-12);
-    }
-
-    /** */
-    @Test
-    public void testNullCustomMetric() {
-        Metric scoreCalculator = new BinaryClassificationMetrics()
-            .withNegativeClsLb(1.0)
-            .withPositiveClsLb(2.0)
-            .withMetric(null);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        // accuracy as default metric
-        assertEquals(0.75, score, 1e-12);
-    }
-
-    /** */
-    @Test
-    public void testNaNinClassLabels() {
-        Metric scoreCalculator = new BinaryClassificationMetrics()
-            .withNegativeClsLb(Double.NaN)
-            .withPositiveClsLb(Double.POSITIVE_INFINITY);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 1.0, 1.0, 1.0),
-            Arrays.asList(1.0, 1.0, 0.0, 1.0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        // accuracy as default metric
-        assertEquals(0.75, score, 1e-12);
-    }
-
-    /** */
-    @Test(expected = UnknownClassLabelException.class)
-    public void testFailWithIncorrectClassLabelsInData() {
-        Metric scoreCalculator = new BinaryClassificationMetrics();
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(2.0, 2.0, 2.0, 2.0),
-            Arrays.asList(2.0, 2.0, 1.0, 2.0)
-        );
-
-        scoreCalculator.score(cursor.iterator());
-    }
-
-    /** */
-    @Test(expected = UnknownClassLabelException.class)
-    public void testFailWithIncorrectClassLabelsInMetrics() {
-        Metric scoreCalculator = new BinaryClassificationMetrics()
-            .withPositiveClsLb(42);
-
-        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1.0, 1.0, 1.0, 1.0),
-            Arrays.asList(1.0, 1.0, 0.0, 1.0)
-        );
-
-        scoreCalculator.score(cursor.iterator());
+        EvaluationResult orResult = Evaluator.evaluateBinaryClassification(xorset, orFunction, Vector::labeled);
+        assertEquals(0.75, orResult.get(MetricName.ACCURACY), 0.01);
+        assertEquals(0.66, orResult.get(MetricName.PRECISION), 0.01); // there is no TP
+        assertEquals(1., orResult.get(MetricName.RECALL), 0.01); // there is no TP
+        assertEquals(0.8, orResult.get(MetricName.F_MEASURE), 0.01); // // there is no TP and zero in denominator
     }
 }

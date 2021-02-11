@@ -140,7 +140,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private <T, R>  void doTestVisorTask(
+    private <T, R> void doTestVisorTask(
         Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite) throws Exception
     {
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
@@ -172,7 +172,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private <T, R>  void doTestNotManagementVisorTask(
+    private <T, R> void doTestNotManagementVisorTask(
         Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite) throws Exception
     {
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();

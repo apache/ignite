@@ -17,11 +17,15 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Tests.Cache;
@@ -151,6 +155,36 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Test cache creation from configuration with expiry policy.
+        /// </summary>
+        [Test]
+        public void TestCreateFromConfigurationWithExpiration()
+        {
+            var expiryPolicy = new ExpiryPolicy(
+                TimeSpan.FromMilliseconds(20),
+                TimeSpan.FromMilliseconds(10),
+                TimeSpan.FromMilliseconds(30));
+
+            // Default config.
+            var cfg = new CacheClientConfiguration("a")
+            {
+                ExpiryPolicyFactory = new ExpiryPolicyFactory(expiryPolicy)
+            };
+            var cache = Client.CreateCache<int, int>(cfg);
+            AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
+
+            var remoteExpiryPolicy  = cache.GetConfiguration().ExpiryPolicyFactory.CreateInstance();
+            AssertExtensions.ReflectionEqual(expiryPolicy, remoteExpiryPolicy);
+
+            cache.Put(1, 1);
+
+            // Wait for expiration period.
+            Thread.Sleep(100);
+
+            Assert.IsFalse(cache.ContainsKey(1));
+        }
+
+        /// <summary>
         /// Tests cache creation from partial configuration.
         /// </summary>
         [Test]
@@ -161,9 +195,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var client = (IgniteClient) Client;
 
             // Create cache directly through a socket with only some config properties provided.
-            client.Socket.DoOutInOp<object>(ClientOp.CacheCreateWithConfiguration, s =>
+            client.Socket.DoOutInOp<object>(ClientOp.CacheCreateWithConfiguration, ctx =>
             {
-                var w = client.Marshaller.StartMarshal(s);
+                var w = ctx.Writer;
 
                 w.WriteInt(2 + 2 + 6 + 2 + 4);  // config length in bytes.
 

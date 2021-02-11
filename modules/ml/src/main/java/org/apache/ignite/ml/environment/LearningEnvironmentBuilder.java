@@ -139,6 +139,14 @@ public interface LearningEnvironmentBuilder extends Serializable {
     }
 
     /**
+     * Specify partition data time-to-live in seconds (-1 for an infinite lifetime).
+     *
+     * @param dataTtl Partition data time-to-live in seconds (-1 for an infinite lifetime).
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withDataTtl(long dataTtl);
+
+    /**
      * Get default {@link LearningEnvironmentBuilder}.
      *
      * @return Default {@link LearningEnvironmentBuilder}.

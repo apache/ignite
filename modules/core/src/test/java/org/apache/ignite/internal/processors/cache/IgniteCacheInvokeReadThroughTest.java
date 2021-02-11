@@ -42,9 +42,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     @Override protected void startNodes() throws Exception {
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
     }
 
     /**

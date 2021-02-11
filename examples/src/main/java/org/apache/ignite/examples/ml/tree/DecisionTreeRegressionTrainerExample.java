@@ -25,19 +25,19 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 
 /**
  * Example of using distributed {@link DecisionTreeRegressionTrainer}.
  * <p>
- * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)}
- * on interval {@code [0, 10)}).</p>
+ * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)} on
+ * interval {@code [0, 10)}).</p>
  * <p>
  * After that it creates classification trainer and uses it to train the model on the training set.</p>
  * <p>
- * Finally, this example loops over the test data points, applies the trained model, and compares prediction
- * to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test data points, applies the trained model, and compares prediction to expected
+ * outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
@@ -70,7 +70,7 @@ public class DecisionTreeRegressionTrainerExample {
                 DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
 
                 // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(ignite, trainingSet, new LabeledDummyVectorizer<>());
+                DecisionTreeModel mdl = trainer.fit(ignite, trainingSet, new LabeledDummyVectorizer<>());
 
                 System.out.println(">>> Decision tree regression model: " + mdl);
 
@@ -88,9 +88,13 @@ public class DecisionTreeRegressionTrainerExample {
                 System.out.println(">>> ---------------------------------");
 
                 System.out.println(">>> Decision tree regression trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 

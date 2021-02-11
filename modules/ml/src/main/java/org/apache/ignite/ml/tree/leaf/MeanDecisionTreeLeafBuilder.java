@@ -42,7 +42,7 @@ public class MeanDecisionTreeLeafBuilder implements DecisionTreeLeafBuilder {
             }
 
             if (cnt != 0) {
-                mean = mean / cnt;
+                mean /= cnt;
 
                 return new double[] {mean, cnt};
             }

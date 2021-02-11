@@ -17,11 +17,18 @@
 
 package org.apache.ignite.examples.ml.tree.randomforest;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -32,14 +39,6 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on a
@@ -52,8 +51,8 @@ import java.util.stream.IntStream;
  * using random forest regression algorithm.</p>
  * <p>
  * Finally, this example loops over the test set of data points, compares prediction of the trained model to the
- * expected outcome (ground truth), and evaluates model quality in terms of Mean Squared Error (MSE) and
- * Mean Absolute Error (MAE).</p>
+ * expected outcome (ground truth), and evaluates model quality in terms of Mean Squared Error (MSE) and Mean Absolute
+ * Error (MAE).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
@@ -61,7 +60,7 @@ public class RandomForestRegressionExample {
     /**
      * Run example.
      */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Random Forest regression algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -116,17 +115,22 @@ public class RandomForestRegressionExample {
 
                     System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
 
-                    mse = mse / totalAmount;
+                    mse /= totalAmount;
                     System.out.println("\n>>> Mean squared error (MSE) " + mse);
 
-                    mae = mae / totalAmount;
+                    mae /= totalAmount;
                     System.out.println("\n>>> Mean absolute error (MAE) " + mae);
 
                     System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");
                 }
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

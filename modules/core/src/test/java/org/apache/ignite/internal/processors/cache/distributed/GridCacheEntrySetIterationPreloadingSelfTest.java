@@ -65,7 +65,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     @Test
-    public void testIteration()  throws Exception {
+    public void testIteration() throws Exception {
         try {
             final IgniteCache<String, Integer> cache = jcache();
 

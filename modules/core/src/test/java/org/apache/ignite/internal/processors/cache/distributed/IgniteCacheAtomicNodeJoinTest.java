@@ -26,7 +26,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  *
  */
 public class IgniteCacheAtomicNodeJoinTest extends IgniteCacheNodeJoinAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;

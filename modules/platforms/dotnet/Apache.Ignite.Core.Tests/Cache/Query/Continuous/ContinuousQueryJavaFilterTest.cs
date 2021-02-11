@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
@@ -55,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
         /** */
         private IIgnite _ignite;
-        
+
         /** */
         private string _javaNodeName;
 

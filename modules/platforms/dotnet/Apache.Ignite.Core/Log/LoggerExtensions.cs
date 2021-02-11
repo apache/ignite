@@ -309,12 +309,26 @@ namespace Apache.Ignite.Core.Log
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="category">The category.</param>
-        /// <returns>Logger that always uses specified category.</returns>
+        /// <returns>Logger that uses specified category when no other category is provided.</returns>
         public static ILogger GetLogger(this ILogger logger, string category)
         {
             IgniteArgumentCheck.NotNull(logger, "logger");
 
             return new CategoryLogger(logger, category);
+        }
+
+        /// <summary>
+        /// Gets the <see cref="CategoryLogger"/> with a specified category that wraps provided logger.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="category">The category as a type.</param>
+        /// <returns>Logger that uses specified category when no other category is provided.</returns>
+        public static ILogger GetLogger(this ILogger logger, Type category)
+        {
+            IgniteArgumentCheck.NotNull(logger, "logger");
+            IgniteArgumentCheck.NotNull(category, "category");
+
+            return new CategoryLogger(logger, category.Name);
         }
     }
 }

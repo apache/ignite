@@ -33,12 +33,14 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.cache.spi.support.AbstractDomainDataRegion;
 
-/** */
+/**
+ * Implementation of a region for cacheable domain data.
+ */
 public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements ExtendedStatisticsSupport {
-    /** */
+    /** Cache proxy. */
     private final HibernateCacheProxy cache;
 
-    /** */
+    /** Strategy factory. */
     private HibernateAccessStrategyFactory stgyFactory;
 
     /** */
@@ -56,7 +58,7 @@ public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements 
         completeInstantiation(regionCfg, buildingCtx);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected EntityDataAccess generateEntityAccess(EntityDataCachingConfig entityAccessCfg) {
         AccessType accessType = entityAccessCfg.getAccessType();
         Ignite ignite = stgyFactory.node();
@@ -90,7 +92,7 @@ public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements 
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected CollectionDataAccess generateCollectionAccess(CollectionDataCachingConfig cachingCfg) {
         HibernateCacheProxy cache = stgyFactory.regionCache(getName());
         AccessType accessType = cachingCfg.getAccessType();
@@ -125,7 +127,7 @@ public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements 
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected NaturalIdDataAccess generateNaturalIdAccess(NaturalIdDataCachingConfig naturalIdAccessCfg) {
         HibernateCacheProxy cache = stgyFactory.regionCache(getName());
         AccessType accessType = naturalIdAccessCfg.getAccessType();
@@ -160,22 +162,22 @@ public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements 
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void destroy() throws CacheException {
         // no-op
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public long getElementCountInMemory() {
         return cache.offHeapEntriesCount();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public long getElementCountOnDisk() {
         return cache.sizeLong();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public long getSizeInMemory() {
         return cache.offHeapAllocatedSize();
     }

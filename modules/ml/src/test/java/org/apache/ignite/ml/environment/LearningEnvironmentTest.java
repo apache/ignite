@@ -87,11 +87,12 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-             @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+             @Override public <K, V> IgniteModel<Object, Vector> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
-                        TestUtils.DataWrapper.of(env.partition()));
+                        TestUtils.DataWrapper.of(env.partition()),
+                    envBuilder.buildForTrainer());
 
                 Vector v = null;
                 for (int iter = 0; iter < iterations; iter++) {
@@ -142,7 +143,7 @@ public class LearningEnvironmentTest {
         return IntStream.range(0, partsCnt).boxed().collect(Collectors.toMap(x -> x, x -> x));
     }
 
-    /** Mock random numners generator. */
+    /** Mock random numbers generator. */
     private static class MockRandom extends Random {
         /** Serial version uuid. */
         private static final long serialVersionUID = -7738558243461112988L;

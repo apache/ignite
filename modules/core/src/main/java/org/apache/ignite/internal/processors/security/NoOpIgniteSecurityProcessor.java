@@ -22,6 +22,8 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -32,6 +34,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.IgniteSecurityProcessor.ATTR_GRID_SEC_PROC_CLASS;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 
 /**
  * No operation IgniteSecurity.
@@ -39,6 +42,9 @@ import static org.apache.ignite.internal.processors.security.IgniteSecurityProce
 public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements IgniteSecurity {
     /** No operation security context. */
     private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null);
+
+    /** Instance of IgniteSandbox. */
+    private final IgniteSandbox sandbox = new NoOpSandbox();
 
     /**
      * @param ctx Grid kernal context.
@@ -98,6 +104,11 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteSandbox sandbox() {
+        return sandbox;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean enabled() {
         return false;
     }
@@ -119,7 +130,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node){
+    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node) {
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
 
         if (rmtCls != null) {

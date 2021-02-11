@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains iterative algorithms for solving linear systems.
  */
+
 package org.apache.ignite.ml.math.isolve;

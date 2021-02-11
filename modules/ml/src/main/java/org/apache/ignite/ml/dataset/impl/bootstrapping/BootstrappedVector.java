@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Represents vector with repetitions counters for subsamples in bootstrapped dataset.

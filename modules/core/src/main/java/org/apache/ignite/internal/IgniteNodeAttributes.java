@@ -69,6 +69,9 @@ public final class IgniteNodeAttributes {
     /** Peer classloading enabled flag. */
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
 
+    /** Shutdown policy attribute name. */
+    public static final String ATTR_SHUTDOWN_POLICY = ATTR_PREFIX + ".shutdown.policy";
+
     /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
@@ -77,9 +80,6 @@ public final class IgniteNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
-
-    /** Internal attribute name constant. */
-    public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
@@ -189,9 +189,6 @@ public final class IgniteNodeAttributes {
 
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
-
-    /** Encryption master key digest. */
-    public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
 
     /** Rebalance thread pool size. */
     public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";

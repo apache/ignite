@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,10 +33,12 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -45,6 +49,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 
 /**
  * Test for customer scenario.
@@ -66,9 +72,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     private static final long TEST_TIME = 60_000;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean forceServerMode;
 
     /** {@inheritDoc} */
@@ -77,7 +80,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        if (!client) {
+        if (!cfg.isClientMode()) {
             CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
             for (int i = 0; i < CACHES; i++) {
@@ -97,8 +100,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         }
         else
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(forceServerMode);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -129,9 +130,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
         startGrids(SRV_CNT);
 
-        client = true;
-
-        startGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
+        startClientGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
 
         waitForTopology(SRV_CNT + CLIENTS_CNT);
 
@@ -156,14 +155,12 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
         startGrids(SRV_CNT);
 
-        client = true;
-
         forceServerMode = true;
 
         int clientNodes = 24;
 
         try {
-            startGridsMultiThreaded(SRV_CNT, clientNodes);
+            startClientGridsMultiThreaded(SRV_CNT, clientNodes);
         }
         catch (IgniteCheckedException e) {
             //Ignored: it is expected to get exception here
@@ -256,8 +253,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     public void testClientReconnect() throws Exception {
         startGrids(SRV_CNT);
 
-        client = true;
-
         final AtomicBoolean stop = new AtomicBoolean(false);
 
         final AtomicInteger idx = new AtomicInteger(SRV_CNT);
@@ -266,7 +261,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Ignite ignite = startGrid(idx.getAndIncrement());
+                Ignite ignite = startClientGrid(idx.getAndIncrement());
 
                 latch.countDown();
 
@@ -291,7 +286,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             while (System.currentTimeMillis() < end) {
                 log.info("Iteration: " + cnt++);
 
-                try (Ignite ignite = startGrid(clientIdx)) {
+                try (Ignite ignite = startClientGrid(clientIdx)) {
                     assertTrue(ignite.cluster().localNode().isClient());
 
                     assertEquals(6, ignite.cluster().nodes().size());
@@ -307,6 +302,63 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         finally {
             stop.set(true);
         }
+    }
+
+    /**
+     * Verifies that new node ID generated by client on disconnect replaces old ID only on RECONNECTED event.
+     *
+     * Old node ID is still available on DISCONNECTED event.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientIdUpdateOnReconnect() throws Exception {
+        startGrid(0);
+
+        IgniteEx clNode = startClientGrid(1);
+        UUID oldNodeId = clNode.localNode().id();
+
+        awaitPartitionMapExchange();
+
+        stopGrid(0);
+
+        AtomicReference<UUID> idOnDisconnect = new AtomicReference<>();
+        AtomicReference<UUID> idOnReconnect = new AtomicReference<>();
+
+        CountDownLatch disconnectedLatch = new CountDownLatch(1);
+        CountDownLatch reconnectedLatch = new CountDownLatch(1);
+
+        clNode.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event event) {
+                switch (event.type()) {
+                    case EVT_CLIENT_NODE_DISCONNECTED: {
+                        idOnDisconnect.set(event.node().id());
+
+                        disconnectedLatch.countDown();
+
+                        break;
+                    }
+
+                    case EVT_CLIENT_NODE_RECONNECTED: {
+                        idOnReconnect.set(event.node().id());
+
+                        reconnectedLatch.countDown();
+
+                        break;
+                    }
+                }
+
+                return true;
+            }
+        }, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> disconnectedLatch.getCount() == 0, 10_000));
+        assertEquals(oldNodeId, idOnDisconnect.get());
+
+        startGrid(0);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> reconnectedLatch.getCount() == 0, 10_000));
+        assertEquals(grid(1).localNode().id(), idOnReconnect.get());
     }
 
     /**
