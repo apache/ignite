@@ -56,17 +56,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var resolveMethod = typeof(NativeLibraryUtils).GetMethod("Resolve", BindingFlags.Static | BindingFlags.NonPublic);
             Debug.Assert(resolveMethod != null);
 
-            var libraryNameArg = Expression.Parameter(typeof(string), "libraryName");
-            var asmArg = Expression.Parameter(typeof(Assembly), "asm");
-            var searchPathArg = Expression.Parameter(typeof(Nullable<>).MakeGenericType(dllImportSearchPathType), "searchPath");
+            var libraryName = Expression.Parameter(typeof(string));
+            var assembly = Expression.Parameter(typeof(Assembly));
+            var searchPath = Expression.Parameter(typeof(Nullable<>).MakeGenericType(dllImportSearchPathType));
 
-            var invokeImplExpr = Expression.Call(resolveMethod, libraryNameArg);
-            var dllImportResolver = Expression.Lambda(dllImportResolverType, invokeImplExpr, libraryNameArg, asmArg, searchPathArg);
+            var resolve = Expression.Call(resolveMethod, libraryName);
+            var dllImportResolver = Expression.Lambda(dllImportResolverType, resolve, libraryName, assembly, searchPath);
             var resolveDelegate = dllImportResolver.Compile();
 
             setDllImportResolverMethod.Invoke(null, new object[] {typeof(Ignition).Assembly, resolveDelegate});
         }
 
+        /// <summary>
+        /// Resolves the native library.
+        /// </summary>
         // ReSharper disable once UnusedMember.Local (reflection).
         private static IntPtr Resolve(string libraryName)
         {
