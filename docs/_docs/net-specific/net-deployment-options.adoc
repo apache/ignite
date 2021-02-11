@@ -59,6 +59,8 @@ TODO:
 * Document `IncludeAllContentForSelfExtract`
 * Document workaround for pre-2.11 versions on .NET 5
 
+xref:net-troubleshooting.adoc#libcoreclr-not-found[DllNotFoundException workaround]
+
 ```
 NativeLibrary.SetDllImportResolver(
     typeof(Ignition).Assembly,

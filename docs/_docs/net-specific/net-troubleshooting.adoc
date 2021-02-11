@@ -160,7 +160,7 @@ move the process handling logic to Java side and invoke it with
 link:developers-guide/distributed-computing/distributed-computing[Compute] `ExecuteJavaTask` API.
 Alternatively, use Services API to call Java service from .NET.
 
-=== DllNotFoundException: Unable to load shared library 'libcoreclr.so' or one of its dependencies
+=== [[libcoreclr-not-found]] DllNotFoundException: Unable to load shared library 'libcoreclr.so' or one of its dependencies
 
 Occurs on .NET 5 in a single-file publish mode (e.g. `dotnet publish --self-contained true -r linux-x64 -p:PublishSingleFile=true`).
 
