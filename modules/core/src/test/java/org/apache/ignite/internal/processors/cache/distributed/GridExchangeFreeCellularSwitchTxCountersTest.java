@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -81,12 +82,14 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
 
         // Partial prepare #1.
         CountDownLatch prepMsgLatch1 = new CountDownLatch(brokenCellNodes.size() /*one per node*/);
+        AtomicInteger blockedMsgCnt1 = new AtomicInteger();
 
-        blockPrepareMessages(brokenCellNodes.get(0), prepMsgLatch1);
+        blockPrepareMessages(brokenCellNodes.get(0), prepMsgLatch1, blockedMsgCnt1);
 
         IgniteInternalFuture<?> hangedPrepFut1 = partialPrepare(partialPreparedKeys1, failed);
 
-        prepMsgLatch1.await();
+        prepMsgLatch1.await(); // Both messages handled.
+        assertEquals(1, blockedMsgCnt1.get()); // One message blocked.
 
         stopBlockingPrepareMessages();
 
@@ -97,12 +100,14 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
 
         // Partial prepare #2.
         CountDownLatch prepMsgLatch2 = new CountDownLatch(brokenCellNodes.size() /*one per node*/);
+        AtomicInteger blockedMsgCnt2 = new AtomicInteger();
 
-        blockPrepareMessages(brokenCellNodes.get(0), prepMsgLatch2);
+        blockPrepareMessages(brokenCellNodes.get(1), prepMsgLatch2, blockedMsgCnt2);
 
         IgniteInternalFuture<?> hangedPrepFut2 = partialPrepare(partialPreparedKeys2, failed);
 
-        prepMsgLatch2.await();
+        prepMsgLatch2.await(); // Both messages handled.
+        assertEquals(1, blockedMsgCnt2.get()); // One message blocked.
 
         stopBlockingPrepareMessages();
 
@@ -124,18 +129,19 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(PART_CACHE_NAME);
 
             for (Integer key : putKeys)
-                assertEquals(key, cache.get(key));
+                assertEquals(key, cache.get(key)); // Successful put. Cnts 1 - 10.
 
             for (Integer key : partialPreparedKeys1)
-                assertEquals(null, cache.get(key));
+                assertEquals(null, cache.get(key)); // Rolled back due to partial preparation. Cnts 11 - 20.
 
             for (Integer key : preparedKeys)
-                assertEquals(key, cache.get(key));
+                assertEquals(key, cache.get(key)); // Successful recovery due to full preparation. Cnts 20 - 30.
 
             for (Integer key : partialPreparedKeys2)
-                assertEquals(null, cache.get(key));
+                assertEquals(null, cache.get(key)); // Rolled back due to partial preparation. Cnts 30 - 40.
         }
 
+        // Finalized to last update. Gaps (11-20) filled. Tail (30-40) dropped.
         assertCountersAsExpected(part, true, PART_CACHE_NAME, 30, 30);
 
         assertPartitionsSame(idleVerify(aliveCellNodes.get(0), PART_CACHE_NAME));
@@ -203,7 +209,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
     /**
      *
      */
-    protected void blockPrepareMessages(Ignite igniteTo, CountDownLatch prepMsgLatch) {
+    protected void blockPrepareMessages(Ignite igniteTo, CountDownLatch prepMsgLatch, AtomicInteger blockedMsgCnt) {
         for (Ignite ignite : G.allGrids()) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
@@ -215,9 +221,14 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
 
                         assert prepMsgLatch.getCount() > 0;
 
+                        boolean block = to.equals(igniteTo);
+
+                        if (block)
+                            blockedMsgCnt.incrementAndGet();
+
                         prepMsgLatch.countDown();
 
-                        return to.equals(igniteTo);
+                        return block;
                     }
 
                     return false;
