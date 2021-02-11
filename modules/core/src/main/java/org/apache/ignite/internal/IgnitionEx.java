@@ -1121,7 +1121,14 @@ public class IgnitionEx {
         }
 
         if (old != null)
-            if (failIfStarted) {
+            if (old.grid() == null) { // Stopped but not removed from map yet.
+                boolean replaced = grids.replace(name, old, grid);
+
+                if (!replaced)
+                    throw new IgniteCheckedException("Ignite instance with this name has been concurrently started: " +
+                        name);
+            }
+            else if (failIfStarted) {
                 if (name == null)
                     throw new IgniteCheckedException("Default Ignite instance has already been started.");
                 else
