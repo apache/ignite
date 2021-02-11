@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
@@ -56,12 +57,13 @@ public interface FieldsMetadata {
             List<String> origin = origins != null ? origins.get(i) : null;
             RelDataTypeField field = fields.get(i);
             RelDataType fieldType = field.getType();
+            Type fieldCls = typeFactory.getResultClass(fieldType);
 
             b.add(new CalciteQueryFieldMetadata(
                 F.isEmpty(origin) ? null : origin.get(0),
                 F.isEmpty(origin) ? null : origin.get(1),
                 F.isEmpty(origin) ? field.getName() : origin.get(2),
-                String.valueOf(typeFactory.getResultClass(fieldType)),
+                fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
                 fieldType.getPrecision(),
                 fieldType.getScale()
             ));
