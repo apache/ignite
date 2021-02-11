@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.defragmentation;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.h2.index.Index;
@@ -164,88 +165,98 @@ public class IndexingDefragmentation {
             GridH2RowDescriptor rowDesc = table.rowDescriptor();
 
             List<Index> indexes = table.getIndexes();
-            H2TreeIndex oldH2Idx = (H2TreeIndex)indexes.get(2);
 
-            int segments = oldH2Idx.segmentsCount();
+            final List<H2TreeIndex> oldIndexes = indexes.stream()
+                .filter(index -> index instanceof H2TreeIndex)
+                .map(H2TreeIndex.class::cast)
+                .collect(Collectors.toList());
 
-            H2Tree firstTree = oldH2Idx.treeForRead(0);
+            for (H2TreeIndex oldH2Idx : oldIndexes) {
+                int segments = oldH2Idx.segmentsCount();
 
-            PageIoResolver pageIoRslvr = pageAddr -> {
-                PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
+                H2Tree firstTree = oldH2Idx.treeForRead(0);
 
-                if (io instanceof BPlusMetaIO)
-                    return io;
+                PageIoResolver pageIoRslvr = pageAddr -> {
+                    PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
 
-                //noinspection unchecked,rawtypes,rawtypes
-                return wrap((BPlusIO)io);
-            };
+                    if (io instanceof BPlusMetaIO)
+                        return io;
 
-            H2TreeIndex newIdx = H2TreeIndex.createIndex(
-                cctx,
-                null,
-                table,
-                oldH2Idx.getName(),
-                firstTree.getPk(),
-                firstTree.getAffinityKey(),
-                Arrays.asList(firstTree.cols()),
-                Arrays.asList(firstTree.cols()),
-                oldH2Idx.inlineSize(),
-                segments,
-                newCachePageMemory,
-                newCtx.offheap(),
-                pageIoRslvr,
-                log
-            );
+                    //noinspection unchecked,rawtypes,rawtypes
+                    return wrap((BPlusIO)io);
+                };
 
-            for (int i = 0; i < segments; i++) {
-                H2Tree tree = oldH2Idx.treeForRead(i);
+                H2TreeIndex newIdx = H2TreeIndex.createIndex(
+                    cctx,
+                    null,
+                    table,
+                    oldH2Idx.getName(),
+                    firstTree.getPk(),
+                    firstTree.getAffinityKey(),
+                    Arrays.asList(firstTree.cols()),
+                    Arrays.asList(firstTree.cols()),
+                    oldH2Idx.inlineSize(),
+                    segments,
+                    newCachePageMemory,
+                    newCtx.offheap(),
+                    pageIoRslvr,
+                    log
+                );
 
-                newIdx.treeForRead(i).enableSequentialWriteMode();
+                for (int i = 0; i < segments; i++) {
+                    H2Tree tree = oldH2Idx.treeForRead(i);
+                    final H2Tree.MetaPageInfo oldInfo = tree.getMetaInfo();
 
-                treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
-                    cancellationChecker.run();
+                    final H2Tree newTree = newIdx.treeForRead(i);
+                    newTree.copyMetaInfo(oldInfo);
 
-                    if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
-                        cpLock.checkpointReadUnlock();
+                    newTree.enableSequentialWriteMode();
 
-                        cpLock.checkpointReadLock();
+                    treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                        cancellationChecker.run();
 
-                        lastCpLockTs.set(System.currentTimeMillis());
-                    }
+                        if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
+                            cpLock.checkpointReadUnlock();
 
-                    assert 1 == io.getVersion()
-                        : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
-                        " Please implement copying of tree in a new format.";
+                            cpLock.checkpointReadLock();
 
-                    BPlusIO<H2Row> h2IO = wrap(io);
+                            lastCpLockTs.set(System.currentTimeMillis());
+                        }
 
-                    H2Row row = theTree.getRow(h2IO, pageAddr, idx);
+                        assert 1 == io.getVersion()
+                            : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
+                            " Please implement copying of tree in a new format.";
 
-                    if (row instanceof H2CacheRowWithIndex) {
-                        H2CacheRowWithIndex h2CacheRow = (H2CacheRowWithIndex)row;
+                        BPlusIO<H2Row> h2IO = wrap(io);
 
-                        CacheDataRow cacheDataRow = h2CacheRow.getRow();
+                        H2Row row = theTree.getRow(h2IO, pageAddr, idx);
 
-                        int partition = cacheDataRow.partition();
+                        if (row instanceof H2CacheRowWithIndex) {
+                            H2CacheRowWithIndex h2CacheRow = (H2CacheRowWithIndex)row;
 
-                        long link = h2CacheRow.link();
+                            CacheDataRow cacheDataRow = h2CacheRow.getRow();
 
-                        LinkMap map = mappingByPartition.get(partition);
+                            int partition = cacheDataRow.partition();
 
-                        long newLink = map.get(link);
+                            long link = h2CacheRow.link();
 
-                        H2CacheRowWithIndex newRow = H2CacheRowWithIndex.create(
-                            rowDesc,
-                            newLink,
-                            h2CacheRow,
-                            ((H2RowLinkIO)io).storeMvccInfo()
-                        );
+                            LinkMap map = mappingByPartition.get(partition);
 
-                        newIdx.putx(newRow);
-                    }
+                            long newLink = map.get(link);
 
-                    return true;
-                });
+                            H2CacheRowWithIndex newRow = H2CacheRowWithIndex.create(
+                                rowDesc,
+                                newLink,
+                                h2CacheRow,
+                                ((H2RowLinkIO)io).storeMvccInfo()
+                            );
+
+                            newIdx.putx(newRow);
+                        }
+
+                        return true;
+                    });
+                }
             }
 
             return true;
@@ -268,7 +279,7 @@ public class IndexingDefragmentation {
 
         int off = io.offset(idx);
 
-        List<Value> values = new ArrayList<>();
+        IntMap<Value> values = new IntHashMap<>();
 
         if (inlineIdxs != null) {
             int fieldOff = 0;
@@ -280,7 +291,9 @@ public class IndexingDefragmentation {
 
                 fieldOff += inlineIndexColumn.inlineSizeOf(value);
 
-                values.add(value);
+                final int columnIndex = inlineIndexColumn.columnIndex();
+
+                values.put(columnIndex, value);
             }
         }
 
@@ -443,10 +456,10 @@ public class IndexingDefragmentation {
      */
     private static class H2CacheRowWithIndex extends H2CacheRow {
         /** List of index values. */
-        private final List<Value> values;
+        private final IntMap<Value> values;
 
         /** Constructor. */
-        public H2CacheRowWithIndex(GridH2RowDescriptor desc, CacheDataRow row, List<Value> values) {
+        public H2CacheRowWithIndex(GridH2RowDescriptor desc, CacheDataRow row, IntMap<Value> values) {
             super(desc, row);
             this.values = values;
         }

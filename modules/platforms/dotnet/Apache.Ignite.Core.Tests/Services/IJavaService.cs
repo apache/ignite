@@ -169,6 +169,15 @@ namespace Apache.Ignite.Core.Tests.Services
         Address testAddress(Address addr);
 
         /** */
+        int testOverload(int count, Employee[] emps);
+
+        /** */
+        int testOverload(int first, int second);
+
+        /** */
+        int testOverload(int count, Parameter[] param);
+
+        /** */
         Employee[] testEmployees(Employee[] emps);
         
         /** */
@@ -194,6 +203,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         void testLocalDateFromCache();
+
+        /** */
+        void testException(string exceptionClass);
 
         /** */
         void sleep(long delayMs);

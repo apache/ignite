@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     /// Tests client discovery with SSL enabled.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class ClientClusterDiscoveryTestsSsl : ClientClusterDiscoveryTestsBase
     {
         /// <summary>

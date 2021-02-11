@@ -152,9 +152,9 @@ public class CheckpointHistory {
     }
 
     /**
-     * @return Last checkpoint entry if exists. Otherwise {@code null}.
+     * @return Last checkpoint entry if exists.
      */
-    public CheckpointEntry lastCheckpoint() {
+    @Nullable public CheckpointEntry lastCheckpoint() {
         Map.Entry<Long, CheckpointEntry> entry = histMap.lastEntry();
 
         return entry != null ? entry.getValue() : null;
