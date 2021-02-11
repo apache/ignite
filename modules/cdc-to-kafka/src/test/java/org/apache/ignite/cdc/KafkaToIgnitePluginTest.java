@@ -18,12 +18,14 @@
 package org.apache.ignite.cdc;
 
 import java.util.Properties;
-import org.apache.ignite.cdc.serde.KafkaIntArrayDeserializer;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.testcontainers.containers.KafkaContainer;
@@ -45,12 +47,9 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (!cfg.isClientMode()) {
-            KafkaToIgnitePluginProvider provider = new KafkaToIgnitePluginProvider();
-
-            provider.setProperties(props);
-            provider.setCaches("my-cache-2");
-
-            cfg.setPluginProviders(provider);
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)));
         }
 
         return cfg;
@@ -64,7 +63,8 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             props = new Properties();
 
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KafkaIntArrayDeserializer.class.getName());
+            props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
             props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
             props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
             props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
@@ -83,33 +83,10 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     @Test
     public void testPartitionSwitchOnNodeJoin() throws Exception {
         IgniteEx ign1 = startGrid(1);
+        IgniteEx ign2 = startGrid(2);
 
-        ign1.createCache("my-cache-1");
-        ign1.createCache("my-cache-2");
-        ign1.createCache("my-cache-3");
+        IgniteEx cli = startClientGrid(3);
 
-        awaitPartitionMapExchange();
-
-        startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        startClientGrid(4);
-
-        startGrid(3);
-
-        awaitPartitionMapExchange();
-
-        ign1.destroyCache("my-cache-2");
-
-        awaitPartitionMapExchange();
-
-        ign1.createCache("my-cache-2");
-
-        awaitPartitionMapExchange();
-
-        stopGrid(2);
-
-        awaitPartitionMapExchange();
+        cli.cre
     }
 }

@@ -44,9 +44,11 @@ public class KafkaUtils {
 
     /**
      * Initialize Kafka topics.
+     *
      * @param props Properties.
      */
-    public static int initTopic(String topic, Properties props) throws InterruptedException, ExecutionException, TimeoutException {
+    public static int initTopic(String topic, Properties props)
+        throws InterruptedException, ExecutionException, TimeoutException {
         try (AdminClient adminCli = AdminClient.create(props)) {
             DescribeTopicsResult res = adminCli.describeTopics(Collections.singleton(topic));
 

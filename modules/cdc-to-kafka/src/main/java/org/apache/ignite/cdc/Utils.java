@@ -27,11 +27,24 @@ import java.util.Properties;
 import java.util.Set;
 
 public class Utils {
-    /** @return Kafka topic name. */
+    /** @return Property value. */
     public static String property(String propName, Properties props) {
+        return property(propName, props, null);
+    }
+
+    /** @return Kafka topic name. */
+    public static String property(String propName, Properties props, String def) {
         String val = System.getProperty(propName);
 
-        return val != null ? val : props.getProperty(propName);
+        if (val != null)
+            return val;
+
+        val = props.getProperty(propName);
+
+        if (val != null)
+            return val;
+
+        return def;
     }
 
     /** @return Loads properties. */

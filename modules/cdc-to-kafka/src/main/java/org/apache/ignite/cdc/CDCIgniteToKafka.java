@@ -63,7 +63,7 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     public static final int TIMEOUT_MIN = 1;
 
     /** Kafka producer to stream events. */
-    private KafkaProducer<int[], EntryEvent<BinaryObject, BinaryObject>> producer;
+    private KafkaProducer<Integer, EntryEvent<BinaryObject, BinaryObject>> producer;
 
     /** Handle only primary entry flag. */
     private boolean onlyPrimary;
@@ -91,7 +91,7 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
             futs.add(producer.send(new ProducerRecord<>(
                 topic,
                 evt.partition() % kafkaPartitionsNum,
-                new int[] { evt.cacheId(), evt.partition() },
+                evt.cacheId(),
                 evt
             )));
         }

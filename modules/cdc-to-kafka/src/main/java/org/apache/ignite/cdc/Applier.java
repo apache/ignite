@@ -21,17 +21,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -53,9 +50,6 @@ import org.apache.kafka.common.errors.WakeupException;
 
 /** */
 class Applier implements Runnable, AutoCloseable {
-    /** cacheId -> kafkaPart -> List<ignitePart> */
-    private final Map<Integer, Map<Integer, Set<Integer>>> cacheParts = new HashMap<>();
-
     /** */
     private final IgniteEx ign;
 
@@ -65,24 +59,7 @@ class Applier implements Runnable, AutoCloseable {
     /** */
     private volatile boolean closed;
 
-    /** */
-    private final Map<int[], KafkaConsumer<int[], byte[]>> consumers = new TreeMap<>(new Comparator<int[]>() {
-        @Override public int compare(int[] o1, int[] o2) {
-            Objects.requireNonNull(o1);
-            Objects.requireNonNull(o2);
-
-            int len = Math.min(o1.length, o2.length);
-
-            for (int i=0; i<len; i++) {
-                int res = Integer.compare(o1[i], o2[i]);
-
-                if (res != 0)
-                    return res;
-            }
-
-            return Integer.compare(o1.length, o2.length);
-        }
-    });
+    Set<Integer> kafakParts;
 
     /** */
     private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
@@ -91,41 +68,42 @@ class Applier implements Runnable, AutoCloseable {
     private final Properties commonProps;
 
     /** */
-    public Applier(IgniteEx ign, Properties commonProps) {
+    private final String topic;
+
+    /** */
+    private final Set<Integer> caches;
+
+    /** */
+    private final List<KafkaConsumer<Integer, byte[]>> consumers = new ArrayList<>();
+
+    /** */
+    public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches) {
         this.ign = ign;
         this.log = ign.log().getLogger(Applier.class);
         this.commonProps = commonProps;
+        this.topic = topic;
+        this.caches = caches;
     }
 
     /** */
     private void initConsumers() {
         int cnt = 0;
 
-        for (Map.Entry<Integer, Map<Integer, Set<Integer>>> cacheEntry : cacheParts.entrySet()) {
-            int cacheId = cacheEntry.getKey();
-            Map<Integer, Set<Integer>> cacheParts = cacheEntry.getValue();
+        for (int kafkaPart : kafakParts) {
+            Properties props = (Properties)commonProps.clone();
 
-            for (Map.Entry<Integer, Set<Integer>> kafkaToIgniteParts : cacheParts.entrySet()) {
-                int kafkaPart = kafkaToIgniteParts.getKey();
+            // TODO: move to the config.
 
-                for (Integer ignitePart : kafkaToIgniteParts.getValue()) {
-                    Properties props = (Properties)commonProps.clone();
+            KafkaConsumer<Integer, byte[]> consumer = new KafkaConsumer<>(props);
 
-                    props.setProperty(ConsumerConfig.GROUP_ID_CONFIG,
-                        "kafka-to-ignite-applier." + cacheId + '.' + ignitePart);
+            consumer.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
 
-                    KafkaConsumer<int[], byte[]> consumer = new KafkaConsumer<>(props);
+            consumers.add(consumer);
 
-                    consumer.assign(Collections.singleton(new TopicPartition("replication-topic-" + cacheId, kafkaPart)));
+            cnt++;
 
-                    consumers.put(new int[] {cacheId, ignitePart}, consumer);
-
-                    cnt++;
-
-                    if (cnt == 1)
-                        return;
-                }
-            }
+            if (cnt == 1)
+                return;
         }
     }
 
@@ -136,17 +114,15 @@ class Applier implements Runnable, AutoCloseable {
 
             assert !consumers.isEmpty();
 
-            Iterator<Map.Entry<int[], KafkaConsumer<int[], byte[]>>> consumerIter = Collections.emptyIterator();
+            Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
 
             while (!closed) {
                 log.warning("Fetching data from " + Thread.currentThread().getName() + '!');
 
                 if (!consumerIter.hasNext())
-                    consumerIter = consumers.entrySet().iterator();
+                    consumerIter = consumers.iterator();
 
-                Map.Entry<int[], KafkaConsumer<int[], byte[]>> entry = consumerIter.next();
-
-                poll(entry.getKey()[0], entry.getKey()[1], entry.getValue());
+                poll(consumerIter.next());
             }
         }
         catch (WakeupException e) {
@@ -157,7 +133,7 @@ class Applier implements Runnable, AutoCloseable {
             log.error("Applier error!", e);
         }
         finally {
-            for (KafkaConsumer<int[], byte[]> consumer : consumers.values()) {
+            for (KafkaConsumer<Integer, byte[]> consumer : consumers) {
                 try {
                     consumer.close(Duration.ofSeconds(3));
                 }
@@ -173,17 +149,14 @@ class Applier implements Runnable, AutoCloseable {
     }
 
     /**
-     * @param cacheId Cache id.
-     * @param partitionId Partition id.
      * @param consumer Data consumer.
      */
-    private void poll(int cacheId, int partitionId, KafkaConsumer<int[], byte[]> consumer) throws InterruptedException, IgniteCheckedException {
-        ConsumerRecords<int[], byte[]> records = consumer.poll(Duration.ofSeconds(3));
+    private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
+        //TODO: try to reconnect on fail. Exit if no success.
+        ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(3));
 
-        for (ConsumerRecord<int[], byte[]> rec : records) {
-            int[] cacheAndPart = rec.key();
-
-            if (cacheId != cacheAndPart[0] || partitionId != cacheAndPart[1])
+        for (ConsumerRecord<Integer, byte[]> rec : records) {
+            if (!caches.contains(rec.key()))
                 continue;
 
             try(ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
@@ -193,6 +166,8 @@ class Applier implements Runnable, AutoCloseable {
                 throw new IgniteCheckedException(e);
             }
         }
+
+        consumer.commitSync(Duration.ofSeconds(3));
     }
 
     /**
@@ -230,40 +205,15 @@ class Applier implements Runnable, AutoCloseable {
     }
 
     /**
-     *
-     * @param kafkaOrd
-     * @param curVer
-     * @param rmvVer
-     * @return
-     */
-    private boolean needToUpdate(EntryEventOrder kafkaOrd, GridCacheVersion curVer, GridCacheVersion rmvVer) {
-        if (curVer == null && rmvVer == null)
-            return true;
-
-        GridCacheVersion kafkaVer =
-            new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order());
-
-        if (rmvVer != null)
-            return kafkaVer.compareTo(rmvVer) > 0;
-
-        return kafkaVer.compareTo(curVer) > 0;
-    }
-
-    /**
-     * @param cacheId Group id.
-     * @param parts Ignite partitions.
      * @param kafkaPart Kafka partition.
      */
-    public void addCachePartition(int cacheId, List<Integer> parts, int kafkaPart) {
-        cacheParts
-            .computeIfAbsent(cacheId, key -> new HashMap<>())
-            .computeIfAbsent(kafkaPart, key -> new HashSet<>())
-            .addAll(parts);
+    public void addPartition(int kafkaPart) {
+        kafakParts.add(kafkaPart);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Applier{, cacheParts=" + cacheParts + '}';
+        return "Applier{kafakParts=" + kafakParts + '}';
     }
 
     /** {@inheritDoc} */
@@ -272,6 +222,6 @@ class Applier implements Runnable, AutoCloseable {
 
         closed = true;
 
-        consumers.values().forEach(KafkaConsumer::wakeup);
+        consumers.forEach(KafkaConsumer::wakeup);
     }
 }
