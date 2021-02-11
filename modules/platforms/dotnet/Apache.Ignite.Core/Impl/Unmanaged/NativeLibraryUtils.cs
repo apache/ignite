@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             // and multi-targeting is not yet implemented.
             //
             // The code below is equivalent to:
-            // NativeLibrary.SetDllImportResolver(typeof(Ignition).Assembly, (libName, _, _) => Resolve(libName);
+            // NativeLibrary.SetDllImportResolver(typeof(Ignition).Assembly, (libName, _, _) => Resolve(libName));
             var dllImportResolverType = Type.GetType("System.Runtime.InteropServices.DllImportResolver");
             var dllImportSearchPathType = Type.GetType("System.Runtime.InteropServices.DllImportSearchPath");
             var nativeLibraryType = Type.GetType("System.Runtime.InteropServices.NativeLibrary");
