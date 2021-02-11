@@ -28,7 +28,7 @@ class Cluster:
 
     def __init__(self, globals_dict):
         self.context = Context(globals_dict)
-        self.certificate_dir = ''
+        self.certificate_dir = '/opt/certs/'
 
 
 class Context:
@@ -41,93 +41,197 @@ class Context:
         self.globals = globals_dict
 
 
-class CheckControlUtility:
+class TestParams:
+    """
+    Globals and Kwargs for tests
+    """
+
+    test_ssl_jks = {'key_store_jks': 'admin1.jks', 'key_store_password': 'qwe123',
+                    'trust_store_jks': 'truststore.jks', 'trust_store_password': 'qwe123'}
+    test_ssl_path = {'key_store_path': '/opt/ignite/certs/admin1.jks', 'key_store_password': 'qwe123',
+                     'trust_store_path': '/opt/ignite/certs/truststore.jks',
+                     'trust_store_password': 'qwe123'}
+    test_auth = {'login': 'admin1', 'password': 'qwe123'}
+
+    creds_full_jks = Creds('/opt/certs/admin1.jks', 'qwe123',
+                           '/opt/certs/truststore.jks', 'qwe123',
+                           'admin1', 'qwe123')
+    creds_full_path = Creds('/opt/ignite/certs/admin1.jks', 'qwe123',
+                            '/opt/ignite/certs/truststore.jks', 'qwe123',
+                            'admin1', 'qwe123')
+    creds_auth = Creds(login='admin1', password='qwe123')
+    creds_jks = Creds('/opt/certs/admin1.jks', 'qwe123',
+                      '/opt/certs/truststore.jks', 'qwe123')
+    creds_none = Creds()
+    creds_full_default = Creds('/opt/certs/admin.jks', '123456',
+                               '/opt/certs/truststore.jks', '123456',
+                               'ignite', 'ignite')
+    creds_ssl_default = Creds('/opt/certs/admin.jks', '123456',
+                              '/opt/certs/truststore.jks', '123456')
+    creds_auth_default = Creds(login='ignite', password='ignite')
+
+    test_globals_full_jks = dict(test_auth)
+    test_globals_full_jks['ssl'] = test_ssl_jks
+    test_globals_full_path = dict(test_auth)
+    test_globals_full_path['ssl'] = test_ssl_path
+    test_globals_auth = dict(test_auth)
+    test_globals_ssl = dict()
+    test_globals_ssl['ssl'] = test_ssl_jks
+    test_globals_none = dict
+
+    test_kwargs_full_jks = dict(test_auth, **test_ssl_jks)
+    test_kwargs_full_path = dict(test_auth, **test_ssl_path)
+    test_kwargs_auth = dict(test_auth)
+    test_kwargs_ssl = test_ssl_jks
+
+
+class CheckCaseGlobalsSetKwargsNotSet:
     """
     Check that control_utulity.py correctly parse credentials from globals
     """
 
-    test_admin_data_full = {"login": "admin1", "password": "qwe123",
-                            "ssl": {"key_store_jks": "admin1.jks", "key_store_password": "qwe123",
-                                    "trust_store_jks": "truststore.jks", "trust_store_password": "qwe123"}}
+    test_globals_full_jks = TestParams.test_globals_full_jks
+    test_globals_full_path = TestParams.test_globals_full_path
+    test_globals_auth = TestParams.test_globals_auth
+    test_globals_ssl = TestParams.test_globals_ssl
+    test_globals_none = TestParams.test_globals_none
 
-    test_admin_data_ssl = {
-        "ssl": {"key_store_jks": "admin1.jks", "key_store_password": "qwe123", "trust_store_jks": "truststore.jks",
-                "trust_store_password": "qwe123"}}
-    test_admin_data_auth = {"login": "admin1", "password": "qwe123"}
+    creds_full_jks = TestParams.creds_full_jks
+    creds_full_path = TestParams.creds_full_path
+    creds_auth = TestParams.creds_auth
+    creds_jks = TestParams.creds_jks
+    creds_none = TestParams.creds_none
 
-    globals_full = {
-        'use_ssl': True,
-        'use_auth': True,
-        'admin': test_admin_data_full
-    }
-    creds_full = Creds('admin1.jks', 'qwe123', 'truststore.jks', 'qwe123', 'admin1', 'qwe123')
+    @staticmethod
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected',
+                             [({'use_ssl': True,
+                                'use_auth': True,
+                                'admin': test_globals_full_jks}, {}, creds_full_jks),
+                              ({'use_ssl': True,
+                                'use_auth': True,
+                                'admin': test_globals_full_path}, {}, creds_full_path),
+                              ({'use_auth': True,
+                                'admin': test_globals_auth}, {}, creds_auth),
+                              ({'use_ssl': True,
+                                'admin': test_globals_ssl}, {}, creds_jks),
+                              ({'admin': test_globals_none}, {}, creds_none),
+                              ({'use_ssl': False,
+                                'use_auth': False,
+                                'admin': test_globals_full_jks}, {}, creds_none), ])
+    def check_parse(test_globals, test_kwargs, expected):
+        """
+        Check that control_utulity.py correctly parse credentials from globals
+        """
 
-    globals_auth = {
-        'use_ssl': True,
-        'use_auth': True,
-        'admin': test_admin_data_auth
-    }
-    creds_auth = Creds('admin.jks', '123456', 'truststore.jks', '123456', 'admin1', 'qwe123')
+        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
 
-    globals_ssl = {
-        'use_ssl': True,
-        'use_auth': True,
-        'admin': test_admin_data_ssl
-    }
-    creds_ssl = Creds('admin1.jks', 'qwe123', 'truststore.jks', 'qwe123', 'ignite', 'ignite')
 
-    globals_no_ssl = {
-        'use_auth': True,
-        'admin': test_admin_data_full
-    }
-    creds_no_ssl = Creds(login='admin1', password='qwe123')
+class CheckCaseGlobalsNotSetKwargsSet:
+    """
+   Check that control_utulity.py correctly parse credentials from kwargs
+   """
 
-    globals_no_auth = {
-        'use_ssl': True,
-        'admin': test_admin_data_full
-    }
-    creds_no_auth = Creds('admin1.jks', 'qwe123', 'truststore.jks', 'qwe123')
+    test_kwargs_full_jks = TestParams.test_kwargs_full_jks
+    test_kwargs_full_path = TestParams.test_kwargs_full_path
+    test_kwargs_auth = TestParams.test_kwargs_auth
+    test_kwargs_ssl = TestParams.test_ssl_jks
 
-    globals_no_ssl_no_auth = {
-        'admin': test_admin_data_full
-    }
-    creds_no_ssl_no_auth = Creds()
+    creds_full_jks = TestParams.creds_full_jks
+    creds_full_path = TestParams.creds_full_path
+    creds_auth = TestParams.creds_auth
+    creds_jks = TestParams.creds_jks
+    creds_none = TestParams.creds_none
 
-    globals_ssl_auth = {
-        'use_ssl': True,
-        'use_auth': True
-    }
-    creds_ssl_auth = Creds('admin.jks', '123456', 'truststore.jks', '123456', 'ignite', 'ignite')
+    @staticmethod
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected',
+                             [({}, test_kwargs_full_jks, creds_full_jks),
+                              ({}, test_kwargs_full_path, creds_full_path),
+                              ({}, test_kwargs_auth, creds_auth),
+                              ({}, test_kwargs_ssl, creds_jks),
+                              ({}, {}, creds_none)])
+    def check_parse(test_globals, test_kwargs, expected):
+        """
+        Check that control_utulity.py correctly parse credentials from kwargs
+        """
 
-    globals_nil = {}
-    creds_nil = Creds()
+        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
+
+
+class CheckCaseGlobalsSetKwargsSet:
+    """
+    Check that control_utulity.py correctly parse credentials
+    """
+
+    test_kwargs_full_jks = TestParams.test_kwargs_full_jks
+    test_kwargs_full_path = TestParams.test_kwargs_full_path
+    test_kwargs_auth = TestParams.test_kwargs_auth
+    test_kwargs_ssl = TestParams.test_ssl_jks
+
+    creds_full_jks = TestParams.creds_full_jks
+    creds_full_path = TestParams.creds_full_path
+    creds_auth = TestParams.creds_auth
+    creds_jks = TestParams.creds_jks
+    creds_none = TestParams.creds_none
+
+    test_globals_full_jks = TestParams.test_globals_full_jks
+    test_globals_full_path = TestParams.test_globals_full_path
+    test_globals_auth = TestParams.test_globals_auth
+    test_globals_ssl = TestParams.test_globals_ssl
+    test_globals_ssl = TestParams.test_ssl_jks
+    test_globals_none = TestParams.test_globals_none
+
+    @staticmethod
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected',
+                             [({'use_ssl': True,
+                                'use_auth': True,
+                                'admin': test_globals_full_jks}, test_kwargs_full_path, creds_full_jks),
+                              ({'use_ssl': True,
+                                'use_auth': True,
+                                'admin': test_globals_full_path}, test_kwargs_full_jks, creds_full_path)])
+    def check_parse(test_globals, test_kwargs, expected):
+        """
+        Check that control_utulity.py correctly parse credentials
+        """
+
+        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
+
+
+class CheckCaseDefaults:
+    """
+    Check that control_utulity.py correctly use default credentials
+    """
+
+    test_globals_full_path = TestParams.test_globals_full_path
+
+    test_kwargs_modify_jks = {'key_store_jks': 'admin11.jks'}
+    test_kwargs_modify_login = {'login': 'admin11'}
+    test_kwargs_modify_jks_login = {'key_store_jks': 'admin11.jks', 'login': 'admin11'}
+
+    creds_modify_jks = Creds('/opt/certs/admin11.jks', '123456',
+                             '/opt/certs/truststore.jks', '123456')
+    creds_modify_login = Creds(login='admin11', password="ignite")
+    creds_modify_jks_login = Creds('/opt/certs/admin11.jks', '123456',
+                                   '/opt/certs/truststore.jks', '123456',
+                                   'admin11', 'ignite')
+
+    creds_full_default = TestParams.creds_full_default
+    creds_ssl_default = TestParams.creds_ssl_default
+    creds_auth_default = TestParams.creds_auth_default
+    creds_none = TestParams.creds_none
 
     @staticmethod
     @pytest.mark.parametrize("test_globals, test_kwargs, expected",
-                             [(globals_full, {}, creds_full),
-                              (globals_nil, {}, creds_nil),
-                              (globals_auth, {}, creds_auth),
-                              (globals_ssl, {}, creds_ssl),
-                              (globals_no_ssl, {}, creds_no_ssl),
-                              (globals_no_auth, {}, creds_no_auth),
-                              (globals_no_ssl_no_auth, {}, Creds()),
-                              (globals_ssl_auth, {}, creds_ssl_auth),
-                              (globals_no_ssl_no_auth, {'key_store_jks': 'admin5.jks', 'key_store_password': 'qwe123'},
-                               Creds('admin5.jks', 'qwe123', 'truststore.jks', '123456')),
-                              (globals_no_ssl_no_auth, {'login': 'admin5', 'password': 'qwe123'},
-                               Creds(login='admin5', password='qwe123')),
-                              (globals_no_ssl_no_auth,
-                               {'login': 'admin5', 'password': 'qwe123', 'key_store_jks': 'admin5',
-                                'key_store_password': 'qwe123'},
-                               Creds('admin5', 'qwe123', 'truststore.jks', '123456', 'admin5', 'qwe123')),
-                              (globals_full, {'login': 'admin5', 'password': 'qwe123', 'key_store_jks': 'admin5',
-                                              'key_store_password': 'qwe123'},
-                               Creds('admin1.jks', 'qwe123', 'truststore.jks', 'qwe123', 'admin1', 'qwe123')),
-                              (globals_no_ssl, {'login': 'admin5', 'password': 'qwe123', 'key_store_jks': 'admin5',
-                                                'key_store_password': 'qwe123'},
-                               Creds('admin5', 'qwe123', 'truststore.jks', '123456', 'admin1', 'qwe123'))])
+                             [({'use_ssl': True,
+                                'use_auth': True}, {}, creds_full_default),
+                              ({'use_ssl': True}, {}, creds_ssl_default),
+                              ({'use_auth': True}, {}, creds_auth_default),
+                              ({'admin': test_globals_full_path}, {}, creds_none),
+                              ({}, test_kwargs_modify_jks, creds_modify_jks),
+                              ({}, test_kwargs_modify_login, creds_modify_login),
+                              ({}, test_kwargs_modify_jks_login, creds_modify_jks_login)])
     def check_parse(test_globals, test_kwargs, expected):
         """
-        Check that control_utulity.py correctly parse globals
+        Check that control_utulity.py correctly parse credentials from globals
         """
+
         assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
