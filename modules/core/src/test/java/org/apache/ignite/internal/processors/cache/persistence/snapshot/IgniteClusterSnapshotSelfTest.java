@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,8 +40,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
@@ -58,36 +57,42 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -106,7 +111,9 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
+import static org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest.toBinary;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
@@ -117,7 +124,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -1398,6 +1405,76 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[2000]));
 
+        forceCheckpoint(ignite);
+
+        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cctx.database();
+
+        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryContext();
+
+        GridCacheAdapter<?, ?> cache = ignite.context().cache().internalCache(dfltCacheCfg.getName());
+        long partCtr = cache.context().offheap().lastUpdatedPartitionCounter(0);
+        AtomicBoolean done = new AtomicBoolean();
+
+        db.addCheckpointListener(new CheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                if (!done.compareAndSet(false, true))
+                    return;
+
+                GridIterator<CacheDataRow> it = cache.context().offheap().partitionIterator(0);
+
+                assertTrue(it.hasNext());
+
+                CacheDataRow row0 = it.nextX();
+
+                AffinityTopologyVersion topVer = cctx.exchange().readyAffinityVersion();
+                GridCacheEntryEx cached = cache.entryEx(row0.key(), topVer);
+
+                byte[] bytes = new byte[2000];
+                new Random().nextBytes(bytes);
+
+                try {
+                    BinaryObjectImpl newVal = toBinary(new Value(bytes), binCtx.marshaller());
+
+                    boolean success0 = cached.initialValue(
+                        newVal,
+                        new GridCacheVersion(row0.version().topologyVersion(),
+                            row0.version().nodeOrder(),
+                            row0.version().order() + 1),
+                        null,
+                        null,
+                        TxState.NA,
+                        TxState.NA,
+                        TTL_ETERNAL,
+                        row0.expireTime(),
+                        true,
+                        topVer,
+                        DR_NONE,
+                        false,
+                        null);
+
+                    assertTrue(success0);
+
+                    long newPartCtr = cache.context().offheap().lastUpdatedPartitionCounter(0);
+
+                    assertEquals(newPartCtr, partCtr);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+        });
+
+        db.waitForCheckpoint("test-checkpoint");
+
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
@@ -1406,58 +1483,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        AtomicReference<ByteBuffer> ref = new AtomicReference<>();
-        AtomicLong page = new AtomicLong();
-
-        FilePageStoreV2 pageStore = new FilePageStoreV2(PageStore.TYPE_DATA, () -> part0,
-            ((FilePageStoreManager)ignite.context().cache().context().pageStore()).getPageStoreFileIoFactory(),
-            ignite.configuration().getDataStorageConfiguration().getPageSize(),
-            val -> {}) {
-            /** {@inheritDoc} */
-            @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-                ref.compareAndSet(null, pageBuf);
-                page.set(pageId);
-
-                return super.read(pageId, pageBuf, keepCrc);
-            }
-        };
-
-        CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
-
-        try (IgniteSnapshotManager.PageScanIterator iter =
-                new IgniteSnapshotManager.PageScanIterator(coctx, pageStore, 0)) {
-            boolean success = iter.hasNext();
-
-            assertTrue(success);
-
-            CacheDataRow row = iter.next();
-            Integer key = row.key().value(coctx, false);
-            BinaryObjectImpl val = (BinaryObjectImpl)row.value();
-
-            assertEquals(key, (Integer)0);
-
-            // Change single byte in the Value byte array.
-            DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(ref.get()));
-            DataPagePayload data = io.readPayload(ref.get(), 0);
-
-            ref.get().put(data.offset() + data.payloadSize() - 16, (byte)127);
-            PageIO.setCrc(ref.get(), 0);
-            ref.get().flip();
-
-            pageStore.write(page.get(), ref.get(), 0, true);
-            pageStore.sync();
-        }
-
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
-        System.out.println(">>>>>> " + b);
-
         assertTrue(F.isEmpty(res.exceptions()));
-        assertPartitionsSame(res);
-        assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
+        assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
     }
 
     /**
