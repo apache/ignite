@@ -85,7 +85,7 @@ public class CheckAllTestsInSuites {
 
             orphanedTests.addAll(allTestClasses);
 
-            orphaned.persistOrphanedTests(orphanedTests);
+            orphaned.persistOrphanedTests(orphanedTests, false);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to check orphaned tests.", e);
