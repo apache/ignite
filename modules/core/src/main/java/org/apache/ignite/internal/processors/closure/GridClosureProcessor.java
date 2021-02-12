@@ -52,6 +52,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -963,26 +965,24 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
-            final UUID secSubjId = securitySubjectId(ctx);
+            final SecurityContext secCtx = ctx.security().securityContext();
 
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
-                    try (OperationSecurityContext opSecCtx = ctx.security().withContext(secSubjId)) {
-                        try {
-                            if (ldr != null)
-                                fut.onDone(U.wrapThreadLoader(ldr, c));
-                            else
-                                fut.onDone(c.call());
-                        }
-                        catch (Throwable e) {
-                            if (e instanceof Error)
-                                U.error(log, "Closure execution failed with error.", e);
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
+                        if (ldr != null)
+                            fut.onDone(U.wrapThreadLoader(ldr, c));
+                        else
+                            fut.onDone(c.call());
+                    }
+                    catch (Throwable e) {
+                        if (e instanceof Error)
+                            U.error(log, "Closure execution failed with error.", e);
 
-                            fut.onDone(U.cast(e));
+                        fut.onDone(U.cast(e));
 
-                            if (e instanceof Error)
-                                throw (Error)e;
-                        }
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 }
             };
