@@ -15,13 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions.proxy;
+package org.apache.ignite.platform;
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 
-/** Represents Ignite client-independent transaction factory. */
-public interface TransactionProxyFactory {
-    /** Starts transaction with specified concurrency, isolation and timeout. */
-    public TransactionProxy txStart(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout);
+/**
+ * Custom name mapper for tests.
+ */
+public class PlatformCustomBinaryBasicNameMapper extends BinaryBasicNameMapper {
+    /** {@inheritDoc} */
+    @Override public String typeName(String clsName) {
+        return clsName + "_";
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fieldName(String fieldName) {
+        return fieldName;
+    }
 }

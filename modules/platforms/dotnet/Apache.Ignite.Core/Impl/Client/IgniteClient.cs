@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
-            _binary = new Binary(_marsh);
+            _binary = new Impl.Binary.Binary(_marsh);
 
             _cluster = new ClientCluster(this);
 
