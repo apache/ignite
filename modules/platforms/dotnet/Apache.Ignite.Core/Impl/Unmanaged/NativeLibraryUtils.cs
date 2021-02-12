@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -96,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Resolves the native library.
         /// </summary>
-        // ReSharper disable once UnusedMember.Local (reflection).
+        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Reflection")]
         private static IntPtr Resolve(string libraryName)
         {
             return libraryName == "libcoreclr.so"
