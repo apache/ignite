@@ -20,7 +20,7 @@ package org.apache.ignite.configuration.tree;
 import java.util.function.Consumer;
 
 /** */
-public interface NamedListChange<T> {
+public interface NamedListChange<Change, Init> extends NamedListInit<Init> {
     /**
      * Update the value in named list configuration.
      *
@@ -28,16 +28,16 @@ public interface NamedListChange<T> {
      * @param valConsumer Closure to modify value associated with the key. Object of type {@code T},
      *      passed to the closure, must not be reused anywhere else.
      *
-     * @throws IllegalStateException If {@link #remove(String)} has been invoked with the same key previously.
+     * @throws IllegalStateException If {@link #delete(String)} has been invoked with the same key previously.
      */
-    NamedListChange<T> put(String key, Consumer<T> valConsumer) throws IllegalStateException;
+    NamedListChange<Change, Init> update(String key, Consumer<Change> valConsumer) throws IllegalStateException;
 
     /**
      * Remove the value from named list configuration.
      *
      * @param key Key for the value to be removed.
      *
-     * @throws IllegalStateException If {@link #put(String, Consumer)} has been invoked with the same key previously.
+     * @throws IllegalStateException If {@link #update(String, Consumer)} has been invoked with the same key previously.
      */
-    NamedListChange<T> remove(String key) throws IllegalStateException;
+    NamedListChange<Change, Init> delete(String key) throws IllegalStateException;
 }

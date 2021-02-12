@@ -23,5 +23,5 @@ public interface TraversableTreeNode {
      * @param key Name of the node retrieved from its holder object.
      * @param visitor Configuration visitor.
      */
-    void accept(String key, ConfigurationVisitor visitor);
+    <T> T accept(String key, ConfigurationVisitor<T> visitor);
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.util;
+package org.apache.ignite.configuration.internal.util;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.util.impl.ParentNode;
+import org.apache.ignite.configuration.internal.util.impl.ParentNode;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonMap;
@@ -100,7 +100,7 @@ public class ConfigurationUtilTest {
     @Test
     public void findSuccessfully() {
         var parent = new ParentNode().changeElements(elements ->
-            elements.put("name", element ->
+            elements.update("name", element ->
                 element.changeChild(child ->
                     child.changeStr("value")
                 )
@@ -140,7 +140,7 @@ public class ConfigurationUtilTest {
 
         assertNull(ConfigurationUtil.find(List.of("elements", "name"), parent));
 
-        parent.changeElements(elements -> elements.put("name", element -> {}));
+        parent.changeElements(elements -> elements.update("name", element -> {}));
 
         assertNull(ConfigurationUtil.find(List.of("elements", "name", "child"), parent));
 
@@ -159,7 +159,7 @@ public class ConfigurationUtilTest {
             () -> ConfigurationUtil.find(List.of("elements", "name", "child"), parent)
         );
 
-        parent.changeElements(elements -> elements.put("name", element -> {}));
+        parent.changeElements(elements -> elements.update("name", element -> {}));
 
         assertThrows(
             KeyNotFoundException.class,
@@ -198,7 +198,7 @@ public class ConfigurationUtilTest {
     @Test
     public void fillFromSuffixMapSuccessfullyWithRemove() {
         var parentNode = new ParentNode().changeElements(elements ->
-            elements.put("name", element ->
+            elements.update("name", element ->
                 element.changeChild(child -> {})
             )
         );
@@ -214,14 +214,14 @@ public class ConfigurationUtilTest {
     @Test
     public void patch() {
         var originalRoot = new ParentNode().initElements(elements ->
-            elements.put("name1", element ->
+            elements.create("name1", element ->
                 element.initChild(child -> child.initStr("value1"))
             )
         );
 
         // Updating config.
         ParentNode updatedRoot = ConfigurationUtil.patch(originalRoot, new ParentNode().changeElements(elements ->
-            elements.put("name1", element ->
+            elements.update("name1", element ->
                 element.changeChild(child -> child.changeStr("value2"))
             )
         ));
@@ -236,7 +236,7 @@ public class ConfigurationUtilTest {
 
         // Expanding config.
         ParentNode expandedRoot = ConfigurationUtil.patch(originalRoot, new ParentNode().changeElements(elements ->
-            elements.put("name2", element ->
+            elements.update("name2", element ->
                 element.changeChild(child -> child.changeStr("value2"))
             )
         ));
@@ -252,7 +252,7 @@ public class ConfigurationUtilTest {
 
         // Shrinking config.
         ParentNode shrinkedRoot = ConfigurationUtil.patch(expandedRoot, new ParentNode().changeElements(elements ->
-            elements.remove("name1")
+            elements.delete("name1")
         ));
 
         assertNotSame(expandedRoot, shrinkedRoot);

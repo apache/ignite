@@ -17,10 +17,10 @@
 
 package org.apache.ignite.configuration.processor.internal;
 
-import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.Value;
 
-@Config(value = "test", root = true)
+@ConfigurationRoot(rootName = "test")
 public class TestConfigurationSchema {
     @Value
     private String value1;

@@ -90,7 +90,7 @@ public class ConfigurationChangerTest {
 
         ANode data = new ANode()
             .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
-            .initElements(change -> change.put("a", init -> init.initStrCfg("1")));
+            .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
 
         final ConfigurationChanger changer = new ConfigurationChanger(storage);
         changer.init();
@@ -120,13 +120,13 @@ public class ConfigurationChangerTest {
 
         ANode data1 = new ANode()
             .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
-            .initElements(change -> change.put("a", init -> init.initStrCfg("1")));
+            .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
 
         ANode data2 = new ANode()
             .initChild(init -> init.initIntCfg(2).initStrCfg("2"))
             .initElements(change -> change
-                .put("a", init -> init.initStrCfg("2"))
-                .put("b", init -> init.initStrCfg("2"))
+                .create("a", init -> init.initStrCfg("2"))
+                .create("b", init -> init.initStrCfg("2"))
             );
 
         final ConfigurationChanger changer1 = new ConfigurationChanger(storage);
@@ -163,13 +163,13 @@ public class ConfigurationChangerTest {
 
         ANode data1 = new ANode()
             .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
-            .initElements(change -> change.put("a", init -> init.initStrCfg("1")));
+            .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
 
         ANode data2 = new ANode()
             .initChild(init -> init.initIntCfg(2).initStrCfg("2"))
             .initElements(change -> change
-                .put("a", init -> init.initStrCfg("2"))
-                .put("b", init -> init.initStrCfg("2"))
+                .create("a", init -> init.initStrCfg("2"))
+                .create("b", init -> init.initStrCfg("2"))
             );
 
         final ConfigurationChanger changer1 = new ConfigurationChanger(storage);

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
@@ -31,7 +32,6 @@ import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.NamedListNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
-import org.apache.ignite.configuration.util.ConfigurationUtil;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 
@@ -160,19 +160,21 @@ public class ConfigurationChanger {
     private Map<String, Serializable> convertChangesToMap(RootKey<?> rootKey, TraversableTreeNode node) {
         Map<String, Serializable> values = new HashMap<>();
 
-        node.accept(rootKey.key(), new ConfigurationVisitor() {
+        node.accept(rootKey.key(), new ConfigurationVisitor<>() {
             /** Current key, aggregated by visitor. */
             StringBuilder currentKey = new StringBuilder();
 
             /** {@inheritDoc} */
-            @Override public void visitLeafNode(String key, Serializable val) {
+            @Override public Void visitLeafNode(String key, Serializable val) {
                 values.put(currentKey.toString() + key, val);
+
+                return null;
             }
 
             /** {@inheritDoc} */
-            @Override public void visitInnerNode(String key, InnerNode node) {
+            @Override public Void visitInnerNode(String key, InnerNode node) {
                 if (node == null)
-                    return;
+                    return null;
 
                 int previousKeyLength = currentKey.length();
 
@@ -181,10 +183,12 @@ public class ConfigurationChanger {
                 node.traverseChildren(this);
 
                 currentKey.setLength(previousKeyLength);
+
+                return null;
             }
 
             /** {@inheritDoc} */
-            @Override public <N extends InnerNode> void visitNamedListNode(String key, NamedListNode<N> node) {
+            @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> node) {
                 int previousKeyLength = currentKey.length();
 
                 if (key != null)
@@ -201,6 +205,8 @@ public class ConfigurationChanger {
                 }
 
                 currentKey.setLength(previousKeyLength);
+
+                return null;
             }
         });
         return values;

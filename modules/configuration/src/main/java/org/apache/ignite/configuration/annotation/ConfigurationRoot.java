@@ -20,40 +20,24 @@ package org.apache.ignite.configuration.annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
+import org.apache.ignite.configuration.storage.ConfigurationStorage;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
- * This annotation, if applied to a class, marks it as a configuration schema.
- * Annotation processor generates several classes for each configuration schema:
- * <ul>
- * <li>Config - Represents configuration itself, provides API to init, change and view it. Extends {@link DynamicConfiguration}</li>
- * <li>Init - initializes config tree</li>
- * <li>Change - changes config tree</li>
- * <li>View - immutable object to view config tree</li>
- * </ul>
+ * Annotation that marks underlying class as a root configuration schema. Has basically the same properties as
+ * {@link Config} + adds extra properties.
  *
- * <h1 class="header">Example</h1>
- * Here is how to create a root configuration schema:
- * <pre name="code" class="java">
- * {@literal @}Config(value = "local", root = true)
- * public class LocalConfigurationSchema {
- *
- *      {@literal @}Value
- *      private String foo;
- *
- *      {@literal @}Value
- *      private boolean bar;
- *
- *      {@literal @}ConfigValue
- *      private SomeOtherConfiguration someOther;
- * }
- * </pre>
+ * @see Config
  */
-@Target({ TYPE })
+@Target(TYPE)
 @Retention(SOURCE)
 @Documented
-public @interface Config {
+public @interface ConfigurationRoot {
+    /** @return Unique root name. */
+    String rootName();
+
+    /** @return Class of storage where to store configuration of the given root. */
+    Class<? extends ConfigurationStorage> storage() default ConfigurationStorage.class;
 }

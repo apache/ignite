@@ -50,7 +50,7 @@ public class ConstructableTreeNodeTest {
             child.initStrCfg("value")
         )
         .initElements(elements ->
-            elements.put("name", element -> {})
+            elements.create("name", element -> {})
         );
 
         // Named list node.
@@ -89,7 +89,7 @@ public class ConstructableTreeNodeTest {
 
         /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> clazz) {
-            return (T)constant;
+            return clazz.cast(constant);
         }
     }
 

@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.annotation.Value;
 
 /** */
 @SuppressWarnings("PMD.UnusedPrivateField")
-@Config(value = "auto_adjust")
+@Config
 public class AutoAdjustConfigurationSchema {
     /** */
     @Value

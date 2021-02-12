@@ -17,16 +17,15 @@
 
 package org.apache.ignite.configuration.sample;
 
-import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 
 /**
  * Test local configuration schema.
  */
-@Config(value = "local", root = true)
+@ConfigurationRoot(rootName = "local")
 public class LocalConfigurationSchema {
     /** Baseline. */
     @ConfigValue
     private BaselineConfigurationSchema baseline;
-
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.util;
+package org.apache.ignite.configuration.internal.util;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -93,28 +93,25 @@ public class ConfigurationUtil {
     public static Object find(List<String> keys, TraversableTreeNode node) throws KeyNotFoundException {
         assert keys instanceof RandomAccess : keys.getClass();
 
-        var visitor = new ConfigurationVisitor() {
+        var visitor = new ConfigurationVisitor<>() {
             /** */
             private int i;
 
-            /** */
-            private Object res;
-
-            @Override public void visitLeafNode(String key, Serializable val) {
+            @Override public Object visitLeafNode(String key, Serializable val) {
                 if (i != keys.size())
                     throw new KeyNotFoundException("Configuration value '" + join(keys.subList(0, i)) + "' is a leaf");
 
-                res = val;
+                return val;
             }
 
-            @Override public void visitInnerNode(String key, InnerNode node) {
+            @Override public Object visitInnerNode(String key, InnerNode node) {
                 if (i == keys.size())
-                    res = node;
+                    return node;
                 else if (node == null)
                     throw new KeyNotFoundException("Configuration node '" + join(keys.subList(0, i)) + "' is null");
                 else {
                     try {
-                        node.traverseChild(keys.get(i++), this);
+                        return node.traverseChild(keys.get(i++), this);
                     }
                     catch (NoSuchElementException e) {
                         throw new KeyNotFoundException("Configuration '" + join(keys.subList(0, i)) + "' is not found");
@@ -122,20 +119,18 @@ public class ConfigurationUtil {
                 }
             }
 
-            @Override public <N extends InnerNode> void visitNamedListNode(String key, NamedListNode<N> node) {
+            @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> node) {
                 if (i == keys.size())
-                    res = node;
+                    return node;
                 else {
                     String name = keys.get(i++);
 
-                    visitInnerNode(name, node.get(name));
+                    return visitInnerNode(name, node.get(name));
                 }
             }
         };
 
-        node.accept(null, visitor);
-
-        return visitor.res;
+        return node.accept(null, visitor);
     }
 
     /**
@@ -225,25 +220,23 @@ public class ConfigurationUtil {
     public static <C extends ConstructableTreeNode> C patch(C root, TraversableTreeNode changes) {
         assert root.getClass() == changes.getClass(); // Yes.
 
-        var scrHolder = new ConfigurationVisitor() {
-            ConfigurationSource src;
-
-            @Override public void visitInnerNode(String key, InnerNode node) {
-                src = new PatchInnerConfigurationSource(node);
+        var scrVisitor = new ConfigurationVisitor<ConfigurationSource>() {
+            @Override public ConfigurationSource visitInnerNode(String key, InnerNode node) {
+                return new PatchInnerConfigurationSource(node);
             }
 
-            @Override public <N extends InnerNode> void visitNamedListNode(String key, NamedListNode<N> node) {
-                src = new PatchNamedListConfigurationSource(node);
+            @Override public <N extends InnerNode> ConfigurationSource visitNamedListNode(String key, NamedListNode<N> node) {
+                return new PatchNamedListConfigurationSource(node);
             }
         };
 
-        changes.accept(null, scrHolder);
+        ConfigurationSource src = changes.accept(null, scrVisitor);
 
-        assert scrHolder.src != null;
+        assert src != null;
 
         C copy = (C)root.copy();
 
-        scrHolder.src.descend(copy);
+        src.descend(copy);
 
         return copy;
     }
@@ -294,20 +287,26 @@ public class ConfigurationUtil {
         @Override public void descend(ConstructableTreeNode dstNode) {
             assert srcNode.getClass() == dstNode.getClass();
 
-            srcNode.traverseChildren(new ConfigurationVisitor() {
-                @Override public void visitLeafNode(String key, Serializable val) {
+            srcNode.traverseChildren(new ConfigurationVisitor<>() {
+                @Override public Void visitLeafNode(String key, Serializable val) {
                     if (val != null)
                         dstNode.construct(key, new PatchLeafConfigurationSource(val));
+
+                    return null;
                 }
 
-                @Override public void visitInnerNode(String key, InnerNode node) {
+                @Override public Void visitInnerNode(String key, InnerNode node) {
                     if (node != null)
                         dstNode.construct(key, new PatchInnerConfigurationSource(node));
+
+                    return null;
                 }
 
-                @Override public <N extends InnerNode> void visitNamedListNode(String key, NamedListNode<N> node) {
+                @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> node) {
                     if (node != null)
                         dstNode.construct(key, new PatchNamedListConfigurationSource(node));
+
+                    return null;
                 }
             });
         }

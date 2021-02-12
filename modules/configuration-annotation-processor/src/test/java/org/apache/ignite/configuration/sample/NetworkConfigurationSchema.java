@@ -17,17 +17,15 @@
 
 package org.apache.ignite.configuration.sample;
 
-import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 
 /**
  * Test network configuration schema.
  */
-@Config(value = "network", root = true)
+@ConfigurationRoot(rootName = "network")
 public class NetworkConfigurationSchema {
     /** Discovery. */
     @ConfigValue
     private DiscoveryConfigurationSchema discovery;
-
-
 }

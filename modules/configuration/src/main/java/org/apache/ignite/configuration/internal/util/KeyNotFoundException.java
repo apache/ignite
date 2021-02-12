@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.rest.configuration;
+package org.apache.ignite.configuration.internal.util;
 
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.Value;
+/** */
+public class KeyNotFoundException extends RuntimeException {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
-/**
- * Configuration schema for REST endpoint subtree.
- */
-@SuppressWarnings("PMD.UnusedPrivateField")
-@ConfigurationRoot(rootName = "rest")
-public class RestConfigurationSchema {
-    /** */
-    @Value
-    private int port;
-
-    /** */
-    @Value
-    private int portRange;
+    /**
+     * @param msg Message.
+     */
+    public KeyNotFoundException(String msg) {
+        super(msg);
+    }
 }

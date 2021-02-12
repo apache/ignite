@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.util;
+package org.apache.ignite.configuration.tree;
+
+import java.util.function.Consumer;
 
 /** */
-public class KeyNotFoundException extends RuntimeException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public interface NamedListInit<T> {
     /**
-     * @param msg Message.
+     * Update the value in named list configuration.
+     *
+     * @param key Key for the value to be created.
+     * @param valConsumer Closure to modify value associated with the key. Object of type {@code T},
+     *      passed to the closure, must not be reused anywhere else.
      */
-    public KeyNotFoundException(String msg) {
-        super(msg);
-    }
+    NamedListInit<T> create(String key, Consumer<T> valConsumer);
 }

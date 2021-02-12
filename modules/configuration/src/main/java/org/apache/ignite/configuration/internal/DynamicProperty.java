@@ -24,9 +24,9 @@ import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.Configurator;
 import org.apache.ignite.configuration.PropertyListener;
 import org.apache.ignite.configuration.internal.selector.BaseSelectors;
+import org.apache.ignite.configuration.internal.validation.MemberKey;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.FieldValidator;
-import org.apache.ignite.configuration.internal.validation.MemberKey;
 
 /**
  * Holder for property value. Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.

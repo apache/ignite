@@ -22,8 +22,8 @@ import java.util.NoSuchElementException;
 /** */
 public abstract class InnerNode implements TraversableTreeNode, ConstructableTreeNode, Cloneable {
     /** {@inheritDoc} */
-    @Override public final void accept(String key, ConfigurationVisitor visitor) {
-        visitor.visitInnerNode(key, this);
+    @Override public final <T> T accept(String key, ConfigurationVisitor<T> visitor) {
+        return visitor.visitInnerNode(key, this);
     }
 
     /**
@@ -77,7 +77,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * @param visitor Configuration visitor.
      * @throws NoSuchElementException If field {@code key} is not found.
      */
-    public abstract void traverseChild(String key, ConfigurationVisitor visitor) throws NoSuchElementException;
+    public abstract <T> T traverseChild(String key, ConfigurationVisitor<T> visitor) throws NoSuchElementException;
 
     /**
      * Method with auto-generated implementation. Must look like this:
