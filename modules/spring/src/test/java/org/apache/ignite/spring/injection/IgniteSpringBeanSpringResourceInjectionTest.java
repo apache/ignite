@@ -27,12 +27,15 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
@@ -172,7 +175,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
         Future<?> fut = executorSvc.submit(testRunnable);
 
         try {
-            fut.get(5, TimeUnit.SECONDS);
+            fut.get(15, TimeUnit.SECONDS);
         }
         catch (TimeoutException ignored) {
             fail("Failed to wait for completion. Deadlock is possible");
@@ -211,6 +214,18 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
                     Ignite ignite = appCtx.getBean(Ignite.class);
+
+                    try {
+                        assertTrue(GridTestUtils.waitForCondition(() -> {
+                            ServiceWithSpringResource svc = ignite.services().service("ServiceWithSpringResource");
+
+                            return svc != null;
+                        }, 5_000L));
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
                     ServiceWithSpringResource svc = ignite.services().service("ServiceWithSpringResource");
 
                     return svc.getInjectedSpringField();
