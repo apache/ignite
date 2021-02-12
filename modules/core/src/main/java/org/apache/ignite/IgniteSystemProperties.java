@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -493,7 +494,7 @@ public final class IgniteSystemProperties {
      * concurrency level for structure holding job metrics snapshots.
      * Default value is {@code 64}.
      *
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
      */
     @Deprecated
     @SystemProperty(value = "Job metrics processor property defining concurrency level " +
