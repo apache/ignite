@@ -26,7 +26,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * This interface defines a JMX view on {@link DataRegionMetrics}.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

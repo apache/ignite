@@ -32,7 +32,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

@@ -27,7 +27,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

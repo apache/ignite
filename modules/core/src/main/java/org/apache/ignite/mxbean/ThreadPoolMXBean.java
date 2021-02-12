@@ -25,7 +25,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * MBean that provides access to information about executor service.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
