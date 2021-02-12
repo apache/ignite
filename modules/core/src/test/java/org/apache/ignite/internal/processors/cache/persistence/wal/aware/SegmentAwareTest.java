@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -772,6 +773,33 @@ public class SegmentAwareTest {
 
         aware.setLastArchivedAbsoluteIndex(6);
         assertEquals(5, aware.awaitAvailableTruncateArchive());
+    }
+
+    /**
+     * Checking the correctness of work with the maximum compressed segment size.
+     */
+    @Test
+    public void testMaxSizeCompressedSegment() {
+        for (boolean compactionEnabled : F.asArray(true, false)) {
+            SegmentAware segmentAware = new SegmentAware(0, compactionEnabled, new NullLogger());
+
+            assertEquals(0, segmentAware.maxSizeCompressedSegment());
+
+            segmentAware.maxSizeCompressedSegment(10);
+            assertEquals(10, segmentAware.maxSizeCompressedSegment());
+
+            segmentAware.maxSizeCompressedSegment(5);
+            assertEquals(10, segmentAware.maxSizeCompressedSegment());
+
+            segmentAware.maxSizeCompressedSegment(20);
+            assertEquals(20, segmentAware.maxSizeCompressedSegment());
+
+            segmentAware.maxSizeCompressedSegment(0);
+            assertEquals(20, segmentAware.maxSizeCompressedSegment());
+
+            segmentAware.maxSizeCompressedSegment(-10);
+            assertEquals(20, segmentAware.maxSizeCompressedSegment());
+        }
     }
 
     /**

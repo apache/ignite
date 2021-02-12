@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
@@ -51,6 +52,9 @@ class SegmentCompressStorage {
 
     /** Compressed segment with maximal index. */
     private long lastMaxCompressedIdx = -1L;
+
+    /** Maximum size in bytes of a compressed segment. */
+    private final AtomicLong maxSizeCompressedSegment = new AtomicLong();
 
     /**
      * Constructor.
@@ -153,5 +157,23 @@ class SegmentCompressStorage {
      */
     public void reset() {
         interrupted = false;
+    }
+
+    /**
+     * Getting size of maximum compressed segment.
+     *
+     * @return Size in bytes.
+     */
+    long maxSizeCompressedSegment() {
+        return maxSizeCompressedSegment.get();
+    }
+
+    /**
+     * Updating size of maximum compressed segment.
+     *
+     * @param size Size in bytes.
+     */
+    void maxSizeCompressedSegment(long size) {
+        maxSizeCompressedSegment.updateAndGet(prev -> Math.max(prev, size));
     }
 }

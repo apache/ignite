@@ -112,6 +112,12 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private long sparseStorageSize;
 
+    /** Last archived absolut WAL segment index. */
+    private long lastArchivedAbsSegmentIdx;
+
+    /** Size in bytes of maximum compressed WAL segment in archive */
+    private long maxSizeCompressedArchivedSegment;
+
     /**
      * @param metrics Metrics.
      */
@@ -145,6 +151,8 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         totalAllocatedSize = metrics.getTotalAllocatedSize();
         storageSize = metrics.getStorageSize();
         sparseStorageSize = metrics.getSparseStorageSize();
+        lastArchivedAbsSegmentIdx = metrics.getLastArchivedSegmentIndex();
+        maxSizeCompressedArchivedSegment = metrics.getMaxSizeCompressedArchivedSegment();
     }
 
     /** {@inheritDoc} */
@@ -290,6 +298,16 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
         return sparseStorageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLastArchivedSegmentIndex() {
+        return lastArchivedAbsSegmentIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMaxSizeCompressedArchivedSegment() {
+        return maxSizeCompressedArchivedSegment;
     }
 
     /** {@inheritDoc} */

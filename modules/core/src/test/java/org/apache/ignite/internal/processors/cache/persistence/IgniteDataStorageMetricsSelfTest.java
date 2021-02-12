@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.DataRegionMetrics;
@@ -38,11 +40,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -305,6 +311,77 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checking that the metrics of the last archive segment are working correctly.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLastArchivedSegmentIndex() throws Exception {
+        IgniteEx n = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> {
+            cfg.getDataStorageConfiguration().setWalSegmentSize((int)(2 * U.MB));
+
+            return cfg;
+        });
+
+        n.cluster().state(ACTIVE);
+        awaitPartitionMapExchange();
+
+        while (walMgr(n).lastArchivedSegment() < 3)
+            n.cache("cache").put(ThreadLocalRandom.current().nextLong(), new byte[(int)(32 * U.KB)]);
+
+        assertCorrectLastArchivedSegmentIndexMetrics(n);
+
+        stopAllGrids();
+
+        n = startGrid(0);
+
+        n.cluster().state(ACTIVE);
+        awaitPartitionMapExchange();
+
+        assertCorrectLastArchivedSegmentIndexMetrics(n);
+    }
+
+    /**
+     * Checking that the metrics of the max size compressed segment are working correctly.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMaxSizeCompressedSegment() throws Exception {
+        IgniteEx n0 = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> {
+            cfg.getDataStorageConfiguration().setWalCompactionEnabled(true).setWalSegmentSize((int)(2 * U.MB));
+
+            return cfg;
+        });
+
+        n0.cluster().state(ACTIVE);
+        awaitPartitionMapExchange();
+
+        while (walMgr(n0).lastArchivedSegment() < 3)
+            n0.cache("cache").put(ThreadLocalRandom.current().nextLong(), new byte[(int)(32 * U.KB)]);
+
+        waitForCondition(
+            () -> walMgr(n0).lastArchivedSegment() == walMgr(n0).lastCompactedSegment(),
+            getTestTimeout()
+        );
+
+        assertCorrectMaxSizeCompressedSegmentMetrics(n0);
+
+        stopAllGrids();
+
+        IgniteEx n1 = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> {
+            cfg.getDataStorageConfiguration().setWalCompactionEnabled(true);
+
+            return cfg;
+        });
+
+        n1.cluster().state(ACTIVE);
+        awaitPartitionMapExchange();
+
+        assertCorrectMaxSizeCompressedSegmentMetrics(n1);
+    }
+
+    /**
      *
      */
     static class Person implements Serializable {
@@ -350,5 +427,79 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         @Override public int hashCode() {
             return Objects.hash(fName, lName);
         }
+    }
+
+    /**
+     * Getting WAL manger.
+     *
+     * @param n Node.
+     * @return WAL manager.
+     */
+    private FileWriteAheadLogManager walMgr(IgniteEx n) {
+        return (FileWriteAheadLogManager)n.context().cache().context().wal();
+    }
+
+    /**
+     * Getting db manager of node.
+     *
+     * @param n Node.
+     * @return Db manager.
+     */
+    private GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
+        return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
+    }
+
+    /**
+     * Getting DATASTORAGE_METRIC_PREFIX metric registry.
+     *
+     * @param n Node.
+     * @return Group of metrics.
+     */
+    private MetricRegistry dsMetricRegistry(IgniteEx n) {
+        return n.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+    }
+
+    /**
+     * Getting data storage MXBean.
+     *
+     * @param n Node.
+     * @return MXBean.
+     */
+    private DataStorageMetricsMXBean dsMetricsMXBean(IgniteEx n) {
+        return getMxBean(n.name(), "Persistent Store", "DataStorageMetrics", DataStorageMetricsMXBean.class);
+    }
+
+    /**
+     * Check that the metric of the last archive segment is working correctly.
+     *
+     * @param n Node.
+     */
+    private void assertCorrectLastArchivedSegmentIndexMetrics(IgniteEx n) {
+        DataStorageMetrics dsMetrics = dbMgr(n).persistentStoreMetrics();
+        DataStorageMetricsMXBean dsMetricsMXBean = dsMetricsMXBean(n);
+        LongGauge lastArchivedSegmentIdxMetric = dsMetricRegistry(n).findMetric("LastArchivedSegmentIndex");
+
+        FileWriteAheadLogManager wal = walMgr(n);
+
+        assertEquals(wal.lastArchivedSegment(), dsMetrics.getLastArchivedSegmentIndex());
+        assertEquals(wal.lastArchivedSegment(), dsMetricsMXBean.getLastArchivedSegmentIndex());
+        assertEquals(wal.lastArchivedSegment(), lastArchivedSegmentIdxMetric.value());
+    }
+
+    /**
+     * Check that the metric of the max size compressed segment is working correctly.
+     *
+     * @param n Node.
+     */
+    private void assertCorrectMaxSizeCompressedSegmentMetrics(IgniteEx n) {
+        DataStorageMetrics dsMetrics = dbMgr(n).persistentStoreMetrics();
+        DataStorageMetricsMXBean dsMetricsMXBean = dsMetricsMXBean(n);
+        LongGauge maxSizeCompressedSegmentMetric = dsMetricRegistry(n).findMetric("MaxSizeCompressedArchivedSegment");
+
+        FileWriteAheadLogManager wal = walMgr(n);
+
+        assertEquals(wal.maxSizeCompressedArchivedSegment(), dsMetrics.getMaxSizeCompressedArchivedSegment());
+        assertEquals(wal.maxSizeCompressedArchivedSegment(), dsMetricsMXBean.getMaxSizeCompressedArchivedSegment());
+        assertEquals(wal.maxSizeCompressedArchivedSegment(), maxSizeCompressedSegmentMetric.value());
     }
 }

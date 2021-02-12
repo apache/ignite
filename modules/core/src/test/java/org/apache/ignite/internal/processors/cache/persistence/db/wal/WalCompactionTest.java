@@ -24,12 +24,14 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -44,14 +46,15 @@ import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -198,7 +201,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + ZIP_SUFFIX);
 
         // Allow compressor to compress WAL segments.
-        assertTrue(GridTestUtils.waitForCondition(walSegment::exists, 15_000));
+        assertTrue(waitForCondition(walSegment::exists, 15_000));
 
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
 
@@ -411,7 +414,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         // Allow compressor to compress WAL segments.
-        assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
+        assertTrue(waitForCondition(zippedWalSegment::exists, 15_000));
 
         File[] compressedSegments = nodeArchiveDir.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -507,7 +510,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + ZIP_SUFFIX);
 
         // Allow compressor to compress WAL segments.
-        assertTrue(GridTestUtils.waitForCondition(() -> !unzippedWalSegment.exists(), 15_000));
+        assertTrue(waitForCondition(() -> !unzippedWalSegment.exists(), 15_000));
 
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
@@ -570,6 +573,63 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checking the correctness of {@link IgniteWriteAheadLogManager#maxSizeCompressedArchivedSegment}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMaxSizeCompressedSegment() throws Exception {
+        compactionEnabled = false;
+        IgniteEx n0 = startGrid(0);
+
+        n0.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        assertEquals(0, walMgr(n0).maxSizeCompressedArchivedSegment());
+
+        while (walMgr(n0).lastArchivedSegment() < 3)
+            n0.cache(CACHE_NAME).put(ThreadLocalRandom.current().nextLong(), new byte[(int)(32 * U.KB)]);
+
+        assertEquals(0, walMgr(n0).maxSizeCompressedArchivedSegment());
+
+        stopAllGrids();
+
+        compactionEnabled = true;
+        IgniteEx n1 = startGrid(0);
+
+        n1.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        waitForCondition(
+            () -> walMgr(n1).lastCompactedSegment() == walMgr(n1).lastArchivedSegment(),
+            getTestTimeout()
+        );
+
+        assertTrue(maxSizeCompressedSegment(n1) > 0);
+        assertEquals(maxSizeCompressedSegment(n1), walMgr(n1).maxSizeCompressedArchivedSegment());
+
+        stopAllGrids();
+
+        IgniteEx n2 = startGrid(0);
+
+        n2.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        assertTrue(maxSizeCompressedSegment(n2) > 0);
+        assertEquals(maxSizeCompressedSegment(n2), walMgr(n2).maxSizeCompressedArchivedSegment());
+
+        stopAllGrids();
+
+        compactionEnabled = false;
+        IgniteEx n3 = startGrid(0);
+
+        n3.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        assertEquals(0, walMgr(n3).maxSizeCompressedArchivedSegment());
+    }
+
+    /**
      * @param pageSize Page size.
      */
     private static byte[] dummyPage(int pageSize) {
@@ -582,5 +642,26 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         pageBuf.get(pageData);
 
         return pageData;
+    }
+
+    /**
+     * Getting WAL manger.
+     *
+     * @param n Node.
+     * @return WAL manager.
+     */
+    private FileWriteAheadLogManager walMgr(IgniteEx n) {
+        return (FileWriteAheadLogManager)n.context().cache().context().wal();
+    }
+
+    /**
+     * Calculates the maximum compressed segment size.
+     *
+     * @param n Node.
+     * @return Size in bytes.
+     */
+    private long maxSizeCompressedSegment(IgniteEx n) {
+        return Arrays.stream(walMgr(n).walArchiveFiles()).filter(FileDescriptor::isCompressed)
+            .mapToLong(fd -> fd.file().length()).max().orElse(0);
     }
 }

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -106,8 +107,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private volatile boolean metricsEnabled;
 
-    /** */
-    private volatile IgniteWriteAheadLogManager wal;
+    /** WAL manager. */
+    @Nullable private volatile IgniteWriteAheadLogManager wal;
 
     /** */
     private volatile IgniteOutClosure<Long> walSizeProvider;
@@ -308,6 +309,18 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         cpHistogram = mreg.histogram("CheckpointHistogram", cpBounds,
                 "Histogram of checkpoint duration in milliseconds.");
+
+        mreg.register(
+            "LastArchivedSegmentIndex",
+            this::getLastArchivedSegmentIndex,
+            "Absolute index of the last archived WAL segment."
+        );
+
+        mreg.register(
+            "MaxSizeCompressedArchivedSegment",
+            this::getMaxSizeCompressedArchivedSegment,
+            "Maximum size in bytes of a compressed WAL segment in archive."
+        );
     }
 
     /** {@inheritDoc} */
@@ -331,7 +344,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return wal.walArchiveSegments();
+        IgniteWriteAheadLogManager walMgr = this.wal;
+
+        return walMgr == null ? 0 : walMgr.walArchiveSegments();
     }
 
     /** {@inheritDoc} */
@@ -825,5 +840,25 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         walFsyncTimeDuration.reset(rateTimeInterval, subInts);
         walFsyncTimeNum.reset(rateTimeInterval, subInts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLastArchivedSegmentIndex() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteWriteAheadLogManager walMgr = this.wal;
+
+        return walMgr == null ? 0 : walMgr.lastArchivedSegment();
+    }   
+
+    /** {@inheritDoc} */
+    @Override public long getMaxSizeCompressedArchivedSegment() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteWriteAheadLogManager walMgr = this.wal;
+
+        return walMgr == null ? 0 : walMgr.maxSizeCompressedArchivedSegment();
     }
 }

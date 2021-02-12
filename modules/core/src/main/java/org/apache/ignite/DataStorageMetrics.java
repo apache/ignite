@@ -241,4 +241,18 @@ public interface DataStorageMetrics {
      *         or negative value is not supported.
      */
     public long getSparseStorageSize();
+
+    /**
+     * Get index of the last archived WAL segment.
+     *
+     * @return Absolute index of segment.
+     */
+    long getLastArchivedSegmentIndex();
+
+    /**
+     * Getting size of maximum compressed WAL segment in archive.
+     *
+     * @return Size in bytes.
+     */
+    long getMaxSizeCompressedArchivedSegment();
 }

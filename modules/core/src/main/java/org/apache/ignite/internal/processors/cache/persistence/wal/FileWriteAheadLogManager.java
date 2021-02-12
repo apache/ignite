@@ -2113,6 +2113,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (alreadyCompressed.length > 0)
                 segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
+
+            segmentAware.maxSizeCompressedSegment(
+                Arrays.stream(alreadyCompressed).mapToLong(fd -> fd.file.length()).max().orElse(0));
         }
 
         /**
@@ -2238,6 +2241,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         segmentSize.put(segIdx, zip.length());
                         segmentAware.addCurrentWalArchiveSize(zip.length());
+                        segmentAware.maxSizeCompressedSegment(zip.length());
 
                         segmentAware.onSegmentCompressed(segIdx);
 
@@ -3413,5 +3417,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long maxSizeCompressedArchivedSegment() {
+        return segmentAware.maxSizeCompressedSegment();
     }
 }

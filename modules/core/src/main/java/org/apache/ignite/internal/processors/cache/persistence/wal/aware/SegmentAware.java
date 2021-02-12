@@ -376,4 +376,22 @@ public class SegmentAware {
     public long awaitAvailableTruncateArchive() throws IgniteInterruptedCheckedException {
         return truncateStorage.awaitAvailableTruncate();
     }
+
+    /**
+     * Getting size of maximum compressed segment.
+     *
+     * @return Size in bytes.
+     */
+    public long maxSizeCompressedSegment() {
+        return segmentCompressStorage.maxSizeCompressedSegment();
+    }
+
+    /**
+     * Updating size of maximum compressed segment.
+     *
+     * @param size Size in bytes.
+     */
+    public void maxSizeCompressedSegment(long size) {
+        segmentCompressStorage.maxSizeCompressedSegment(size);
+    }
 }
