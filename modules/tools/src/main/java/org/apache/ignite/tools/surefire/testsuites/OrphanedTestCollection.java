@@ -33,8 +33,11 @@ import java.util.Set;
  * Represents a persisted list of orphaned tests.
  */
 public class OrphanedTestCollection {
-    /** This line marks {@link #getOrphanedTests()} to ignore content of the file. */
-    private static final String IGNORE_MARK = "---";
+    /**
+     * This line in the file shows that the list of orphaned tests is final for all maven modules.
+     * {@link #getOrphanedTests()} ignores a content of the file if read this mark.
+     * */
+    private static final String FINAL_MARK = "---";
 
     /** File to persist orphaned tests. */
     private final Path path = initPath();
@@ -49,7 +52,7 @@ public class OrphanedTestCollection {
         ) {
             String testClsName = testReader.readLine();
 
-            if (IGNORE_MARK.equals(testClsName))
+            if (FINAL_MARK.equals(testClsName))
                 return new HashSet<>();
 
             Set<String> testClasses = new HashSet<>();
@@ -73,7 +76,7 @@ public class OrphanedTestCollection {
             BufferedWriter testWriter = new BufferedWriter(new FileWriter(path.toFile()))
         ) {
             if (last) {
-                testWriter.write(IGNORE_MARK);
+                testWriter.write(FINAL_MARK);
                 testWriter.newLine();
             }
 
