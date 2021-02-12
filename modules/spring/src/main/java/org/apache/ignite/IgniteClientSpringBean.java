@@ -32,9 +32,9 @@ import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextRefreshedEvent;
-
-import static org.apache.ignite.IgniteSpringLifecyclePhase.IGNITE_CLIENT_LIFECYCLE_PHASE;
 
 /**
  * Represents Ignite client Spring bean that provides the ability to automatically start Ignite client during
@@ -64,12 +64,43 @@ import static org.apache.ignite.IgniteSpringLifecyclePhase.IGNITE_CLIENT_LIFECYC
  * &lt;/bean&gt;
  * </pre>
  */
-public class IgniteClientSpringBean extends AbstractLifecycleBean implements IgniteClient {
+public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
+    /** Default Ignite client {@link SmartLifecycle} phase. */
+    public static final int DFLT_IGNITE_CLI_LIFECYCLE_PHASE = 0;
+
+    /** Whether this component is initialized and running. */
+    private volatile boolean isRunning;
+
     /** Ignite client instance to which operations are delegated. */
     private IgniteClient cli;
 
     /** Ignite client configuration. */
     private ClientConfiguration cfg;
+
+    /** Ignite client {@link SmartLifecycle} phase. */
+    private int phase = DFLT_IGNITE_CLI_LIFECYCLE_PHASE;
+
+    /** {@inheritDoc} */
+    @Override public boolean isAutoStartup() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(Runnable callback) {
+        stop();
+
+        callback.run();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        isRunning = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isRunning() {
+        return isRunning;
+    }
 
     /** {@inheritDoc} */
     @Override public void start() {
@@ -78,12 +109,12 @@ public class IgniteClientSpringBean extends AbstractLifecycleBean implements Ign
 
         cli = Ignition.startClient(cfg);
 
-        super.start();
+        isRunning = true;
     }
 
     /** {@inheritDoc} */
     @Override public int getPhase() {
-        return IGNITE_CLIENT_LIFECYCLE_PHASE;
+        return phase;
     }
 
     /** {@inheritDoc} */
@@ -212,5 +243,16 @@ public class IgniteClientSpringBean extends AbstractLifecycleBean implements Ign
     /** Gets Ignite client configuration. */
     public ClientConfiguration getClientConfiguration() {
         return cfg;
+    }
+
+    /**
+     * Sets {@link SmartLifecycle} phase during which the current bean will be initialized. Note, underlying Ignite
+     * client will be closed during handling of {@link DisposableBean} since {@link IgniteClient}
+     * implements {@link AutoCloseable} interface.
+     */
+    public IgniteClientSpringBean setPhase(int phase) {
+        this.phase = phase;
+
+        return this;
     }
 }

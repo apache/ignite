@@ -45,8 +45,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.event.ContextRefreshedEvent;
 
-import static org.apache.ignite.IgniteSpringLifecyclePhase.IGNITE_LIFECYCLE_PHASE;
-
 /**
  * Ignite Spring bean allows to bypass {@link Ignition} methods.
  * In other words, this bean class allows to inject new grid instance from
@@ -95,7 +93,8 @@ import static org.apache.ignite.IgniteSpringLifecyclePhase.IGNITE_LIFECYCLE_PHAS
  * </pre>
  * <p>
  */
-public class IgniteSpringBean extends AbstractLifecycleBean implements Ignite, ApplicationContextAware, Externalizable {
+public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializingSingleton,
+    ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -159,17 +158,15 @@ public class IgniteSpringBean extends AbstractLifecycleBean implements Ignite, A
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override public void destroy() throws Exception {
         if (g != null) {
             // Do not cancel started tasks, wait for them.
             G.stop(g.name(), false);
         }
-
-        super.stop();
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void afterSingletonsInstantiated() {
         if (cfg == null)
             cfg = new IgniteConfiguration();
 
@@ -179,13 +176,6 @@ public class IgniteSpringBean extends AbstractLifecycleBean implements Ignite, A
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to start IgniteSpringBean", e);
         }
-
-        super.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getPhase() {
-        return IGNITE_LIFECYCLE_PHASE;
     }
 
     /** {@inheritDoc} */
