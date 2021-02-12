@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
+    using Org.Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Tests binary name mapper.
@@ -93,6 +94,44 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
             Assert.AreEqual("Bar`1[[Foo]][]", mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
             Assert.AreEqual("Bar`1[[Foo[]]][]", mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
+        }
+
+        /// <summary>
+        /// Tests full name mode with ForceJavaNamingConventions = true.
+        /// </summary>
+        [Test]
+        public void TestFullNameForceJavaNamingConventions()
+        {
+            var mapper = new BinaryBasicNameMapper {ForceJavaNamingConventions = true};
+            Assert.IsFalse(mapper.IsSimpleName);
+            Assert.IsTrue(mapper.ForceJavaNamingConventions);
+
+            Assert.AreEqual("org.company.Class", mapper.GetTypeName("Org.Company.Class"));
+            Assert.AreEqual("org.myCompany.Class", mapper.GetTypeName("Org.MyCompany.Class"));
+            Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Org.Company.MyClass"));
+            Assert.AreEqual("org.company.URL", mapper.GetTypeName("Org.Company.URL"));
+
+            Assert.AreEqual("org.apache.ignite.platform.model.Address", 
+                mapper.GetTypeName(typeof(Address).FullName));
+
+            Assert.AreEqual("org.apache.ignite.platform.model.Address[]", 
+                mapper.GetTypeName(typeof(Address[]).FullName));
+        }
+
+        /// <summary>
+        /// Tests full name mode with ForceJavaNamingConventions = true.
+        /// </summary>
+        [Test]
+        public void TestSimpleNameUseDotNetNamingConventions()
+        {
+            var mapper = new BinaryBasicNameMapper {ForceJavaNamingConventions = true, IsSimpleName = true};
+            Assert.IsTrue(mapper.IsSimpleName);
+            Assert.IsTrue(mapper.ForceJavaNamingConventions);
+
+            Assert.AreEqual("Class", mapper.GetTypeName("Org.Company.Class"));
+            Assert.AreEqual("Class", mapper.GetTypeName("Org.MyCompany.Class"));
+            Assert.AreEqual("MyClass", mapper.GetTypeName("Org.Company.MyClass"));
+            Assert.AreEqual("URL", mapper.GetTypeName("Org.Company.URL"));
         }
 
         /// <summary>

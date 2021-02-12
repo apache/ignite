@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-// ReSharper disable once CheckNamespace
-namespace org.apache.ignite.platform.model
+namespace Org.Apache.Ignite.Platform.Model
 {
     using System;
 

@@ -46,19 +46,25 @@ namespace Apache.Ignite.Core.Binary
         public bool IsSimpleName { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this instance maps using standart Java naming convensions.
+        /// E.g `Com.Company.Class` maps to `com.company.Class`.
+        /// </summary>
+        public bool ForceJavaNamingConventions { get; set; }
+
+        /// <summary>
         /// Gets the type name.
         /// </summary>
         public string GetTypeName(string name)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "typeName");
 
-            var parsedName = TypeNameParser.Parse(name);
+            var parsedName = TypeNameParser.Parse(name, ForceJavaNamingConventions);
 
             if (parsedName.Generics == null)
             {
                 // Generics are rare, use simpler logic for the common case.
                 var res = IsSimpleName ? parsedName.GetName() : parsedName.GetNameWithNamespace();
-                
+
                 var arr = parsedName.GetArray();
 
                 if (arr != null)

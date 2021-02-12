@@ -22,8 +22,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
-    using org.apache.ignite.platform.model;
+    using Org.Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Tests checks ability to execute service method without explicit registration of parameter type.
@@ -223,7 +224,11 @@ namespace Apache.Ignite.Core.Tests.Services
 
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl
+                SpringConfigUrl = springConfigUrl,
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper {ForceJavaNamingConventions = true}
+                }
             };
         }
     }

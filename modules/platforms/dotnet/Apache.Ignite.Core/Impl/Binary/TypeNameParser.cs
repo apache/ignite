@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
+    using static System.Char;
 
     /// <summary>
     /// Parses .NET-style type names and deconstructs them into parts.
@@ -30,7 +31,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly int _start;
 
         /** */
-        private readonly string _typeName;
+        private char[] _typeNameArr;
+
+        /** */
+        private readonly bool _forceJavaNamingConventions;
 
         /** */
         private int _pos;
@@ -38,11 +42,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeNameParser" /> class.
         /// </summary>
-        private TypeNameParser(string typeName, ref int pos)
+        private TypeNameParser(string typeName, ref int pos, bool forceJavaNamingConventions)
         {
-            _typeName = typeName;
+            _typeNameArr = typeName.ToCharArray();
             _start = pos;
             _pos = _start;
+            _forceJavaNamingConventions = forceJavaNamingConventions;
 
             NameEnd = -1;
             NameStart = 0;
@@ -58,13 +63,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Parses the specified type name.
         /// </summary>
-        public static TypeNameParser Parse(string typeName)
+        public static TypeNameParser Parse(string typeName, bool forceJavaNamingConventions = false)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
             int pos = 0;
 
-            return new TypeNameParser(typeName, ref pos);
+            return new TypeNameParser(typeName, ref pos, forceJavaNamingConventions);
         }
 
         /// <summary>
@@ -115,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (NameEnd < 0)
                 return null;
 
-            return _typeName.Substring(NameStart, NameEnd - NameStart + 1);
+            return Substring(NameStart, NameEnd - NameStart + 1);
         }
 
         /// <summary>
@@ -126,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (NameEnd < 0)
                 return null;
 
-            return _typeName.Substring(_start, NameEnd - _start + 1);
+            return Substring(_start, NameEnd - _start + 1);
         }
 
         /// <summary>
@@ -134,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public string GetFullName()
         {
-            return _typeName.Substring(_start, FullNameEnd - _start + 1);
+            return Substring(_start, FullNameEnd - _start + 1);
         }
 
         /// <summary>
@@ -145,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (ArrayStart < 0)
                 return null;
 
-            return _typeName.Substring(ArrayStart, ArrayEnd - ArrayStart + 1);
+            return Substring(ArrayStart, ArrayEnd - ArrayStart + 1);
         }
 
         /// <summary>
@@ -156,7 +161,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (AssemblyStart < 0)
                 return null;
 
-            return _typeName.Substring(AssemblyStart, AssemblyEnd - AssemblyStart + 1);
+            return Substring(AssemblyStart, AssemblyEnd - AssemblyStart + 1);
         }
 
         /// <summary>
@@ -192,6 +197,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (Char == '.' || Char == '+')
                 {
+                    if (_forceJavaNamingConventions)
+                        _typeNameArr[NameStart] = ToLower(_typeNameArr[NameStart]);
+
                     NameStart = _pos + 1;
                 }
 
@@ -229,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (Char != '[')
             {
-                throw new IgniteException("Invalid generic type name, number must be followed by '[': " + _typeName);
+                throw new IgniteException("Invalid generic type name, number must be followed by '[': " + TypeName);
             }
 
             while (true)
@@ -238,16 +246,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (Char != '[')
                 {
-                    throw new IgniteException("Invalid generic type name, '[' must be followed by '[': " + _typeName);
+                    throw new IgniteException("Invalid generic type name, '[' must be followed by '[': " + TypeName);
                 }
 
                 RequireShift();
 
-                Generics.Add(new TypeNameParser(_typeName, ref _pos));
+                Generics.Add(new TypeNameParser(TypeName, ref _pos, _forceJavaNamingConventions));
 
                 if (Char != ']')
                 {
-                    throw new IgniteException("Invalid generic type name, no matching ']': " + _typeName);
+                    throw new IgniteException("Invalid generic type name, no matching ']': " + TypeName);
                 }
 
                 RequireShift();
@@ -260,7 +268,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (Char != ',')
                 {
-                    throw new IgniteException("Invalid generic type name, expected ',': " + _typeName);
+                    throw new IgniteException("Invalid generic type name, expected ',': " + TypeName);
                 }
             }
         }
@@ -285,7 +293,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (bracket)
                     {
-                        throw new IgniteException("Invalid array specification: " + _typeName);
+                        throw new IgniteException("Invalid array specification: " + TypeName);
                     }
 
                     bracket = true;
@@ -311,7 +319,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (bracket)
                     {
-                        throw new IgniteException("Invalid array specification: " + _typeName);
+                        throw new IgniteException("Invalid array specification: " + TypeName);
                     }
 
                     break;
@@ -351,7 +359,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private bool Shift()
         {
-            if (_pos < _typeName.Length - 1)
+            if (_pos < _typeNameArr.Length - 1)
             {
                 _pos++;
                 return true;
@@ -367,7 +375,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (!Shift())
             {
-                throw new IgniteException("Invalid type name - not enough data: " + _typeName);
+                throw new IgniteException("Invalid type name - not enough data: " + TypeName);
             }
         }
 
@@ -387,7 +395,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private bool End
         {
-            get { return _pos >= _typeName.Length - 1; }
+            get { return _pos >= _typeNameArr.Length - 1; }
         }
 
         /// <summary>
@@ -395,13 +403,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private char Char
         {
-            get { return _typeName[_pos]; }
+            get { return _typeNameArr[_pos]; }
+        }
+
+        private string TypeName
+        {
+            get { return new string(_typeNameArr); }
+        }
+
+        private string Substring(int start, int length)
+        {
+            return new string(_typeNameArr, start, length); 
         }
 
         /** <inheritdoc /> */
         public override string ToString()
         {
-            return _typeName;
+            return TypeName;
         }
     }
 }
