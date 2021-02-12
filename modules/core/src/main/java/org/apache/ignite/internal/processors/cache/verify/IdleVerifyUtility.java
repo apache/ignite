@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -246,6 +247,7 @@ public class IdleVerifyUtility {
      * @param isPrimary {@code true} if partition is primary.
      * @param partSize Partition size on disk.
      * @param it Iterator though partition data rows.
+     * @throws IgniteCheckedException If fails.
      * @return Map of calculated partition.
      */
     public static Map<PartitionKeyV2, PartitionHashRecordV2> calculatePartitionHash(
@@ -258,40 +260,35 @@ public class IdleVerifyUtility {
         boolean isPrimary,
         long partSize,
         GridIterator<CacheDataRow> it
-    ) {
+    ) throws IgniteCheckedException {
         int partHash = 0;
 
         PartitionKeyV2 partKey = new PartitionKeyV2(grpId, partId, grpName);
 
-        try {
-            if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-                PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(
-                    partKey,
-                    isPrimary,
-                    consId,
-                    partHash,
-                    updCntr,
-                    state == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
-                    state == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST
-                );
+        if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
+            PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(
+                partKey,
+                isPrimary,
+                consId,
+                partHash,
+                updCntr,
+                state == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                state == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST
+            );
 
-                return Collections.singletonMap(partKey, movingHashRecord);
-            }
-
-            if (state != GridDhtPartitionState.OWNING)
-                return emptyMap();
-
-            while (it.hasNextX()) {
-                CacheDataRow row = it.nextX();
-
-                partHash += row.key().hashCode();
-
-                // Object context may be null since the value bytes have been read directly from page.
-                partHash += Arrays.hashCode(row.value().valueBytes(null));
-            }
+            return Collections.singletonMap(partKey, movingHashRecord);
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Can't calculate partition hash [grpId=" + grpId + ", partId=" + partId + "]", e);
+
+        if (state != GridDhtPartitionState.OWNING)
+            return emptyMap();
+
+        while (it.hasNextX()) {
+            CacheDataRow row = it.nextX();
+
+            partHash += row.key().hashCode();
+
+            // Object context may be null since the value bytes have been read directly from page.
+            partHash += Arrays.hashCode(row.value().valueBytes(null));
         }
 
         PartitionHashRecordV2 partRec = new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, updCntr,

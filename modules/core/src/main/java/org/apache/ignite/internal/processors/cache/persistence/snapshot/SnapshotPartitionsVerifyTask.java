@@ -243,9 +243,11 @@ public class SnapshotPartitionsVerifyTask
                 );
             }
             catch (Exception e) {
-                log.error("Partition verify job threw an exception", e);
+                U.error(log, "Can't verify partition consistency the job threw an exception " +
+                    "[meta=" + meta + ", consId=" + consId + ']', e);
 
-                throw new IgniteException(e);
+                throw new IgniteException("Can't verify partition consistency the job threw an exception " +
+                    "[meta=" + meta + ", consId=" + consId + ']', e);
             }
 
             return res;

@@ -17,9 +17,7 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,13 +49,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.PartitionState;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,6 +68,7 @@ import static java.util.Collections.emptyMap;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 
 /**
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
@@ -504,100 +500,55 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         * @param grpCtx Group context.
+         * @param gctx Group context.
          * @param part Local partition.
          */
         private Future<Map<PartitionKeyV2, PartitionHashRecordV2>> calculatePartitionHashAsync(
-            final CacheGroupContext grpCtx,
+            final CacheGroupContext gctx,
             final GridDhtLocalPartition part
         ) {
-            return ForkJoinPool.commonPool().submit(() -> calculatePartitionHash(grpCtx, part));
-        }
+            return ForkJoinPool.commonPool().submit(() -> {
+                Map<PartitionKeyV2, PartitionHashRecordV2> res;
 
-        /**
-         * @param grpCtx Group context.
-         * @param part Local partition.
-         */
-        private Map<PartitionKeyV2, PartitionHashRecordV2> calculatePartitionHash(
-            CacheGroupContext grpCtx,
-            GridDhtLocalPartition part
-        ) {
-            if (!part.reserve())
-                return emptyMap();
-
-            int partHash = 0;
-            long partSize;
-
-            @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
-
-            PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
-
-            PartitionKeyV2 partKey = new PartitionKeyV2(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
-
-            Object consId = ignite.context().discovery().localNode().consistentId();
-
-            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
-
-            try {
-                if (part.state() == GridDhtPartitionState.MOVING || part.state() == GridDhtPartitionState.LOST) {
-                    PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(
-                        partKey,
-                        isPrimary,
-                        consId,
-                        partHash,
-                        updateCntrBefore == null ? 0 : updateCntrBefore.get(),
-                        part.state() == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
-                        part.state() == GridDhtPartitionState.MOVING ? PartitionState.MOVING : PartitionState.LOST
-                    );
-
-                    return Collections.singletonMap(partKey, movingHashRecord);
-                }
-
-                if (part.state() != GridDhtPartitionState.OWNING)
+                if (!part.reserve())
                     return emptyMap();
 
-                partSize = part.dataStore().fullSize();
+                try {
+                    PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
 
-                if (arg.checkCrc())
-                    checkPartitionCrc(grpCtx, part);
+                    res = calculatePartitionHash(updCntr == null ? 0 : updCntr.get(),
+                        gctx.groupId(),
+                        part.id(),
+                        gctx.cacheOrGroupName(),
+                        ignite.context().discovery().localNode().consistentId(),
+                        part.state(),
+                        part.primary(gctx.topology().readyTopologyVersion()),
+                        part.dataStore().fullSize(),
+                        gctx.offheap().partitionIterator(part.id()));
 
-                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
+                    PartitionUpdateCounter lastUpdCntr = part.dataStore().partUpdateCounter();
 
-                while (it.hasNextX()) {
-                    CacheDataRow row = it.nextX();
+                    if (lastUpdCntr != null && !lastUpdCntr.equals(updCntr)) {
+                        throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + gctx.cacheOrGroupName() +
+                            ", grpId=" + gctx.groupId() + ", partId=" + part.id() + "] changed during size " +
+                            "calculation [updCntrBefore=" + updCntr + ", updCntrAfter=" + lastUpdCntr + "]");
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Can't calculate partition hash [grpId=" + gctx.groupId() +
+                        ", partId=" + part.id() + "]", e);
 
-                    partHash += row.key().hashCode();
-
-                    partHash += Arrays.hashCode(row.value().valueBytes(grpCtx.cacheObjectContext()));
+                    throw new IgniteException("Can't calculate partition hash [grpId=" + gctx.groupId() +
+                        ", partId=" + part.id() + "]", e);
+                }
+                finally {
+                    part.release();
                 }
 
-                PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
+                completionCntr.incrementAndGet();
 
-                if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
-                    throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
-                        ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during size " +
-                        "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
-                }
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Can't calculate partition hash [grpId=" + grpCtx.groupId() +
-                    ", partId=" + part.id() + "]", e);
-
-                throw new IgniteException("Can't calculate partition hash [grpId=" + grpCtx.groupId() +
-                    ", partId=" + part.id() + "]", e);
-            }
-            finally {
-                part.release();
-            }
-
-            PartitionHashRecordV2 partRec = new PartitionHashRecordV2(
-                partKey, isPrimary, consId, partHash, updateCntrBefore == null ? 0 : updateCntrBefore.get(), partSize,
-                PartitionState.OWNING
-            );
-
-            completionCntr.incrementAndGet();
-
-            return Collections.singletonMap(partKey, partRec);
+                return res == null ? emptyMap() : res;
+            });
         }
 
         /**
