@@ -34,6 +34,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public delegate void ThreadExitCallback(IntPtr threadLocalValue);
 
         /// <summary>
+        /// Initializes the <see cref="UnmanagedThread"/> class.
+        /// </summary>
+        static UnmanagedThread()
+        {
+            if (Os.IsLinux)
+            {
+                NativeLibraryUtils.SetDllImportResolvers();
+            }
+        }
+
+        /// <summary>
         /// Sets the thread exit callback, and returns an id to pass to <see cref="EnableCurrentThreadExitEvent"/>.
         /// </summary>
         /// <param name="callbackPtr">
@@ -67,8 +78,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             if (Os.IsLinux)
             {
-                NativeLibraryUtils.SetDllImportResolvers();
-
                 int tlsIndex;
                 var res = Os.IsMono
                     ? NativeMethodsMono.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr)

@@ -18,10 +18,8 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
-    using System.Diagnostics;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Threading;
 
     /// <summary>
     /// Native library call utilities.
@@ -29,18 +27,34 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     public static class NativeLibraryUtils
     {
         /** */
-        private static int _resolversInitialized;
+        private static readonly object SyncRoot = new object();
+
+        /** */
+        private static bool _resolversInitialized;
 
         /// <summary>
         /// Sets dll import resolvers.
         /// </summary>
         public static void SetDllImportResolvers()
         {
-            if (Interlocked.CompareExchange(ref _resolversInitialized, 1, 0) != 0)
+            lock (SyncRoot)
             {
-                return;
-            }
+                if (_resolversInitialized)
+                {
+                    return;
+                }
 
+                SetDllImportResolversImpl();
+
+                _resolversInitialized = true;
+            }
+        }
+
+        /// <summary>
+        /// Sets dll import resolvers.
+        /// </summary>
+        private static void SetDllImportResolversImpl()
+        {
             // Init custom resolver for .NET 5+ single-file apps.
             // Do it with Reflection, because SetDllImportResolver is not available on some frameworks,
             // and multi-targeting is not yet implemented.

@@ -47,6 +47,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private const int ERROR_MOD_NOT_FOUND = 126;
 
         /// <summary>
+        /// Initializes the <see cref="DllLoader"/> class.
+        /// </summary>
+        static DllLoader()
+        {
+            if (Os.IsLinux)
+            {
+                NativeLibraryUtils.SetDllImportResolvers();
+            }
+        }
+
+        /// <summary>
         /// Loads specified DLL.
         /// </summary>
         /// <returns>Library handle and error message.</returns>
@@ -70,8 +81,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (Os.IsLinux)
             {
-                NativeLibraryUtils.SetDllImportResolvers();
-
                 if (Os.IsMono)
                 {
                     var ptr = NativeMethodsMono.dlopen(dllPath, RtldGlobal | RtldLazy);
