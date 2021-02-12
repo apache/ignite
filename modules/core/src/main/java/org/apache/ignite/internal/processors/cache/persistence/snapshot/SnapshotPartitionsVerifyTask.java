@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -60,6 +62,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * Since a snapshot partitions already stored apart on disk the is no requirement for a cluster upcoming updates
  * to be hold on.
  */
+@GridInternal
 public class SnapshotPartitionsVerifyTask
     extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
     /** Serial version uid. */
@@ -203,7 +206,7 @@ public class SnapshotPartitionsVerifyTask
                     ", meta=" + meta + ']');
             }
 
-            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
