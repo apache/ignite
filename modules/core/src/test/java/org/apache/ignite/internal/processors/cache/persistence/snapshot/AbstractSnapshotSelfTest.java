@@ -124,6 +124,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
+        if (dfltCacheCfg != null)
+            cfg.setCacheConfiguration(dfltCacheCfg);
+
         return cfg.setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()

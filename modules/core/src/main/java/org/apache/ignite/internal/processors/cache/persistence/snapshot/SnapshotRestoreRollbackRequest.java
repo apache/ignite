@@ -20,27 +20,28 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Request to perform snapshot restore.
+ * Request to complete/rollback cache group restore process.
  */
-public class SnapshotRestorePerformRequest implements Serializable {
+public class SnapshotRestoreRollbackRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Request ID. */
     private final UUID reqId;
 
-    /** Node ID from which to update the binary metadata. */
-    private final UUID updateMetaNodeId;
+    /** Process execution error. */
+    private final Throwable err;
 
     /**
      * @param reqId Request ID.
-     * @param updateMetaNodeId Node ID from which to update the binary metadata.
+     * @param err Process execution error.
      */
-    public SnapshotRestorePerformRequest(UUID reqId, UUID updateMetaNodeId) {
+    public SnapshotRestoreRollbackRequest(UUID reqId, @Nullable Throwable err) {
         this.reqId = reqId;
-        this.updateMetaNodeId = updateMetaNodeId;
+        this.err = err;
     }
 
     /**
@@ -51,14 +52,14 @@ public class SnapshotRestorePerformRequest implements Serializable {
     }
 
     /**
-     * @return Node ID from which to update the binary metadata.
+     * @return Process execution error.
      */
-    public UUID updateMetaNodeId() {
-        return updateMetaNodeId;
+    public @Nullable Throwable error() {
+        return err;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRestorePerformRequest.class, this);
+        return S.toString(SnapshotRestoreRollbackRequest.class, this);
     }
 }

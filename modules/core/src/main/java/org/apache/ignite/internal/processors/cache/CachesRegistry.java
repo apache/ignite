@@ -186,7 +186,7 @@ public class CachesRegistry {
         for (ExchangeActions.CacheGroupActionData stopAction : exchActions.cacheGroupsToStop()) {
             CacheGroupDescriptor rmvd = unregisterGroup(stopAction.descriptor().groupId());
 
-            assert rmvd != null : stopAction.descriptor().cacheOrGroupName();
+//            assert rmvd != null : stopAction.descriptor().cacheOrGroupName();
         }
 
         for (ExchangeActions.CacheActionData req : exchActions.cacheStopRequests())

@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1096,25 +1095,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             }
         }
-    }
-
-    /**
-     * @param cacheDIr Directory with partition files.
-     * @return Set of partition file IDs found in the directory.
-     */
-    public Set<Integer> scanPartitionIds(File cacheDIr) {
-        Set<Integer> partIds = new HashSet<>();
-
-        for (String name : cacheDIr.list((dir, name) -> name.startsWith(PART_FILE_PREFIX))) {
-            if (new File(cacheDIr, name).isDirectory())
-                continue;
-
-            String partId = name.substring(PART_FILE_PREFIX.length(), name.indexOf('.'));
-
-            partIds.add(Integer.parseInt(partId));
-        }
-
-        return partIds;
     }
 
     /**

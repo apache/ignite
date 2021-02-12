@@ -19,21 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Request to prepare snapshot restore.
+ * Verification task argument.
  */
-public class SnapshotRestorePrepareRequest implements Serializable {
+public class SnapshotRestoreVerificationArg implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Request ID. */
-    private final UUID reqId;
 
     /** Snapshot name. */
     private final String snpName;
@@ -42,28 +35,13 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     @GridToStringInclude
     private final Collection<String> grps;
 
-    /** List of baseline node IDs that must be alive to complete the operation. */
-    @GridToStringInclude
-    private final Set<UUID> nodes;
-
     /**
-     * @param reqId Request ID.
      * @param snpName Snapshot name.
      * @param grps List of cache group names to restore from the snapshot.
-     * @param nodes List of baseline node IDs that must be alive to complete the operation.
      */
-    public SnapshotRestorePrepareRequest(UUID reqId, String snpName, Collection<String> grps, Set<UUID> nodes) {
+    public SnapshotRestoreVerificationArg(String snpName, Collection<String> grps) {
         this.snpName = snpName;
         this.grps = grps;
-        this.nodes = nodes;
-        this.reqId = reqId;
-    }
-
-    /**
-     * @return Request ID.
-     */
-    public UUID requestId() {
-        return reqId;
     }
 
     /**
@@ -78,17 +56,5 @@ public class SnapshotRestorePrepareRequest implements Serializable {
      */
     public String snapshotName() {
         return snpName;
-    }
-
-    /**
-     * @return List of baseline node IDs that must be alive to complete the operation.
-     */
-    public Set<UUID> nodes() {
-        return Collections.unmodifiableSet(nodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SnapshotRestorePrepareRequest.class, this);
     }
 }

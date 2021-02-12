@@ -2987,11 +2987,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (fut != null)
                 fut.onDone(success, err);
         }
-
-        if (req.restoredCache()) {
-            ctx.cache().context().snapshotMgr().afterRestoredCacheStarted(req.cacheName(),
-                req.startCacheConfiguration().getGroupName(), err);
-        }
     }
 
     /**
@@ -5444,6 +5439,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+            ctx.cache().context().snapshotMgr().cleanupRestoredCacheGroups(metastorage);
+
             CacheJoinNodeDiscoveryData data = locCfgMgr.restoreCacheConfigurations();
 
             cachesInfo.onStart(data);
