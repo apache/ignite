@@ -17,11 +17,21 @@
 
 package org.apache.ignite.cdc;
 
+import java.nio.ByteBuffer;
 import java.util.Properties;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cdc.DataChangeConsumer;
+import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -30,6 +40,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Test for cache with custom groupId created.
@@ -50,6 +62,13 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
+
+            cfg.getDataStorageConfiguration()
+                .setWalForceArchiveTimeout(1_000)
+                .setCdcEnabled(true)
+                .setWalMode(WALMode.FSYNC);
+
+            cfg.setConsistentId(igniteInstanceName);
         }
 
         return cfg;
@@ -81,12 +100,67 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC, value = "replication-data")
+    @WithSystemProperty(key = CDCIgniteToKafka.IGNITE_TO_KAFKA_CACHES, value = "cache-2")
     public void testPartitionSwitchOnNodeJoin() throws Exception {
         IgniteEx ign1 = startGrid(1);
         IgniteEx ign2 = startGrid(2);
 
+        IgniteInternalFuture<?> fut1 =
+            runAsync(new IgniteCDC(ign1.configuration(), new DataChangeConsumer<>(new CDCIgniteToKafka())));
+        IgniteInternalFuture<?> fut2 =
+            runAsync(new IgniteCDC(ign2.configuration(), new DataChangeConsumer<>(new CDCIgniteToKafka())));
+
         IgniteEx cli = startClientGrid(3);
 
-        cli.cre
+        Function<String, Runnable> genData = cacheName -> () -> {
+            IgniteCache<Integer, Data> cache = cli.createCache(cacheName);
+
+            FastCrc crc = new FastCrc();
+
+            for (int i=0; i<1000; i++) {
+                byte[] payload = new byte[1024];
+
+                ThreadLocalRandom.current().nextBytes(payload);
+
+                crc.update(ByteBuffer.wrap(payload), 1024);
+
+                cache.put(i, new Data(payload, crc.getValue()));
+
+                crc.reset();
+            }
+        };
+
+        IgniteInternalFuture<?> runFut1 = runAsync(genData.apply("cache-1"));
+        IgniteInternalFuture<?> runFut2 = runAsync(genData.apply("cache-2"));
+
+        runFut1.get(getTestTimeout());
+        runFut2.get(getTestTimeout());
+
+    }
+
+    /** */
+    private static class Data {
+        /** */
+        private final byte[] payload;
+
+        /** */
+        private final int crc;
+
+        /** */
+        public Data(byte[] payload, int crc) {
+            this.payload = payload;
+            this.crc = crc;
+        }
+
+        /** */
+        public byte[] getPayload() {
+            return payload;
+        }
+
+        /** */
+        public int getCrc() {
+            return crc;
+        }
     }
 }
