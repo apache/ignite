@@ -70,6 +70,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         assert stmt.isClosed();
         assert conn.isClosed();
+
+        stopAllGrids();
     }
 
     /**
