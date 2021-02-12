@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.tree;
 
 import org.apache.ignite.ml.tree.data.DecisionTreeDataTest;
-import org.apache.ignite.ml.tree.data.TreeDataIndexTest;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculatorTest;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureTest;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculatorTest;
@@ -43,8 +42,7 @@ import org.junit.runners.Suite;
     StepFunctionTest.class,
     SimpleStepFunctionCompressorTest.class,
     DecisionTreeRegressionTrainerIntegrationTest.class,
-    DecisionTreeClassificationTrainerIntegrationTest.class,
-    TreeDataIndexTest.class
+    DecisionTreeClassificationTrainerIntegrationTest.class
 })
 public class DecisionTreeTestSuite {
 }

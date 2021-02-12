@@ -18,7 +18,6 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.file.IgniteFileIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -40,7 +39,6 @@ public class IgnitePdsNativeIoTestSuite {
         suite.add(IgnitePdsReplacementNativeIoTest.class);
 
         suite.add(IgniteNativeIoWithNoPersistenceTest.class);
-        suite.add(IgniteFileIOTest.class);
 
         return suite;
     }

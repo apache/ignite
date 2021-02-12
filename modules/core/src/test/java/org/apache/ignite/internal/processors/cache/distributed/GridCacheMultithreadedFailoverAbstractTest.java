@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -70,8 +69,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Base test for all multithreaded cache scenarios w/ and w/o failover.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
-public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
+public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstractTest {
     /** Node name prefix. */
     private static final String NODE_PREFIX = "node";
 

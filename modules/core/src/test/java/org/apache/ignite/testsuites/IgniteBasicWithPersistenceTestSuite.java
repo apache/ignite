@@ -23,7 +23,6 @@ import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
-import org.apache.ignite.internal.cluster.FullyConnectedComponentSearcherTest;
 import org.apache.ignite.internal.cluster.IgniteClusterIdTagTest;
 import org.apache.ignite.internal.encryption.CacheGroupKeyChangeTest;
 import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
@@ -38,12 +37,10 @@ import org.apache.ignite.internal.encryption.EncryptionMXBeanTest;
 import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest;
 import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
-import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvationCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
-import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
@@ -68,7 +65,6 @@ import org.junit.runners.Suite;
     FailureHandlingConfigurationTest.class,
     SystemWorkersBlockingTest.class,
     CheckpointReadLockFailureTest.class,
-    CommonPoolStarvationCheckpointTest.class,
 
     GridInternalTaskUnusedWalSegmentsTest.class,
 
@@ -97,7 +93,6 @@ import org.junit.runners.Suite;
     IgniteSnapshotMXBeanTest.class,
 
     IgniteClusterIdTagTest.class,
-    FullyConnectedComponentSearcherTest.class,
 
     PerformanceStatisticsSelfTest.class,
     PerformanceStatisticsThinClientTest.class,
@@ -106,8 +101,7 @@ import org.junit.runners.Suite;
     StringCacheTest.class,
     PerformanceStatisticsPropertiesTest.class,
     PerformanceStatisticsMultipleStartTest.class,
-    ForwardReadTest.class,
-    CacheStartTest.class
+    ForwardReadTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }
