@@ -81,17 +81,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
             failedCache.put(key, key);
 
         // Partial prepare #1.
-        CountDownLatch prepMsgLatch1 = new CountDownLatch(brokenCellNodes.size() /*one per node*/);
-        AtomicInteger blockedMsgCnt1 = new AtomicInteger();
-
-        blockPrepareMessages(brokenCellNodes.get(0), prepMsgLatch1, blockedMsgCnt1);
-
-        IgniteInternalFuture<?> hangedPrepFut1 = partialPrepare(partialPreparedKeys1, failed);
-
-        prepMsgLatch1.await(); // Both messages handled.
-        assertEquals(1, blockedMsgCnt1.get()); // One message blocked.
-
-        stopBlockingPrepareMessages();
+        IgniteInternalFuture<?> hangedPrepFut1 = partialPrepare(partialPreparedKeys1, failed, brokenCellNodes.get(0));
 
         // Regular prepare.
         CountDownLatch nodeFailedLatch = new CountDownLatch(1);
@@ -99,17 +89,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
         IgniteInternalFuture<?> prepFut = prepare(preparedKeys, orig, nodeFailedLatch);
 
         // Partial prepare #2.
-        CountDownLatch prepMsgLatch2 = new CountDownLatch(brokenCellNodes.size() /*one per node*/);
-        AtomicInteger blockedMsgCnt2 = new AtomicInteger();
-
-        blockPrepareMessages(brokenCellNodes.get(1), prepMsgLatch2, blockedMsgCnt2);
-
-        IgniteInternalFuture<?> hangedPrepFut2 = partialPrepare(partialPreparedKeys2, failed);
-
-        prepMsgLatch2.await(); // Both messages handled.
-        assertEquals(1, blockedMsgCnt2.get()); // One message blocked.
-
-        stopBlockingPrepareMessages();
+        IgniteInternalFuture<?> hangedPrepFut2 = partialPrepare(partialPreparedKeys2, failed, brokenCellNodes.get(1));
 
         assertCountersAsExpected(part, false, PART_CACHE_NAME, 10, -1 /*ignored*/);
 
@@ -181,7 +161,12 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
     /**
      *
      */
-    private IgniteInternalFuture<?> partialPrepare(List<Integer> keys, Ignite node) throws Exception {
+    private IgniteInternalFuture<?> partialPrepare(List<Integer> keys, Ignite node, Ignite blockedBackup) throws Exception {
+        CountDownLatch prepMsgLatch = new CountDownLatch(2 /*one per node*/);
+        AtomicInteger blockedMsgCnt = new AtomicInteger();
+
+        blockPrepareMessages(blockedBackup, prepMsgLatch, blockedMsgCnt);
+
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             try {
                 IgniteCache<Integer, Integer> cache = node.getOrCreateCache(PART_CACHE_NAME);
@@ -202,6 +187,11 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
                 fail("Should not happen [exception=" + e + "]");
             }
         }, 1);
+
+        prepMsgLatch.await(); // Both messages handled.
+        assertEquals(1, blockedMsgCnt.get()); // One message blocked.
+
+        stopBlockingPrepareMessages();
 
         return fut;
     }
