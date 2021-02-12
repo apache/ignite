@@ -21,7 +21,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.utils import ignite_versions, cluster
+from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
@@ -60,6 +60,7 @@ class AuthenticationTests(IgniteTest):
         control_utility.deactivate()
 
     @cluster(num_nodes=NUM_NODES)
+    @ignore_if(lambda version, globals: globals.get("use_auth", False))  # Globals overrides test params
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_activate_deactivate_bad_user(self, ignite_version):
         """
