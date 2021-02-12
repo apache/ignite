@@ -63,14 +63,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 return;
             }
 
-            var resolveMethod = typeof(NativeLibraryUtils).GetMethod("Resolve", BindingFlags.Static | BindingFlags.NonPublic);
-            Debug.Assert(resolveMethod != null);
-
             var libraryName = Expression.Parameter(typeof(string));
             var assembly = Expression.Parameter(typeof(Assembly));
             var searchPath = Expression.Parameter(typeof(Nullable<>).MakeGenericType(dllImportSearchPathType));
 
-            var resolve = Expression.Call(resolveMethod, libraryName);
+            Expression<Func<string, IntPtr>> call = lib => Resolve(lib);
+            var resolve = Expression.Invoke(call, libraryName);
+
             var dllImportResolver = Expression.Lambda(dllImportResolverType, resolve, libraryName, assembly, searchPath);
             var resolveDelegate = dllImportResolver.Compile();
 
