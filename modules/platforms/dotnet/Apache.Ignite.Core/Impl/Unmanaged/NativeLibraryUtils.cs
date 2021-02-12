@@ -44,7 +44,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return;
                 }
 
-                SetDllImportResolversImpl();
+                if (Os.IsLinux)
+                {
+                    SetLibcoreclrResolver();
+                }
 
                 _resolversInitialized = true;
             }
@@ -53,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Sets dll import resolvers.
         /// </summary>
-        private static void SetDllImportResolversImpl()
+        private static void SetLibcoreclrResolver()
         {
             // Init custom resolver for .NET 5+ single-file apps.
             // Do it with Reflection, because SetDllImportResolver is not available on some frameworks,

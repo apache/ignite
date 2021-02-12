@@ -51,10 +51,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         static DllLoader()
         {
-            if (Os.IsLinux)
-            {
-                NativeLibraryUtils.SetDllImportResolvers();
-            }
+            NativeLibraryUtils.SetDllImportResolvers();
         }
 
         /// <summary>

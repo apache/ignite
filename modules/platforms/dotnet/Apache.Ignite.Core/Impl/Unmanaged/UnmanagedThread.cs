@@ -38,10 +38,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         static UnmanagedThread()
         {
-            if (Os.IsLinux)
-            {
-                NativeLibraryUtils.SetDllImportResolvers();
-            }
+            NativeLibraryUtils.SetDllImportResolvers();
         }
 
         /// <summary>
