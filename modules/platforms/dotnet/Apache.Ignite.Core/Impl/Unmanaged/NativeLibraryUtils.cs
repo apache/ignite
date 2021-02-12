@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Native library call utilities.
     /// </summary>
-    public static class NativeLibraryUtils
+    internal static class NativeLibraryUtils
     {
         /** */
         private static readonly object SyncRoot = new object();
