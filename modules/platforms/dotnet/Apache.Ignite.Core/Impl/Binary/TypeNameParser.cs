@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly int _start;
 
         /** */
-        private char[] _typeNameArr;
+        private readonly char[] _typeNameArr;
 
         /** */
         private readonly bool _forceJavaNamingConventions;

@@ -189,13 +189,3 @@ namespace Org.Apache.Ignite.Platform.Model
     /// </summary>
     public class V4 { public String Name { get; set; } }
 }
-
-namespace Мой.Неймспейс
-{
-    using System;
-
-    /// <summary>
-    /// A class is a clone of Java class Address with the same namespace.
-    /// </summary>
-    public class ОченьСтранныйТип { public String Name { get; set; } }
-}
