@@ -112,29 +112,26 @@ namespace Apache.Ignite.Core.Tests
             
             var csFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
 
-            Assert.Multiple(() =>
+            foreach (var csFile in csFiles)
             {
-                foreach (var csFile in csFiles)
+                if (excluded.Contains(csFile.Name))
                 {
-                    if (excluded.Contains(csFile.Name))
-                    {
-                        continue;
-                    }
-                    
-                    var text = File.ReadAllText(csFile.FullName);
-
-                    if (!text.Contains("namespace Apache.Ignite.Core.Impl"))
-                    {
-                        continue;
-                    }
-
-                    StringAssert.DoesNotContain("public class", text, csFile.FullName);
-                    StringAssert.DoesNotContain("public static class", text, csFile.FullName);
-                    StringAssert.DoesNotContain("public interface", text, csFile.FullName);
-                    StringAssert.DoesNotContain("public enum", text, csFile.FullName);
-                    StringAssert.DoesNotContain("public struct", text, csFile.FullName);
+                    continue;
                 }
-            });
+
+                var text = File.ReadAllText(csFile.FullName);
+
+                if (!text.Contains("namespace Apache.Ignite.Core.Impl"))
+                {
+                    continue;
+                }
+
+                StringAssert.DoesNotContain("public class", text, csFile.FullName);
+                StringAssert.DoesNotContain("public static class", text, csFile.FullName);
+                StringAssert.DoesNotContain("public interface", text, csFile.FullName);
+                StringAssert.DoesNotContain("public enum", text, csFile.FullName);
+                StringAssert.DoesNotContain("public struct", text, csFile.FullName);
+            }
         }
 
 #if NETCOREAPP
