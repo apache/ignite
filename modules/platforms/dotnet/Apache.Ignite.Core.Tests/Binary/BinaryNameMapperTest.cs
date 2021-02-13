@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
     using Org.Apache.Ignite.Platform.Model;
+    using Мой.Неймспейс;
 
     /// <summary>
     /// Tests binary name mapper.
@@ -110,6 +111,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("org.myCompany.Class", mapper.GetTypeName("Org.MyCompany.Class"));
             Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Org.Company.MyClass"));
             Assert.AreEqual("org.company.URL", mapper.GetTypeName("Org.Company.URL"));
+            Assert.AreEqual("мой.неймспейс.ОченьСтранныйТип", mapper.GetTypeName(typeof(ОченьСтранныйТип).FullName));
+            
 
             Assert.AreEqual("org.apache.ignite.platform.model.Address", 
                 mapper.GetTypeName(typeof(Address).FullName));

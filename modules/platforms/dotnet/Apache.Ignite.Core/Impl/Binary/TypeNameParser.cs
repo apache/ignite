@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Collections.Generic;
+    using System.Globalization;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -197,7 +198,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (Char == '.' || Char == '+')
                 {
                     if (_forceJavaNamingConventions)
-                        _typeNameArr[NameStart] = System.Char.ToLower(_typeNameArr[NameStart]);
+                        _typeNameArr[NameStart] =
+                            System.Char.ToLower(_typeNameArr[NameStart], CultureInfo.CurrentCulture);
 
                     NameStart = _pos + 1;
                 }
