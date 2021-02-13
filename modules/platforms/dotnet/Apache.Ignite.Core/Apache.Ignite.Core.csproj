@@ -151,6 +151,7 @@
     <Compile Include="Impl\Transactions\TransactionRollbackOnlyProxy.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Jvm.CrossAppDomain.cs" />
+    <Compile Include="Impl\Unmanaged\NativeLibraryUtils.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedThread.cs" />
     <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\IDateTimeProvider.cs" />
