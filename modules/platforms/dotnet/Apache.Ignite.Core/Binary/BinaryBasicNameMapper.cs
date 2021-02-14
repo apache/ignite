@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using System.Globalization;
     using System.Text;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -52,18 +53,46 @@ namespace Apache.Ignite.Core.Binary
         public bool ForceJavaNamingConventions { get; set; }
 
         /// <summary>
+        /// Perform mapping to java naming convention e.g `Com.Company.Class` maps to `com.company.Class`.
+        /// </summary>
+        /// <param name="name">Type name with the namespace.</param>
+        /// <returns></returns>
+        private static string DoForceJavaNamingConventions(string name)
+        {
+            var resArr = name.ToCharArray();
+
+            var nameStart = 0;
+
+            for (int i = 0; i < resArr.Length; i++)
+            {
+                if (resArr[i] == '.')
+                {
+                    resArr[nameStart] = Char.ToLower(resArr[nameStart], CultureInfo.CurrentCulture);
+                    nameStart = i + 1;
+                }
+            }
+
+            return new string(resArr);
+        }
+
+        /// <summary>
         /// Gets the type name.
         /// </summary>
         public string GetTypeName(string name)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "typeName");
 
-            var parsedName = TypeNameParser.Parse(name, ForceJavaNamingConventions);
+            var parsedName = TypeNameParser.Parse(name);
 
             if (parsedName.Generics == null)
             {
                 // Generics are rare, use simpler logic for the common case.
                 var res = IsSimpleName ? parsedName.GetName() : parsedName.GetNameWithNamespace();
+
+                if (!IsSimpleName && ForceJavaNamingConventions)
+                {
+                    res = DoForceJavaNamingConventions(res);
+                }
 
                 var arr = parsedName.GetArray();
 
@@ -77,7 +106,7 @@ namespace Apache.Ignite.Core.Binary
 
             var nameFunc = IsSimpleName
                 ? (Func<TypeNameParser, string>) (x => x.GetName())
-                : (x => x.GetNameWithNamespace());
+                : (x => ForceJavaNamingConventions ? DoForceJavaNamingConventions(x.GetNameWithNamespace()) : x.GetNameWithNamespace());
 
             return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
         }
