@@ -149,7 +149,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             var mapper = new BinaryBasicNameMapperForJava {JavaDomain = "org"};
             Assert.IsFalse(mapper.IsSimpleName);
 
-            // .Net -> Java.
             Assert.AreEqual("org.company.Class", mapper.GetTypeName("Company.Class"));
             Assert.AreEqual("org.myCompany.Class", mapper.GetTypeName("MyCompany.Class"));
             Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Company.MyClass"));
@@ -160,12 +159,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual("org.apache.ignite.platform.model.Address[]", 
                 mapper.GetTypeName(typeof(Address[]).FullName));
-
-            // Java -> .Net.
-            Assert.AreEqual("Company.Class", mapper.GetTypeName("org.company.Class"));
-            Assert.AreEqual("MyCompany.Class", mapper.GetTypeName("org.myCompany.Class"));
-            Assert.AreEqual("Company.MyClass", mapper.GetTypeName("org.company.MyClass"));
-            Assert.AreEqual("Company.URL", mapper.GetTypeName("org.company.URL"));
         }
 
         /// <summary>

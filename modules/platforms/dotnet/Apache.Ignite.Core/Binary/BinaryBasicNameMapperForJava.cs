@@ -29,17 +29,9 @@ namespace Apache.Ignite.Core.Binary
         /// <returns></returns>
         private static string DoForceJavaNamingConventions(string name, string javaDomain)
         {
-            bool toUpper = false;
-
             if (javaDomain != null)
             {
-                if (name.StartsWith(javaDomain, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name.Substring(javaDomain.Length);
-                    toUpper = true;
-                }
-                else
-                    name = javaDomain + name;
+                name = javaDomain + name;
             }
 
             var arr = name.ToCharArray();
@@ -50,9 +42,7 @@ namespace Apache.Ignite.Core.Binary
             {
                 if (arr[i] == '.')
                 {
-                    arr[nameStart] = toUpper
-                        ? Char.ToUpper(arr[nameStart], CultureInfo.CurrentCulture)
-                        : Char.ToLower(arr[nameStart], CultureInfo.CurrentCulture);
+                    arr[nameStart] = Char.ToLower(arr[nameStart], CultureInfo.CurrentCulture);
                     nameStart = i + 1;
                 }
             }
