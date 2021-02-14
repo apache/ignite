@@ -14,12 +14,6 @@ namespace Apache.Ignite.Core.Binary
     public class BinaryBasicNameMapperForJava: BinaryBasicNameMapper
     {
         /// <summary>
-        /// Gets or sets a value indicating whether this instance maps using standart Java naming convensions.
-        /// E.g <code>Com.Company.Class</code> maps to <code>com.company.Class</code>.
-        /// </summary>
-        public bool ForceJavaNamingConventions { get; set; }
-
-        /// <summary>
         /// Domain to be removed for .Net style name or added as a first part of Java type name.
         /// Java and .Net assumes usage of different naming conventions.
         /// Java package name first part is a domain: com, org, ru, etc. and second part is a company name: acme, company, etc.
@@ -80,7 +74,7 @@ namespace Apache.Ignite.Core.Binary
                 // Generics are rare, use simpler logic for the common case.
                 var res = IsSimpleName ? parsedName.GetName() : parsedName.GetNameWithNamespace();
 
-                if (!IsSimpleName && ForceJavaNamingConventions)
+                if (!IsSimpleName)
                 {
                     res = DoForceJavaNamingConventions(res, 
                         JavaDomain == null ? null : JavaDomain + '.');
@@ -98,10 +92,8 @@ namespace Apache.Ignite.Core.Binary
 
             var nameFunc = IsSimpleName
                 ? (Func<TypeNameParser, string>) (x => x.GetName())
-                : x => ForceJavaNamingConventions
-                    ? DoForceJavaNamingConventions(x.GetNameWithNamespace(),
-                        JavaDomain == null ? null : JavaDomain + '.')
-                    : x.GetNameWithNamespace();
+                : x => DoForceJavaNamingConventions(x.GetNameWithNamespace(),
+                    JavaDomain == null ? null : JavaDomain + '.');
 
             return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
         }

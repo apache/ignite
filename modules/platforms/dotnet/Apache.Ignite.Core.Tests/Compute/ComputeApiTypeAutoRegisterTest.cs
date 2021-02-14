@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 SpringConfigUrl = Path.Combine("Config", "Compute", "compute-grid") + "1.xml",
                 BinaryConfiguration = new BinaryConfiguration
                 {
-                    NameMapper = new BinaryBasicNameMapperForJava {ForceJavaNamingConventions = true, JavaDomain = "org"}
+                    NameMapper = new BinaryBasicNameMapperForJava {JavaDomain = "org"}
                 }
             });
         }

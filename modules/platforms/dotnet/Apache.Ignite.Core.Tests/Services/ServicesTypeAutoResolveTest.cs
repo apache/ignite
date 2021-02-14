@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 SpringConfigUrl = springConfigUrl,
                 BinaryConfiguration = new BinaryConfiguration
                 {
-                    NameMapper = new BinaryBasicNameMapperForJava {ForceJavaNamingConventions = true, JavaDomain = "org"}
+                    NameMapper = new BinaryBasicNameMapperForJava {JavaDomain = "org"}
                 }
             };
         }
