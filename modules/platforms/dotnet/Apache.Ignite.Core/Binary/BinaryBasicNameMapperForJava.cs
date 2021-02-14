@@ -8,9 +8,9 @@ namespace Apache.Ignite.Core.Binary
 
     /// <summary>
     /// Implementation of <code>IBinaryNameMapper</code> that handles differs in Java and .Net naming conventions.
+    /// https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html
+    /// https://docs.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-namespaces
     /// </summary>
-    /// <seealso cref="https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html"/>
-    /// <seealso cref="https://docs.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-namespaces"/>
     public class BinaryBasicNameMapperForJava: BinaryBasicNameMapper
     {
         /// <summary>
