@@ -97,10 +97,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests full name mode with ForceJavaNamingConventions = true.
+        /// Tests BinaryBasicNameMapperForJava.
         /// </summary>
         [Test]
-        public void TestFullNameForceJavaNamingConventions()
+        public void TestBinaryBasicNameMapperForJava()
         {
             var mapper = new BinaryBasicNameMapperForJava();
             Assert.IsFalse(mapper.IsSimpleName);
@@ -118,12 +118,20 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests full name mode with ForceJavaNamingConventions = true.
+        /// Tests BinaryBasicNameMapperForJava with simple name mode.
         /// </summary>
         [Test]
-        public void TestSimpleNameUseDotNetNamingConventions()
+        public void TestBinaryBasicNameMapperForJavaSimpleName()
         {
             var mapper = new BinaryBasicNameMapperForJava {IsSimpleName = true};
+            Assert.IsTrue(mapper.IsSimpleName);
+
+            Assert.AreEqual("Class", mapper.GetTypeName("Org.Company.Class"));
+            Assert.AreEqual("Class", mapper.GetTypeName("Org.MyCompany.Class"));
+            Assert.AreEqual("MyClass", mapper.GetTypeName("Org.Company.MyClass"));
+            Assert.AreEqual("URL", mapper.GetTypeName("Org.Company.URL"));
+
+            mapper = new BinaryBasicNameMapperForJava {IsSimpleName = true, JavaDomain = "org"};
             Assert.IsTrue(mapper.IsSimpleName);
 
             Assert.AreEqual("Class", mapper.GetTypeName("Org.Company.Class"));
@@ -133,7 +141,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests full name mode with ForceJavaNamingConventions = true and JavaDomain = "org".
+        /// Tests BinaryBasicNameMapperForJava and JavaDomain = "org".
         /// </summary>
         [Test]
         public void TestFullNameForceJavaNamingConventionsWithDomain()
