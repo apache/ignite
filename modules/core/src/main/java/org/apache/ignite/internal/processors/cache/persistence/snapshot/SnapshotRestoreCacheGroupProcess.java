@@ -227,9 +227,7 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param leftNodeId Left node ID.
      */
     public void onNodeLeft(UUID leftNodeId) {
-        IgniteInternalFuture<Void> fut0 = fut;
-
-        if (staleFuture(fut0))
+        if (staleFuture(fut))
             return;
 
         if (opCtx.nodes().contains(leftNodeId)) {
@@ -386,20 +384,17 @@ public class SnapshotRestoreCacheGroupProcess {
     private IgniteInternalFuture<SnapshotRestoreResponse> cacheStart(SnapshotRestoreRequest req) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (staleFuture(fut) || !req.requestId().equals(opCtx0.requestId()))
-            return new GridFinishedFuture<>();
-
-        if (!opCtx0.nodes().contains(ctx.localNodeId()))
+        if (staleFuture(fut))
             return new GridFinishedFuture<>();
 
         if (!req.requestId().equals(opCtx0.requestId()))
             return new GridFinishedFuture<>(new IgniteException("Unknown snapshot restore operation was rejected."));
 
-        if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
-            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Cluster state has been changed."));
-
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
+
+        if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
+            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Cluster state has been changed."));
 
         if (interrupted())
             return new GridFinishedFuture<>(errRef.get());

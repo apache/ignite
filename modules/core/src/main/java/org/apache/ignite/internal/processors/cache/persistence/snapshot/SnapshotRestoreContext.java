@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,8 +60,11 @@ class SnapshotRestoreContext {
     /** Restore operation lock. */
     private final ReentrantLock rollbackLock = new ReentrantLock();
 
+    /** List of processed cache IDs. */
+    private final Set<Integer> cacheIds = new HashSet<>();
+
     /** Cache configurations. */
-    private final Map<Integer, StoredCacheData> cacheCfgs = new ConcurrentHashMap<>();
+    private final List<StoredCacheData> ccfgs;
 
     /** Restored cache groups. */
     private final Map<String, GroupRestoreContext> grps = new ConcurrentHashMap<>();
@@ -74,15 +78,20 @@ class SnapshotRestoreContext {
      */
     public SnapshotRestoreContext(UUID reqId, String snpName, Set<UUID> reqNodes, List<StoredCacheData> configs,
         GridKernalContext ctx) {
+        ccfgs = new ArrayList<>(configs);
+
         for (StoredCacheData cacheData : configs) {
             String cacheName = cacheData.config().getName();
 
-            cacheCfgs.put(CU.cacheId(cacheName), cacheData);
+            cacheIds.add(CU.cacheId(cacheName));
 
             boolean shared = cacheData.config().getGroupName() != null;
 
             grps.computeIfAbsent(
                 shared ? cacheData.config().getGroupName() : cacheName, v -> new GroupRestoreContext(shared));
+
+            if (shared)
+                cacheIds.add(CU.cacheId(cacheData.config().getGroupName()));
         }
 
         this.reqId = reqId;
@@ -126,12 +135,12 @@ class SnapshotRestoreContext {
      * @return {@code True} if the cache with the specified name is currently being restored.
      */
     public boolean containsCache(String name) {
-        return grps.containsKey(name) || cacheCfgs.containsKey(CU.cacheId(name));
+        return cacheIds.contains(CU.cacheId(name));
     }
 
     /** @return Cache configurations. */
     public Collection<StoredCacheData> configs() {
-        return cacheCfgs.values();
+        return ccfgs;
     }
 
     /**
