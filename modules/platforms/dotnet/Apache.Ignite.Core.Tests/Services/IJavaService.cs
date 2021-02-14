@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
-    using Org.Apache.Ignite.Platform.Model;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Java service proxy interface.

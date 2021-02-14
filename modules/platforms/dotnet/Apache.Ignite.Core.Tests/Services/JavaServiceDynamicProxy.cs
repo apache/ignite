@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using Org.Apache.Ignite.Platform.Model;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Explicit service proxy over dynamic variable.
