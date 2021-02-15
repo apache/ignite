@@ -23,9 +23,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -38,6 +43,9 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
+import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.AFFINITY_KEY_IDX_NAME;
+import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Table.generateProxyIdxName;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
 
@@ -120,6 +128,46 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         devCache.put(22, new Developer("Prokofiev", 21, "", -1));
         devCache.put(23, new Developer("Musorgskii", 22, "", -1));
 
+        IgniteCache<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer> tblWithAff =
+            grid.getOrCreateCache(new CacheConfiguration<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>()
+            .setName("TBL_WITH_AFF_KEY")
+            .setSqlSchema("PUBLIC")
+            .setBackups(1)
+            .setQueryEntities(F.asList(new QueryEntity(CalciteQueryProcessorTest.Key.class, CalciteQueryProcessorTest.Developer.class)
+            .setTableName("TBL_WITH_AFF_KEY")))
+        );
+
+        tblWithAff.put(new CalciteQueryProcessorTest.Key(1, 2), new CalciteQueryProcessorTest.Developer("Petr", 10));
+        tblWithAff.put(new CalciteQueryProcessorTest.Key(2, 3), new CalciteQueryProcessorTest.Developer("Ivan", 11));
+
+        IgniteCache<Integer, CalciteQueryProcessorTest.Developer> tblConstrPk =
+            grid.getOrCreateCache(new CacheConfiguration<Integer, CalciteQueryProcessorTest.Developer>()
+                .setName("TBL_CONSTR_PK")
+                .setSqlSchema("PUBLIC")
+                .setBackups(0)
+                .setQueryEntities(F.asList(new QueryEntity(Integer.class, CalciteQueryProcessorTest.Developer.class)
+                    .setTableName("TBL_CONSTR_PK")
+                    .setKeyFieldName("id")
+                    .addQueryField("id", Integer.class.getName(), null)))
+            );
+
+        tblConstrPk.put(1, new CalciteQueryProcessorTest.Developer("Petr", 10));
+        tblConstrPk.put(2, new CalciteQueryProcessorTest.Developer("Ivan", 11));
+
+        GridQueryProcessor qryProc = ((IgniteEx)grid).context().query();
+
+        qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC.UNWRAP_PK" + " (F1 VARCHAR, F2 LONG, F3 LONG, F4 LONG, " +
+            "CONSTRAINT PK PRIMARY KEY (F2, F1)) WITH \"backups=0, affinity_key=F1\""), true).getAll();
+
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Petr', 1, 2, 3)"), true);
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan', 2, 2, 4)"), true);
+
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan1', 21, 2, 4)"), true);
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan2', 22, 2, 4)"), true);
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan3', 23, 2, 4)"), true);
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan4', 24, 2, 4)"), true);
+        qryProc.querySqlFields(new SqlFieldsQuery("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan5', 25, 2, 4)"), true);
+
         awaitPartitionMapExchange();
     }
 
@@ -130,6 +178,24 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .setBackups(1)
             .setQueryEntities(singletonList(ent))
             .setSqlSchema("PUBLIC");
+    }
+
+    /** */
+    @Test
+    public void testEqualsFilterWithUnwrpKey() {
+        assertQuery("SELECT F1 FROM UNWRAP_PK WHERE F2=2")
+            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", PK_IDX_NAME))
+            .returns("Ivan")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testEqualsFilterWithUnwrpKeyAndAff() {
+        assertQuery("SELECT F1 FROM UNWRAP_PK WHERE F2=2")
+            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", PK_IDX_NAME))
+            .returns("Ivan")
+            .check();
     }
 
     /** */
@@ -237,8 +303,31 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key=1")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", PK_IDX_NAME))
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+
+        assertQuery("SELECT * FROM Developer WHERE id=1")
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", generateProxyIdxName(PK_IDX_NAME)))
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testEqualsFilterWithAffIdx() {
+        assertQuery("SELECT * FROM TBL_WITH_AFF_KEY WHERE affinityKey=3")
+            .matches(containsIndexScan("PUBLIC", "TBL_WITH_AFF_KEY", AFFINITY_KEY_IDX_NAME))
+            .returns(2, 3, "Ivan", 11)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testEqualsFilterWithPkIdx1() {
+        assertQuery("SELECT * FROM TBL_CONSTR_PK WHERE id=2")
+            .matches(containsIndexScan("PUBLIC", "TBL_CONSTR_PK", generateProxyIdxName(PK_IDX_NAME)))
+            .returns("Ivan", 11, 2)
             .check();
     }
 
@@ -246,7 +335,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnGreaterThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key>3 and _key<12")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", PK_IDX_NAME))
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(5, "Vagner", 4, "Leipzig", 70)
             .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
@@ -263,7 +352,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyColumnGreaterThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE _key>=? and _key<=?")
             .withParams(3, 11)
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", PK_IDX_NAME))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(5, "Vagner", 4, "Leipzig", 70)
@@ -303,7 +392,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE id=2")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", generateProxyIdxName(PK_IDX_NAME)))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
     }
@@ -313,7 +402,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     public void testKeyAliasGreaterThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE id>? and id<?")
             .withParams(3, 12)
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", generateProxyIdxName(PK_IDX_NAME)))
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(5, "Vagner", 4, "Leipzig", 70)
             .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
@@ -329,7 +418,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasGreaterThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE id>=3 and id<12")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", generateProxyIdxName(PK_IDX_NAME)))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(5, "Vagner", 4, "Leipzig", 70)
@@ -346,7 +435,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasLessThanFilter() {
         assertQuery("SELECT * FROM Developer WHERE id<3")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", generateProxyIdxName(PK_IDX_NAME)))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -356,7 +445,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasLessThanOrEqualsFilter() {
         assertQuery("SELECT * FROM Developer WHERE id<=2")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", generateProxyIdxName(PK_IDX_NAME)))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .check();
@@ -954,6 +1043,23 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
                 "name='" + name + '\'' +
                 ", ver=" + depId +
                 '}';
+        }
+    }
+
+    /** */
+    public static class Key {
+        /** */
+        @QuerySqlField
+        public int id;
+
+        /** */
+        @QuerySqlField
+        public int id2;
+
+        /** */
+        public Key(int id, int id2) {
+            this.id = id;
+            this.id2 = id2;
         }
     }
 }

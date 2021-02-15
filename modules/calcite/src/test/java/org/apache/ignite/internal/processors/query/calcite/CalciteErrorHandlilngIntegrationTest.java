@@ -174,7 +174,7 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
                         BPlusTree.Result res =
                             delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
 
-                        if (shouldThrow.get() && tree instanceof H2Tree)
+                        if (shouldThrow.get() && (tree instanceof H2Tree))
                             throw new RuntimeException("test exception");
 
                         return res;
