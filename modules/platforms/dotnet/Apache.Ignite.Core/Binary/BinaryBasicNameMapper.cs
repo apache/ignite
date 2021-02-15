@@ -47,12 +47,12 @@ namespace Apache.Ignite.Core.Binary
         public bool IsSimpleName { get; set; }
 
         /// <summary>
-        /// Domain to be added as a first part of Java type name.
-        /// Java and .Net assumes usage of different naming conventions.
+        /// Prefix to be added as a first part of Java type name.
+        /// Java and .NET assumes usage of different naming conventions.
         /// Java package name first part is a domain: com, org, ru, etc. and second part is a company name: acme, company, etc.
-        /// .Net naming conventions don't use domain and start with a company name.
+        /// .NET naming conventions don't use domain and start with a company name.
         /// </summary>
-        public string JavaDomain { get; set; }
+        public string NamespacePrefix { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this instance maps names using standard Java naming conventions.
@@ -72,11 +72,15 @@ namespace Apache.Ignite.Core.Binary
             if (parsedName.Generics == null)
             {
                 // Generics are rare, use simpler logic for the common case.
-                var res = IsSimpleName ? parsedName.GetName() : parsedName.GetNameWithNamespace();
-
-                if (!IsSimpleName && NamespaceToLower)
+                string res;
+                
+                if (IsSimpleName)
+                    res = parsedName.GetName();
+                else
                 {
-                    res = DoForceJavaNamingConventions(res, JavaDomain == null ? null : JavaDomain + '.');
+                    res = NamespaceToLower
+                        ? DoForceJavaNamingConventions(parsedName, NamespacePrefix)
+                        : parsedName.GetNameWithNamespace();
                 }
 
                 var arr = parsedName.GetArray();
@@ -101,8 +105,7 @@ namespace Apache.Ignite.Core.Binary
             }
             else
             {
-                nameFunc = x => DoForceJavaNamingConventions(x.GetNameWithNamespace(),
-                    JavaDomain == null ? null : JavaDomain + '.');
+                nameFunc = x => DoForceJavaNamingConventions(x, NamespacePrefix);
             }
 
             return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
@@ -119,7 +122,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Builds the type name.
         /// </summary>
-        internal static StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb, 
+        private static StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb, 
             Func<TypeNameParser, string> typeNameFunc)
         {
             sb.Append(typeNameFunc(typeName));
@@ -161,23 +164,17 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Perform mapping to java naming convention e.g `Com.Company.Class` maps to `com.company.Class`.
         /// </summary>
-        /// <param name="name">Type name with the namespace.</param>
+        /// <param name="parsedName">Type name parser.</param>
         /// <param name="javaDomain">Java domain to be added.</param>
         /// <returns></returns>
-        private static string DoForceJavaNamingConventions(string name, string javaDomain)
+        private static string DoForceJavaNamingConventions(TypeNameParser parsedName, string javaDomain)
         {
-            if (javaDomain != null)
-            {
-                name = javaDomain + name;
-            }
+            var nameSpace = parsedName.GetNamespace();
 
-            var arr = name.ToCharArray();
-            var nameStart = name.LastIndexOf('.');
+            if (nameSpace == null)
+                return javaDomain + parsedName.GetName();
 
-            for (int j = 0; j < nameStart; j++)
-                arr[j] = Char.ToLower(arr[j], CultureInfo.CurrentCulture);
-
-            return new string(arr);
+            return javaDomain + nameSpace.ToLower(CultureInfo.InvariantCulture) + '.' + parsedName.GetName();
         }
     }
 }
