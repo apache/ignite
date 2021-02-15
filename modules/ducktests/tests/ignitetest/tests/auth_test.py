@@ -68,8 +68,6 @@ class AuthenticationTests(IgniteTest):
         Negative case
         """
 
-        success = False
-
         config = IgniteConfiguration(
             cluster_state="INACTIVE",
             auth=True,
@@ -90,5 +88,3 @@ class AuthenticationTests(IgniteTest):
             raise Exception("User successfully execute command with wrong credentials")
         except ControlUtilityError:
             pass
-
-
