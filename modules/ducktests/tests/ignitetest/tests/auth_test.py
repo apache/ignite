@@ -35,9 +35,9 @@ class AuthenticationTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    def test_activate_deactivate_good_user(self, ignite_version):
+    def test_activate_good_user(self, ignite_version):
         """
-        Test activate and deactivate cluster.
+        Test activate cluster.
         Authentication enabled
         Positive case
         """
@@ -61,9 +61,9 @@ class AuthenticationTests(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignore_if(lambda version, globals_dict: globals_dict.get("use_auth", False))  # Globals overrides test params
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    def test_activate_deactivate_bad_user(self, ignite_version):
+    def test_activate_bad_user(self, ignite_version):
         """
-        Test activate and deactivate cluster.
+        Test activate cluster.
         Authentication enabled
         Negative case
         """
