@@ -1736,7 +1736,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /**
-         * Test tries to provoke garbage collection for .Net future before it was completed to verify
+         * Test tries to provoke garbage collection for .NET future before it was completed to verify
          * futures pinning works.
          */
         [Test]
