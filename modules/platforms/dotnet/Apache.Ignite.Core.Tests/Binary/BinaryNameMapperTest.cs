@@ -102,11 +102,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestBinaryBasicNameMapperForJava()
         {
-            var mapper = new BinaryBasicNameMapperForJava();
+            var mapper = new BinaryBasicNameMapper {NamespaceToLower = true};
             Assert.IsFalse(mapper.IsSimpleName);
 
             Assert.AreEqual("org.company.Class", mapper.GetTypeName("Org.Company.Class"));
-            Assert.AreEqual("org.myCompany.Class", mapper.GetTypeName("Org.MyCompany.Class"));
+            Assert.AreEqual("org.mycompany.Class", mapper.GetTypeName("Org.MyCompany.Class"));
             Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Org.Company.MyClass"));
             Assert.AreEqual("org.company.URL", mapper.GetTypeName("Org.Company.URL"));
 
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestBinaryBasicNameMapperForJavaSimpleName()
         {
-            var mapper = new BinaryBasicNameMapperForJava {IsSimpleName = true};
+            var mapper = new BinaryBasicNameMapper {IsSimpleName = true, NamespaceToLower = true};
             Assert.IsTrue(mapper.IsSimpleName);
 
             Assert.AreEqual("Class", mapper.GetTypeName("Org.Company.Class"));
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("MyClass", mapper.GetTypeName("Org.Company.MyClass"));
             Assert.AreEqual("URL", mapper.GetTypeName("Org.Company.URL"));
 
-            mapper = new BinaryBasicNameMapperForJava {IsSimpleName = true, JavaDomain = "org"};
+            mapper = new BinaryBasicNameMapper {IsSimpleName = true, JavaDomain = "org"};
             Assert.IsTrue(mapper.IsSimpleName);
 
             Assert.AreEqual("Class", mapper.GetTypeName("Org.Company.Class"));
@@ -146,11 +146,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFullNameForceJavaNamingConventionsWithDomain()
         {
-            var mapper = new BinaryBasicNameMapperForJava {JavaDomain = "org"};
+            var mapper = new BinaryBasicNameMapper {JavaDomain = "org", NamespaceToLower = true};
             Assert.IsFalse(mapper.IsSimpleName);
 
             Assert.AreEqual("org.company.Class", mapper.GetTypeName("Company.Class"));
-            Assert.AreEqual("org.myCompany.Class", mapper.GetTypeName("MyCompany.Class"));
+            Assert.AreEqual("org.mycompany.Class", mapper.GetTypeName("MyCompany.Class"));
             Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Company.MyClass"));
             Assert.AreEqual("org.company.URL", mapper.GetTypeName("Company.URL"));
 
