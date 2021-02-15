@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Binary
 {
-    using System;
     using System.Globalization;
     using System.Text;
     using Apache.Ignite.Core.Impl.Binary;
@@ -47,16 +46,22 @@ namespace Apache.Ignite.Core.Binary
         public bool IsSimpleName { get; set; }
 
         /// <summary>
-        /// Prefix to be added as a first part of Java type name.
-        /// Java and .NET assumes usage of different naming conventions.
-        /// Java package name first part is a domain: com, org, ru, etc. and second part is a company name: acme, company, etc.
-        /// .NET naming conventions don't use domain and start with a company name.
+        /// Gets or sets the prefix to be added to the full type name.
+        /// For example, Java package names usually begin with <c>org.</c> or <c>com.</c>.
+        /// <para />
+        /// In combination with <see cref="NamespaceToLower"/>, we can map .NET type name <c>Apache.Ignite.Foo</c>
+        /// to a corresponding Java type name <c>org.apache.ignite.Foo</c>, conforming to the naming conventions
+        /// for both languages.
         /// </summary>
         public string NamespacePrefix { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this instance maps names using standard Java naming conventions.
-        /// E.g `Com.Company.Class` maps to `com.company.Class`.
+        /// Gets or sets a value indicating whether this instance converts the namespace part to the lower case.
+        /// For example, Java package names are usually lowercase.
+        /// <para />
+        /// In combination with <see cref="NamespacePrefix"/>, we can map .NET type name <c>Apache.Ignite.Foo</c>
+        /// to a corresponding Java type name <c>org.apache.ignite.Foo</c>, conforming to the naming conventions
+        /// for both languages.
         /// </summary>
         public bool NamespaceToLower { get; set; }
 
@@ -72,39 +77,10 @@ namespace Apache.Ignite.Core.Binary
             if (parsedName.Generics == null)
             {
                 // Generics are rare, use simpler logic for the common case.
-                string res;
-                
-                if (IsSimpleName)
-                    res = parsedName.GetName();
-                else
-                {
-                    res = NamespaceToLower
-                        ? DoForceJavaNamingConventions(parsedName, NamespacePrefix)
-                        : parsedName.GetNameWithNamespace();
-                }
-
-                var arr = parsedName.GetArray();
-
-                if (arr != null)
-                {
-                    res += arr;
-                }
-
-                return res;
+                return GetTypeName(parsedName) + parsedName.GetArray();
             }
 
-            Func<TypeNameParser, string> nameFunc;
-
-            if (IsSimpleName)
-                nameFunc = x => x.GetName();
-            else 
-            {
-                nameFunc = NamespaceToLower 
-                    ? (Func<TypeNameParser, string>)(x => DoForceJavaNamingConventions(x, NamespacePrefix))
-                    : x => x.GetNameWithNamespace();
-            }
-
-            return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
+            return BuildTypeName(parsedName, new StringBuilder()).ToString();
         }
 
         /// <summary>
@@ -118,10 +94,9 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Builds the type name.
         /// </summary>
-        private static StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb, 
-            Func<TypeNameParser, string> typeNameFunc)
+        private StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb)
         {
-            sb.Append(typeNameFunc(typeName));
+            sb.Append(GetTypeName(typeName));
 
             var generics = typeName.Generics;
 
@@ -144,7 +119,7 @@ namespace Apache.Ignite.Core.Binary
 
                     sb.Append('[');
 
-                    BuildTypeName(genArg, sb, typeNameFunc);
+                    BuildTypeName(genArg, sb);
 
                     sb.Append(']');
                 }
@@ -158,19 +133,20 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Perform mapping to java naming convention e.g `Com.Company.Class` maps to `com.company.Class`.
+        /// Gets the type name from the parser.
         /// </summary>
-        /// <param name="parsedName">Type name parser.</param>
-        /// <param name="javaDomain">Java domain to be added.</param>
-        /// <returns></returns>
-        private static string DoForceJavaNamingConventions(TypeNameParser parsedName, string javaDomain)
+        private string GetTypeName(TypeNameParser name)
         {
-            var nameSpace = parsedName.GetNamespace();
+            var simpleName = name.GetName();
 
-            if (nameSpace == null)
-                return javaDomain + parsedName.GetName();
+            if (IsSimpleName)
+                return simpleName;
 
-            return javaDomain + nameSpace.ToLower(CultureInfo.InvariantCulture) + '.' + parsedName.GetName();
+            var fullName = NamespaceToLower && name.HasNamespace()
+                ? name.GetNamespace().ToLower(CultureInfo.InvariantCulture) + simpleName
+                : name.GetNameWithNamespace();
+
+            return NamespacePrefix + fullName;
         }
     }
 }
