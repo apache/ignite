@@ -60,7 +60,7 @@ class AuthenticationTests(IgniteTest):
         control_utility.deactivate()
 
     @cluster(num_nodes=NUM_NODES)
-    @ignore_if(lambda version, globals: globals.get("use_auth", False))  # Globals overrides test params
+    @ignore_if(lambda version, globals_dict: globals_dict.get("use_auth", False))  # Globals overrides test params
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_activate_deactivate_bad_user(self, ignite_version):
         """
