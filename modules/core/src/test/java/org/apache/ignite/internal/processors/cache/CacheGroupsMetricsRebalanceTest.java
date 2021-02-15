@@ -224,12 +224,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertTrue(rate1 > 0);
         assertTrue(rate2 > 0);
 
-        // rate1 has to be roughly the same as rate2
-        double ratio = ((double)rate2 / rate1);
-
-        log.info("Ratio: " + ratio);
-
-        assertTrue(ratio > 0.9 && ratio < 1.1);
+        assertTrue(rate1 > rate2);
     }
 
     /**
