@@ -4569,6 +4569,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Cache ID to Name Mapping
+     */
+    public Map<Integer, String> cacheIDToNameMapping() {
+        return cachesInfo.cacheIdToNameMapping();
+    }
+
+    /**
      * @return Collection of persistent cache descriptors.
      */
     public Collection<DynamicCacheDescriptor> persistentCaches() {
@@ -4616,6 +4623,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     public @Nullable DynamicCacheDescriptor cacheDescriptor(int cacheId) {
+        Map<Integer, String> cacheIdToNameMapping = cacheIDToNameMapping();
+        String name = cacheIdToNameMapping.get(cacheId);
+
+        if (name != null) {
+            return cacheDescriptors().get(name);
+        }
+
         for (DynamicCacheDescriptor cacheDesc : cacheDescriptors().values()) {
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
