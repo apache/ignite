@@ -2,12 +2,13 @@ package org.apache.ignite.internal.ducktest.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.Base64;
 
@@ -36,30 +37,31 @@ public class ThinClientService {
         JsonNode jsonNode = params.length > 3 ?
                 mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
 
-        String host = jsonNode.get("server_address").asText();
-        String port = jsonNode.get("port").asText();
+        String xmlPath = jsonNode.get("path").asText();
 
         ThinClientApplication app =
                 (ThinClientApplication)clazz.getConstructor().newInstance();
 
         app.cfgPath = cfgPath;
+        log.info("Config path:" + cfgPath);
 
         if (startIgnite) {
             log.info("Starting Thin Client...");
 
-            ClientConfiguration cfg = new ClientConfiguration().setAddresses(host + ":" + port);
+            // Initialize Spring factory.
+            ClassPathXmlApplicationContext ctx =
+                    new ClassPathXmlApplicationContext(xmlPath);
 
-            try (IgniteClient client = Ignition.startClient(cfg)) {
-                app.client = client;
+            ctx.refresh();
 
-                app.start(jsonNode);
-            }
-            finally {
-                log.info("Thin Client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
-            }
+            IgniteClient cli = ctx.getBean(IgniteClient.class);
+
+            app.client = cli;
+
+            app.start(jsonNode);
         }
         else
-            app.start(jsonNode);
+            log.info("Can't start thin client due to startIgnite is false");
     }
 
 }

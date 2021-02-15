@@ -48,10 +48,10 @@ public class ThinClientCachePut extends ThinClientApplication {
         ClientCacheConfiguration cfg = new ClientCacheConfiguration();
         cfg.setName(cacheName);
 
-        System.out.println(">>> Cache requested [cacheName=" + cacheName + ']');
-        System.out.println(">>>                 [cacheMode=" + cacheMode + ']');
-        System.out.println(">>>                 [cacheAtomcityMode=" + cacheAtomcityMode + ']');
-        System.out.println(">>>                 [backups=" + backups + ']');
+        System.out.println(">>> Cache requested  [cacheName=" + cacheName + ']');
+        System.out.println(">>>                  [cacheMode=" + cacheMode + ']');
+        System.out.println(">>>                  [cacheAtomcityMode=" + cacheAtomcityMode + ']');
+        System.out.println(">>>                  [backups=" + backups + ']');
 
         if (cacheMode.equals(CacheMode.REPLICATED.toString())) { cfg.setCacheMode(CacheMode.REPLICATED);}
         else if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
@@ -75,10 +75,10 @@ public class ThinClientCachePut extends ThinClientApplication {
 
         ClientCache<Long, Long> cache = client.getOrCreateCache(cfg);
 
-        System.out.println(">>> Cache created [cacheName=" + cache.getName() + ']');
-        System.out.println(">>>               [cacheMode=" + cache.getConfiguration().getCacheMode() + ']');
-        System.out.println(">>>               [cacheAtomcityMode=" + cache.getConfiguration().getAtomicityMode() + ']');
-        System.out.println(">>>               [backups=" + cache.getConfiguration().getBackups() + ']');
+        System.out.println(">>> Cache created    [cacheName=" + cache.getName() + ']');
+        System.out.println(">>>                  [cacheMode=" + cache.getConfiguration().getCacheMode() + ']');
+        System.out.println(">>>                  [cacheAtomcityMode=" + cache.getConfiguration().getAtomicityMode() + ']');
+        System.out.println(">>>                  [backups=" + cache.getConfiguration().getBackups() + ']');
 
         assert (cacheMode.equals(cache.getConfiguration().getCacheMode().toString()));
         assert (cacheAtomcityMode.equals(cache.getConfiguration().getAtomicityMode().toString()));
