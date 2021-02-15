@@ -96,16 +96,12 @@ namespace Apache.Ignite.Core.Binary
             Func<TypeNameParser, string> nameFunc;
 
             if (IsSimpleName)
-            {
                 nameFunc = x => x.GetName();
-            }
-            else if (!NamespaceToLower)
+            else 
             {
-                nameFunc = x => x.GetNameWithNamespace();
-            }
-            else
-            {
-                nameFunc = x => DoForceJavaNamingConventions(x, NamespacePrefix);
+                nameFunc = NamespaceToLower 
+                    ? (Func<TypeNameParser, string>)(x => DoForceJavaNamingConventions(x, NamespacePrefix))
+                    : x => x.GetNameWithNamespace();
             }
 
             return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
