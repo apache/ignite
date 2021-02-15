@@ -33,6 +33,12 @@ import java.util.Set;
  * Represents a persisted list of orphaned tests.
  */
 public class OrphanedTestCollection {
+    /**
+     * This line in the file shows that the list of orphaned tests is final for all maven modules.
+     * {@link #getOrphanedTests()} ignores a content of the file if read this mark.
+     * */
+    private static final String FINAL_MARK = "---";
+
     /** File to persist orphaned tests. */
     private final Path path = initPath();
 
@@ -46,6 +52,9 @@ public class OrphanedTestCollection {
         ) {
             String testClsName = testReader.readLine();
 
+            if (FINAL_MARK.equals(testClsName))
+                return new HashSet<>();
+
             Set<String> testClasses = new HashSet<>();
 
             while (testClsName != null) {
@@ -58,11 +67,19 @@ public class OrphanedTestCollection {
         }
     }
 
-    /** */
-    public void persistOrphanedTests(Collection<String> testClasses) throws Exception {
+    /**
+     * @param testClasses Collection of test classes names.
+     * @param last Whether it's the last call within whole project.
+     */
+    public void persistOrphanedTests(Collection<String> testClasses, boolean last) throws Exception {
         try (
             BufferedWriter testWriter = new BufferedWriter(new FileWriter(path.toFile()))
         ) {
+            if (last) {
+                testWriter.write(FINAL_MARK);
+                testWriter.newLine();
+            }
+
             for (String cls: testClasses) {
                 testWriter.write(cls);
                 testWriter.newLine();
