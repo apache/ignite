@@ -19,6 +19,7 @@ package org.apache.ignite.configuration.sample.storage;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.Configurator;
@@ -29,7 +30,6 @@ import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.sample.storage.impl.ANode;
 import org.apache.ignite.configuration.storage.Data;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -82,7 +82,7 @@ public class ConfigurationChangerTest {
      * Test simple change of configuration.
      */
     @Test
-    public void testSimpleConfigurationChange() {
+    public void testSimpleConfigurationChange() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
         final ConfiguratorController configuratorController = new ConfiguratorController();
@@ -97,7 +97,7 @@ public class ConfigurationChangerTest {
 
         changer.registerConfiguration(KEY, configurator);
 
-        changer.change(Collections.singletonMap(KEY, data));
+        changer.change(Collections.singletonMap(KEY, data)).get();
 
         final Data dataFromStorage = storage.readAll();
         final Map<String, Serializable> dataMap = dataFromStorage.values();
@@ -112,7 +112,7 @@ public class ConfigurationChangerTest {
      * Test subsequent change of configuration via different changers.
      */
     @Test
-    public void testModifiedFromAnotherStorage() {
+    public void testModifiedFromAnotherStorage() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
         final ConfiguratorController configuratorController = new ConfiguratorController();
@@ -138,8 +138,8 @@ public class ConfigurationChangerTest {
         changer1.registerConfiguration(KEY, configurator);
         changer2.registerConfiguration(KEY, configurator);
 
-        changer1.change(Collections.singletonMap(KEY, data1));
-        changer2.change(Collections.singletonMap(KEY, data2));
+        changer1.change(Collections.singletonMap(KEY, data1)).get();
+        changer2.change(Collections.singletonMap(KEY, data2)).get();
 
         final Data dataFromStorage = storage.readAll();
         final Map<String, Serializable> dataMap = dataFromStorage.values();
@@ -155,7 +155,7 @@ public class ConfigurationChangerTest {
      * Test that subsequent change of configuration is failed if changes are incompatible.
      */
     @Test
-    public void testModifiedFromAnotherStorageWithIncompatibleChanges() {
+    public void testModifiedFromAnotherStorageWithIncompatibleChanges() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
         final ConfiguratorController configuratorController = new ConfiguratorController();
@@ -181,11 +181,11 @@ public class ConfigurationChangerTest {
         changer1.registerConfiguration(KEY, configurator);
         changer2.registerConfiguration(KEY, configurator);
 
-        changer1.change(Collections.singletonMap(KEY, data1));
+        changer1.change(Collections.singletonMap(KEY, data1)).get();
 
         configuratorController.hasIssues(true);
 
-        assertThrows(ConfigurationValidationException.class, () -> changer2.change(Collections.singletonMap(KEY, data2)));
+        assertThrows(ExecutionException.class, () -> changer2.change(Collections.singletonMap(KEY, data2)).get());
 
         final Data dataFromStorage = storage.readAll();
         final Map<String, Serializable> dataMap = dataFromStorage.values();
@@ -222,7 +222,7 @@ public class ConfigurationChangerTest {
 
         storage.fail(true);
 
-        assertThrows(ConfigurationChangeException.class, () -> changer.change(Collections.singletonMap(KEY, data)));
+        assertThrows(ExecutionException.class, () -> changer.change(Collections.singletonMap(KEY, data)).get());
 
         storage.fail(false);
 

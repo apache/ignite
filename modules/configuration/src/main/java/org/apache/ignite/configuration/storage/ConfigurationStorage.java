@@ -19,6 +19,7 @@ package org.apache.ignite.configuration.storage;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Common interface for configuration storage.
@@ -35,11 +36,10 @@ public interface ConfigurationStorage {
      * Write key-value pairs into the storage with last known version.
      * @param newValues Key-value pairs.
      * @param version Last known version.
-     * @return {@code true} if successfully written, {@code false} if version of the storage is different from the passed
-     * argument.
-     * @throws StorageException If failed to write data.
+     * @return Future that gives you {@code true} if successfully written, {@code false} if version of the storage is
+     *      different from the passed argument and {@link StorageException} if failed to write data.
      */
-    boolean write(Map<String, Serializable> newValues, int version) throws StorageException;
+    CompletableFuture<Boolean> write(Map<String, Serializable> newValues, int version);
 
     /**
      * Get all the keys of the configuration storage.
