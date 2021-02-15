@@ -57,7 +57,6 @@ class AuthenticationTests(IgniteTest):
 
         control_utility = ControlUtility(cluster=servers, login="ignite", password="ignite")
         control_utility.activate()
-        control_utility.deactivate()
 
     @cluster(num_nodes=NUM_NODES)
     @ignore_if(lambda version, globals_dict: globals_dict.get("use_auth", False))  # Globals overrides test params
@@ -88,7 +87,8 @@ class AuthenticationTests(IgniteTest):
 
         try:
             control_utility.activate()
+            raise Exception("User successfully execute command with wrong credentials")
         except ControlUtilityError:
-            success = True
+            pass
 
-        assert success is True, "User successfully execute command with wrong credentials"
+
