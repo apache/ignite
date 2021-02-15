@@ -109,10 +109,12 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     @Override public Collection<GridDeployment> getDeployments() {
         Collection<GridDeployment> deps = new ArrayList<>();
 
-        for (Deque<GridDeployment> depList : cache.values())
-            for (GridDeployment d : depList)
-                if (!deps.contains(d))
-                    deps.add(d);
+        synchronized (mux) {
+            for (Deque<GridDeployment> depList : cache.values())
+                for (GridDeployment d : depList)
+                    if (!deps.contains(d))
+                        deps.add(d);
+        }
 
         return deps;
     }
