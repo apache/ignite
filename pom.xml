@@ -822,9 +822,6 @@
                         <configuration>
                             <includePluginDependencies>true</includePluginDependencies>
                             <mainClass>org.apache.ignite.tools.surefire.testsuites.AssertOnOrphanedTests</mainClass>
-                            <arguments>
-                                <argument>${project.modules}</argument>
-                            </arguments>
                         </configuration>
                     </plugin>
                 </plugins>

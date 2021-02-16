@@ -34,6 +34,8 @@ public class AssertOnOrphanedTests {
             return;
         }
 
+        orphanedTestCollection.persistOrphanedTests(orphanedTests, true);
+
         StringBuilder builder = new StringBuilder("All test classes must be include in any test suite")
             .append(" or mark with the @Ignore annotation.")
             .append("\nList of non-suited classes (")
