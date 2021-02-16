@@ -78,9 +78,7 @@ namespace Apache.Ignite.Core.Binary
                     res = parsedName.GetName();
                 else
                 {
-                    res = NamespaceToLower
-                        ? DoForceJavaNamingConventions(parsedName, NamespacePrefix)
-                        : parsedName.GetNameWithNamespace();
+                    res = DoForceJavaNamingConventions(parsedName, NamespacePrefix, NamespaceToLower);
                 }
 
                 var arr = parsedName.GetArray();
@@ -99,8 +97,9 @@ namespace Apache.Ignite.Core.Binary
                 nameFunc = x => x.GetName();
             else 
             {
-                nameFunc = NamespaceToLower 
-                    ? (Func<TypeNameParser, string>)(x => DoForceJavaNamingConventions(x, NamespacePrefix))
+                nameFunc = NamespaceToLower
+                    ? (Func<TypeNameParser, string>) (x =>
+                        DoForceJavaNamingConventions(x, NamespacePrefix, NamespaceToLower))
                     : x => x.GetNameWithNamespace();
             }
 
@@ -162,15 +161,20 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="parsedName">Type name parser.</param>
         /// <param name="javaDomain">Java domain to be added.</param>
+        /// <param name="namespaceToLower">If true then namespace should be in lower registry.</param>
         /// <returns></returns>
-        private static string DoForceJavaNamingConventions(TypeNameParser parsedName, string javaDomain)
+        private static string DoForceJavaNamingConventions(TypeNameParser parsedName, string javaDomain,
+            bool namespaceToLower)
         {
             var nameSpace = parsedName.GetNamespace();
 
             if (nameSpace == null)
                 return javaDomain + parsedName.GetName();
 
-            return javaDomain + nameSpace.ToLower(CultureInfo.InvariantCulture) + '.' + parsedName.GetName();
+            if (namespaceToLower)
+                nameSpace = nameSpace.ToLower(CultureInfo.InvariantCulture);
+
+            return javaDomain + nameSpace + '.' + parsedName.GetName();
         }
     }
 }

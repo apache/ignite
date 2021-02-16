@@ -159,6 +159,20 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual("org.apache.ignite.platform.model.Address[]", 
                 mapper.GetTypeName(typeof(Address[]).FullName));
+                
+            mapper = new BinaryBasicNameMapper {NamespacePrefix = "Org.", NamespaceToLower = false};
+            Assert.IsFalse(mapper.IsSimpleName);
+
+            Assert.AreEqual("Org.Company.Class", mapper.GetTypeName("Company.Class"));
+            Assert.AreEqual("Org.MyCompany.Class", mapper.GetTypeName("MyCompany.Class"));
+            Assert.AreEqual("Org.Company.MyClass", mapper.GetTypeName("Company.MyClass"));
+            Assert.AreEqual("Org.Company.URL", mapper.GetTypeName("Company.URL"));
+
+            Assert.AreEqual("Org.Apache.Ignite.Platform.Model.Address", 
+                mapper.GetTypeName(typeof(Address).FullName));
+
+            Assert.AreEqual("Org.Apache.Ignite.Platform.Model.Address[]", 
+                mapper.GetTypeName(typeof(Address[]).FullName));
         }
 
         /// <summary>
