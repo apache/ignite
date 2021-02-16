@@ -499,7 +499,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private ColocationGroup replicatedGroup(@NotNull AffinityTopologyVersion topVer) {
         GridDhtPartitionTopology top = cctx.topology();
 
-        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
+        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.groupId());
         List<UUID> nodes0;
 
         if (!top.rebalanceFinished(topVer)) {
