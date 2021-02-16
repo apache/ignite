@@ -18,7 +18,10 @@ Checks Control Utility params pasrsing
 """
 
 import pytest
-from ignitetest.services.utils.control_utility import ControlUtility, Creds
+from ignitetest.services.utils.auth.creds_provider import CredsProvider, DEFAULT_AUTH_LOGIN, DEFAULT_AUTH_PASSWORD
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory, DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, \
+    DEFAULT_ADMIN_KEYSTORE
+from ignitetest.services.utils.control_utility import ControlUtility
 
 
 class Cluster:
@@ -41,6 +44,30 @@ class Context:
         self.globals = globals_dict
 
 
+def compare_ssl(class1, class2):
+    """
+    Compare two SslContextFactory objects
+    """
+
+    if class1 is None and class2 is None:
+        return True
+    if isinstance(class1, SslContextFactory) and isinstance(class2, SslContextFactory):
+        return class1.__dict__ == class2.__dict__
+    return False
+
+
+def compare_creds(class1, class2):
+    """
+    Compare two CredsProvider objects
+    """
+
+    if class1 is None and class2 is None:
+        return True
+    if isinstance(class1, CredsProvider) and isinstance(class2, CredsProvider):
+        return class1.__dict__ == class2.__dict__
+    return False
+
+
 class TestParams:
     """
     Globals and Kwargs for tests
@@ -48,181 +75,174 @@ class TestParams:
 
     test_ssl_jks = {'key_store_jks': 'admin1.jks', 'key_store_password': 'qwe123',
                     'trust_store_jks': 'truststore.jks', 'trust_store_password': 'qwe123'}
-    test_ssl_path = {'key_store_path': '/opt/ignite/certs/admin1.jks', 'key_store_password': 'qwe123',
-                     'trust_store_path': '/opt/ignite/certs/truststore.jks',
+    test_ssl_path = {'key_store_path': '/opt/certs/admin1.jks', 'key_store_password': 'qwe123',
+                     'trust_store_path': '/opt/certs/truststore.jks',
                      'trust_store_password': 'qwe123'}
-    test_auth = {'login': 'admin1', 'password': 'qwe123'}
+    test_ssl_only_key = {'key_store_jks': 'admin1.jks'}
 
-    creds_full_jks = Creds('/opt/certs/admin1.jks', 'qwe123',
-                           '/opt/certs/truststore.jks', 'qwe123',
-                           'admin1', 'qwe123')
-    creds_full_path = Creds('/opt/ignite/certs/admin1.jks', 'qwe123',
-                            '/opt/ignite/certs/truststore.jks', 'qwe123',
-                            'admin1', 'qwe123')
-    creds_auth = Creds(login='admin1', password='qwe123')
-    creds_jks = Creds('/opt/certs/admin1.jks', 'qwe123',
-                      '/opt/certs/truststore.jks', 'qwe123')
-    creds_none = Creds()
-    creds_full_default = Creds('/opt/certs/admin.jks', '123456',
-                               '/opt/certs/truststore.jks', '123456',
-                               'ignite', 'ignite')
-    creds_ssl_default = Creds('/opt/certs/admin.jks', '123456',
-                              '/opt/certs/truststore.jks', '123456')
-    creds_auth_default = Creds(login='ignite', password='ignite')
+    test_creds = {'login': 'admin1', 'password': 'qwe123'}
+    test_creds_only_login = {'login': 'admin1'}
 
-    test_globals_full_jks = dict(test_auth)
-    test_globals_full_jks['ssl'] = test_ssl_jks
-    test_globals_full_path = dict(test_auth)
-    test_globals_full_path['ssl'] = test_ssl_path
-    test_globals_auth = dict(test_auth)
-    test_globals_ssl = dict()
-    test_globals_ssl['ssl'] = test_ssl_jks
-    test_globals_none = dict
+    expected_ssl = SslContextFactory(key_store_path='/opt/certs/admin1.jks',
+                                     key_store_password='qwe123',
+                                     trust_store_path='/opt/certs/truststore.jks',
+                                     trust_store_password='qwe123')
+    expected_ssl_default = SslContextFactory(key_store_path='/opt/certs/'+DEFAULT_ADMIN_KEYSTORE,
+                                             key_store_password=DEFAULT_PASSWORD,
+                                             trust_store_path='/opt/certs/'+DEFAULT_TRUSTSTORE,
+                                             trust_store_password=DEFAULT_PASSWORD)
+    expected_ssl_only_key = SslContextFactory(key_store_path='/opt/certs/admin1.jks',
+                                              key_store_password=DEFAULT_PASSWORD,
+                                              trust_store_path='/opt/certs/'+DEFAULT_TRUSTSTORE,
+                                              trust_store_password=DEFAULT_PASSWORD)
 
-    test_kwargs_full_jks = dict(test_auth, **test_ssl_jks)
-    test_kwargs_full_path = dict(test_auth, **test_ssl_path)
-    test_kwargs_auth = dict(test_auth)
-    test_kwargs_ssl = test_ssl_jks
+    expected_creds = CredsProvider(login='admin1',
+                                   password='qwe123')
+    expected_creds_default = CredsProvider(login=DEFAULT_AUTH_LOGIN,
+                                           password=DEFAULT_AUTH_PASSWORD)
+    expected_creds_only_login = CredsProvider(login='admin1',
+                                              password=DEFAULT_AUTH_PASSWORD)
 
 
-class CheckCaseGlobalsSetKwargsNotSet:
+class CheckCaseGlobalsSetKwargsNotSetSsl:
     """
-    Check that control_utulity.py correctly parse credentials from globals
+    Check that control_utulity.py correctly parse SSL params from globals
     """
-
-    test_globals_full_jks = TestParams.test_globals_full_jks
-    test_globals_full_path = TestParams.test_globals_full_path
-    test_globals_auth = TestParams.test_globals_auth
-    test_globals_ssl = TestParams.test_globals_ssl
-    test_globals_none = TestParams.test_globals_none
-
-    creds_full_jks = TestParams.creds_full_jks
-    creds_full_path = TestParams.creds_full_path
-    creds_auth = TestParams.creds_auth
-    creds_jks = TestParams.creds_jks
-    creds_none = TestParams.creds_none
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_kwargs, expected',
                              [({'use_ssl': True,
-                                'use_auth': True,
-                                'admin': test_globals_full_jks}, {}, creds_full_jks),
+                                'admin': {'ssl': TestParams.test_ssl_jks}}, {}, TestParams.expected_ssl),
                               ({'use_ssl': True,
-                                'use_auth': True,
-                                'admin': test_globals_full_path}, {}, creds_full_path),
+                                'admin': {'ssl': TestParams.test_ssl_path}}, {}, TestParams.expected_ssl),
+                              ({'use_ssl': True,
+                                'admin': {'ssl': TestParams.test_ssl_only_key}}, {}, TestParams.expected_ssl_only_key),
+                              ({'admin': {'ssl': TestParams.test_ssl_jks}}, {}, None), ])
+    def check_parse(test_globals, test_kwargs, expected):
+        """
+        Check that control_utulity.py correctly parse SSL params from globals
+        """
+
+        assert compare_ssl(ControlUtility(Cluster(test_globals), **test_kwargs).ssl_context, expected)
+
+
+class CheckCaseGlobalsNotSetKwargsSetSsl:
+    """
+   Check that control_utulity.py correctly parse SSL params from kwargs
+   """
+
+    @staticmethod
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected',
+                             [({}, TestParams.test_ssl_jks, TestParams.expected_ssl),
+                              ({}, TestParams.test_ssl_path, TestParams.expected_ssl),
+                              ({}, TestParams.test_ssl_only_key, TestParams.expected_ssl_only_key)])
+    def check_parse(test_globals, test_kwargs, expected):
+        """
+        Check that control_utulity.py correctly parse SSL params from kwargs
+        """
+
+        assert compare_ssl(ControlUtility(Cluster(test_globals), **test_kwargs).ssl_context, expected)
+
+
+class CheckCaseGlobalsSetKwargsSetSsl:
+    """
+    Check that control_utulity.py correctly parse SSL params
+    """
+
+    @staticmethod
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected',
+                             [({'use_ssl': True,
+                                'admin': {'ssl': TestParams.test_ssl_jks}}, TestParams.test_ssl_only_key,
+                               TestParams.expected_ssl),
+                              ({'admin': {'ssl': TestParams.test_ssl_jks}}, TestParams.test_ssl_only_key,
+                               TestParams.expected_ssl_only_key)])
+    def check_parse(test_globals, test_kwargs, expected):
+        """
+        Check that control_utulity.py correctly parse SSL params
+        """
+
+        assert compare_ssl(ControlUtility(Cluster(test_globals), **test_kwargs).ssl_context, expected)
+
+
+class CheckCaseGlobalsSetKwargsNotSetCreds:
+    """
+    Check that control_utulity.py correctly parse credentials from globals
+    """
+
+    @staticmethod
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected',
+                             [({'use_auth': True,
+                                'admin': {'creds': TestParams.test_creds}}, {}, TestParams.expected_creds),
                               ({'use_auth': True,
-                                'admin': test_globals_auth}, {}, creds_auth),
-                              ({'use_ssl': True,
-                                'admin': test_globals_ssl}, {}, creds_jks),
-                              ({'admin': test_globals_none}, {}, creds_none),
-                              ({'use_ssl': False,
-                                'use_auth': False,
-                                'admin': test_globals_full_jks}, {}, creds_none), ])
+                                'admin': {'creds': TestParams.test_creds_only_login}}, {},
+                               TestParams.expected_creds_only_login),
+                              ({'use_auth': True}, {},
+                               TestParams.expected_creds_default)])
     def check_parse(test_globals, test_kwargs, expected):
         """
         Check that control_utulity.py correctly parse credentials from globals
         """
 
-        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
+        assert compare_creds(ControlUtility(Cluster(test_globals), **test_kwargs).creds_prover, expected)
 
 
-class CheckCaseGlobalsNotSetKwargsSet:
+class CheckCaseGlobalsNotSetKwargsSetCreds:
     """
    Check that control_utulity.py correctly parse credentials from kwargs
    """
 
-    test_kwargs_full_jks = TestParams.test_kwargs_full_jks
-    test_kwargs_full_path = TestParams.test_kwargs_full_path
-    test_kwargs_auth = TestParams.test_kwargs_auth
-    test_kwargs_ssl = TestParams.test_ssl_jks
-
-    creds_full_jks = TestParams.creds_full_jks
-    creds_full_path = TestParams.creds_full_path
-    creds_auth = TestParams.creds_auth
-    creds_jks = TestParams.creds_jks
-    creds_none = TestParams.creds_none
-
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_kwargs, expected',
-                             [({}, test_kwargs_full_jks, creds_full_jks),
-                              ({}, test_kwargs_full_path, creds_full_path),
-                              ({}, test_kwargs_auth, creds_auth),
-                              ({}, test_kwargs_ssl, creds_jks),
-                              ({}, {}, creds_none)])
+                             [({}, TestParams.test_creds, TestParams.expected_creds),
+                              ({}, TestParams.test_creds_only_login, TestParams.expected_creds_only_login)])
     def check_parse(test_globals, test_kwargs, expected):
         """
         Check that control_utulity.py correctly parse credentials from kwargs
         """
 
-        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
+        assert compare_creds(ControlUtility(Cluster(test_globals), **test_kwargs).creds_prover, expected)
 
 
-class CheckCaseGlobalsSetKwargsSet:
+class CheckCaseGlobalsSetKwargsSetCreds:
     """
     Check that control_utulity.py correctly parse credentials
     """
 
-    test_kwargs_full_jks = TestParams.test_kwargs_full_jks
-    test_kwargs_full_path = TestParams.test_kwargs_full_path
-
-    creds_full_jks = TestParams.creds_full_jks
-    creds_full_path = TestParams.creds_full_path
-
-    test_globals_full_jks = TestParams.test_globals_full_jks
-    test_globals_full_path = TestParams.test_globals_full_path
-
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_kwargs, expected',
-                             [({'use_ssl': True,
-                                'use_auth': True,
-                                'admin': test_globals_full_jks}, test_kwargs_full_path, creds_full_jks),
-                              ({'use_ssl': True,
-                                'use_auth': True,
-                                'admin': test_globals_full_path}, test_kwargs_full_jks, creds_full_path)])
+                             [({'use_auth': True,
+                                'admin': {'creds': TestParams.test_creds}}, TestParams.test_creds_only_login,
+                               TestParams.expected_creds),
+                              ({'admin': {'creds': TestParams.test_creds}}, TestParams.test_creds_only_login,
+                               TestParams.expected_creds_only_login)])
     def check_parse(test_globals, test_kwargs, expected):
         """
         Check that control_utulity.py correctly parse credentials
         """
 
-        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
+        assert compare_creds(ControlUtility(Cluster(test_globals), **test_kwargs).creds_prover, expected)
 
 
-class CheckCaseDefaults:
+class CheckCaseCredsSetSslSet:
     """
-    Check that control_utulity.py correctly use default credentials
+    Check that control_utulity.py correctly parse SSL and Credentials
     """
-
-    test_globals_full_path = TestParams.test_globals_full_path
-
-    test_kwargs_modify_jks = {'key_store_jks': 'admin11.jks'}
-    test_kwargs_modify_login = {'login': 'admin11'}
-    test_kwargs_modify_jks_login = {'key_store_jks': 'admin11.jks', 'login': 'admin11'}
-
-    creds_modify_jks = Creds('/opt/certs/admin11.jks', '123456',
-                             '/opt/certs/truststore.jks', '123456')
-    creds_modify_login = Creds(login='admin11', password="ignite")
-    creds_modify_jks_login = Creds('/opt/certs/admin11.jks', '123456',
-                                   '/opt/certs/truststore.jks', '123456',
-                                   'admin11', 'ignite')
-
-    creds_full_default = TestParams.creds_full_default
-    creds_ssl_default = TestParams.creds_ssl_default
-    creds_auth_default = TestParams.creds_auth_default
-    creds_none = TestParams.creds_none
 
     @staticmethod
-    @pytest.mark.parametrize("test_globals, test_kwargs, expected",
-                             [({'use_ssl': True,
-                                'use_auth': True}, {}, creds_full_default),
-                              ({'use_ssl': True}, {}, creds_ssl_default),
-                              ({'use_auth': True}, {}, creds_auth_default),
-                              ({'admin': test_globals_full_path}, {}, creds_none),
-                              ({}, test_kwargs_modify_jks, creds_modify_jks),
-                              ({}, test_kwargs_modify_login, creds_modify_login),
-                              ({}, test_kwargs_modify_jks_login, creds_modify_jks_login)])
-    def check_parse(test_globals, test_kwargs, expected):
+    @pytest.mark.parametrize('test_globals, test_kwargs, expected_creds, expected_ssl',
+                             [({'use_auth': True,
+                                'use_ssl': True,
+                                'admin': {'creds': TestParams.test_creds, 'ssl': TestParams.test_ssl_jks}},
+                               {},
+                               TestParams.expected_creds, TestParams.expected_ssl),
+                              ({'use_auth': True,
+                                'use_ssl': True},
+                               {},
+                               TestParams.expected_creds_default, TestParams.expected_ssl_default)])
+    def check_parse(test_globals, test_kwargs, expected_creds, expected_ssl):
         """
-        Check that control_utulity.py correctly parse credentials from globals
+        Check that control_utulity.py correctly parse credentials
         """
 
-        assert ControlUtility(Cluster(test_globals), **test_kwargs).creds.__eq__(expected)
+        assert compare_creds(ControlUtility(Cluster(test_globals), **test_kwargs).creds_prover, expected_creds)
+        assert compare_ssl(ControlUtility(Cluster(test_globals), **test_kwargs).ssl_context, expected_ssl)

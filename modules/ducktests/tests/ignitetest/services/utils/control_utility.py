@@ -24,8 +24,9 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.auth.auth_provider import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN
+from ignitetest.services.utils.auth.creds_provider import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN, CredsProvider
 from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 
 
 class ControlUtility:
@@ -38,7 +39,8 @@ class ControlUtility:
     def __init__(self, cluster, **kwargs):
         self._cluster = cluster
         self.logger = cluster.context.logger
-        self.creds = self._get_creds_from_globals("admin", cluster.context.globals, **kwargs)
+        self.ssl_context = self._parse_ssl_params("admin", cluster.context.globals, **kwargs)
+        self.creds_prover = self._parse_creds("admin", cluster.context.globals, **kwargs)
 
     def jks_path(self, jks_name: str):
         """
@@ -276,15 +278,15 @@ class ControlUtility:
 
     def __form_cmd(self, node, cmd):
         ssl = ""
-        if self.creds.key_store_path is not None:
-            ssl = f" --keystore {self.creds.key_store_path} " \
-                  f"--keystore-password {self.creds.key_store_password} " \
-                  f"--truststore {self.creds.trust_store_path} " \
-                  f"--truststore-password {self.creds.trust_store_password}"
+        if self.ssl_context is not None:
+            ssl = f" --keystore {self.ssl_context.key_store_path} " \
+                  f"--keystore-password {self.ssl_context.key_store_password} " \
+                  f"--truststore {self.ssl_context.trust_store_path} " \
+                  f"--truststore-password {self.ssl_context.trust_store_password}"
         auth = ""
-        if self.creds.login is not None:
-            auth = f" --user {self.creds.login} " \
-                   f"--password {self.creds.password} "
+        if self.creds_prover is not None:
+            auth = f" --user {self.creds_prover.login} " \
+                   f"--password {self.creds_prover.password} "
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
                                     f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
@@ -303,36 +305,32 @@ class ControlUtility:
     def __alives(self):
         return [node for node in self._cluster.nodes if self._cluster.alive(node)]
 
-    def _get_creds_from_globals(self, user, globals_dict, **kwargs):
-
-        creds = Creds()
-
-        if globals_dict.get("use_ssl", False):
-            user_dict = globals_dict.get(user, {})
-            creds = self._get_ssl_from_dict(creds, user_dict.get('ssl', {}))
+    def _parse_ssl_params(self, user, globals_dict, **kwargs):
+        ssl_dict = None
+        if globals_dict.get('use_ssl', False):
+            ssl_dict = globals_dict.get(user, {}).get('ssl', {})
         elif kwargs.get('key_store_jks') is not None or kwargs.get('key_store_path') is not None:
-            creds = self._get_ssl_from_dict(creds, kwargs)
+            ssl_dict = kwargs
+        return None if ssl_dict is None else \
+            SslContextFactory(key_store_path=ssl_dict.get("key_store_path",
+                                                          self.jks_path(
+                                                              ssl_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE))),
+                              key_store_password=ssl_dict.get('key_store_password', DEFAULT_PASSWORD),
+                              trust_store_path=ssl_dict.get("trust_store_path",
+                                                            self.jks_path(
+                                                                ssl_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE))),
+                              trust_store_password=ssl_dict.get('trust_store_password', DEFAULT_PASSWORD))
 
-        if globals_dict.get("use_auth", False):
-            user_dict = globals_dict.get(user, {})
-            creds.login = user_dict.get("login", DEFAULT_AUTH_LOGIN)
-            creds.password = user_dict.get("password", DEFAULT_AUTH_PASSWORD)
-        elif kwargs.get('login') is not None:
-            creds.login = kwargs.get("login", DEFAULT_AUTH_LOGIN)
-            creds.password = kwargs.get("password", DEFAULT_AUTH_PASSWORD)
-
-        return creds
-
-    def _get_ssl_from_dict(self, creds, ssl_dict):
-
-        creds.key_store_path = ssl_dict.get("key_store_path",
-                                            self.jks_path(ssl_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
-        creds.key_store_password = ssl_dict.get('key_store_password', DEFAULT_PASSWORD)
-        creds.trust_store_path = ssl_dict.get("trust_store_path",
-                                              self.jks_path(ssl_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
-        creds.trust_store_password = ssl_dict.get('trust_store_password', DEFAULT_PASSWORD)
-
-        return creds
+    @staticmethod
+    def _parse_creds(user, globals_dict, **kwargs):
+        creds_dict = None
+        if globals_dict.get('use_auth', False):
+            creds_dict = globals_dict.get(user, {}).get('creds', {})
+        elif kwargs.get('login', False):
+            creds_dict = kwargs
+        return None if creds_dict is None else \
+            CredsProvider(login=creds_dict.get("login", DEFAULT_AUTH_LOGIN),
+                          password=creds_dict.get("password", DEFAULT_AUTH_PASSWORD))
 
 
 class BaselineNode(NamedTuple):
@@ -398,29 +396,6 @@ class ControlUtilityError(RemoteCommandError):
 
     def __init__(self, account, cmd, exit_status, output):
         super().__init__(account, cmd, exit_status, "".join(output))
-
-
-class Creds():
-    """
-    POJO for SSL and Authentication params
-    """
-
-    # pylint: disable=R0913
-    def __init__(self, key_store_path=None, key_store_password=None,
-                 trust_store_path=None, trust_store_password=None,
-                 login=None, password=None):
-        self.key_store_path = key_store_path
-        self.key_store_password = key_store_password
-        self.trust_store_path = trust_store_path
-        self.trust_store_password = trust_store_password
-        self.login = login
-        self.password = password
-
-    def __eq__(self, other):
-        """Overrides the default implementation"""
-        if isinstance(other, Creds):
-            return self.__dict__ == other.__dict__
-        return False
 
 
 def parse_dict(raw):

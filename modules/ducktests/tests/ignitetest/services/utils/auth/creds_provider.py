@@ -19,3 +19,13 @@ This module contains classes and utilities for Authentication Provider.
 
 DEFAULT_AUTH_PASSWORD = "ignite"
 DEFAULT_AUTH_LOGIN = "ignite"
+
+
+class CredsProvider:
+    """
+    Credentials provider.
+    """
+
+    def __init__(self, login=None, password=None):
+        self.login = login
+        self.password = password
