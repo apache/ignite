@@ -26,6 +26,9 @@ import org.jetbrains.annotations.NotNull;
  * Greater value means that event occurs later.
  */
 public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Topology version. */
     private final int topVer;
 
