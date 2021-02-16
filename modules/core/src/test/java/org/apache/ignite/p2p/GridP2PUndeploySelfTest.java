@@ -92,6 +92,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             LocalDeploymentSpi spi1 = spis.get(ignite1.name());
             LocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
+            assert spi1.findResource(task1.getName()) != null;
+            assert spi2.findResource(task1.getName()) != null;
             assert spi1.findResource(task1.getName(), tstClsLdr) != null;
             assert spi2.findResource(task1.getName(), tstClsLdr) != null;
 
@@ -103,6 +105,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             // Wait for undeploy.
             Thread.sleep(1000);
 
+            assert spi1.findResource(task1.getName()) == null;
+            assert spi2.findResource(task1.getName()) == null;
             assert spi1.findResource(task1.getName(), tstClsLdr) == null;
             assert spi2.findResource(task1.getName(), tstClsLdr) == null;
 
