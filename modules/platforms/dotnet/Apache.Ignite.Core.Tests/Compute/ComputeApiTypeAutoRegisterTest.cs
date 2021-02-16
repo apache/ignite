@@ -18,8 +18,9 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System.IO;
+    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
-    using org.apache.ignite.platform.model;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Compute tests for type auto register with Java tasks.
@@ -43,7 +44,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             _grid1 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = Path.Combine("Config", "Compute", "compute-grid") + "1.xml"
+                SpringConfigUrl = Path.Combine("Config", "Compute", "compute-grid") + "1.xml",
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
+                }
             });
         }
 
