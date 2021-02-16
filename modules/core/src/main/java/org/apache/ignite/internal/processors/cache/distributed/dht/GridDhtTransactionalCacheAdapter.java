@@ -967,8 +967,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         assert tx != null;
 
-        assert !ctx.kernalContext().security().enabled() || F.eq(tx.subjectId(), securitySubjectId(ctx));
-
         GridDhtLockFuture fut = new GridDhtLockFuture(
             ctx,
             tx.nearNodeId(),

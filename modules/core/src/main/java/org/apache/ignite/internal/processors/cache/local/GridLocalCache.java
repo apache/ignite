@@ -151,9 +151,6 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(true);
 
-        assert tx == null || !ctx.kernalContext().security().enabled() ||
-            F.eq(tx.subjectId(), securitySubjectId(ctx));
-
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter,
             securitySubjectId(ctx));
 
