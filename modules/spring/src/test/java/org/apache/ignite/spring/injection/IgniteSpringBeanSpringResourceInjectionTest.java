@@ -215,18 +215,8 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 @Override Integer getInjectedBean() {
                     Ignite ignite = appCtx.getBean(Ignite.class);
 
-                    try {
-                        assertTrue(GridTestUtils.waitForCondition(() -> {
-                            ServiceWithSpringResource svc = ignite.services().service("ServiceWithSpringResource");
-
-                            return svc != null;
-                        }, 5_000L));
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    ServiceWithSpringResource svc = ignite.services().service("ServiceWithSpringResource");
+                    ServiceWithSpringResource svc = ignite.services().serviceProxy("ServiceWithSpringResource",
+                        ServiceWithSpringResource.class, false);
 
                     return svc.getInjectedSpringField();
                 }
