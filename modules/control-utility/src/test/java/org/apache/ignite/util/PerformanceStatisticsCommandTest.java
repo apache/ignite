@@ -18,11 +18,13 @@
 package org.apache.ignite.util;
 
 import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.PERFORMANCE_STATISTICS;
+import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.START;
+import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STATUS;
+import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STOP;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_DISABLED;
@@ -54,45 +56,54 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
 
     /** @throws Exception If failed. */
     @Test
-    public void testStart() throws Exception {
-        int res = execute(PERFORMANCE_STATISTICS.text(), PerformanceStatisticsSubCommand.START.toString());
+    public void testCommands() throws Exception {
+        int res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(STATUS_DISABLED, lastOperationResult);
+
+        res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
 
         assertEquals(EXIT_CODE_OK, res);
 
         waitForStatisticsEnabled(true);
-    }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testStop() throws Exception {
-        crd.context().performanceStatistics().startCollectStatistics();
+        res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
 
-        waitForStatisticsEnabled(true);
+        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(STATUS_ENABLED, lastOperationResult);
 
-        int res = execute(PERFORMANCE_STATISTICS.text(), PerformanceStatisticsSubCommand.STOP.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), STOP.toString());
 
         assertEquals(EXIT_CODE_OK, res);
 
         waitForStatisticsEnabled(false);
+
+        res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(STATUS_DISABLED, lastOperationResult);
     }
 
     /** @throws Exception If failed. */
     @Test
-    public void testStatus() throws Exception {
-        int res = execute(PERFORMANCE_STATISTICS.text(), PerformanceStatisticsSubCommand.STATUS.toString());
+    public void testStartAlreadyStarted() throws Exception {
+        int res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
 
         assertEquals(EXIT_CODE_OK, res);
-
-        assertEquals(STATUS_DISABLED, lastOperationResult);
-
-        crd.context().performanceStatistics().startCollectStatistics();
 
         waitForStatisticsEnabled(true);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), PerformanceStatisticsSubCommand.STATUS.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
 
         assertEquals(EXIT_CODE_OK, res);
+    }
 
-        assertEquals(STATUS_ENABLED, lastOperationResult);
+    /** */
+    @Test
+    public void testStopAlreadyStopped() {
+        int res = execute(PERFORMANCE_STATISTICS.text(), STOP.toString());
+
+        assertEquals(EXIT_CODE_OK, res);
     }
 }
