@@ -37,11 +37,11 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         int interval = jNode.get("interval").asInt();
 
-        int valueSize = jNode.get("valueSizeKb").asInt() * 1024;
+        int valSize = jNode.get("valueSizeKb").asInt() * 1024;
 
         markInitialized();
 
-        QueryEntity queryEntity = new QueryEntity()
+        QueryEntity qryEntity = new QueryEntity()
             .setKeyFieldName("id")
             .setKeyType(Long.class.getName())
             .setTableName("TEST_TABLE")
@@ -51,13 +51,13 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         CacheConfiguration<Long, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.REPLICATED);
-        cacheCfg.setQueryEntities(Collections.singletonList(queryEntity));
+        cacheCfg.setQueryEntities(Collections.singletonList(qryEntity));
 
         ignite.getOrCreateCache(cacheCfg);
 
         long start = ThreadLocalRandom.current().nextLong();
 
-        byte[] data = new byte[valueSize];
+        byte[] data = new byte[valSize];
 
         try (IgniteDataStreamer<Long, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
             dataStreamer.autoFlushFrequency(1000);
