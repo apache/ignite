@@ -232,7 +232,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
         if (opCtx.nodes().contains(leftNodeId)) {
             interrupt(new IgniteException(OP_REJECT_MSG +
-                "Baseline node(s) has left the cluster [nodeId=" + leftNodeId + ']'));
+                "Server node(s) has left the cluster [nodeId=" + leftNodeId + ']'));
         }
     }
 
@@ -294,7 +294,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
         if (!baselineNodes().containsAll(req.nodes())) {
             return new GridFinishedFuture<>(
-                new IgniteException(OP_REJECT_MSG + "Baseline node(s) has left the cluster."));
+                new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster."));
         }
 
         SnapshotRestoreContext opCtx0 = opCtx;
@@ -400,7 +400,7 @@ public class SnapshotRestoreCacheGroupProcess {
             return new GridFinishedFuture<>(errRef.get());
 
         if (!baselineNodes().containsAll(opCtx0.nodes()))
-            return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "Baseline node(s) has left the cluster."));
+            return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster."));
 
         GridFutureAdapter<SnapshotRestoreResponse> retFut = new GridFutureAdapter<>();
 
@@ -410,7 +410,7 @@ public class SnapshotRestoreCacheGroupProcess {
                 ", caches=" + F.viewReadOnly(opCtx0.configs(), c -> c.config().getName()) + ']');
         }
 
-        ctx.cache().dynamicStartCachesByStoredConf(opCtx.configs(), true, true, false, null, true).listen(
+        ctx.cache().dynamicStartCachesByStoredConf(opCtx.configs(), true, true, false, null, true, opCtx0.nodes()).listen(
             f -> {
                 if (f.error() != null) {
                     log.error("Unable to start restored caches.", f.error());
@@ -444,7 +444,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
             leftNodes.removeAll(res.keySet());
 
-            failure = new IgniteException(OP_REJECT_MSG + "Baseline node(s) has left the cluster [nodeId=" + leftNodes + ']');
+            failure = new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
         }
 
         if (failure != null) {

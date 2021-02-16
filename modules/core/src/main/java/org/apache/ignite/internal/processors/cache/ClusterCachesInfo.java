@@ -48,6 +48,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
@@ -577,28 +578,13 @@ public class ClusterCachesInfo {
     /**
      * @param batch Cache change request.
      * @param topVer Topology version.
+     * @param topSnapshot Topology snapshot.
      * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
+    public boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer, Collection<ClusterNode> topSnapshot) {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
-        if (state.active() && !state.transition()) {
-            ExchangeActions exchangeActions = new ExchangeActions();
-
-            CacheChangeProcessResult res = processCacheChangeRequests(exchangeActions,
-                batch.requests(),
-                topVer,
-                false);
-
-            if (res.needExchange) {
-                assert !exchangeActions.empty() : exchangeActions;
-
-                batch.exchangeActions(exchangeActions);
-            }
-
-            return res.needExchange;
-        }
-        else {
+        if (!state.active() || state.transition()) {
             IgniteCheckedException err = new IgniteCheckedException("Failed to start/stop cache, cluster state change " +
                 "is in progress.");
 
@@ -613,6 +599,41 @@ public class ClusterCachesInfo {
 
             return false;
         }
+
+        if (!F.isEmpty(batch.nodes())) {
+            Set<UUID> srvNodes =
+                new HashSet<>(F.viewReadOnly(topSnapshot, ClusterNode::id, n -> !n.isClient() && !n.isDaemon()));
+
+            if (!srvNodes.containsAll(batch.nodes()) || !ctx.discovery().aliveAll(batch.nodes())) {
+                ClusterTopologyCheckedException err =
+                    new ClusterTopologyCheckedException("Server node(s) has left the cluster.");
+
+                for (DynamicCacheChangeRequest req : batch.requests())
+                    ctx.cache().completeCacheStartFuture(req, false, err);
+
+                return false;
+            }
+        }
+
+        ExchangeActions exchangeActions = new ExchangeActions();
+
+        CacheChangeProcessResult res = processCacheChangeRequests(exchangeActions,
+            batch.requests(),
+            topVer,
+            false);
+
+        if (res.needExchange) {
+            assert !exchangeActions.empty() : exchangeActions;
+
+            batch.exchangeActions(exchangeActions);
+
+            if (!F.isEmpty(batch.nodes())) {
+                U.dumpStack(">xxx> set failCacheStartOnNodeLeft=true");
+                exchangeActions.failCacheStartOnNodeLeft(true);
+            }
+        }
+
+        return res.needExchange;
     }
 
     /**

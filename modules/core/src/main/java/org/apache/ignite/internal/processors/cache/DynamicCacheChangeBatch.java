@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -45,6 +46,8 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
 
+    private Collection<UUID> reqNodes;
+
     /** Cache updates to be executed on exchange. */
     private transient ExchangeActions exchangeActions;
 
@@ -60,11 +63,13 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
 
     /**
      * @param reqs Requests.
+     * @param reqNodes todo
      */
-    public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs) {
+    public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs, Collection<UUID> reqNodes) {
         assert !F.isEmpty(reqs) : reqs;
 
         this.reqs = reqs;
+        this.reqNodes = reqNodes;
     }
 
     /** {@inheritDoc} */
@@ -160,6 +165,10 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      */
     public void startCaches(boolean startCaches) {
         this.startCaches = startCaches;
+    }
+
+    public Collection<UUID> nodes() {
+        return reqNodes;
     }
 
     /** {@inheritDoc} */

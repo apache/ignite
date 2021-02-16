@@ -3827,10 +3827,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return;
 
         try {
-            if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheStartExchange() && isRollbackSupported()) {
-                sendExchangeFailureMessage();
+            if (dynamicCacheStartExchange() && isRollbackSupported()) {
+                if (!F.isEmpty(exchangeGlobalExceptions)) {
+                    sendExchangeFailureMessage();
 
-                return;
+                    return;
+                }
+
+                if (exchActions.failCacheStartOnNodeLeft()) {
+                    Collection<UUID> srvs = F.viewReadOnly(firstEvent().topologyNodes(), ClusterNode::id, n -> !n.isDaemon() && !n.isClient());
+
+                    if (!cctx.discovery().aliveAll(srvs)) {
+                        exchangeGlobalExceptions.put(cctx.localNodeId(), new ClusterTopologyCheckedException("Server node(s) has left the cluster."));
+
+                        sendExchangeFailureMessage();
+
+                        return;
+                    }
+                    else
+                        System.out.println(">xxx> firstEvent all alive: " + srvs);
+                }
             }
 
             AffinityTopologyVersion resTopVer = exchCtx.events().topologyVersion();

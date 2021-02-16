@@ -44,6 +44,9 @@ public class ExchangeActions {
     private Map<String, CacheActionData> cachesToStart;
 
     /** */
+    private boolean failCacheStartOnNodeLeft;
+
+    /** */
     private Map<String, CacheActionData> cachesToStop;
 
     /** */
@@ -317,6 +320,14 @@ public class ExchangeActions {
         }
 
         return false;
+    }
+
+    public boolean failCacheStartOnNodeLeft() {
+        return failCacheStartOnNodeLeft;
+    }
+
+    public void failCacheStartOnNodeLeft(boolean failCacheStartOnNodeLeft) {
+        this.failCacheStartOnNodeLeft = failCacheStartOnNodeLeft;
     }
 
     /**

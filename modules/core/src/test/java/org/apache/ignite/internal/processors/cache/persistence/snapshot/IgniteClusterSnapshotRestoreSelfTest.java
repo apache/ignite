@@ -43,7 +43,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -70,7 +72,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Snapshot restore tests.
  */
-public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTest {
+public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTest {
     /** Timeout. */
     private static final long TIMEOUT = 15_000;
 
@@ -132,12 +134,34 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         }
     }
 
-    //    @Test
-//    public void computeTest() throws Exception {
-//        IgniteEx node = startGrid(4);
-//
-//        node.context().task().execute()
-//    }
+    /**
+     * Ensures that the cache doesn't start if one of the baseline nodes fails.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheStartFailOnNodeLeft() throws Exception {
+        int keysCnt = 10_000;
+
+        startGridsWithSnapshot(3, keysCnt, true);
+
+        BlockingCustomMessageDiscoverySpi discoSpi = discoSpi(grid(0));
+
+        discoSpi.block((msg) -> msg instanceof DynamicCacheChangeBatch);
+
+        IgniteFuture<Void> fut =
+            grid(0).snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
+
+        discoSpi.waitBlocked(TIMEOUT);
+
+        stopGrid(2, true);
+
+        discoSpi.unblock();
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
+
+        ensureCacheDirEmpty(2, dfltCacheCfg.getName());
+    }
 
     /** @throws Exception If failed. */
     @Test
@@ -559,7 +583,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
                 log,
                 () -> fut.get(TIMEOUT),
                 IgniteException.class,
-                "Cache group restore operation was rejected. Baseline node(s) has left the cluster"
+                "Cache group restore operation was rejected. Server node(s) has left the cluster"
             );
 
             fut0.get(TIMEOUT);
@@ -649,7 +673,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
     @Ignore
     public void testClusterDeactivateOnFinish() throws Exception {
         checkClusterStateChange(ClusterState.INACTIVE, RESTORE_CACHE_GROUP_SNAPSHOT_FINISH,
-            IgniteException.class, "Baseline node(s) has left the cluster", true);
+            IgniteException.class, "Server node(s) has left the cluster", true);
     }
 
     /**

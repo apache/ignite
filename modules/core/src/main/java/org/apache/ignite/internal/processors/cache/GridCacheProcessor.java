@@ -227,6 +227,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    public static final CountDownLatch MEGALATCH = new CountDownLatch(3);
+
     /** */
     public static final String CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT =
         "Failed to perform %s operation (cluster is in read-only mode) [cacheGrp=%s, cache=%s]";
@@ -1991,6 +1993,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
+        if ("SuperCache".equals(desc.cacheName()))
+            try {
+                U.sleep(5_000);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException(e);
+            }
+
+        MEGALATCH.countDown();
+
+        U.dumpStack(">xxx> prepare cache context " + desc.cacheName());
+
         desc = enricher().enrich(desc,
             desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
 
@@ -3727,6 +3743,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             restoredCache);
     }
 
+    public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
+        Collection<StoredCacheData> storedCacheDataList,
+        boolean failIfExists,
+        boolean checkThreadTx,
+        boolean disabledAfterStart,
+        IgniteUuid restartId,
+        boolean restoredCache
+    ) {
+        return dynamicStartCachesByStoredConf(storedCacheDataList, failIfExists, checkThreadTx, disabledAfterStart,
+            restartId, restoredCache, null);
+    }
+
     /**
      * Dynamically starts multiple caches.
      *
@@ -3743,7 +3771,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean disabledAfterStart,
         IgniteUuid restartId,
-        boolean restoredCache
+        boolean restoredCache,
+        @Nullable Set<UUID> reqNodes
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3805,7 +3834,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCompoundFuture<?, Boolean> compoundFut = new GridCompoundFuture<>();
 
-            for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs))
+            for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs, reqNodes))
                 compoundFut.add((IgniteInternalFuture)fut);
 
             if (clientReqs != null) {
@@ -4059,6 +4088,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
         Collection<DynamicCacheChangeRequest> reqs
     ) {
+        return initiateCacheChanges(reqs, null);
+    }
+
+    /**
+     * @param reqs Requests.
+     * @param reqNodes todo
+     * @return Collection of futures.
+     */
+    private Collection<DynamicCacheStartFuture> initiateCacheChanges(
+        Collection<DynamicCacheChangeRequest> reqs,
+        Collection<UUID> reqNodes
+    ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
@@ -4113,7 +4154,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
+                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs, reqNodes));
 
                 err = checkNodeState();
             }
@@ -4213,9 +4254,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Customer message.
      * @param topVer Current topology version.
      * @param node Node sent message.
+     * @param topSnapshot Topology snapshot.
      * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node) {
+    public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node, Collection<ClusterNode> topSnapshot) {
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
             ctx.query().onDiscovery((SchemaAbstractDiscoveryMessage)msg);
 
@@ -4241,7 +4283,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (msg instanceof DynamicCacheChangeBatch) {
-            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer, topSnapshot);
 
             ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
 
@@ -4678,7 +4720,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Exception err = null;
 
         try {
-            ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(Collections.singleton(req)));
+            ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(Collections.singleton(req), null));
 
             if (ctx.isStopping()) {
                 err = new IgniteCheckedException("Failed to execute dynamic cache change request, " +
