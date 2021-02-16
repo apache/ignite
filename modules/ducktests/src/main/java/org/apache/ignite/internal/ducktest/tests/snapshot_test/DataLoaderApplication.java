@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.ducktest.tests.snapshot_test;
 
 import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
@@ -34,6 +34,8 @@ public class DataLoaderApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
+
+        int start = Optional.ofNullable(jNode.get("start")).map(JsonNode::asInt).orElse(0);
 
         int interval = jNode.get("interval").asInt();
 
@@ -54,8 +56,6 @@ public class DataLoaderApplication extends IgniteAwareApplication {
         cacheCfg.setQueryEntities(Collections.singletonList(qryEntity));
 
         ignite.getOrCreateCache(cacheCfg);
-
-        long start = ThreadLocalRandom.current().nextLong();
 
         byte[] data = new byte[valSize];
 

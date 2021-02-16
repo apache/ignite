@@ -200,9 +200,7 @@ class ControlUtility:
             for node in self._cluster.nodes:
                 mbean = JmxClient(node).find_mbean('.*name=snapshot')
 
-                name = next(mbean.LastSnapshotName)
-
-                if snapshot_name != name:
+                if snapshot_name != next(mbean.LastSnapshotName):
                     continue
 
                 start_time = int(next(mbean.LastSnapshotStartTime))
@@ -210,6 +208,7 @@ class ControlUtility:
                 err_msg = next(mbean.LastSnapshotErrorMessage)
 
                 if (0 < start_time < end_time) and (err_msg == ''):
+                    assert snapshot_name == next(mbean.LastSnapshotName)
                     return
 
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
