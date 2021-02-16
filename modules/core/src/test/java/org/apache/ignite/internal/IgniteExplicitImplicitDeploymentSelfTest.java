@@ -211,8 +211,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
             }
 
             if (byName) {
-                //ignite.compute().undeployTask(taskCls.getName());
-
                 ignite.compute().localDeployTask(taskCls, ldr1);
 
                 Integer res = ignite.compute().execute(taskCls.getName(), null);
@@ -353,8 +351,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
            }
 
            if (byName) {
-               //ignite.compute().undeployTask(taskCls.getName());
-
                ignite.compute().localDeployTask(taskCls, ldr1);
 
                // Even though the task is deployed with resource class loader,
@@ -422,15 +418,11 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
           }
 
           if (byName) {
-              //ignite.compute().undeployTask(taskCls1.getName());
-
               ignite.compute().localDeployTask(taskCls1, ldr1);
               Integer res1 = ignite.compute().execute(taskCls1.getName(), null);
 
               assert res1 != null;
               assertEquals("Invalid res1: ", 1, (int)res1);
-
-              //ignite.compute().undeployTask(taskCls1.getName());
 
               ignite.compute().localDeployTask(taskCls2, ldr2);
               Integer res2 = ignite.compute().execute(taskCls2.getName(), null);

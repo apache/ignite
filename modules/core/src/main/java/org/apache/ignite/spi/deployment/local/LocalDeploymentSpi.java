@@ -248,22 +248,15 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
 
         ConcurrentMap<String, String> clsLdrRsrcs = ldrRsrcs.getSafe(ldr);
 
-        if (clsLdrRsrcs == null) {
-            ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
-                clsLdrRsrcs = new ConcurrentLinkedHashMap<>());
-
-            if (old != null)
-                clsLdrRsrcs = old;
-        }
-        else {
+        // move forward, localDeployTask compatibility issue.
+        if (clsLdrRsrcs != null)
             ldrRsrcs.remove(ldr);
 
-            ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
-                clsLdrRsrcs = new ConcurrentLinkedHashMap<>());
+        ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
+            clsLdrRsrcs = new ConcurrentLinkedHashMap<>());
 
-            if (old != null)
-                clsLdrRsrcs = old;
-        }
+        if (old != null)
+            clsLdrRsrcs = old;
 
         Map<String, String> newRsrcs = addResource(ldr, clsLdrRsrcs, rsrc);
 
@@ -340,15 +333,6 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
                         "[taskName=" + entry.getKey() + ", existingCls=" + oldCls +
                         ", newCls=" + entry.getValue() + ", ldr=" + ldr + ']');
                 }
-/*                else {
-                    ldrRsrcs.remove(entry.getKey());
-                    ldrRsrcs.put(entry.getKey(), entry.getValue());
-
-                    if (newRsrcs == null)
-                        newRsrcs = new LinkedHashMap<>(regRsrcs.size());
-
-                    newRsrcs.put(entry.getKey(), entry.getValue());
-                }*/
             }
             else {
                 // New resource was added.
