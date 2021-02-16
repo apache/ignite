@@ -1097,12 +1097,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     }
                     catch (IgniteException e) {
                         if (X.hasCause(e, ComputeJobFailoverException.class)) {
-                            // Print internal exceptions only if debug is enabled.
-                            if (log.isDebugEnabled())
-                                U.error(log, "Failed to obtain remote job result policy for result from " +
-                                    "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
-                        }
-                        else if (X.hasCause(e, ComputeJobFailoverException.class)) {
                             IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
                                 "ComputeJobResultPolicy.FAILOVER was not returned from " +
                                 "ComputeTask.result(...) method for job result with ComputeJobFailoverException.", e);
