@@ -19,6 +19,7 @@ package org.apache.ignite.spi.deployment.local;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -168,7 +169,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         }
 
         // we can remove this stub after deprecated IgniteCompute.localDeployTask was deleted.
-        for (Entry<ClassLoader, ConcurrentMap<String, String>> e : ldrRsrcs.entrySet()) {
+        for (Entry<ClassLoader, ConcurrentMap<String, String>> e : ldrRsrcs.descendingEntrySet()) {
             ClassLoader ldr = e.getKey();
             ConcurrentMap<String, String> rsrcs = e.getValue();
 
@@ -249,7 +250,16 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
 
         if (clsLdrRsrcs == null) {
             ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
-                clsLdrRsrcs = new ConcurrentHashMap<>());
+                clsLdrRsrcs = new ConcurrentLinkedHashMap<>());
+
+            if (old != null)
+                clsLdrRsrcs = old;
+        }
+        else {
+            ldrRsrcs.remove(ldr);
+
+            ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
+                clsLdrRsrcs = new ConcurrentLinkedHashMap<>());
 
             if (old != null)
                 clsLdrRsrcs = old;
@@ -324,11 +334,21 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             String oldCls = ldrRsrcs.putIfAbsent(entry.getKey(), entry.getValue());
 
             if (oldCls != null) {
-                if (!oldCls.equals(entry.getValue()))
+                if (!oldCls.equals(entry.getValue())) {
                     throw new IgniteSpiException("Failed to register resources with given task name " +
                         "(found another class with same task name in the same class loader) " +
                         "[taskName=" + entry.getKey() + ", existingCls=" + oldCls +
                         ", newCls=" + entry.getValue() + ", ldr=" + ldr + ']');
+                }
+/*                else {
+                    ldrRsrcs.remove(entry.getKey());
+                    ldrRsrcs.put(entry.getKey(), entry.getValue());
+
+                    if (newRsrcs == null)
+                        newRsrcs = new LinkedHashMap<>(regRsrcs.size());
+
+                    newRsrcs.put(entry.getKey(), entry.getValue());
+                }*/
             }
             else {
                 // New resource was added.

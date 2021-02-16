@@ -244,6 +244,9 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
         if (deps != null) {
             for (GridDeployment dep : deps) {
+                if (dep.undeployed())
+                    continue;
+
                 // local or remote deployment.
                 if (dep.classLoaderId() == meta.classLoaderId() || dep.classLoader() == meta.classLoader()) {
                     if (log.isTraceEnabled())

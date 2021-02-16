@@ -211,7 +211,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
             }
 
             if (byName) {
-                ignite.compute().undeployTask(taskCls.getName());
+                //ignite.compute().undeployTask(taskCls.getName());
 
                 ignite.compute().localDeployTask(taskCls, ldr1);
 
@@ -281,8 +281,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
            }
 
            if (byName) {
-               ignite.compute().undeployTask(taskCls1.getName());
-
                ignite.compute().localDeployTask(taskCls1, ldr1);
 
                Integer res1 = ignite.compute().execute(taskCls1.getName(), null);
@@ -290,8 +288,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                assert res1 != null;
 
                assert res1 == 1 : "Invalid res1: " + res1;
-
-               ignite.compute().undeployTask(taskCls1.getName());
 
                ignite.compute().localDeployTask(taskCls2, ldr2);
 
@@ -357,7 +353,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
            }
 
            if (byName) {
-               ignite.compute().undeployTask(taskCls.getName());
+               //ignite.compute().undeployTask(taskCls.getName());
 
                ignite.compute().localDeployTask(taskCls, ldr1);
 
@@ -426,7 +422,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
           }
 
           if (byName) {
-              ignite.compute().undeployTask(taskCls1.getName());
+              //ignite.compute().undeployTask(taskCls1.getName());
 
               ignite.compute().localDeployTask(taskCls1, ldr1);
               Integer res1 = ignite.compute().execute(taskCls1.getName(), null);
@@ -434,7 +430,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
               assert res1 != null;
               assertEquals("Invalid res1: ", 1, (int)res1);
 
-              ignite.compute().undeployTask(taskCls1.getName());
+              //ignite.compute().undeployTask(taskCls1.getName());
 
               ignite.compute().localDeployTask(taskCls2, ldr2);
               Integer res2 = ignite.compute().execute(taskCls2.getName(), null);
