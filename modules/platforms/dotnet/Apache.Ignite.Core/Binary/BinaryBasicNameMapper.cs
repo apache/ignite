@@ -137,13 +137,11 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         private string GetTypeName(TypeNameParser name)
         {
-            var simpleName = name.GetName();
-
             if (IsSimpleName)
-                return simpleName;
+                return name.GetName();
 
             var fullName = NamespaceToLower && name.HasNamespace()
-                ? name.GetNamespace().ToLower(CultureInfo.InvariantCulture) + simpleName
+                ? name.GetNamespace().ToLower(CultureInfo.InvariantCulture) + name.GetName()
                 : name.GetNameWithNamespace();
 
             return NamespacePrefix + fullName;
