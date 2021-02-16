@@ -240,6 +240,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
         assert ldr != null;
         assert rsrc != null;
+        boolean move = false;
 
         if (log.isDebugEnabled())
             log.debug("Registering [ldrRsrcs=" + ldrRsrcs + ", ldr=" + ldr + ", rsrc=" + rsrc + ']');
@@ -247,18 +248,21 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         ConcurrentMap<String, String> clsLdrRsrcs = ldrRsrcs.getSafe(ldr);
 
         // move forward, localDeployTask compatibility issue.
-        if (clsLdrRsrcs != null)
+        if (clsLdrRsrcs != null) {
             ldrRsrcs.remove(ldr);
 
+            move = true;
+        }
+
         ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
-            clsLdrRsrcs = new ConcurrentLinkedHashMap<>());
+            clsLdrRsrcs == null ? clsLdrRsrcs = new ConcurrentLinkedHashMap<>() : clsLdrRsrcs);
 
         if (old != null)
             clsLdrRsrcs = old;
 
         Map<String, String> newRsrcs = addResource(ldr, clsLdrRsrcs, rsrc);
 
-        return !F.isEmpty(newRsrcs);
+        return !F.isEmpty(newRsrcs) && !move;
     }
 
     /** {@inheritDoc} */

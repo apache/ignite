@@ -245,7 +245,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
                 info("Received expected grid exception: " + e);
             }
 
-            assert depSpi.getRegisterCount() == 3 : "Invalid register count: " + depSpi.getRegisterCount();
+            assert depSpi.getRegisterCount() == 2 : "Invalid register count: " + depSpi.getRegisterCount();
             assert depSpi.getUnregisterCount() == 1 : "Invalid unregister count: " + depSpi.getUnregisterCount();
 
             assert ignite.compute().localTasks().get("GridDeploymentTestTask") != null;
