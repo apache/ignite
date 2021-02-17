@@ -39,7 +39,8 @@ class IgniteTxTestSuiteFixture
 public:
     IgniteTxTestSuiteFixture()
     {
-        serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
+        serverNode0 = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode0");
+        serverNode1 = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode1");
     }
 
     ~IgniteTxTestSuiteFixture()
@@ -48,8 +49,9 @@ public:
     }
 
 private:
-    /** Server node. */
-    ignite::Ignite serverNode;
+    /** Server nodes. */
+    ignite::Ignite serverNode0;
+    ignite::Ignite serverNode1;
 };
 
 BOOST_FIXTURE_TEST_SUITE(IgniteTxTestSuite, IgniteTxTestSuiteFixture)
@@ -77,7 +79,7 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 {
     IgniteClientConfiguration cfg;
 
-    cfg.SetEndPoints("127.0.0.1:11110");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111");
 
     IgniteClient client = IgniteClient::Start(cfg);
 
