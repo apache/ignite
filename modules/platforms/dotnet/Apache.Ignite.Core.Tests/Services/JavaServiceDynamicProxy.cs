@@ -412,5 +412,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc.testSendMessage();
         }
+
+        /** <inheritDoc /> */
+        public void putValsForCache()
+        {
+            _svc.putValsForCache();
+        }
     }
 }
