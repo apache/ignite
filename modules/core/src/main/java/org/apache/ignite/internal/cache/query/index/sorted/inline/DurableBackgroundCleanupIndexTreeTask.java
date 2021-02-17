@@ -17,14 +17,20 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
@@ -108,7 +114,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     InlineIndexTree tree = new InlineIndexTree(
                         null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
                         cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, null, null);
+                        rootPage, false, 0, null, new NoopRowHandlerFactory(), null);
 
                     trees0.add(tree);
                 }
@@ -155,5 +161,43 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
+    }
+
+    /** */
+    private static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
+        /** {@inheritDoc} */
+        @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args) {
+            return new InlineIndexRowHandler() {
+                /** {@inheritDoc} */
+                @Override public Object getIndexKey(int idx, CacheDataRow row) {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<InlineIndexKeyType> getInlineIndexKeyTypes() {
+                    return Collections.emptyList();
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<IndexKeyDefinition> getIndexKeyDefinitions() {
+                    return Collections.emptyList();
+                }
+
+                /** {@inheritDoc} */
+                @Override public int partition(CacheDataRow row) {
+                    return 0;
+                }
+
+                /** {@inheritDoc} */
+                @Override public Object getCacheKey(CacheDataRow row) {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public Object getCacheValue(CacheDataRow row) {
+                    return null;
+                }
+            };
+        }
     }
 }

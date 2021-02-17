@@ -31,17 +31,17 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<String>
     /** Default charset. */
     protected static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    // TODO: how to configure it? Looks like ignoreCase may be configured on moment of Search row creation.
     /** Whether respect case or not while comparing. */
     private final boolean compareIgnoreCase;
 
-    // TODO: what is it?
-//    /** Whether to use optimized comparison or not. */
-//    private final boolean useOptimizedCompare;
+    /** Constructor. */
+    public StringInlineIndexKeyType() {
+        this(IndexKeyTypes.STRING, false);
+    }
 
     /** Constructor. */
-    public StringInlineIndexKeyType(boolean compareIgnoreCase) {
-        super(IndexKeyTypes.STRING, (short) -1);  // -1 means variable length.
+    protected StringInlineIndexKeyType(int keyType, boolean compareIgnoreCase) {
+        super(keyType, (short) -1);  // -1 means variable length.
 
         this.compareIgnoreCase = compareIgnoreCase;
     }

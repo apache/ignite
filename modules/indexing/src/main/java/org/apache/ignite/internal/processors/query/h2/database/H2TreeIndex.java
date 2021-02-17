@@ -26,18 +26,17 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -205,7 +204,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         assert upper == null || upper instanceof H2Row : upper;
 
         try {
-            T2<IndexSearchRow, IndexSearchRow> key = prepareIndexKeys(lower, upper);
+            T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
 
@@ -228,28 +227,26 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** */
-    private T2<IndexSearchRow, IndexSearchRow> prepareIndexKeys(SearchRow lower, SearchRow upper) {
-        SortedIndexDefinition def = (SortedIndexDefinition) ctx.indexing().getIndexDefition(queryIndex.id());
+    private T2<IndexKey, IndexKey> prepareIndexKeys(SearchRow lower, SearchRow upper) {
+        InlineIndexRowHandler rowHnd = queryIndex.getSegment(0).getRowHandler();
 
-        SortedIndexSchema schema = def.getSchema();
-
-        return new T2<>(prepareIndexKey(lower, schema), prepareIndexKey(upper, schema));
+        return new T2<>(prepareIndexKey(lower, rowHnd), prepareIndexKey(upper, rowHnd));
     }
 
     /** */
-    private IndexSearchRow prepareIndexKey(SearchRow row, SortedIndexSchema schema) {
+    private IndexKey prepareIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
         if (row == null)
             return null;
 
         else if (row instanceof H2CacheRow)
-            return new IndexRowImpl(schema, (CacheDataRow) row);
+            return new IndexRowImpl(rowHnd, (CacheDataRow) row);
 
         else
-            return preparePlainIndexKey(row, schema);
+            return preparePlainIndexKey(row, rowHnd);
     }
 
     /** */
-    private IndexSearchRow preparePlainIndexKey(SearchRow row, SortedIndexSchema schema) {
+    private IndexKey preparePlainIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
         int idxColsLen = indexColumns.length;
 
         Object[] keys = row == null ? null : new Object[idxColsLen];
@@ -269,7 +266,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 keys[i] = v.getObject();
         }
 
-        return new IndexSearchRowImpl(keys, schema);
+        return new IndexSearchRowImpl(keys, rowHnd);
     }
 
     /** */
@@ -569,7 +566,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         SearchRow lower = toSearchRow(bounds.first());
         SearchRow upper = toSearchRow(bounds.last());
 
-        T2<IndexSearchRow, IndexSearchRow> key = prepareIndexKeys(lower, upper);
+        T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
 
         try {
             GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), segment, filter);

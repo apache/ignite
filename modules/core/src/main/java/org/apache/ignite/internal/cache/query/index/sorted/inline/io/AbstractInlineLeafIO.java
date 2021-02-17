@@ -19,8 +19,8 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -77,19 +77,15 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
         int fieldOff = 0;
 
-        SortedIndexSchema schema = ThreadLocalSchemaHolder.getSchema();
+        InlineIndexRowHandler rowHnd = ThreadLocalSchemaHolder.getSchema();
 
-        for (int i = 0; i < schema.getKeyDefinitions().length; i++) {
+        for (int i = 0; i < rowHnd.getInlineIndexKeyTypes().size(); i++) {
             try {
                 int maxSize = inlineSize - fieldOff;
 
-                int type = schema.getKeyDefinitions()[i].getIdxType();
+                InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
 
-                if (!InlineIndexKeyTypeRegistry.supportInline(type))
-                    break;
-
-                int size = InlineIndexKeyTypeRegistry.get(row.getKey(i).getClass(), type)
-                    .put(pageAddr, off + fieldOff, row.getKey(i), maxSize);
+                int size = keyType.put(pageAddr, off + fieldOff, row.getKey(i), maxSize);
 
                 // Inline size has exceeded.
                 if (size == 0)

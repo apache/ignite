@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.sorted.SortedIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -30,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
 /**
  * This class represents a row in {@link SortedIndex}.
  */
-public class IndexRowImpl implements IndexSearchRow {
+public class IndexRowImpl implements IndexRow {
     /** Object that contains info about original IgniteCache row. */
     private final CacheDataRow cacheRow;
 
@@ -38,20 +39,20 @@ public class IndexRowImpl implements IndexSearchRow {
     private final Object[] keyCache;
 
     /** Schema of an index. */
-    private final SortedIndexSchema schema;
+    private final InlineIndexRowHandler rowHnd;
 
     /** Constructor. */
-    public IndexRowImpl(SortedIndexSchema schema, CacheDataRow row) {
-        this(schema, row, new Object[schema.getKeyDefinitions().length]);
+    public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row) {
+        this(rowHnd, row, new Object[rowHnd.getIndexKeyDefinitions().size()]);
     }
 
     /**
      * Constructor with prefilling of keys cache.
      */
-    public IndexRowImpl(SortedIndexSchema schema, CacheDataRow row, Object[] keys) {
-        assert keys.length == schema.getKeyDefinitions().length;
+    public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row, Object[] keys) {
+        assert keys.length == rowHnd.getIndexKeyDefinitions().size();
 
-        this.schema = schema;
+        this.rowHnd = rowHnd;
         cacheRow = row;
         keyCache = keys;
     }
@@ -68,7 +69,9 @@ public class IndexRowImpl implements IndexSearchRow {
         if (keyCache[idx] != null)
             return keyCache[idx];
 
-        Object key = schema.getIndexKey(idx, cacheRow);
+        Object key = rowHnd.getIndexKey(idx, cacheRow);
+
+        validate(idx, key);
 
         keyCache[idx] = key;
 
@@ -77,7 +80,7 @@ public class IndexRowImpl implements IndexSearchRow {
 
     /** {@inheritDoc} */
     @Override public Object[] getKeys() {
-        int keysCnt = getSearchKeysCount();
+        int keysCnt = rowHnd.getIndexKeyDefinitions().size();
 
         Object[] keys = new Object[keysCnt];
 
@@ -93,8 +96,8 @@ public class IndexRowImpl implements IndexSearchRow {
     }
 
     /** {@inheritDoc} */
-    @Override public SortedIndexSchema getSchema() {
-        return schema;
+    @Override public InlineIndexRowHandler getRowHandler() {
+        return rowHnd;
     }
 
     /** {@inheritDoc} */
@@ -102,14 +105,10 @@ public class IndexRowImpl implements IndexSearchRow {
         return cacheRow;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getSearchKeysCount() {
-        return schema.getKeyDefinitions().length;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isFullSchemaSearch() {
-        return true;
+    private void validate(int idx, Object key) {
+        if (!rowHnd.getIndexKeyDefinitions().get(idx).validate(key))
+            throw new IgniteException("Index row key class mismatch. Expected " +
+                rowHnd.getIndexKeyDefinitions().get(idx).getIdxClass() + ", actual " + key.getClass());
     }
 
     /** {@inheritDoc} */
@@ -118,18 +117,18 @@ public class IndexRowImpl implements IndexSearchRow {
 
         sb.a(Integer.toHexString(System.identityHashCode(this)));
 
-        Object v = schema.getCacheKey(cacheRow);
+        Object v = rowHnd.getCacheKey(cacheRow);
 
         sb.a("[ key: ").a(v == null ? "nil" : v.toString());
 
-        v = schema.getCacheValue(cacheRow);
+        v = rowHnd.getCacheValue(cacheRow);
         sb.a(", val: ").a(v == null ? "nil" : (S.includeSensitive() ? v.toString() :
             "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
 
         sb.a(" ][ ");
 
         if (v != null) {
-            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = schema.getKeyDefinitions().length; i < cnt; i++) {
+            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = rowHnd.getIndexKeyDefinitions().size(); i < cnt; i++) {
                 if (i != QueryUtils.DEFAULT_COLUMNS_COUNT)
                     sb.a(", ");
 

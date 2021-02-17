@@ -17,22 +17,22 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 
 /**
  * Holds an index schema during work session with an index tree.
  */
 public class ThreadLocalSchemaHolder {
     /** */
-    private static final ThreadLocal<SortedIndexSchema> holder = new ThreadLocal<>();
+    private static final ThreadLocal<InlineIndexRowHandler> holder = new ThreadLocal<>();
 
     /** */
-    public static void setSchema(SortedIndexSchema schema) {
+    public static void setSchema(InlineIndexRowHandler schema) {
         holder.set(schema);
     }
 
     /** */
-    public static SortedIndexSchema getSchema() {
+    public static InlineIndexRowHandler getSchema() {
         return holder.get();
     }
 

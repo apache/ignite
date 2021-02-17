@@ -33,6 +33,7 @@ import org.h2.index.SpatialTreeIndex;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
+import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
@@ -47,8 +48,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** */
     public GridH2SpatialIndex(GeoSpatialIndexImpl idx) {
-        super(idx.def.schema().getTable(), idx.def.getIdxName().idxName(),
-            idx.def.schema().getColumns(), IndexType.createNonUnique(false, false, true));
+        super(idx.def.rowHandler().getTable(), idx.def.getIdxName().idxName(),
+            idx.def.rowHandler().getH2IdxColumns().toArray(new IndexColumn[0]), IndexType.createNonUnique(false, false, true));
 
         delegate = idx;
     }

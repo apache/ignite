@@ -30,7 +30,12 @@ public class IndexKeyDefinition {
     /** Index key type. {@link IndexKeyTypes}. */
     private final int idxType;
 
-    /** Index key class. */
+    /**
+     * Index key class. Can be:
+     * 1. One of SQL type class {@code QueryUtils.isSqlType(Class)}.
+     * 2. Object.class for key and value columns for a non-SQL type class.
+     * 3. Any user defined class.
+     */
     private final Class<?> idxCls;
 
     /** Order. */
@@ -62,5 +67,23 @@ public class IndexKeyDefinition {
     /** */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Validates that specified key's class matches to index key definition.
+     * @return {@code true} if key class matches {@link .idxCls}, otherwise {@code false}.
+     */
+    public boolean validate(Object key) {
+        assert key != null;
+
+        Class<?> keyCls = key.getClass();
+
+        if (keyCls == NullKey.class || keyCls == idxCls)
+            return true;
+
+        if (idxType == IndexKeyTypes.JAVA_OBJECT && (keyCls == JavaObjectKey.class))
+            return true;
+
+        return false;
     }
 }

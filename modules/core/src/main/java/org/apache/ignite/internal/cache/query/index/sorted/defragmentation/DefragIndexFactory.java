@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.cache.query.index.sorted.defragmentation;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.MetaPageInfo;
@@ -62,7 +62,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
     private final PageMemory newCachePageMemory;
 
     /** */
+    private final InlineIndexRowHandlerFactory rowHndFactory;
+
+    /** */
     public DefragIndexFactory(IgniteCacheOffheapManager offheap, PageMemory newCachePageMemory, InlineIndex oldIdx) {
+        // Row handler factory that produces no-op handler.
+        rowHndFactory = (def, args) -> oldIdx.getSegment(0).getRowHandler();
+
         this.offheap = offheap;
         this.oldIdx = oldIdx;
         this.newCachePageMemory = newCachePageMemory;
@@ -79,11 +85,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
             offheap,
             offheap.reuseListForIndex(def.getTreeName()),
             newCachePageMemory,
-            getPageIoResolver(def),
+            // Use old row handler to have access to inline index key types.
+            getPageIoResolver(),
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             oldIdx.inlineSize(),
             null,
+            rowHndFactory,
             null
         );
 
@@ -102,7 +110,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
     }
 
     /** */
-    private PageIoResolver getPageIoResolver(SortedIndexDefinition def) {
+    private PageIoResolver getPageIoResolver() {
         return pageAddr -> {
             PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
 
@@ -110,48 +118,46 @@ public class DefragIndexFactory extends InlineIndexFactory {
                 return io;
 
             //noinspection unchecked,rawtypes,rawtypes
-            return wrap((BPlusIO)io, def.getSchema());
+            return wrap((BPlusIO)io, rowHndFactory.create(null));
         };
     }
 
     /** */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    static BPlusIO<IndexRow> wrap(BPlusIO<IndexRow> io, SortedIndexSchema schema) {
+    static BPlusIO<IndexRow> wrap(BPlusIO<IndexRow> io, InlineIndexRowHandler rowHnd) {
         assert io instanceof InlineIO;
 
         if (io instanceof BPlusInnerIO) {
             assert io instanceof AbstractInlineInnerIO
                 || io instanceof InlineInnerIO;
 
-            return new BPlusInnerIoDelegate((BPlusInnerIO<IndexRow>)io, schema);
+            return new BPlusInnerIoDelegate((BPlusInnerIO<IndexRow>)io, rowHnd);
         }
         else {
             assert io instanceof AbstractInlineLeafIO
                 || io instanceof InlineLeafIO;
 
-            return new BPlusLeafIoDelegate((BPlusLeafIO<IndexRow>)io, schema);
+            return new BPlusLeafIoDelegate((BPlusLeafIO<IndexRow>)io, rowHnd);
         }
     }
 
     /** */
     private static <T extends BPlusIO<IndexRow> & InlineIO> IndexRow lookupRow(
-        SortedIndexSchema schema,
+        InlineIndexRowHandler rowHnd,
         long pageAddr,
         int idx,
         T io
-    ) throws IgniteCheckedException {
+    ) {
         long link = io.getLink(pageAddr, idx);
 
         int off = io.offset(idx);
 
-        Object[] keys = new Object[schema.getKeyDefinitions().length];
+        Object[] keys = new Object[rowHnd.getIndexKeyDefinitions().size()];
 
         int fieldOff = 0;
 
-        for (int i = 0; i < schema.getKeyDefinitions().length; i++) {
-            int type = schema.getKeyDefinitions()[i].getIdxType();
-
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(type);
+        for (int i = 0; i < rowHnd.getInlineIndexKeyTypes().size(); i++) {
+            InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
 
             Object key = keyType.get(pageAddr, off + fieldOff, io.getInlineSize() - fieldOff);
 
@@ -160,7 +166,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             keys[i] = key;
         }
 
-        return new IndexRowImpl(schema, new CacheDataRowAdapter(link), keys);
+        return new IndexRowImpl(rowHnd, new CacheDataRowAdapter(link), keys);
     }
 
     /** */
@@ -170,13 +176,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
         private final IO io;
 
         /** */
-        private final SortedIndexSchema schema;
+        private final InlineIndexRowHandler rowHnd;
 
         /** */
-        public BPlusInnerIoDelegate(IO io, SortedIndexSchema schema) {
+        public BPlusInnerIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
             super(io.getType(), io.getVersion(), io.canGetRow(), io.getItemSize());
             this.io = io;
-            this.schema = schema;
+            this.rowHnd = rowHnd;
         }
 
         /** {@inheritDoc} */
@@ -193,7 +199,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
-            return lookupRow(schema, pageAddr, idx, this);
+            return lookupRow(rowHnd, pageAddr, idx, this);
         }
 
         /** {@inheritDoc} */
@@ -214,13 +220,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
         private final IO io;
 
         /** */
-        private final SortedIndexSchema schema;
+        private final InlineIndexRowHandler rowHnd;
 
         /** */
-        public BPlusLeafIoDelegate(IO io, SortedIndexSchema schema) {
+        public BPlusLeafIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
             super(io.getType(), io.getVersion(), io.getItemSize());
             this.io = io;
-            this.schema = schema;
+            this.rowHnd = rowHnd;
         }
 
         /** {@inheritDoc} */
@@ -237,7 +243,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
-            return lookupRow(schema, pageAddr, idx, this);
+            return lookupRow(rowHnd, pageAddr, idx, this);
         }
 
         /** {@inheritDoc} */

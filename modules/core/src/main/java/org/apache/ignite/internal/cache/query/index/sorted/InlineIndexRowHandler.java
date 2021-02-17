@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import java.util.List;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
- * Schema for sorted index.
+ * Handles InlineIndexRow. Stores information about inlined keys, and rules how to convert CacheDataRow to IndexRow.
  */
-public interface SortedIndexSchema {
+public interface InlineIndexRowHandler {
     /**
-     * Describe all index keys.
-     */
-    public IndexKeyDefinition[] getKeyDefinitions();
-
-    /**
+     * Returns index key by specified idx.
+     *
      * @param idx Index of key within index schema.
      * @param row Original cache data row.
      * @return Index key.
      */
     public Object getIndexKey(int idx, CacheDataRow row);
+
+    /**
+     * @return List of key types for inlined index keys.
+     */
+    public List<InlineIndexKeyType> getInlineIndexKeyTypes();
+
+    /**
+     * @return List of index key definitions.
+     */
+    public List<IndexKeyDefinition> getIndexKeyDefinitions();
 
     /**
      * @return Parition for specified row.

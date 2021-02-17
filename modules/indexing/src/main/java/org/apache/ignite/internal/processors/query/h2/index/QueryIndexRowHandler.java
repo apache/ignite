@@ -17,89 +17,48 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
-import org.apache.ignite.cache.query.index.sorted.NullsOrder;
-import org.apache.ignite.cache.query.index.sorted.Order;
-import org.apache.ignite.cache.query.index.sorted.SortOrder;
+import java.util.List;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
-/**
- * Schema for QueryIndex.
- */
-public class QueryIndexSchema implements SortedIndexSchema {
-    /** Key definitions. */
-    private final IndexKeyDefinition[] idxKeyDefinitions;
-
-    /** H2 index columns. */
-    private final IndexColumn[] h2IdxColumns;
-
+/** Maps CacheDataRow to IndexRow using H2 columns references. */
+public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** Cache descriptor. */
     private final GridH2RowDescriptor cacheDesc;
 
-    /** Table. */
-    private final GridH2Table table;
+    /** H2 index columns. */
+    private final List<IndexColumn> h2IdxColumns;
+
+    /** List of key types for inlined index keys. */
+    private final List<InlineIndexKeyType> keyTypes;
+
+    /** List of index key definitions. */
+    private final List<IndexKeyDefinition> keyDefs;
+
+    /** H2 Table. */
+    private final GridH2Table h2Table;
 
     /** */
-    public QueryIndexSchema(GridH2Table table, IndexColumn[] h2IndexColumns) {
-        this.table = table;
-
-        cacheDesc = table.rowDescriptor();
-
-        idxKeyDefinitions = new IndexKeyDefinition[h2IndexColumns.length];
-
-        this.h2IdxColumns = h2IndexColumns.clone();
-
-        for (int i = 0; i < h2IndexColumns.length; ++i)
-            addKeyDefinition(i, h2IndexColumns[i]);
-
-        IndexColumn.mapColumns(h2IndexColumns, table);
-    }
-
-    /** */
-    private void addKeyDefinition(int i, IndexColumn c) {
-        GridQueryTypeDescriptor type = cacheDesc.type();
-
-        Class<?> idxKeyCls;
-
-        int colId = c.column.getColumnId();
-
-        if (cacheDesc.isKeyColumn(colId) || cacheDesc.isKeyAliasColumn(colId))
-            idxKeyCls = type.keyClass();
-        else if (cacheDesc.isValueColumn(colId) || cacheDesc.isKeyAliasColumn(colId))
-            idxKeyCls = type.valueClass();
-        else
-            idxKeyCls = type.property(c.columnName).type();
-
-        idxKeyDefinitions[i] = new IndexKeyDefinition(
-            c.columnName, c.column.getType(), idxKeyCls, getSortOrder(c.sortType));
-    }
-
-    /** Maps H2 column order to Ignite index order. */
-    private Order getSortOrder(int sortType) {
-        SortOrder sortOrder = (sortType & 1) != 0 ? SortOrder.DESC : SortOrder.ASC;
-
-        NullsOrder nullsOrder = (sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : NullsOrder.NULLS_LAST;
-
-        return new Order(sortOrder, nullsOrder);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public IndexKeyDefinition[] getKeyDefinitions() {
-        return idxKeyDefinitions.clone();
+    public QueryIndexRowHandler(GridH2Table h2table, List<IndexColumn> h2IdxColumns,
+        List<IndexKeyDefinition> keyDefs, List<InlineIndexKeyType> keyTypes) {
+        this.h2IdxColumns = h2IdxColumns;
+        this.keyTypes = keyTypes;
+        this.keyDefs = keyDefs;
+        this.h2Table = h2table;
+        cacheDesc = h2table.rowDescriptor();
     }
 
     /** {@inheritDoc} */
@@ -109,15 +68,30 @@ public class QueryIndexSchema implements SortedIndexSchema {
         if (o == null)
             return NullKey.INSTANCE;
 
-        if (idxKeyDefinitions[idx].getIdxType() == IndexKeyTypes.JAVA_OBJECT)
+        if (keyDefs.get(idx).getIdxType() == IndexKeyTypes.JAVA_OBJECT)
             return new JavaObjectKey(o);
 
         return o;
     }
 
     /** */
-    private Object getKey(int idx, CacheDataRow row) {
-        int cacheIdx = h2IdxColumns[idx].column.getColumnId();
+    public List<IndexColumn> getH2IdxColumns() {
+        return h2IdxColumns;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<InlineIndexKeyType> getInlineIndexKeyTypes() {
+        return keyTypes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<IndexKeyDefinition> getIndexKeyDefinitions() {
+        return keyDefs;
+    }
+
+    /** */
+    protected Object getKey(int idx, CacheDataRow row) {
+        int cacheIdx = h2IdxColumns.get(idx).column.getColumnId();
 
         switch (cacheIdx) {
             case QueryUtils.KEY_COL:
@@ -138,7 +112,7 @@ public class QueryIndexSchema implements SortedIndexSchema {
         }
     }
 
-     /** {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override public int partition(CacheDataRow row) {
         Object key = key(row);
 
@@ -159,14 +133,7 @@ public class QueryIndexSchema implements SortedIndexSchema {
      * @return H2 table.
      */
     public GridH2Table getTable() {
-        return table;
-    }
-
-    /**
-     * @return H2 index columns.
-     */
-    public IndexColumn[] getColumns() {
-        return h2IdxColumns;
+        return h2Table;
     }
 
     /** @return Cache key for specified cache row. */

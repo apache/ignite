@@ -36,7 +36,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImp
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -107,13 +106,13 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
 
     /** */
     IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        QueryIndexSchema schema = def.schema();
+        GridH2Table table = def.rowHandler().getTable();
 
-        if (schema.getTable().isPartitioned()) {
+        if (table.isPartitioned()) {
             assert filter > 0; // Lookup batch will not be created for the first table filter.
 
             throw DbException.throwInternalError(
-                "Table with a spatial index must be the first in the query: " + schema.getTable());
+                "Table with a spatial index must be the first in the query: " + table);
         }
 
         return null; // Support must be explicitly added.
@@ -132,7 +131,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
      * @return Envelope.
      */
     private SpatialKey getEnvelope(CacheDataRow row, long rowId) {
-        Geometry g = (Geometry) def.schema().getIndexKey(0, row);
+        Geometry g = (Geometry) def.rowHandler().getIndexKey(0, row);
 
         return getEnvelope(g, rowId);
     }
@@ -217,7 +216,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     private boolean put(CacheDataRow row) {
         checkClosed();
 
-        Object key = def.schema().key(row);
+        Object key = def.rowHandler().key(row);
 
         assert key != null;
 
@@ -236,7 +235,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
             keyToId.put(key, rowId);
         }
 
-        IndexRow old = idToRow.put(rowId, new IndexRowImpl(def.schema(), row));
+        IndexRow old = idToRow.put(rowId, new IndexRowImpl(def.rowHandler(), row));
 
         segments[seg].put(getEnvelope(row, rowId), rowId);
 
@@ -250,7 +249,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     private boolean remove(CacheDataRow row) {
         checkClosed();
 
-        Object key = def.schema().key(row);
+        Object key = def.rowHandler().key(row);
 
         assert key != null;
 
@@ -342,7 +341,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
             qryFilter = qctx.filter();
 
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ?
-            qryFilter.forCache(def.schema().getTable().cacheName()) : null;
+            qryFilter.forCache(def.rowHandler().getTable().cacheName()) : null;
 
         List<IndexRow> rows = new ArrayList<>();
 
@@ -419,6 +418,6 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
      * @return Segment ID for given key
      */
     public int segmentForRow(CacheDataRow row) {
-        return segments.length == 1 ? 0 : (def.schema().partition(row) % segments.length);
+        return segments.length == 1 ? 0 : (def.rowHandler().partition(row) % segments.length);
     }
 }

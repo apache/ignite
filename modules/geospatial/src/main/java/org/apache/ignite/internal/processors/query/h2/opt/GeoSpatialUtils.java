@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
+import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 import org.h2.table.IndexColumn;
 
 /**
@@ -29,15 +32,19 @@ import org.h2.table.IndexColumn;
  */
 public class GeoSpatialUtils {
     /** */
-    public static GridH2SpatialIndex createIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
+    public static GridH2SpatialIndex createIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         try {
             IndexName name = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
 
-            QueryIndexSchema schema = new QueryIndexSchema(tbl, cols);
+            QueryIndexKeyDefinitionProvider keyProvider = new QueryIndexKeyDefinitionProvider(tbl, cols);
+
+            List<InlineIndexKeyType> idxKeyType = keyProvider.getTypes();
+
+            QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyProvider.get(), idxKeyType);
 
             final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
 
-            IndexDefinition def = new GeoSpatialIndexDefinition(name, schema, segments);
+            IndexDefinition def = new GeoSpatialIndexDefinition(name, rowHnd, segments);
 
             Index idx = tbl.cacheContext().kernalContext().indexing().createIndex(
                 tbl.cacheContext(), GeoSpatialIndexFactory.INSTANCE, def);

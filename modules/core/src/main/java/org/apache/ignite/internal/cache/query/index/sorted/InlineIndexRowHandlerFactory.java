@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 /**
- * Represents a search row that used to find a place in a tree.
- *
- * Row contains of multiple keys to compare on. Tree row may contain more keys {@link #isFullSchemaSearch()}
+ * Basic interface for factories that provide InlineIndexRowHandler based on index definition and optional arguments.
  */
-public interface IndexSearchRow extends IndexRow {
+public interface InlineIndexRowHandlerFactory {
     /**
-     * @return Number of search keys.
+     * Creates instance of row handler.
+     * @param sdef Index definition.
+     * @param args Optional arguments to configure row handler.
+     * @return Index row handler.
      */
-    public int getSearchKeysCount();
-
-    /**
-     * @return Whether number of search keys equals to number of keys in a tree.
-     */
-    public boolean isFullSchemaSearch();
+    public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args);
 }

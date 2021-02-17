@@ -1,0 +1,117 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.query.h2.index;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.cache.query.index.sorted.NullsOrder;
+import org.apache.ignite.cache.query.index.sorted.Order;
+import org.apache.ignite.cache.query.index.sorted.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.h2.table.IndexColumn;
+
+/** Maps H2 columns to IndexKeyDefinition and InlineIndexKeyType. */
+public class QueryIndexKeyDefinitionProvider {
+    /** Table. */
+    private final GridH2Table table;
+
+    /** Cache descriptor. */
+    private final GridH2RowDescriptor cacheDesc;
+
+    /** H2 index columns. */
+    private final List<IndexColumn> h2IdxColumns;
+
+    /** Index key definitions. */
+    private List<IndexKeyDefinition> keyDefs;
+
+    /** */
+    public QueryIndexKeyDefinitionProvider(GridH2Table table, List<IndexColumn> h2IndexColumns) {
+        this.table = table;
+        cacheDesc = table.rowDescriptor();
+        h2IdxColumns = h2IndexColumns;
+    }
+
+    /**
+     * @return List of index key definitions.
+     */
+    public List<IndexKeyDefinition> get() {
+        if (keyDefs != null)
+            return keyDefs;
+
+        List<IndexKeyDefinition> idxKeyDefinitions = new ArrayList<>();
+
+        for (IndexColumn c: h2IdxColumns)
+            idxKeyDefinitions.add(keyDefinition(c));
+
+        IndexColumn.mapColumns(h2IdxColumns.toArray(new IndexColumn[0]), table);
+
+        keyDefs = idxKeyDefinitions;
+
+        return keyDefs;
+    }
+
+    /**
+     * @return List of inlined index key types.
+     */
+    public List<InlineIndexKeyType> getTypes() {
+        List<InlineIndexKeyType> keyTypes = new ArrayList<>();
+
+        for (IndexKeyDefinition keyDef: get()) {
+            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType()))
+                break;
+
+            keyTypes.add(
+                InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType(), false));
+        }
+
+        return keyTypes;
+    }
+
+    /** */
+    private IndexKeyDefinition keyDefinition(IndexColumn c) {
+        GridQueryTypeDescriptor type = cacheDesc.type();
+
+        Class<?> idxKeyCls;
+
+        int colId = c.column.getColumnId();
+
+        if (cacheDesc.isKeyColumn(colId) || cacheDesc.isKeyAliasColumn(colId))
+            idxKeyCls = type.keyClass();
+        else if (cacheDesc.isValueColumn(colId) || cacheDesc.isValueAliasColumn(colId))
+            idxKeyCls = type.valueClass();
+        else
+            idxKeyCls = type.property(c.columnName).type();
+
+        return new IndexKeyDefinition(
+            c.columnName, c.column.getType(), idxKeyCls, getSortOrder(c.sortType));
+    }
+
+    /** Maps H2 column order to Ignite index order. */
+    private Order getSortOrder(int sortType) {
+        SortOrder sortOrder = (sortType & 1) != 0 ? SortOrder.DESC : SortOrder.ASC;
+
+        NullsOrder nullsOrder = (sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : NullsOrder.NULLS_LAST;
+
+        return new Order(sortOrder, nullsOrder);
+    }
+}

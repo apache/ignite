@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
@@ -40,23 +41,23 @@ public class GeoSpatialIndexFactory implements IndexFactory {
         GeoSpatialIndexDefinition def = (GeoSpatialIndexDefinition) definition;
 
         try {
-            IndexColumn[] cols = def.schema().getColumns();
+            List<IndexColumn> cols = def.rowHandler().getH2IdxColumns();
 
-            if (cols.length > 1)
+            if (cols.size() > 1)
                 throw DbException.getUnsupportedException("can only do one column");
 
-            if ((cols[0].sortType & SortOrder.DESCENDING) != 0)
+            if ((cols.get(0).sortType & SortOrder.DESCENDING) != 0)
                 throw DbException.getUnsupportedException("cannot do descending");
 
-            if ((cols[0].sortType & SortOrder.NULLS_FIRST) != 0)
+            if ((cols.get(0).sortType & SortOrder.NULLS_FIRST) != 0)
                 throw DbException.getUnsupportedException("cannot do nulls first");
 
-            if ((cols[0].sortType & SortOrder.NULLS_LAST) != 0)
+            if ((cols.get(0).sortType & SortOrder.NULLS_LAST) != 0)
                 throw DbException.getUnsupportedException("cannot do nulls last");
 
-            if (cols[0].column.getType() != Value.GEOMETRY) {
+            if (cols.get(0).column.getType() != Value.GEOMETRY) {
                 throw DbException.getUnsupportedException("spatial index on non-geometry column, " +
-                    cols[0].column.getCreateSQL());
+                    cols.get(0).column.getCreateSQL());
             }
 
             return new GeoSpatialIndexImpl(cctx, def);

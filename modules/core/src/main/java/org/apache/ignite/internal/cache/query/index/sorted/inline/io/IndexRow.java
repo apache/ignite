@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
@@ -33,7 +33,7 @@ public interface IndexRow extends IndexKey {
     /**
      * @return Schema of an index.
      */
-    public SortedIndexSchema getSchema();
+    public InlineIndexRowHandler getRowHandler();
 
     /**
      * @return Cache row.

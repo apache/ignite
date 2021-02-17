@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
  * Factory to create {@link InlineIndex}.
  */
 public class InlineIndexFactory implements IndexFactory {
-    /** Instance of factory. */
+    /** */
     public static final InlineIndexFactory INSTANCE = new InlineIndexFactory();
 
     /** {@inheritDoc} */
@@ -89,6 +89,7 @@ public class InlineIndexFactory implements IndexFactory {
             rootPage.isAllocated(),
             def.getInlineSize(),
             stats,
+            def.getRowHandlerFactory(),
             recommender);
     }
 

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LocalDate
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LocalDateTimeInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LocalTimeInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.LongInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ObjectByteArrayInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ObjectHashInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ShortInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.StringInlineIndexKeyType;
@@ -59,6 +60,9 @@ public class InlineIndexKeyTypeRegistry {
     /** Object key type does not map to known java type. */
     private static final ObjectHashInlineIndexKeyType objectType = new ObjectHashInlineIndexKeyType();
 
+    /** Object key type does not map to known java type. */
+    private static final ObjectByteArrayInlineIndexKeyType legacyObjectType = new ObjectByteArrayInlineIndexKeyType();
+
     static {
         classMapping.put(Boolean.class, new BooleanInlineIndexKeyType());
         classMapping.put(Byte.class, new ByteInlineIndexKeyType());
@@ -74,15 +78,12 @@ public class InlineIndexKeyTypeRegistry {
         classMapping.put(Integer.class, new IntegerInlineIndexKeyType());
         classMapping.put(Long.class, new LongInlineIndexKeyType());
         classMapping.put(Short.class, new ShortInlineIndexKeyType());
-        // TODO: ignore case handling
-        classMapping.put(String.class, new StringInlineIndexKeyType(false));
+        classMapping.put(String.class, new StringInlineIndexKeyType());
         classMapping.put(Time.class, new TimeInlineIndexKeyType());
         classMapping.put(UUID.class, new UuidInlineIndexKeyType());
 
         for (InlineIndexKeyType cm: classMapping.values())
             typeMapping.put(cm.type(), cm);
-
-        typeMapping.put(IndexKeyTypes.JAVA_OBJECT, objectType);
     }
 
     /**
@@ -90,40 +91,48 @@ public class InlineIndexKeyTypeRegistry {
      * Type is required for cases when class doesn't have strict type relation (nulls, POJO).
      *
      * @param clazz Class of a key.
-     * @param type Type of a key.
+     * @param expType Expected type of a key.
      */
-    public static InlineIndexKeyType get(Class<?> clazz, int type) {
-        if (clazz == NullKey.class)
-            return get(type);
+    public static InlineIndexKeyType get(Class<?> clazz, int expType, boolean legacyObj) {
+        if (clazz == NullKey.class) {
+            if (expType == IndexKeyTypes.JAVA_OBJECT)
+                return getJavaObjectType(legacyObj);
+            else
+                // Actually it's wrong to get typeMapping due to collisions (Date, LocalDate classes map to single type).
+                // But the object is null and then it's safe to use it as no type-specific code will be executed.
+                // Also this approach returns correct type int value, it's enough.
+                return typeMapping.get(expType);
+        }
+
+        // 1. BinaryObjectImpl.class is a class of stored POJO.
+        // 2. Object.class is set up for custom (no-SQL) key types within IndexKeyDefinition.idxCls.
+        if ((clazz == BinaryObjectImpl.class || clazz == Object.class))
+            return getJavaObjectType(legacyObj);
 
         InlineIndexKeyType key = classMapping.get(clazz);
 
-        if (key == null && type == IndexKeyTypes.JAVA_OBJECT)
-            return objectType;
+        // User defined POJO classes.
+        if (key == null && expType == IndexKeyTypes.JAVA_OBJECT)
+            return getJavaObjectType(legacyObj);
 
-        if (key == null && clazz == BinaryObjectImpl.class)
-            return objectType;
+        if (key != null && key.type() == IndexKeyTypes.JAVA_OBJECT)
+            return getJavaObjectType(legacyObj);
 
-        return key == null ? get(type) : key;
+        return key;
     }
 
     /**
      * Checks whether specified type support inlining.
      */
     public static boolean supportInline(int type) {
-        return typeMapping.containsKey(type);
+        return typeMapping.containsKey(type) || type == IndexKeyTypes.JAVA_OBJECT;
     }
 
     /**
-     * Get key type for a specified type. Should check {@link #supportInline(int)} before invoke it.
+     * Get key type for a POJO type.
      */
-    public static InlineIndexKeyType get(int type) {
-        InlineIndexKeyType idxKeyType = typeMapping.get(type);
-
-        if (idxKeyType == null)
-            throw new IgniteException("Type does not support inlining: " + type);
-
-        return idxKeyType;
+    private static InlineIndexKeyType getJavaObjectType(boolean legacyObj) {
+        return legacyObj ? legacyObjectType : objectType;
     }
 
     /**

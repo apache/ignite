@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 
@@ -32,7 +32,7 @@ public class DefaultIndexRowComparator implements IndexRowComparator {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(IndexSearchRow left, IndexSearchRow right, int idx) {
+    @Override public int compareKey(IndexRow left, IndexRow right, int idx) {
         Object v1 = left.getKey(idx);
         Object v2 = right.getKey(idx);
         return Integer.signum(compare(v1, v2));

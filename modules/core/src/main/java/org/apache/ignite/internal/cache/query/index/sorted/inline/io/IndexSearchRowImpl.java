@@ -17,31 +17,24 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Represents a search row that used to find a place in a tree.
  */
-public class IndexSearchRowImpl implements IndexSearchRow {
-    /**
-     * If {@code true} then length of {@link #keys} must be equal to length of schema, so use full
-     * schema to search. If {@code false} then it's possible to use only part of schema for search.
-     */
-    private final boolean fullSchemaSearch;
-
+public class IndexSearchRowImpl implements IndexRow {
     /** */
     private final Object[] keys;
 
     /** */
-    private final SortedIndexSchema schema;
+    private final InlineIndexRowHandler rowHnd;
 
     /** Constructor. */
-    public IndexSearchRowImpl(Object[] idxKeys, SortedIndexSchema schema) {
-        fullSchemaSearch = isFullSchemaSearch(idxKeys, schema.getKeyDefinitions().length);
+    public IndexSearchRowImpl(Object[] idxKeys, InlineIndexRowHandler rowHnd) {
         keys = idxKeys;
-        this.schema = schema;
+        this.rowHnd = rowHnd;
     }
 
     /** {@inheritDoc} */
@@ -52,16 +45,6 @@ public class IndexSearchRowImpl implements IndexSearchRow {
     /** {@inheritDoc} */
     @Override public Object[] getKeys() {
         return keys.clone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getSearchKeysCount() {
-        return keys.length;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isFullSchemaSearch() {
-        return fullSchemaSearch;
     }
 
     /** {@inheritDoc} */
@@ -77,8 +60,8 @@ public class IndexSearchRowImpl implements IndexSearchRow {
     }
 
     /** {@inheritDoc} */
-    @Override public SortedIndexSchema getSchema() {
-        return schema;
+    @Override public InlineIndexRowHandler getRowHandler() {
+        return rowHnd;
     }
 
     /** {@inheritDoc} */

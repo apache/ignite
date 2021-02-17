@@ -31,8 +31,13 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<byte[]> 
     private final boolean compareBinaryUnsigned = true;
 
     /** */
+    public BytesInlineIndexKeyType(int type) {
+        super(type, (short)-1);
+    }
+
+    /** */
     public BytesInlineIndexKeyType() {
-        super(IndexKeyTypes.BYTES, (short)-1);
+        this(IndexKeyTypes.BYTES);
     }
 
     /** {@inheritDoc} */

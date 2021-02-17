@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
@@ -69,6 +70,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** Definition of index. */
     private final SortedIndexDefinition def;
 
+    /** */
+    private final InlineIndexRowHandler rowHnd;
+
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
 
@@ -90,6 +94,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         boolean initNew,
         int configuredInlineSize,
         IoStatisticsHolder stats,
+        InlineIndexRowHandlerFactory rowHndFactory,
         InlineRecommender recommender) throws IgniteCheckedException {
         super(
             treeName,
@@ -117,20 +122,21 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = getMetaInfo();
 
-            this.def.setUseUnwrappedPk(metaInfo.useUnwrappedPk());
-
             inlineSize = metaInfo.inlineSize();
 
             boolean inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
+
+            rowHnd = rowHndFactory
+                .create(def, metaInfo.useUnwrappedPk(), inlineObjSupported, metaInfo.inlineObjHash);
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
-            this.def.setUseUnwrappedPk(true);
+            rowHnd = rowHndFactory.create(def, true, true, true);
 
             inlineSize = computeInlineSize(
-                def.getSchema().getKeyDefinitions(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
+                rowHnd.getInlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
         }
 
         if (inlineSize == 0)
@@ -151,16 +157,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow row)
         throws IgniteCheckedException {
-        IndexSearchRow r = (IndexSearchRow) row;
 
-        int searchKeysLength = r.getSearchKeysCount();
+        int searchKeysLength = row.getKeys().length;
 
         if (inlineSize == 0)
             return compareFullRows(getRow(io, pageAddr, idx), row, 0, searchKeysLength);
 
-        SortedIndexSchema schema = def.getSchema();
-
-        if ((schema.getKeyDefinitions().length != searchKeysLength) && r.isFullSchemaSearch())
+        if ((def.getIndexKeyDefinitions().size() != searchKeysLength) && isFullSchemaSearch(row))
             throw new IgniteCheckedException("Find is configured for full schema search.");
 
         int fieldOff = 0;
@@ -176,7 +179,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                     return 0;
 
                 // Other keys are not inlined. Should compare as rows.
-                if (i >= schema.getKeyDefinitions().length) {
+                if (i >= rowHnd.getInlineIndexKeyTypes().size()) {
                     lastIdxUsed = i;
                     break;
                 }
@@ -185,24 +188,18 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 int off = io.offset(idx);
 
-                IndexKeyDefinition keyDef = schema.getKeyDefinitions()[i];
-
-                if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType())) {
-                    lastIdxUsed = i;
-                    break;
-                }
+                InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
 
                 int cmp = COMPARE_UNSUPPORTED;
 
-                if (!row.getKey(i).getClass().isAssignableFrom(keyDef.getIdxClass())) {
+                if (!def.getIndexKeyDefinitions().get(i).validate(row.getKey(i))) {
                     lastIdxUsed = i;
                     break;
                 }
 
-                InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType());
-
+                // Value can be set up by user in query with different data type.
                 // By default do not compare different types.
-                if (InlineIndexKeyTypeRegistry.validate(keyDef.getIdxType(), row.getKey(i).getClass()))
+                if (InlineIndexKeyTypeRegistry.validate(keyType.type(), row.getKey(i).getClass()))
                     cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.getKey(i));
 
                 // Can't compare as inlined bytes are not enough for comparation.
@@ -222,7 +219,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 }
 
                 if (cmp != 0)
-                    return applySortOrder(cmp, schema.getKeyDefinitions()[i].getOrder().getSortOrder());
+                    return applySortOrder(cmp, def.getIndexKeyDefinitions().get(i).getOrder().getSortOrder());
 
                 fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
 
@@ -242,6 +239,22 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         return 0;
     }
 
+    /**
+     * If {@code true} then length of keys for search must be equal to length of schema, so use full
+     * schema to search. If {@code false} then it's possible to use only part of schema for search.
+     */
+    boolean isFullSchemaSearch(IndexKey key) {
+        int schemaLength = def.getIndexKeyDefinitions().size();
+
+        for (int i = 0; i < schemaLength; i++) {
+            // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
+            if (key.getKey(i) == null)
+                return false;
+        }
+
+        return true;
+    }
+
     /** */
     private int compareFullRows(IndexRow currRow, IndexRow row, int from, int searchKeysLength) throws IgniteCheckedException {
         for (int i = from; i < searchKeysLength; i++) {
@@ -250,10 +263,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (row.getKey(i) == null)
                 return 0;
 
-            int c = def.getRowComparator().compareKey((IndexSearchRow) currRow, (IndexSearchRow) row, i);
+            int c = def.getRowComparator().compareKey(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), def.getSchema().getKeyDefinitions()[i].getOrder().getSortOrder());
+                return applySortOrder(Integer.signum(c), def.getIndexKeyDefinitions().get(i).getOrder().getSortOrder());
         }
 
         return 0;
@@ -277,7 +290,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         boolean cleanSchema = false;
 
         if (ThreadLocalSchemaHolder.getSchema() == null) {
-            ThreadLocalSchemaHolder.setSchema(def.getSchema());
+            ThreadLocalSchemaHolder.setSchema(rowHnd);
             cleanSchema = true;
         }
 
@@ -288,7 +301,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (cleanSchema)
                 ThreadLocalSchemaHolder.cleanSchema();
         }
-
     }
 
     /** */
@@ -297,20 +309,20 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /**
-     * @param keyDefs definition on index keys.
+     * @param keyTypes Index key types.
      * @param cfgInlineSize Inline size from index config.
      * @param maxInlineSize Max inline size from cache config.
      * @return Inline size.
      */
     public static int computeInlineSize(
-        IndexKeyDefinition[] keyDefs,
+        List<InlineIndexKeyType> keyTypes,
         int cfgInlineSize,
         int maxInlineSize
     ) {
         if (cfgInlineSize == 0)
             return 0;
 
-        if (F.isEmpty(keyDefs))
+        if (F.isEmpty(keyTypes))
             return 0;
 
         if (cfgInlineSize != -1)
@@ -322,14 +334,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int size = 0;
 
-        for (IndexKeyDefinition keyDef : keyDefs) {
-            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType())) {
-                size = propSize;
-                break;
-            }
-
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.getIdxType());
-
+        for (InlineIndexKeyType keyType: keyTypes) {
             if (keyType.inlineSize() <= 0) {
                 size = propSize;
                 break;
@@ -466,5 +471,12 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** {@inheritDoc} */
     @Override protected IoStatisticsHolder statisticsHolder() {
         return stats != null ? stats : super.statisticsHolder();
+    }
+
+    /**
+     * @return Index row handler for this tree.
+     */
+    public InlineIndexRowHandler getRowHandler() {
+        return rowHnd;
     }
 }

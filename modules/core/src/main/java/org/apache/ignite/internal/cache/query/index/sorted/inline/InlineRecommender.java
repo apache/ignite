@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
@@ -60,7 +59,7 @@ public class InlineRecommender {
     private final SortedIndexDefinition def;
 
     /** Constructor. */
-    public InlineRecommender(GridCacheContext cctx, SortedIndexDefinition def) {
+    public InlineRecommender(GridCacheContext<?, ?> cctx, SortedIndexDefinition def) {
         log = cctx.kernalContext().indexing().getLogger();
         this.def = def;
     }
@@ -86,14 +85,10 @@ public class InlineRecommender {
 
         int newSize = 0;
 
-        for (int i = 0; i < row.getSchema().getKeyDefinitions().length; i++) {
-            IndexKeyDefinition keyDef = row.getSchema().getKeyDefinitions()[i];
+        for (int i = 0; i < row.getRowHandler().getInlineIndexKeyTypes().size(); i++) {
+            InlineIndexKeyType keyType = row.getRowHandler().getInlineIndexKeyTypes().get(i);
 
-            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType()))
-                break;
-
-            newSize += InlineIndexKeyTypeRegistry.get(row.getKey(i).getClass(), keyDef.getIdxType())
-                .inlineSize(row.getKey(i));
+            newSize += keyType.inlineSize(row.getKey(i));
         }
 
         if (newSize > currInlineSize) {
@@ -109,7 +104,7 @@ public class InlineRecommender {
                     break;
             }
 
-            String cols = Arrays.stream(def.getSchema().getKeyDefinitions())
+            String cols = def.getIndexKeyDefinitions().stream()
                 .map(IndexKeyDefinition::getName)
                 .collect(Collectors.joining(", ", "(", ")"));
 

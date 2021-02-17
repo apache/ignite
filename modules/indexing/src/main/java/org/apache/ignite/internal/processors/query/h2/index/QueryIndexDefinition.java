@@ -17,24 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.util.List;
 import org.apache.ignite.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.h2.table.IndexColumn;
 
 /**
  * Define H2 query index.
  */
-public class QueryIndexDefinition extends SortedIndexDefinition {
-    /** Array of possible schemas with wrapped or unwrapped PK. Discover final schema when InlineIndexTree is creating. */
-    private volatile QueryIndexSchema[] possibleSchemas;
+public class QueryIndexDefinition implements SortedIndexDefinition {
+    /** Wrapped key definitions. */
+    private List<IndexKeyDefinition> keyDefs;
 
-    /** H2 query index schema. */
-    private volatile QueryIndexSchema schema;
+    /** List of unwrapped index columns. */
+    List<IndexColumn> h2UnwrappedCols;
+
+    /** List of wrapped index columns. */
+    List<IndexColumn> h2WrappedCols;
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -42,21 +49,43 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     /** H2 table. */
     private final GridH2Table table;
 
+    /** Index name. */
+    private final IndexName idxName;
+
+    /** Configured inline size. */
+    private final int inlineSize;
+
+    /** Segments. */
+    private final int segments;
+
+    /** Whether this index is primary key (unique) or not. */
+    private final boolean isPrimary;
+
+    /** Whether this index is affinity key index or not. */
+    private final boolean isAffinity;
+
+    /** Index row comparator. */
+    private H2RowComparator rowComparator;
+
+    /** Row handler factory. */
+    private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();
+
     /** */
     public QueryIndexDefinition(GridH2Table tbl, String idxName, boolean isPrimary, boolean isAffinity,
-        QueryIndexSchema unwrappedSchema, QueryIndexSchema wrappedSchema, int cfgInlineSize) {
-        super(
-            new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName),
-            isPrimary, isAffinity, null, tbl.rowDescriptor().context().config().getQueryParallelism(),
-            cfgInlineSize, new H2RowComparator(unwrappedSchema.getTable()));
+        List<IndexColumn> h2UnwrappedCols, List<IndexColumn> h2WrappedCols, int cfgInlineSize) {
+
+        this.idxName = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
+        this.segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+        this.inlineSize = cfgInlineSize;
+        this.isPrimary = isPrimary;
+        this.isAffinity = isAffinity;
 
         cctx = tbl.cacheContext();
 
         table = tbl;
 
-        possibleSchemas = new QueryIndexSchema[2];
-        possibleSchemas[0] = unwrappedSchema;
-        possibleSchemas[1] = wrappedSchema;
+        this.h2WrappedCols = h2WrappedCols;
+        this.h2UnwrappedCols = h2UnwrappedCols;
     }
 
     /** {@inheritDoc} */
@@ -78,24 +107,68 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public SortedIndexSchema getSchema() {
-        assert schema != null : "Must not get schema before initializing it with setUseUnwrappedPk.";
+    @Override public List<IndexKeyDefinition> getIndexKeyDefinitions() {
+        if (keyDefs == null)
+            throw new IllegalStateException("Index key definitions is not initialized yet.");
 
-        return schema;
+        return keyDefs;
     }
 
     /** {@inheritDoc} */
-    @Override public void setUseUnwrappedPk(boolean useUnwrappedPk) {
-        synchronized (this) {
-            if (schema != null)
-                return;
+    @Override public IndexRowComparator getRowComparator() {
+        if (rowComparator == null)
+            throw new IllegalStateException("Index key definitions is not initialized yet.");
 
-            if (useUnwrappedPk)
-                schema = possibleSchemas[0];
+        return rowComparator;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getSegments() {
+        return segments;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getInlineSize() {
+        return inlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPrimary() {
+        return isPrimary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAffinity() {
+        return isAffinity;
+    }
+
+    /** {@inheritDoc} */
+    @Override public InlineIndexRowHandlerFactory getRowHandlerFactory() {
+        return rowHndFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexName getIdxName() {
+        return idxName;
+    }
+
+    /** */
+    public GridH2Table getTable() {
+        return table;
+    }
+
+    /**
+     * This method should be invoked from row handler to finally configure definition.
+     * In case of multiple segments within signle index it affects only once.
+     */
+    public void setUpFlags(boolean useUnWrapPK, boolean inlineObjHash) {
+        if (keyDefs == null) {
+            if (useUnWrapPK)
+                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).get();
             else
-                schema = possibleSchemas[1];
+                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).get();
 
-            possibleSchemas = null;
+            rowComparator = new H2RowComparator(table, inlineObjHash);
         }
     }
 }

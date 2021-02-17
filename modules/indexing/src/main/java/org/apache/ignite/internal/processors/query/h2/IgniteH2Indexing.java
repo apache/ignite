@@ -56,7 +56,6 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -122,7 +121,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -438,20 +436,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + name + ']');
 
-        QueryIndexSchema schemaUnwrapped = new QueryIndexSchema(
-            tbl, unwrappedCols.toArray(new IndexColumn[0]));
-
-        QueryIndexSchema schemaWrapped = new QueryIndexSchema(
-            tbl, wrappedCols.toArray(new IndexColumn[0]));
-
         if (cacheInfo.affinityNode()) {
-            SortedIndexDefinition idxDef = new QueryIndexDefinition(
+            QueryIndexDefinition idxDef = new QueryIndexDefinition(
                 tbl,
                 name,
                 pk,
                 affinityKey,
-                schemaUnwrapped,
-                schemaWrapped,
+                unwrappedCols,
+                wrappedCols,
                 inlineSize
             );
 
@@ -469,7 +461,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name), schemaUnwrapped, inlineSize);
+                tbl,
+                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
+                unwrappedCols,
+                inlineSize,
+                tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
             org.apache.ignite.cache.query.index.Index index =
                 ctx.indexing().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);

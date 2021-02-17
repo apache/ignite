@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
+import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 
 /**
- * Definition of geo spatial index.\
+ * Definition of geo spatial index.
  */
 public class GeoSpatialIndexDefinition implements IndexDefinition {
     /** */
-    private final QueryIndexSchema schema;
+    private final QueryIndexRowHandler rowHnd;
 
     /** */
     private final int segmentsCnt;
@@ -35,15 +35,15 @@ public class GeoSpatialIndexDefinition implements IndexDefinition {
     private final IndexName idxName;
 
     /** */
-    public GeoSpatialIndexDefinition(IndexName idxName, QueryIndexSchema schema, int segmentsCnt) {
+    public GeoSpatialIndexDefinition(IndexName idxName, QueryIndexRowHandler rowHnd, int segmentsCnt) {
         this.idxName = idxName;
-        this.schema = schema;
+        this.rowHnd = rowHnd;
         this.segmentsCnt = segmentsCnt;
     }
 
     /** */
-    public QueryIndexSchema schema() {
-        return schema;
+    public QueryIndexRowHandler rowHandler() {
+        return rowHnd;
     }
 
     /** */

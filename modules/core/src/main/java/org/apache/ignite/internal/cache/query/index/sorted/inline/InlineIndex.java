@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.index.sorted.SortedIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 
 /**
  * Represents an index that inlines some of index keys.
@@ -40,12 +38,4 @@ public interface InlineIndex extends SortedIndex {
      * @return Tree segment for specified number.
      */
     public InlineIndexTree getSegment(int segment);
-
-    /**
-     * Put index row to index.
-     *
-     * @param row Index row.
-     * @return {@code True} if replaced existing row.
-     */
-    public boolean putx(IndexSearchRow row) throws IgniteCheckedException;
 }

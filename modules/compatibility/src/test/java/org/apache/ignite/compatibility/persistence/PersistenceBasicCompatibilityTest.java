@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -62,7 +63,8 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
                         .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                ));
+                )
+                .setWalMode(WALMode.NONE));
 
         cfg.setBinaryConfiguration(
             new BinaryConfiguration()
@@ -313,7 +315,10 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+            cfg.setPersistentStoreConfiguration(
+                new PersistentStoreConfiguration()
+                    .setWalMode(WALMode.NONE)
+            );
 
             cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
         }

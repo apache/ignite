@@ -17,105 +17,35 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import java.util.List;
 import org.apache.ignite.cache.query.index.IndexDefinition;
-import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 
 /**
  * Represents a definition of a sorted index.
  */
-public class SortedIndexDefinition implements IndexDefinition {
-    /** Schema of an index. */
-    private final SortedIndexSchema schema;
-
-    /** Index row comparator. */
-    private final IndexRowComparator rowComparator;
-
-    /** Index name. */
-    private final IndexName idxName;
-
-    /** Configured inline size. */
-    private final int inlineSize;
-
-    /** Segments. */
-    private final int segments;
-
-    /** Whether this index is primary key (unique) or not. */
-    private final boolean isPrimary;
-
-    /**
-     * Whether this index is affinity key index or not.
-     */
-    private final boolean isAffinity;
-
-    /** Constructor. */
-    public SortedIndexDefinition(
-        IndexName idxName,
-        boolean isPrimary,
-        boolean isAffinity,
-        SortedIndexSchema schema,
-        int segments,
-        int inlineSize,
-        IndexRowComparator rowComparator) {
-
-        this.idxName = idxName;
-        this.segments = segments;
-        this.schema = schema;
-        this.rowComparator = rowComparator;
-        this.inlineSize = inlineSize;
-        this.isPrimary = isPrimary;
-        this.isAffinity = isAffinity;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IndexName getIdxName() {
-        return idxName;
-    }
-
+public interface SortedIndexDefinition extends IndexDefinition {
     /** Represents an index tree name. */
-    public String getTreeName() {
-        return BPlusTree.treeName(getIdxName().idxName(), "sorted");
-    }
+    public String getTreeName();
+
+    /** List of index key definitions. */
+    public List<IndexKeyDefinition> getIndexKeyDefinitions();
+
+    /** Comparator for comparing index rows. */
+    public IndexRowComparator getRowComparator();
+
+    /** Index row handler. */
+    public InlineIndexRowHandlerFactory getRowHandlerFactory();
 
     /** Amount of index tree segments.*/
-    public int getSegments() {
-        return segments;
-    }
+    public int getSegments();
 
-    /** */
-    public SortedIndexSchema getSchema() {
-        return schema;
-    }
+    /** Inline size. */
+    public int getInlineSize();
 
-    /** */
-    public IndexRowComparator getRowComparator() {
-        return rowComparator;
-    }
+    /** Whether this index is primary key (unique) or not. */
+    public boolean isPrimary();
 
-    /** */
-    public int getInlineSize() {
-        return inlineSize;
-    }
-
-    /**
-     * For backward compatibility.
-     * <p>
-     * Prior some Ignite version complex key column was handled as regular object. Currently complex column is splitted
-     * on multiple keys (if it possible) and then every key is handled separately. Information how to work with such
-     * column is stored in the tree meta page info.
-     */
-    public void setUseUnwrappedPk(boolean useUnwrappedPk) {
-        // No-op.
-    }
-
-    /** */
-    public boolean isPrimary() {
-        return isPrimary;
-    }
-
-    /** */
-    public boolean isAffinity() {
-        return isAffinity;
-    }
+    /** Whether this index is affinity key index or not. */
+    public boolean isAffinity();
 }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 
 /**
  * Comparator for index rows.
@@ -42,5 +42,5 @@ public interface IndexRowComparator {
      * @param right index row.
      * @param idx offset of index key.
      */
-    public int compareKey(IndexSearchRow left, IndexSearchRow right, int idx) throws IgniteCheckedException;
+    public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException;
 }

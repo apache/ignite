@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
@@ -143,11 +145,13 @@ public class IndexingDefragmentation {
             cancellationChecker.run();
 
             for (InlineIndex oldIdx : indexes.idxs) {
+                InlineIndexRowHandler oldRowHnd = oldIdx.getSegment(0).getRowHandler();
+
                 SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.getIndexDefition(oldIdx.id());
 
-                InlineIndex newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
+                InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
-                    .unwrap(InlineIndex.class);
+                    .unwrap(InlineIndexImpl.class);
 
                 int segments = oldIdx.segmentsCount();
 
@@ -167,7 +171,7 @@ public class IndexingDefragmentation {
                             : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
                             " Please implement copying of tree in a new format.";
 
-                        BPlusIO<IndexRow> h2IO = DefragIndexFactory.wrap(io, idxDef.getSchema());
+                        BPlusIO<IndexRow> h2IO = DefragIndexFactory.wrap(io, oldRowHnd);
 
                         IndexRow row = theTree.getRow(h2IO, pageAddr, idx);
 
@@ -184,8 +188,9 @@ public class IndexingDefragmentation {
 
                             long newLink = map.get(link);
 
+                            // Use old row handler, as MetaInfo is copied from old tree.
                             IndexRowImpl newRow = new IndexRowImpl(
-                                idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.getKeys());
+                                oldRowHnd, new CacheDataRowAdapter(newLink), r.getKeys());
 
                             newIdx.putx(newRow);
                         }

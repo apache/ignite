@@ -17,28 +17,49 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
+import java.util.List;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.h2.table.IndexColumn;
 
 /**
  * Define index for filtered or client node.
  */
 public class ClientIndexDefinition implements IndexDefinition {
     /** */
-    private final QueryIndexSchema schema;
+    private final int cfgInlineSize;
 
     /** */
-    private final int cfgInlineSize;
+    private final int maxInlineSize;
 
     /** */
     private final IndexName idxName;
 
     /** */
-    public ClientIndexDefinition(IndexName idxName, QueryIndexSchema schema, int cfgInlineSize) {
+    private final List<IndexColumn> cols;
+
+    /** */
+    private final GridH2Table table;
+
+    /** */
+    public ClientIndexDefinition(GridH2Table table, IndexName idxName, List<IndexColumn> unwrappedCols,
+        int cfgInlineSize, int maxInlineSize) {
+        this.table = table;
         this.idxName = idxName;
-        this.schema = schema;
         this.cfgInlineSize = cfgInlineSize;
+        this.maxInlineSize = maxInlineSize;
+        cols = unwrappedCols;
+    }
+
+    /** */
+    public GridH2Table getTable() {
+        return table;
+    }
+
+    /** */
+    public List<IndexColumn> getColumns() {
+        return cols;
     }
 
     /** */
@@ -47,8 +68,8 @@ public class ClientIndexDefinition implements IndexDefinition {
     }
 
     /** */
-    public QueryIndexSchema getSchema() {
-        return schema;
+    public int getMaxInlineSize() {
+        return maxInlineSize;
     }
 
     /** {@inheritDoc} */

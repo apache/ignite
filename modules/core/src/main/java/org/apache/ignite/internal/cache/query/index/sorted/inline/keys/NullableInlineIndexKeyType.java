@@ -194,12 +194,6 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
         if (v == NullKey.INSTANCE)
             return 1;
 
-        // Value can be set up by user in query with different data type.
-        if (!InlineIndexKeyTypeRegistry.validate(type, v.getClass()))
-            return COMPARE_UNSUPPORTED;
-
-        ensureKeyType(v);
-
         return compare0(pageAddr, off, (T) v);
     }
 
@@ -215,8 +209,10 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
      * Checks whether specified val corresponds to this key type.
      */
     private void ensureKeyType(Object val) {
-        int valType = InlineIndexKeyTypeRegistry.get(val.getClass(), type).type();
-        ensureKeyType(valType);
+        if (!InlineIndexKeyTypeRegistry.validate(type, val.getClass()))
+            throw new ClassCastException(val.getClass() + " cannot be cast to " + type());
+            //            throw new UnsupportedOperationException("Value type doesn't match: exp=" + type + ", act=" +
+//                InlineIndexKeyTypeRegistry.get(val.getClass(), type, false).type());
     }
 
     /**
