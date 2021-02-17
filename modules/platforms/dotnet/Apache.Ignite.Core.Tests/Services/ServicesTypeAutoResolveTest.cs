@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
-            doTestService(new JavaServiceDynamicProxy(svc));
+            DoTestService(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            doTestService(svc);
+            DoTestService(svc);
 
             Assert.IsNull(svc.testDepartments(null));
 
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests java service instance.
         /// </summary>
-        private void doTestService(IJavaService svc)
+        private void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testAddress(null));
 
@@ -191,6 +191,36 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.Deny, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+
+            svc.putValsForCache();
+
+            Assert.AreEqual("1", _grid1.GetCache<int, V9>("V9").Get(1).Name);
+
+            var v10 = _grid1.GetCache<int, V10>("V10").GetAll(new List<int> {1, 2});
+
+            Assert.AreEqual(2, v10.Count);
+
+            foreach (var entry in v10)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else 
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            Assert.AreEqual("1", _grid1.GetCache<int, V11>("V11").GetAsync(1).Result.Name);
+
+            var v12 = _grid1.GetCache<int, V12>("V12").GetAllAsync(new List<int> {1, 2}).Result;
+
+            Assert.AreEqual(2, v12.Count);
+
+            foreach (var entry in v12)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else 
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
         }
 
         /// <summary>

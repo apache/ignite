@@ -208,6 +208,9 @@ namespace Apache.Ignite.Core.Tests.Services
         void sleep(long delayMs);
 
         /** */
+        void putValsForCache();
+
+        /** */
         void startReceiveMessage();
 
         /** */
