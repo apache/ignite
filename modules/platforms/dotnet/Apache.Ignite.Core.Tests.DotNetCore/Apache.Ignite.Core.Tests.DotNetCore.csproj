@@ -296,6 +296,7 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Common\IgniteProductVersionTests.cs" Link="Common\IgniteProductVersionTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTypeAutoRegisterTest.cs" Link="Compute\ComputeApiTypeAutoRegisterTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeWithExecutorTest.cs" Link="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Dataload\DataStreamerTest.cs">
