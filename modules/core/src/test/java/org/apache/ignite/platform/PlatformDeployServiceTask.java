@@ -51,6 +51,9 @@ import org.apache.ignite.platform.model.Parameter;
 import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.V5;
+import org.apache.ignite.platform.model.V6;
+import org.apache.ignite.platform.model.V7;
+import org.apache.ignite.platform.model.V8;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -623,12 +626,20 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public void putV5() {
-            IgniteCache<Integer, V5> v5 = ignite.getOrCreateCache("V5");
+        public void putValsForCache() {
+            ignite.<Integer, V5>getOrCreateCache("V5").put(1, new V5("1"));
 
-            v5.put(1, new V5("1"));
-            v5.put(2, new V5("2"));
-            v5.put(3, new V5("3"));
+            IgniteCache<Integer, V6> v6 = ignite.getOrCreateCache("V6");
+
+            v6.put(1, new V6("1"));
+            v6.put(2, new V6("2"));
+
+            ignite.<Integer, V7>getOrCreateCache("V7").put(1, new V7("1"));
+
+            IgniteCache<Integer, V8> v8 = ignite.getOrCreateCache("V8");
+
+            v8.put(1, new V8("1"));
+            v8.put(2, new V8("2"));
         }
 
         /** */

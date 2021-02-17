@@ -194,4 +194,19 @@ namespace Apache.Ignite.Platform.Model
     /// A class is a clone of Java class V5 with the same namespace.
     /// </summary>
     public class V5 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V6 with the same namespace.
+    /// </summary>
+    public class V6 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V7 with the same namespace.
+    /// </summary>
+    public class V7 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V8 with the same namespace.
+    /// </summary>
+    public class V8 { public String Name { get; set; } }
 }

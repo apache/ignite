@@ -211,6 +211,6 @@ namespace Apache.Ignite.Core.Tests.Services
         void sleep(long delayMs);
 
         /** */
-        void putV5();
+        void putValsForCache();
     }
 }

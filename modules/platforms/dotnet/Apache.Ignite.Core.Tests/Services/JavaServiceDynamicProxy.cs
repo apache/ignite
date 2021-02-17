@@ -396,9 +396,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public void putV5()
+        public void putValsForCache()
         {
-            _svc.putV5();
+            _svc.putValsForCache();
         }
     }
 }
