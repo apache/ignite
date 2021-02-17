@@ -48,9 +48,6 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     /** Backoff ratio. Each next park will be this times longer. */
     private static final double BACKOFF_RATIO = 1.05;
 
-    /** Checkpoint buffer fullfill upper bound. */
-    private static final float CP_BUF_FILL_THRESHOLD = 2f / 3;
-
     /** Counter for dirty pages ratio throttling. */
     private final AtomicInteger notInCheckpointBackoffCntr = new AtomicInteger(0);
 
