@@ -414,6 +414,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void putValsForCache()
+        {
+            _svc.putValsForCache();
+        }
+
+        /** <inheritDoc /> */
         public object testRoundtrip(object x)
         {
             return x;
