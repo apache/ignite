@@ -394,5 +394,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc.sleep(delayMs);
         }
+
+        /** <inheritDoc /> */
+        public void putV5()
+        {
+            _svc.putV5();
+        }
     }
 }

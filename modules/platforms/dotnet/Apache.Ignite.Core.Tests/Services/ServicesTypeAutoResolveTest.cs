@@ -191,6 +191,24 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.Deny, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+
+            svc.putV5();
+
+            var v5Cache = _grid1.GetCache<int, V5>("V5");
+
+            Assert.AreEqual("1", v5Cache.Get(1).Name);
+
+            var v5All = v5Cache.GetAll(new List<int> {2, 3});
+
+            Assert.AreEqual(2, v5All.Count);
+
+            foreach (var entry in v5All)
+            {
+                if (entry.Key == 2)
+                    Assert.AreEqual("2", entry.Value.Name);
+                else 
+                    Assert.AreEqual("3", entry.Value.Name);
+            }
         }
 
         /// <summary>

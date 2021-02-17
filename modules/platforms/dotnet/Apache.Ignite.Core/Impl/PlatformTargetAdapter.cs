@@ -94,14 +94,28 @@ namespace Apache.Ignite.Core.Impl
         #region OUT operations
 
         /// <summary>
-        /// Perform out operation.
+        /// Enables Register Same Java Type mode is keepBinary = false.
         /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="action">Action to be performed on the stream.</param>
+        /// <param name="action">Action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns></returns>
-        protected long DoOutOp(int type, Action<IBinaryStream> action)
+        public T withReg<T>(Func<T> action, bool keepBinary)
         {
-            return _target.InStreamOutLong(type, action);
+            if (keepBinary)
+                return action.Invoke();
+
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                return action.Invoke();
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
         }
 
         /// <summary>
@@ -109,10 +123,11 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns></returns>
-        protected long DoOutOp(int type, Action<BinaryWriter> action)
+        protected long DoOutOp(int type, Action<IBinaryStream> action, bool keepBinary = true)
         {
-            return DoOutOp(type, stream => WriteToStream(action, stream, _marsh));
+            return withReg(() => _target.InStreamOutLong(type, action), keepBinary);
         }
 
         /// <summary>
@@ -120,10 +135,11 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
-        /// <returns>Resulting object.</returns>
-        protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        /// <returns></returns>
+        protected long DoOutOp(int type, Action<BinaryWriter> action, bool keepBinary = true)
         {
-            return _target.InStreamOutObject(type, stream => WriteToStream(action, stream, _marsh));
+            return DoOutOp(type, stream => WriteToStream(action, stream, _marsh), keepBinary);
         }
 
         /// <summary>
@@ -131,10 +147,23 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Resulting object.</returns>
-        protected IPlatformTargetInternal DoOutOpObject(int type, Action<IBinaryStream> action)
+        protected IPlatformTargetInternal DoOutOpObject(int type, Action<BinaryWriter> action, bool keepBinary = true)
         {
-            return _target.InStreamOutObject(type, action);
+            return withReg(() => _target.InStreamOutObject(type, stream => WriteToStream(action, stream, _marsh)), keepBinary);
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="action">Action to be performed on the stream.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        /// <returns>Resulting object.</returns>
+        protected IPlatformTargetInternal DoOutOpObject(int type, Action<IBinaryStream> action, bool keepBinary = true)
+        {
+            return withReg(() => _target.InStreamOutObject(type, action), keepBinary);
         }
 
         /// <summary>
@@ -152,13 +181,14 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="val1">Value.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
-        protected long DoOutOp<T1>(int type, T1 val1)
+        protected long DoOutOp<T1>(int type, T1 val1, bool keepBinary = true)
         {
-            return DoOutOp(type, writer =>
+            return withReg(() => DoOutOp(type, writer =>
             {
                 writer.Write(val1);
-            });
+            }), keepBinary);
         }
 
         /// <summary>
@@ -167,14 +197,15 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="val1">Value 1.</param>
         /// <param name="val2">Value 2.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
-        protected long DoOutOp<T1, T2>(int type, T1 val1, T2 val2)
+        protected long DoOutOp<T1, T2>(int type, T1 val1, T2 val2, bool keepBinary = true)
         {
-            return DoOutOp(type, writer =>
+            return withReg(() => DoOutOp(type, writer =>
             {
                 writer.Write(val1);
                 writer.Write(val2);
-            });
+            }), keepBinary);
         }
 
         #endregion
@@ -186,10 +217,11 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Type.</param>
         /// <param name="action">Action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
-        protected T DoInOp<T>(int type, Func<IBinaryStream, T> action)
+        protected T DoInOp<T>(int type, Func<IBinaryStream, T> action, bool keepBinary = true)
         {
-            return _target.OutStream(type, action);
+            return withReg(() => _target.OutStream(type, action), keepBinary);
         }
 
         /// <summary>
@@ -213,10 +245,11 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
         /// <param name="errorAction">Error action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, Func<Exception, TR> errorAction = null)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, Func<Exception, TR> errorAction = null, bool keepBinary = true)
         {
-            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction, errorAction);
+            return withReg(() => _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction, errorAction), keepBinary);
         }
 
         /// <summary>
@@ -227,14 +260,15 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
         /// <param name="inErrorAction">The action to read an error.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>
         /// Result.
         /// </returns>
         protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
-            Func<IBinaryStream, Exception> inErrorAction)
+            Func<IBinaryStream, Exception> inErrorAction, bool keepBinary = true)
         {
-            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
-                inAction, inErrorAction);
+            return withReg(() => _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                inAction, inErrorAction), keepBinary);
         }
 
         /// <summary>
@@ -243,14 +277,15 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inErrorAction">The action to read an error.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>
         /// Result.
         /// </returns>
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, Exception> inErrorAction)
+            Func<IBinaryStream, Exception> inErrorAction, bool keepBinary = true)
         {
-            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
-                (stream, res) => res == True, inErrorAction);
+            return withReg(() => _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                (stream, res) => res == True, inErrorAction), keepBinary);
         }
 
         /// <summary>
@@ -260,12 +295,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg)
+            Func<IBinaryStream, IPlatformTargetInternal, TR> inAction, IPlatformTargetInternal arg, bool keepBinary = true)
         {
-            return _target.InObjectStreamOutObjectStream(type, stream => WriteToStream(outAction, stream, _marsh), 
-                inAction, arg);
+            return withReg(() => _target.InObjectStreamOutObjectStream(type, stream => WriteToStream(outAction, stream, _marsh), 
+                inAction, arg), keepBinary);
         }
 
         /// <summary>
@@ -273,11 +309,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, bool keepBinary = true)
         {
-            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), 
-                stream => Unmarshal<TR>(stream));
+            return withReg(() => _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), 
+                stream => Unmarshal<TR>(stream)), keepBinary);
         }
 
         /// <summary>
@@ -285,11 +322,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="val">Value.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<T1, TR>(int type, T1 val)
+        protected TR DoOutInOp<T1, TR>(int type, T1 val, bool keepBinary = true)
         {
-            return _target.InStreamOutStream(type, stream => WriteToStream(val, stream, _marsh),
-                stream => Unmarshal<TR>(stream));
+            return withReg(() => _target.InStreamOutStream(type, stream => WriteToStream(val, stream, _marsh),
+                stream => Unmarshal<TR>(stream)), keepBinary);
         }
 
         /// <summary>
@@ -312,10 +350,11 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Task for async operation</returns>
-        protected Task DoOutOpAsync(int type, Action<BinaryWriter> writeAction = null)
+        protected Task DoOutOpAsync(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = true)
         {
-            return DoOutOpAsync<object>(type, writeAction);
+            return withReg(() => DoOutOpAsync<object>(type, writeAction), keepBinary);
         }
 
         /// <summary>
@@ -327,7 +366,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Task for async operation</returns>
-        protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
+        protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = true,
             Func<BinaryReader, T> convertFunc = null)
         {
             return GetFuture((futId, futType) => DoOutOp(type, w =>
@@ -347,8 +386,9 @@ namespace Apache.Ignite.Core.Impl
         /// <typeparam name="T">Type of the result.</typeparam>
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Future for async operation</returns>
-        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<BinaryWriter> writeAction)
+        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<BinaryWriter> writeAction, bool keepBinary = true)
         {
             return GetFuture<T>((futId, futType) => DoOutOpObject(type, w =>
             {
@@ -365,10 +405,11 @@ namespace Apache.Ignite.Core.Impl
         /// <typeparam name="T1">The type of the first arg.</typeparam>
         /// <param name="type">The type code.</param>
         /// <param name="val1">First arg.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>
         /// Task for async operation
         /// </returns>
-        protected Task<TR> DoOutOpAsync<T1, TR>(int type, T1 val1)
+        protected Task<TR> DoOutOpAsync<T1, TR>(int type, T1 val1, bool keepBinary = true)
         {
             return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
             {
@@ -387,10 +428,11 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">The type code.</param>
         /// <param name="val1">First arg.</param>
         /// <param name="val2">Second arg.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>
         /// Task for async operation
         /// </returns>
-        protected Task<TR> DoOutOpAsync<T1, T2, TR>(int type, T1 val1, T2 val2)
+        protected Task<TR> DoOutOpAsync<T1, T2, TR>(int type, T1 val1, T2 val2, bool keepBinary = true)
         {
             return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
             {
