@@ -174,6 +174,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         return os.path.join(self.work_dir, "db")
 
     @property
+    def snapshots_dir(self):
+        """
+        :return: path to snapshots directory
+        """
+        return os.path.join(self.work_dir, "snapshots")
+
+    @property
     def certificate_dir(self):
         """
         :return: path to the certificate directory.

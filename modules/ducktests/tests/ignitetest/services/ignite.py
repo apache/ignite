@@ -17,7 +17,6 @@
 This module contains class to start ignite cluster node.
 """
 
-import os
 import re
 import signal
 from datetime import datetime
@@ -40,29 +39,9 @@ class IgniteService(IgniteAwareService):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
-    @property
-    def snapshots_dir(self):
-        """
-        :return: path to snapshots directory
-        """
-        return os.path.join(self.work_dir, "snapshots")
-
     def clean_node(self, node, **kwargs):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
-
-    def restore_from_snapshot(self, snapshot_name: str):
-        """
-        Restore from snapshot.
-        :param snapshot_name: Name of Snapshot.
-        """
-        snapshot_db = os.path.join(self.snapshots_dir, snapshot_name, "db")
-
-        for node in self.nodes:
-            assert len(self.pids(node)) == 0
-
-            node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
-            node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
 
     def thread_dump(self, node):
         """

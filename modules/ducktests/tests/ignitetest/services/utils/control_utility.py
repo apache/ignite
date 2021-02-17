@@ -207,7 +207,7 @@ class ControlUtility:
                 end_time = int(next(mbean.LastSnapshotEndTime))
                 err_msg = next(mbean.LastSnapshotErrorMessage)
 
-                if (0 < start_time < end_time) and (err_msg == ''):
+                if (start_time < end_time) and (err_msg == ''):
                     assert snapshot_name == next(mbean.LastSnapshotName)
                     return
 

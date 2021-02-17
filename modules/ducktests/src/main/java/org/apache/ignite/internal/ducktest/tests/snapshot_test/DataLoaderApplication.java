@@ -60,8 +60,6 @@ public class DataLoaderApplication extends IgniteAwareApplication {
         byte[] data = new byte[valSize];
 
         try (IgniteDataStreamer<Long, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
-            dataStreamer.autoFlushFrequency(1000);
-
             for (long i = start; i < start + interval; i++)
                 dataStreamer.addData(i, data);
         }

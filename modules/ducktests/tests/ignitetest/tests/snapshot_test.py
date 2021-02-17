@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9
+from ignitetest.utils.version import IgniteVersion, LATEST_2_9
 
 
 # pylint: disable=W0223
@@ -39,8 +39,8 @@ class SnapshotTest(IgniteTest):
 
     CACHE_NAME = "TEST_CACHE"
 
-    @cluster(num_nodes=5)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9))
+    @cluster(num_nodes=4)
+    @ignite_versions(str(LATEST_2_9))
     def snapshot_test(self, ignite_version):
         """
         Basic snapshot test.
@@ -54,7 +54,7 @@ class SnapshotTest(IgniteTest):
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 2)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
         service.start()
 
         control_utility = ControlUtility(service)
@@ -66,7 +66,7 @@ class SnapshotTest(IgniteTest):
             discovery_spi=from_ignite_cluster(service)
         )
 
-        loader1 = IgniteApplicationService(
+        loader = IgniteApplicationService(
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
@@ -78,7 +78,18 @@ class SnapshotTest(IgniteTest):
             }
         )
 
-        loader2 = IgniteApplicationService(
+        loader.run()
+        loader.free()
+
+        control_utility.validate_indexes()
+        control_utility.idle_verify()
+        node = service.nodes[0]
+
+        dump_1 = control_utility.idle_verify_dump(node)
+
+        control_utility.snapshot_create(self.SNAPSHOT_NAME)
+
+        loader = IgniteApplicationService(
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
@@ -91,17 +102,8 @@ class SnapshotTest(IgniteTest):
             }
         )
 
-        loader1.run()
-
-        control_utility.validate_indexes()
-        control_utility.idle_verify()
-        node = service.nodes[0]
-
-        dump_1 = control_utility.idle_verify_dump(node)
-
-        control_utility.snapshot_create(self.SNAPSHOT_NAME)
-
-        loader2.run()
+        loader.start(clean=False)
+        loader.stop()
 
         dump_2 = control_utility.idle_verify_dump(node)
 
