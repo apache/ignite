@@ -41,6 +41,8 @@
         <module>modules/configuration</module>
         <module>modules/configuration-annotation-processor</module>
         <module>modules/core</module>
+        <module>modules/metastorage-client</module>
+        <module>modules/metastorage-common</module>
         <module>modules/network</module>
         <module>modules/raft-client</module>
         <module>modules/rest</module>
