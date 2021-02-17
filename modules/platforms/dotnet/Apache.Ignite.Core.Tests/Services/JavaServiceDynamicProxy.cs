@@ -414,6 +414,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void putValsForCache()
+        {
+            _svc.putValsForCache();
+        }
+
+        /** <inheritDoc /> */
         public object contextAttribute(string name)
         {
             return _svc.contextAttribute(name);
