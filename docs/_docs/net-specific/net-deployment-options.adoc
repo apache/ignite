@@ -24,7 +24,7 @@ This page introduces several most-commonly used deployment options of Ignite.NET
 
 == NuGet Deployment
 
-`Apache.Ignite` NuGet package includes a `lib` folder with all the required jar files. This folder has 
+`Apache.Ignite` NuGet package includes a `lib` folder with all the required jar files. This folder has
 the `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` build action, and is copied automatically to the output directory
 during the build or publish process.
 
@@ -52,6 +52,17 @@ tab:MyApp.csproj[]
 ----
 --
 
+== Single File Deployment
+
+Ignite.NET supports link:https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file[single file deployment] that is available in .NET Core 3 / .NET 5+.
+
+* Use the `IncludeAllContentForSelfExtract` MSBuild property to include jar files into the single-file bundle, or ship them separately.
+* See xref:net-troubleshooting.adoc#libcoreclr-not-found[Troubleshooting: DllNotFoundException] for a workaround that is required
+on .NET 5 with some Ignite versions.
+
+Publish command example:
+
+`dotnet publish --self-contained true -r linux-x64 -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true`
 
 == Full Binary Package Deployment
 
