@@ -422,8 +422,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
 
         _dict = self.globals.get(dict_name)
-        if _dict is not None and "ssl" in _dict:
-            ssl_context_factory = SslContextFactory(self.install_root, **_dict.get("ssl"))
+        if _dict and "ssl" in _dict:
+            ssl_context_factory = SslContextFactory(self.install_root, **_dict['ssl'])
         else:
             ssl_context_factory = SslContextFactory(self.install_root, default_jks)
 

@@ -182,6 +182,8 @@ class CheckCaseGlobalsSetKwargsNotSetCreds:
         """
         Check that control_utulity.py correctly parse credentials from globals
         """
+        print(expected.__dict__)
+        print(ControlUtility(Cluster(test_globals), **test_kwargs).creds_prover.__dict__)
 
         assert compare_creds(ControlUtility(Cluster(test_globals), **test_kwargs).creds_prover, expected)
 

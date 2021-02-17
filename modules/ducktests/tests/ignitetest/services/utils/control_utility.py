@@ -278,13 +278,13 @@ class ControlUtility:
 
     def __form_cmd(self, node, cmd):
         ssl = ""
-        if self.ssl_context is not None:
+        if self.ssl_context:
             ssl = f" --keystore {self.ssl_context.key_store_path} " \
                   f"--keystore-password {self.ssl_context.key_store_password} " \
                   f"--truststore {self.ssl_context.trust_store_path} " \
                   f"--truststore-password {self.ssl_context.trust_store_password}"
         auth = ""
-        if self.creds_prover is not None:
+        if self.creds_prover:
             auth = f" --user {self.creds_prover.login} " \
                    f"--password {self.creds_prover.password} "
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
@@ -307,26 +307,34 @@ class ControlUtility:
 
     def _parse_ssl_params(self, user, globals_dict, **kwargs):
         ssl_dict = None
-        if globals_dict.get('use_ssl', False):
-            ssl_dict = globals_dict.get(user, {}).get('ssl', {})
-        elif kwargs.get('key_store_jks') is not None or kwargs.get('key_store_path') is not None:
+        if globals_dict.get('use_ssl'):
+            if user in globals_dict and 'ssl' in globals_dict[user]:
+                ssl_dict = globals_dict[user]['ssl']
+            else:
+                ssl_dict = {}
+        elif kwargs.get('key_store_jks') or kwargs.get('key_store_path'):
             ssl_dict = kwargs
         return None if ssl_dict is None else \
-            SslContextFactory(key_store_path=ssl_dict.get("key_store_path",
-                                                          self.jks_path(
-                                                              ssl_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE))),
+            SslContextFactory(key_store_path=self.__get_store_path('key_store', ssl_dict),
                               key_store_password=ssl_dict.get('key_store_password', DEFAULT_PASSWORD),
-                              trust_store_path=ssl_dict.get("trust_store_path",
-                                                            self.jks_path(
-                                                                ssl_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE))),
+                              trust_store_path=self.__get_store_path('trust_store', ssl_dict),
                               trust_store_password=ssl_dict.get('trust_store_password', DEFAULT_PASSWORD))
+
+    def __get_store_path(self, store_type, ssl_dict):
+        path_key = f'{store_type}_path'
+        store_name = f'{store_type}_jks'
+        default_name = DEFAULT_TRUSTSTORE if store_type == 'trust_store' else DEFAULT_ADMIN_KEYSTORE
+        return ssl_dict.get(path_key, self.jks_path(ssl_dict.get(store_name, default_name)))
 
     @staticmethod
     def _parse_creds(user, globals_dict, **kwargs):
         creds_dict = None
-        if globals_dict.get('use_auth', False):
-            creds_dict = globals_dict.get(user, {}).get('creds', {})
-        elif kwargs.get('login', False):
+        if globals_dict.get('use_auth'):
+            if user in globals_dict and 'creds' in globals_dict[user]:
+                creds_dict = globals_dict[user]['creds']
+            else:
+                creds_dict = {}
+        elif kwargs.get('login'):
             creds_dict = kwargs
         return None if creds_dict is None else \
             CredsProvider(login=creds_dict.get("login", DEFAULT_AUTH_LOGIN),
