@@ -36,10 +36,10 @@ class IgniteApplicationService(IgniteAwareService):
     # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=10, modules=None, servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
-                 full_jvm_opts=None, start_ignite=True, envs=None):
+                 full_jvm_opts=None, start_ignite=True):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
-                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts, start_ignite=start_ignite, envs=envs)
+                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts, start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name

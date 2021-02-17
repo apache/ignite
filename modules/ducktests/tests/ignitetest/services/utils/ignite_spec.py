@@ -168,7 +168,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
     """
     Implementation IgniteNodeSpec for Apache Ignite project
     """
-    def __init__(self, modules, envs=None, **kwargs):
+    def __init__(self, modules, **kwargs):
         super().__init__(project="ignite", **kwargs)
 
         libs = (modules or [])
@@ -183,9 +183,6 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
             'USER_LIBS': ":".join(libs)
         }
 
-        if envs is not None:
-            self.envs.update(envs)
-
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
                             "-Dlog4j.configDebug=true"])
@@ -196,8 +193,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     Implementation IgniteApplicationSpec for Apache Ignite project
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, servicejava_class_name, java_class_name, params, start_ignite, envs=None,
-                 **kwargs):
+    def __init__(self, context, modules, servicejava_class_name, java_class_name, params, start_ignite, **kwargs):
         super().__init__(project="ignite", **kwargs)
         self.context = context
 
@@ -214,9 +210,6 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
             "IGNITE_LOG_DIR": self.path_aware.persistent_root,
             "USER_LIBS": ":".join(libs)
         }
-
-        if envs is not None:
-            self.envs.update(envs)
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,

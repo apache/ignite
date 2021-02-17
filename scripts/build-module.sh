@@ -21,5 +21,5 @@
 # Run in Ignite sources root directory.
 # Usage: ./scripts/build-module.sh ducktests
 #
-
+mvn clean -Pall-java,all-scala
 mvn package -pl :ignite-$1 -Pall-java,all-scala -DskipTests -Dmaven.javadoc.skip=true -am
