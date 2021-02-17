@@ -128,8 +128,8 @@ class CheckCaseGlobalsSetKwargsNotSetSsl:
 
 class CheckCaseGlobalsNotSetKwargsSetSsl:
     """
-   Check that control_utulity.py correctly parse SSL params from kwargs
-   """
+    Check that control_utulity.py correctly parse SSL params from kwargs
+    """
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_kwargs, expected',
@@ -190,8 +190,8 @@ class CheckCaseGlobalsSetKwargsNotSetCreds:
 
 class CheckCaseGlobalsNotSetKwargsSetCreds:
     """
-   Check that control_utulity.py correctly parse credentials from kwargs
-   """
+    Check that control_utulity.py correctly parse credentials from kwargs
+    """
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_kwargs, expected',
