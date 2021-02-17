@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -309,17 +308,6 @@ public class SnapshotRestoreCacheGroupProcess {
                 if (!F.isEmpty(cfg.config().getGroupName()))
                     ensureCacheAbsent(cfg.config().getName());
             }
-
-            fut.listen(f -> {
-                    try {
-                        ctx.cache().context().snapshotMgr().updateRecoveryDataForRestoredGroups(null);
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.warning("Unable to reset restored groups.", e);
-                    }
-            });
-
-            ctx.cache().context().snapshotMgr().updateRecoveryDataForRestoredGroups(new ArrayList<>(opCtx0.groupDirs()));
 
             if (!ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snapshotName()).exists())
                 return new GridFinishedFuture<>();

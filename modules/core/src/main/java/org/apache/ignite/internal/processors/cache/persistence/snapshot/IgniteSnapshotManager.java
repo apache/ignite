@@ -219,9 +219,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Metastorage key to save currently running snapshot. */
     public static final String SNP_RUNNING_KEY = "snapshot-running";
 
-    /** Metastorage key to save currently restoring cache groups. */
-    public static final String RESTORE_GRP_KEY = "snapshotRestoreGroups";
-
     /** Snapshot metrics prefix. */
     public static final String SNAPSHOT_METRICS = "snapshot";
 
@@ -307,9 +304,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@code true} if recovery process occurred for snapshot. */
     private volatile boolean recovered;
-
-    /** {@code true} if recovery process occurred for snapshot restore. */
-    private volatile boolean restoreRecovered;
 
     /** Last seen cluster snapshot operation. */
     private volatile ClusterSnapshotFuture lastSeenSnpFut = new ClusterSnapshotFuture();
@@ -472,17 +466,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
-        try {
-            if (metaStorage == null)
-                return;
-
-            // Remove metastorage key used for recovery in case cluster has been
-            // deactivated and process was not able to do this.
-            updateRecoveryDataForRestoredGroups(null);
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Unable to remove key from metastorage.", e);
-        }
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -1179,27 +1163,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param dirs Cache group directory names, required to clean up in case of node failure during the restore process.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void updateRecoveryDataForRestoredGroups(@Nullable List<String> dirs) throws IgniteCheckedException {
-        if (!cctx.kernalContext().state().clusterState().state().active())
-            throw new IgniteCheckedException("Unable to update key in metastorage - cluster is not active.");
-
-        cctx.database().checkpointReadLock();
-
-        try {
-            if (dirs == null)
-                metaStorage.remove(RESTORE_GRP_KEY);
-            else
-                metaStorage.write(RESTORE_GRP_KEY, new ArrayList<>(dirs));
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
-    }
-
-    /**
      * @param files Collection of files to delete.
      */
     protected void rollbackRestoreOperation(Collection<File> files) {
@@ -1249,11 +1212,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             recovered = false;
         }
-
-        if (restoreRecovered)
-            updateRecoveryDataForRestoredGroups(null);
-
-        restoreRecovered = false;
     }
 
     /** {@inheritDoc} */
@@ -1275,28 +1233,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
                 "related to snapshot operation have been deleted: " + snpName);
         }
-    }
-
-    /**
-     * Clean up restored cache group folders if a node failed during restore process.
-     *
-     * @param metaStorage Read-only meta storage.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void cleanupRestoredCacheGroups(ReadOnlyMetastorage metaStorage) throws IgniteCheckedException {
-        Collection<String> grps = (Collection<String>)metaStorage.read(RESTORE_GRP_KEY);
-
-        if (grps == null)
-            return;
-
-        for (String grpDirName : grps) {
-            File cacheDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(), DFLT_STORE_DIR +
-                File.separator + pdsSettings.folderName() + File.separator + grpDirName, false);
-
-            U.delete(cacheDir);
-        }
-
-        restoreRecovered = true;
     }
 
     /**

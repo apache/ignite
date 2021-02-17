@@ -5481,8 +5481,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-            ctx.cache().context().snapshotMgr().cleanupRestoredCacheGroups(metastorage);
-
             CacheJoinNodeDiscoveryData data = locCfgMgr.restoreCacheConfigurations();
 
             cachesInfo.onStart(data);

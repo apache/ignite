@@ -33,13 +33,10 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 
 /**
  * Cache group restore from snapshot operation context.
@@ -67,7 +64,7 @@ class SnapshotRestoreContext {
     private final List<StoredCacheData> ccfgs;
 
     /** Restored cache groups. */
-    private final Map<String, GroupRestoreContext> grps = new ConcurrentHashMap<>();
+    private final Map<String, List<File>> grps = new ConcurrentHashMap<>();
 
     /**
      * @param reqId Request ID.
@@ -87,8 +84,7 @@ class SnapshotRestoreContext {
 
             boolean shared = cacheData.config().getGroupName() != null;
 
-            grps.computeIfAbsent(
-                shared ? cacheData.config().getGroupName() : cacheName, v -> new GroupRestoreContext(shared));
+            grps.computeIfAbsent(shared ? cacheData.config().getGroupName() : cacheName, v -> new ArrayList<>());
 
             if (shared)
                 cacheIds.add(CU.cacheId(cacheData.config().getGroupName()));
@@ -120,14 +116,6 @@ class SnapshotRestoreContext {
      */
     public Set<String> groups() {
         return grps.keySet();
-    }
-
-    /**
-     * @return Names of the directories of the restored caches.
-     */
-    public Collection<String> groupDirs() {
-        return F.viewReadOnly(grps.entrySet(),
-            e -> (e.getValue().shared ? CACHE_GRP_DIR_PREFIX : CACHE_DIR_PREFIX) + e.getKey());
     }
 
     /**
@@ -170,9 +158,7 @@ class SnapshotRestoreContext {
             rollbackLock.lock();
 
             try {
-                GroupRestoreContext grp = grps.get(grpName);
-
-                ctx.cache().context().snapshotMgr().restoreCacheGroupFiles(snpName, grpName, stopChecker, grp.files);
+                ctx.cache().context().snapshotMgr().restoreCacheGroupFiles(snpName, grpName, stopChecker, grps.get(grpName));
             }
             finally {
                 rollbackLock.unlock();
@@ -190,10 +176,10 @@ class SnapshotRestoreContext {
             List<String> grpNames = new ArrayList<>(groups());
 
             for (String grpName : grpNames) {
-                GroupRestoreContext grp = grps.remove(grpName);
+                List<File> files = grps.remove(grpName);
 
-                if (grp != null)
-                    ctx.cache().context().snapshotMgr().rollbackRestoreOperation(grp.files);
+                if (files != null)
+                    ctx.cache().context().snapshotMgr().rollbackRestoreOperation(files);
             }
         }
         finally {
@@ -204,17 +190,5 @@ class SnapshotRestoreContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotRestoreContext.class, this);
-    }
-
-    /** */
-    private static class GroupRestoreContext {
-        /** Files created in the cache group folder during a restore operation. */
-        final List<File> files = new ArrayList<>();
-
-        final boolean shared;
-
-        private GroupRestoreContext(boolean shared) {
-            this.shared = shared;
-        }
     }
 }

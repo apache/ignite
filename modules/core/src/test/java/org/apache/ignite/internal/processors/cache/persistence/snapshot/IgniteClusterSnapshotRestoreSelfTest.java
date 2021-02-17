@@ -46,11 +46,9 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -63,7 +61,6 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.RESTORE_GRP_KEY;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -109,29 +106,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             .setValueType(typeName)
             .setFields(new LinkedHashMap<>(F.asMap("id", Integer.class.getName(), "name", String.class.getName())))
             .setIndexes(Arrays.asList(new QueryIndex("id"), new QueryIndex("name")));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterTestSnapshot() throws Exception {
-        try {
-            for (Ignite ignite : G.allGrids()) {
-                IgniteEx grid = (IgniteEx)ignite;
-
-                if (grid.context().clientNode())
-                    continue;
-
-                MetaStorage metaStorage = grid.context().cache().context().database().metaStorage();
-
-                if (metaStorage == null)
-                    continue;
-
-                Object val = metaStorage.read(RESTORE_GRP_KEY);
-
-                assertNull("Metastorage key has not beend removed [node=" + grid.localNode().id() + ']', val);
-            }
-        } finally {
-            super.afterTestSnapshot();
-        }
     }
 
     /**
@@ -495,14 +469,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         return cache;
     }
 
-//    /**
-//     * @throws Exception if failed
-//     */
-//    @Test
-//    public void testParallelCacheStartWithTheSameNameOnPrepare() throws Exception {
-//        checkCacheStartWithTheSameName(true);
-//    }
-
     /**
      * @throws Exception if failed
      */
@@ -553,21 +519,21 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
-    public void testRollbackOnNodeFail() throws Exception {
-        checkBaselineChange(true);
+    public void testNodeFail() throws Exception {
+        checkTopologyChange(true);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testNodeJoin() throws Exception {
-        checkBaselineChange(false);
+        checkTopologyChange(false);
     }
 
     /**
      * @param stopNode {@code True} to check node fail, {@code False} to check node join.
      * @throws Exception if failed.
      */
-    private void checkBaselineChange(boolean stopNode) throws Exception {
+    private void checkTopologyChange(boolean stopNode) throws Exception {
         int keysCnt = 10_000;
 
         IgniteEx ignite = startGridsWithSnapshot(4, keysCnt);
@@ -586,21 +552,20 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
                 "Cache group restore operation was rejected. Server node(s) has left the cluster"
             );
 
-            fut0.get(TIMEOUT);
+            ensureCacheDirEmpty(3, dfltCacheCfg.getName());
 
-            String cacheName = dfltCacheCfg.getName();
+            fut0.get(TIMEOUT);
 
             awaitPartitionMapExchange();
 
             dfltCacheCfg = null;
 
-            startGrid(3);
-
-            resetBaselineTopology();
-
-            awaitPartitionMapExchange();
-
-            ensureCacheDirEmpty(4, cacheName);
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> startGrid(3),
+                IgniteSpiException.class,
+                "to add the node to cluster - remove directories with the caches"
+            );
 
             return;
         }
