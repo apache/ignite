@@ -4571,7 +4571,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Cache ID to Name Mapping
      */
-    public Map<Integer, String> cacheIdToNameMapping() {
+    private Map<Integer, String> cacheIdToNameMapping() {
         return cachesInfo.cacheIdToNameMapping();
     }
 
