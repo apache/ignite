@@ -45,7 +45,6 @@ class SnapshotTest(IgniteTest):
         """
         Basic snapshot test.
         """
-
         version = IgniteVersion(ignite_version)
 
         ignite_config = IgniteConfiguration(
