@@ -29,6 +29,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
@@ -111,7 +112,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         RexToLixTranslator.InputGetter getter =
             new RexToLixTranslator.InputGetterImpl(
                 ImmutableList.of(
-                    Pair.of(in_,
+                    Pair.of(EnumUtils.convert(in_, Object.class, typeFactory.getJavaClass(from)),
                         PhysTypeImpl.of(typeFactory, rowType,
                             JavaRowFormat.SCALAR, false))));
 

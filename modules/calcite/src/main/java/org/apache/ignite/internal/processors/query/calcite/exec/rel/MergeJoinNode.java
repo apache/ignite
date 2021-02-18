@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
+
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
@@ -71,33 +71,23 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (!inLoop)
-                context().execute(this::doJoin);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (!inLoop)
+            context().execute(this::doJoin, this::onError);
     }
 
     /** */
-    private void doJoin() {
-        try {
-            checkState();
+    private void doJoin() throws Exception {
+        checkState();
 
-            join();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        join();
     }
 
     /** {@inheritDoc} */
@@ -115,12 +105,12 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         if (idx == 0)
             return new Downstream<Row>() {
                 /** {@inheritDoc} */
-                @Override public void push(Row row) {
+                @Override public void push(Row row) throws Exception {
                     pushLeft(row);
                 }
 
                 /** {@inheritDoc} */
-                @Override public void end() {
+                @Override public void end() throws Exception {
                     endLeft();
                 }
 
@@ -132,12 +122,12 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         else if (idx == 1)
             return new Downstream<Row>() {
                 /** {@inheritDoc} */
-                @Override public void push(Row row) {
+                @Override public void push(Row row) throws Exception {
                     pushRight(row);
                 }
 
                 /** {@inheritDoc} */
-                @Override public void end() {
+                @Override public void end() throws Exception {
                     endRight();
                 }
 
@@ -151,75 +141,55 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    private void pushLeft(Row row) {
+    private void pushLeft(Row row) throws Exception {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waitingLeft--;
+        waitingLeft--;
 
-            leftInBuf.add(row);
+        leftInBuf.add(row);
 
-            join();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        join();
     }
 
     /** */
-    private void pushRight(Row row) {
+    private void pushRight(Row row) throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waitingRight--;
+        waitingRight--;
 
-            rightInBuf.add(row);
+        rightInBuf.add(row);
 
-            join();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        join();
     }
 
     /** */
-    private void endLeft() {
+    private void endLeft() throws Exception {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waitingLeft = NOT_WAITING;
+        waitingLeft = NOT_WAITING;
 
-            join();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        join();
     }
 
     /** */
-    private void endRight() {
+    private void endRight() throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waitingRight = NOT_WAITING;
+        waitingRight = NOT_WAITING;
 
-            join();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        join();
     }
 
     /** */
@@ -233,7 +203,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    protected abstract void join() throws IgniteCheckedException;
+    protected abstract void join() throws Exception;
 
     /** */
     @NotNull public static <Row> MergeJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
@@ -310,7 +280,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void join() throws IgniteCheckedException {
+        @Override protected void join() throws Exception {
             inLoop = true;
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && (right != null || !rightInBuf.isEmpty() || rightMaterialization != null)) {
@@ -466,7 +436,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void join() throws IgniteCheckedException {
+        @Override protected void join() throws Exception {
             inLoop = true;
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty())
@@ -639,7 +609,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void join() throws IgniteCheckedException {
+        @Override protected void join() throws Exception {
             inLoop = true;
             try {
                 while (requested > 0 && !(left == null && leftInBuf.isEmpty() && waitingLeft != NOT_WAITING)
@@ -835,7 +805,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void join() throws IgniteCheckedException {
+        @Override protected void join() throws Exception {
             inLoop = true;
             try {
                 while (requested > 0 && !(left == null && leftInBuf.isEmpty() && waitingLeft != NOT_WAITING)
@@ -1033,7 +1003,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void join() throws IgniteCheckedException {
+        @Override protected void join() throws Exception {
             inLoop = true;
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && (right != null || !rightInBuf.isEmpty())) {
@@ -1109,7 +1079,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void join() throws IgniteCheckedException {
+        @Override protected void join() throws Exception {
             inLoop = true;
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && !(right == null && rightInBuf.isEmpty() && waitingRight != NOT_WAITING)) {

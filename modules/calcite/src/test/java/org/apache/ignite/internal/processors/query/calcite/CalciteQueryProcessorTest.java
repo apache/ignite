@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.Ignite;
@@ -43,8 +45,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
 
 /**
  *
@@ -72,6 +72,38 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             qryProc.queryPlanCache().clear();
         }
+    }
+
+    /**
+     * Test verifies that replicated cache with specified cache group
+     * could be properly mapped on server nodes.
+     */
+    @Test
+    public void queryOverReplCacheGroup() {
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("ID", Integer.class.getName());
+        fields.put("VAL", String.class.getName());
+
+        IgniteCache<Integer, String> cache = client.getOrCreateCache(new CacheConfiguration<Integer, String>()
+            .setGroupName("SOME_GROUP")
+            .setName("TBL")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, String.class).setTableName("TBL")
+                .setKeyFieldName("ID")
+                .setFields(fields)
+                .setValueFieldName("VAL")
+            ))
+            .setCacheMode(CacheMode.REPLICATED)
+        );
+
+        cache.put(1, "1");
+        cache.put(2, "2");
+
+        assertQuery(client, "select id, val from tbl")
+            .returns(1, "1")
+            .returns(2, "2")
+            .check();
     }
 
     /** */
@@ -119,30 +151,38 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-13849
-        // we have a problem with serialization/deserialization of MergeJoin
-        String sqlCalc = "SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ count(*)" +
-            " FROM RISK R," +
-            " TRADE T," +
-            " BATCH B " +
-            "WHERE R.BATCHKEY = B.BATCHKEY " +
-            "AND R.TRADEID = T.TRADEID " +
-            "AND R.TRADEVER = T.TRADEVER " +
-            "AND T.BOOK = 'BOOK' " +
-            "AND B.LS = TRUE";
+        List<String> joinConverters = Arrays.asList("CorrelatedNestedLoopJoin", "MergeJoinConverter", "NestedLoopJoinConverter");
 
-        // loop for test execution.
-        for (int i = 0; i < 10; i++) {
-            List<List<?>> resLoc = sql(sqlCalc);
-            assertEquals(40L, resLoc.get(0).get(0));
+        // CorrelatedNestedLoopJoin skipped intentionally since it takes too long to finish
+        // the query with only CNLJ
+        for (int i = 1; i < joinConverters.size(); i++) {
+            String currJoin = joinConverters.get(i);
+
+            log.info("Verifying " + currJoin);
+
+            String disableRuleArgs = joinConverters.stream()
+                .filter(rn -> !rn.equals(currJoin))
+                .collect(Collectors.joining("', '", "'", "'"));
+
+            String sql = "SELECT /*+ DISABLE_RULE(" + disableRuleArgs + ") */ count(*)" +
+                " FROM RISK R," +
+                " TRADE T," +
+                " BATCH B " +
+                "WHERE R.BATCHKEY = B.BATCHKEY " +
+                "AND R.TRADEID = T.TRADEID " +
+                "AND R.TRADEVER = T.TRADEVER " +
+                "AND T.BOOK = 'BOOK' " +
+                "AND B.LS = TRUE";
+
+            // loop for test execution.
+            for (int j = 0; j < 10; j++) {
+                List<List<?>> res = sql(sql);
+
+                assertEquals(1, res.size());
+                assertEquals(1, res.get(0).size());
+                assertEquals(40L, res.get(0).get(0));
+            }
         }
-
-        //calcite
-        List<List<?>> res1 = sql(sqlCalc);
-
-        assertEquals(1, res1.size());
-        assertEquals(1, res1.get(0).size());
-        assertEquals(40L, res1.get(0).get(0));
     }
 
     /** */
@@ -465,12 +505,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13729")
     public void testNotExistsConditionWithSubquery() throws Exception {
         populateTables();
 
         List<List<?>> rows = sql(
-            "EXPLAIN PLAN FOR SELECT name FROM Orders o WHERE NOT EXISTS (" +
+            "SELECT name FROM Orders o WHERE NOT EXISTS (" +
                 "   SELECT 1" +
                 "   FROM Account a" +
                 "   WHERE o.name = a.name)");
@@ -492,18 +531,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 "   WHERE o.name = a.name)");
 
         assertEquals(1, rows.size());
-    }
-
-    /**
-     * Temporary redirects create|drop|alter commands into h2 engine.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_EXPERIMENTAL_SQL_ENGINE, value = "true")
-    public void testUseH2Functionality() {
-        execute(grid(1), "CREATE TABLE IF NOT EXISTS Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
-
-        execute(grid(1), "alter table Person add column age int");
-        execute(grid(1),"drop table Person");
     }
 
     /**
@@ -547,7 +574,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
@@ -616,7 +642,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void queryMultiStatement() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
@@ -906,5 +931,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public Project(String name) {
             this.name = name;
         }
+    }
+
+    /** */
+    private QueryChecker assertQuery(IgniteEx ignite, String qry) {
+        return new QueryChecker(qry) {
+            @Override protected QueryEngine getEngine() {
+                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+            }
+        };
     }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -111,6 +113,12 @@ public class GridH2Table extends TableBase {
      * table size change exceeds this threshold. Should be the number in interval (0,1).
      */
     private static final double STATS_UPDATE_THRESHOLD = 0.1; // 10%.
+
+    /** */
+    private static final int STATS_CLI_UPDATE_THRESHOLD = 200;
+
+    /** */
+    AtomicInteger cliReqCnt = new AtomicInteger();
 
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
@@ -1242,6 +1250,13 @@ public class GridH2Table extends TableBase {
         return tblStats.primaryRowCount();
     }
 
+    /** */
+    public long getRowCountApproximationNoCheck() {
+        refreshStatsIfNeededEx();
+
+        return tblStats.primaryRowCount();
+    }
+
     /**
      * @param qctx Context.
      *
@@ -1271,6 +1286,40 @@ public class GridH2Table extends TableBase {
             size.add(totalRowCnt);
 
             tblStats = new TableStatistics(totalRowCnt, primaryRowCnt);
+        }
+    }
+
+    /**
+     * Refreshes table stats if they are possibly outdated, must be called only in client mode.
+     */
+    private void refreshStatsIfNeededEx() {
+        boolean client = cacheInfo.cacheContext().kernalContext().clientNode();
+
+        GridQueryProcessor qryProc = cacheInfo.cacheContext().kernalContext().query();
+        boolean experimental = qryProc.useExperimentalEngine();
+
+        assert experimental;
+
+        if (!client) {
+            refreshStatsIfNeeded();
+
+            return;
+        }
+
+        // Update stats if total table size changed significantly since the last stats update.
+        if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
+            TableStatistics stats = tblStats;
+
+            long primaryRowCnt = stats.primaryRowCount();
+
+            try {
+                primaryRowCnt = cacheInfo.cacheContext().cache().size(new CachePeekMode[] {CachePeekMode.PRIMARY});
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Can`t update cache size.", e);
+            }
+
+            tblStats = new TableStatistics(stats.totalRowCount(), primaryRowCnt);
         }
     }
 

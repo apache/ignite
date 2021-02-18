@@ -17,12 +17,15 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.calcite.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
+import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
@@ -44,12 +47,15 @@ import org.junit.runners.Suite;
     ClosableIteratorsHolderTest.class,
     ContinuousExecutionTest.class,
     CalciteQueryProcessorTest.class,
+    CalciteErrorHandlilngIntegrationTest.class,
     JdbcQueryTest.class,
     CalciteBasicSecondaryIndexIntegrationTest.class,
     CancelTest.class,
     QueryCheckerTest.class,
     DateTimeTest.class,
     LimitOffsetTest.class,
+    SqlFieldsQueryUsageTest.class,
+    AggregatesIntegrationTest.class
     SortAggregateIntegrationTest.class,
 })
 public class IgniteCalciteTestSuite {

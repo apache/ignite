@@ -101,62 +101,47 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            if (!indexReady()) {
-                requested = rowsCnt;
+        if (!indexReady()) {
+            requested = rowsCnt;
 
-                requestSource();
-            }
-            else
-                scan.request(rowsCnt);
+            requestSource();
         }
-        catch (Exception e) {
-            onError(e);
-        }
+        else
+            scan.request(rowsCnt);
     }
 
     /** */
-    private void requestSource() {
+    private void requestSource() throws Exception {
         waiting = IN_BUFFER_SIZE;
 
         source().request(IN_BUFFER_SIZE);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
-        try {
-            checkState();
+    @Override public void push(Row row) throws Exception {
+        checkState();
 
-            idx.push(row);
+        idx.push(row);
 
-            waiting--;
+        waiting--;
 
-            if (waiting == 0)
-                context().execute(this::requestSource);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (waiting == 0)
+            context().execute(this::requestSource, this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
-        try {
-            checkState();
+    @Override public void end() throws Exception {
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            scan.request(requested);
-        }
-        catch (Exception e) {
-            scan.downstream().onError(e);
-        }
+        scan.request(requested);
     }
 
     /** {@inheritDoc} */

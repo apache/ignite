@@ -26,6 +26,8 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -566,6 +568,127 @@ public class ExecutionTest extends AbstractExecutionTest {
                     min(leftSize, rightSize),
                     cnt);
             }
+        }
+    }
+
+    /**
+     * Test verifies that an AssertionError thrown from an execution node
+     * proprely handled by a task executor.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void assertionHandlingTest() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class);
+
+        CorruptedNode<Object[]> node = new CorruptedNode<>();
+
+        RootNode<Object[]> root = new RootNode<>(ctx, rowType);
+        root.register(node);
+
+        Thread watchDog = new Thread(() -> {
+            try {
+                U.sleep(5_000);
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+            }
+
+            if (!root.isClosed())
+                root.close();
+        }, "test-watchdog");
+
+        watchDog.start();
+
+        GridTestUtils.assertThrowsWithCause(root::hasNext, AssertionError.class);
+
+        watchDog.interrupt();
+    }
+
+    /**
+     *
+     */
+    private Object[] row(Object... fields) {
+        return fields;
+    }
+
+    /**
+     *
+     */
+    private Supplier<List<AccumulatorWrapper<Object[]>>> accFactory(ExecutionContext<Object[]> ctx, AggregateCall call,
+        AggregateNode.AggregateType type, RelDataType rowType) {
+        return ctx.expressionFactory().accumulatorsFactory(type, F.asList(call), rowType);
+    }
+
+    /**
+     *
+     */
+    private RowFactory<Object[]> rowFactory() {
+        return new RowFactory<Object[]>() {
+            /** */
+            @Override public RowHandler<Object[]> handler() {
+                return ArrayRowHandler.INSTANCE;
+            }
+
+            /** */
+            @Override public Object[] create() {
+                throw new AssertionError();
+            }
+
+            /** */
+            @Override public Object[] create(Object... fields) {
+                return fields;
+            }
+        };
+    }
+
+    /**
+     * Node that always throws assertion error except for {@link #close()}
+     * and {@link #onRegister(Downstream)} methods.
+     */
+    static class CorruptedNode<T> implements Node<T> {
+        /** {@inheritDoc} */
+        @Override public ExecutionContext<T> context() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType rowType() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Downstream<T> downstream() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void register(List<Node<T>> sources) {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Node<T>> sources() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onRegister(Downstream<T> downstream) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void request(int rowsCnt) throws Exception {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rewind() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
         }
     }
 }

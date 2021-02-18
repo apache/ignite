@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
 import java.util.List;
+
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -51,32 +51,22 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (!inLoop)
-                context().execute(this::doPush);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        if (!inLoop)
+            context().execute(this::doPush, this::onError);
     }
 
     /** */
-    private void doPush() {
-        try {
-            checkState();
+    private void doPush() throws Exception {
+        checkState();
 
-            push();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        push();
     }
 
     /** {@inheritDoc} */
@@ -105,7 +95,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /** */
-    private void push() throws IgniteCheckedException {
+    private void push() throws Exception {
         inLoop = true;
         try {
             if (it == null)
@@ -120,7 +110,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::doPush);
+                    context().execute(this::doPush, this::onError);
 
                     return;
                 }

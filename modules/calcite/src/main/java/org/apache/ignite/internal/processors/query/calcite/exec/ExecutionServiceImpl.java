@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -718,7 +719,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 plan.target(fragment),
                 plan.remotes(fragment));
 
-            Exception ex = null;
+            Throwable ex = null;
             for (UUID nodeId : fragmentDesc.nodeIds()) {
                 if (ex != null)
                     info.onResponse(nodeId, fragment.fragmentId(), ex);
@@ -734,7 +735,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                         messageService().send(nodeId, req);
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         info.onResponse(nodeId, fragment.fragmentId(), ex = e);
                     }
                 }
@@ -770,7 +771,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 failureProcessor())
                 .go(plan.root());
         }
-        catch (Exception ex) {
+        catch (Throwable ex) {
             U.error(log, "Failed to build execution tree. ", ex);
 
             mailboxRegistry.outboxes(qryId, frId, -1)

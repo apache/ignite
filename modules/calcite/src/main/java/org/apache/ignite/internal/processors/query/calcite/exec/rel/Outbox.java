@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -100,17 +101,12 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
      * @param nodeId Target ID.
      * @param batchId Batch ID.
      */
-    public void onAcknowledge(UUID nodeId, int batchId) {
+    public void onAcknowledge(UUID nodeId, int batchId) throws Exception {
         assert nodeBuffers.containsKey(nodeId);
 
-        try {
-            checkState();
+        checkState();
 
-            nodeBuffers.get(nodeId).acknowledge(batchId);
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        nodeBuffers.get(nodeId).acknowledge(batchId);
     }
 
     /** */
@@ -120,8 +116,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
             flush();
         }
-        catch (Exception e) {
-            onError(e);
+        catch (Throwable t) {
+            onError(t);
         }
     }
 
@@ -131,37 +127,27 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            inBuf.add(row);
+        inBuf.add(row);
 
-            flush();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flush();
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            flush();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flush();
     }
 
     /** {@inheritDoc} */
@@ -241,7 +227,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** */
-    private void flush() throws IgniteCheckedException {
+    private void flush() throws Exception {
         while (!inBuf.isEmpty()) {
             checkState();
 
@@ -273,7 +259,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     /** */
     public void onNodeLeft(UUID nodeId) {
         if (nodeId.equals(context().originatingNodeId()))
-            context().execute(this::close);
+            context().execute(this::close, this::onError);
     }
 
     /** */
@@ -347,7 +333,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
          *
          * @param id batch ID.
          */
-        private void acknowledge(int id) throws IgniteCheckedException {
+        private void acknowledge(int id) throws Exception {
             if (lwm > id)
                 return;
 

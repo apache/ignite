@@ -1273,7 +1273,9 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assert exec instanceof Outbox;
 
-            exec.context().execute(((Outbox<Object[]>) exec)::init);
+            Outbox<Object[]> outbox = (Outbox<Object[]>) exec;
+
+            exec.context().execute(outbox::init, outbox::onError);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -1532,7 +1534,9 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assert exec instanceof Outbox;
 
-            exec.context().execute(((Outbox<Object[]>) exec)::init);
+            Outbox<Object[]> outbox = (Outbox<Object[]>) exec;
+
+            exec.context().execute(outbox::init, outbox::onError);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -2557,7 +2561,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
         assertEquals("" +
-                "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner])\n" +
+                "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner], leftCollation=[[0, 1]], rightCollation=[[2, 1]])\n" +
                 "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n" +
                 "  IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n",
             RelOptUtil.toString(phys));

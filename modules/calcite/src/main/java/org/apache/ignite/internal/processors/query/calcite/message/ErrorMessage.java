@@ -167,6 +167,7 @@ public class ErrorMessage implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
-        err = ctx.unmarshal(errBytes);
+        if (errBytes != null)
+            err = ctx.unmarshal(errBytes);
     }
 }

@@ -101,6 +101,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils
 @SuppressWarnings("TypeMayBeWeakened")
 public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** */
+    public static final String CNLJ_SUPPORTS_ONLY_INNER_ASSERTION_MSG = "only INNER join supported by IgniteCorrelatedNestedLoop";
+
+    /** */
     private final ExecutionContext<Row> ctx;
 
     /** */
@@ -228,7 +231,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
+        assert rel.getJoinType() == JoinRelType.INNER : CNLJ_SUPPORTS_ONLY_INNER_ASSERTION_MSG;
 
         Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet());
 
@@ -247,9 +250,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
+        int pairsCnt = rel.analyzeCondition().pairs().size();
+
         Comparator<Row> comp = expressionFactory.comparator(
-            rel.getLeft().getTraitSet().getCollation().getFieldCollations().subList(0, rel.analyzeCondition().pairs().size()),
-            rel.getRight().getTraitSet().getCollation().getFieldCollations().subList(0, rel.analyzeCondition().pairs().size())
+            rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
+            rel.rightCollation().getFieldCollations().subList(0, pairsCnt)
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp);
