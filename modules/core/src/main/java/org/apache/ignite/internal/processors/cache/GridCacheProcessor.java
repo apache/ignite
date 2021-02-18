@@ -4569,13 +4569,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Cache ID to Name Mapping
-     */
-    private Map<Integer, DynamicCacheDescriptor> cacheIdToNameMapping() {
-        return cachesInfo.registeredCachesById();
-    }
-
-    /**
      * @return Collection of persistent cache descriptors.
      */
     public Collection<DynamicCacheDescriptor> persistentCaches() {

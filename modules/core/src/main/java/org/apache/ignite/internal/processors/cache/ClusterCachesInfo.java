@@ -2423,7 +2423,7 @@ public class ClusterCachesInfo {
     }
 
     /**
-     * @return Cache ID to Cache Name Mapping
+     * @return Registered caches by Id
      */
     ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById() {
         return registeredCachesById;
