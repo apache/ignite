@@ -1057,6 +1057,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .map(CacheGroupDescriptor::groupId)
                 .collect(Collectors.toList());
 
+            List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
             snpFut0.listen(f -> {
                 if (f.error() == null)
                     recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG + grps, EVT_CLUSTER_SNAPSHOT_FINISHED);
@@ -1068,7 +1070,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx.localNodeId(),
                 name,
                 grps,
-                new HashSet<>(cctx.kernalContext().state().onlineBaselineNodes())));
+                new HashSet<>(F.viewReadOnly(srvNodes,
+                    F.node2id(),
+                    (node) -> CU.baselineNode(node, clusterState)))));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 

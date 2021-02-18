@@ -51,7 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitions;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 
 /** */
@@ -177,7 +177,7 @@ public class SnapshotPartitionsVerifyTask
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
-                for (File part : cachePartitions(dir)) {
+                for (File part : cachePartitionFiles(dir)) {
                     int partId = partId(part.getName());
 
                     if (!parts.remove(partId))

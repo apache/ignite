@@ -1034,7 +1034,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheDir Cache directory to check.
      * @return List of cache partitions in given directory.
      */
-    public static List<File> cachePartitions(File cacheDir) {
+    public static List<File> cachePartitionFiles(File cacheDir) {
         File[] files = cacheDir.listFiles();
 
         if (files == null)
@@ -1047,29 +1047,18 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param file Directory to check.
-     * @return {@code true} if given directory is shared.
-     * @throws IgniteException If given directory doesn't match the cache pattern.
-     */
-    public static boolean isSharedGroup(File file) {
-        String name = file.getName();
-
-        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
-            return true;
-        else if (name.startsWith(CACHE_DIR_PREFIX))
-            return false;
-        else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + file);
-    }
-
-    /**
      * @param dir Cache directory on disk.
      * @return Cache or cache group name.
      */
     public static String cacheGroupName(File dir) {
-        return isSharedGroup(dir) ?
-            dir.getName().replaceFirst("^" + CACHE_GRP_DIR_PREFIX, "") :
-            dir.getName().replaceFirst("^" + CACHE_DIR_PREFIX, "");
+        String name = dir.getName();
+
+        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
+            return name.substring(CACHE_GRP_DIR_PREFIX.length());
+        else if (name.startsWith(CACHE_DIR_PREFIX))
+            return name.substring(CACHE_DIR_PREFIX.length());
+        else
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
     }
 
     /**
