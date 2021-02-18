@@ -1377,7 +1377,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param req Start request.
      */
     private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
-        if (node.id().equals(ctx.localNodeId()))
+        if (node.id().equals(ctx.localNodeId()) || !req.errs().isEmpty())
             return;
 
         UUID routineId = req.routineId();

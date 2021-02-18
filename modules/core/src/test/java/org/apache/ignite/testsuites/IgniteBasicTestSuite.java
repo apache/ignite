@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanTes
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
+import org.apache.ignite.internal.processors.continuous.IgniteEventsP2pDisabledTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
@@ -182,6 +183,7 @@ import org.junit.runners.Suite;
     GridStopWithCollisionSpiTest.class,
     GridReduceSelfTest.class,
     GridEventConsumeSelfTest.class,
+    IgniteEventsP2pDisabledTest.class,
     GridSuppressedExceptionSelfTest.class,
     GridLifecycleAwareSelfTest.class,
     GridMessageListenSelfTest.class,
