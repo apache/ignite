@@ -442,7 +442,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATA_REGION_PAGE_LISTS",
                 "SYS.PARTITION_STATES",
                 "SYS.BINARY_METADATA",
-                "SYS.DISTRIBUTED_METASTORAGE"
+                "SYS.DISTRIBUTED_METASTORAGE",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM"
             ))
         );
     }
@@ -1000,7 +1001,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.BINARY_METADATA.FIELDS_COUNT.null.10",
                 "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647",
                 "SYS.DISTRIBUTED_METASTORAGE.NAME.null.2147483647",
-                "SYS.DISTRIBUTED_METASTORAGE.VALUE.null.2147483647"
+                "SYS.DISTRIBUTED_METASTORAGE.VALUE.null.2147483647",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.DATA_REGION_NAME.null.2147483647",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_START.null.26.6",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_END.null.26.6",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null.19"
                 ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
