@@ -266,7 +266,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
-* Thu Feb 01 2020 Maxim Muzafarov <mmuzaf@apache.org> - 2.10.0-1
+* Thu Feb 01 2021 Maxim Muzafarov <mmuzaf@apache.org> - 2.10.0-1
 - Updated Apache Ignite to version 2.10.0
 
 * Wed Nov 25 2020 Yaroslav Molochkov <y.n.molochkov@gmail.com> - 2.9.1-1
