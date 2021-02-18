@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,21 +60,6 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
 
     /** Partition state. */
     private PartitionState partitionState;
-
-    /**
-     * @param partKey Partition key.
-     * @param isPrimary Is primary.
-     * @param consistentId Consistent id.
-     * @param partitionState Partition state.
-     */
-    public PartitionHashRecordV2(
-        PartitionKeyV2 partKey,
-        boolean isPrimary,
-        Object consistentId,
-        PartitionState partitionState
-    ) {
-        this(partKey, isPrimary, consistentId, 0, 0, 0, partitionState);
-    }
 
     /**
      * @param partKey Partition key.
@@ -146,24 +130,10 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     }
 
     /**
-     * @param updCntr Update counter.
-     */
-    public void updateCounter(long updCntr) {
-        updateCntr = updCntr;
-    }
-
-    /**
      * @return Size.
      */
     public long size() {
         return size;
-    }
-
-    /**
-     * @param size Size.
-     */
-    public void size(long size) {
-        this.size = size;
     }
 
     /**

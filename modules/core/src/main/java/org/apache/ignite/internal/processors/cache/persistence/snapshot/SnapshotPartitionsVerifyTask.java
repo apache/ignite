@@ -221,13 +221,6 @@ public class SnapshotPartitionsVerifyTask
                         int grpId = CU.cacheId(grpName);
                         int partId = partId(part.getName());
 
-                        PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
-
-                        // Snapshot partitions must always be in OWNING state.
-                        // There is no `primary` partitions for snapshot.
-                        PartitionHashRecordV2 rec = new PartitionHashRecordV2(key, false, consId,
-                            PartitionHashRecordV2.PartitionState.OWNING);
-
                         FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
                         try {
@@ -252,9 +245,6 @@ public class SnapshotPartitionsVerifyTask
                                 long updateCntr = io.getUpdateCounter(pageAddr);
                                 long size = io.getSize(pageAddr);
 
-                                rec.updateCounter(updateCntr);
-                                rec.size(size);
-
                                 if (log.isDebugEnabled()) {
                                     log.debug("Partition [grpId=" + grpId
                                         + ", id=" + partId
@@ -262,7 +252,11 @@ public class SnapshotPartitionsVerifyTask
                                         + ", size=" + size + "]");
                                 }
 
-                                res.put(key, rec);
+                                // Snapshot partitions must always be in OWNING state.
+                                // There is no `primary` partitions for snapshot.
+                                res.computeIfAbsent(new PartitionKeyV2(grpId, partId, grpName),
+                                    key -> new PartitionHashRecordV2(key, false, consId,
+                                    0, updateCntr, size, PartitionHashRecordV2.PartitionState.OWNING));
                             }
                         }
                         catch (IOException e) {
