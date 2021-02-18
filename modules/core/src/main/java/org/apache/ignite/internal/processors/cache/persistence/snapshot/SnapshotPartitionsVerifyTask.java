@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -176,7 +175,7 @@ public class SnapshotPartitionsVerifyTask
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
             Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
-            Set<T2<File, File>> pairs = new HashSet<>();
+            Set<File> partFiles = new HashSet<>();
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
                 int grpId = CU.cacheId(cacheGroupName(dir));
@@ -192,7 +191,7 @@ public class SnapshotPartitionsVerifyTask
                     if (!parts.remove(partId))
                         continue;
 
-                    pairs.add(new T2<>(dir, part));
+                    partFiles.add(part);
                 }
 
                 if (!parts.isEmpty()) {
@@ -215,11 +214,11 @@ public class SnapshotPartitionsVerifyTask
             try {
                 U.doInParallel(
                     ignite.context().getSystemExecutorService(),
-                    pairs,
-                    pair -> {
-                        String grpName = pair.get1().getName();
+                    partFiles,
+                    part -> {
+                        String grpName = cacheGroupName(part.getParentFile());
                         int grpId = CU.cacheId(grpName);
-                        int partId = partId(pair.get2().getName());
+                        int partId = partId(part.getName());
 
                         PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
@@ -233,7 +232,7 @@ public class SnapshotPartitionsVerifyTask
                         try {
                             try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
                                 .createPageStore(getTypeByPartId(partId),
-                                    pair.get2()::toPath,
+                                    part::toPath,
                                     val -> {
                                     })
                             ) {
