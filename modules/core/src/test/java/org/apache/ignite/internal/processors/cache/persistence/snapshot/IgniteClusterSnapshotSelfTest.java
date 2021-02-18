@@ -1340,7 +1340,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
-        System.out.println(">>>>>> " + b);
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
     }

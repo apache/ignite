@@ -37,38 +37,31 @@ public class SnapshotMetadata implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Unique snapshot request id. */
-    private UUID rqId;
+    private final UUID rqId;
 
     /** Snapshot name. */
-    private String snpName;
+    private final String snpName;
 
     /** Consistent id of a node to which this metadata relates. */
-    private String consId;
+    private final String consId;
 
     /** Page size of stored snapshot data. */
-    private int pageSize;
+    private final int pageSize;
 
     /** The list of cache groups ids which were included into snapshot. */
     @GridToStringInclude
-    private List<Integer> grpIds;
+    private final List<Integer> grpIds;
 
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
-    private Set<String> bltNodes;
+    private final Set<String> bltNodes;
 
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
      * since for instance, due to the node filter there is no cache data on node.
      */
     @GridToStringInclude
-    private Map<Integer, Set<Integer>> locParts = new HashMap<>();
-
-    /**
-     * No-arg constructor.
-     */
-    public SnapshotMetadata() {
-        // No-arg.
-    }
+    private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
     /**
      * @param rqId Unique snapshot request id.
@@ -107,24 +100,10 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @param rqId Unique snapshot request id.
-     */
-    public void requestId(UUID rqId) {
-        this.rqId = rqId;
-    }
-
-    /**
      * @return Snapshot name.
      */
     public String snapshotName() {
         return snpName;
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     */
-    public void snapshotName(String snpName) {
-        this.snpName = snpName;
     }
 
     /**
@@ -135,24 +114,10 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @param consId Consistent id of a node to which this metadata relates.
-     */
-    public void consistentId(String consId) {
-        this.consId = consId;
-    }
-
-    /**
      * @return Page size of stored snapshot data.
      */
     public int pageSize() {
         return pageSize;
-    }
-
-    /**
-     * @param pageSize Page size of stored snapshot data.
-     */
-    public void pageSize(int pageSize) {
-        this.pageSize = pageSize;
     }
 
     /**
@@ -163,24 +128,10 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @param grpIds The list of cache groups ids which were included into snapshot.
-     */
-    public void cacheGroupIds(List<Integer> grpIds) {
-        this.grpIds = grpIds;
-    }
-
-    /**
      * @return The set of affected by snapshot baseline nodes.
      */
     public Set<String> baselineNodes() {
         return bltNodes;
-    }
-
-    /**
-     * @param bltNodes The set of affected by snapshot baseline nodes.
-     */
-    public void baselineNodes(Set<String> bltNodes) {
-        this.bltNodes = bltNodes;
     }
 
     /**
@@ -191,10 +142,15 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @param parts Map of cache group partitions from which snapshot has been taken on local node.
+     * @param compare Snapshot metadata to compare.
+     * @return {@code true} if given metadata belongs to the same snapshot.
      */
-    public void partitions(Map<Integer, Set<Integer>> parts) {
-        this.locParts = parts;
+    public boolean sameSnapshot(SnapshotMetadata compare) {
+        return requestId().equals(compare.requestId()) &&
+            snapshotName().equals(compare.snapshotName()) &&
+            pageSize() == compare.pageSize() &&
+            Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
+            Objects.equals(baselineNodes(), compare.baselineNodes());
     }
 
     /** {@inheritDoc} */

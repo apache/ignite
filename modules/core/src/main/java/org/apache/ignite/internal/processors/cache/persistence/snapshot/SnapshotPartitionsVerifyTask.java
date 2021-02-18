@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -36,6 +37,11 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
@@ -50,9 +56,12 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 
 /** */
 @GridInternal
@@ -78,12 +87,12 @@ public class SnapshotPartitionsVerifyTask
         }
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
-        Set<SnapshotMetadata> allParts = new HashSet<>();
-        clusterMetas.values().forEach(allParts::addAll);
+        Set<SnapshotMetadata> allMetas = new HashSet<>();
+        clusterMetas.values().forEach(allMetas::addAll);
 
         Set<String> missed = null;
 
-        for (SnapshotMetadata meta : allParts) {
+        for (SnapshotMetadata meta : allMetas) {
             if (missed == null)
                 missed = new HashSet<>(meta.baselineNodes());
 
@@ -98,19 +107,19 @@ public class SnapshotPartitionsVerifyTask
                 new IgniteException("Some metadata is missing from the snapshot: " + missed)));
         }
 
-        for (int idx = 0; !allParts.isEmpty(); idx++) {
+        for (int idx = 0; !allMetas.isEmpty(); idx++) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
                 if (e.getValue().size() < idx)
                     continue;
 
                 SnapshotMetadata meta = e.getValue().get(idx);
 
-                if (allParts.remove(meta)) {
+                if (allMetas.remove(meta)) {
                     jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId()),
                         e.getKey());
                 }
 
-                if (allParts.isEmpty())
+                if (allMetas.isEmpty())
                     break;
             }
         }
@@ -219,8 +228,44 @@ public class SnapshotPartitionsVerifyTask
                         PartitionHashRecordV2 rec = new PartitionHashRecordV2(key, false, consId,
                             PartitionHashRecordV2.PartitionState.OWNING);
 
-                        snpMgr.readSnapshotPartitionMeta(pair.get2(), grpId, partId, buff.get(), rec::updateCounter, rec::size);
-                        res.put(key, rec);
+                        FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                        try {
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
+                                .createPageStore(getTypeByPartId(partId),
+                                    pair.get2()::toPath,
+                                    val -> {
+                                    })
+                            ) {
+                                ByteBuffer pageBuff = buff.get();
+                                pageBuff.clear();
+                                pageStore.read(0, pageBuff, true);
+
+                                PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+                                GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageBuff));
+
+                                if (partState != OWNING)
+                                    throw new IgniteException("Snapshot partitions must be in OWNING state only: " + partState);
+
+                                long updateCntr = io.getUpdateCounter(pageBuff);
+                                long size = io.getSize(pageBuff);
+
+                                rec.updateCounter(updateCntr);
+                                rec.size(size);
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Partition [grpId=" + grpId
+                                        + ", id=" + partId
+                                        + ", counter=" + updateCntr
+                                        + ", size=" + size + "]");
+                                }
+
+                                res.put(key, rec);
+                            }
+                        }
+                        catch (IOException e) {
+                            throw new IgniteCheckedException(e);
+                        }
 
                         return null;
                     }

@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -657,9 +656,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
-        SnapshotOperationRequest req0 = clusterSnpReq;
-
-        if (req0 == null)
+        if (clusterSnpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
         try {
@@ -838,56 +835,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param part Partition file.
-     * @param grpId Cache group id.
-     * @param partId Partition id.
-     * @param pageBuff Page buffer to read data into.
-     * @param updCntr Partition update counter value consumer.
-     * @param partSize Partition size value consumer.
-     */
-    public void readSnapshotPartitionMeta(
-        File part,
-        int grpId,
-        int partId,
-        ByteBuffer pageBuff,
-        LongConsumer updCntr,
-        LongConsumer partSize
-    ) {
-        try {
-            FilePageStore pageStore = (FilePageStore)storeFactory
-                .apply(grpId, false)
-                .createPageStore(getTypeByPartId(partId),
-                    part::toPath,
-                    val -> {
-                    });
-
-            pageBuff.clear();
-            pageStore.read(0, pageBuff, true);
-
-            PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-            GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageBuff));
-
-            assert partState == OWNING : "Snapshot partitions must be in OWNING state only: " + partState;
-
-            long updateCntr = io.getUpdateCounter(pageBuff);
-            long size = io.getSize(pageBuff);
-
-            updCntr.accept(updateCntr);
-            partSize.accept(size);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Partition [grpId=" + grpId
-                    + ", id=" + partId
-                    + ", counter=" + updateCntr
-                    + ", size=" + size + "]");
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
      * @param snpName Snapshot name.
      * @param consId Consistent id.
      * @return The list of cache or cache group names in given snapshot on local node.
@@ -908,26 +855,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public SnapshotMetadata readSnapshotMetadata(String snpName, String consId) {
         return readSnapshotMetadata(new File(snapshotLocalDir(snpName),
-                U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT),
-            marsh,
-            cctx.gridConfig());
+                U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT));
     }
 
     /**
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
-    private static SnapshotMetadata readSnapshotMetadata(File smf, Marshaller marsh, IgniteConfiguration cfg) {
+    private SnapshotMetadata readSnapshotMetadata(File smf) {
         if (!smf.exists())
             throw new IgniteException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
         String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
 
         try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
-            SnapshotMetadata meta = marsh.unmarshal(in, U.resolveClassLoader(cfg));
+            SnapshotMetadata meta = marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
 
-            assert U.maskForFileName(meta.consistentId()).equals(smfName) :
-                "smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId());
+            if (!U.maskForFileName(meta.consistentId()).equals(smfName))
+                throw new IgniteException("Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId()));
 
             return meta;
         }
@@ -957,9 +902,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata prev = null;
 
         for (File smf : smfs) {
-            SnapshotMetadata curr = readSnapshotMetadata(smf, marsh, cctx.gridConfig());
+            SnapshotMetadata curr = readSnapshotMetadata(smf);
 
-            assert prev == null || sameSnapshotMetadata(prev, curr) : "prev=" + prev + ", curr=" + curr;
+            if (prev != null && !prev.sameSnapshot(curr))
+                throw new IgniteException("Snapshot metadata files are from different snapshots [prev=" + prev + ", curr=" + curr);
 
             metasMap.put(curr.consistentId(), curr);
 
@@ -979,19 +925,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             return result;
         }
-    }
-
-    /**
-     * @param meta1 First snapshot metadata.
-     * @param meta2 Second snapshot metadata.
-     * @return {@code true} if given metadata belongs to the same snapshot.
-     */
-    public static boolean sameSnapshotMetadata(SnapshotMetadata meta1, SnapshotMetadata meta2) {
-        return meta1.requestId().equals(meta2.requestId()) &&
-            meta1.snapshotName().equals(meta2.snapshotName()) &&
-            meta1.pageSize() == meta2.pageSize() &&
-            Objects.equals(meta1.cacheGroupIds(), meta2.cacheGroupIds()) &&
-            Objects.equals(meta1.baselineNodes(), meta2.baselineNodes());
     }
 
     /** {@inheritDoc} */
