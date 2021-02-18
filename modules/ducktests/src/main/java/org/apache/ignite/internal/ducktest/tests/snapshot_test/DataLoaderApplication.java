@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.tests.snapshot_test;
 
 import java.util.Collections;
-import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
@@ -35,9 +34,9 @@ public class DataLoaderApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
 
-        int start = Optional.ofNullable(jNode.get("start")).map(JsonNode::asInt).orElse(0);
+        long start = jNode.get("start").asLong();
 
-        int interval = jNode.get("interval").asInt();
+        long interval = jNode.get("interval").asLong();
 
         int valSize = jNode.get("valueSizeKb").asInt() * 1024;
 
