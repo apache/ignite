@@ -95,6 +95,13 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         }
 
         grpSet = b.build();
+
+        if (type == AggregateType.REDUCE || type == AggregateType.SINGLE)
+            for (Grouping grouping : groupings) {
+                if (grouping.grpFields.isEmpty())
+                    grouping.groups.computeIfAbsent(GroupKey.EMPTY_GRP_KEY, grouping::create);
+            }
+
     }
 
     /** {@inheritDoc} */

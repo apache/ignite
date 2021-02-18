@@ -24,6 +24,9 @@ import java.util.Arrays;
  */
 public class GroupKey {
     /** */
+    public static final GroupKey EMPTY_GRP_KEY = new GroupKey(new Object[0]);
+
+    /** */
     private final Object[] fields;
 
     /** */
