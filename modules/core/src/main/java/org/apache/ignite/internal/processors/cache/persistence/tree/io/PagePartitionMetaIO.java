@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -80,14 +79,6 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
-     * @param buff Page buffer.
-     * @return Partition size.
-     */
-    public long getSize(ByteBuffer buff) {
-        return buff.getLong(SIZE_OFF);
-    }
-
-    /**
      * @param pageAddr Page address.
      * @param size Partition size.
      *
@@ -108,27 +99,6 @@ public class PagePartitionMetaIO extends PageMetaIO {
      */
     public long getUpdateCounter(long pageAddr) {
         return PageUtils.getLong(pageAddr, UPDATE_CNTR_OFF);
-    }
-
-    /**
-     * @param buff Page buffer.
-     * @return Partition update counter.
-     */
-    public long getUpdateCounter(ByteBuffer buff) {
-        return buff.getLong(UPDATE_CNTR_OFF);
-    }
-
-    /**
-     * @param buff Page buffer.
-     * @return Partition update counter.
-     */
-    public boolean setUpdateCounter(ByteBuffer buff, long cntr) {
-        if (getUpdateCounter(buff) == cntr)
-            return false;
-
-        buff.putLong(UPDATE_CNTR_OFF, cntr);
-
-        return true;
     }
 
     /**
@@ -174,13 +144,6 @@ public class PagePartitionMetaIO extends PageMetaIO {
      */
     public byte getPartitionState(long pageAddr) {
         return PageUtils.getByte(pageAddr, PARTITION_STATE_OFF);
-    }
-
-    /**
-     * @param buff Page buffer.
-     */
-    public byte getPartitionState(ByteBuffer buff) {
-        return buff.get(PARTITION_STATE_OFF);
     }
 
     /**

@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -1318,14 +1319,17 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 val -> {
                 });
 
-        ByteBuffer buff = ByteBuffer.allocate(ignite.configuration().getDataStorageConfiguration().getPageSize())
+        ByteBuffer buff = ByteBuffer.allocateDirect(ignite.configuration().getDataStorageConfiguration().getPageSize())
             .order(ByteOrder.nativeOrder());
 
         buff.clear();
         pageStore.read(0, buff, false);
 
         PagePartitionMetaIO io = PageIO.getPageIO(buff);
-        io.setUpdateCounter(buff, CACHE_KEYS_RANGE * 2);
+
+        long pageAddr = GridUnsafe.bufferAddress(buff);
+
+        io.setUpdateCounter(pageAddr, CACHE_KEYS_RANGE * 2);
 
         pageStore.beginRecover();
 

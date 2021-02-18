@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -240,14 +241,16 @@ public class SnapshotPartitionsVerifyTask
                                 pageBuff.clear();
                                 pageStore.read(0, pageBuff, true);
 
+                                long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
                                 PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-                                GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageBuff));
+                                GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
 
                                 if (partState != OWNING)
                                     throw new IgniteException("Snapshot partitions must be in OWNING state only: " + partState);
 
-                                long updateCntr = io.getUpdateCounter(pageBuff);
-                                long size = io.getSize(pageBuff);
+                                long updateCntr = io.getUpdateCounter(pageAddr);
+                                long size = io.getSize(pageAddr);
 
                                 rec.updateCounter(updateCntr);
                                 rec.size(size);
