@@ -127,7 +127,8 @@ public class ClusterCachesInfo {
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<Integer, DynamicCacheDescriptor> cacheIdToNameMapping = new ConcurrentHashMap<>();
+    /** Mapping of caches by cache ID */
+    private final ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById = new ConcurrentHashMap<>();
 
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
@@ -816,7 +817,7 @@ public class ClusterCachesInfo {
         markedForDeletionCaches.put(cacheName, old);
 
         DynamicCacheDescriptor removedCacheDescriptor = registeredCaches.remove(cacheName);
-        cacheIdToNameMapping.remove(removedCacheDescriptor.cacheId());
+        registeredCachesById.remove(removedCacheDescriptor.cacheId());
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
@@ -1043,7 +1044,7 @@ public class ClusterCachesInfo {
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
-        cacheIdToNameMapping.put(startDesc.cacheId(), startDesc);
+        registeredCachesById.put(startDesc.cacheId(), startDesc);
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1478,7 +1479,7 @@ public class ClusterCachesInfo {
             desc.receivedOnDiscovery(true);
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
-            cacheIdToNameMapping.put(desc.cacheId(), desc);
+            registeredCachesById.put(desc.cacheId(), desc);
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1591,7 +1592,7 @@ public class ClusterCachesInfo {
      */
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
-        cacheIdToNameMapping.clear();
+        registeredCachesById.clear();
         registeredCacheGrps.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
@@ -2120,7 +2121,7 @@ public class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
-        cacheIdToNameMapping.put(desc.cacheId(), desc);
+        registeredCachesById.put(desc.cacheId(), desc);
 
         assert old == null : old;
     }
@@ -2424,8 +2425,8 @@ public class ClusterCachesInfo {
     /**
      * @return Cache ID to Cache Name Mapping
      */
-    ConcurrentMap<Integer, DynamicCacheDescriptor> cacheIdToNameMapping() {
-        return cacheIdToNameMapping;
+    ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById() {
+        return registeredCachesById;
     }
 
     /**
@@ -2467,7 +2468,7 @@ public class ClusterCachesInfo {
 
         registeredCacheGrps.clear();
         registeredCaches.clear();
-        cacheIdToNameMapping.clear();
+        registeredCachesById.clear();
         registeredTemplates.clear();
 
         clientReconnectReqs = null;
