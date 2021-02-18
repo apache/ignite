@@ -177,7 +177,7 @@ public class SnapshotPartitionsVerifyTask
             Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
             Set<File> partFiles = new HashSet<>();
 
-            for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
+            for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
                 int grpId = CU.cacheId(cacheGroupName(dir));
 
                 if (!grps.remove(grpId))

@@ -45,6 +45,12 @@ public class SnapshotMetadata implements Serializable {
     /** Consistent id of a node to which this metadata relates. */
     private final String consId;
 
+    /**
+     * Directory related to the current consistent node id on which partition files are stored.
+     * For some of the cases, consId doesn't equal the directory name.
+     */
+    private final String folderName;
+
     /** Page size of stored snapshot data. */
     private final int pageSize;
 
@@ -67,6 +73,7 @@ public class SnapshotMetadata implements Serializable {
      * @param rqId Unique snapshot request id.
      * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
+     * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
@@ -75,6 +82,7 @@ public class SnapshotMetadata implements Serializable {
         UUID rqId,
         String snpName,
         String consId,
+        String folderName,
         int pageSize,
         List<Integer> grpIds,
         Set<String> bltNodes,
@@ -83,6 +91,7 @@ public class SnapshotMetadata implements Serializable {
         this.rqId = rqId;
         this.snpName = snpName;
         this.consId = consId;
+        this.folderName = folderName;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
@@ -111,6 +120,13 @@ public class SnapshotMetadata implements Serializable {
      */
     public String consistentId() {
         return consId;
+    }
+
+    /**
+     * @return Directory name which stores the data files.
+     */
+    public String folderName() {
+        return folderName;
     }
 
     /**
