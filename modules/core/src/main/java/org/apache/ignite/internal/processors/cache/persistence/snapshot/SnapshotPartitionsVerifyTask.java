@@ -240,7 +240,7 @@ public class SnapshotPartitionsVerifyTask
                                 GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
 
                                 if (partState != OWNING)
-                                    throw new IgniteException("Snapshot partitions must be in OWNING state only: " + partState);
+                                    throw new IgniteCheckedException("Snapshot partitions must be in OWNING state only: " + partState);
 
                                 long updateCntr = io.getUpdateCounter(pageAddr);
                                 long size = io.getSize(pageAddr);
