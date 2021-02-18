@@ -127,7 +127,7 @@ public class ClusterCachesInfo {
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<Integer, String> cacheIdToNameMapping = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, DynamicCacheDescriptor> cacheIdToNameMapping = new ConcurrentHashMap<>();
 
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
@@ -1043,7 +1043,7 @@ public class ClusterCachesInfo {
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
-        cacheIdToNameMapping.put(startDesc.cacheId(), ccfg.getName());
+        cacheIdToNameMapping.put(startDesc.cacheId(), startDesc);
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1478,7 +1478,7 @@ public class ClusterCachesInfo {
             desc.receivedOnDiscovery(true);
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
-            cacheIdToNameMapping.put(desc.cacheId(), cacheData.cacheConfiguration().getName());
+            cacheIdToNameMapping.put(desc.cacheId(), desc);
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -2120,7 +2120,7 @@ public class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
-        cacheIdToNameMapping.put(desc.cacheId(), cfg.getName());
+        cacheIdToNameMapping.put(desc.cacheId(), desc);
 
         assert old == null : old;
     }
@@ -2424,7 +2424,7 @@ public class ClusterCachesInfo {
     /**
      * @return Cache ID to Cache Name Mapping
      */
-    ConcurrentMap<Integer, String> cacheIdToNameMapping() {
+    ConcurrentMap<Integer, DynamicCacheDescriptor> cacheIdToNameMapping() {
         return cacheIdToNameMapping;
     }
 
