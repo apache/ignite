@@ -250,6 +250,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         final Collection<Dependency> dependencies = new ArrayList<>();
 
         dependencies.add(new Dependency("core", "ignite-core", false));
+        dependencies.add(new Dependency("indexing", "ignite-indexing", false));
         dependencies.add(new Dependency("core", "ignite-core", true));
 
         return dependencies;
