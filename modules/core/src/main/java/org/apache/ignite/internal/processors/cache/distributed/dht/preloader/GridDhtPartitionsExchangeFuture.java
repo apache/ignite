@@ -3834,18 +3834,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     return;
                 }
 
-                if (exchActions.failCacheStartOnNodeLeft()) {
-                    Collection<UUID> srvs = F.viewReadOnly(firstEvent().topologyNodes(), ClusterNode::id, n -> !n.isDaemon() && !n.isClient());
+                if (exchActions.checkCacheStartTopology()) {
+                    Collection<UUID> srvNodeIds = F.viewReadOnly(
+                        firstEvent().topologyNodes(), ClusterNode::id, n -> !n.isDaemon() && !n.isClient());
 
-                    if (!cctx.discovery().aliveAll(srvs)) {
-                        exchangeGlobalExceptions.put(cctx.localNodeId(), new ClusterTopologyCheckedException("Server node(s) has left the cluster."));
+                    if (!cctx.discovery().aliveAll(srvNodeIds)) {
+                        exchangeGlobalExceptions.put(cctx.localNodeId(),
+                            new ClusterTopologyCheckedException("Server node(s) has left the cluster."));
 
                         sendExchangeFailureMessage();
 
                         return;
                     }
-                    else
-                        System.out.println(">xxx> firstEvent all alive: " + srvs);
                 }
             }
 

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 
@@ -66,6 +68,9 @@ class SnapshotRestoreContext {
     /** Restored cache groups. */
     private final Map<String, List<File>> grps = new ConcurrentHashMap<>();
 
+    /** The exception that led to the interruption of the process. */
+    private final AtomicReference<Throwable> errRef = new AtomicReference<>();
+
     /**
      * @param reqId Request ID.
      * @param snpName Snapshot name.
@@ -73,7 +78,7 @@ class SnapshotRestoreContext {
      * @param configs Stored cache configurations.
      * @param ctx Kernal context.
      */
-    public SnapshotRestoreContext(UUID reqId, String snpName, Set<UUID> reqNodes, List<StoredCacheData> configs,
+    protected SnapshotRestoreContext(UUID reqId, String snpName, Set<UUID> reqNodes, List<StoredCacheData> configs,
         GridKernalContext ctx) {
         ccfgs = new ArrayList<>(configs);
 
@@ -97,24 +102,24 @@ class SnapshotRestoreContext {
     }
 
     /** @return Request ID. */
-    public UUID requestId() {
+    protected UUID requestId() {
         return reqId;
     }
 
     /** @return List of baseline node IDs that must be alive to complete the operation. */
-    public Set<UUID> nodes() {
+    protected Set<UUID> nodes() {
         return Collections.unmodifiableSet(reqNodes);
     }
 
     /** @return Snapshot name. */
-    public String snapshotName() {
+    protected String snapshotName() {
         return snpName;
     }
 
     /**
      * @return List of cache group names to restore from the snapshot.
      */
-    public Set<String> groups() {
+    protected Set<String> groups() {
         return grps.keySet();
     }
 
@@ -122,13 +127,37 @@ class SnapshotRestoreContext {
      * @param name Cache name.
      * @return {@code True} if the cache with the specified name is currently being restored.
      */
-    public boolean containsCache(String name) {
+    protected boolean containsCache(String name) {
         return cacheIds.contains(CU.cacheId(name));
     }
 
     /** @return Cache configurations. */
-    public Collection<StoredCacheData> configs() {
+    protected Collection<StoredCacheData> configs() {
         return ccfgs;
+    }
+
+    /**
+     * @return Interrupted flag.
+     */
+    protected boolean interrupted() {
+        return error() != null;
+    }
+
+    /**
+     * @return Error or {@code null} if there were no errors.
+     */
+    protected @Nullable Throwable error() {
+        return errRef.get();
+    }
+
+    /**
+     * Interrupt process.
+     *
+     * @param err Error.
+     * @return {@code True} if process has been interrupted by this call.
+     */
+    protected boolean interrupt(Exception err) {
+        return errRef.compareAndSet(null, err);
     }
 
     /**
@@ -138,7 +167,7 @@ class SnapshotRestoreContext {
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @throws IgniteCheckedException If failed.
      */
-    public void restore(boolean updateMetadata, BooleanSupplier stopChecker) throws IgniteCheckedException {
+    protected void restore(boolean updateMetadata, BooleanSupplier stopChecker) throws IgniteCheckedException {
         if (stopChecker.getAsBoolean())
             return;
 
@@ -169,7 +198,7 @@ class SnapshotRestoreContext {
     /**
      * Rollback changes made by process in specified cache group.
      */
-    public void rollback() {
+    protected void rollback() {
         rollbackLock.lock();
 
         try {

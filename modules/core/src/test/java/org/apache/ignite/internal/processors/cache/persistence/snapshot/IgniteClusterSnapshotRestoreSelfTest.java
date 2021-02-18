@@ -55,13 +55,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -192,47 +190,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(
             log, () -> fut.get(TIMEOUT), IgniteException.class, "The cluster should be active");
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    @Ignore
-    public void testRestoreWithMissedPartitions() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg.setBackups(0));
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-
-        forceCheckpoint();
-
-        stopGrid(1);
-
-        IgniteFuture<Void> fut =
-            ignite.snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
-
-        GridTestUtils.assertThrowsAnyCause(
-            log, () -> fut.get(TIMEOUT), IgniteException.class, "not all partitions available");
-
-        startGrid(1);
-
-        IgniteFuture<Void> fut1 =
-            ignite.snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
-
-        GridTestUtils.assertThrowsAnyCause(
-            log, () -> fut1.get(TIMEOUT), IllegalStateException.class,
-            "Cache \"" + dfltCacheCfg.getName() + "\" should be destroyed manually");
-
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-
-        ignite.snapshot().restoreCacheGroups(
-            SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
-
-        checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -595,7 +552,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     public void testClusterStateChangeActiveReadonlyOnPrepare() throws Exception {
         checkClusterStateChange(ClusterState.ACTIVE_READ_ONLY, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
             IgniteCheckedException.class,
-            "Cluster state has been changed");
+            "The cluster should be active.");
     }
 
     /**
@@ -606,21 +563,13 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         checkClusterStateChange(ClusterState.ACTIVE_READ_ONLY, RESTORE_CACHE_GROUP_SNAPSHOT_START, null, null);
     }
 
-//    /**
-//     * @throws Exception if failed.
-//     */
-//    @Test
-//    public void testClusterStateChangeActiveReadonlyOnFinish() throws Exception {
-//        checkClusterStateChange(ClusterState.ACTIVE_READ_ONLY, RESTORE_CACHE_GROUP_SNAPSHOT_FINISH, null, null);
-//    }
-
     /**
      * @throws Exception if failed.
      */
     @Test
     public void testClusterDeactivateOnPrepare() throws Exception {
         checkClusterStateChange(ClusterState.INACTIVE, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
-            IgniteCheckedException.class, "Cluster state has been changed.");
+            IgniteCheckedException.class, "The cluster should be active.");
     }
 
     /**
@@ -629,16 +578,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     @Test
     public void testClusterDeactivateOnCacheStart() throws Exception {
         checkClusterStateChange(ClusterState.INACTIVE, RESTORE_CACHE_GROUP_SNAPSHOT_START, null, null);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    @Ignore
-    public void testClusterDeactivateOnFinish() throws Exception {
-        checkClusterStateChange(ClusterState.INACTIVE, RESTORE_CACHE_GROUP_SNAPSHOT_FINISH,
-            IgniteException.class, "Server node(s) has left the cluster", true);
     }
 
     /**

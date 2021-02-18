@@ -227,8 +227,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
-    public static final CountDownLatch MEGALATCH = new CountDownLatch(3);
-
     /** */
     public static final String CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT =
         "Failed to perform %s operation (cluster is in read-only mode) [cacheGrp=%s, cache=%s]";
@@ -1993,20 +1991,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
-        if ("SuperCache".equals(desc.cacheName()))
-            try {
-                U.sleep(5_000);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException(e);
-            }
-
-        MEGALATCH.countDown();
-
-        U.dumpStack(">xxx> prepare cache context " + desc.cacheName());
-
         desc = enricher().enrich(desc,
             desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
 
@@ -3743,6 +3727,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             restoredCache);
     }
 
+    /**
+     * Dynamically starts multiple caches.
+     *
+     * @param storedCacheDataList Collection of stored cache data.
+     * @param failIfExists Fail if exists flag.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param restartId Restart requester id (it'll allow to start this cache only him).
+     * @return Future that will be completed when all caches are deployed.
+     */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
         Collection<StoredCacheData> storedCacheDataList,
         boolean failIfExists,
@@ -3763,6 +3757,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
+     * @param topNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
+     *                 when starting the cache(s), the whole procedure is rolled back.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3772,7 +3768,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         IgniteUuid restartId,
         boolean restoredCache,
-        @Nullable Set<UUID> reqNodes
+        @Nullable Set<UUID> topNodes
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3834,7 +3830,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCompoundFuture<?, Boolean> compoundFut = new GridCompoundFuture<>();
 
-            for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs, reqNodes))
+            for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs, topNodes))
                 compoundFut.add((IgniteInternalFuture)fut);
 
             if (clientReqs != null) {
@@ -4093,12 +4089,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param reqs Requests.
-     * @param reqNodes todo
+     * @param topNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
+     *                 when starting the cache(s), the whole procedure is rolled back.
      * @return Collection of futures.
      */
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
         Collection<DynamicCacheChangeRequest> reqs,
-        Collection<UUID> reqNodes
+        @Nullable Collection<UUID> topNodes
     ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
@@ -4154,7 +4151,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs, reqNodes));
+                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs, topNodes));
 
                 err = checkNodeState();
             }

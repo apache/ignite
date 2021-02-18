@@ -43,8 +43,11 @@ public class ExchangeActions {
     /** */
     private Map<String, CacheActionData> cachesToStart;
 
-    /** */
-    private boolean failCacheStartOnNodeLeft;
+    /**
+     * Topology check after cache start flag. If this flag is enabled and any of the server nodes is missing after
+     * starting the cache, the whole procedure fails and is rolled back.
+     */
+    private boolean checkCacheStartTop;
 
     /** */
     private Map<String, CacheActionData> cachesToStop;
@@ -322,12 +325,18 @@ public class ExchangeActions {
         return false;
     }
 
-    public boolean failCacheStartOnNodeLeft() {
-        return failCacheStartOnNodeLeft;
+    /**
+     * @return Topology check after cache start flag.
+     */
+    public boolean checkCacheStartTopology() {
+        return checkCacheStartTop;
     }
 
-    public void failCacheStartOnNodeLeft(boolean failCacheStartOnNodeLeft) {
-        this.failCacheStartOnNodeLeft = failCacheStartOnNodeLeft;
+    /**
+     * @param checkCacheStartTop Topology check after cache start flag.
+     */
+    public void checkCacheStartTopology(boolean checkCacheStartTop) {
+        this.checkCacheStartTop = checkCacheStartTop;
     }
 
     /**

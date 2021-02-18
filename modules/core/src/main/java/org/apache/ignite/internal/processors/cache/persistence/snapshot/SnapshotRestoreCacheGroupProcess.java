@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,8 +46,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 
 /**
@@ -79,9 +78,6 @@ public class SnapshotRestoreCacheGroupProcess {
     /** Snapshot restore operation context. */
     private volatile SnapshotRestoreContext opCtx;
 
-    /** The exception that led to the interruption of the process. */
-    private final AtomicReference<Throwable> errRef = new AtomicReference<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -97,7 +93,7 @@ public class SnapshotRestoreCacheGroupProcess {
             ctx, RESTORE_CACHE_GROUP_SNAPSHOT_START, this::cacheStart, this::finishCacheStart);
 
         rollbackRestoreProc = new DistributedProcess<>(
-            ctx, RESTORE_CACHE_GROUP_SNAPSHOT_FINISH, this::rollback, this::finishRollback);
+            ctx, RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK, this::rollback, this::finishRollback);
 
         fut.onDone();
     }
@@ -196,23 +192,6 @@ public class SnapshotRestoreCacheGroupProcess {
     }
 
     /**
-     * @return Interrupted flag.
-     */
-    private boolean interrupted() {
-        return errRef.get() != null;
-    }
-
-    /**
-     * Interrupt process.
-     *
-     * @param err Error.
-     * @return {@code True} if process has been interrupted by this call.
-     */
-    private boolean interrupt(Exception err) {
-        return errRef.compareAndSet(null, err);
-    }
-
-    /**
      * @param fut The future of cache snapshot restore operation.
      * @return {@code True} if the future completed or not initiated.
      */
@@ -226,11 +205,10 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param leftNodeId Left node ID.
      */
     public void onNodeLeft(UUID leftNodeId) {
-        if (staleFuture(fut))
-            return;
+        SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx.nodes().contains(leftNodeId)) {
-            interrupt(new IgniteException(OP_REJECT_MSG +
+        if (opCtx0 != null && opCtx0.nodes().contains(leftNodeId)) {
+            opCtx0.interrupt(new IgniteException(OP_REJECT_MSG +
                 "Server node(s) has left the cluster [nodeId=" + leftNodeId + ']'));
         }
     }
@@ -241,12 +219,10 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param reason Interruption reason.
      */
     public void stop(Exception reason) {
-        IgniteInternalFuture<Void> fut0 = fut;
+        SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (staleFuture(fut0))
-            return;
-
-        interrupt(reason);
+        if (opCtx0 != null)
+            opCtx0.interrupt(reason);
     }
 
     /**
@@ -286,10 +262,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
         opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), new HashSet<>(req.nodes()), req.configs(), ctx);
 
-        fut.listen(f -> {
-            opCtx = null;
-            errRef.set(null);
-        });
+        fut.listen(f -> opCtx = null);
 
         if (!baselineNodes().containsAll(req.nodes())) {
             return new GridFinishedFuture<>(
@@ -316,15 +289,15 @@ public class SnapshotRestoreCacheGroupProcess {
 
             ctx.getSystemExecutorService().submit(() -> {
                 try {
-                    opCtx0.restore(updateMeta, this::interrupted);
+                    opCtx0.restore(updateMeta, opCtx0::interrupted);
 
-                    if (interrupted()) {
+                    if (opCtx0.interrupted()) {
                         log.error("Snapshot restore process has been interrupted " +
-                            "[groups=" + opCtx0.groups() + ", snapshot=" + opCtx0.snapshotName() + ']', errRef.get());
+                            "[groups=" + opCtx0.groups() + ", snapshot=" + opCtx0.snapshotName() + ']', opCtx0.error());
 
                         opCtx0.rollback();
 
-                        retFut.onDone(errRef.get());
+                        retFut.onDone(opCtx0.error());
                     }
                     else
                         retFut.onDone();
@@ -382,10 +355,10 @@ public class SnapshotRestoreCacheGroupProcess {
             return new GridFinishedFuture<>();
 
         if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
-            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Cluster state has been changed."));
+            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "The cluster should be active."));
 
-        if (interrupted())
-            return new GridFinishedFuture<>(errRef.get());
+        if (opCtx0.interrupted())
+            return new GridFinishedFuture<>(opCtx0.error());
 
         if (!baselineNodes().containsAll(opCtx0.nodes()))
             return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster."));

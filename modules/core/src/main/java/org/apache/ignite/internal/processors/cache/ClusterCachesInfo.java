@@ -600,11 +600,11 @@ public class ClusterCachesInfo {
             return false;
         }
 
-        if (!F.isEmpty(batch.nodes())) {
-            Set<UUID> srvNodes =
+        if (!F.isEmpty(batch.topologyNodes())) {
+            Set<UUID> srvNodeIds =
                 new HashSet<>(F.viewReadOnly(topSnapshot, ClusterNode::id, n -> !n.isClient() && !n.isDaemon()));
 
-            if (!srvNodes.containsAll(batch.nodes()) || !ctx.discovery().aliveAll(batch.nodes())) {
+            if (!srvNodeIds.containsAll(batch.topologyNodes()) || !ctx.discovery().aliveAll(batch.topologyNodes())) {
                 ClusterTopologyCheckedException err =
                     new ClusterTopologyCheckedException("Server node(s) has left the cluster.");
 
@@ -627,10 +627,8 @@ public class ClusterCachesInfo {
 
             batch.exchangeActions(exchangeActions);
 
-            if (!F.isEmpty(batch.nodes())) {
-                U.dumpStack(">xxx> set failCacheStartOnNodeLeft=true");
-                exchangeActions.failCacheStartOnNodeLeft(true);
-            }
+            if (!F.isEmpty(batch.topologyNodes()))
+                exchangeActions.checkCacheStartTopology(true);
         }
 
         return res.needExchange;
