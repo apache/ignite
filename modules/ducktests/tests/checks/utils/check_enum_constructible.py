@@ -35,6 +35,7 @@ class ConnectType(IntEnum):
 
 
 check_params = []
+# pylint: disable=E1101
 for name, value in ConnectType.__members__.items():
     check_params.append([name, value])
     check_params.append([int(value), value])
