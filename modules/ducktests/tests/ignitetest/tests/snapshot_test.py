@@ -87,7 +87,8 @@ class SnapshotTest(IgniteTest):
 
         dump_1 = control_utility.idle_verify_dump(node)
 
-        index_file = os.path.join(service.database_dir, node.account.hostname, f'cache-{self.CACHE_NAME}', 'index.bin')
+        index_file = os.path.join(service.database_dir, node.account.hostname.replace('-', '_').replace('.', '_'),
+                                  f'cache-{self.CACHE_NAME}', 'index.bin')
         assert next(node.account.ssh_capture(f'du -m  {index_file} | cut -f1', callback=int)) > 30
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
