@@ -71,7 +71,6 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         return Arrays.asList(new Object[][] {
             /** 2.6.0 is a last version where POJO inlining isn't enabled. */
             {"2.6.0", false},
-            // FAILED if user specified too big inline size for index with JavaObject.
             {"2.6.0", true},
 
             {"2.7.0", false},
