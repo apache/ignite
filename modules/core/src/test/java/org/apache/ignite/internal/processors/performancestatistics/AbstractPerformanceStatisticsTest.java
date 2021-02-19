@@ -66,7 +66,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Cleans performance statistics directory. */
-    protected static void cleanPerformanceStatisticsDir() throws Exception {
+    public static void cleanPerformanceStatisticsDir() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
     }
 
