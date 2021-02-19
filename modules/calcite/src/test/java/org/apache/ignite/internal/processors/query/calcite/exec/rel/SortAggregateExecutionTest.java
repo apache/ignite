@@ -67,7 +67,7 @@ public class SortAggregateExecutionTest extends BaseAggregateTest {
 
         sort.register(scan);
 
-        AggregateSortNode<Object[]> agg = new AggregateSortNode<>(
+        SortAggregateNode<Object[]> agg = new SortAggregateNode<>(
             ctx,
             aggRowType,
             SINGLE,
@@ -106,7 +106,7 @@ public class SortAggregateExecutionTest extends BaseAggregateTest {
 
         sort.register(scan);
 
-        AggregateSortNode<Object[]> aggMap = new AggregateSortNode<>(
+        SortAggregateNode<Object[]> aggMap = new SortAggregateNode<>(
             ctx,
             aggRowType,
             MAP,
@@ -129,7 +129,7 @@ public class SortAggregateExecutionTest extends BaseAggregateTest {
 
         Comparator<Object[]> rdcCmp = ctx.expressionFactory().comparator(rdcCollation);
 
-        AggregateSortNode<Object[]> aggRdc = new AggregateSortNode<>(
+        SortAggregateNode<Object[]> aggRdc = new SortAggregateNode<>(
             ctx,
             aggRowType,
             REDUCE,

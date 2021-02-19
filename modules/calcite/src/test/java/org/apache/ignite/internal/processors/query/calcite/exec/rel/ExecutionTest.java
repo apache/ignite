@@ -27,7 +27,6 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -573,7 +572,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
     /**
      * Test verifies that an AssertionError thrown from an execution node
-     * proprely handled by a task executor.
+     * properly handled by a task executor.
      */
     @Test
     @SuppressWarnings("ThrowableNotThrown")
@@ -608,38 +607,8 @@ public class ExecutionTest extends AbstractExecutionTest {
     /**
      *
      */
-    private Object[] row(Object... fields) {
+    protected Object[] row(Object... fields) {
         return fields;
-    }
-
-    /**
-     *
-     */
-    private Supplier<List<AccumulatorWrapper<Object[]>>> accFactory(ExecutionContext<Object[]> ctx, AggregateCall call,
-        AggregateNode.AggregateType type, RelDataType rowType) {
-        return ctx.expressionFactory().accumulatorsFactory(type, F.asList(call), rowType);
-    }
-
-    /**
-     *
-     */
-    private RowFactory<Object[]> rowFactory() {
-        return new RowFactory<Object[]>() {
-            /** */
-            @Override public RowHandler<Object[]> handler() {
-                return ArrayRowHandler.INSTANCE;
-            }
-
-            /** */
-            @Override public Object[] create() {
-                throw new AssertionError();
-            }
-
-            /** */
-            @Override public Object[] create(Object... fields) {
-                return fields;
-            }
-        };
     }
 
     /**

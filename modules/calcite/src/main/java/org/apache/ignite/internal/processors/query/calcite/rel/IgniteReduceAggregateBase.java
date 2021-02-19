@@ -22,7 +22,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -34,12 +33,11 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
  */
-public abstract class IgniteReduceAggregateBase extends SingleRel implements IgniteRel {
+public abstract class IgniteReduceAggregateBase extends SingleRel implements IgniteRel, IgniteAggregate {
     /** */
     protected final ImmutableBitSet groupSet;
 
@@ -114,7 +112,7 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
     }
 
     /** */
-    public List<AggregateCall> aggregateCalls() {
+    @Override public List<AggregateCall> aggregateCalls() {
         return aggCalls;
     }
 }

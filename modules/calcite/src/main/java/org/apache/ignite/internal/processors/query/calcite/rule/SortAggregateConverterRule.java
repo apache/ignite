@@ -28,7 +28,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -59,7 +59,7 @@ public class SortAggregateConverterRule extends AbstractIgniteConverterRule<Logi
 
         RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(rel.getGroupSet().asList()));
 
-        return new IgniteAggregateSort(
+        return new IgniteSortAggregate(
             cluster,
             outTrait.replace(collation),
             convert(input, input.getTraitSet().replace(collation)),

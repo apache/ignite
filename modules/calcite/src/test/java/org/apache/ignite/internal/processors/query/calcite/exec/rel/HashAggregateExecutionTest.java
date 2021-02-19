@@ -55,7 +55,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
     ) {
         assert grpSets.size() == 1 : "Test checks only simple GROUP BY";
 
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(
+        HashAggregateNode<Object[]> agg = new HashAggregateNode<>(
             ctx,
             aggRowType,
             SINGLE,
@@ -96,7 +96,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
     ) {
         assert grpSets.size() == 1 : "Test checks only simple GROUP BY";
 
-        AggregateHashNode<Object[]> aggMap = new AggregateHashNode<>(
+        HashAggregateNode<Object[]> aggMap = new HashAggregateNode<>(
             ctx,
             aggRowType,
             MAP,
@@ -107,7 +107,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
 
         aggMap.register(scan);
 
-        AggregateHashNode<Object[]> aggRdc = new AggregateHashNode<>(
+        HashAggregateNode<Object[]> aggRdc = new HashAggregateNode<>(
             ctx,
             aggRowType,
             REDUCE,

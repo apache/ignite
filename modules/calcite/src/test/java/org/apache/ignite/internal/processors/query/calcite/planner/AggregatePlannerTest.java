@@ -31,15 +31,15 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -352,17 +352,17 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
     enum AggregateAlgorithm {
         /** */
         SORT(
-            IgniteAggregateSort.class,
-            IgniteMapAggregateSort.class,
-            IgniteReduceAggregateSort.class,
+            IgniteSortAggregate.class,
+            IgniteMapSortAggregate.class,
+            IgniteReduceSortAggregate.class,
             "HashAggregateConverterRule"
         ),
 
         /** */
         HASH(
-            IgniteAggregateHash.class,
-            IgniteMapAggregateHash.class,
-            IgniteReduceAggregateHash.class,
+            IgniteHashAggregate.class,
+            IgniteMapHashAggregate.class,
+            IgniteReduceHashAggregate.class,
             "SortAggregateConverterRule"
         );
 

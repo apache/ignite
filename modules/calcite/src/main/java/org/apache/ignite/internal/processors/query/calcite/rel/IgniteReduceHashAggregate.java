@@ -36,9 +36,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  *
  */
-public class IgniteReduceAggregateHash extends IgniteReduceAggregateBase {
+public class IgniteReduceHashAggregate extends IgniteReduceAggregateBase {
     /** */
-    public IgniteReduceAggregateHash(
+    public IgniteReduceHashAggregate(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
@@ -50,22 +50,22 @@ public class IgniteReduceAggregateHash extends IgniteReduceAggregateBase {
         super(cluster, traits, input, groupSet, groupSets, aggCalls, rowType);
 
         assert RelOptUtil.areRowTypesEqual(input.getRowType(),
-            IgniteMapAggregateHash.rowType(Commons.typeFactory(cluster)), true);
+            IgniteMapHashAggregate.rowType(Commons.typeFactory(cluster)), true);
     }
 
     /** */
-    public IgniteReduceAggregateHash(RelInput input) {
+    public IgniteReduceHashAggregate(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteReduceAggregateHash(getCluster(), traitSet, sole(inputs), groupSet, groupSets, aggCalls, rowType);
+        return new IgniteReduceHashAggregate(getCluster(), traitSet, sole(inputs), groupSet, groupSets, aggCalls, rowType);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteReduceAggregateHash(cluster, getTraitSet(), sole(inputs),
+        return new IgniteReduceHashAggregate(cluster, getTraitSet(), sole(inputs),
             groupSet, groupSets, aggCalls, rowType);
     }
 

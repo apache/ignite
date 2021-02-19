@@ -18,85 +18,56 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
  */
-public class IgniteMapAggregateSort extends IgniteMapAggregateBase {
-    /** Collation. */
-    private final RelCollation collation;
-
+public class IgniteMapHashAggregate extends IgniteMapAggregateBase {
     /** */
-    public IgniteMapAggregateSort(
+    public IgniteMapHashAggregate(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls,
-        RelCollation collation
+        List<AggregateCall> aggCalls
     ) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
-
-        assert Objects.nonNull(collation);
-        assert !collation.isDefault();
-
-        this.collation = collation;
     }
 
     /** */
-    public IgniteMapAggregateSort(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
-
-        collation = input.getCollation();
-
-        assert Objects.nonNull(collation);
-        assert !collation.isDefault();
+    public IgniteMapHashAggregate(RelInput input) {
+        super(input);
     }
 
     /** {@inheritDoc} */
-    @Override public Aggregate copy(
-        RelTraitSet traitSet,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls) {
-        return new IgniteMapAggregateSort(getCluster(), traitSet, input, groupSet, groupSets, aggCalls, collation);
+    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        return new IgniteMapHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteMapAggregateSort(
-            cluster,
-            getTraitSet(),
-            sole(inputs),
-            getGroupSet(),
-            getGroupSets(),
-            getAggCallList(),
-            collation
-        );
+        return new IgniteMapHashAggregate(cluster, getTraitSet(), sole(inputs),
+            getGroupSet(), getGroupSets(), getAggCallList());
     }
 
     /** {@inheritDoc} */
@@ -105,22 +76,18 @@ public class IgniteMapAggregateSort extends IgniteMapAggregateBase {
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
-        return super.explainTerms(pw).item("collation", collation);
+    @Override protected RelDataType deriveRowType() {
+        return rowType(Commons.typeFactory(getCluster()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected RelDataType deriveRowType() {
-        RelDataTypeFactory typeFactory = Commons.typeFactory(getCluster());
+    /** */
+    public static RelDataType rowType(RelDataTypeFactory typeFactory) {
+        assert typeFactory instanceof IgniteTypeFactory;
 
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
-        groupSet.forEach(fieldIdx -> {
-            RelDataTypeField fld = input.getRowType().getFieldList().get(fieldIdx);
-
-            builder.add(fld);
-        });
-
+        builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
+        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
         builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
 
         return builder.build();
@@ -128,15 +95,17 @@ public class IgniteMapAggregateSort extends IgniteMapAggregateBase {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
         double rows = mq.getRowCount(getInput());
 
-        // TODO: fix it when https://issues.apache.org/jira/browse/IGNITE-13543 will be resolved
-        // currently it's OK to have such a dummy cost because there is no other options
-        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
-    }
+        double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
 
-    /** {@inheritDoc} */
-    @Override public RelCollation collation() {
-        return collation;
-    }
-}
+        return costFactory.makeCost(
+            groupsCnt,
+            rows * IgniteCost.ROW_PASS_THROUGH_COST,
+            0,
+            groupsCnt * aggCalls.size() * IgniteCost.AGG_CALL_MEM_COST,
+            0
+        );
+    }}

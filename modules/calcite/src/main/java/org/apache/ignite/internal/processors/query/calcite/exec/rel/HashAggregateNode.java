@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.n
 /**
  *
  */
-public class AggregateHashNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
     private final AggregateType type;
 
@@ -73,7 +73,7 @@ public class AggregateHashNode<Row> extends AbstractNode<Row> implements SingleN
     /**
      * @param ctx Execution context.
      */
-    public AggregateHashNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, List<ImmutableBitSet> grpSets,
+    public HashAggregateNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, List<ImmutableBitSet> grpSets,
         Supplier<List<AccumulatorWrapper<Row>>> accFactory, RowFactory<Row> rowFactory) {
         super(ctx, rowType);
 

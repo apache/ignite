@@ -55,7 +55,7 @@ import org.junit.runners.Suite;
     DateTimeTest.class,
     LimitOffsetTest.class,
     SqlFieldsQueryUsageTest.class,
-    AggregatesIntegrationTest.class
+    AggregatesIntegrationTest.class,
     SortAggregateIntegrationTest.class,
 })
 public class IgniteCalciteTestSuite {

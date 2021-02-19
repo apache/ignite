@@ -28,7 +28,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -54,7 +54,7 @@ public class UnionConverterRule extends AbstractIgniteConverterRule<LogicalUnion
         PhysicalNode res = new IgniteUnionAll(cluster, traits, inputs);
 
         if (!rel.all)
-            res = new IgniteAggregateHash(cluster, traits, res,
+            res = new IgniteHashAggregate(cluster, traits, res,
                 ImmutableBitSet.range(rel.getRowType().getFieldCount()), null, ImmutableList.of());
 
         return res;

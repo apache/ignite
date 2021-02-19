@@ -25,7 +25,7 @@ import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 
 /**
@@ -48,7 +48,7 @@ public class HashAggregateConverterRule extends AbstractIgniteConverterRule<Logi
         RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode input = convert(rel.getInput(), inTrait);
 
-        return new IgniteAggregateHash(cluster, outTrait, input,
+        return new IgniteHashAggregate(cluster, outTrait, input,
             rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
     }
 }

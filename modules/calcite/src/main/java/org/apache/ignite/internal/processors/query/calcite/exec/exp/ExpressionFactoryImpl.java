@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateHashNode;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;

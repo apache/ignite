@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwareIgniteRel {
+public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwareIgniteRel, IgniteAggregate {
     /** {@inheritDoc} */
     protected IgniteAggregateBase(
         RelOptCluster cluster,
@@ -71,6 +71,11 @@ public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwa
     /** {@inheritDoc} */
     protected IgniteAggregateBase(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+    }
+
+    /** */
+    @Override public List<AggregateCall> aggregateCalls() {
+        return getAggCallList();
     }
 
     /** {@inheritDoc} */

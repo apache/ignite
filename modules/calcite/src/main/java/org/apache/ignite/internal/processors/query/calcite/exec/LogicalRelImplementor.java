@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateHashNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateSortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -56,22 +56,22 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -438,7 +438,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteAggregateHash rel) {
+    @Override public Node<Row> visit(IgniteHashAggregate rel) {
         AggregateType type = AggregateType.SINGLE;
 
         RelDataType rowType = rel.getRowType();
@@ -448,7 +448,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             type, rel.getAggCallList(), inputType);
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        AggregateHashNode<Row> node = new AggregateHashNode<>(ctx, rowType, type, rel.getGroupSets(), accFactory, rowFactory);
+        HashAggregateNode<Row> node = new HashAggregateNode<>(ctx, rowType, type, rel.getGroupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -458,7 +458,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteMapAggregateHash rel) {
+    @Override public Node<Row> visit(IgniteMapHashAggregate rel) {
         AggregateType type = AggregateType.MAP;
 
         RelDataType rowType = rel.getRowType();
@@ -468,7 +468,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             type, rel.getAggCallList(), inputType);
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        AggregateHashNode<Row> node = new AggregateHashNode<>(ctx, rowType, type, rel.getGroupSets(), accFactory, rowFactory);
+        HashAggregateNode<Row> node = new HashAggregateNode<>(ctx, rowType, type, rel.getGroupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -478,7 +478,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteReduceAggregateHash rel) {
+    @Override public Node<Row> visit(IgniteReduceHashAggregate rel) {
         AggregateType type = AggregateType.REDUCE;
 
         RelDataType rowType = rel.getRowType();
@@ -487,7 +487,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             type, rel.aggregateCalls(), null);
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        AggregateHashNode<Row> node = new AggregateHashNode<>(ctx, rowType, type, rel.groupSets(), accFactory, rowFactory);
+        HashAggregateNode<Row> node = new HashAggregateNode<>(ctx, rowType, type, rel.groupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -497,7 +497,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteAggregateSort rel) {
+    @Override public Node<Row> visit(IgniteSortAggregate rel) {
         AggregateType type = AggregateType.SINGLE;
 
         RelDataType rowType = rel.getRowType();
@@ -511,7 +511,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        AggregateSortNode<Row> node = new AggregateSortNode<>(
+        SortAggregateNode<Row> node = new SortAggregateNode<>(
             ctx,
             rowType,
             type,
@@ -529,7 +529,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteMapAggregateSort rel) {
+    @Override public Node<Row> visit(IgniteMapSortAggregate rel) {
         AggregateType type = AggregateType.MAP;
 
         RelDataType rowType = rel.getRowType();
@@ -543,7 +543,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        AggregateSortNode<Row> node = new AggregateSortNode<>(
+        SortAggregateNode<Row> node = new SortAggregateNode<>(
             ctx,
             rowType,
             type,
@@ -561,7 +561,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteReduceAggregateSort rel) {
+    @Override public Node<Row> visit(IgniteReduceSortAggregate rel) {
         AggregateType type = AggregateType.REDUCE;
 
         RelDataType rowType = rel.getRowType();
@@ -574,7 +574,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        AggregateSortNode<Row> node = new AggregateSortNode<>(
+        SortAggregateNode<Row> node = new SortAggregateNode<>(
             ctx,
             rowType,
             type,

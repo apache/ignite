@@ -18,55 +18,83 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
  */
-public class IgniteMapAggregateHash extends IgniteMapAggregateBase {
+public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
+    /** Collation. */
+    private final RelCollation collation;
+
     /** */
-    public IgniteMapAggregateHash(
+    public IgniteReduceSortAggregate(
         RelOptCluster cluster,
-        RelTraitSet traitSet,
+        RelTraitSet traits,
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
+        List<AggregateCall> aggCalls,
+        RelDataType rowType,
+        RelCollation collation
     ) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
+        super(cluster, traits, input, groupSet, groupSets, aggCalls, rowType);
+
+        assert Objects.nonNull(collation);
+        assert !collation.isDefault();
+
+        this.collation = collation;
     }
 
     /** */
-    public IgniteMapAggregateHash(RelInput input) {
+    public IgniteReduceSortAggregate(RelInput input) {
         super(input);
+        collation = input.getCollation();
+
+        assert Objects.nonNull(collation);
+        assert !collation.isDefault();
     }
 
     /** {@inheritDoc} */
-    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteMapAggregateHash(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new IgniteReduceSortAggregate(
+            getCluster(),
+            traitSet,
+            sole(inputs),
+            groupSet,
+            groupSets,
+            aggCalls,
+            rowType,
+            collation
+        );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteMapAggregateHash(cluster, getTraitSet(), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList());
+        return new IgniteReduceSortAggregate(
+            cluster,
+            getTraitSet(),
+            sole(inputs),
+            groupSet,
+            groupSets,
+            aggCalls,
+            rowType,
+            collation
+        );
     }
 
     /** {@inheritDoc} */
@@ -75,21 +103,8 @@ public class IgniteMapAggregateHash extends IgniteMapAggregateBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected RelDataType deriveRowType() {
-        return rowType(Commons.typeFactory(getCluster()));
-    }
-
-    /** */
-    public static RelDataType rowType(RelDataTypeFactory typeFactory) {
-        assert typeFactory instanceof IgniteTypeFactory;
-
-        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-
-        builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
-        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
-        builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
-
-        return builder.build();
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw).item("collation", collation);
     }
 
     /** {@inheritDoc} */

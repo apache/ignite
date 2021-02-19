@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,8 +87,8 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-        AggregateHashNode<Object[]> map = new AggregateHashNode<>(
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        HashAggregateNode<Object[]> map = new HashAggregateNode<>(
             ctx,
             mapType,
             MAP,
@@ -100,7 +100,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         map.register(scan);
 
         RelDataType reduceType = TypeUtils.createRowType(tf, double.class);
-        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(
+        HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(
             ctx,
             reduceType,
             REDUCE,
@@ -145,12 +145,12 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
+        HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
@@ -187,12 +187,12 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
+        HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
@@ -229,12 +229,12 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
+        HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
@@ -271,12 +271,12 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
+        HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
@@ -314,7 +314,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
@@ -352,7 +352,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
@@ -390,7 +390,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
@@ -428,7 +428,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
@@ -467,7 +467,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(
+        HashAggregateNode<Object[]> agg = new HashAggregateNode<>(
             ctx,
             aggType,
             SINGLE,

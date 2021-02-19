@@ -19,22 +19,22 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateHash;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -190,31 +190,31 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteAggregateHash rel) {
+    @Override public IgniteRel visit(IgniteHashAggregate rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteMapAggregateHash rel) {
+    @Override public IgniteRel visit(IgniteMapHashAggregate rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteReduceAggregateHash rel) {
+    @Override public IgniteRel visit(IgniteReduceHashAggregate rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteAggregateSort rel) {
+    @Override public IgniteRel visit(IgniteSortAggregate rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteMapAggregateSort rel) {
+    @Override public IgniteRel visit(IgniteMapSortAggregate rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 
-    @Override public IgniteRel visit(IgniteReduceAggregateSort rel) {
+    @Override public IgniteRel visit(IgniteReduceSortAggregate rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 

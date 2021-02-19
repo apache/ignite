@@ -19,39 +19,30 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.util.ImmutableBitSet;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
  */
-public abstract class IgniteMapAggregateBase extends Aggregate implements IgniteRel, IgniteAggregate {
-    /** */
-    protected IgniteMapAggregateBase(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
-    ) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
-    }
+interface IgniteAggregate extends RelNode {
+    /**
+     * @return Aggregate calls.
+     */
+    List<AggregateCall> aggregateCalls();
 
     /** */
-    protected IgniteMapAggregateBase(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
+    default double memoryCost() {
+        if (aggregateCalls().isEmpty()) {
+            // SELECT DISTINCT
 
-    /** */
-    @Override public List<AggregateCall> aggregateCalls() {
-        return getAggCallList();
+        }
+        else {
+            for (AggregateCall aggCall : aggregateCalls()) {
+
+            }
+        }
+
+        return 0;
     }
 }

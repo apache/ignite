@@ -79,32 +79,32 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteAggregateHash rel);
+    T visit(IgniteHashAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteMapAggregateHash rel);
+    T visit(IgniteMapHashAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteReduceAggregateHash rel);
+    T visit(IgniteReduceHashAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteAggregateSort rel);
+    T visit(IgniteSortAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteMapAggregateSort rel);
+    T visit(IgniteMapSortAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteReduceAggregateSort rel);
+    T visit(IgniteReduceSortAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}

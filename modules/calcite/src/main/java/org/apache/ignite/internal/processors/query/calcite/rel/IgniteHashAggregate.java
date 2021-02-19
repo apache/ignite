@@ -34,30 +34,31 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  *
  */
-public class IgniteAggregateHash extends IgniteAggregateBase {
+public class IgniteHashAggregate extends IgniteAggregateBase {
     /** {@inheritDoc} */
-    public IgniteAggregateHash(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    public IgniteHashAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
-    public IgniteAggregateHash(RelInput input) {
+    public IgniteHashAggregate(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteAggregateHash(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+        return new IgniteHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteAggregateHash(cluster, getTraitSet(), sole(inputs),
+        return new IgniteHashAggregate(cluster, getTraitSet(), sole(inputs),
             getGroupSet(), getGroupSets(), getAggCallList());
     }
 
@@ -91,22 +92,43 @@ public class IgniteAggregateHash extends IgniteAggregateBase {
     /** {@inheritDoc} */
     @Override protected RelNode createMapAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
         ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteMapAggregateHash(getCluster(), traits, input, groupSet, groupSets, aggCalls);
+        return new IgniteMapHashAggregate(getCluster(), traits, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override protected RelNode createReduceAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
         ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls,
         RelDataType rowType) {
-        return new IgniteReduceAggregateHash(getCluster(), traits, input, groupSet, groupSets, aggCalls, getRowType());
+        return new IgniteReduceHashAggregate(getCluster(), traits, input, groupSet, groupSets, aggCalls, getRowType());
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
         double rows = mq.getRowCount(getInput());
 
-        // TODO: fix it when https://issues.apache.org/jira/browse/IGNITE-13543 will be resolved
-        // currently it's OK to have such a dummy cost because there is no other options
-        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
+        double groupsCnt = estimateRowCount(mq);
+
+        if (aggCalls.isEmpty()) {
+            // SELECT DISTINCT
+            return costFactory.makeCost(
+                groupsCnt,
+                rows * IgniteCost.ROW_PASS_THROUGH_COST,
+                0,
+                groupsCnt * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE,
+                0
+            );
+        }
+        else {
+            // GROUP BY
+            return costFactory.makeCost(
+                groupsCnt,
+                rows * IgniteCost.ROW_PASS_THROUGH_COST,
+                0,
+                groupsCnt * aggCalls.size() * IgniteCost.AGG_CALL_MEM_COST,
+                0
+            );
+        }
     }
 }

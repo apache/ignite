@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-public class AggregateSortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
     private final AggregateType type;
 
@@ -69,7 +69,7 @@ public class AggregateSortNode<Row> extends AbstractNode<Row> implements SingleN
     /**
      * @param ctx Execution context.
      */
-    public AggregateSortNode(
+    public SortAggregateNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
         AggregateType type,
@@ -186,9 +186,6 @@ public class AggregateSortNode<Row> extends AbstractNode<Row> implements SingleN
 
     /** */
     private Group newGroup(Row r) {
-        if (type == AggregateType.REDUCE)
-            System.out.println();
-
         final Object[] grpKeys = new Object[grpSet.cardinality()];
         List<Integer> fldIdxs = grpSet.asList();
 
@@ -205,7 +202,7 @@ public class AggregateSortNode<Row> extends AbstractNode<Row> implements SingleN
     }
 
     /** */
-    private void doPush() {
+    private void doPush() throws Exception {
         requested--;
 
         downstream().push(grp.row());
