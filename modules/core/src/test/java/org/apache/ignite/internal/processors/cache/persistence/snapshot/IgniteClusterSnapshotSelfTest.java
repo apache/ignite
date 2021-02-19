@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -1445,7 +1446,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertContains(log, b.toString(), "The check procedure failed on 1 node.");
 
         Exception ex = res.exceptions().values().iterator().next();
-        assertTrue(ex instanceof IgniteDataIntegrityViolationException);
+        assertTrue(X.hasCause(ex, IgniteDataIntegrityViolationException.class));
     }
 
     /**
