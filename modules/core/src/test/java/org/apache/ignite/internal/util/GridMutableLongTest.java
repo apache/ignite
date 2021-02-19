@@ -31,8 +31,9 @@ public class GridMutableLongTest extends GridCommonAbstractTest {
     public void testInitialization() {
         assertEquals(0, new GridMutableLong().get());
         assertEquals(5, new GridMutableLong(5).get());
-        assertEquals(10, new GridMutableLong(10).get());
         assertEquals(-25, new GridMutableLong(-25).get());
+        assertEquals(Long.MIN_VALUE, new GridMutableLong(Long.MIN_VALUE).get());
+        assertEquals(Long.MAX_VALUE, new GridMutableLong(Long.MAX_VALUE).get());
     }
 
     /**
