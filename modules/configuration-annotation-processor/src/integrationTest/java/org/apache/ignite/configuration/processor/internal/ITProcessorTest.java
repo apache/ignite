@@ -57,7 +57,8 @@ public class ITProcessorTest extends AbstractProcessorTest {
             hasFields(
                 "value1", Types.STRING,
                 "primitiveLong", Types.LONG,
-                "primitiveInt", Types.INT
+                "primitiveInt", Types.INT,
+                "stringArray", Types.STRING_ARRAY
             )
         );
 
@@ -66,7 +67,8 @@ public class ITProcessorTest extends AbstractProcessorTest {
             hasMethods(
                 "value1()", Types.STRING,
                 "primitiveLong()", Types.LONG,
-                "primitiveInt()", Types.INT
+                "primitiveInt()", Types.INT,
+                "stringArray()", Types.STRING_ARRAY
             )
         );
 
@@ -75,7 +77,8 @@ public class ITProcessorTest extends AbstractProcessorTest {
             hasFields(
                 "value1", Types.STRING,
                 "primitiveLong", Types.LONG,
-                "primitiveInt", Types.INT
+                "primitiveInt", Types.INT,
+                "stringArray", Types.STRING_ARRAY
             )
         );
 
@@ -89,7 +92,8 @@ public class ITProcessorTest extends AbstractProcessorTest {
                 "primitiveInt()", Types.INT,
                 "withValue1(java.lang.String)", initTypeName,
                 "withPrimitiveLong(java.lang.Long)", initTypeName,
-                "withPrimitiveInt(java.lang.Integer)", initTypeName
+                "withPrimitiveInt(java.lang.Integer)", initTypeName,
+                "withStringArray(java.lang.String[])", initTypeName
             )
         );
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration.processor.internal;
 
 import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -280,19 +281,13 @@ public class Processor extends AbstractProcessor {
 
                 final Value valueAnnotation = field.getAnnotation(Value.class);
                 if (valueAnnotation != null) {
-                    switch (baseType.toString()) {
-                        case "boolean":
-                        case "int":
-                        case "long":
-                        case "double":
-                        case "java.lang.String":
-                            break;
-
-                        default:
-                            throw new ProcessorException(
-                                "@Value " + clazz.getQualifiedName() + "." + field.getSimpleName() + " field must" +
-                                    " have one of the following types: boolean, int, long, double, String."
-                            );
+                    // Must be a primitive or an array of the primitives (including java.lang.String)
+                    if (!isPrimitiveOrArrayOfPrimitives(baseType)) {
+                        throw new ProcessorException(
+                            "@Value " + clazz.getQualifiedName() + "." + field.getSimpleName() + " field must" +
+                                " have one of the following types: boolean, int, long, double, String or an array of " +
+                                "aforementioned type."
+                        );
                     }
 
                     // Create value (DynamicProperty<>) field
@@ -901,25 +896,29 @@ public class Processor extends AbstractProcessor {
             String fieldName = field.getSimpleName().toString();
             TypeName schemaFieldType = TypeName.get(field.asType());
 
-            boolean leafField = schemaFieldType.isPrimitive() || !((ClassName)schemaFieldType).simpleName().contains("ConfigurationSchema");
+            boolean isArray = schemaFieldType instanceof ArrayTypeName;
+
+            boolean leafField = isPrimitiveOrArrayOfPrimitives(schemaFieldType)
+                || !((ClassName)schemaFieldType).simpleName().contains("ConfigurationSchema");
+
             boolean namedListField = field.getAnnotation(NamedConfigValue.class) != null;
 
-            TypeName viewFieldType = schemaFieldType.isPrimitive() ? schemaFieldType : ClassName.get(
+            TypeName viewFieldType = leafField ? schemaFieldType : ClassName.get(
                 ((ClassName)schemaFieldType).packageName(),
                 ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "View")
             );
 
-            TypeName changeFieldType = schemaFieldType.isPrimitive() ? schemaFieldType : ClassName.get(
+            TypeName changeFieldType = leafField ? schemaFieldType : ClassName.get(
                 ((ClassName)schemaFieldType).packageName(),
                 ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "Change")
             );
 
-            TypeName initFieldType = schemaFieldType.isPrimitive() ? schemaFieldType : ClassName.get(
+            TypeName initFieldType = leafField ? schemaFieldType : ClassName.get(
                 ((ClassName)schemaFieldType).packageName(),
                 ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "Init")
             );
 
-            TypeName nodeFieldType = schemaFieldType.isPrimitive() ? schemaFieldType.box() : ClassName.get(
+            TypeName nodeFieldType = leafField ? schemaFieldType.box() : ClassName.get(
                 ((ClassName)schemaFieldType).packageName() + (leafField ? "" : ".impl"),
                 ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "Node")
             );
@@ -955,11 +954,18 @@ public class Processor extends AbstractProcessor {
                 }
 
                 {
+                    CodeBlock getStatement;
+
+                    if (isArray)
+                        getStatement = CodeBlock.builder().add("return $L.clone()", fieldName).build();
+                    else
+                        getStatement = CodeBlock.builder().add("return $L", fieldName).build();
+
                     MethodSpec.Builder nodeGetMtdBuilder = MethodSpec.methodBuilder(fieldName)
                         .addAnnotation(Override.class)
                         .addModifiers(PUBLIC)
                         .returns(leafField ? viewFieldType : nodeFieldType)
-                        .addStatement("return $L", fieldName);
+                        .addStatement(getStatement);
 
                     nodeClsBuilder.addMethod(nodeGetMtdBuilder.build());
                 }
@@ -988,9 +994,16 @@ public class Processor extends AbstractProcessor {
                         .returns(nodeClsName);
 
                     if (valAnnotation != null) {
+                        CodeBlock changeStatement;
+
+                        if (isArray)
+                            changeStatement = CodeBlock.builder().add("this.$L = $L.clone()", fieldName, fieldName).build();
+                        else
+                            changeStatement = CodeBlock.builder().add("this.$L = $L", fieldName, fieldName).build();
+
                         nodeChangeMtdBuilder
                             .addParameter(changeFieldType, fieldName)
-                            .addStatement("this.$L = $L", fieldName, fieldName);
+                            .addStatement(changeStatement);
                     }
                     else {
                         String paramName = fieldName + "Consumer";
@@ -1046,9 +1059,16 @@ public class Processor extends AbstractProcessor {
                         .returns(nodeClsName);
 
                     if (valAnnotation != null) {
+                        CodeBlock initStatement;
+
+                        if (isArray)
+                            initStatement = CodeBlock.builder().add("this.$L = $L.clone()", fieldName, fieldName).build();
+                        else
+                            initStatement = CodeBlock.builder().add("this.$L = $L", fieldName, fieldName).build();
+
                         nodeInitMtdBuilder
                             .addParameter(initFieldType, fieldName)
-                            .addStatement("this.$L = $L", fieldName, fieldName);
+                            .addStatement(initStatement);
                     }
                     else {
                         String paramName = fieldName + "Consumer";
@@ -1337,6 +1357,31 @@ public class Processor extends AbstractProcessor {
             .addParameter(type, "changes")
             .addCode(builder.build())
             .build();
+    }
+
+    /**
+     * Checks whether TypeName is a primitive (or String) or an array of primitives (or Strings)
+     * @param typeName TypeName.
+     * @return {@code true} if type is primitive or array.
+     */
+    private boolean isPrimitiveOrArrayOfPrimitives(TypeName typeName) {
+        String type = typeName.toString();
+
+        if (typeName instanceof ArrayTypeName)
+            type = ((ArrayTypeName) typeName).componentType.toString();
+
+        switch (type) {
+            case "boolean":
+            case "int":
+            case "long":
+            case "double":
+            case "java.lang.String":
+                return true;
+
+            default:
+                return false;
+
+        }
     }
 
     /** {@inheritDoc} */

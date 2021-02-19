@@ -25,16 +25,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
-import org.apache.ignite.configuration.tree.ConfigurationVisitor;
-import org.apache.ignite.configuration.tree.InnerNode;
-import org.apache.ignite.configuration.tree.NamedListNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
+
+import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.nodeToFlatMap;
 
 /**
  * Class that handles configuration changes, by validating them, passing to storage and listening to storage updates.
@@ -98,10 +96,14 @@ public class ConfigurationChanger {
         return fut;
     }
 
-    /** */
+    /**
+     * Internal configuration change method that completes provided future.
+     * @param changes Map of changes by root key.
+     * @param fut Future, that must be completed after changes are written to the storage.
+     */
     private void change0(Map<RootKey<?>, TraversableTreeNode> changes, CompletableFuture<?> fut) {
         Map<String, Serializable> allChanges = changes.entrySet().stream()
-            .map((Map.Entry<RootKey<?>, TraversableTreeNode> change) -> convertChangesToMap(change.getKey(), change.getValue()))
+            .map((Map.Entry<RootKey<?>, TraversableTreeNode> change) -> nodeToFlatMap(change.getKey(), change.getValue()))
             .flatMap(map -> map.entrySet().stream())
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -159,67 +161,6 @@ public class ConfigurationChanger {
         }
 
         return new ValidationResult(issues, version);
-    }
-
-    /**
-     * Convert a traversable tree to a map of qualified keys to values.
-     * @param rootKey Root configuration key.
-     * @param node Tree.
-     * @return Map of changes.
-     */
-    private Map<String, Serializable> convertChangesToMap(RootKey<?> rootKey, TraversableTreeNode node) {
-        Map<String, Serializable> values = new HashMap<>();
-
-        node.accept(rootKey.key(), new ConfigurationVisitor<>() {
-            /** Current key, aggregated by visitor. */
-            StringBuilder currentKey = new StringBuilder();
-
-            /** {@inheritDoc} */
-            @Override public Void visitLeafNode(String key, Serializable val) {
-                values.put(currentKey.toString() + key, val);
-
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Void visitInnerNode(String key, InnerNode node) {
-                if (node == null)
-                    return null;
-
-                int previousKeyLength = currentKey.length();
-
-                currentKey.append(key).append('.');
-
-                node.traverseChildren(this);
-
-                currentKey.setLength(previousKeyLength);
-
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> node) {
-                int previousKeyLength = currentKey.length();
-
-                if (key != null)
-                    currentKey.append(key).append('.');
-
-                for (String namedListKey : node.namedListKeys()) {
-                    int loopPreviousKeyLength = currentKey.length();
-
-                    currentKey.append(ConfigurationUtil.escape(namedListKey)).append('.');
-
-                    node.get(namedListKey).traverseChildren(this);
-
-                    currentKey.setLength(loopPreviousKeyLength);
-                }
-
-                currentKey.setLength(previousKeyLength);
-
-                return null;
-            }
-        });
-        return values;
     }
 
     /**

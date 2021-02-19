@@ -30,4 +30,7 @@ public class TestConfigurationSchema {
 
     @Value
     private int primitiveInt;
+
+    @Value
+    private String[] stringArray;
 }

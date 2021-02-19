@@ -33,6 +33,9 @@ public class Types {
     /** String. */
     public static final String STRING = PKG_JAVA_LANG + "String";
 
+    /** String array. */
+    public static final String STRING_ARRAY = PKG_JAVA_LANG + "String[]";
+
     /** Double. */
     public static final String DOUBLE = PKG_JAVA_LANG + "Double";
 
