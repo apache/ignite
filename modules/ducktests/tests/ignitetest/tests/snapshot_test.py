@@ -16,7 +16,6 @@
 """
 Module contains snapshot test.
 """
-import os
 
 from ducktape.mark.resource import cluster
 
@@ -87,13 +86,7 @@ class SnapshotTest(IgniteTest):
 
         dump_1 = control_utility.idle_verify_dump(node)
 
-        index_file = os.path.join(service.database_dir, node.account.hostname.replace('-', '_').replace('.', '_'),
-                                  f'cache-{self.CACHE_NAME}', 'index.bin')
-        assert next(node.account.ssh_capture(f'du -m  {index_file} | cut -f1', callback=int)) > 30
-
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
-
-        diff_cache_group_on_nodes_with_snapshot(service, self.SNAPSHOT_NAME, self.CACHE_NAME)
 
         loader = IgniteApplicationService(
             self.test_context,
@@ -130,18 +123,3 @@ class SnapshotTest(IgniteTest):
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
-
-
-def diff_cache_group_on_nodes_with_snapshot(service, snapshot_name: str, cache_group_name: str, ) -> None:
-    """
-    :param service: Service.
-    :param snapshot_name: Name of snapshot.
-    :param cache_group_name: Name of cache group.
-    """
-    cache_group = f'cache-{cache_group_name}'
-
-    for node in service.nodes:
-        snapshot_cg_dir = os.path.join(service.snapshots_dir, snapshot_name, 'db', node.account.hostname, cache_group)
-        service_cg_dir = os.path.join(service.database_dir, node.account.hostname, cache_group)
-
-        node.account.ssh(f'diff -r {snapshot_cg_dir} {service_cg_dir}')
