@@ -17,12 +17,18 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -30,20 +36,91 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 
 /**
  * Tests that upgrade version on persisted inline index is successfull.
  */
+@RunWith(Parameterized.class)
 public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     private static final String TEST_CACHE_NAME = InlineIndexCompatibilityTest.class.getSimpleName();
 
     /** */
+    private static final int ROWS_CNT = 100;
+
+    /** Parametrized run param : Ignite version. */
+    @Parameterized.Parameter(0)
+    public String igniteVer;
+
+    /** Parametrized run param : startup closure of old version. */
+    @Parameterized.Parameter(1)
+    public boolean cfgInlineSize;
+
+    /** Test run configurations: Cache mode, atomicity type, is near. */
+    @Parameterized.Parameters(name = "ver={0}, cfgInlineSize={1}")
+    public static Collection<Object[]> runConfig() {
+        return Arrays.asList(new Object[][] {
+            /** 2.6.0 is a last version where POJO inlining isn't enabled. */
+            {"2.6.0", false},
+            // FAILED if user specified too big inline size for index with JavaObject.
+            {"2.6.0", true},
+
+            {"2.7.0", false},
+            {"2.7.0", true},
+
+            {"2.7.6", false},
+            {"2.7.6", true},
+
+            {"2.8.0", false},
+            {"2.8.0", true},
+
+            {"2.8.1", false},
+            {"2.8.1", true},
+
+            {"2.9.0", false},
+            {"2.9.0", true},
+
+            {"2.9.1", false},
+            {"2.9.1", true}
+        });
+    }
+
+    /** */
     @Test
-    public void test_2_8_1() throws Exception {
-        doTestStartupWithOldVersion("2.8.1");
+    public void testQueryOldInlinedIndex() throws Exception {
+        PostStartupClosure closure = cfgInlineSize ? new PostStartupClosureSized() : new PostStartupClosure();
+        doTestStartupWithOldVersion(igniteVer, closure);
+    }
+
+    /** {@inheritDoc} */
+    @Override @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
+        Collection<Dependency> dependencies = super.getDependencies(igniteVer);
+
+        if ("2.6.0".equals(igniteVer))
+            dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
+
+        dependencies.add(new Dependency("indexing", "ignite-indexing", false));
+
+        return dependencies;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
+        Set<String> excluded = super.getExcluded(ver, dependencies);
+
+        if ("2.6.0".equals(ver))
+            excluded.add("h2");
+
+        return excluded;
     }
 
     /** {@inheritDoc} */
@@ -76,23 +153,19 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
      * @param igniteVer 3-digits version of ignite
      * @throws Exception If failed.
      */
-    protected void doTestStartupWithOldVersion(String igniteVer) throws Exception {
+    protected void doTestStartupWithOldVersion(String igniteVer, PostStartupClosure closure) throws Exception {
         try {
-            startGrid(1, igniteVer,
+            IgniteEx ignite = startGrid(1, igniteVer,
                 new PersistenceBasicCompatibilityTest.ConfigurationClosure(true),
-                new PostStartupClosure());
+                closure);
 
-            stopAllGrids();
+            stopRemoteGrid(ignite);
 
-            Thread.sleep(100);
-
-            IgniteEx ignite = startGrid(0);
+            ignite = startGrid(0);
 
             assertEquals(1, ignite.context().discovery().topologyVersion());
 
-            ignite.active(true);
-
-            Thread.sleep(100);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             validateResultingCacheData(ignite.cache(TEST_CACHE_NAME));
         }
@@ -101,42 +174,74 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         }
     }
 
-    /**
-     * @param cache to be filled by different keys and values. Results may be validated in {@link
-     * #validateResultingCacheData(IgniteCache)}.
-     */
-    public static void saveCacheData(IgniteCache<Object, Object> cache) {
-        for (int i = 0; i < 100; i++)
-            cache.put(i, new EntityValueValue(new EntityValue(i + 2), i, i + 1));
+    /** */
+    private void stopRemoteGrid(Ignite ignite) throws IgniteInterruptedCheckedException {
+        IgniteProcessProxy proxy = IgniteProcessProxy.ignite(ignite.name());
 
-        cache.query(new SqlFieldsQuery(
-            "CREATE INDEX intval1_val_intval2 ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
-                "(intVal1, value, intVal2)")).getAll();
+        stopAllGrids();
+
+        Process proc = proxy.getProcess().getProcess();
+
+        // We should wait until process exits, or it can affect next tests.
+        assertTrue(GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L));
     }
 
     /**
      * Asserts cache contained all expected values as it was saved before.
      *
-     * @param cache Cache  should be filled using {@link #saveCacheData(IgniteCache)}.
+     * @param cache Cache to check.
      */
     public static void validateResultingCacheData(IgniteCache<Object, Object> cache) {
+        validateRandomRow(cache);
+        validateRandomRange(cache);
+    }
+
+    /** */
+    private static void validateRandomRow(IgniteCache<Object, Object> cache) {
+        int val = new Random().nextInt(ROWS_CNT);
+
         List<List<?>> result = cache.query(
             // Select by quering complex index.
             new SqlFieldsQuery(
                 "SELECT * FROM \"" + TEST_CACHE_NAME + "\".EntityValueValue v " +
-                    "WHERE v.intVal1 = ? and v.value = ? and v.intVal2 = ?;")
-                .setArgs(12, new EntityValue(14), 13)
+                    "WHERE v.intVal1 = ? and v.val = ? and v.intVal2 = ?;")
+                .setArgs(val, new EntityValue(val + 2), val + 1)
         ).getAll();
-
-        System.out.println("RESULT: " + result);
 
         assertTrue(result.size() == 1);
 
         List<?> row = result.get(0);
 
-        assertTrue(row.get(0).equals(new EntityValue(14)));
-        assertTrue(row.get(1).equals(12));
-        assertTrue(row.get(2).equals(13));
+        assertTrue(row.get(0).equals(new EntityValue(val + 2)));
+        assertTrue(row.get(1).equals(val));
+        assertTrue(row.get(2).equals(val + 1));
+    }
+
+    /** */
+    private static void validateRandomRange(IgniteCache<Object, Object> cache) {
+        int pivot = new Random().nextInt(ROWS_CNT);
+
+        List<List<?>> result = cache.query(
+            // Select by quering complex index.
+            new SqlFieldsQuery(
+                "SELECT * FROM \"" + TEST_CACHE_NAME + "\".EntityValueValue v " +
+                "WHERE v.intVal1 > ? and v.val > ? and v.intVal2 > ? " +
+                "ORDER BY v.val, v.intVal1, v.intVal2;")
+                .setArgs(pivot, new EntityValue(pivot), pivot)
+        ).getAll();
+
+        // For strict comparison. There was an issues with >= comparison for some versions.
+        pivot += 1;
+
+        assertTrue(result.size() == ROWS_CNT - pivot);
+
+        for (int i = 0; i < ROWS_CNT - pivot; i++) {
+            List<?> row = result.get(i);
+
+            assertTrue(row.get(0).equals(new EntityValue(pivot + i + 2)));
+            assertTrue(row.get(1).equals(pivot + i));
+            assertTrue(row.get(2).equals(pivot + i + 1));
+        }
     }
 
     /** */
@@ -165,52 +270,88 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
                 e.printStackTrace();
             }
         }
+
+        /**
+         * Create a complex index (int, pojo, int). Check that middle POJO object is correctly available from inline.
+         *
+         * @param cache to be filled with data. Results may be validated in {@link #validateResultingCacheData(IgniteCache)}.
+         */
+        protected void saveCacheData(IgniteCache<Object, Object> cache) {
+            for (int i = 0; i < ROWS_CNT; i++)
+                cache.put(i, new EntityValueValue(new EntityValue(i + 2), i, i + 1));
+
+            // Create index (int, pojo, int).
+            cache.query(new SqlFieldsQuery(
+                "CREATE INDEX intval1_val_intval2 ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
+                    "(intVal1, val, intVal2)")).getAll();
+        }
     }
 
     /** */
-    public static class EntityValue {
-        private int value;
+    public static class PostStartupClosureSized extends PostStartupClosure {
+        /** {@inheritDoc} */
+        @Override protected void saveCacheData(IgniteCache<Object, Object> cache) {
+            for (int i = 0; i < ROWS_CNT; i++)
+                cache.put(i, new EntityValueValue(new EntityValue(i + 2), i, i + 1));
 
-        public EntityValue(int value) {
-            this.value = value;
-        }
-
-        @Override public String toString() {
-            return "EV[value=" + value + "]";
-        }
-
-        @Override public int hashCode() {
-            return 1 + value;
-        }
-
-        @Override public boolean equals(Object other) {
-            return value == ((EntityValue) other).value;
+            // Create index (int, pojo, int) with configured inline size.
+            cache.query(new SqlFieldsQuery(
+                "CREATE INDEX intval1_val_intval2_sized ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
+                    "(intVal1, val, intVal2) " +
+                    "INLINE_SIZE 100")).getAll();
         }
     }
 
-    public static class EntityValueValue {
+    /** POJO object aimed to be inlined. */
+    public static class EntityValue {
+        /** */
+        private final int val;
 
-        @QuerySqlField(index = true)
-        private EntityValue value;
-
-        @QuerySqlField
-        private int intVal1;
-
-        @QuerySqlField
-        private int intVal2;
-
-        public EntityValueValue(EntityValue value) {
-            this(value, 0, 0);
+        /** */
+        public EntityValue(int val) {
+            this.val = val;
         }
 
-        public EntityValueValue(EntityValue value, int val1, int val2) {
-            this.value = value;
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "EV[value=" + val + "]";
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 1 + val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object other) {
+            return val == ((EntityValue) other).val;
+        }
+    }
+
+    /** Represents a cache value with 3 fields (POJO, int, int). */
+    public static class EntityValueValue {
+        /** */
+        @QuerySqlField
+        private final EntityValue val;
+
+        /** */
+        @QuerySqlField
+        private final int intVal1;
+
+        /** */
+        @QuerySqlField
+        private final int intVal2;
+
+        /** */
+        public EntityValueValue(EntityValue val, int val1, int val2) {
+            this.val = val;
             intVal1 = val1;
             intVal2 = val2;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
-            return "EVV[value=" + value + "]";
+            return "EVV[value=" + val + "]";
         }
     }
 }
