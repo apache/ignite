@@ -446,3 +446,16 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
 
         return IgniteAwareService.exec_command(node, cmd).strip().lower()
+
+    def restore_from_snapshot(self, snapshot_name: str):
+        """
+        Restore from snapshot.
+        :param snapshot_name: Name of Snapshot.
+        """
+        snapshot_db = os.path.join(self.snapshots_dir, snapshot_name, "db")
+
+        for node in self.nodes:
+            assert len(self.pids(node)) == 0
+
+            node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
+            node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)

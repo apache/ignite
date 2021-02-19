@@ -15,3 +15,6 @@
 
 discovery:
   - ../discovery_test.py
+
+snapshot:
+  - ../snapshot_test.py

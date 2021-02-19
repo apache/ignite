@@ -45,6 +45,7 @@ class IgniteConfiguration(NamedTuple):
     local_host: str = None
     ssl_context_factory: SslContextFactory = None
     connector_configuration: ConnectorConfiguration = None
+    metric_exporter: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
