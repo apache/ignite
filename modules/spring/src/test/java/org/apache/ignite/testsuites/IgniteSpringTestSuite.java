@@ -32,6 +32,7 @@ import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
 import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
+import org.apache.ignite.internal.IgniteClientSpringBeanTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
 import org.apache.ignite.internal.IgniteSpringBeanTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
@@ -52,6 +53,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     GridSpringBeanSerializationSelfTest.class,
     IgniteSpringBeanTest.class,
+    IgniteClientSpringBeanTest.class,
     GridFactorySelfTest.class,
 
     IgniteResourceSelfTestSuite.class,
