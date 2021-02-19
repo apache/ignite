@@ -236,17 +236,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             IndexRow currRow = getRow(io, pageAddr, idx);
 
-            for (int i = lastIdxUsed; i < searchKeysLength; i++) {
-                // If a search key is null then skip other keys (consider that null shows that we should get all
-                // possible keys for that comparison).
-                if (row.getKey(i) == null)
-                    return 0;
-
-                int c = def.getRowComparator().compareKey((IndexSearchRow) currRow, (IndexSearchRow) row, i);
-
-                if (c != 0)
-                    return applySortOrder(Integer.signum(c), schema.getKeyDefinitions()[i].getOrder().getSortOrder());
-            }
+            return compareFullRows(currRow, row, lastIdxUsed, searchKeysLength)
         }
 
         return 0;

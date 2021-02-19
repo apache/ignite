@@ -240,7 +240,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
     /**
      * Indexing that blocks index rebuild until status request is completed.
      */
-    private static class BlockingIndexing extends IndexesRebuildTask {
+    private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
             SchemaIndexCacheVisitorClosure clo) {
             idxRebuildsStartedNum.incrementAndGet();

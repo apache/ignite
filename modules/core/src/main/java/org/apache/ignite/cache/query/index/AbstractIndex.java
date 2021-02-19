@@ -33,7 +33,7 @@ public abstract class AbstractIndex implements Index {
      * @param val Mark or unmark index to rebuild.
      */
     public void markIndexRebuild(boolean val) {
-        rebuildInProgress.compareAndSet(val ? FALSE : TRUE, val ? TRUE : FALSE);
+        rebuildInProgress.compareAndSet(!val, val);
     }
 
     /**
