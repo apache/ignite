@@ -349,10 +349,8 @@ class ControlUtility:
         auth = ""
         if self.creds:
             auth = " --user {} --password {} ".format(*self.creds)
-        return self._cluster.script(f"{self.BASE_COMMAND} --host "
-                                    f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
+        return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
 
-                          
     @staticmethod
     def __parse_output(raw_output):
         exit_code = raw_output.channel_file.channel.recv_exit_status()
