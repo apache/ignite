@@ -17,27 +17,24 @@
   limitations under the License.
 -->
 
-<!--
-    Ignite Spring configuration file to startup grid cache.
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="lifecycleBeans">
-            <array>
-                <bean id="bean1" class="org.apache.ignite.TestInjectionLifecycleBean"/>
-                <bean id="bean2" class="org.apache.ignite.TestInjectionLifecycleBean"/>
-            </array>
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="igniteClient" class="org.apache.ignite.IgniteClientSpringBean">
+        <property name="clientConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConfiguration">
+                <property name="addresses">
+                    <list>
+                        <value>127.0.0.1:10800</value>
+                    </list>
+                </property>
+            </bean>
         </property>
-
-        <property name="localHost" value="127.0.0.1"/>
-
-        <property name="igniteInstanceName" value="springInjectionTest"/>
     </bean>
+
+    <!--
+        The following bean is declared after "igniteClient" bean to test that Ignite node and Ignite client beans are
+        initialized in correct order regardless of the declaration order.
+    -->
+    <bean id="ignite" class="org.apache.ignite.IgniteSpringBean"/>
 </beans>
