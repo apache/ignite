@@ -17,7 +17,6 @@
 This module contains ignite config classes and utilities.
 """
 import os
-import re
 
 from jinja2 import FileSystemLoader, Environment
 
@@ -46,7 +45,7 @@ class ConfigTemplate:
         kwargs.update(self.default_params)
         unfiltered = self.template.render(**kwargs)
 
-        res = '\n'.join(filter(lambda line: re.search(r'\S', line), unfiltered.split('\n')))
+        res = '\n'.join(filter(lambda line: line.strip(), unfiltered.split('\n')))
 
         return res
 
