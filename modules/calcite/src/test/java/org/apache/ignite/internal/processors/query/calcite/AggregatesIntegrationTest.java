@@ -116,6 +116,9 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
             .returns(15d, "Ilya", 1L, 15d)
             .returns(15d, null, 1L, 15d)
             .check();
+
+        assertQuery("select salary, count(name) from person group by salary having salary < 10 order by salary")
+            .check();
     }
 
     /** */

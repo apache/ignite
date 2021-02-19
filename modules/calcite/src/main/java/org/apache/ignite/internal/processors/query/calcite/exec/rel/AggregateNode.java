@@ -95,13 +95,6 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         }
 
         grpSet = b.build();
-
-        if (type == AggregateType.REDUCE || type == AggregateType.SINGLE)
-            for (Grouping grouping : groupings) {
-                if (grouping.grpFields.isEmpty())
-                    grouping.groups.computeIfAbsent(GroupKey.EMPTY_GRP_KEY, grouping::create);
-            }
-
     }
 
     /** {@inheritDoc} */
@@ -254,6 +247,13 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
             this.grpFields = grpFields;
 
             handler = context().rowHandler();
+
+            // Initialyzes aggregates for case when no any rown will be added into the aggregate to have 0 as result.
+            // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
+            if (type == AggregateType.REDUCE || type == AggregateType.SINGLE) {
+                if (grpFields.isEmpty())
+                    groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
+            }
         }
 
         /** */
