@@ -27,7 +27,7 @@ import org.springframework.cache.support.SimpleValueWrapper;
 /**
  * Spring cache implementation.
  */
-class SpringCache implements Cache {
+public class SpringCache implements Cache {
     /** */
     private static final Object NULL = new NullValue();
 
