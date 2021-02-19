@@ -35,29 +35,29 @@ public class GridSqlMerge extends GridSqlStatement {
     private GridSqlQuery qry;
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("MERGE INTO ")
-            .append(into.getSQL())
+            .append(into.getSQL(hideConst, delim))
             .append("(");
 
         for (GridSqlColumn col : cols) {
             buff.appendExceptFirst(", ");
-            buff.append('\n')
-                .append(col.getSQL());
+            buff.append(delim)
+                .append(col.getSQL(hideConst, delim));
         }
-        buff.append("\n)\n");
+        buff.append(delim).append(")").append(delim);
 
         if (!rows.isEmpty()) {
-            buff.append("VALUES\n");
+            buff.append("VALUES").append(delim);
             StatementBuilder valuesBuff = new StatementBuilder();
 
             for (GridSqlElement[] row : rows()) {
-                valuesBuff.appendExceptFirst(",\n");
+                valuesBuff.appendExceptFirst("," + delim);
                 StatementBuilder rowBuff = new StatementBuilder("(");
                 for (GridSqlElement e : row) {
                     rowBuff.appendExceptFirst(", ");
-                    rowBuff.append(e != null ? e.getSQL() : "DEFAULT");
+                    rowBuff.append(e != null ? e.getSQL(hideConst, delim) : "DEFAULT");
                 }
                 rowBuff.append(')');
                 valuesBuff.append(rowBuff.toString());
@@ -65,8 +65,8 @@ public class GridSqlMerge extends GridSqlStatement {
             buff.append(valuesBuff.toString());
         }
         else
-            buff.append('\n')
-                .append(qry.getSQL());
+            buff.append(delim)
+                .append(qry.getSQL(hideConst, delim));
 
         return buff.toString();
     }

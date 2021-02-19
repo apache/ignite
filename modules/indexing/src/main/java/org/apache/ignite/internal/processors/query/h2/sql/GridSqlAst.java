@@ -21,10 +21,23 @@ package org.apache.ignite.internal.processors.query.h2.sql;
  * AST for SQL.
  */
 public interface GridSqlAst {
+    /** Default SQL delimeter. */
+    public static final char DEFAULT_DELIM = '\n';
+
     /**
+     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
      * @return Generate sql from this AST.
      */
-    public String getSQL();
+    public default String getSQL(boolean hideConst) {
+        return getSQL(hideConst, DEFAULT_DELIM);
+    }
+
+    /**
+     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
+     * @param delim Delimeter char.
+     * @return Generate sql from this AST.
+     */
+    public String getSQL(boolean hideConst, char delim);
 
     /**
      * @return Number of child nodes.

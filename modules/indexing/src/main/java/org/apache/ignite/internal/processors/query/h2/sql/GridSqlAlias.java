@@ -70,14 +70,14 @@ public class GridSqlAlias extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         SB b = new SB();
 
         GridSqlAst child = child(0);
 
         boolean tbl = child instanceof GridSqlTable;
 
-        b.a(tbl ? ((GridSqlTable)child).getBeforeAliasSql() : child.getSQL());
+        b.a(tbl ? ((GridSqlTable)child).getBeforeAliasSql() : child.getSQL(hideConst, delim));
 
         b.a(useAs ? " AS " : " ");
         b.a(Parser.quoteIdentifier(alias));

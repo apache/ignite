@@ -143,9 +143,9 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
     /**
      * @param buff Statement builder.
      */
-    protected void getSortLimitSQL(StatementBuilder buff) {
+    protected void getSortLimitSQL(StatementBuilder buff, boolean hideConst, char delim) {
         if (!sort.isEmpty()) {
-            buff.append("\nORDER BY ");
+            buff.append(delim).append("ORDER BY ");
 
             int visibleCols = visibleColumns();
 
@@ -169,7 +169,7 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
                     if (expr instanceof GridSqlAlias)
                         expr = expr.child(0);
 
-                    buff.append('=').append(StringUtils.unEnclose(expr.getSQL()));
+                    buff.append('=').append(StringUtils.unEnclose(expr.getSQL(hideConst, delim)));
                 }
 
                 if (!col.asc())
@@ -183,10 +183,10 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
         }
 
         if (limit != null)
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
+            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL(hideConst, delim)));
 
         if (offset != null)
-            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL(hideConst, delim)));
     }
 
     /**

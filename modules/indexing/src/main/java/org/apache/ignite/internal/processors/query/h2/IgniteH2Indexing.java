@@ -208,6 +208,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
@@ -231,6 +232,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_DML_QRY
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_OPEN;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_EXECUTE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -663,7 +665,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         QueryParserResultDml dml = streamerParse(schemaName, qry);
 
-        return streamQuery0(qry, schemaName, streamer, dml, params);
+        return streamQuery0(schemaName, streamer, dml, params);
     }
 
     /** {@inheritDoc} */
@@ -689,7 +691,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         List<Long> ress = new ArrayList<>(params.size());
 
         for (int i = 0; i < params.size(); i++) {
-            long res = streamQuery0(qry, schemaName, streamer, dml, params.get(i));
+            long res = streamQuery0(schemaName, streamer, dml, params.get(i));
 
             ress.add(res);
         }
@@ -700,7 +702,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Perform given statement against given data streamer. Only rows based INSERT is supported.
      *
-     * @param qry Query.
      * @param schemaName Schema name.
      * @param streamer Streamer to feed data to.
      * @param dml DML statement.
@@ -709,9 +710,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "Anonymous2MethodRef"})
-    private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
+    private long streamQuery0(String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
-        Long qryId = runningQryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId =
+            runningQryMgr.register(sqlForUser(dml.statement()), GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
 
         Exception failReason = null;
 
@@ -757,6 +759,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             runningQryMgr.unregister(qryId, failReason);
         }
+    }
+
+    /** */
+    private static String sqlForUser(GridSqlStatement stmnt) {
+        return stmnt.getSQL(
+            !IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE),
+            ' '
+        );
     }
 
     /**
@@ -1030,7 +1040,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        Long qryId = registerRunningQuery(qryDesc, qryParams, null);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, null, null, null, cmd);
 
         CommandResult res = null;
 
@@ -1213,7 +1223,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
 
-        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, null, dml, null);
 
         Exception failReason = null;
 
@@ -1298,7 +1308,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert cancel != null;
 
         // Register query.
-        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select, null, null);
 
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_CURSOR_OPEN, MTC.span()))) {
             GridNearTxLocal tx = null;
@@ -1561,9 +1571,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Query cancel state holder.
      * @return Id of registered query or {@code null} if query wasn't registered.
      */
-    private Long registerRunningQuery(QueryDescriptor qryDesc, QueryParameters qryParams, GridQueryCancel cancel) {
+    private Long registerRunningQuery(
+        QueryDescriptor qryDesc,
+        QueryParameters qryParams,
+        GridQueryCancel cancel,
+        QueryParserResultSelect select,
+        QueryParserResultDml dml,
+        QueryParserResultCommand cmd
+    ) {
+        String qry = select != null
+            ? sqlForUser(select.statement())
+            : dml != null
+                ? sqlForUser(dml.statement())
+                : qryDesc.sql();
+
         Long res = runningQryMgr.register(
-            qryDesc.sql(),
+            qry,
             GridCacheQueryType.SQL_FIELDS,
             qryDesc.schemaName(),
             qryDesc.local(),
@@ -1574,7 +1597,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ctx.event().record(new SqlQueryExecutionEvent(
                 ctx.discovery().localNode(),
                 GridCacheQueryType.SQL_FIELDS.name() + " query execution.",
-                qryDesc.sql(),
+                qry,
                 qryParams.arguments(),
                 ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null));
         }

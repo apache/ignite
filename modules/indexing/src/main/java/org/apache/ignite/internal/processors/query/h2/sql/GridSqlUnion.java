@@ -41,7 +41,6 @@ public class GridSqlUnion extends GridSqlQuery {
     private GridSqlQuery left;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <E extends GridSqlAst> E child(int childIdx) {
         if (childIdx < LEFT_CHILD)
             return super.child(childIdx);
@@ -102,10 +101,10 @@ public class GridSqlUnion extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN \n" : "");
 
-        buff.append('(').append(left.getSQL()).append(')');
+        buff.append('(').append(left.getSQL(hideConst, delim)).append(')');
 
         switch (unionType()) {
             case UNION_ALL:
@@ -128,9 +127,9 @@ public class GridSqlUnion extends GridSqlQuery {
                 throw new CacheException("type=" + unionType);
         }
 
-        buff.append('(').append(right.getSQL()).append(')');
+        buff.append('(').append(right.getSQL(hideConst, delim)).append(')');
 
-        getSortLimitSQL(buff);
+        getSortLimitSQL(buff, hideConst, delim);
 
         return buff.toString();
     }

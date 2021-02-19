@@ -73,7 +73,7 @@ public class GridSqlDropTable extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         return null;
     }
 }

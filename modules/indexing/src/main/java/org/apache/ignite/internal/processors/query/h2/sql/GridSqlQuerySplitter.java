@@ -169,7 +169,7 @@ public class GridSqlQuerySplitter {
      * @return Merge table name.
      */
     public static String mergeTableIdentifier(int idx) {
-        return mergeTable(idx).getSQL();
+        return mergeTable(idx).getSQL(false);
     }
 
     /**
@@ -274,7 +274,7 @@ public class GridSqlQuerySplitter {
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
         qry = GridSqlQueryParser.parseQuery(
-            prepare(conn, H2Utils.context(conn), qry.getSQL(), false, enforceJoinOrder),
+            prepare(conn, H2Utils.context(conn), qry.getSQL(false), false, enforceJoinOrder),
             true, log);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
@@ -299,7 +299,7 @@ public class GridSqlQuerySplitter {
 
                 allCollocated &= isCollocated((Query)prepared0);
 
-                mapSqlQry.query(GridSqlQueryParser.parseQuery(prepared0, true, log).getSQL());
+                mapSqlQry.query(GridSqlQueryParser.parseQuery(prepared0, true, log).getSQL(false));
             }
 
             // We do not need distributed joins if all MAP queries are collocated.
@@ -371,7 +371,7 @@ public class GridSqlQuerySplitter {
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryParent.subquery();
 
-        String rdcQry = qry.getSQL();
+        String rdcQry = qry.getSQL(false);
 
         SplitterUtils.checkNoDataTablesInReduceQuery(qry, rdcQry);
 
@@ -703,7 +703,7 @@ public class GridSqlQuerySplitter {
         for (int i = begin; i <= end; i++) {
             GridSqlAlias uniqueTblAlias = model.childModel(i).uniqueAlias();
 
-            assert uniqueTblAlias != null : select.getSQL();
+            assert uniqueTblAlias != null : select;
 
             tblAliases.add(uniqueTblAlias);
         }
@@ -1259,7 +1259,7 @@ public class GridSqlQuerySplitter {
         parent.child(childIdx, rdcQry);
 
         // Setup resulting map query.
-        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
+        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL(false));
 
         setupParameters(map, mapQry, paramsCnt);
 
@@ -1452,7 +1452,7 @@ public class GridSqlQuerySplitter {
             normalizeQuery(((GridSqlSubquery)from).subquery());
 
             if (!parentAlias) // H2 generates aliases for subqueries in FROM clause.
-                throw new IllegalStateException("No alias for subquery: " + from.getSQL());
+                throw new IllegalStateException("No alias for subquery: " + from);
         }
         else if (from instanceof GridSqlJoin) {
             // Left and right.
@@ -1468,7 +1468,7 @@ public class GridSqlQuerySplitter {
                 generateUniqueAlias(parent, childIdx);
         }
         else
-            throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
+            throw new IllegalStateException(from.getClass().getName() + " : " + from);
     }
 
     /**
@@ -1496,7 +1496,7 @@ public class GridSqlQuerySplitter {
             GridSqlAlias uniqueAlias = uniqueFromAliases.get(tbl);
 
             // Unique aliases must be generated for all the table filters already.
-            assert uniqueAlias != null : childIdx + "\n" + parent.getSQL();
+            assert uniqueAlias != null : childIdx + "\n" + parent;
 
             col.tableAlias(uniqueAlias.alias());
             col.expressionInFrom(uniqueAlias);

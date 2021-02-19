@@ -18,6 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.List;
+import org.apache.ignite.IgniteSystemProperties;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Base class for all SQL AST nodes.
@@ -92,7 +96,10 @@ public abstract class GridSqlElement implements GridSqlAst {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getSQL();
+        return getSQL(
+            !IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE),
+            DEFAULT_DELIM
+        );
     }
 
     /** {@inheritDoc} */

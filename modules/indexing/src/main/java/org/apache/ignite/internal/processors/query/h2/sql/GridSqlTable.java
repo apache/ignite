@@ -74,7 +74,7 @@ public class GridSqlTable extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         return getBeforeAliasSql() + getAfterAliasSQL();
     }
 

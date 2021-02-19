@@ -1028,7 +1028,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         GridSqlStatement gQry = new GridSqlQueryParser(false, log).parse(prepared);
 
-        String res = gQry.getSQL();
+        String res = gQry.getSQL(false);
 
         System.out.println(normalizeSql(res));
 

@@ -100,7 +100,7 @@ public class GridSqlColumn extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         String sql = Parser.quoteIdentifier(colName);
 
         if (tblAlias != null)

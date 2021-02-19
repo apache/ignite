@@ -51,17 +51,17 @@ public class GridSqlDelete extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("DELETE")
-            .append("\nFROM ")
-            .append(from.getSQL());
+            .append(delim).append("FROM ")
+            .append(from.getSQL(hideConst, delim));
 
         if (where != null)
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst, delim)));
 
         if (limit != null)
-            buff.append("\nLIMIT (").append(StringUtils.unEnclose(limit.getSQL())).append(')');
+            buff.append(delim).append("LIMIT (").append(StringUtils.unEnclose(limit.getSQL(hideConst, delim))).append(')');
 
         return buff.toString();
     }

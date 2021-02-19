@@ -141,7 +141,7 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
+    @Override public String getSQL(boolean hideConst, char delim) {
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN SELECT" : "SELECT");
 
         if (distinct)
@@ -149,38 +149,38 @@ public class GridSqlSelect extends GridSqlQuery {
 
         for (GridSqlAst expression : columns(true)) {
             buff.appendExceptFirst(",");
-            buff.append('\n');
-            buff.append(expression.getSQL());
+            buff.append(delim);
+            buff.append(expression.getSQL(hideConst, delim));
         }
 
         if (from != null)
-            buff.append("\nFROM ").append(from.getSQL());
+            buff.append(delim).append("FROM ").append(from.getSQL(hideConst, delim));
 
         if (where != null)
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst, delim)));
 
         if (grpCols != null) {
-            buff.append("\nGROUP BY ");
+            buff.append(delim).append("GROUP BY ");
 
             buff.resetCount();
 
             for (int grpCol : grpCols) {
                 buff.appendExceptFirst(", ");
 
-                addAlias(buff, cols.get(grpCol));
+                addAlias(buff, cols.get(grpCol), hideConst, delim);
             }
         }
 
         if (havingCol >= 0) {
-            buff.append("\nHAVING ");
+            buff.append(delim).append("HAVING ");
 
-            addAlias(buff, cols.get(havingCol));
+            addAlias(buff, cols.get(havingCol), hideConst, delim);
         }
 
-        getSortLimitSQL(buff);
+        getSortLimitSQL(buff, hideConst, delim);
 
         if (isForUpdate)
-            buff.append("\nFOR UPDATE");
+            buff.append(delim).append("FOR UPDATE");
 
         return buff.toString();
     }
@@ -216,10 +216,10 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param buff Statement builder.
      * @param exp Alias expression.
      */
-    private static void addAlias(StatementBuilder buff, GridSqlAst exp) {
+    private static void addAlias(StatementBuilder buff, GridSqlAst exp, boolean hideConst, char delim) {
         exp = GridSqlAlias.unwrap(exp);
 
-        buff.append(StringUtils.unEnclose(exp.getSQL()));
+        buff.append(StringUtils.unEnclose(exp.getSQL(hideConst, delim)));
     }
 
     /**
