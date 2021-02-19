@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -39,7 +39,7 @@ public class SnapshotRestoreRequest implements Serializable {
     private final String snpName;
 
     /** Baseline node IDs that must be alive to complete the operation. */
-    private final Collection<UUID> nodes;
+    private final Set<UUID> nodes;
 
     /** Stored cache configurations. */
     @GridToStringExclude
@@ -58,7 +58,7 @@ public class SnapshotRestoreRequest implements Serializable {
     public SnapshotRestoreRequest(
         UUID reqId,
         String snpName,
-        Collection<UUID> nodes,
+        Set<UUID> nodes,
         List<StoredCacheData> ccfgs,
         UUID updateMetaNodeId
     ) {
@@ -93,7 +93,7 @@ public class SnapshotRestoreRequest implements Serializable {
     /**
      * @return Baseline node IDs that must be alive to complete the operation.
      */
-    public Collection<UUID> nodes() {
+    public Set<UUID> nodes() {
         return nodes;
     }
 

@@ -62,7 +62,7 @@ public class SnapshotRestoreVerificatioTask extends
 
         return jobs;
     }
-
+    SnapshotRestoreRequest
     /** {@inheritDoc} */
     @Override public SnapshotRestoreVerificationResult reduce(List<ComputeJobResult> results) throws IgniteException {
         SnapshotRestoreVerificationResult firstRes = null;

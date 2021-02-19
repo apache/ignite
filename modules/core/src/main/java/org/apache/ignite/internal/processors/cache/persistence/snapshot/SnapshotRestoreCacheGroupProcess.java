@@ -260,7 +260,7 @@ public class SnapshotRestoreCacheGroupProcess {
         if (fut.isDone())
             fut = new GridFutureAdapter<>();
 
-        opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), new HashSet<>(req.nodes()), req.configs(), ctx);
+        opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.nodes(), req.configs(), ctx);
 
         fut.listen(f -> opCtx = null);
 
@@ -289,7 +289,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
             ctx.getSystemExecutorService().submit(() -> {
                 try {
-                    opCtx0.restore(updateMeta, opCtx0::interrupted);
+                    opCtx0.restore(updateMeta);
 
                     if (opCtx0.interrupted()) {
                         log.error("Snapshot restore process has been interrupted " +

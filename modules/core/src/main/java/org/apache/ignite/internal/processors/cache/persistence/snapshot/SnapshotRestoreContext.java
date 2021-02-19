@@ -29,8 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -50,14 +48,11 @@ class SnapshotRestoreContext {
     /** Snapshot name. */
     private final String snpName;
 
-    /** List of baseline node IDs that must be alive to complete the operation. */
+    /** Baseline node IDs that must be alive to complete the operation. */
     private final Set<UUID> reqNodes;
 
     /** Kernal context. */
     private final GridKernalContext ctx;
-
-    /** Restore operation lock. */
-    private final ReentrantLock rollbackLock = new ReentrantLock();
 
     /** List of processed cache IDs. */
     private final Set<Integer> cacheIds = new HashSet<>();
@@ -74,7 +69,7 @@ class SnapshotRestoreContext {
     /**
      * @param reqId Request ID.
      * @param snpName Snapshot name.
-     * @param reqNodes List of baseline node IDs that must be alive to complete the operation.
+     * @param reqNodes Baseline node IDs that must be alive to complete the operation.
      * @param configs Stored cache configurations.
      * @param ctx Kernal context.
      */
@@ -96,7 +91,7 @@ class SnapshotRestoreContext {
         }
 
         this.reqId = reqId;
-        this.reqNodes = reqNodes;
+        this.reqNodes = new HashSet<>(reqNodes);
         this.snpName = snpName;
         this.ctx = ctx;
     }
@@ -106,7 +101,7 @@ class SnapshotRestoreContext {
         return reqId;
     }
 
-    /** @return List of baseline node IDs that must be alive to complete the operation. */
+    /** @return Baseline node IDs that must be alive to complete the operation. */
     protected Set<UUID> nodes() {
         return Collections.unmodifiableSet(reqNodes);
     }
@@ -137,6 +132,14 @@ class SnapshotRestoreContext {
     }
 
     /**
+     * @param err Error.
+     * @return {@code True} if operation has been interrupted by this call.
+     */
+    protected boolean interrupt(Exception err) {
+        return errRef.compareAndSet(null, err);
+    }
+
+    /**
      * @return Interrupted flag.
      */
     protected boolean interrupted() {
@@ -144,35 +147,26 @@ class SnapshotRestoreContext {
     }
 
     /**
-     * @return Error or {@code null} if there were no errors.
+     * @return Error if operation was interrupted, otherwise {@code null}.
      */
     protected @Nullable Throwable error() {
         return errRef.get();
     }
 
     /**
-     * Interrupt process.
-     *
-     * @param err Error.
-     * @return {@code True} if process has been interrupted by this call.
-     */
-    protected boolean interrupt(Exception err) {
-        return errRef.compareAndSet(null, err);
-    }
-
-    /**
      * Restore specified cache groups from the local snapshot directory.
      *
      * @param updateMetadata Update binary metadata flag.
-     * @param stopChecker Node stop or prcoess interrupt checker.
      * @throws IgniteCheckedException If failed.
      */
-    protected void restore(boolean updateMetadata, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        if (stopChecker.getAsBoolean())
+    protected void restore(boolean updateMetadata) throws IgniteCheckedException {
+        if (interrupted())
             return;
 
+        IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+
         if (updateMetadata) {
-            File binDir = binaryWorkDir(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpName).getAbsolutePath(),
+            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(),
                 ctx.pdsFolderResolver().resolveFolders().folderName());
 
             if (!binDir.exists()) {
@@ -180,39 +174,27 @@ class SnapshotRestoreContext {
                     "directory doesn't exists [snapshot=" + snpName + ", dir=" + binDir + ']');
             }
 
-            ctx.cacheObjects().updateMetadata(binDir, stopChecker);
+            ctx.cacheObjects().updateMetadata(binDir, this::interrupted);
         }
 
-        for (String grpName : groups()) {
-            rollbackLock.lock();
-
-            try {
-                ctx.cache().context().snapshotMgr().restoreCacheGroupFiles(snpName, grpName, stopChecker, grps.get(grpName));
-            }
-            finally {
-                rollbackLock.unlock();
-            }
-        }
+        for (String grpName : groups())
+            snapshotMgr.restoreCacheGroupFiles(snpName, grpName, this::interrupted, grps.get(grpName));
     }
 
     /**
      * Rollback changes made by process in specified cache group.
      */
     protected void rollback() {
-        rollbackLock.lock();
+        if (groups().isEmpty())
+            return;
 
-        try {
-            List<String> grpNames = new ArrayList<>(groups());
+        List<String> grpNames = new ArrayList<>(groups());
 
-            for (String grpName : grpNames) {
-                List<File> files = grps.remove(grpName);
+        for (String grpName : grpNames) {
+            List<File> files = grps.remove(grpName);
 
-                if (files != null)
-                    ctx.cache().context().snapshotMgr().rollbackRestoreOperation(files);
-            }
-        }
-        finally {
-            rollbackLock.unlock();
+            if (files != null)
+                ctx.cache().context().snapshotMgr().rollbackRestoreOperation(files);
         }
     }
 
