@@ -47,6 +47,7 @@ class IgniteConfiguration(NamedTuple):
     connector_configuration: ConnectorConfiguration = None
     auth: bool = False
     plugins: list = []
+    metric_exporter: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

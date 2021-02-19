@@ -19,7 +19,9 @@ This module contains control utility wrapper.
 import os
 import random
 import re
+import socket
 import time
+from datetime import datetime, timedelta
 from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -27,6 +29,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN
 from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
 from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
+from ignitetest.services.utils.jmx_utils import JmxClient
 
 
 class ControlUtility:
@@ -139,6 +142,63 @@ class ControlUtility:
         output = self.__run(self.__tx_command(kill=True, **kwargs))
         res = self.__parse_tx_list(output)
         return res if res else output
+
+    def validate_indexes(self):
+        """
+        Validate indexes.
+        """
+        data = self.__run("--cache validate_indexes")
+
+        assert ('no issues found.' in data), data
+
+    def idle_verify(self):
+        """
+        Idle verify.
+        """
+        data = self.__run("--cache idle_verify")
+
+        assert ('idle_verify check has finished, no conflicts have been found.' in data), data
+
+    def idle_verify_dump(self, node=None):
+        """
+        Idle verify dump.
+        :param node: Node on which the command will be executed and the dump file will be located.
+        """
+        data = self.__run("--cache idle_verify --dump", node=node)
+
+        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+
+        return re.search(r'/.*.txt', data).group(0)
+
+    def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
+        """
+        Create snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param timeout_sec: Timeout to await snapshot to complete.
+        """
+        res = self.__run(f"--snapshot create {snapshot_name}")
+
+        assert "Command [SNAPSHOT] finished with code: 0" in res
+
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            for node in self._cluster.nodes:
+                mbean = JmxClient(node).find_mbean('.*name=snapshot')
+
+                if snapshot_name != next(mbean.LastSnapshotName):
+                    continue
+
+                start_time = int(next(mbean.LastSnapshotStartTime))
+                end_time = int(next(mbean.LastSnapshotEndTime))
+                err_msg = next(mbean.LastSnapshotErrorMessage)
+
+                if (start_time < end_time) and (err_msg == ''):
+                    assert snapshot_name == next(mbean.LastSnapshotName)
+                    return
+
+        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
+                           f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
     @staticmethod
     def __tx_command(**kwargs):
@@ -261,12 +321,15 @@ class ControlUtility:
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline)
 
-    def __run(self, cmd):
-        node = random.choice(self.__alives())
+    def __run(self, cmd, node=None):
+        if node is None:
+            node = random.choice(self.__alives())
 
         self.logger.debug(f"Run command {cmd} on node {node.name}")
 
-        raw_output = node.account.ssh_capture(self.__form_cmd(node, cmd), allow_fail=True)
+        node_ip = socket.gethostbyname(node.account.hostname)
+
+        raw_output = node.account.ssh_capture(self.__form_cmd(node_ip, cmd), allow_fail=True)
         code, output = self.__parse_output(raw_output)
 
         self.logger.debug(f"Output of command {cmd} on node {node.name}, exited with code {code}, is {output}")
@@ -276,7 +339,7 @@ class ControlUtility:
 
         return output
 
-    def __form_cmd(self, node, cmd):
+    def __form_cmd(self, node_ip, cmd):
         ssl = ""
         if self.ssl_context:
             ssl = f" --keystore {self.ssl_context.key_store_path} " \
@@ -289,6 +352,7 @@ class ControlUtility:
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
                                     f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
+                          
     @staticmethod
     def __parse_output(raw_output):
         exit_code = raw_output.channel_file.channel.recv_exit_status()
