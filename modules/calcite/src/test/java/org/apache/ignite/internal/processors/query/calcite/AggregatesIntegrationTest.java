@@ -61,19 +61,25 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void countOfNonNumericField() throws InterruptedException {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
-            .setName("person")
-            .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("person")))
-            .setBackups(2)
-        );
+    public void columnNameForAggregates() {
+        createAndPopulateTable();
 
-        int idx = 0;
-        person.put(idx++, new Employer("Igor", 10d));
-        person.put(idx++, new Employer(null, 15d));
-        person.put(idx++, new Employer("Ilya", 15d));
-        person.put(idx++, new Employer("Roma", 10d));
+        assertQuery("select count(*) from person").columnNames("COUNT(*)").check();
+
+        assertQuery("select count(name) from person").columnNames("COUNT(`NAME`)").check();
+        assertQuery("select max(salary) from person").columnNames("MAX(`SALARY`)").check();
+        assertQuery("select min(salary) from person").columnNames("MIN(`SALARY`)").check();
+        assertQuery("select aVg(salary) from person").columnNames("AVG(`SALARY`)").check();
+        assertQuery("select sum(salary) from person").columnNames("SUM(`SALARY`)").check();
+
+        assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(`NAME`)").check();
+    }
+
+
+    /** */
+    @Test
+    public void countOfNonNumericField() {
+        createAndPopulateTable();
 
         assertQuery("select count(name) from person").returns(3L).check();
         assertQuery("select count(*) from person").returns(4L).check();
@@ -100,6 +106,21 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
             .returns(10d, 2L)
             .returns(15d, 2L)
             .check();
+    }
+
+    private void createAndPopulateTable() {
+        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("person")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("person")))
+            .setBackups(2)
+        );
+
+        int idx = 0;
+        person.put(idx++, new Employer("Igor", 10d));
+        person.put(idx++, new Employer(null, 15d));
+        person.put(idx++, new Employer("Ilya", 15d));
+        person.put(idx++, new Employer("Roma", 10d));
     }
 
     /** */

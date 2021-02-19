@@ -222,6 +222,9 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
+    private List<String> expectedColumnNames;
+
+    /** */
     private boolean ordered;
 
     /** */
@@ -265,6 +268,16 @@ public abstract class QueryChecker {
     }
 
     /** */
+    public QueryChecker columnNames(String... columns) {
+        if (expectedColumnNames == null)
+            expectedColumnNames = new ArrayList<>();
+
+        expectedColumnNames.addAll(Arrays.asList(columns));
+
+        return this;
+    }
+
+    /** */
     public QueryChecker matches(Matcher<String>... planMatcher) {
         Collections.addAll(planMatchers, planMatcher);
         return this;
@@ -302,6 +315,13 @@ public abstract class QueryChecker {
             engine.query(null, "PUBLIC", qry, params);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
+
+        if(expectedColumnNames != null) {
+            assertEquals("numer of columns are different", expectedColumnNames.size(), cur.getColumnsCount());
+
+            for (int i = 0; i < cur.getColumnsCount(); i++)
+                assertEquals(expectedColumnNames.get(i), cur.getFieldName(i));
+        }
 
         List<List<?>> res = cur.getAll();
 

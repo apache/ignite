@@ -187,6 +187,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public String deriveAlias(SqlNode node, int ordinal) {
+        if (SqlKind.AGGREGATE.contains(node.getKind()))
+            return node.toString();
+
+        return super.deriveAlias(node, ordinal);
+    }
+
+    /** {@inheritDoc} */
     @Override public void validateAggregateParams(SqlCall aggCall, SqlNode filter, SqlNodeList orderList, SqlValidatorScope scope) {
         validateAggregateFunction(aggCall, (SqlAggFunction) aggCall.getOperator());
 
