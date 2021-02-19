@@ -27,8 +27,11 @@ import org.apache.ignite.internal.util.typedef.F;
 public class OracleDialect extends BasicJdbcDialect {
     /** */
     private static final long serialVersionUID = 0L;
+
     private static final String MERGE_ON = "MERGE INTO %s t USING (SELECT %s FROM dual) v ON %s";
+
     private static final String WHEN_MATCHED = " WHEN MATCHED THEN UPDATE SET %s";
+
     private static final String WHEN_NOT_MATCHED = " WHEN NOT MATCHED THEN INSERT (%s) VALUES (%s)";
 
     /** {@inheritDoc} */
