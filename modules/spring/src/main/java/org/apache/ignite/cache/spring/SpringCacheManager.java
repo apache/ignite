@@ -164,8 +164,14 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
     /** Count of IgniteLocks are used for sync get */
     private int locksCnt = DEFAULT_LOCKS_COUNT;
 
+    /** Dynamic cache configuration template map. */
+    private final ConcurrentMap<String, CacheConfiguration<Object, Object>> dynamicCacheCfgMap = new ConcurrentHashMap<>();
+
     /** Dynamic cache configuration template. */
     private CacheConfiguration<Object, Object> dynamicCacheCfg;
+
+    /** Dynamic near cache configuration template map. */
+    private final ConcurrentMap<String, NearCacheConfiguration<Object, Object>> dynamicNearCacheCfgMap = new ConcurrentHashMap<>();
 
     /** Dynamic near cache configuration template. */
     private NearCacheConfiguration<Object, Object> dynamicNearCacheCfg;
@@ -295,6 +301,16 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
     }
 
     /**
+     * Sets dynamic cache configuration template.
+     *
+     * @param name cache name
+     * @param dynamicCacheCfg Dynamic cache configuration template.
+     */
+    public void setDynamicCacheConfiguration(String name, CacheConfiguration<Object, Object> dynamicCacheCfg) {
+        this.dynamicCacheCfgMap.putIfAbsent(name, dynamicCacheCfg);
+    }
+
+    /**
      * Gets dynamic near cache configuration template.
      *
      * @return Dynamic near cache configuration template.
@@ -310,6 +326,16 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
      */
     public void setDynamicNearCacheConfiguration(NearCacheConfiguration<Object, Object> dynamicNearCacheCfg) {
         this.dynamicNearCacheCfg = dynamicNearCacheCfg;
+    }
+
+    /**
+     * Sets dynamic cache configuration template.
+     *
+     * @param name cache name
+     * @param dynamicNearCacheCfg Dynamic cache configuration template.
+     */
+    public void setDynamicNearCacheConfiguration(String name, NearCacheConfiguration<Object, Object> dynamicNearCacheCfg) {
+        this.dynamicNearCacheCfgMap.putIfAbsent(name, dynamicNearCacheCfg);
     }
 
     /** {@inheritDoc} */
@@ -345,10 +371,12 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
         SpringCache cache = caches.get(name);
 
         if (cache == null) {
-            CacheConfiguration<Object, Object> cacheCfg = dynamicCacheCfg != null ?
+            CacheConfiguration<Object, Object> cacheCfg = this.dynamicCacheCfgMap.get(name);
+            cacheCfg = cacheCfg != null ? cacheCfg : dynamicCacheCfg != null ?
                 new CacheConfiguration<>(dynamicCacheCfg) : new CacheConfiguration<>();
 
-            NearCacheConfiguration<Object, Object> nearCacheCfg = dynamicNearCacheCfg != null ?
+            NearCacheConfiguration<Object, Object> nearCacheCfg = this.dynamicNearCacheCfgMap.get(name);
+            nearCacheCfg = nearCacheCfg != null ? nearCacheCfg : dynamicNearCacheCfg != null ?
                 new NearCacheConfiguration<>(dynamicNearCacheCfg) : null;
 
             cacheCfg.setName(name);
