@@ -17,11 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.spring.GridSpringCacheManagerMultiJvmSelfTest;
-import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
-import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
-import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
-import org.apache.ignite.cache.spring.SpringCacheTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlSelfTest;
@@ -63,9 +58,6 @@ import org.junit.runners.Suite;
     // Tests moved to this suite since they require Spring functionality.
     GridP2PUserVersionChangeSelfTest.class,
 
-    GridSpringCacheManagerSelfTest.class,
-    GridSpringCacheManagerSpringBeanSelfTest.class,
-
     IgniteDynamicCacheConfigTest.class,
 
     IgniteStartFromStreamConfigurationTest.class,
@@ -82,14 +74,8 @@ import org.junit.runners.Suite;
 
     GridTransformSpringInjectionSelfTest.class,
 
-    SpringCacheManagerContextInjectionTest.class,
-
-    SpringCacheTest.class,
-
     SpringEncryptedCacheRestartTest.class,
     SpringEncryptedCacheRestartClientTest.class,
-
-    GridSpringCacheManagerMultiJvmSelfTest.class,
 
     GridCommandLineLoaderTest.class,
 
