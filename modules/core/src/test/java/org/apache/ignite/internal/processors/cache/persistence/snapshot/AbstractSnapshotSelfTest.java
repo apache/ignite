@@ -82,6 +82,7 @@ import org.junit.Before;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -130,7 +131,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(4096))
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
+            .setIncludeEventTypes(EVTS_ALL)
             .setDiscoverySpi(discoSpi);
     }
 

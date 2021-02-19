@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -37,6 +38,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -62,6 +64,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
 /** */
 @GridInternal
@@ -112,10 +115,12 @@ public class SnapshotPartitionsVerifyTask
                 if (e.getValue().size() < idx)
                     continue;
 
-                SnapshotMetadata meta = e.getValue().get(idx);
+                Optional<SnapshotMetadata> meta = e.getValue().stream()
+                    .filter(allMetas::contains)
+                    .findFirst();
 
-                if (allMetas.remove(meta)) {
-                    jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId()),
+                if (meta.isPresent() && allMetas.remove(meta.get())) {
+                    jobs.put(new VisorVerifySnapshotPartitionsJob(meta.get().snapshotName(), meta.get().consistentId()),
                         e.getKey());
                 }
 
@@ -251,6 +256,8 @@ public class SnapshotPartitionsVerifyTask
                                         + ", counter=" + updateCntr
                                         + ", size=" + size + "]");
                                 }
+
+                                checkPartitionsPageCrcSum(() -> pageStore, partId, PageIdAllocator.FLAG_DATA);
 
                                 // Snapshot partitions must always be in OWNING state.
                                 // There is no `primary` partitions for snapshot.
