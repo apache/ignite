@@ -27,14 +27,14 @@ public class Data {
     private final Map<String, Serializable> values;
 
     /** Configuration storage version. */
-    private final int version;
+    private final long version;
 
     /**
      * Constructor.
      * @param values Values.
      * @param version Version.
      */
-    public Data(Map<String, Serializable> values, int version) {
+    public Data(Map<String, Serializable> values, long version) {
         this.values = values;
         this.version = version;
     }
@@ -51,7 +51,7 @@ public class Data {
      * Get version.
      * @return version.
      */
-    public int version() {
+    public long version() {
         return version;
     }
 }

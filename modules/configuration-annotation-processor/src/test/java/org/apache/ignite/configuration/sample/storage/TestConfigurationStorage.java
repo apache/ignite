@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.ConfigurationStorageListener;
 import org.apache.ignite.configuration.storage.Data;
@@ -41,7 +41,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     private List<ConfigurationStorageListener> listeners = new ArrayList<>();
 
     /** Storage version. */
-    private AtomicInteger version = new AtomicInteger(0);
+    private AtomicLong version = new AtomicLong(0);
 
     /** Should fail on every operation. */
     private boolean fail = false;
@@ -63,7 +63,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, int sentVersion) throws StorageException {
+    @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long sentVersion) throws StorageException {
         if (fail)
             return CompletableFuture.failedFuture(new StorageException("Failed to write data"));
 

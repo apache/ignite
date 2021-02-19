@@ -20,7 +20,11 @@ package org.apache.ignite.configuration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
+import org.apache.ignite.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
 public class ConfigurationRegistry {
@@ -42,5 +46,21 @@ public class ConfigurationRegistry {
     /** */
     public Map<String, Configurator<? extends DynamicConfiguration<?, ?, ?>>> getConfigurators() {
         return Collections.unmodifiableMap(configs);
+    }
+
+    /**
+     * Method to instantiate a new {@link RootKey} for your configuration root. Invoked in generated code only.
+     * Does not register this root anywhere, used for static object initialization only.
+     *
+     * @param rootName Name of the root as described in {@link ConfigurationRoot#rootName()}.
+     * @param storageType Storage class as descried in {@link ConfigurationRoot#storage()}.
+     * @param rootSupplier Closure to instantiate internal configuration tree roots.
+     */
+    public static <T extends ConfigurationTree<?, ?>> RootKey<T> newRootKey(
+        String rootName,
+        Class<? extends ConfigurationStorage> storageType,
+        Supplier<InnerNode> rootSupplier
+    ) {
+        return new RootKeyImpl<>(rootName, storageType, rootSupplier);
     }
 }

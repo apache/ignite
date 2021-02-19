@@ -39,7 +39,7 @@ public interface ConfigurationStorage {
      * @return Future that gives you {@code true} if successfully written, {@code false} if version of the storage is
      *      different from the passed argument and {@link StorageException} if failed to write data.
      */
-    CompletableFuture<Boolean> write(Map<String, Serializable> newValues, int version);
+    CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long version);
 
     /**
      * Get all the keys of the configuration storage.

@@ -59,7 +59,7 @@ public class ConfigurationUtil {
      * Splits string using unescaped {@code .} character as a separator.
      *
      * @param keys Qualified key where escaped subkeys are joined with dots.
-     * @return List of unescaped subkeys.
+     * @return Random access list of unescaped subkeys.
      * @see #unescape(String)
      * @see #join(List)
      */
@@ -136,6 +136,63 @@ public class ConfigurationUtil {
     }
 
     /**
+     * Converts raw map with dot-separated keys into a prefix map.
+     *
+     * @param rawConfig Original map.
+     * @return Prefix map.
+     * @see #split(String)
+     */
+    public static Map<String, ?> toPrefixMap(Map<String, Serializable> rawConfig) {
+        Map<String, Object> res = new HashMap<>();
+
+        for (Map.Entry<String, Serializable> entry : rawConfig.entrySet()) {
+            List<String> keys = split(entry.getKey());
+
+            assert keys instanceof RandomAccess : keys.getClass();
+
+            insert(res, keys, 0, entry.getValue());
+        }
+
+        return res;
+    }
+
+    /**
+     * Inserts value into the prefix by a given "path".
+     *
+     * @param map Output map.
+     * @param keys List of keys.
+     * @param idx Starting position in the {@code keys} list.
+     * @param val Value to be inserted.
+     */
+    private static void insert(Map<String, Object> map, List<String> keys, int idx, Serializable val) {
+        String key = keys.get(idx);
+
+        if (keys.size() == idx + 1) {
+            assert !map.containsKey(key) : map.get(key);
+
+            map.put(key, val);
+        }
+        else {
+            Object node = map.get(key);
+
+            Map<String, Object> submap;
+
+            if (node == null) {
+                submap = new HashMap<>();
+
+                map.put(key, submap);
+            }
+            else {
+                assert node instanceof Map : node;
+
+                submap = (Map<String, Object>)node;
+            }
+
+            insert(submap, keys, idx + 1, val);
+        }
+    }
+
+    /**
      * Convert Map tree to configuration tree. No error handling here.
      *
      * @param node Node to fill. Not necessarily empty.
@@ -144,7 +201,7 @@ public class ConfigurationUtil {
      * @throws UnsupportedOperationException if prefix map structure doesn't correspond to actual tree structure.
      *      This will be fixed when method is actually used in configuration storage intergration.
      */
-    public static void fillFromSuffixMap(ConstructableTreeNode node, Map<String, ?> prefixMap) {
+    public static void fillFromPrefixMap(ConstructableTreeNode node, Map<String, ?> prefixMap) {
         assert node instanceof InnerNode;
 
         /** */
@@ -201,8 +258,11 @@ public class ConfigurationUtil {
                         node.construct(key, null);
                     else if (val instanceof Map)
                         node.construct(key, new InnerConfigurationSource((Map<String, ?>)val));
-                    else
+                    else {
+                        assert val instanceof Serializable;
+
                         node.construct(key, new LeafConfigurationSource((Serializable)val));
+                    }
                 }
             }
         }
@@ -227,7 +287,8 @@ public class ConfigurationUtil {
 
             /** {@inheritDoc} */
             @Override public Void visitLeafNode(String key, Serializable val) {
-                values.put(currentKey.toString() + key, val);
+                if (val != null)
+                    values.put(currentKey.toString() + key, val);
 
                 return null;
             }

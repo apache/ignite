@@ -176,10 +176,34 @@ public class ConfigurationUtilTest {
 
     /** */
     @Test
-    public void fillFromSuffixMapSuccessfully() {
+    public void toPrefixMap() {
+        assertEquals(
+            Map.of("foo", 42),
+            ConfigurationUtil.toPrefixMap(Map.of("foo", 42))
+        );
+
+        assertEquals(
+            Map.of("foo.bar", 42),
+            ConfigurationUtil.toPrefixMap(Map.of("foo\\.bar", 42))
+        );
+
+        assertEquals(
+            Map.of("foo", Map.of("bar1", 10, "bar2", 20)),
+            ConfigurationUtil.toPrefixMap(Map.of("foo.bar1", 10, "foo.bar2", 20))
+        );
+
+        assertEquals(
+            Map.of("root1", Map.of("leaf1", 10), "root2", Map.of("leaf2", 20)),
+            ConfigurationUtil.toPrefixMap(Map.of("root1.leaf1", 10, "root2.leaf2", 20))
+        );
+    }
+
+    /** */
+    @Test
+    public void fillFromPrefixMapSuccessfully() {
         var parentNode = new ParentNode();
 
-        ConfigurationUtil.fillFromSuffixMap(parentNode, Map.of(
+        ConfigurationUtil.fillFromPrefixMap(parentNode, Map.of(
             "elements", Map.of(
                 "name1", Map.of(
                     "child", Map.of("str", "value1")
@@ -196,14 +220,14 @@ public class ConfigurationUtilTest {
 
     /** */
     @Test
-    public void fillFromSuffixMapSuccessfullyWithRemove() {
+    public void fillFromPrefixMapSuccessfullyWithRemove() {
         var parentNode = new ParentNode().changeElements(elements ->
             elements.update("name", element ->
                 element.changeChild(child -> {})
             )
         );
 
-        ConfigurationUtil.fillFromSuffixMap(parentNode, Map.of(
+        ConfigurationUtil.fillFromPrefixMap(parentNode, Map.of(
             "elements", singletonMap("name", null)
         ));
 

@@ -44,7 +44,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *
      * @param visitor Configuration visitor.
      */
-    public abstract void traverseChildren(ConfigurationVisitor visitor);
+    public abstract <T> void traverseChildren(ConfigurationVisitor<T> visitor);
 
     /**
      * Method with auto-generated implementation. Must look like this:
