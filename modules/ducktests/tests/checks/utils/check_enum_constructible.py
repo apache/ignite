@@ -24,7 +24,6 @@ from ignitetest.utils.enum import constructible
 
 
 @constructible
-# pylint: disable=no-member
 class ConnectType(IntEnum):
     """
     Example of IntEnum.

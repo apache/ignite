@@ -24,7 +24,7 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.auth.creds_provider import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN, CredsProvider
+from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN
 from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
 from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 
@@ -40,7 +40,7 @@ class ControlUtility:
         self._cluster = cluster
         self.logger = cluster.context.logger
         self.ssl_context = self._parse_ssl_params("admin", cluster.context.globals, **kwargs)
-        self.creds_prover = self._parse_creds("admin", cluster.context.globals, **kwargs)
+        self.creds = self._parse_creds("admin", cluster.context.globals, **kwargs)
 
     def jks_path(self, jks_name: str):
         """
@@ -284,9 +284,8 @@ class ControlUtility:
                   f"--truststore {self.ssl_context.trust_store_path} " \
                   f"--truststore-password {self.ssl_context.trust_store_password}"
         auth = ""
-        if self.creds_prover:
-            auth = f" --user {self.creds_prover.login} " \
-                   f"--password {self.creds_prover.password} "
+        if self.creds:
+            auth = " --user {} --password {} ".format(*self.creds)
         return self._cluster.script(f"{self.BASE_COMMAND} --host "
                                     f"{node.account.externally_routable_ip} {cmd} {ssl} {auth}")
 
@@ -337,8 +336,8 @@ class ControlUtility:
         elif kwargs.get('login'):
             creds_dict = kwargs
         return None if creds_dict is None else \
-            CredsProvider(login=creds_dict.get("login", DEFAULT_AUTH_LOGIN),
-                          password=creds_dict.get("password", DEFAULT_AUTH_PASSWORD))
+            (creds_dict.get("login", DEFAULT_AUTH_LOGIN),
+             creds_dict.get("password", DEFAULT_AUTH_PASSWORD))
 
 
 class BaselineNode(NamedTuple):

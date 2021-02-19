@@ -35,7 +35,7 @@ class AuthenticationTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    def test_activate_good_user(self, ignite_version):
+    def test_activate_correct_password(self, ignite_version):
         """
         Test activate cluster.
         Authentication enabled
@@ -51,7 +51,7 @@ class AuthenticationTests(IgniteTest):
             )
         )
 
-        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES, startup_timeout_sec=60)
+        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES)
 
         servers.start()
 
@@ -61,7 +61,7 @@ class AuthenticationTests(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignore_if(lambda version, globals_dict: globals_dict.get("use_auth", False))  # Globals overrides test params
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    def test_activate_bad_user(self, ignite_version):
+    def test_activate_wrong_password(self, ignite_version):
         """
         Test activate cluster.
         Authentication enabled
@@ -77,14 +77,14 @@ class AuthenticationTests(IgniteTest):
             )
         )
 
-        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES, startup_timeout_sec=60)
+        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES)
 
         servers.start()
 
-        control_utility = ControlUtility(cluster=servers, login="bad_person", password="wrong_password")
+        control_utility = ControlUtility(cluster=servers, login="ignite", password="wrong_password")
 
         try:
             control_utility.activate()
-            raise Exception("User successfully execute command with wrong credentials")
+            raise Exception("User successfully execute command with wrong password")
         except ControlUtilityError:
             pass

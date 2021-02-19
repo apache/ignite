@@ -46,6 +46,7 @@ class IgniteConfiguration(NamedTuple):
     ssl_context_factory: SslContextFactory = None
     connector_configuration: ConnectorConfiguration = None
     auth: bool = False
+    plugins: list = []
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
