@@ -232,6 +232,14 @@ public class PagePool {
     }
 
     /**
+     * @param relPtr Relative pointer.
+     * @return Page index in the pool.
+     */
+    long pageIndex(long relPtr) {
+        return relPtr & ~SEGMENT_INDEX_MASK;
+    }
+
+    /**
      * @return Max number of pages in the pool.
      */
     public int pages() {
