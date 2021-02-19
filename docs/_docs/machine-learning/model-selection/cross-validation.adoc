@@ -27,7 +27,7 @@ Let’s imagine that we have a trainer, a training set and we want to make cross
 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
 // Create cross-validation instance
-CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
+CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator
   = new CrossValidation<>();
 
 // Set up the cross-validation process
@@ -67,7 +67,7 @@ Pipeline<Integer, Vector, Integer, Double> pipeline
 
 
 // Create cross-validation instance
-CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
+CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator
   = new CrossValidation<>();
 
 // Set up the cross-validation process

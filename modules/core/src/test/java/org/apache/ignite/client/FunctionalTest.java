@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +43,7 @@ import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -93,7 +95,6 @@ import static org.junit.Assert.fail;
 /**
  * Thin client functional tests.
  */
-@SuppressWarnings("unused")
 public class FunctionalTest {
     /** Per test timeout */
     @SuppressWarnings("deprecation")
@@ -235,6 +236,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#put(Object, Object)}</li>
      * <li>{@link ClientCache#get(Object)}</li>
      * <li>{@link ClientCache#containsKey(Object)}</li>
+     * <li>{@link ClientCache#clear(Object)}</li>
      * </ul>
      */
     @Test
@@ -255,6 +257,12 @@ public class FunctionalTest {
             Person cachedVal = cache.get(key);
 
             assertEquals(val, cachedVal);
+
+            cache.clear(key);
+
+            assertFalse(cache.containsKey(key));
+
+            assertNull(cache.get(key));
         }
 
         // Non-existing cache, object key and primitive value
@@ -272,6 +280,12 @@ public class FunctionalTest {
             Integer cachedVal = cache.get(key);
 
             assertEquals(val, cachedVal);
+
+            cache.clear(key);
+
+            assertFalse(cache.containsKey(key));
+
+            assertNull(cache.get(key));
         }
 
         // Object key and Object value
@@ -289,6 +303,12 @@ public class FunctionalTest {
             Person cachedVal = cache.get(key);
 
             assertEquals(val, cachedVal);
+
+            cache.clear(key);
+
+            assertFalse(cache.containsKey(key));
+
+            assertNull(cache.get(key));
         }
     }
 
@@ -423,7 +443,9 @@ public class FunctionalTest {
      * <ul>
      * <li>{@link ClientCache#putAll(Map)}</li>
      * <li>{@link ClientCache#getAll(Set)}</li>
+     * <li>{@link ClientCache#containsKeys(Set)} (Set)}</li>
      * <li>{@link ClientCache#clear()}</li>
+     * <li>{@link ClientCache#clearAll(Set)} ()}</li>
      * </ul>
      */
     @Test
@@ -438,7 +460,11 @@ public class FunctionalTest {
                 .rangeClosed(1, 1000).boxed()
                 .collect(Collectors.toMap(i -> i, i -> new Person(i, String.format("Person %s", i))));
 
+            assertFalse(cache.containsKeys(data.keySet()));
+
             cache.putAll(data);
+
+            assertTrue(cache.containsKeys(data.keySet()));
 
             Map<Integer, Person> cachedData = cache.getAll(data.keySet());
 
@@ -455,14 +481,33 @@ public class FunctionalTest {
                 .rangeClosed(1, 1000).boxed()
                 .collect(Collectors.toMap(i -> new Person(i, String.format("Person %s", i)), i -> i));
 
+            assertFalse(cache.containsKeys(data.keySet()));
+
             cache.putAll(data);
+
+            assertTrue(cache.containsKeys(data.keySet()));
 
             Map<Person, Integer> cachedData = cache.getAll(data.keySet());
 
             assertEquals(data, cachedData);
 
+            Set<Person> clearKeys = new HashSet<>();
+
+            Iterator<Person> keyIter = data.keySet().iterator();
+
+            for (int i = 0; i < 100; i++)
+                clearKeys.add(keyIter.next());
+
+            cache.clearAll(clearKeys);
+
+            assertFalse(cache.containsKeys(clearKeys));
+            assertTrue(cache.containsKeys(
+                data.keySet().stream().filter(key -> !data.containsKey(key)).collect(Collectors.toSet())));
+            assertEquals(data.size() - clearKeys.size(), cache.size(CachePeekMode.ALL));
+
             cache.clear();
 
+            assertFalse(cache.containsKeys(data.keySet()));
             assertEquals(0, cache.size(CachePeekMode.ALL));
         }
     }
@@ -474,6 +519,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#getAndRemove(Object)}</li>
      * <li>{@link ClientCache#getAndReplace(Object, Object)}</li>
      * <li>{@link ClientCache#putIfAbsent(Object, Object)}</li>
+     * <li>{@link ClientCache#getAndPutIfAbsent(Object, Object)}</li>
      * </ul>
      */
     @Test
@@ -495,6 +541,11 @@ public class FunctionalTest {
             assertEquals("1", cache.getAndReplace(1, "1.1"));
             assertEquals("1.1", cache.getAndReplace(1, "1"));
             assertNull(cache.getAndReplace(2, "2"));
+
+            assertEquals("1", cache.getAndPutIfAbsent(1, "1.1"));
+            assertEquals("1", cache.get(1));
+            assertNull(cache.getAndPutIfAbsent(3, "3"));
+            assertEquals("3", cache.get(3));
         }
     }
 
@@ -920,17 +971,23 @@ public class FunctionalTest {
                 cache.putAll(F.asMap(1, "value11", 3, "value12"));
                 cache.putIfAbsent(4, "value13");
 
-                // Operations: get, getAll, getAndPut, getAndRemove, getAndReplace.
+                // Operations: get, getAll, getAndPut, getAndRemove, getAndReplace, getAndPutIfAbsent.
                 assertEquals("value10", cache.get(2));
                 assertEquals(F.asMap(1, "value11", 2, "value10"),
                     cache.getAll(new HashSet<>(Arrays.asList(1, 2))));
                 assertEquals("value13", cache.getAndPut(4, "value14"));
+                assertEquals("value14", cache.getAndPutIfAbsent(4, "valueDiscarded"));
+                assertEquals("value14", cache.get(4));
                 assertEquals("value14", cache.getAndReplace(4, "value15"));
                 assertEquals("value15", cache.getAndRemove(4));
+                assertNull(cache.getAndPutIfAbsent(10, "valuePutIfAbsent"));
+                assertEquals("valuePutIfAbsent", cache.get(10));
 
                 // Operations: contains.
                 assertTrue(cache.containsKey(2));
                 assertFalse(cache.containsKey(4));
+                assertTrue(cache.containsKeys(ImmutableSet.of(2, 10)));
+                assertFalse(cache.containsKeys(ImmutableSet.of(2, 4)));
 
                 // Operations: replace.
                 cache.put(4, "");

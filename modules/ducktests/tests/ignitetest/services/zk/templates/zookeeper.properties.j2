@@ -19,8 +19,11 @@ tickTime={{ settings.tick_time }}
 minSessionTimeout={{ settings.min_session_timeout }}
 initLimit={{ settings.init_limit }}
 syncLimit={{ settings.sync_limit }}
-dataDir={{ DATA_DIR }}
+forceSync={{ settings.force_sync }}
+dataDir={{ data_dir }}
 clientPort={{ settings.client_port }}
 {% for node in nodes %}
 server.{{ loop.index }}={{ node.account.hostname }}:2888:3888
 {% endfor %}
+txnLogSizeLimitInKb=5120
+preAllocSize=5120

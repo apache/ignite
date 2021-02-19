@@ -16,6 +16,7 @@
 """
 This module contains smoke tests that checks that ducktape works as expected
 """
+import os
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -93,3 +94,41 @@ class SelfTest(IgniteTest):
         client.stop()
 
         ignites.stop()
+
+    @cluster(num_nodes=1)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_logs_rotation(self, ignite_version):
+        """
+        Test logs rotation after ignite service restart.
+        """
+        def get_log_lines_count(service, filename):
+            node = service.nodes[0]
+            log_file = os.path.join(service.log_dir, filename)
+            log_cnt = list(node.account.ssh_capture(f'cat {log_file} | wc -l', callback=int))[0]
+            return log_cnt
+
+        def get_logs_count(service):
+            node = service.nodes[0]
+            return list(node.account.ssh_capture(f'ls {service.log_dir}/console.log* | wc -l', callback=int))[0]
+
+        ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
+                                num_nodes=1)
+
+        ignites.start()
+
+        num_restarts = 6
+        for i in range(num_restarts - 1):
+            ignites.stop()
+
+            old_cnt = get_log_lines_count(ignites, "console.log")
+            assert old_cnt > 0
+
+            ignites.start(clean=False)
+
+            new_cnt = get_log_lines_count(ignites, "console.log")
+            assert new_cnt > 0
+
+            # check that there is no new entry in rotated file
+            assert old_cnt == get_log_lines_count(ignites, f"console.log.{i + 1}")
+
+        assert get_logs_count(ignites) == num_restarts

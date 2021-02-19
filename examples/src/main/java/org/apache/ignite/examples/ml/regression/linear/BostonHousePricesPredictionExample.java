@@ -105,7 +105,7 @@ public class BostonHousePricesPredictionExample {
     private static String toString(LinearRegressionModel mdl) {
         BiFunction<Integer, Double, String> formatter = (idx, val) -> String.format("%.2f*f%d", val, idx);
 
-        Vector weights = mdl.getWeights();
+        Vector weights = mdl.weights();
         StringBuilder sb = new StringBuilder(formatter.apply(0, weights.get(0)));
 
         for (int fid = 1; fid < weights.size(); fid++) {
@@ -114,7 +114,7 @@ public class BostonHousePricesPredictionExample {
                 .append(formatter.apply(fid, Math.abs(w)));
         }
 
-        double intercept = mdl.getIntercept();
+        double intercept = mdl.intercept();
         sb.append(" ").append(intercept > 0 ? "+" : "-").append(" ")
             .append(String.format("%.2f", Math.abs(intercept)));
         return sb.toString();

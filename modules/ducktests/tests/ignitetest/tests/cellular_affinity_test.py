@@ -29,10 +29,10 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_zookeeper_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
-from ignitetest.utils import ignite_versions, version_if, cluster
+from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_8
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
 @constructible
@@ -61,6 +61,9 @@ class CellularAffinity(IgniteTest):
     """
     NODES_PER_CELL = 3
     ZOOKEPER_CLUSTER_SIZE = 3
+
+    FAILURE_DETECTION_TIMEOUT = 500
+    ZOOKEPER_SESSION_TIMEOUT = FAILURE_DETECTION_TIMEOUT
 
     ATTRIBUTE = "CELL"
 
@@ -101,7 +104,7 @@ class CellularAffinity(IgniteTest):
             cacheName=CellularAffinity.CACHE_NAME)
 
     @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
-    @version_if(lambda version: version >= DEV_BRANCH)
+    @ignore_if(lambda version, globals: version < DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
         """
@@ -118,7 +121,7 @@ class CellularAffinity(IgniteTest):
         for cell in [cell1, cell2, cell3]:
             cell.await_started()
 
-        ControlUtility(cell1, self.test_context).activate()
+        ControlUtility(cell1).activate()
 
         checker = IgniteApplicationService(
             self.test_context,
@@ -134,7 +137,7 @@ class CellularAffinity(IgniteTest):
     # pylint: disable=R0914
     # pylint: disable=no-member
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
     def test_latency(self, ignite_version, stop_type, discovery_type):
@@ -159,7 +162,7 @@ class CellularAffinity(IgniteTest):
         d_type = DiscoreryType.construct_from(discovery_type)
 
         if d_type is DiscoreryType.ZooKeeper:
-            zk_settings = ZookeeperSettings()
+            zk_settings = ZookeeperSettings(min_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT)
             zk_quorum = ZookeeperService(self.test_context, self.ZOOKEPER_CLUSTER_SIZE, settings=zk_settings)
             zk_quorum.start()
 
@@ -200,8 +203,8 @@ class CellularAffinity(IgniteTest):
         for streamer in streamers:
             streamer.await_started()
 
-        ControlUtility(cell0, self.test_context).disable_baseline_auto_adjust()  # baseline set.
-        ControlUtility(cell0, self.test_context).activate()
+        ControlUtility(cell0).disable_baseline_auto_adjust()  # baseline set.
+        ControlUtility(cell0).activate()
 
         for loader in loaders:
             loader.await_event("ALL_TRANSACTIONS_PREPARED", 180, from_the_beginning=True)
@@ -267,6 +270,7 @@ class CellularAffinity(IgniteTest):
         prepared_tx_streamer = IgniteApplicationService(  # last server node at the cell.
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
+                                failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
                                 discovery_spi=from_ignite_cluster(nodes) if discovery_spi is None else discovery_spi),
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test."
                             "CellularPreparedTxStreamer",
@@ -289,6 +293,7 @@ class CellularAffinity(IgniteTest):
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                 cluster_state="INACTIVE",
+                                failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
                                 discovery_spi=TcpDiscoverySpi() if discovery_spi is None else discovery_spi),
             num_nodes=nodes_cnt, modules=modules, jvm_opts=jvm_opts, startup_timeout_sec=180)
 

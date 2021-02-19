@@ -5,6 +5,10 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.BenchmarkDotNet.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

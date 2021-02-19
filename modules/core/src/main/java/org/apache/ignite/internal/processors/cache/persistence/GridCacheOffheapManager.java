@@ -129,6 +129,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler.isWalDeltaRecordNeeded;
 
 /**
  * Used when persistence enabled.
@@ -247,7 +248,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
-        return new GridCacheDataStore(grp, p, exists, busyLock, log);
+        return createGridCacheDataStore(grp, p, exists, log);
     }
 
     /** {@inheritDoc} */
@@ -260,6 +261,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
         syncMetadata(ctx);
+
+        // Double flushing memory buckets for decrease a time on write lock.
+        syncMetadata(ctx, ctx.executor(), false);
     }
 
     /** {@inheritDoc} */
@@ -574,7 +578,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
-                        if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
+                        if (changed && isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecordV3(
                                 grpId,
                                 partMetaId,
@@ -743,7 +747,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param ctx Snapshot context.
      */
     private void tryAddEmptyPartitionToSnapshot(CacheDataStore store, Context ctx) {
-        if (getPartition(store).state() == OWNING) {
+        GridDhtLocalPartition locPart = getPartition(store);
+
+        if (locPart != null && locPart.state() == OWNING) {
             ctx.partitionStatMap().put(
                 new GroupPartitionId(grp.groupId(), store.partId()),
                 new PagesAllocationRange(0, 0));
@@ -890,9 +896,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
 
+            if (metaPageAddr == 0L) {
+                U.warn(log, "Failed to acquire write lock for index meta page [grpId=" + grpId +
+                    ", metaPageId=" + metaPageId + ']');
+
+                return;
+            }
+
+            boolean changed = false;
+
             try {
                 PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
+                int pageCnt = this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION);
+
+                changed = metaIo.setCandidatePageCount(metaPageAddr, pageCnt);
+
+                // Following method doesn't modify page data, it only reads last allocated page count from it.
                 addPartition(
                     null,
                     ctx.partitionStatMap(),
@@ -900,11 +920,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     metaIo,
                     grpId,
                     PageIdAllocator.INDEX_PARTITION,
-                    this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION),
+                    pageCnt,
                     -1);
             }
             finally {
-                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
+                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, changed);
             }
         }
         finally {
@@ -1058,67 +1078,79 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             final long pageAddr = pageMem.writeLock(grpId, metaId, metaPage);
 
+            boolean allocated = false;
             boolean markDirty = false;
 
             try {
                 long metastoreRoot, reuseListRoot;
 
-                if (PageIO.getType(pageAddr) != PageIO.T_META) {
-                    PageMetaIOV2 pageIO = (PageMetaIOV2)PageMetaIOV2.VERSIONS.latest();
+                PageMetaIOV2 io = (PageMetaIOV2)PageMetaIO.VERSIONS.latest();
 
-                    pageIO.initNewPage(pageAddr, metaId, pageMem.realPageSize(grpId));
+                if (PageIO.getType(pageAddr) != PageIO.T_META) {
+                    io.initNewPage(pageAddr, metaId, pageMem.realPageSize(grpId));
 
                     metastoreRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
                     reuseListRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
 
-                    pageIO.setTreeRoot(pageAddr, metastoreRoot);
-                    pageIO.setReuseListRoot(pageAddr, reuseListRoot);
+                    io.setTreeRoot(pageAddr, metastoreRoot);
+                    io.setReuseListRoot(pageAddr, reuseListRoot);
 
-                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
-                        assert pageIO.getType() == PageIO.T_META;
+                    if (isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
+                        assert io.getType() == PageIO.T_META;
 
                         wal.log(new MetaPageInitRecord(
                             grpId,
                             metaId,
-                            pageIO.getType(),
-                            pageIO.getVersion(),
+                            io.getType(),
+                            io.getVersion(),
                             metastoreRoot,
                             reuseListRoot
                         ));
                     }
 
-                    markDirty = true;
+                    allocated = true;
                 }
                 else {
-                    if (PageMetaIO.getVersion(pageAddr) < 2) {
-                        ((PageMetaIOV2)PageMetaIOV2.VERSIONS.latest()).upgradePage(pageAddr);
+                    if (io != PageIO.getPageIO(pageAddr)) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Upgrade index partition meta page version: [grpId=" + grpId +
+                                ", oldVer=" + PagePartitionMetaIO.getVersion(pageAddr) +
+                                ", newVer=" + io.getVersion() + ']');
+                        }
+
+                        io.upgradePage(pageAddr);
 
                         markDirty = true;
                     }
 
-                    PageMetaIOV2 pageIO = PageIO.getPageIO(pageAddr);
+                    metastoreRoot = io.getTreeRoot(pageAddr);
+                    reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                    metastoreRoot = pageIO.getTreeRoot(pageAddr);
-                    reuseListRoot = pageIO.getReuseListRoot(pageAddr);
-
-                    int encrPageCnt = pageIO.getEncryptedPageCount(pageAddr);
+                    int encrPageCnt = io.getEncryptedPageCount(pageAddr);
 
                     if (encrPageCnt > 0) {
                         ctx.kernalContext().encryption().setEncryptionState(grp, PageIdAllocator.INDEX_PARTITION,
-                            pageIO.getEncryptedPageIndex(pageAddr), encrPageCnt);
+                            io.getEncryptedPageIndex(pageAddr), encrPageCnt);
+
+                        markDirty = true;
                     }
 
                     assert reuseListRoot != 0L;
+
+                    if (markDirty && isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
+                        wal.log(new PageSnapshot(new FullPageId(PageIdAllocator.INDEX_PARTITION, grpId), pageAddr,
+                            pageMem.pageSize(), pageMem.realPageSize(grpId)));
+                    }
                 }
 
                 return new Metas(
-                    new RootPage(new FullPageId(metastoreRoot, grpId), markDirty),
-                    new RootPage(new FullPageId(reuseListRoot, grpId), markDirty),
-                    null,
-                    null);
+                        new RootPage(new FullPageId(metastoreRoot, grpId), allocated),
+                        new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
+                        null,
+                        null);
             }
             finally {
-                pageMem.writeUnlock(grpId, metaId, metaPage, null, markDirty);
+                pageMem.writeUnlock(grpId, metaId, metaPage, null, allocated || markDirty);
             }
         }
         finally {
@@ -1139,11 +1171,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-        WALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
-
-        if (latestReservedPointer == null)
-            throw new IgniteHistoricalIteratorException("Historical iterator wasn't created, because WAL isn't reserved.");
-
         Map<Integer, Long> partsCounters = new HashMap<>();
 
         for (int i = 0; i < partCntrs.size(); i++) {
@@ -1153,15 +1180,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             partsCounters.put(p, initCntr);
         }
 
-        WALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
-            partsCounters, latestReservedPointer, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
-
-        assert latestReservedPointer.compareTo(minPtr) <= 0
-            : "Historical iterator tries to iterate WAL out of reservation [cache=" + grp.cacheOrGroupName()
-            + ", reservedPointer=" + database.latestWalPointerReservedForPreloading()
-            + ", historicalPointer=" + minPtr + ']';
-
         try {
+            WALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+                partsCounters, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
+
+            WALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
+
+            assert latestReservedPointer == null || latestReservedPointer.compareTo(minPtr) <= 0
+                : "Historical iterator tries to iterate WAL out of reservation [cache=" + grp.cacheOrGroupName()
+                + ", reservedPointer=" + latestReservedPointer
+                + ", historicalPointer=" + minPtr + ']';
+
+            if (latestReservedPointer == null)
+                log.warning("History for the preloading has not reserved yet.");
+
             WALIterator it = grp.shared().wal().replay(minPtr);
 
             WALHistoricalIterator histIt = new WALHistoricalIterator(log, grp, partCntrs, partsCounters, it);
@@ -1357,8 +1389,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** */
-    public GridSpinBusyLock busyLock() {
-        return busyLock;
+    public GridCacheDataStore createGridCacheDataStore(
+        CacheGroupContext grpCtx,
+        int partId,
+        boolean exists,
+        IgniteLogger log
+    ) {
+        return new GridCacheDataStore(
+            grpCtx,
+            partId,
+            exists,
+            busyLock,
+            log
+        );
     }
 
     /**
@@ -1638,11 +1681,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (!doneParts.contains(p)) {
                                 log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
-                                        (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
 
-                                    doneParts.add(p);
-                                }
+                                doneParts.add(p);
                             }
+                        }
 
                         return;
                     }
@@ -1838,6 +1881,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private volatile long nextStoreCleanTimeNanos;
 
         /** */
+        private GridQueryRowCacheCleaner rowCacheCleaner;
+
+        /**
+         * Mutex used to synchronise publication of initialized delegate link and actions that should change
+         * the delegate's state, so the delegate will not be in obsolete state.
+         */
+        private final Object delegatePublicationMux = new Object();
+
+        /** */
         private PartitionMetaStorage<SimpleDataRow> partStorage;
 
         /** */
@@ -1902,7 +1954,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return Name of pending entires tree.
          */
         private String pendingEntriesTreeName() {
-            return grp.cacheOrGroupName() + "-" + "PendingEntries-" + partId;
+            return grp.cacheOrGroupName() + "-PendingEntries-" + partId;
         }
 
         /**
@@ -1971,20 +2023,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
-                    String partitionMetaStoreName = partitionMetaStoreName();
-
                     RootPage partMetastoreReuseListRoot = metas.partMetastoreReuseListRoot;
+
+                    String partMetastoreName = partitionMetaStoreName();
 
                     partStorage = new PartitionMetaStorageImpl<SimpleDataRow>(
                         grp.groupId(),
-                        partitionMetaStoreName,
+                        partMetastoreName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
                         freeList,
                         ctx.wal(),
                         partMetastoreReuseListRoot.pageId().pageId(),
                         partMetastoreReuseListRoot.isAllocated(),
-                        ctx.diagnostic().pageLockTracker().createPageLockTracker(partitionMetaStoreName),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(partMetastoreName),
                         ctx.kernalContext(),
                         pageListCacheLimit,
                         PageIdAllocator.FLAG_AUX
@@ -2130,7 +2182,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         pageMem.releasePage(grpId, partMetaId, partMetaPage);
                     }
 
-                    delegate = delegate0;
+                    synchronized (delegatePublicationMux) {
+                        delegate0.setRowCacheCleaner(rowCacheCleaner);
+
+                        delegate = delegate0;
+                    }
                 }
                 catch (Throwable ex) {
                     U.error(log, "Unhandled exception during page store initialization. All further operations will " +
@@ -2177,17 +2233,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             try {
                 boolean allocated = false;
+                boolean pageUpgraded = false;
                 boolean pendingTreeAllocated = false;
                 boolean partMetastoreReuseListAllocated = false;
+                boolean updateLogTreeRootAllocated = false;
 
                 long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
                 try {
                     long treeRoot, reuseListRoot, pendingTreeRoot, partMetaStoreReuseListRoot;
 
+                    PagePartitionMetaIOV3 io = (PagePartitionMetaIOV3)PagePartitionMetaIO.VERSIONS.latest();
+
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
-                        PagePartitionMetaIOV3 io = (PagePartitionMetaIOV3)PagePartitionMetaIO.VERSIONS.latest();
-
                         io.initNewPage(pageAddr, partMetaId, pageMem.realPageSize(grpId));
 
                         treeRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_AUX);
@@ -2205,63 +2263,39 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
                         io.setPartitionMetaStoreReuseListRoot(pageAddr, partMetaStoreReuseListRoot);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
-                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
-                                pageMem.pageSize(), pageMem.realPageSize(grpId)));
-                        }
-
                         allocated = true;
                     }
                     else {
-                        PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
+                        if (io != PageIO.getPageIO(pageAddr)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Upgrade partition meta page version: [part=" + partId +
+                                    ", grpId=" + grpId +
+                                    ", oldVer=" + PagePartitionMetaIO.getVersion(pageAddr) +
+                                    ", newVer=" + io.getVersion() + ']');
+                            }
+
+                            io.upgradePage(pageAddr);
+
+                            pageUpgraded = true;
+                        }
 
                         treeRoot = io.getTreeRoot(pageAddr);
                         reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                        int pageVer = PagePartitionMetaIO.getVersion(pageAddr);
-
-                        if (pageVer < 3) {
-                            assert pageVer == 1 || pageVer == 2;
-
-                            if (log.isDebugEnabled())
-                                log.debug("Upgrade partition meta page version: [part=" + partId +
-                                    ", grpId=" + grpId + ", oldVer=" + pageVer +
-                                    ", newVer=" + io.getVersion()
-                                );
-
-                            io = PagePartitionMetaIO.VERSIONS.latest();
-
-                            ((PagePartitionMetaIOV3)io).upgradePage(pageAddr);
-
+                        if ((pendingTreeRoot = io.getPendingTreeRoot(pageAddr)) == 0) {
                             pendingTreeRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_AUX);
-                            partMetaStoreReuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_AUX);
 
                             io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
+
+                            pendingTreeAllocated = true;
+                        }
+
+                        if ((partMetaStoreReuseListRoot = io.getPartitionMetaStoreReuseListRoot(pageAddr)) == 0) {
+                            partMetaStoreReuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_AUX);
+
                             io.setPartitionMetaStoreReuseListRoot(pageAddr, partMetaStoreReuseListRoot);
 
-                            if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal,
-                                null)) {
-                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
-                                    pageMem.pageSize(), pageMem.realPageSize(grpId)));
-                            }
-
-                            pendingTreeAllocated = partMetastoreReuseListAllocated = true;
-                        }
-                        else {
-                            pendingTreeRoot = io.getPendingTreeRoot(pageAddr);
-                            partMetaStoreReuseListRoot = io.getPartitionMetaStoreReuseListRoot(pageAddr);
-
-                            if (partMetaStoreReuseListRoot == 0) {
-                                partMetaStoreReuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_AUX);
-
-                                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal,
-                                    null)) {
-                                    wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
-                                        pageMem.pageSize(), pageMem.realPageSize(grpId)));
-                                }
-
-                                partMetastoreReuseListAllocated = true;
-                            }
+                            partMetastoreReuseListAllocated = true;
                         }
 
                         if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX
@@ -2285,6 +2319,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 + U.hexLong(partMetaStoreReuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
                     }
 
+                    if ((allocated || pageUpgraded || pendingTreeAllocated || partMetastoreReuseListAllocated || updateLogTreeRootAllocated) &&
+                        isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
+                        wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
+                            pageMem.pageSize(), pageMem.realPageSize(grpId)));
+                    }
+
                     return new Metas(
                         new RootPage(new FullPageId(treeRoot, grpId), allocated),
                         new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
@@ -2293,7 +2333,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
                 finally {
                     pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null,
-                        allocated || pendingTreeAllocated || partMetastoreReuseListAllocated);
+                        allocated || pageUpgraded || pendingTreeAllocated || partMetastoreReuseListAllocated || updateLogTreeRootAllocated);
                 }
             }
             finally {
@@ -2532,6 +2572,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             try {
+                synchronized (delegatePublicationMux) {
+                    this.rowCacheCleaner = rowCacheCleaner;
+                }
+
                 CacheDataStore delegate0 = init0(true);
 
                 if (delegate0 != null)

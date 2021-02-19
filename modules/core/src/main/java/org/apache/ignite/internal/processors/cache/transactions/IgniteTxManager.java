@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -102,6 +101,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -1676,6 +1676,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
+                writeStatistics(tx, true);
+
                 tx.txState().onTxEnd(cctx, tx, true);
             }
 
@@ -1745,6 +1747,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
+                writeStatistics(tx, false);
+
                 tx.txState().onTxEnd(cctx, tx, false);
             }
 
@@ -1797,6 +1801,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else
                         cctx.txMetrics().onTxRollback();
                 }
+
+                writeStatistics(tx, commit);
 
                 tx.txState().onTxEnd(cctx, tx, commit);
             }
@@ -2179,7 +2185,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         scheduleDumpTask(
             IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
             () -> cctx.kernalContext().closure().runLocalSafe(
-                () -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
+                (GridPlainRunnable)() -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
             longOpsDumpTimeout);
     }
 
@@ -3216,9 +3222,26 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Writes transaction performance statistics.
+     *
+     * @param tx Transaction.
+     * @param commited {@code True} if transaction commited.
+     */
+    private void writeStatistics(IgniteInternalTx tx, boolean commited) {
+        if (!cctx.kernalContext().performanceStatistics().enabled() || tx.startTimeNanos() == 0)
+            return;
+
+        cctx.kernalContext().performanceStatistics().transaction(
+            tx.txState().cacheIds(),
+            tx.startTime(),
+            System.nanoTime() - tx.startTimeNanos(),
+            commited);
+    }
+
+    /**
      * Transactions recovery initialization runnable.
      */
-    private final class TxRecoveryInitRunnable implements Runnable {
+    private final class TxRecoveryInitRunnable implements GridPlainRunnable {
         /** */
         private final ClusterNode node;
 
@@ -3353,9 +3376,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @return True if message required, false otherwise.
          */
         private boolean isMvccRecoveryMessageRequired() {
-            return node.isClient() && mvccCrd != null && mvccCrd.nodeId() != null &&
-                (cctx.kernalContext().coordinators().mvccEnabled() ||
-                    !IgniteFeatures.nodeSupports(cctx.node(mvccCrd.nodeId()), IgniteFeatures.MVCC_TX_RECOVERY_PROTOCOL_V2));
+            ClusterNode mvccCrdNode = null;
+
+            if (mvccCrd != null && mvccCrd.nodeId() != null)
+                mvccCrdNode = cctx.node(mvccCrd.nodeId());
+
+            return node.isClient() && mvccCrdNode != null && cctx.kernalContext().coordinators().mvccEnabled();
         }
 
         /**

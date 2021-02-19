@@ -21,8 +21,8 @@ import re
 
 from jinja2 import FileSystemLoader, Environment
 
-DEFAULT_CONFIG_PATH = os.path.dirname(os.path.abspath(__file__)) + "/templates"
-DEFAULT_IGNITE_CONF = DEFAULT_CONFIG_PATH + "/ignite.xml.j2"
+DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+DEFAULT_IGNITE_CONF = os.path.join(DEFAULT_CONFIG_PATH, "ignite.xml.j2")
 
 
 class ConfigTemplate:
@@ -73,4 +73,4 @@ class IgniteLoggerConfigTemplate(ConfigTemplate):
     Ignite logger configuration.
     """
     def __init__(self):
-        super().__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")
+        super().__init__(os.path.join(DEFAULT_CONFIG_PATH, "log4j.xml.j2"))

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +41,7 @@ import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -353,17 +354,24 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         ClientChannel ch,
         ClientOperation op,
         long rsrcId,
-        byte[] payload,
+        ByteBuffer payload,
         Exception err
     ) {
         if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
-            Object res = payload == null ? null : utils.readObject(new BinaryHeapInputStream(payload), false);
-
             ClientComputeTask<Object> task = addTask(ch, rsrcId);
 
             if (task != null) { // If channel is closed concurrently, task is already done with "channel closed" reason.
-                if (err == null)
-                    task.fut.onDone(res);
+                if (err == null) {
+                    try {
+                        Object res = payload == null ? null :
+                            utils.readObject(BinaryByteBufferInputStream.create(payload), false);
+
+                        task.fut.onDone(res);
+                    }
+                    catch (Throwable e) {
+                        task.fut.onDone(e);
+                    }
+                }
                 else
                     task.fut.onDone(err);
 

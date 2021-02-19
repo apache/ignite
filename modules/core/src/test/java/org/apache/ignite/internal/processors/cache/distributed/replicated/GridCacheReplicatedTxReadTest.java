@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractTxReadTest;
+import org.junit.Ignore;
 
 /**
  * Checks transactional reads for local cache.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheReplicatedTxReadTest extends GridCacheAbstractTxReadTest {
     /**
      * @return {@code LOCAL} for this test.

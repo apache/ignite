@@ -30,8 +30,5 @@ setup(name="ignitetest",
       license="apache2.0",
       packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
       include_package_data=True,
-      install_requires=["ducktape==0.8.0"],
-      tests_require=["pytest==6.0.1"],
-      dependency_links=[
-          'https://github.com/confluentinc/ducktape/tarball/master#egg=ducktape-0.8.0'
-      ])
+      install_requires=["ducktape==0.8.2"],
+      tests_require=["pytest==6.0.1"])

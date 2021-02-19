@@ -28,7 +28,7 @@ from ignitetest.services.utils.ignite_configuration.cache import CacheConfigurat
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
 # pylint: disable=W0223
@@ -40,7 +40,7 @@ class TransactionsTests(IgniteTest):
     CACHE_NAME = "TEST"
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_tx_info(self, ignite_version):
         """
         Tests verbose tx info for specific xid.
@@ -52,7 +52,7 @@ class TransactionsTests(IgniteTest):
 
         wait_for_key_locked(long_tx)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         transactions = control_utility.tx()
 
@@ -66,7 +66,7 @@ class TransactionsTests(IgniteTest):
         assert res.label == pick_tx.label
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_kill_tx(self, ignite_version):
         """
         Test kill transactions by xid and filter.
@@ -83,7 +83,7 @@ class TransactionsTests(IgniteTest):
 
         wait_for_key_locked(long_tx_1, long_tx_2)
 
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         # check kill with specific xid.
         transactions = control_utility.tx(label_pattern='TX_1')
@@ -96,7 +96,7 @@ class TransactionsTests(IgniteTest):
             .issubset(set(long_tx_2.extract_results("TX_ID")))
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_tx_filter(self, ignite_version):
         """
         Test filtering transactions list.
@@ -115,7 +115,7 @@ class TransactionsTests(IgniteTest):
                                       wait_for_topology_version=4)
 
         wait_for_key_locked(clients, servers)
-        control_utility = ControlUtility(servers, self.test_context)
+        control_utility = ControlUtility(servers)
 
         start_check = self.monotonic()
         assert len(control_utility.tx(clients=True, label_pattern='LBL_.*')) == client_tx_count

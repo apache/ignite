@@ -24,8 +24,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
-default_image_name="ducker-ignite-openjdk-8"
-IMAGE_NAME="${IMAGE_NAME:-$default_image_name}"
+JDK_VERSION="${JDK_VERSION:-8}"
+IMAGE_PREFIX="ducker-ignite-openjdk"
 
 ###
 # DuckerTest parameters are specified with options to the script
@@ -63,8 +63,6 @@ The options are as follows:
 -p|--param
     Use specified param to inject in tests. Could be used multiple times.
 
-    ./run_tests.sh --param version=2.8.1
-
 -pj|--params-json
     Use specified json as parameters to inject in tests. Can be extended with -p|--param.
 
@@ -83,6 +81,12 @@ The options are as follows:
 
 -t|--tc-paths
     Path to ducktests. Must be relative path to 'IGNITE/modules/ducktests/tests' directory
+
+--jdk
+    Set jdk version to build, default is 8
+
+--image
+    Set custom docker image to run tests on.
 
 EOF
     exit 0
@@ -127,13 +131,16 @@ while [[ $# -ge 1 ]]; do
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
         -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
+        --jdk) JDK_VERSION="$2"; shift 2;;
+        --image) IMAGE_NAME="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
     esac
 done
 
-if [[ "$IMAGE_NAME" == "$default_image_name" ]]; then
-    "$SCRIPT_DIR"/ducker-ignite build "$IMAGE_NAME" || die "ducker-ignite build failed"
+if [ -z "$IMAGE_NAME" ]; then
+    IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
+    "$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"
@@ -159,6 +166,8 @@ fi
 if [[ -n "$MAX_PARALLEL" ]]; then
   DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --max-parallel $MAX_PARALLEL"
 fi
+
+"$SCRIPT_DIR"/../certs/mkcerts.sh
 
 "$SCRIPT_DIR"/ducker-ignite test "$TC_PATHS" "$DUCKTAPE_OPTIONS" \
   || die "ducker-ignite test failed"

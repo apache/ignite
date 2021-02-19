@@ -419,6 +419,8 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = qryIdGen.incrementAndGet();
 
+            h2.runningQueryManager().trackRequestId(qryReqId);
+
             boolean retry = false;
             boolean release = true;
 
@@ -720,7 +722,7 @@ public class GridReduceQueryExecutor {
             Reducer reducer;
 
             if (skipMergeTbl)
-                reducer = UnsortedReducer.createDummy(ctx);
+                reducer = UnsortedOneWayReducer.createDummy(ctx);
             else {
                 ReduceTable tbl;
 
@@ -773,7 +775,7 @@ public class GridReduceQueryExecutor {
 
         return GridH2QueryRequest.queryFlags(qry.distributedJoins(),
             enforceJoinOrder, lazy, qry.isReplicatedOnly(),
-            qry.explain(), dataPageScanEnabled);
+            qry.explain(), dataPageScanEnabled, qry.treatReplicatedAsPartitioned());
     }
 
     /**
@@ -876,6 +878,8 @@ public class GridReduceQueryExecutor {
         }
 
         final long reqId = qryIdGen.incrementAndGet();
+
+        h2.runningQueryManager().trackRequestId(reqId);
 
         final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(nodes.size());
 

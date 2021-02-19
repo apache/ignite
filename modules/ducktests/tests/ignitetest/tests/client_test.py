@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
 # pylint: disable=W0223
@@ -49,7 +49,7 @@ class ClientTest(IgniteTest):
 
     # pylint: disable=R0913
     @cluster(num_nodes=7)
-    @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
+    @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
     def test_ignite_start_stop_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
                                      client_work_time):
@@ -62,7 +62,7 @@ class ClientTest(IgniteTest):
 
     # pylint: disable=R0913
     @cluster(num_nodes=7)
-    @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
+    @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
     def test_ignite_kill_start_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
                                      client_work_time):
@@ -91,7 +91,7 @@ class ClientTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
 
-        control_utility = ControlUtility(ignite, self.test_context)
+        control_utility = ControlUtility(ignite)
 
         client_cfg = server_cfg._replace(client_mode=True)
 
