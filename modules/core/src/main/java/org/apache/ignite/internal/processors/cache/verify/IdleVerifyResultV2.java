@@ -284,6 +284,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                 printer.accept("Partition instances: " + entry.getValue() + "\n");
             }
         }
+
+        printer.accept("\n");
     }
 
     /** {@inheritDoc} */

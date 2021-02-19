@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -25,9 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,13 +40,17 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -52,9 +58,12 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitions;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 
 /**
@@ -85,12 +94,12 @@ public class SnapshotPartitionsVerifyTask
         }
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
-        Set<SnapshotMetadata> allParts = new HashSet<>();
-        clusterMetas.values().forEach(allParts::addAll);
+        Set<SnapshotMetadata> allMetas = new HashSet<>();
+        clusterMetas.values().forEach(allMetas::addAll);
 
         Set<String> missed = null;
 
-        for (SnapshotMetadata meta : allParts) {
+        for (SnapshotMetadata meta : allMetas) {
             if (missed == null)
                 missed = new HashSet<>(meta.baselineNodes());
 
@@ -105,19 +114,21 @@ public class SnapshotPartitionsVerifyTask
                 new IgniteException("Some metadata is missing from the snapshot: " + missed)));
         }
 
-        for (int idx = 0; !allParts.isEmpty(); idx++) {
+        for (int idx = 0; !allMetas.isEmpty(); idx++) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
                 if (e.getValue().size() < idx)
                     continue;
 
-                SnapshotMetadata meta = e.getValue().get(idx);
+                Optional<SnapshotMetadata> meta = e.getValue().stream()
+                    .filter(allMetas::contains)
+                    .findFirst();
 
-                if (allParts.remove(meta)) {
-                    jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId()),
+                if (meta.isPresent() && allMetas.remove(meta.get())) {
+                    jobs.put(new VisorVerifySnapshotPartitionsJob(meta.get().snapshotName(), meta.get().consistentId()),
                         e.getKey());
                 }
 
-                if (allParts.isEmpty())
+                if (allMetas.isEmpty())
                     break;
             }
         }
@@ -174,9 +185,9 @@ public class SnapshotPartitionsVerifyTask
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
             Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
-            Set<T2<File, File>> pairs = new HashSet<>();
+            Set<File> partFiles = new HashSet<>();
 
-            for (File dir : snpMgr.snapshotCacheDirectories(snpName, consId)) {
+            for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
                 int grpId = CU.cacheId(cacheGroupName(dir));
 
                 if (!grps.remove(grpId))
@@ -184,13 +195,13 @@ public class SnapshotPartitionsVerifyTask
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
-                for (File part : cachePartitions(dir)) {
+                for (File part : cachePartitionFiles(dir)) {
                     int partId = partId(part.getName());
 
                     if (!parts.remove(partId))
                         continue;
 
-                    pairs.add(new T2<>(dir, part));
+                    partFiles.add(part);
                 }
 
                 if (!parts.isEmpty()) {
@@ -213,33 +224,59 @@ public class SnapshotPartitionsVerifyTask
             try {
                 U.doInParallel(
                     ignite.context().getSystemExecutorService(),
-                    pairs,
-                    pair -> {
-                        String grpName = cacheGroupName(pair.get1());
+                    partFiles,
+                    part -> {
+                        String grpName = cacheGroupName(part.getParentFile());
                         int grpId = CU.cacheId(grpName);
-                        int partId = partId(pair.get2().getName());
+                        int partId = partId(part.getName());
 
-                        // Snapshot partitions must always be in OWNING state.
-                        // There is no `primary` partitions for snapshot.
-                        AtomicLong updCntr = new AtomicLong();
-                        AtomicLong partSize = new AtomicLong();
+                        FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
-                        snpMgr.readSnapshotPartitionMeta(pair.get2(),
-                            grpId,
-                            partId,
-                            buff.get(),
-                            updCntr::set,
-                            partSize::set);
+                        try {
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
+                                .createPageStore(getTypeByPartId(partId),
+                                    part::toPath,
+                                    val -> {
+                                    })
+                            ) {
+                                ByteBuffer pageBuff = buff.get();
+                                pageBuff.clear();
+                                pageStore.read(0, pageBuff, true);
 
-                        res.putAll(calculatePartitionHash(updCntr.get(),
-                            grpId,
-                            partId,
-                            grpName,
-                            consId,
-                            GridDhtPartitionState.OWNING,
-                            false,
-                            partSize.get(),
-                            snpMgr.partitionRows(snpName, consId, grpName, partId)));
+                                long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
+                                PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+                                GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
+
+                                if (partState != OWNING)
+                                    throw new IgniteCheckedException("Snapshot partitions must be in OWNING state only: " + partState);
+
+                                long updateCntr = io.getUpdateCounter(pageAddr);
+                                long size = io.getSize(pageAddr);
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Partition [grpId=" + grpId
+                                        + ", id=" + partId
+                                        + ", counter=" + updateCntr
+                                        + ", size=" + size + "]");
+                                }
+
+                                // Snapshot partitions must always be in OWNING state.
+                                // There is no `primary` partitions for snapshot.
+                                res.putAll(calculatePartitionHash(updateCntr,
+                                    grpId,
+                                    partId,
+                                    grpName,
+                                    consId,
+                                    GridDhtPartitionState.OWNING,
+                                    false,
+                                    size,
+                                    snpMgr.partitionRows(snpName, consId, grpName, partId)));
+                            }
+                        }
+                        catch (IOException e) {
+                            throw new IgniteCheckedException(e);
+                        }
 
                         return null;
                     }

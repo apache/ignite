@@ -346,7 +346,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
                 IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
             try (PrintWriter pw = new PrintWriter(f)) {
-                res.print(System.out::print, true);
+                res.print(pw::print, true);
                 pw.flush();
 
                 System.out.println("See log for additional information. " + f.getAbsolutePath());

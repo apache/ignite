@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.PartitionState;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -69,6 +68,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
 /**
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
@@ -516,6 +516,14 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
 
+                    if (arg.checkCrc() && gctx.persistenceEnabled()) {
+                        FilePageStoreManager pageStoreMgr =
+                            (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                        checkPartitionsPageCrcSum(() -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
+                            part.id(), FLAG_DATA);
+                    }
+
                     res = calculatePartitionHash(updCntr == null ? 0 : updCntr.get(),
                         gctx.groupId(),
                         part.id(),
@@ -549,42 +557,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 return res == null ? emptyMap() : res;
             });
-        }
-
-        /**
-         * Checks correct CRC sum for given partition and cache group.
-         *
-         * @param grpCtx Cache group context
-         * @param part partition.
-         */
-        private void checkPartitionCrc(CacheGroupContext grpCtx, GridDhtLocalPartition part) {
-            if (grpCtx.persistenceEnabled()) {
-                FilePageStore pageStore = null;
-
-                try {
-                    FilePageStoreManager pageStoreMgr =
-                        (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
-                    if (pageStoreMgr == null)
-                        return;
-
-                    pageStore = (FilePageStore)pageStoreMgr.getStore(grpCtx.groupId(), part.id());
-
-                    IdleVerifyUtility.checkPartitionsPageCrcSum(pageStore, grpCtx, part.id(), FLAG_DATA);
-                }
-                catch (GridNotIdleException e) {
-                    throw e;
-                }
-                catch (Exception | AssertionError e) {
-                    String msg = new SB("CRC check of partition: ").a(part.id()).a(", for cache group \"")
-                        .a(grpCtx.cacheOrGroupName()).a("\" failed.")
-                        .a(pageStore != null ? " file: " + pageStore.getFileAbsolutePath() : "").toString();
-
-                    log.error(msg, e);
-
-                    throw new IgniteException(msg, e);
-                }
-            }
         }
     }
 }

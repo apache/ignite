@@ -35,8 +35,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.sameSnapshotMetadata;
-
 /** Snapshot task to collect snapshot metadata from the baseline nodes for given snapshot name. */
 @GridInternal
 public class SnapshotMetadataCollectorTask
@@ -86,7 +84,7 @@ public class SnapshotMetadataCollectorTask
                 if (first == null)
                     first = meta;
 
-                if (!sameSnapshotMetadata(first, meta)) {
+                if (!first.sameSnapshot(meta)) {
                     exs.put(res.getNode(),
                         new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
                             "[first=" + first + ", meta=" + meta + ", nodeId=" + res.getNode().id() + ']'));

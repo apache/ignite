@@ -28,10 +28,12 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,6 +54,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridJobExecuteRequest;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -60,6 +64,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -85,10 +90,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -96,6 +103,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -128,6 +136,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Cluster-wide snapshot test.
@@ -1319,8 +1328,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(0));
@@ -1328,29 +1336,31 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
+        try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
             .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
             .createPageStore(getTypeByPartId(0),
                 () -> part0,
                 val -> {
-                });
+                })
+        ) {
+            ByteBuffer buff = ByteBuffer.allocateDirect(ignite.configuration().getDataStorageConfiguration().getPageSize())
+                .order(ByteOrder.nativeOrder());
 
-        ByteBuffer buff = ByteBuffer.allocate(ignite.configuration().getDataStorageConfiguration().getPageSize())
-            .order(ByteOrder.nativeOrder());
+            buff.clear();
+            pageStore.read(0, buff, false);
 
-        buff.clear();
-        pageStore.read(0, buff, false);
+            PagePartitionMetaIO io = PageIO.getPageIO(buff);
 
-        PagePartitionMetaIO io = PageIO.getPageIO(buff);
-        io.setUpdateCounter(buff, CACHE_KEYS_RANGE * 2);
+            long pageAddr = GridUnsafe.bufferAddress(buff);
 
-        pageStore.beginRecover();
+            io.setUpdateCounter(pageAddr, CACHE_KEYS_RANGE * 2);
 
-        buff.flip();
-        pageStore.write(PageIO.getPageId(buff), buff, 0, true);
-        pageStore.finishRecover();
+            pageStore.beginRecover();
 
-        pageStore.close();
+            buff.flip();
+            pageStore.write(PageIO.getPageId(buff), buff, 0, true);
+            pageStore.finishRecover();
+        }
 
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
 
@@ -1376,8 +1386,24 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             .filter(f -> !f.getName().equals(DFLT_SNAPSHOT_DIRECTORY))
             .forEach(U::delete);
 
-        for (int i = 4; i < 6; i++)
+        Set<UUID> assigns = new HashSet<>();
+
+        for (int i = 4; i < 7; i++) {
             startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+
+            UUID locNodeId = grid(i).localNode().id();
+
+            grid(i).context().io().addMessageListener(GridTopic.TOPIC_JOB, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof GridJobExecuteRequest) {
+                        GridJobExecuteRequest msg0 = (GridJobExecuteRequest)msg;
+
+                        if (msg0.getTaskName().contains(SnapshotPartitionsVerifyTask.class.getName()))
+                            assigns.add(locNodeId);
+                    }
+                }
+            });
+        }
 
         IgniteEx ignite = grid(4);
         ignite.cluster().baselineAutoAdjustEnabled(false);
@@ -1388,9 +1414,56 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
+        // GridJobExecuteRequest is not send to the local node.
+        assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns,
+            waitForCondition(() -> assigns.size() == 2, 5_000L));
+
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckCRCFail() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
+                setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+            getPartitionFileName(0));
+
+        try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
+            .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
+            .createPageStore(getTypeByPartId(0),
+                () -> part0,
+                val -> {
+                })
+        ) {
+            ByteBuffer buff = ByteBuffer.allocateDirect(ignite.configuration().getDataStorageConfiguration().getPageSize())
+                .order(ByteOrder.nativeOrder());
+            pageStore.read(0, buff, false);
+
+            pageStore.beginRecover();
+
+            PageIO.setCrc(buff, 1);
+
+            buff.flip();
+            pageStore.write(PageIO.getPageId(buff), buff, 0, false);
+            pageStore.finishRecover();
+        }
+
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertEquals(1, res.exceptions().size());
+        assertContains(log, b.toString(), "The check procedure failed on 1 node.");
+
+        Exception ex = res.exceptions().values().iterator().next();
+        assertTrue(X.hasCause(ex, IgniteDataIntegrityViolationException.class));
     }
 
     /** @throws Exception If fails. */
