@@ -315,7 +315,7 @@ public abstract class QueryChecker {
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
         if(expectedColumnNames != null) {
-            assertEquals("numer of columns are different", expectedColumnNames.size(), cur.getColumnsCount());
+            assertEquals("number of columns are different", expectedColumnNames.size(), cur.getColumnsCount());
 
             for (int i = 0; i < cur.getColumnsCount(); i++)
                 assertEquals(expectedColumnNames.get(i), cur.getFieldName(i));
