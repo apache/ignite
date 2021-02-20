@@ -16,8 +16,8 @@
 """
 Module contains snapshot test.
 """
-
 from ducktape.mark.resource import cluster
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -47,9 +47,13 @@ class SnapshotTest(IgniteTest):
         """
         version = IgniteVersion(ignite_version)
 
+        cache_cfg = CacheConfiguration(name=self.CACHE_NAME, cache_mode='REPLICATED',
+                                       indexed_types=['java.lang.Long', 'byte[]'])
+
         ignite_config = IgniteConfiguration(
             version=version,
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
+            caches=[cache_cfg],
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 

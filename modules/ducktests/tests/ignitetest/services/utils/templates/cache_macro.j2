@@ -15,6 +15,17 @@
  limitations under the License.
 #}
 
+
+{% macro rendezvous_backup_filter(affinity) %}
+    <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+        <property name="affinityBackupFilter">
+            <bean class="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.CellularAffinityBackupFilter">
+                <constructor-arg value="{{ affinity.constructor_arg }}"/>
+            </bean>
+        </property>
+    </bean>
+{% endmacro %}
+
 {% macro cache_configs(caches) %}
     {% if caches %}
         <property name="cacheConfiguration">
@@ -22,10 +33,25 @@
                 {% for cache in caches %}
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
-                    {% if cache.cache_mode == 'PARTITIONED' %}
-                        <property name="backups" value="{{ cache.backups or 0 }}"/>
-                    {% endif %}
+                    <property name="backups" value="{{ cache.backups or 0 }}"/>
+                    <property name="cacheMode" value="{{ cache.cache_mode }}"/>
                     <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
+
+                    {% if cache.indexed_types %}
+                    <property name="indexedTypes">
+                        <list>
+                            {% for class in cache.indexed_types %}
+                                <value>{{ class }}</value>
+                            {% endfor %}
+                        </list>
+                    </property>
+                    {% endif %}
+
+                    {% if cache.affinity and cache.affinity.name == 'BACKUP_FILTER' %}
+                    <property name="affinity">
+                    {{ rendezvous_backup_filter(cache.affinity) }}
+                    </property>
+                    {% endif %}
                 </bean>
                 {% endfor %}
             </list>

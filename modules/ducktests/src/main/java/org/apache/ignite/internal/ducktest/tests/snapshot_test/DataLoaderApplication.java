@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.tests.snapshot_test;
 
-import java.util.Collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
@@ -42,19 +37,7 @@ public class DataLoaderApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        QueryEntity qryEntity = new QueryEntity()
-            .setKeyFieldName("id")
-            .setKeyType(Long.class.getName())
-            .setTableName("TEST_TABLE")
-            .setValueType(byte[].class.getName())
-            .addQueryField("id", Long.class.getName(), null)
-            .setIndexes(Collections.singletonList(new QueryIndex("id")));
-
-        CacheConfiguration<Long, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
-        cacheCfg.setCacheMode(CacheMode.REPLICATED);
-        cacheCfg.setQueryEntities(Collections.singletonList(qryEntity));
-
-        ignite.getOrCreateCache(cacheCfg);
+        ignite.getOrCreateCache(cacheName);
 
         byte[] data = new byte[valSize];
 

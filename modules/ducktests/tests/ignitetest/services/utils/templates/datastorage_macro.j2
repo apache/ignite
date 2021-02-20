@@ -31,6 +31,10 @@
                         </list>
                     </property>
                 {% endif %}
+
+                {% if config.checkpoint_frequency %}
+                    <property name="checkpointFrequency" value="{{ config.checkpoint_frequency }}"/>
+                {% endif %}
             </bean>
         </property>
     {% endif %}

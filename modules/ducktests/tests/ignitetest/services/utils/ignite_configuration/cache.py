@@ -18,6 +18,17 @@ This module contains classes and utilities for Ignite Cache configuration.
 """
 from typing import NamedTuple
 
+AFFINITY_BACKUP_FILTER = 'BACKUP_FILTER'
+CELL = 'CELL'
+
+
+class Affinity(NamedTuple):
+    """
+    Affinity.
+    """
+    name: str = AFFINITY_BACKUP_FILTER
+    constructor_arg: str = CELL
+
 
 class CacheConfiguration(NamedTuple):
     """
@@ -27,3 +38,5 @@ class CacheConfiguration(NamedTuple):
     cache_mode: str = 'PARTITIONED'
     atomicity_mode: str = 'ATOMIC'
     backups: int = 0
+    indexed_types: list = None
+    affinity: Affinity = None

@@ -11,13 +11,21 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License
+# limitations under the License.
 
-discovery:
-  - ../discovery_test.py
+"""
+This module contains utility methods.
+"""
+import os
 
-snapshot:
-  - ../snapshot_test.py
 
-two_phased_rebalance:
-  - ../two_phased_rebalanced_test.py.py
+def copy_file_to_dest(node, file_path: str, dest_dir: str):
+    """
+    Move file to logs directory.
+    :return new path to file.
+    """
+    node.account.ssh_output(f'cp {file_path} {dest_dir}')
+
+    file_name = os.path.basename(file_path)
+
+    return os.path.join(dest_dir, file_name)
