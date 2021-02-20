@@ -52,7 +52,8 @@ class SslTest(IgniteTest):
 
         client_configuration = server_configuration._replace(
             client_mode=True,
-            ssl_context=SslContext(root_dir=root_dir, key_store_jks="client.jks"))
+            ssl_context=SslContext(root_dir=root_dir, key_store_jks="client.jks"),
+            connector_configuration=None)
 
         app = IgniteApplicationService(
             self.test_context,
