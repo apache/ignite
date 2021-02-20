@@ -189,7 +189,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 int maxSize = inlineSize - fieldOff;
 
-
                 InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(keyIdx);
 
                 int cmp = COMPARE_UNSUPPORTED;

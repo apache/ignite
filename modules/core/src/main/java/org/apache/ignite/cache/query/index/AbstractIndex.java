@@ -19,9 +19,6 @@ package org.apache.ignite.cache.query.index;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-
 /**
  * Abstract class for all Index implementations.
  */
