@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.junit.Test;
 
@@ -46,7 +51,7 @@ public class InlineIndexKeyTypeRegistryTest {
         assert t.type() == IndexKeyTypes.JAVA_OBJECT;
 
         t = InlineIndexKeyTypeRegistry.get(BinaryObjectImpl.class, IndexKeyTypes.INT, false);
-        assert t.type() == IndexKeyTypes.JAVA_OBJECT;;
+        assert t.type() == IndexKeyTypes.JAVA_OBJECT;
 
         t = InlineIndexKeyTypeRegistry.get(Integer.class, IndexKeyTypes.JAVA_OBJECT, true);
         assert t.type() == IndexKeyTypes.INT;
@@ -63,6 +68,32 @@ public class InlineIndexKeyTypeRegistryTest {
     @Test
     public void testMismatchType() {
         InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Integer.class, 11, false);
+        assert t.type() == IndexKeyTypes.INT;
+    }
+
+    /** */
+    @Test
+    public void testDateTypes() {
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Date.class, IndexKeyTypes.TIMESTAMP, false);
+        assert t.type() == IndexKeyTypes.TIMESTAMP;
+
+        t = InlineIndexKeyTypeRegistry.get(LocalDateTime.class, IndexKeyTypes.TIMESTAMP, false);
+        assert t.type() == IndexKeyTypes.TIMESTAMP;
+
+        t = InlineIndexKeyTypeRegistry.get(Timestamp.class, IndexKeyTypes.TIMESTAMP, false);
+        assert t.type() == IndexKeyTypes.TIMESTAMP;
+
+        t = InlineIndexKeyTypeRegistry.get(java.sql.Date.class, IndexKeyTypes.TIMESTAMP, false);
+        assert t.type() == IndexKeyTypes.DATE;
+
+        t = InlineIndexKeyTypeRegistry.get(LocalDate.class, IndexKeyTypes.TIMESTAMP, false);
+        assert t.type() == IndexKeyTypes.DATE;
+    }
+
+    /** */
+    @Test
+    public void testPrimitiveTypes() {
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(int.class, IndexKeyTypes.INT, false);
         assert t.type() == IndexKeyTypes.INT;
     }
 }

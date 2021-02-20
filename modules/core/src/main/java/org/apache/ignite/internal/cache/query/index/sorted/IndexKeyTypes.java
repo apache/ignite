@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 /**
  * List of available types to use as index key.

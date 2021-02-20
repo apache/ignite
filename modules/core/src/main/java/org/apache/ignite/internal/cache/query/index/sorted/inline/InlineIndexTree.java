@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
@@ -135,7 +136,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
-            rowHnd = rowHndFactory.create(def, true, true, true);
+            rowHnd = rowHndFactory.create(def, true, true);
 
             inlineSize = computeInlineSize(
                 rowHnd.getInlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());

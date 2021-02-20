@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.cache.query.index.sorted.Order;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 
 /**
  * Defines a signle index key.
@@ -71,7 +70,7 @@ public class IndexKeyDefinition {
 
     /**
      * Validates that specified key's class matches to index key definition.
-     * @return {@code true} if key class matches {@link .idxCls}, otherwise {@code false}.
+     * @return {@code true} if key class matches {@link #idxCls}, otherwise {@code false}.
      */
     public boolean validate(Object key) {
         assert key != null;
@@ -81,6 +80,9 @@ public class IndexKeyDefinition {
         if (keyCls == NullKey.class || keyCls == idxCls)
             return true;
 
-        return idxType == IndexKeyTypes.JAVA_OBJECT && (keyCls == JavaObjectKey.class);
+        if (idxType == IndexKeyTypes.JAVA_OBJECT && keyCls == JavaObjectKey.class)
+            return true;
+
+        return PrimitivesDict.areAlternatives(keyCls, idxCls);
     }
 }

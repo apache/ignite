@@ -19,7 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;

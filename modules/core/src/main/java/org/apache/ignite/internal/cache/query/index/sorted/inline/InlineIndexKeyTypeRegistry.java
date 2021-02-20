@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.BooleanInlineIndexKeyType;
@@ -64,26 +66,31 @@ public class InlineIndexKeyTypeRegistry {
     private static final ObjectByteArrayInlineIndexKeyType legacyObjectType = new ObjectByteArrayInlineIndexKeyType();
 
     static {
-        classMapping.put(Boolean.class, new BooleanInlineIndexKeyType());
-        classMapping.put(Byte.class, new ByteInlineIndexKeyType());
-        classMapping.put(byte[].class, new BytesInlineIndexKeyType());
-        classMapping.put(Date.class, new DateInlineIndexKeyType());
-        classMapping.put(Timestamp.class, new TimestampInlineIndexKeyType());
-        classMapping.put(java.util.Date.class, new LegacyDateInlineIndexKeyType());
-        classMapping.put(java.time.LocalDate.class, new LocalDateInlineIndexKeyType());
-        classMapping.put(java.time.LocalTime.class, new LocalTimeInlineIndexKeyType());
-        classMapping.put(java.time.LocalDateTime.class, new LocalDateTimeInlineIndexKeyType());
-        classMapping.put(Double.class, new DoubleInlineIndexKeyType());
-        classMapping.put(Float.class, new FloatInlineIndexKeyType());
-        classMapping.put(Integer.class, new IntegerInlineIndexKeyType());
-        classMapping.put(Long.class, new LongInlineIndexKeyType());
-        classMapping.put(Short.class, new ShortInlineIndexKeyType());
-        classMapping.put(String.class, new StringInlineIndexKeyType());
-        classMapping.put(Time.class, new TimeInlineIndexKeyType());
-        classMapping.put(UUID.class, new UuidInlineIndexKeyType());
+        register(IndexKeyTypes.BOOLEAN, new BooleanInlineIndexKeyType(), boolean.class, Boolean.class);
+        register(IndexKeyTypes.BYTE, new ByteInlineIndexKeyType(), byte.class, Byte.class);
+        register(IndexKeyTypes.SHORT, new ShortInlineIndexKeyType(), short.class, Short.class);
+        register(IndexKeyTypes.INT, new IntegerInlineIndexKeyType(), int.class, Integer.class);
+        register(IndexKeyTypes.LONG, new LongInlineIndexKeyType(), long.class, Long.class);
+        register(IndexKeyTypes.DOUBLE, new DoubleInlineIndexKeyType(), double.class, Double.class);
+        register(IndexKeyTypes.FLOAT, new FloatInlineIndexKeyType(), float.class, Float.class);
+        register(IndexKeyTypes.TIME, new TimeInlineIndexKeyType(), java.sql.Time.class);
+        register(IndexKeyTypes.TIME, new LocalTimeInlineIndexKeyType(), LocalTime.class);
+        register(IndexKeyTypes.DATE, new DateInlineIndexKeyType(), java.sql.Date.class);
+        register(IndexKeyTypes.DATE, new LocalDateInlineIndexKeyType(), LocalDate.class);
+        register(IndexKeyTypes.TIMESTAMP, new LegacyDateInlineIndexKeyType(), java.util.Date.class);
+        register(IndexKeyTypes.TIMESTAMP, new LocalDateTimeInlineIndexKeyType(), LocalDateTime.class);
+        register(IndexKeyTypes.TIMESTAMP, new TimestampInlineIndexKeyType(), Timestamp.class);
+        register(IndexKeyTypes.BYTES, new BytesInlineIndexKeyType(), byte[].class);
+        register(IndexKeyTypes.STRING, new StringInlineIndexKeyType(), String.class);
+        register(IndexKeyTypes.UUID, new UuidInlineIndexKeyType(), UUID.class);
+    }
 
-        for (InlineIndexKeyType cm: classMapping.values())
-            typeMapping.put(cm.type(), cm);
+    /** */
+    private static void register(int type, InlineIndexKeyType keyType, Class<?>... classes) {
+        typeMapping.put(type, keyType);
+
+        for (Class<?> cls: classes)
+            classMapping.put(cls, keyType);
     }
 
     /**

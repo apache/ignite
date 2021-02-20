@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
 import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**

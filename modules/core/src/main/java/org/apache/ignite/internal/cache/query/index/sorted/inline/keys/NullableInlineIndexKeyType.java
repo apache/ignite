@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.pagemem.PageUtils;

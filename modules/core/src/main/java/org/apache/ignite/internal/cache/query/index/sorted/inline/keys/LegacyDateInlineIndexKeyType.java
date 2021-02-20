@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
 import java.util.Date;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 
