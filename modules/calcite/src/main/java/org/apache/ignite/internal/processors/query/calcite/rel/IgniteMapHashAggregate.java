@@ -95,17 +95,6 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
-
-        double rows = mq.getRowCount(getInput());
-
-        double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
-
-        return costFactory.makeCost(
-            groupsCnt,
-            rows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0,
-            groupsCnt * aggCalls.size() * IgniteCost.AGG_CALL_MEM_COST,
-            0
-        );
-    }}
+        return computeSelfCostHash(planner, mq);
+    }
+}

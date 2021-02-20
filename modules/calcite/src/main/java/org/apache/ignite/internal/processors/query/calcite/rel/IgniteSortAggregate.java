@@ -137,18 +137,6 @@ public class IgniteSortAggregate extends IgniteAggregateBase {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
-
-        double rows = mq.getRowCount(getInput());
-
-        double groupsCnt = estimateRowCount(mq);
-
-        return costFactory.makeCost(
-            groupsCnt,
-            rows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0,
-            aggCalls.size() * IgniteCost.AGG_CALL_MEM_COST,
-            0
-        );
+        return computeSelfCostSort(planner, mq);
     }
 }

@@ -83,13 +83,6 @@ public class IgniteHashAggregate extends IgniteAggregateBase {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
-            inTraits));
-    }
-
-    /** {@inheritDoc} */
     @Override protected RelNode createMapAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
         ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteMapHashAggregate(getCluster(), traits, input, groupSet, groupSets, aggCalls);
@@ -104,31 +97,6 @@ public class IgniteHashAggregate extends IgniteAggregateBase {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
-
-        double rows = mq.getRowCount(getInput());
-
-        double groupsCnt = estimateRowCount(mq);
-
-        if (aggCalls.isEmpty()) {
-            // SELECT DISTINCT
-            return costFactory.makeCost(
-                groupsCnt,
-                rows * IgniteCost.ROW_PASS_THROUGH_COST,
-                0,
-                groupsCnt * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE,
-                0
-            );
-        }
-        else {
-            // GROUP BY
-            return costFactory.makeCost(
-                groupsCnt,
-                rows * IgniteCost.ROW_PASS_THROUGH_COST,
-                0,
-                groupsCnt * aggCalls.size() * IgniteCost.AGG_CALL_MEM_COST,
-                0
-            );
-        }
+        return computeSelfCostHash(planner, mq);
     }
 }

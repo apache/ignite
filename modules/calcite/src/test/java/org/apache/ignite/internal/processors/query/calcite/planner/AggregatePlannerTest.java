@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashA
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -146,7 +146,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         publicSchema.addTable("TEST", tbl);
 
-        String sql = "SELECT AVG(val0) FROM test GROUP BY grp0";
+        String sql = "SELECT AVG(val0) FILTER(WHERE val1 > 10) FROM test GROUP BY grp0";
 
         IgniteRel phys = physicalPlan(
             sql,
@@ -204,7 +204,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         publicSchema.addTable("TEST", tbl);
 
-        String sql = "SELECT AVG(val0) FROM test GROUP BY grp1, grp0";
+        String sql = "SELECT AVG(val0) FILTER (WHERE val1 > 10) FROM test GROUP BY grp1, grp0";
 
         IgniteRel phys = physicalPlan(
             sql,

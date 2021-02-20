@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public abstract class IgniteMapAggregateBase extends Aggregate implements IgniteRel, IgniteAggregate {
+public abstract class IgniteMapAggregateBase extends IgniteAggregate implements IgniteRel {
     /** */
     protected IgniteMapAggregateBase(
         RelOptCluster cluster,
@@ -48,10 +48,5 @@ public abstract class IgniteMapAggregateBase extends Aggregate implements Ignite
     /** */
     protected IgniteMapAggregateBase(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
-    /** */
-    @Override public List<AggregateCall> aggregateCalls() {
-        return getAggCallList();
     }
 }

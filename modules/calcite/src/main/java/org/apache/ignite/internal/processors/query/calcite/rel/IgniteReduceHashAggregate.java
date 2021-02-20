@@ -31,6 +31,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -76,10 +77,28 @@ public class IgniteReduceHashAggregate extends IgniteReduceAggregateBase {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
         double rows = mq.getRowCount(getInput());
 
-        // TODO: fix it when https://issues.apache.org/jira/browse/IGNITE-13543 will be resolved
-        // currently it's OK to have such a dummy cost because there is no other options
-        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
+        double mem = 0d;
+        if (aggCalls.isEmpty())
+            mem = groupSet.cardinality() * IgniteCost.AVERAGE_FIELD_SIZE;
+        else {
+            for (AggregateCall aggCall : aggCalls) {
+                if (aggCall.isDistinct())
+                    mem += IgniteCost.AGG_CALL_MEM_COST * rows;
+                else
+                    mem += IgniteCost.AGG_CALL_MEM_COST;
+            }
+        }
+
+        return costFactory.makeCost(
+            rows,
+            rows * IgniteCost.ROW_PASS_THROUGH_COST,
+            0,
+            mem,
+            0
+        );
     }
 }

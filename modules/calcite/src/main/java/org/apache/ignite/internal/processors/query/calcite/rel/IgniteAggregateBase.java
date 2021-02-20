@@ -27,7 +27,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -55,7 +54,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwareIgniteRel, IgniteAggregate {
+public abstract class IgniteAggregateBase extends IgniteAggregate implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     protected IgniteAggregateBase(
         RelOptCluster cluster,
@@ -65,17 +64,12 @@ public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwa
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls
     ) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     protected IgniteAggregateBase(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
-    /** */
-    @Override public List<AggregateCall> aggregateCalls() {
-        return getAggCallList();
     }
 
     /** {@inheritDoc} */

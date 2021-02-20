@@ -37,7 +37,7 @@ import org.apache.calcite.util.Util;
 /**
  *
  */
-public abstract class IgniteReduceAggregateBase extends SingleRel implements IgniteRel, IgniteAggregate {
+public abstract class IgniteReduceAggregateBase extends SingleRel implements IgniteRel {
     /** */
     protected final ImmutableBitSet groupSet;
 
@@ -112,7 +112,7 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
     }
 
     /** */
-    @Override public List<AggregateCall> aggregateCalls() {
+    public List<AggregateCall> aggregateCalls() {
         return aggCalls;
     }
 }

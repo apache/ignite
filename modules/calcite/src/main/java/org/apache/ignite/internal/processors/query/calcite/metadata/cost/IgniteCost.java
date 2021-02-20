@@ -38,7 +38,7 @@ public class IgniteCost implements RelOptCost {
     public static final double ROW_COMPARISON_COST = 3;
 
     /** Memory cost of a aggregate call. */
-    public static final double AGG_CALL_MEM_COST = 3;
+    public static final double AGG_CALL_MEM_COST = 5;
 
     /**
      * With broadcast distribution each row will be sent to the each distination node,

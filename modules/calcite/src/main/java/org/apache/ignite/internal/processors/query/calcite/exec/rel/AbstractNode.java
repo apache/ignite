@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
-    protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE", 512);
+    protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE", 2);
 
     /** */
     protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_BATCH_SIZE", 100);

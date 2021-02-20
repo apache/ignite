@@ -160,8 +160,6 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
             grp = null;
             prevRow = null;
-
-            downstream().end();
         }
         catch (Exception e) {
             onError(e);

@@ -86,6 +86,10 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
         assertQuery("select count(*) from person where salary > 10").returns(2L).check();
         assertQuery("select count(1) from person where salary > 10").returns(2L).check();
 
+        assertQuery("select count(name) filter (where salary > 10) from person").returns(1L).check();
+        assertQuery("select count(*) filter (where salary > 10) from person").returns(2L).check();
+        assertQuery("select count(1) filter (where salary > 10) from person").returns(2L).check();
+
         assertQuery("select salary, count(name) from person group by salary order by salary")
             .returns(10d, 2L)
             .returns(15d, 1L)
