@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -42,7 +43,7 @@ public class InlineRecommender {
     public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
 
     /** Counter of inline size calculation for throttling real invocations. */
-    private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
+    private final AtomicLong inlineSizeCalculationCntr = new AtomicLong();
 
     /** How often real invocation of inline size calculation will be skipped. */
     private final int inlineSizeThrottleThreshold =
@@ -74,11 +75,12 @@ public class InlineRecommender {
         if (row instanceof IndexSearchRowImpl)
             return;
 
-        Long invokeCnt = inlineSizeCalculationCntr.get();
+        long invokeCnt = inlineSizeCalculationCntr.get();
 
-        inlineSizeCalculationCntr.set(++invokeCnt);
+        if (!inlineSizeCalculationCntr.compareAndSet(invokeCnt, invokeCnt + 1))
+            return;
 
-        boolean throttle = invokeCnt % inlineSizeThrottleThreshold != 0;
+        boolean throttle = invokeCnt + 1 % inlineSizeThrottleThreshold != 0;
 
         if (throttle)
             return;
