@@ -55,7 +55,7 @@ class AuthenticationTests(IgniteTest):
 
         servers.start()
 
-        control_utility = ControlUtility(cluster=servers, login="ignite", password="ignite")
+        control_utility = ControlUtility(cluster=servers, username="ignite", password="ignite")
         control_utility.activate()
 
     @cluster(num_nodes=NUM_NODES)
@@ -81,7 +81,7 @@ class AuthenticationTests(IgniteTest):
 
         servers.start()
 
-        control_utility = ControlUtility(cluster=servers, login="ignite", password="wrong_password")
+        control_utility = ControlUtility(cluster=servers, username="ignite", password="wrong_password")
 
         try:
             control_utility.activate()

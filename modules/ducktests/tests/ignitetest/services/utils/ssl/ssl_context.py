@@ -19,20 +19,24 @@ This module contains classes and utilities for SslContextFactory.
 import os
 
 DEFAULT_PASSWORD = "123456"
-DEFAULT_SERVER_KEYSTORE = "server.jks"
-DEFAULT_CLIENT_KEYSTORE = "client.jks"
-DEFAULT_ADMIN_KEYSTORE = "admin.jks"
 DEFAULT_TRUSTSTORE = "truststore.jks"
+DEFAULT_ROOT = "/opt/"
+
+default_keystore = {
+    'server': 'server.jks',
+    'client': 'client.jks',
+    'admin': 'admin.jks'
+}
 
 
-class SslContextFactory:
+class SslContext:
     """
     Ignite SslContextFactory.
     """
 
     # pylint: disable=R0913
-    def __init__(self, root_dir: str = "/opt",
-                 key_store_jks: str = DEFAULT_SERVER_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
+    def __init__(self, root_dir: str = DEFAULT_ROOT,
+                 key_store_jks: str = default_keystore['server'], key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
                  key_store_path: str = None, trust_store_path: str = None):
         certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")
@@ -43,3 +47,28 @@ class SslContextFactory:
         self.trust_store_path = trust_store_path if trust_store_path is not None \
             else os.path.join(certificate_dir, trust_store_jks)
         self.trust_store_password = trust_store_password
+
+
+def get_ssl_context_from_globals(_globals: dict, user: str = 'server'):
+    """
+    Parse globals with structure like that.
+    {
+        "use_ssl": True,
+        "admin": {
+            "credentials": ["username", "qwerty_123"],
+            "ssl": {
+                "key_store_jks": ....
+            }
+        }
+
+    }
+    """
+    root_dir = _globals.get("install_root", DEFAULT_ROOT)
+    ssl_param = None
+    if _globals.get('use_ssl'):
+        if user in _globals and 'ssl' in _globals[user]:
+            ssl_param = _globals[user]['ssl']
+        else:
+            ssl_param = {'key_store_jks': default_keystore[user]}
+
+    return SslContext(root_dir, **ssl_param) if ssl_param else None

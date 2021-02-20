@@ -39,7 +39,7 @@ from ignitetest.utils.enum import constructible
 
 # pylint: disable=too-many-public-methods
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
+from ignitetest.services.utils.ssl.ssl_context import get_ssl_context_from_globals
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
@@ -416,20 +416,16 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 
-    def _update_ssl_config_with_globals(self, dict_name: str, default_jks: str):
+    def _update_ssl_config_with_globals(self, dict_name: str):
         """
         Update ssl configuration.
         """
 
-        _dict = self.globals.get(dict_name)
-        if _dict and "ssl" in _dict:
-            ssl_context_factory = SslContextFactory(self.install_root, **_dict['ssl'])
-        else:
-            ssl_context_factory = SslContextFactory(self.install_root, default_jks)
-
-        self.config = self.config._replace(ssl_context_factory=ssl_context_factory)
-        self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-            ssl_enabled=True, ssl_context_factory=ssl_context_factory))
+        ssl_context = get_ssl_context_from_globals(self.globals, dict_name)
+        if ssl_context:
+            self.config = self.config._replace(ssl_context_factory=ssl_context)
+            self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
+                ssl_enabled=True, ssl_context_factory=ssl_context))
 
     @staticmethod
     def exec_command(node, cmd):

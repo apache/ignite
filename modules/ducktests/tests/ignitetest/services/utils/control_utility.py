@@ -16,7 +16,6 @@
 """
 This module contains control utility wrapper.
 """
-import os
 import random
 import re
 import socket
@@ -26,9 +25,8 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_LOGIN
-from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
-from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
+from ignitetest.services.utils.auth import get_credentials_from_globals, DEFAULT_AUTH_PASSWORD
+from ignitetest.services.utils.ssl.ssl_context import get_ssl_context_from_globals
 from ignitetest.services.utils.jmx_utils import JmxClient
 
 
@@ -39,17 +37,19 @@ class ControlUtility:
     BASE_COMMAND = "control.sh"
 
     # pylint: disable=R0913
-    def __init__(self, cluster, **kwargs):
+    def __init__(self, cluster, ssl_context=None, username=None, password=DEFAULT_AUTH_PASSWORD):
         self._cluster = cluster
         self.logger = cluster.context.logger
-        self.ssl_context = self._parse_ssl_params("admin", cluster.context.globals, **kwargs)
-        self.creds = self._parse_creds("admin", cluster.context.globals, **kwargs)
 
-    def jks_path(self, jks_name: str):
-        """
-        :return Path to jks file.
-        """
-        return os.path.join(self._cluster.certificate_dir, jks_name)
+        self.ssl_context = get_ssl_context_from_globals(cluster.context.globals, 'admin')
+
+        if not self.ssl_context:
+            self.ssl_context = ssl_context
+
+        self.username, self.password = get_credentials_from_globals(cluster.context.globals, 'admin')
+
+        if not self.username:
+            self.username, self.password = username, password
 
     def baseline(self):
         """
@@ -347,8 +347,8 @@ class ControlUtility:
                   f"--truststore {self.ssl_context.trust_store_path} " \
                   f"--truststore-password {self.ssl_context.trust_store_password}"
         auth = ""
-        if self.creds:
-            auth = " --user {} --password {} ".format(*self.creds)
+        if self.username:
+            auth = f" --user {self.username} --password {self.password} "
         return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
 
     @staticmethod
@@ -365,41 +365,6 @@ class ControlUtility:
 
     def __alives(self):
         return [node for node in self._cluster.nodes if self._cluster.alive(node)]
-
-    def _parse_ssl_params(self, user, globals_dict, **kwargs):
-        ssl_dict = None
-        if globals_dict.get('use_ssl'):
-            if user in globals_dict and 'ssl' in globals_dict[user]:
-                ssl_dict = globals_dict[user]['ssl']
-            else:
-                ssl_dict = {}
-        elif kwargs.get('key_store_jks') or kwargs.get('key_store_path'):
-            ssl_dict = kwargs
-        return None if ssl_dict is None else \
-            SslContextFactory(key_store_path=self.__get_store_path('key_store', ssl_dict),
-                              key_store_password=ssl_dict.get('key_store_password', DEFAULT_PASSWORD),
-                              trust_store_path=self.__get_store_path('trust_store', ssl_dict),
-                              trust_store_password=ssl_dict.get('trust_store_password', DEFAULT_PASSWORD))
-
-    def __get_store_path(self, store_type, ssl_dict):
-        path_key = f'{store_type}_path'
-        store_name = f'{store_type}_jks'
-        default_name = DEFAULT_TRUSTSTORE if store_type == 'trust_store' else DEFAULT_ADMIN_KEYSTORE
-        return ssl_dict.get(path_key, self.jks_path(ssl_dict.get(store_name, default_name)))
-
-    @staticmethod
-    def _parse_creds(user, globals_dict, **kwargs):
-        creds_dict = None
-        if globals_dict.get('use_auth'):
-            if user in globals_dict and 'creds' in globals_dict[user]:
-                creds_dict = globals_dict[user]['creds']
-            else:
-                creds_dict = {}
-        elif kwargs.get('login'):
-            creds_dict = kwargs
-        return None if creds_dict is None else \
-            (creds_dict.get("login", DEFAULT_AUTH_LOGIN),
-             creds_dict.get("password", DEFAULT_AUTH_PASSWORD))
 
 
 class BaselineNode(NamedTuple):
