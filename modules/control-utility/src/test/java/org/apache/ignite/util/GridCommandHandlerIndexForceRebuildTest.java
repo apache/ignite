@@ -88,7 +88,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
     /**
      * Set containing names of caches for which index rebuild should be blocked.
-     * See {@link BlockingIndexing}.
+     * See {@link BlockingIndexesRebuildTask}.
      */
     private static Set<String> cacheNamesBlockedIdxRebuild = new GridConcurrentHashSet<>();
 
@@ -128,7 +128,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /** */
     private void startupTestCluster() throws Exception {
         for (int i = 0; i < GRIDS_NUM; i++ ) {
-            GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+            GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
             startGrid(i);
         }
 
@@ -484,7 +484,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
         final IgniteEx ignite = startGrid(igniteIdx);
 
         resetBaselineTopology();

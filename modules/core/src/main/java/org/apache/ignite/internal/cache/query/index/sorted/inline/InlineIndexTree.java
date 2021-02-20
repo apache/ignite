@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -60,6 +59,9 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.Nu
 public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
+
+    /** Whether this tree supported of inlining POJO keys. */
+    private final boolean inlineObjSupported;
 
     /** Recommends change inline size if needed. */
     private final InlineRecommender recommender;
@@ -124,10 +126,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             inlineSize = metaInfo.inlineSize();
 
-            boolean inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
+            inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
 
             rowHnd = rowHndFactory
-                .create(def, metaInfo.useUnwrappedPk(), inlineObjSupported, metaInfo.inlineObjHash);
+                .create(def, metaInfo.useUnwrappedPk(), metaInfo.inlineObjHash);
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
@@ -137,6 +139,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             inlineSize = computeInlineSize(
                 rowHnd.getInlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
+
+            inlineObjSupported = true;
         }
 
         if (inlineSize == 0)
@@ -163,96 +167,84 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (inlineSize == 0)
             return compareFullRows(getRow(io, pageAddr, idx), row, 0, searchKeysLength);
 
-        if ((def.getIndexKeyDefinitions().size() != searchKeysLength) && isFullSchemaSearch(row))
-            throw new IgniteCheckedException("Find is configured for full schema search.");
-
         int fieldOff = 0;
 
         // Use it when can't compare values (variable length, for example).
-        int lastIdxUsed = searchKeysLength;
+        int keyIdx;
 
-        for (int i = 0; i < searchKeysLength; i++) {
+        IndexRow currRow = null;
+
+        int off = io.offset(idx);
+
+        for (keyIdx = 0; keyIdx < searchKeysLength; keyIdx++) {
             try {
                 // If a search key is null then skip other keys (consider that null shows that we should get all
                 // possible keys for that comparison).
-                if (row.getKey(i) == null)
+                if (row.getKey(keyIdx) == null)
                     return 0;
 
                 // Other keys are not inlined. Should compare as rows.
-                if (i >= rowHnd.getInlineIndexKeyTypes().size()) {
-                    lastIdxUsed = i;
+                if (keyIdx >= rowHnd.getInlineIndexKeyTypes().size())
                     break;
-                }
 
                 int maxSize = inlineSize - fieldOff;
 
-                int off = io.offset(idx);
 
-                InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
+                InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(keyIdx);
 
                 int cmp = COMPARE_UNSUPPORTED;
 
-                if (!def.getIndexKeyDefinitions().get(i).validate(row.getKey(i))) {
-                    lastIdxUsed = i;
+                // By default do not compare different classes.
+                if (!def.getIndexKeyDefinitions().get(keyIdx).validate(row.getKey(keyIdx)))
                     break;
-                }
 
                 // Value can be set up by user in query with different data type.
                 // By default do not compare different types.
-                if (InlineIndexKeyTypeRegistry.validate(keyType.type(), row.getKey(i).getClass()))
-                    cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.getKey(i));
+                if (InlineIndexKeyTypeRegistry.validate(keyType.type(), row.getKey(keyIdx).getClass())) {
+                    if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || inlineObjSupported) {
+                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.getKey(keyIdx));
+
+                        fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
+                    }
+                    // If inlining of POJO is not supported then fallback to previous logic.
+                    else {
+                        if (currRow == null)
+                            currRow = getRow(io, pageAddr, idx);
+
+                        cmp = compareFullRows(currRow, row, keyIdx, keyIdx + 1);
+                    }
+                }
 
                 // Can't compare as inlined bytes are not enough for comparation.
-                if (cmp == CANT_BE_COMPARE) {
-                    lastIdxUsed = i;
+                if (cmp == CANT_BE_COMPARE)
                     break;
-                }
 
                 // Try compare stored values for inlined keys with different approach?
                 if (cmp == COMPARE_UNSUPPORTED)
                     cmp = def.getRowComparator().compareKey(
-                        pageAddr, off + fieldOff, maxSize, row.getKey(i), keyType.type());
+                        pageAddr, off + fieldOff, maxSize, row.getKey(keyIdx), keyType.type());
 
-                if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED) {
-                    lastIdxUsed = i;
+                if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED)
                     break;
-                }
 
                 if (cmp != 0)
-                    return applySortOrder(cmp, def.getIndexKeyDefinitions().get(i).getOrder().getSortOrder());
-
-                fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
+                    return applySortOrder(cmp, def.getIndexKeyDefinitions().get(keyIdx).getOrder().getSortOrder());
 
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
         }
 
-        if (lastIdxUsed < searchKeysLength) {
+        if (keyIdx < searchKeysLength) {
             recommender.recommend(row, inlineSize);
 
-            IndexRow currRow = getRow(io, pageAddr, idx);
+            if (currRow == null)
+                currRow = getRow(io, pageAddr, idx);
 
-            return compareFullRows(currRow, row, lastIdxUsed, searchKeysLength)
+            return compareFullRows(currRow, row, keyIdx, searchKeysLength);
         }
 
         return 0;
-    }
-
-    /**
-     * If {@code true} then length of keys for search must be equal to length of schema, so use full
-     * schema to search. If {@code false} then it's possible to use only part of schema for search.
-     */
-    boolean isFullSchemaSearch(IndexKey key) {
-        int schemaLength = def.getIndexKeyDefinitions().size();
-
-        for (int i = 0; i < schemaLength; i++) {
-            // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
-            if (key.getKey(i) == null)
-                return false;
-        }
-
-        return true;
     }
 
     /** */

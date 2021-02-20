@@ -210,9 +210,7 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
      */
     private void ensureKeyType(Object val) {
         if (!InlineIndexKeyTypeRegistry.validate(type, val.getClass()))
-            throw new ClassCastException(val.getClass() + " cannot be cast to " + type());
-            //            throw new UnsupportedOperationException("Value type doesn't match: exp=" + type + ", act=" +
-//                InlineIndexKeyTypeRegistry.get(val.getClass(), type, false).type());
+            throw new UnsupportedOperationException(val.getClass() + " cannot be used for inline type " + type());
     }
 
     /**

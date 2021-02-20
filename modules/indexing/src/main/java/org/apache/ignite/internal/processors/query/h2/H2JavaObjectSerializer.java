@@ -17,26 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.h2.api.JavaObjectSerializer;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Ignite java object serializer implementation for H2.
  */
 class H2JavaObjectSerializer implements JavaObjectSerializer {
     /** */
-    private final JavaObjectKeySerializer delegate;
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Kernal context.
-     */
-    public H2JavaObjectSerializer(@NotNull GridKernalContext ctx) {
-        delegate = new JavaObjectKeySerializer(ctx);
-    }
+    private final JavaObjectKeySerializer delegate = GridIndexingManager.serializer;
 
     /** {@inheritDoc} */
     @Override public byte[] serialize(Object obj) throws Exception {

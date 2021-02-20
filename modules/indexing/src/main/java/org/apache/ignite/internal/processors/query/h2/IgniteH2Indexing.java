@@ -2255,7 +2255,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Serializer.
      */
     private JavaObjectSerializer h2Serializer() {
-        return new H2JavaObjectSerializer(ctx);
+        return new H2JavaObjectSerializer();
     }
 
     /** {@inheritDoc} */

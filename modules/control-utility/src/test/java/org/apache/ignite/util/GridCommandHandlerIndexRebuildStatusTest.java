@@ -143,10 +143,10 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
 
         final UUID id1 = ignite1.localNode().id();
@@ -178,10 +178,10 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
         startGrid(GRIDS_NUM - 2);
 
         final UUID id1 = ignite1.localNode().id();

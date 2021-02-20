@@ -117,7 +117,7 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean handlesRow(CacheDataRow row) throws IgniteCheckedException {
+    @Override public boolean canHandle(CacheDataRow row) throws IgniteCheckedException {
         throw unsupported();
     }
 

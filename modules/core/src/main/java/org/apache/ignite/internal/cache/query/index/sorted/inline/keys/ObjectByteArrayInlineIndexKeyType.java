@@ -17,43 +17,72 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 
-/** */
+/**
+ * Inline index key implementation for inlining Java Objects as byte array.
+ */
 public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyType<Object> {
-    /**
-     */
+    /** */
+    private final BytesInlineIndexKeyType delegate = new BytesInlineIndexKeyType();
+
+    /** */
+    private final JavaObjectKeySerializer serializer = GridIndexingManager.serializer;
+
+    /** */
     public ObjectByteArrayInlineIndexKeyType() {
         super(IndexKeyTypes.JAVA_OBJECT, (short) -1);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, Object val, int maxSize) {
-        return 0;
-        //        return bytesType.put0(pageAddr, off, fromObject(val), maxSize);
+        try {
+            byte[] b = serializer.serialize(val);
+
+            return delegate.put0(pageAddr, off, b, maxSize);
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to serialize Java Object to byte array", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected Object get0(long pageAddr, int off) {
-//        byte[] arr = bytesType.get0(pageAddr, off);
-        return null;
+        try {
+            byte[] b = delegate.get0(pageAddr, off);
 
-//        return ValueJavaObject.getNoCopy(null, readBytes(pageAddr, off), null);
+            return serializer.deserialize(b);
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to deserialize Java Object from byte array", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, Object v) {
-        return 0;
+        try {
+            byte[] b = serializer.serialize(v);
+
+            return delegate.compare0(pageAddr, off, b);
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to serialize Java Object to byte array", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Object key) {
-        return 0;
-//        return bytesType.inlineSize0(fromObject(key));
-    }
+        try {
+            byte[] b = serializer.serialize(key);
 
-    /** */
-    private byte[] fromObject(Object o) {
-        return new byte[0];
+            return delegate.inlineSize0(b);
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to serialize Java Object to byte array", e);
+        }
     }
 }

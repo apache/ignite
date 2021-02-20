@@ -258,10 +258,10 @@ public class IgniteIndexing implements IndexingSpi {
         Index idx, CacheDataRow row, CacheDataRow prevRow, boolean prevRowAvailable, IgniteCheckedException prevErr
     ) throws IgniteCheckedException {
         try {
-            if (row != null && !idx.handlesRow(row))
+            if (row != null && !idx.canHandle(row))
                 return prevErr;
 
-            if (prevRow != null && !idx.handlesRow(prevRow))
+            if (prevRow != null && !idx.canHandle(prevRow))
                 return prevErr;
 
             idx.onUpdate(prevRow, row, prevRowAvailable);

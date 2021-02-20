@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Object> {
     /** */
     public ObjectHashInlineIndexKeyType() {
-        super(IndexKeyTypes.JAVA_OBJECT, (short)4);
+        super(IndexKeyTypes.JAVA_OBJECT, (short) 4);
     }
 
     /** {@inheritDoc} */

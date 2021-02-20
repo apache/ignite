@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 
-/** */
+/**
+ * Serializer for representing JO as byte array in inline.
+ */
 public class JavaObjectKeySerializer {
     /** Class loader. */
     private final ClassLoader clsLdr;
@@ -33,20 +36,20 @@ public class JavaObjectKeySerializer {
     /**
      * Constructor.
      *
-     * @param ctx Kernal context.
+     * @param cfg Ignite configuration.
      */
-    public JavaObjectKeySerializer(@NotNull GridKernalContext ctx) {
-        marshaller = ctx.config().getMarshaller();
-        clsLdr = U.resolveClassLoader(ctx.config());
+    public JavaObjectKeySerializer(@NotNull IgniteConfiguration cfg) {
+        marshaller = cfg.getMarshaller();
+        clsLdr = U.resolveClassLoader(cfg);
     }
 
     /** */
-    public byte[] serialize(Object obj) throws Exception {
+    public byte[] serialize(Object obj) throws IgniteCheckedException {
         return U.marshal(marshaller, obj);
     }
 
     /** */
-    public Object deserialize(byte[] bytes) throws Exception {
+    public Object deserialize(byte[] bytes) throws IgniteCheckedException {
         return U.unmarshal(marshaller, bytes, clsLdr);
     }
 }

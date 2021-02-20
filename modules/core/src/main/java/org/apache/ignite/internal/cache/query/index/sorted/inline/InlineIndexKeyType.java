@@ -31,12 +31,16 @@ public interface InlineIndexKeyType {
     public int type();
 
     /**
-     * Returns size of inlined key. It contains system fields too (type, length).
+     * Returns size of inlined key.
+     *
+     * Note: system fields (e.g. type, length) are taken into account as well.
      */
     public int inlineSize();
 
     /**
-     * Returns required inline size for specified key.
+     * Returns inline size for specified key.
+     *
+     * Note: system fields (e.g. type, length) are taken into account as well.
      */
     public int inlineSize(Object key);
 

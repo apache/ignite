@@ -34,8 +34,7 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     /** {@inheritDoc} */
     @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args) {
         boolean useUnwrappedPk = (boolean) args[0];
-        boolean inlineObjSupported = (boolean) args[1];
-        boolean inlineObjHash = (boolean) args[2];
+        boolean inlineObjHash = (boolean) args[1];
 
         QueryIndexDefinition def = (QueryIndexDefinition) sdef;
         def.setUpFlags(useUnwrappedPk, inlineObjHash);

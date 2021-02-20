@@ -149,13 +149,29 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** */
     private boolean isSingleRowLookup(IndexKey lower, IndexKey upper) throws IgniteCheckedException {
-        return def.isPrimary() && lower != null && getSegment(0).isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+        return def.isPrimary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
-     * Checks both rows are the same. <p/>
-     * Primarly used to verify both search rows are the same and we can apply
-     * the single row lookup optimization.
+     * If {@code true} then length of keys for search must be equal to length of schema, so use full
+     * schema to search. If {@code false} then it's possible to use only part of schema for search.
+     */
+    private boolean isFullSchemaSearch(IndexKey key) {
+        int schemaLength = def.getIndexKeyDefinitions().size();
+
+        for (int i = 0; i < schemaLength; i++) {
+            // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
+            if (key.getKey(i) == null)
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks both rows are the same.
+     * <p/>
+     * Primarly used to verify if the single row lookup optimization can be applied.
      *
      * @param r1 The first row.
      * @param r2 Another row.
@@ -454,7 +470,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean handlesRow(CacheDataRow row) throws IgniteCheckedException {
+    @Override public boolean canHandle(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
             cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
     }

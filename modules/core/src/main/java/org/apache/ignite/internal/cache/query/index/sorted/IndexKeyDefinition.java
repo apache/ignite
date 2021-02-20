@@ -81,9 +81,6 @@ public class IndexKeyDefinition {
         if (keyCls == NullKey.class || keyCls == idxCls)
             return true;
 
-        if (idxType == IndexKeyTypes.JAVA_OBJECT && (keyCls == JavaObjectKey.class))
-            return true;
-
-        return false;
+        return idxType == IndexKeyTypes.JAVA_OBJECT && (keyCls == JavaObjectKey.class);
     }
 }

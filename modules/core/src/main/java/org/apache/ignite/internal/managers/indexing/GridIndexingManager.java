@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.IndexingDefragmentation;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
@@ -76,6 +77,9 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** Indexes rebuild job. */
     private final IndexesRebuildTask idxRebuild;
 
+    /** Serializer for representing JO as byte array in inline. */
+    public static JavaObjectKeySerializer serializer;
+
     /**
      * @param ctx  Kernal context.
      */
@@ -89,6 +93,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         }
         else
             idxRebuild = new IndexesRebuildTask();
+
+        serializer = new JavaObjectKeySerializer(ctx.config());
     }
 
     /**
@@ -182,7 +188,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
             // Populate index with cache rows.
             cacheVisitor.visit(row -> {
-                if (idx.handlesRow(row))
+                if (idx.canHandle(row))
                     idx.putx(row);
             });
 
