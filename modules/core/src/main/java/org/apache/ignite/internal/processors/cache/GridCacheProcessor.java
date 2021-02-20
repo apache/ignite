@@ -5515,7 +5515,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             TreeSet<T3<Long, Long, GroupPartitionId>> top =
                                 new TreeSet<>(processedPartitionComparator());
 
-                            long ts = System.nanoTime();
+                            long ts = System.currentTimeMillis();
 
                             for (Map.Entry<Integer, Long> e : processed.entrySet()) {
                                 top.add(new T3<>(e.getValue(), ts, new GroupPartitionId(grp.groupId(), e.getKey())));
