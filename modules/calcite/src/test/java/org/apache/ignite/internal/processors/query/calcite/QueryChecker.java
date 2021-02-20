@@ -269,10 +269,7 @@ public abstract class QueryChecker {
 
     /** */
     public QueryChecker columnNames(String... columns) {
-        if (expectedColumnNames == null)
-            expectedColumnNames = new ArrayList<>();
-
-        expectedColumnNames.addAll(Arrays.asList(columns));
+        expectedColumnNames = Arrays.asList(columns);
 
         return this;
     }
@@ -280,6 +277,7 @@ public abstract class QueryChecker {
     /** */
     public QueryChecker matches(Matcher<String>... planMatcher) {
         Collections.addAll(planMatchers, planMatcher);
+
         return this;
     }
 

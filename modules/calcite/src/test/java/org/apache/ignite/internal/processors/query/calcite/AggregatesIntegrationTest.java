@@ -74,7 +74,6 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
 
         assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(`NAME`)").check();
     }
-        );
 
     /** */
     @Test
@@ -126,6 +125,7 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     private void createAndPopulateTable() {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("person")
