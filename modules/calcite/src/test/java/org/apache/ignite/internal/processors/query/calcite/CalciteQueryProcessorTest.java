@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -71,6 +72,38 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             qryProc.queryPlanCache().clear();
         }
+    }
+
+    /**
+     * Test verifies that replicated cache with specified cache group
+     * could be properly mapped on server nodes.
+     */
+    @Test
+    public void queryOverReplCacheGroup() {
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("ID", Integer.class.getName());
+        fields.put("VAL", String.class.getName());
+
+        IgniteCache<Integer, String> cache = client.getOrCreateCache(new CacheConfiguration<Integer, String>()
+            .setGroupName("SOME_GROUP")
+            .setName("TBL")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, String.class).setTableName("TBL")
+                .setKeyFieldName("ID")
+                .setFields(fields)
+                .setValueFieldName("VAL")
+            ))
+            .setCacheMode(CacheMode.REPLICATED)
+        );
+
+        cache.put(1, "1");
+        cache.put(2, "2");
+
+        assertQuery(client, "select id, val from tbl")
+            .returns(1, "1")
+            .returns(2, "2")
+            .check();
     }
 
     /** */
@@ -898,5 +931,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public Project(String name) {
             this.name = name;
         }
+    }
+
+    /** */
+    private QueryChecker assertQuery(IgniteEx ignite, String qry) {
+        return new QueryChecker(qry) {
+            @Override protected QueryEngine getEngine() {
+                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+            }
+        };
     }
 }

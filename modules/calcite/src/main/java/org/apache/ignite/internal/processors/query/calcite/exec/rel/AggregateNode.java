@@ -247,6 +247,11 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
             this.grpFields = grpFields;
 
             handler = context().rowHandler();
+
+            // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
+            // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
+            if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE))
+                groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
         }
 
         /** */
