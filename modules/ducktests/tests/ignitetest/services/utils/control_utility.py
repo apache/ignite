@@ -41,14 +41,14 @@ class ControlUtility:
         self._cluster = cluster
         self.logger = cluster.context.logger
 
-        self.ssl_context = get_ssl_context_from_globals(cluster.context.globals, 'admin')
-
-        if not self.ssl_context:
+        if not ssl_context:
+            self.ssl_context = get_ssl_context_from_globals(cluster.context.globals, 'admin')
+        else:
             self.ssl_context = ssl_context
 
-        self.username, self.password = get_credentials_from_globals(cluster.context.globals, 'admin')
-
-        if not self.username:
+        if not username:
+            self.username, self.password = get_credentials_from_globals(cluster.context.globals, 'admin')
+        else:
             self.username, self.password = username, password
 
     def baseline(self):

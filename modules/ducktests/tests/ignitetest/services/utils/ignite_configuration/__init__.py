@@ -43,7 +43,7 @@ class IgniteConfiguration(NamedTuple):
     data_storage: DataStorageConfiguration = None
     caches: list = []
     local_host: str = None
-    ssl_context_factory: SslContext = None
+    ssl_context: SslContext = None
     connector_configuration: ConnectorConfiguration = None
     auth: bool = False
     plugins: list = []

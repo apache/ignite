@@ -67,9 +67,9 @@
             {{ config.properties }}
         {% endif %}
 
-        {% if config.ssl_context_factory %}
+        {% if config.ssl_context %}
             <property name="sslContextFactory">
-                {{ ssl_factory_util.ssl_factory(config.ssl_context_factory) }}
+                {{ ssl_factory_util.ssl_factory(config.ssl_context) }}
             </property>
         {% endif %}
         {% if config.connector_configuration %}

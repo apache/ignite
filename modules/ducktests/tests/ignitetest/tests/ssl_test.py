@@ -44,15 +44,15 @@ class SslTest(IgniteTest):
         server_ssl = SslContext(root_dir=root_dir)
 
         server_configuration = IgniteConfiguration(
-            version=IgniteVersion(ignite_version), ssl_context_factory=server_ssl,
-            connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_context_factory=server_ssl))
+            version=IgniteVersion(ignite_version), ssl_context=server_ssl,
+            connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_context=server_ssl))
 
         ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
                                startup_timeout_sec=180)
 
         client_configuration = server_configuration._replace(
             client_mode=True,
-            ssl_context_factory=SslContext(root_dir=root_dir, key_store_jks="client.jks"))
+            ssl_context=SslContext(root_dir=root_dir, key_store_jks="client.jks"))
 
         app = IgniteApplicationService(
             self.test_context,

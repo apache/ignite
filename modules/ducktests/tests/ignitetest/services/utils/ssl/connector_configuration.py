@@ -28,4 +28,4 @@ class ConnectorConfiguration(NamedTuple):
     Used to connect from ControlUtility (control.sh).
     """
     ssl_enabled: bool = False
-    ssl_context_factory: SslContext = None
+    ssl_context: SslContext = None

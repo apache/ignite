@@ -131,7 +131,7 @@ class CheckCaseParamAndGlobalsSsl:
     @pytest.mark.parametrize('test_globals, test_ssl_context, expected',
                              [({'use_ssl': True,
                                 'admin': {'ssl': TestParams.test_ssl_jks}}, TestParams.test_ssl_context_default,
-                               TestParams.test_ssl_context_jks)])
+                               TestParams.test_ssl_context_default)])
     def check_parse(test_globals, test_ssl_context, expected):
         """
         Check that control_utulity.py correctly parse SSL
@@ -188,15 +188,16 @@ class CheckCaseParamAndGlobalsCredentials:
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, test_username, test_password, expected_username, expected_password',
-                             [({'use_ssl': True,
+                             [({'use_auth': True,
                                 'admin': {'credentials': [TestParams.test_username2, TestParams.test_password]}},
                                TestParams.test_username, TestParams.test_password,
-                               TestParams.test_username2, TestParams.test_password)])
+                               TestParams.test_username, TestParams.test_password)])
     def check_parse(test_globals, test_username, test_password, expected_username, expected_password):
         """
         Check that control_utulity.py correctly parse Credentials
         """
 
         control_utility = ControlUtility(cluster=Cluster(test_globals), username=test_username, password=test_password)
+
         assert control_utility.username == expected_username
         assert control_utility.password == expected_password

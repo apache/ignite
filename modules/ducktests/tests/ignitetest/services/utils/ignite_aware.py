@@ -420,12 +420,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Update ssl configuration.
         """
-
-        ssl_context = get_ssl_context_from_globals(self.globals, dict_name)
+        ssl_context = None
+        if self.config.ssl_context is None:
+            ssl_context = get_ssl_context_from_globals(self.globals, dict_name)
         if ssl_context:
-            self.config = self.config._replace(ssl_context_factory=ssl_context)
+            self.config = self.config._replace(ssl_context=ssl_context)
             self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context_factory=ssl_context))
+                ssl_enabled=True, ssl_context=ssl_context))
 
     @staticmethod
     def exec_command(node, cmd):
