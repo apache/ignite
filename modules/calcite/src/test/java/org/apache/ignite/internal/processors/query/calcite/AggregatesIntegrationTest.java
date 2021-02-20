@@ -74,31 +74,50 @@ public class AggregatesIntegrationTest extends GridCommonAbstractTest {
         person.put(idx++, new Employer(null, 15d));
         person.put(idx++, new Employer("Ilya", 15d));
         person.put(idx++, new Employer("Roma", 10d));
+        person.put(idx++, new Employer("Roma", 10d));
 
-        assertQuery("select count(name) from person").returns(3L).check();
-        assertQuery("select count(*) from person").returns(4L).check();
-        assertQuery("select count(1) from person").returns(4L).check();
+        assertQuery("select count(name) from person").returns(4L).check();
+        assertQuery("select count(*) from person").returns(5L).check();
+        assertQuery("select count(1) from person").returns(5L).check();
 
-        assertQuery("select count(case when name like 'R%' then 1 else null end) from person").returns(1L).check();
-        assertQuery("select count(case when name not like 'I%' then 1 else null end) from person").returns(1L).check();
+        assertQuery("select count(*) from person where salary < 0").returns(0L).check();
+        assertQuery("select count(*) from person where salary < 0 and salary > 0").returns(0L).check();
+
+        assertQuery("select count(case when name like 'R%' then 1 else null end) from person").returns(2L).check();
+        assertQuery("select count(case when name not like 'I%' then 1 else null end) from person").returns(2L).check();
 
         assertQuery("select count(name) from person where salary > 10").returns(1L).check();
         assertQuery("select count(*) from person where salary > 10").returns(2L).check();
         assertQuery("select count(1) from person where salary > 10").returns(2L).check();
 
         assertQuery("select salary, count(name) from person group by salary order by salary")
-            .returns(10d, 2L)
+            .returns(10d, 3L)
             .returns(15d, 1L)
             .check();
 
         assertQuery("select salary, count(*) from person group by salary order by salary")
-            .returns(10d, 2L)
+            .returns(10d, 3L)
             .returns(15d, 2L)
             .check();
 
         assertQuery("select salary, count(1) from person group by salary order by salary")
-            .returns(10d, 2L)
+            .returns(10d, 3L)
             .returns(15d, 2L)
+            .check();
+
+        assertQuery("select salary, count(1), sum(1) from person group by salary order by salary")
+            .returns(10d, 3L, 3)
+            .returns(15d, 2L, 2)
+            .check();
+
+        assertQuery("select salary, name, count(1), sum(salary) from person group by salary, name order by salary")
+            .returns(10d, "Igor", 1L, 10d)
+            .returns(10d, "Roma", 2L, 20d)
+            .returns(15d, "Ilya", 1L, 15d)
+            .returns(15d, null, 1L, 15d)
+            .check();
+
+        assertQuery("select salary, count(name) from person group by salary having salary < 10 order by salary")
             .check();
     }
 
