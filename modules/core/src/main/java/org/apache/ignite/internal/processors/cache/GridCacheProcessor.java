@@ -4616,16 +4616,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     public @Nullable DynamicCacheDescriptor cacheDescriptor(int cacheId) {
-        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors().values()) {
-            CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
-
-            assert ccfg != null : cacheDesc;
-
-            if (CU.cacheId(ccfg.getName()) == cacheId)
-                return cacheDesc;
-        }
-
-        return null;
+        return cachesInfo.registeredCachesById().get(cacheId);
     }
 
     /**
@@ -5399,6 +5390,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onBaselineChange() {
+            for (GridCacheAdapter<?, ?> cache : caches.values())
+                if (cache != null)
+                    cache.context().ttl().unregister();
+
             onKernalStopCaches(true);
 
             stopCaches(true);

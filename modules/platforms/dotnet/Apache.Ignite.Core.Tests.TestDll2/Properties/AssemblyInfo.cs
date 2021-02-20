@@ -16,7 +16,6 @@
 */
 
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Core.Tests.TestDll2")]
 [assembly: AssemblyDescription("Apache Ignite.NET Tests Library 2")]
