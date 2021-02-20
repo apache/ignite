@@ -57,15 +57,15 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
     /** */
     private static final int ROWS_CNT = 100;
 
-    /** Parametrized run param : Ignite version. */
+    /** Parametrized run param: Ignite version. */
     @Parameterized.Parameter(0)
     public String igniteVer;
 
-    /** Parametrized run param : startup closure of old version. */
+    /** Parametrized run param: Inline size is configured by user. */
     @Parameterized.Parameter(1)
     public boolean cfgInlineSize;
 
-    /** Test run configurations: Cache mode, atomicity type, is near. */
+    /** Test run configurations: Ignite version, Inline size configuration. */
     @Parameterized.Parameters(name = "ver={0}, cfgInlineSize={1}")
     public static Collection<Object[]> runConfig() {
         return Arrays.asList(new Object[][] {

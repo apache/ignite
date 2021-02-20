@@ -30,7 +30,7 @@ import org.h2.value.ValueNull;
 /**
  * This class helps detects wheter tree contains inline JO type.
  *
- * When starting on old Ignite versions it's impossible to discover whenther JO type was inlined or not.
+ * When starting on old Ignite versions it's impossible to discover whether JO type was inlined or not.
  * Then try to find that with 2 steps:
  * 1. analyze of inline size;
  * 2. traverse tree and check stored values.
