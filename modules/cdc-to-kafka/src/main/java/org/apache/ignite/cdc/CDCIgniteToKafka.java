@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -43,6 +44,9 @@ import static org.apache.ignite.cdc.Utils.properties;
  * CDC consumer that streams all data changes to Kafka.
  */
 public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, BinaryObject> {
+    /** Default kafka topic name. */
+    private static final String DFLT_TOPIC_NAME = "cdc-ignite";
+
     /** Path to the kafka properties file. */
     private static final String CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS = "CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS";
 
@@ -62,6 +66,9 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     /** Timeout minutes. */
     public static final int TIMEOUT_MIN = 1;
 
+    /** */
+    private IgniteLogger log;
+
     /** Kafka producer to stream events. */
     private KafkaProducer<Integer, EntryEvent<BinaryObject, BinaryObject>> producer;
 
@@ -77,16 +84,24 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
     /** */
     private Set<Integer> cachesIds;
 
+    /** Kafka properties. */
+    private Properties kafkaProps;
+
+    /** Count of messages.  */
+    private long cntMsgs;
+
     /** {@inheritDoc} */
-    @Override public boolean onChange(Iterable<EntryEvent<BinaryObject, BinaryObject>> evts) {
+    @Override public boolean onChange(Iterator<EntryEvent<BinaryObject, BinaryObject>> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
-        for (EntryEvent<BinaryObject, BinaryObject> evt : evts) {
+        evts.forEachRemaining(evt -> {
             if (onlyPrimary && !evt.primary())
-                continue;
+                return;
 
             if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
-                continue;
+                return;
+
+            cntMsgs++;
 
             futs.add(producer.send(new ProducerRecord<>(
                 topic,
@@ -94,7 +109,7 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
                 evt.cacheId(),
                 evt
             )));
-        }
+        });
 
         try {
             for (Future<RecordMetadata> fut : futs)
@@ -104,26 +119,31 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
             throw new RuntimeException(e);
         }
 
+        log.info("cntMsgs = " + cntMsgs);
+
         return true;
     }
 
     /** Start event consumer with possible error. */
     public void startx() throws Exception {
-        Properties props = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
+        if (kafkaProps == null)
+            kafkaProps = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
 
-        topic = property(IGNITE_TO_KAFKA_TOPIC, props);
+        topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps, DFLT_TOPIC_NAME);
 
-        kafkaPartitionsNum = KafkaUtils.initTopic(topic, props);
+        onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, kafkaProps, "false"));
 
-        onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, props));
+        kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 
-        producer = new KafkaProducer<>(props);
+        producer = new KafkaProducer<>(kafkaProps);
 
-        cachesIds = cachesIds(props);
+        cachesIds = cachesIds(kafkaProps);
     }
 
     /** {@inheritDoc} */
     @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+        this.log = log;
+
         try {
             startx();
         }
@@ -143,6 +163,15 @@ public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, Binary
             .mapToInt(CU::cacheId)
             .boxed()
             .collect(Collectors.toSet());
+    }
+
+    /**
+     * Sets kafka properties.
+     *
+     * @param kafkaProps Kafka properties.
+     */
+    public void setKafkaProps(Properties kafkaProps) {
+        this.kafkaProps = kafkaProps;
     }
 
     /** {@inheritDoc} */

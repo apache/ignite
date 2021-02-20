@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -47,9 +48,9 @@ public interface DataChangeListener<K, V> {
      * will be started from it.
      *
      * @param events Entry change events.
-     * @return {@code True} if current offset should be commited.
+     * @return {@code True} if current offset should be committed.
      */
-    boolean onChange(Iterable<EntryEvent<K, V>> events);
+    boolean onChange(Iterator<EntryEvent<K, V>> events);
 
     /**
      * Stops the consumer.

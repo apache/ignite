@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -53,6 +53,9 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
 
+    /** WAL Records filter. */
+    private static final IgnitePredicate<WALRecord> DATA_REC_FILTER = r -> r.type() == DATA_RECORD_V2;
+
     /** Operations filter. */
     private static final IgnitePredicate<? super DataEntry> OPS_FILTER = e -> {
         if (!(e instanceof UnwrappedDataEntry))
@@ -67,53 +70,44 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends WALRecord> boolean onRecord(T rec) {
-        if (rec.type() != WALRecord.RecordType.DATA_RECORD_V2)
-            return false;
+    @Override public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
+        return dataConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
+            UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
-        DataRecord dataRecord = (DataRecord)rec;
+            EntryEventType type;
 
-        return dataConsumer.onChange(new Iterable<EntryEvent<K, V>>() {
-            @NotNull @Override public Iterator<EntryEvent<K, V>> iterator() {
-                return F.iterator(dataRecord.writeEntries(), e -> {
-                    UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
+            switch (e.op()) {
+                // Combine two types of the events because `CREATE` only generated for first `put`
+                // of the key for `TRANSACTIONAL` caches.
+                // For `ATOMIC` caches every `put` generate `UPDATE` event.
+                case CREATE:
+                case UPDATE:
+                    type = EntryEventType.UPDATE;
 
-                    EntryEventType type;
+                    break;
 
-                    switch (e.op()) {
-                        // Combine two types of the events because `CREATE` only generated for first `put`
-                        // of the key for `TRANSACTIONAL` caches.
-                        // For `ATOMIC` caches every `put` generate `UPDATE` event.
-                        case CREATE:
-                        case UPDATE:
-                            type = EntryEventType.UPDATE;
+                case DELETE:
+                    type = EntryEventType.DELETE;
 
-                            break;
+                    break;
 
-                        case DELETE:
-                            type = EntryEventType.DELETE;
-
-                            break;
-
-                        default:
-                            throw new IllegalStateException("Unexpected operation type[" + e.op());
-                    }
-
-                    GridCacheVersion ver = e.writeVersion();
-
-                    return new EntryEvent<>(
-                        (K)ue.unwrappedKey(),
-                        (V)ue.unwrappedValue(),
-                        e.primary(),
-                        e.partitionId(),
-                        new EntryEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order()),
-                        type,
-                        e.cacheId(),
-                        e.expireTime()
-                    );
-                }, true, OPS_FILTER);
+                default:
+                    throw new IllegalStateException("Unexpected operation type[" + e.op());
             }
-        });
+
+            GridCacheVersion ver = e.writeVersion();
+
+            return new EntryEvent<>(
+                (K)ue.unwrappedKey(),
+                (V)ue.unwrappedValue(),
+                e.primary(),
+                e.partitionId(),
+                new EntryEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order()),
+                type,
+                e.cacheId(),
+                e.expireTime()
+            );
+        }, true, OPS_FILTER), true, DATA_REC_FILTER)));
     }
 
     /** {@inheritDoc} */

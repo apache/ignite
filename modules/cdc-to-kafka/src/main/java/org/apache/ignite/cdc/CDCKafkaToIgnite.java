@@ -62,14 +62,14 @@ public class CDCKafkaToIgnite implements Runnable {
     private final int thCnt;
 
     /** */
-    public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String[] cacheNames) {
+    public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String... cacheNames) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.caches = Arrays.stream(cacheNames)
             .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
             .map(CU::cacheId).collect(Collectors.toSet());
 
-        this.thCnt = Integer.parseInt(property(KAFKA_TO_IGNITE_THREAD_COUNT, kafkaProps, "10"));
+        this.thCnt = Integer.parseInt(property(KAFKA_TO_IGNITE_THREAD_COUNT, kafkaProps, "3"));
 
         execSvc = Executors.newFixedThreadPool(thCnt, new ThreadFactory() {
             private final AtomicInteger cntr = new AtomicInteger();

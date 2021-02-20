@@ -19,13 +19,9 @@ package org.apache.ignite.internal.cdc;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -49,9 +45,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_PATH;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.NODE_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.UUID_STR_PATTERN;
@@ -75,6 +70,9 @@ public class IgniteCDC implements Runnable {
 
     /** Default lock timeout. */
     public static final int DFLT_LOCK_TIMEOUT = 1000;
+
+    /** Default wait for new files timeout. */
+    public static final int WAIT_FOR_NEW_FILES_TIMEOUT = 1000;
 
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
@@ -140,7 +138,7 @@ public class IgniteCDC implements Runnable {
         try {
             runX();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             e.printStackTrace();
 
             throw new RuntimeException(e);
@@ -187,8 +185,16 @@ public class IgniteCDC implements Runnable {
 
                 Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentNumber);
 
+                long[] lastSgmnt = new long[] { -1 };
+
                 waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
                     try {
+                        long nextSgmnt = segmentNumber(segment);
+
+                        assert lastSgmnt[0] == -1 || nextSgmnt - lastSgmnt[0] == 1;
+
+                        lastSgmnt[0] = nextSgmnt;
+
                         readSegment(segment);
 
                         return true;
@@ -262,27 +268,21 @@ public class IgniteCDC implements Runnable {
         }
 
         try (WALIterator it = factory.iterator(builder)) {
-            while (it.hasNext()) {
-                boolean commit;
+            boolean commit = consumer.onRecords(F.iterator(it.iterator(), IgniteBiTuple::get2, true));
 
-                synchronized (this) {
-                    commit = consumer.onRecord(it.next().get2());
-                }
+            if (commit) {
+                assert it.lastRead().isPresent();
 
-                if (commit) {
-                    assert it.lastRead().isPresent();
+                state.save(it.lastRead().get());
 
-                    state.save(it.lastRead().get());
+                // Can delete after new file state save.
+                if (!prevSegments.isEmpty()) {
+                    // WAL segment is a hard link to a segment file in a specifal CDC folder.
+                    // So we can safely delete it after success processing.
+                    for (Path prevSegment : prevSegments)
+                        Files.deleteIfExists(prevSegment);
 
-                    // Can delete after new file state save.
-                    if (!prevSegments.isEmpty()) {
-                        // WAL segment is a hard link to a segment file in a specifal CDC folder.
-                        // So we can safely delete it after success processing.
-                        for (Path prevSegment : prevSegments)
-                            Files.deleteIfExists(prevSegment);
-
-                        prevSegments.clear();
-                    }
+                    prevSegments.clear();
                 }
             }
         }
@@ -418,29 +418,31 @@ public class IgniteCDC implements Runnable {
      *
      * @param watchDir Directory to watch.
      * @param filter Filter of events.
-     * @param existingSorter Sorter of existing files.
+     * @param sorter Sorter of files.
      * @param callback Callback to be notified.
      */
-    public static void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> existingSorter,
+    public static void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> sorter,
         Predicate<Path> callback, IgniteLogger log) throws InterruptedException {
         // If watch dir not exists waiting for it creation.
         if (!Files.exists(watchDir))
             waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false, log);
 
         try {
-            try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
-                watchDir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+            // Clear deleted file.
+            Set<Path> seen = new HashSet<>();
 
-                Set<Path> seen = new HashSet<>();
-
+            while (true) {
                 try (Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
                     final boolean[] status = {true};
 
                     children
-                        .filter(filter)
-                        .sorted()
+                        .filter(filter.and(p -> !seen.contains(p)))
+                        .sorted(sorter)
                         .peek(seen::add)
                         .peek(p -> {
+                            if (log.isDebugEnabled())
+                                log.debug("New file[evt=" + p.toAbsolutePath() + ']');
+
                             if (status[0])
                                 status[0] = callback.test(p);
                         }).count();
@@ -449,46 +451,7 @@ public class IgniteCDC implements Runnable {
                         return;
                 }
 
-                if (log.isDebugEnabled())
-                    log.debug("Waiting for creation of child directory. Watching directory[dir=" + watchDir + ']');
-
-                boolean needNext = true;
-
-                while (needNext) {
-                    WatchKey key = watcher.take();
-
-                    for (WatchEvent<?> evt: key.pollEvents()) {
-                        WatchEvent.Kind<?> kind = evt.kind();
-
-                        Path evtPath = Paths.get(watchDir.toString(), evt.context().toString()).toAbsolutePath();
-
-                        if (kind == ENTRY_DELETE)
-                            seen.remove(evtPath);
-                        else if (kind == ENTRY_CREATE) {
-                            if (seen.contains(evtPath))
-                                continue;
-
-                            if (log.isDebugEnabled())
-                                log.debug("Event received[evt=" + evtPath.toAbsolutePath() + ",kind=" + kind + ']');
-
-                            if (!filter.test(evtPath))
-                                continue;
-
-                            needNext = callback.test(evtPath);
-
-                            if (!needNext)
-                                break;
-                        }
-                    }
-
-                    if (!needNext)
-                        break;
-
-                    boolean reset = key.reset();
-
-                    if (!reset)
-                        throw new IllegalStateException("Key no longer valid.");
-                }
+                Thread.sleep(WAIT_FOR_NEW_FILES_TIMEOUT);
             }
         }
         catch (IOException e) {

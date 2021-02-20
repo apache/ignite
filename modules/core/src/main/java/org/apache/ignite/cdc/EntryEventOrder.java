@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -92,5 +93,10 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(topVer, nodeOrderDrId, order);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(EntryEventOrder.class, this);
     }
 }

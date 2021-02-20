@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -45,11 +46,11 @@ public interface CDCConsumer {
      * If this method return {@code true} then current offset in WAL will be stored and WAL iteration will be
      * started from it on CDC application fail/restart.
      *
-     * @param record WAL record.
+     * @param records WAL records iterator.
      * @param <T> Record type.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    <T extends WALRecord> boolean onRecord(T record);
+    <T extends WALRecord> boolean onRecords(Iterator<T> records);
 
     /**
      * Stops the consumer.

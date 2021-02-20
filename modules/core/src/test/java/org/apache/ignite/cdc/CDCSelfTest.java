@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -71,7 +72,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** Keys count. */
-    private static final int KEYS_CNT = 1_000;
+    private static final int KEYS_CNT = 50;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -380,14 +381,17 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean waitForSize(int expSz, String cacheName, EntryEventType evtType, TestDataChangeListener... lsnrs) throws IgniteInterruptedCheckedException {
-        return waitForCondition(() ->
-            Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(evtType, cacheId(cacheName)))).sum() >= expSz,
+        return waitForCondition(
+            () -> Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(evtType, cacheId(cacheName)))).sum() >= expSz,
             getTestTimeout());
     }
 
     /** */
     private void addData(IgniteCache<Integer, User> cache, int from, int to) {
         for (int i = from; i < to; i++) {
+            if (i % 10 == 0)
+                System.out.println(i);
+
             byte[] bytes = new byte[1024];
 
             ThreadLocalRandom.current().nextBytes(bytes);
@@ -436,10 +440,10 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterable<EntryEvent<Integer, User>> events) {
-            for (EntryEvent<Integer, User> evt : events) {
+        @Override public boolean onChange(Iterator<EntryEvent<Integer, User>> events) {
+            events.forEachRemaining(evt -> {
                 if (!evt.primary())
-                    continue;
+                    return;
 
                 cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
                     k -> new GridConcurrentHashSet<>()).add(evt.key());
@@ -448,7 +452,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                     assertTrue(evt.value().getName().startsWith("John Connor"));
                     assertTrue(evt.value().getAge() >= 42);
                 }
-            }
+            });
 
             return commit();
         }
@@ -459,10 +463,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** @return Read keys. */
-        public Set<Integer> keys(EntryEventType op, long cacheId) {
-            if (cacheKeys == null)
-                return null;
-
+        public Set<Integer> keys(EntryEventType op, int cacheId) {
             return cacheKeys.get(F.t(op, cacheId));
         }
     }

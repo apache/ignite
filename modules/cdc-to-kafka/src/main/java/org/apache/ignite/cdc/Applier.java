@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -59,7 +60,8 @@ class Applier implements Runnable, AutoCloseable {
     /** */
     private volatile boolean closed;
 
-    Set<Integer> kafakParts;
+    /** */
+    private final Set<Integer> kafkaParts = new HashSet<>();
 
     /** */
     private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
@@ -77,6 +79,9 @@ class Applier implements Runnable, AutoCloseable {
     private final List<KafkaConsumer<Integer, byte[]>> consumers = new ArrayList<>();
 
     /** */
+    private long rcvdEvts;
+
+    /** */
     public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches) {
         this.ign = ign;
         this.log = ign.log().getLogger(Applier.class);
@@ -87,34 +92,30 @@ class Applier implements Runnable, AutoCloseable {
 
     /** */
     private void initConsumers() {
-        int cnt = 0;
-
-        for (int kafkaPart : kafakParts) {
+        for (int kafkaPart : kafkaParts) {
             Properties props = (Properties)commonProps.clone();
 
             // TODO: move to the config.
-
             KafkaConsumer<Integer, byte[]> consumer = new KafkaConsumer<>(props);
 
             consumer.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
 
             consumers.add(consumer);
-
-            cnt++;
-
-            if (cnt == 1)
-                return;
         }
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
+        U.setCurrentIgniteName(ign.name());
+
         try {
             initConsumers();
 
             assert !consumers.isEmpty();
 
             Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
+
+            System.out.println("consumers = " + consumers);
 
             while (!closed) {
                 log.warning("Fetching data from " + Thread.currentThread().getName() + '!');
@@ -152,6 +153,8 @@ class Applier implements Runnable, AutoCloseable {
      * @param consumer Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
+        log.warning("Polling from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts + ']');
+
         //TODO: try to reconnect on fail. Exit if no success.
         ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(3));
 
@@ -174,6 +177,8 @@ class Applier implements Runnable, AutoCloseable {
      * @param evt Applies event to Ignite.
      */
     private void apply(EntryEvent<BinaryObject, BinaryObject> evt) throws IgniteCheckedException {
+        rcvdEvts++;
+
         IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
             for (String cacheName : ign.cacheNames()) {
                 if (CU.cacheId(cacheName) == cacheId)
@@ -195,9 +200,13 @@ class Applier implements Runnable, AutoCloseable {
                     new GridCacheDrInfo(cacheObj,
                         new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order()))));
 
+                break;
+
             case DELETE:
                 cache.removeAllConflict(Collections.singletonMap(keyCacheObj,
                         new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order())));
+
+                break;
 
             default:
                 throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
@@ -208,12 +217,12 @@ class Applier implements Runnable, AutoCloseable {
      * @param kafkaPart Kafka partition.
      */
     public void addPartition(int kafkaPart) {
-        kafakParts.add(kafkaPart);
+        kafkaParts.add(kafkaPart);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Applier{kafakParts=" + kafakParts + '}';
+        return "Applier{kafakParts=" + kafkaParts + '}';
     }
 
     /** {@inheritDoc} */

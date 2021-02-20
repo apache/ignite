@@ -22,6 +22,8 @@ import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cdc.serde.JavaObjectSerializer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,8 +36,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.testcontainers.containers.KafkaContainer;
@@ -64,7 +68,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
                     .setPersistenceEnabled(true)));
 
             cfg.getDataStorageConfiguration()
-                .setWalForceArchiveTimeout(1_000)
+                .setWalForceArchiveTimeout(5_000)
                 .setCdcEnabled(true)
                 .setWalMode(WALMode.FSYNC);
 
@@ -76,18 +80,24 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         kafka.start();
 
         if (props == null) {
             props = new Properties();
 
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
+
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JavaObjectSerializer.class.getName());
+
             props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
             props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
             props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
             props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
             props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-            props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 1_000);
+            props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10_000);
         }
     }
 
@@ -102,14 +112,25 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC, value = "replication-data")
     @WithSystemProperty(key = CDCIgniteToKafka.IGNITE_TO_KAFKA_CACHES, value = "cache-2")
-    public void testPartitionSwitchOnNodeJoin() throws Exception {
+    public void testBasicReplication() throws Exception {
         IgniteEx ign1 = startGrid(1);
-        IgniteEx ign2 = startGrid(2);
+        //IgniteEx ign2 = startGrid(2);
+
+        ign1.cluster().state(ClusterState.ACTIVE);
+
+
+        CDCIgniteToKafka cdc1 = new CDCIgniteToKafka();
+        //CDCIgniteToKafka cdc2 = new CDCIgniteToKafka();
+
+        cdc1.setKafkaProps(props);
+        //cdc2.setKafkaProps(props);
 
         IgniteInternalFuture<?> fut1 =
-            runAsync(new IgniteCDC(ign1.configuration(), new DataChangeConsumer<>(new CDCIgniteToKafka())));
+            runAsync(new IgniteCDC(ign1.configuration(), new DataChangeConsumer<>(cdc1)));
+/*
         IgniteInternalFuture<?> fut2 =
-            runAsync(new IgniteCDC(ign2.configuration(), new DataChangeConsumer<>(new CDCIgniteToKafka())));
+            runAsync(new IgniteCDC(ign2.configuration(), new DataChangeConsumer<>(cdc2)));
+*/
 
         IgniteEx cli = startClientGrid(3);
 
@@ -118,7 +139,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
             FastCrc crc = new FastCrc();
 
-            for (int i=0; i<1000; i++) {
+            for (int i = 0; i < 50; i++) {
                 byte[] payload = new byte[1024];
 
                 ThreadLocalRandom.current().nextBytes(payload);
@@ -137,6 +158,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         runFut1.get(getTestTimeout());
         runFut2.get(getTestTimeout());
 
+        new CDCKafkaToIgnite(ign1, props, "cache-1", "cache-2").run();
     }
 
     /** */

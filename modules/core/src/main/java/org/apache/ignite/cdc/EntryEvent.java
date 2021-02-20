@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.Serializable;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -26,17 +29,22 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @param <V> Value type.
  */
 @IgniteExperimental
-public class EntryEvent<K, V> {
+public class EntryEvent<K, V> implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Key. */
+    @GridToStringInclude(sensitive = true)
     private final K key;
 
     /** Value. */
+    @GridToStringInclude(sensitive = true)
     private final V val;
 
     /** {@code True} if changes made on primary node. */
     private final boolean primary;
 
-    /** Parition. */
+    /** Partition. */
     private final int part;
 
     /** Order of the entry change. */
@@ -129,5 +137,10 @@ public class EntryEvent<K, V> {
      */
     long expireTime() {
         return expireTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(EntryEvent.class, this);
     }
 }
