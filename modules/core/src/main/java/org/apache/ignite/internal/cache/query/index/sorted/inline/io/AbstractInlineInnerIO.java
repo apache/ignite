@@ -77,7 +77,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
         int fieldOff = 0;
 
-        InlineIndexRowHandler rowHnd = ThreadLocalSchemaHolder.getSchema();
+        InlineIndexRowHandler rowHnd = ThreadLocalRowHandlerHolder.getRowHandler();
 
         for (int i = 0; i < rowHnd.getInlineIndexKeyTypes().size(); i++) {
             try {
@@ -116,7 +116,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
-        return new IndexRowImpl(ThreadLocalSchemaHolder.getSchema(), row);
+        return new IndexRowImpl(ThreadLocalRowHandlerHolder.getRowHandler(), row);
     }
 
     /** {@inheritDoc} */

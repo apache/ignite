@@ -60,7 +60,7 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexRow> implements In
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
-        return new IndexRowImpl(ThreadLocalSchemaHolder.getSchema(), row);
+        return new IndexRowImpl(ThreadLocalRowHandlerHolder.getRowHandler(), row);
     }
 
     /** {@inheritDoc} */

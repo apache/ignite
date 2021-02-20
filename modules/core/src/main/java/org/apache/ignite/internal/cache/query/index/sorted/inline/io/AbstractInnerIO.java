@@ -59,7 +59,7 @@ public abstract class AbstractInnerIO extends BPlusInnerIO<IndexRow> implements 
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
-        return new IndexRowImpl(ThreadLocalSchemaHolder.getSchema(), row);
+        return new IndexRowImpl(ThreadLocalRowHandlerHolder.getRowHandler(), row);
     }
 
     /** {@inheritDoc} */

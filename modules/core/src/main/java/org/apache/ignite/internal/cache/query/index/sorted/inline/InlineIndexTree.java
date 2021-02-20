@@ -29,7 +29,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -281,8 +281,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         boolean cleanSchema = false;
 
-        if (ThreadLocalSchemaHolder.getSchema() == null) {
-            ThreadLocalSchemaHolder.setSchema(rowHnd);
+        if (ThreadLocalRowHandlerHolder.getRowHandler() == null) {
+            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
             cleanSchema = true;
         }
 
@@ -291,7 +291,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         }
         finally {
             if (cleanSchema)
-                ThreadLocalSchemaHolder.cleanSchema();
+                ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
 

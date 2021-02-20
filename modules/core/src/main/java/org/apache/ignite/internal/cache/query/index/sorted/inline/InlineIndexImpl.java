@@ -33,7 +33,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -98,7 +98,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         // If it is known that only one row will be returned an optimization is employed
         if (isSingleRowLookup(rlower, rupper)) {
             try {
-                ThreadLocalSchemaHolder.setSchema(rowHnd);
+                ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
 
                 IndexRowImpl row = segments[segment].findOne(rlower, closure, null);
 
@@ -108,17 +108,17 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 return new SingleCursor<>(row);
 
             } finally {
-                ThreadLocalSchemaHolder.cleanSchema();
+                ThreadLocalRowHandlerHolder.clearRowHandler();
             }
         }
 
         try {
-            ThreadLocalSchemaHolder.setSchema(rowHnd);
+            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
 
             return segments[segment].find(rlower, rupper, closure, null);
 
         } finally {
-            ThreadLocalSchemaHolder.cleanSchema();
+            ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
 
@@ -206,7 +206,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         try {
-            ThreadLocalSchemaHolder.setSchema(rowHnd);
+            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
 
             InlineTreeFilterClosure closure = getFilterClosure(filter);
 
@@ -218,14 +218,14 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return new SingleCursor<>(found);
 
         } finally {
-            ThreadLocalSchemaHolder.cleanSchema();
+            ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         try {
-            ThreadLocalSchemaHolder.setSchema(rowHnd);
+            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
 
             InlineTreeFilterClosure closure = getFilterClosure(filter);
 
@@ -237,7 +237,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return new SingleCursor<>(found);
 
         } finally {
-            ThreadLocalSchemaHolder.cleanSchema();
+            ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
 
@@ -258,7 +258,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (destroyed.get())
                 return;
 
-            ThreadLocalSchemaHolder.setSchema(rowHnd);
+            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
 
             boolean replaced = false;
 
@@ -285,7 +285,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             }
 
         } finally {
-            ThreadLocalSchemaHolder.cleanSchema();
+            ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
 
@@ -310,7 +310,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             row.getKey(i);
 
         try {
-            ThreadLocalSchemaHolder.setSchema(rowHnd);
+            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
 
             return segments[segment].putx(row);
         }
@@ -320,7 +320,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             throw t;
         }
         finally {
-            ThreadLocalSchemaHolder.cleanSchema();
+            ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
 
