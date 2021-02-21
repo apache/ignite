@@ -172,8 +172,10 @@ public class IgniteIndexing implements IndexingSpi {
 
             Index idx = idxs.remove(def.getIdxName().fullName());
 
-            if (idx != null)
+            if (idx != null) {
                 idx.destroy(softDelete);
+                idxDefs.remove(idx.id());
+            }
 
         } finally {
             ddlLock.writeLock().unlock();
@@ -312,7 +314,7 @@ public class IgniteIndexing implements IndexingSpi {
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-
+        idxDefs.clear();
     }
 
     /** {@inheritDoc} */
