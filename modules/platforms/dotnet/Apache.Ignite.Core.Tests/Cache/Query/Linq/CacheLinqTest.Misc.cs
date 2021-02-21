@@ -128,8 +128,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(PersonCount, cache.Count());
             Assert.AreEqual(PersonCount, cache.Count(x => x.Key < PersonCount));
             
-            Assert.That(cache.LongCount(), Is.EqualTo(PersonCount));
-            Assert.That(cache.LongCount(), Is.EqualTo(cache.LongCount(x => x.Key < PersonCount)));
+            Assert.AreEqual(PersonCount, cache.LongCount());
+            Assert.AreEqual(PersonCount, cache.LongCount(x => x.Key < PersonCount));
         }
 
         /// <summary>
