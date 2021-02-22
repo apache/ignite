@@ -177,6 +177,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -247,9 +248,12 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -12050,5 +12054,27 @@ public abstract class IgniteUtils {
 
             return size;
         }
+    }
+
+    /**
+     * Acquires the given semaphore, executes the given callable and schedules the release of permits asynchronously
+     */
+    public static <T> IgniteFuture<T> acquireAndExecute(IgniteSemaphore semaphore,
+                                          IgniteCallable<IgniteFuture<T>> callable, int numPermits) throws Exception {
+
+        semaphore.acquire(numPermits);
+
+        IgniteFuture<T> future = callable.call();
+
+        future.listen(new IgniteInClosure<IgniteFuture<T>>() {
+            @Override
+            public void apply(IgniteFuture<T> IgniteFuture) {
+                if (IgniteFuture.isCancelled() || IgniteFuture.isDone()) {
+                    semaphore.release(numPermits);
+                }
+            }
+        });
+
+        return future;
     }
 }

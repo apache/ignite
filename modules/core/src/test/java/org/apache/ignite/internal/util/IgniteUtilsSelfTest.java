@@ -60,20 +60,25 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -90,6 +95,7 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.nonNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
@@ -117,6 +123,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         Arrays.fill(chs, 'x');
 
         return new String(chs);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected void beforeTestsStarted() throws Exception {
+        startGrids(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -1453,6 +1471,55 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         finally {
             assertTrue(U.delete(zipFile));
         }
+    }
+
+    /**
+     * Test to verify the {@link U#uncompressedSize}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAcquireAndExecute() throws Exception {
+        IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ClusterGroup empty = ignite(0).cluster().forNodeId(UUID.randomUUID());
+        final IgniteCompute comp = ignite(0).compute(empty);
+
+        IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
+            @Override
+            public IgniteFuture<Integer> call() {
+                IgniteFutureImpl<Integer> igniteFuture = new IgniteFutureImpl<>(new GridFutureAdapter<>());
+
+                assert(semaphore.availablePermits() == 0);
+
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);
+                            GridFutureAdapter fut = (GridFutureAdapter) igniteFuture.internalFuture();
+                            fut.onDone(true);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e.getMessage());
+                        }
+                    }
+                };
+
+                executorService.submit(runnable);
+
+                return igniteFuture;
+            }
+        };
+
+        IgniteFuture<Integer> igniteFuture = U.acquireAndExecute(semaphore, callable, 1);
+
+        igniteFuture.get(7000, MILLISECONDS);
+
+        assertTrue(igniteFuture.isDone());
+
+        assertTrue(semaphore.availablePermits() == 1);
+
+        executorService.shutdown();
     }
 
     /**
