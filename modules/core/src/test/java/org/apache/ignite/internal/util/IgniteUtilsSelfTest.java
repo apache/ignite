@@ -60,7 +60,6 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSemaphore;
@@ -126,14 +125,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrids(2);
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -1484,15 +1481,13 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
         IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
-            @Override
-            public IgniteFuture<Integer> call() {
+            @Override public IgniteFuture<Integer> call() {
                 IgniteFutureImpl<Integer> igniteFuture = new IgniteFutureImpl<>(new GridFutureAdapter<>());
 
-                assert(semaphore.availablePermits() == 0);
+                assert (semaphore.availablePermits() == 0);
 
                 Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
+                    @Override public void run() {
                         try {
                             Thread.sleep(1000);
                             GridFutureAdapter fut = (GridFutureAdapter) igniteFuture.internalFuture();

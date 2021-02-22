@@ -12067,8 +12067,7 @@ public abstract class IgniteUtils {
         IgniteFuture<T> future = callable.call();
 
         future.listen(new IgniteInClosure<IgniteFuture<T>>() {
-            @Override
-            public void apply(IgniteFuture<T> IgniteFuture) {
+            @Override public void apply(IgniteFuture<T> IgniteFuture) {
                 if (IgniteFuture.isCancelled() || IgniteFuture.isDone()) {
                     semaphore.release(numPermits);
                 }
