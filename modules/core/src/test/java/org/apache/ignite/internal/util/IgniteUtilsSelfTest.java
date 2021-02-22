@@ -1482,8 +1482,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testAcquireAndExecute() throws Exception {
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        ClusterGroup empty = ignite(0).cluster().forNodeId(UUID.randomUUID());
-        final IgniteCompute comp = ignite(0).compute(empty);
 
         IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
             @Override
