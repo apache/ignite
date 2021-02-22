@@ -1474,7 +1474,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test to verify the {@link U#uncompressedSize}.
+     * Test to verify the {@link U#acquireAndExecute(IgniteSemaphore, IgniteCallable, int)}.
      *
      * @throws Exception If failed.
      */
