@@ -161,6 +161,7 @@ SQL:
 * Fixed exception occurred on SQL caches during the client reconnection
 * Fixed tracing of SELECT queries caused incorrect span inheritance
 * Fixed transformation of sub-queries to JOINs when possible
+* Fixed time complexity of GridCacheProcessor#cacheDescriptor from O(n) to amortised constant time
 
 JDBC/ODBC:
 * Added ODBC SQLNumResultCols for prepared statement
