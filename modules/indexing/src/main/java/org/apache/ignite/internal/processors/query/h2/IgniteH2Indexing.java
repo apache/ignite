@@ -718,7 +718,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(
-            sqlForUser(qry, dml.statement()),
+            INCL_SENS ? qry : dml.statement().getSQL(true),
             GridCacheQueryType.SQL_FIELDS,
             schemaName,
             true,
@@ -769,18 +769,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             runningQryMgr.unregister(qryId, failReason);
         }
-    }
-
-    /**
-     * @param qry Query text from user.
-     * @param stmnt Parsed sql statement. {@code Null} for native commands.
-     * @return Query text to use in "logging" API e.g. system view and events.
-     */
-    private static String sqlForUser(String qry, @Nullable GridSqlStatement stmnt) {
-        if (stmnt != null && !INCL_SENS)
-            return stmnt.getSQL(true);
-
-        return qry;
     }
 
     /**
@@ -1592,7 +1580,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         @Nullable GridSqlStatement stmnt
     ) {
-        String qry = sqlForUser(qryDesc.sql(), stmnt);
+        String qry = INCL_SENS || stmnt == null ? qryDesc.sql() : stmnt.getSQL(true);
 
         Long res = runningQryMgr.register(
             qry,
