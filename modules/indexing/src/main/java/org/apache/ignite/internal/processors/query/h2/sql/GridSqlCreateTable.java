@@ -372,7 +372,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
         return null;
     }
 }

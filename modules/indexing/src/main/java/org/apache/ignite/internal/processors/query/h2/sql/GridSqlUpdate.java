@@ -81,23 +81,25 @@ public class GridSqlUpdate extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
+        char delim = delimeter(hideConst);
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("UPDATE ")
-            .append(target.getSQL(hideConst, delim))
+            .append(target.getSQL(hideConst))
             .append(delim).append("SET").append(delim);
 
         for (GridSqlColumn c : cols) {
             GridSqlElement e = set.get(c.columnName());
             buff.appendExceptFirst("," + delim + "    ");
-            buff.append(c.columnName()).append(" = ").append(e != null ? e.getSQL(hideConst, delim) : "DEFAULT");
+            buff.append(c.columnName()).append(" = ").append(e != null ? e.getSQL(hideConst) : "DEFAULT");
         }
 
         if (where != null)
-            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst, delim)));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst)));
 
         if (limit != null)
-            buff.append(delim).append("LIMIT ").append(StringUtils.unEnclose(limit.getSQL(hideConst, delim)));
+            buff.append(delim).append("LIMIT ").append(StringUtils.unEnclose(limit.getSQL(hideConst)));
 
         return buff.toString();
     }

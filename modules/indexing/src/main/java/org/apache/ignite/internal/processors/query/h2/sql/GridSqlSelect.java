@@ -141,7 +141,9 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
+        char delim = delimeter(hideConst);
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN SELECT" : "SELECT");
 
         if (distinct)
@@ -150,14 +152,14 @@ public class GridSqlSelect extends GridSqlQuery {
         for (GridSqlAst expression : columns(true)) {
             buff.appendExceptFirst(",");
             buff.append(delim);
-            buff.append(expression.getSQL(hideConst, delim));
+            buff.append(expression.getSQL(hideConst));
         }
 
         if (from != null)
-            buff.append(delim).append("FROM ").append(from.getSQL(hideConst, delim));
+            buff.append(delim).append("FROM ").append(from.getSQL(hideConst));
 
         if (where != null)
-            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst, delim)));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst)));
 
         if (grpCols != null) {
             buff.append(delim).append("GROUP BY ");
@@ -167,17 +169,17 @@ public class GridSqlSelect extends GridSqlQuery {
             for (int grpCol : grpCols) {
                 buff.appendExceptFirst(", ");
 
-                addAlias(buff, cols.get(grpCol), hideConst, delim);
+                addAlias(buff, cols.get(grpCol), hideConst);
             }
         }
 
         if (havingCol >= 0) {
             buff.append(delim).append("HAVING ");
 
-            addAlias(buff, cols.get(havingCol), hideConst, delim);
+            addAlias(buff, cols.get(havingCol), hideConst);
         }
 
-        getSortLimitSQL(buff, hideConst, delim);
+        getSortLimitSQL(buff, hideConst);
 
         if (isForUpdate)
             buff.append(delim).append("FOR UPDATE");
@@ -216,10 +218,10 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param buff Statement builder.
      * @param exp Alias expression.
      */
-    private static void addAlias(StatementBuilder buff, GridSqlAst exp, boolean hideConst, char delim) {
+    private static void addAlias(StatementBuilder buff, GridSqlAst exp, boolean hideConst) {
         exp = GridSqlAlias.unwrap(exp);
 
-        buff.append(StringUtils.unEnclose(exp.getSQL(hideConst, delim)));
+        buff.append(StringUtils.unEnclose(exp.getSQL(hideConst)));
     }
 
     /**

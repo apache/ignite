@@ -20,13 +20,18 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst.DEFAULT_DELIM;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * SQL statement to query or update grid caches.
  */
 public abstract class GridSqlStatement {
+    /** Default SQL delimeter. */
+    public static final char DEFAULT_DELIM = '\n';
+
+    /** Space SQL delimeter. */
+    public static final char SPACE_DELIM = ' ';
+
     /** */
     protected GridSqlAst limit;
 
@@ -37,16 +42,7 @@ public abstract class GridSqlStatement {
      * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
      * @return Generate sql.
      */
-    public String getSQL(boolean hideConst) {
-        return getSQL(hideConst, DEFAULT_DELIM);
-    }
-
-    /**
-     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
-     * @param delim Delimeter char.
-     * @return Generate sql.
-     */
-    public abstract String getSQL(boolean hideConst, char delim);
+    public abstract String getSQL(boolean hideConst);
 
     /** {@inheritDoc} */
     @Override public String toString() {
@@ -83,5 +79,16 @@ public abstract class GridSqlStatement {
      */
     public GridSqlAst limit() {
         return limit;
+    }
+
+    /**
+     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
+     * @return Delimeter to use.
+     */
+    public static char delimeter(boolean hideConst) {
+        if (hideConst)
+            return SPACE_DELIM;
+
+        return DEFAULT_DELIM;
     }
 }

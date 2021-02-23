@@ -55,7 +55,7 @@ public class GridSqlConst extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
         if (hideConst)
             return "?";
 

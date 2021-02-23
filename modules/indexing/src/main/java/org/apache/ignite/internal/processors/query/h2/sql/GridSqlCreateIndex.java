@@ -95,7 +95,7 @@ public class GridSqlCreateIndex extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
         StringBuilder sb = new StringBuilder("CREATE ")
             .append(idx.getIndexType() == QueryIndexType.GEOSPATIAL ? "SPATIAL " : "")
             .append("INDEX ").append(ifNotExists ? "IF NOT EXISTS " : "")

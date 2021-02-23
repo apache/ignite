@@ -777,7 +777,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE))
             return qry;
 
-        return stmnt.getSQL(true, ' ');
+        return stmnt.getSQL(true);
     }
 
     /**

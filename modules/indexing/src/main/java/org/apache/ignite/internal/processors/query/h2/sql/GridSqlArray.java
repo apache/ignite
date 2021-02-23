@@ -33,7 +33,7 @@ public class GridSqlArray extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
         if (size() == 0)
             return "()";
 
@@ -41,7 +41,7 @@ public class GridSqlArray extends GridSqlElement {
 
         for (int i = 0; i < size(); i++) {
             buff.appendExceptFirst(", ");
-            buff.append(child(i).getSQL(hideConst, delim));
+            buff.append(child(i).getSQL(hideConst));
         }
 
         if (size() == 1)

@@ -22,6 +22,8 @@ import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement.delimeter;
+
 /**
  * Join of two tables or subqueries.
  */
@@ -101,16 +103,18 @@ public class GridSqlJoin extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
+        char delim = delimeter(hideConst);
+
         StatementBuilder buff = new StatementBuilder();
 
-        buff.append(leftTable().getSQL(hideConst, delim));
+        buff.append(leftTable().getSQL(hideConst));
 
         buff.append(" ").append(delim).append(leftOuter ? " LEFT OUTER JOIN " : " INNER JOIN ");
 
-        buff.append(rightTable().getSQL(hideConst, delim));
+        buff.append(rightTable().getSQL(hideConst));
 
-        buff.append(" ").append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL(hideConst, delim)));
+        buff.append(" ").append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL(hideConst)));
 
         return buff.toString();
     }

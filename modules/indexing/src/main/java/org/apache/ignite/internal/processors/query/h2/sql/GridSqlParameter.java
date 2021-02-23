@@ -36,7 +36,7 @@ public class GridSqlParameter extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
         return "?" + (idx + 1);
     }
 

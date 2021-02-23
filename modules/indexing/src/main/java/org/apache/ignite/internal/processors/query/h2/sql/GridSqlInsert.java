@@ -47,17 +47,19 @@ public class GridSqlInsert extends GridSqlStatement {
     private boolean sorted;
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
+        char delim = delimeter(hideConst);
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("INSERT")
             .append(delim).append("INTO ")
-            .append(into.getSQL(hideConst, delim))
+            .append(into.getSQL(hideConst))
             .append('(');
 
         for (GridSqlColumn col : cols) {
             buff.appendExceptFirst(",");
             buff.append(delim);
-            buff.append(col.getSQL(hideConst, delim));
+            buff.append(col.getSQL(hideConst));
         }
         buff.append(delim).append(")").append(delim);
 
@@ -76,7 +78,7 @@ public class GridSqlInsert extends GridSqlStatement {
                 StatementBuilder rowBuff = new StatementBuilder("(");
                 for (GridSqlElement e : row) {
                     rowBuff.appendExceptFirst(", ");
-                    rowBuff.append(e != null ? e.getSQL(hideConst, delim) : "DEFAULT");
+                    rowBuff.append(e != null ? e.getSQL(hideConst) : "DEFAULT");
                 }
                 rowBuff.append(')');
                 valuesBuff.append(rowBuff.toString());
@@ -85,7 +87,7 @@ public class GridSqlInsert extends GridSqlStatement {
         }
         else
             buff.append(delim)
-                .append(qry.getSQL(hideConst, delim));
+                .append(qry.getSQL(hideConst));
 
         return buff.toString();
     }

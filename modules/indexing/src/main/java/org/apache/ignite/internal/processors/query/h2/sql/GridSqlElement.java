@@ -97,8 +97,7 @@ public abstract class GridSqlElement implements GridSqlAst {
     /** {@inheritDoc} */
     @Override public String toString() {
         return getSQL(
-            !IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE),
-            DEFAULT_DELIM
+            !IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE)
         );
     }
 

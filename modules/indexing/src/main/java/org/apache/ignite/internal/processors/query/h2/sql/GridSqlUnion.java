@@ -41,6 +41,7 @@ public class GridSqlUnion extends GridSqlQuery {
     private GridSqlQuery left;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <E extends GridSqlAst> E child(int childIdx) {
         if (childIdx < LEFT_CHILD)
             return super.child(childIdx);
@@ -101,35 +102,37 @@ public class GridSqlUnion extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN \n" : "");
+    @Override public String getSQL(boolean hideConst) {
+        char delim = delimeter(hideConst);
 
-        buff.append('(').append(left.getSQL(hideConst, delim)).append(')');
+        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " + delim : "");
+
+        buff.append('(').append(left.getSQL(hideConst)).append(')');
 
         switch (unionType()) {
             case UNION_ALL:
-                buff.append("\nUNION ALL\n");
+                buff.append(delim).append("UNION ALL").append(delim);
                 break;
 
             case UNION:
-                buff.append("\nUNION\n");
+                buff.append(delim).append("UNION").append(delim);
                 break;
 
             case INTERSECT:
-                buff.append("\nINTERSECT\n");
+                buff.append(delim).append("INTERSECT").append(delim);
                 break;
 
             case EXCEPT:
-                buff.append("\nEXCEPT\n");
+                buff.append(delim).append("EXCEPT").append(delim);
                 break;
 
             default:
                 throw new CacheException("type=" + unionType);
         }
 
-        buff.append('(').append(right.getSQL(hideConst, delim)).append(')');
+        buff.append('(').append(right.getSQL(hideConst)).append(')');
 
-        getSortLimitSQL(buff, hideConst, delim);
+        getSortLimitSQL(buff, hideConst);
 
         return buff.toString();
     }

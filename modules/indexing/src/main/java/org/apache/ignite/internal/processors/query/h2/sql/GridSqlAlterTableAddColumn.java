@@ -107,7 +107,7 @@ public class GridSqlAlterTableAddColumn extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst, char delim) {
+    @Override public String getSQL(boolean hideConst) {
         throw new UnsupportedOperationException();
     }
 }
