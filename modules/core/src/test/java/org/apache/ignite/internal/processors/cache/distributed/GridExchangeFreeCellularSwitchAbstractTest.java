@@ -150,7 +150,7 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
                 }
 
                 return true;
-            }, 5000));
+            }, 10000));
     }
 
     /**

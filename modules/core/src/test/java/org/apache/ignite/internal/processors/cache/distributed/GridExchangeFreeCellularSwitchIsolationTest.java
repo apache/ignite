@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
@@ -69,7 +68,14 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
     }
 
     /**
+     * Tests checks that switch finished only when all transactions required recovery are recovered.
+     * Based on corner case found at TeamCity runs:
      *
+     * We have 2 cells, the first contains partitions for k1, second for k2.
+     * Tx with put(k1,v1) and put(k2,v2) started and prepared.
+     * Then node from the first cell, which is the primary for k1, failed.
+     * The second cell (with key2) should NOT finish the cellular switch before tx recovered,
+     * otherwice stale data read is possible.
      */
     @Test
     public void testMutliKeyTxRecoveryHappenBeforeTheSwitchOnCellularSwitch() throws Exception {
@@ -127,8 +133,6 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         awaitForSwitchOnNodeLeft(failed);
 
-        U.sleep(5_000); // Wait enough for the switch (which should not happen before the recovery).
-
         checkTransactionsCount( // Making sure txs still unrecovered.
             null, 0,
             brokenCellNodes, 1,
@@ -152,7 +156,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
         }, 1);
 
         // Get should not happen while tx is not recovered.
-        assertFalse(getLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(getLatch.await(10, TimeUnit.SECONDS));
 
         // Allowing recovery.
         for (Ignite ignite : G.allGrids()) {
@@ -166,6 +170,9 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
         commitLatch.countDown();
 
         putFut.get();
+
+        // Awaiting for get on alive cell.
+        getLatch.await();
 
         // Making sure get finished with recovered value.
         getFut.get();
