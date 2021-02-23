@@ -1127,6 +1127,8 @@ public class IgnitionEx {
                 if (!replaced)
                     throw new IgniteCheckedException("Ignite instance with this name has been concurrently started: " +
                         name);
+                else
+                    notifyStateChange(old.getName(), old.state());
             }
             else if (failIfStarted) {
                 if (name == null)
