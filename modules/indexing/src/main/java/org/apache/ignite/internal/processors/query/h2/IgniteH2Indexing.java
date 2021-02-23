@@ -244,6 +244,10 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * For each table it will create indexes declared in {@link GridQueryTypeDescriptor#indexes()}.
  */
 public class IgniteH2Indexing implements GridQueryIndexing {
+    /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
+    public static final boolean INCLUDE_SENSITIVE
+        = IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
+
     /*
      * Register IO for indexes.
      */
@@ -773,8 +777,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query text to use in "logging" API e.g. system view and events.
      */
     private static String sqlForUser(String qry, @Nullable GridSqlStatement stmnt) {
-        if (stmnt == null ||
-            IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE))
+        if (stmnt == null || INCLUDE_SENSITIVE)
             return qry;
 
         return stmnt.getSQL(true);
