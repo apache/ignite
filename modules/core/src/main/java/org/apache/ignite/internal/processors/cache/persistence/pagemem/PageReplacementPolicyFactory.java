@@ -15,28 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.resources.SpringApplicationContextResource;
-import org.springframework.context.ApplicationContext;
+/**
+ * Page replacement policy factory.
+ */
+public interface PageReplacementPolicyFactory {
+    /**
+     * Calculaete amount of memory required to service {@code pagesCnt} pages.
+     *
+     * @param pagesCnt Pages count.
+     */
+    public long requiredMemory(int pagesCnt);
 
-import static org.junit.Assert.assertNotNull;
-
-/** Lifecycle bean for testing. */
-public class TestInjectionLifecycleBean implements LifecycleBean {
-    /** */
-    @SpringApplicationContextResource
-    private ApplicationContext appCtx;
-
-    /** Checks that context was injected. */
-    public void checkState() {
-        assertNotNull(appCtx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onLifecycleEvent(LifecycleEventType evt) {
-        checkState();
-    }
+    /**
+     * Create page replacement policy.
+     *
+     * @param seg Page memory segment.
+     * @param ptr Pointer to memory region.
+     * @param pagesCnt Pages count.
+     */
+    public PageReplacementPolicy create(PageMemoryImpl.Segment seg, long ptr, int pagesCnt);
 }
