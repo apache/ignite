@@ -2471,14 +2471,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             tx.commitAsync().listen(new CommitListener(tx));
         else if (!tx.local()) {
             // This tx was rolled back on recovery because of primary node fail, other backups may be not aware of it.
-            // Skipping update to keep counters the same everywhere without any sync, otherwice may (will) have an uncommitted
-            // tx's counters tail, which will require nodes sync on "every node finished the recovery" and counters
-            // propagation to have actual (maximal) counters at new primary.
-            // So, each node will have counter equals to latest successful transaction counter.
-            // Tx counters will be finalized (gaps removed) on local txs recovery finish.
             TxCounters cnts = tx.txCounters(false);
 
             if (cnts != null)
+                // Skipping counters update to keep them the same everywhere without any sync.
+                // Tx counters will be finalized (gaps removed) on local txs recovery finish.
+                // Each node will have counters equals to latest successful transactions counters.
                 cnts.updateCounters().clear();
         }
 
