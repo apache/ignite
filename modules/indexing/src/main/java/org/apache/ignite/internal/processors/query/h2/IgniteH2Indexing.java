@@ -665,7 +665,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         QueryParserResultDml dml = streamerParse(schemaName, qry);
 
-        return streamQuery0(schemaName, streamer, dml, params);
+        return streamQuery0(qry, schemaName, streamer, dml, params);
     }
 
     /** {@inheritDoc} */
@@ -691,7 +691,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         List<Long> ress = new ArrayList<>(params.size());
 
         for (int i = 0; i < params.size(); i++) {
-            long res = streamQuery0(schemaName, streamer, dml, params.get(i));
+            long res = streamQuery0(qry, schemaName, streamer, dml, params.get(i));
 
             ress.add(res);
         }
@@ -702,6 +702,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Perform given statement against given data streamer. Only rows based INSERT is supported.
      *
+     * @param qry Query.
      * @param schemaName Schema name.
      * @param streamer Streamer to feed data to.
      * @param dml DML statement.
@@ -710,10 +711,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "Anonymous2MethodRef"})
-    private long streamQuery0(String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
+    private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
-        Long qryId =
-            runningQryMgr.register(sqlForUser(dml.statement()), GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId = runningQryMgr.register(
+            sqlForUser(qry, dml.statement()),
+            GridCacheQueryType.SQL_FIELDS,
+            schemaName,
+            true,
+            null
+        );
 
         Exception failReason = null;
 
@@ -761,12 +767,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** */
-    private static String sqlForUser(GridSqlStatement stmnt) {
-        return stmnt.getSQL(
-            !IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE),
-            ' '
-        );
+    /**
+     * @param qry Query text from user.
+     * @param stmnt Parsed sql statement. {@code Null} for native commands.
+     * @return Query text to use in "logging" API e.g. system view and events.
+     */
+    private static String sqlForUser(String qry, @Nullable GridSqlStatement stmnt) {
+        if (stmnt == null ||
+            IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE))
+            return qry;
+
+        return stmnt.getSQL(true, ' ');
     }
 
     /**
@@ -1040,7 +1051,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        Long qryId = registerRunningQuery(qryDesc, qryParams, null, null, null, cmd);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, null, null);
 
         CommandResult res = null;
 
@@ -1223,7 +1234,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
 
-        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, null, dml, null);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, dml.statement());
 
         Exception failReason = null;
 
@@ -1308,7 +1319,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert cancel != null;
 
         // Register query.
-        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select, null, null);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select.statement());
 
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_CURSOR_OPEN, MTC.span()))) {
             GridNearTxLocal tx = null;
@@ -1569,21 +1580,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryDesc Query descriptor.
      * @param qryParams Query parameters.
      * @param cancel Query cancel state holder.
+     * @param stmnt Parsed statement.
      * @return Id of registered query or {@code null} if query wasn't registered.
      */
     private Long registerRunningQuery(
         QueryDescriptor qryDesc,
         QueryParameters qryParams,
         GridQueryCancel cancel,
-        QueryParserResultSelect select,
-        QueryParserResultDml dml,
-        QueryParserResultCommand cmd
+        @Nullable GridSqlStatement stmnt
     ) {
-        String qry = select != null
-            ? sqlForUser(select.statement())
-            : dml != null
-                ? sqlForUser(dml.statement())
-                : qryDesc.sql();
+        String qry = sqlForUser(qryDesc.sql(), stmnt);
 
         Long res = runningQryMgr.register(
             qry,
