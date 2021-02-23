@@ -73,7 +73,8 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
     }
 
     /**
-     *
+     * Test checks that txs will be recovered on Cellular switch if prepared, regardless of their content,
+     * as well as upcoming txs will be committed.
      */
     @Test
     public void testComplexOperationsRecoveryOnCellularSwitch() throws Exception {
@@ -191,14 +192,14 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
         futs.add(multithreadedAsync(() -> putEverywhereToBoth.accept(2), 1));
         futs.add(multithreadedAsync(() -> putEverywhereToBoth.accept(10), 1));
 
-        Consumer<Boolean> singleTxPerCell = (partAtCell1) -> {
+        Consumer<Boolean> singleTxPerCell = (partAtBrokenCell) -> {
             try {
                 Transaction tx = orig.transactions().txStart(concurrency, isolation);
 
-                Integer pKey = partAtCell1 ? nextPrimaryKey.apply(failed, PART_CACHE_NAME) :
+                Integer pKey = partAtBrokenCell ? nextPrimaryKey.apply(failed, PART_CACHE_NAME) :
                     nextPrimaryKey.apply(aliveCellNodes.get(0), PART_CACHE_NAME);
 
-                Integer rKey = partAtCell1 ? nextPrimaryKey.apply(aliveCellNodes.get(0), REPL_CACHE_NAME) :
+                Integer rKey = partAtBrokenCell ? nextPrimaryKey.apply(aliveCellNodes.get(0), REPL_CACHE_NAME) :
                     nextPrimaryKey.apply(failed, REPL_CACHE_NAME);
 
                 IgniteCache<Integer, Integer> pCache = orig.getOrCreateCache(PART_CACHE_NAME);
