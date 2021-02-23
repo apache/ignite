@@ -88,7 +88,7 @@ public class GridSqlFunction extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
+    @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder();
 
         if (schema != null)
@@ -100,15 +100,15 @@ public class GridSqlFunction extends GridSqlElement {
         buff.append(name);
 
         if (type == CASE) {
-            buff.append(' ').append(child().getSQL(hideConst));
+            buff.append(' ').append(child().getSQL());
 
             for (int i = 1, len = size() - 1; i < len; i += 2) {
-                buff.append(" WHEN ").append(child(i).getSQL(hideConst));
-                buff.append(" THEN ").append(child(i + 1).getSQL(hideConst));
+                buff.append(" WHEN ").append(child(i).getSQL());
+                buff.append(" THEN ").append(child(i + 1).getSQL());
             }
 
             if ((size() & 1) == 0)
-                buff.append(" ELSE ").append(child(size() - 1).getSQL(hideConst));
+                buff.append(" ELSE ").append(child(size() - 1).getSQL());
 
             return buff.append(" END").toString();
         }
@@ -124,7 +124,7 @@ public class GridSqlFunction extends GridSqlElement {
 
                 assert !F.isEmpty(castType) : castType;
 
-                buff.append(child().getSQL(hideConst));
+                buff.append(child().getSQL());
                 buff.append(type == CAST ? " AS " : ",");
                 buff.append(castType);
 
@@ -132,7 +132,7 @@ public class GridSqlFunction extends GridSqlElement {
 
             case EXTRACT:
                 ValueString v = (ValueString)((GridSqlConst)child(0)).value();
-                buff.append(v.getString()).append(" FROM ").append(child(1).getSQL(hideConst));
+                buff.append(v.getString()).append(" FROM ").append(child(1).getSQL());
 
                 break;
 
@@ -147,7 +147,7 @@ public class GridSqlFunction extends GridSqlElement {
                         .append(' ')
                         .append(e.resultType().sql())
                         .append('=')
-                        .append(e.child().getSQL(hideConst));
+                        .append(e.child().getSQL());
                 }
 
                 break;
@@ -155,7 +155,7 @@ public class GridSqlFunction extends GridSqlElement {
             default:
                 for (int i = 0; i < size(); i++) {
                     buff.appendExceptFirst(", ");
-                    buff.append(child(i).getSQL(hideConst));
+                    buff.append(child(i).getSQL());
                 }
         }
 

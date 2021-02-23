@@ -68,7 +68,7 @@ public class GridSqlOperation extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
-        return opType.toSql(this, hideConst);
+    @Override public String getSQL() {
+        return opType.toSql(this);
     }
 }

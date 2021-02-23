@@ -81,25 +81,25 @@ public class GridSqlUpdate extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
-        char delim = delimeter(hideConst);
+    @Override public String getSQL() {
+        char delim = delimeter();
 
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("UPDATE ")
-            .append(target.getSQL(hideConst))
+            .append(target.getSQL())
             .append(delim).append("SET").append(delim);
 
         for (GridSqlColumn c : cols) {
             GridSqlElement e = set.get(c.columnName());
             buff.appendExceptFirst("," + delim + "    ");
-            buff.append(c.columnName()).append(" = ").append(e != null ? e.getSQL(hideConst) : "DEFAULT");
+            buff.append(c.columnName()).append(" = ").append(e != null ? e.getSQL() : "DEFAULT");
         }
 
         if (where != null)
-            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL(hideConst)));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL()));
 
         if (limit != null)
-            buff.append(delim).append("LIMIT ").append(StringUtils.unEnclose(limit.getSQL(hideConst)));
+            buff.append(delim).append("LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
 
         return buff.toString();
     }

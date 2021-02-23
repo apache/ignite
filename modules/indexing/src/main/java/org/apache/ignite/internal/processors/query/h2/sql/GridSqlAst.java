@@ -22,10 +22,9 @@ package org.apache.ignite.internal.processors.query.h2.sql;
  */
 public interface GridSqlAst {
     /**
-     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
      * @return Generate sql from this AST.
      */
-    public String getSQL(boolean hideConst);
+    public String getSQL();
 
     /**
      * @return Number of child nodes.

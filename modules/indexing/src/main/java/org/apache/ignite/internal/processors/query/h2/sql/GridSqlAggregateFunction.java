@@ -157,7 +157,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
+    @Override public String getSQL() {
         if (type == COUNT_ALL)
             return "COUNT(*)";
 
@@ -166,7 +166,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         if (distinct)
             buff.append("DISTINCT ");
 
-        buff.append(child().getSQL(hideConst));
+        buff.append(child().getSQL());
 
         if (!F.isEmpty(groupConcatOrderExpression)) {
             buff.append(" ORDER BY ");
@@ -176,7 +176,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
             for (int i = 0; i < groupConcatOrderExpression.length; ++i) {
                 buff.appendExceptFirst(", ");
 
-                buff.append(groupConcatOrderExpression[i].getSQL(hideConst));
+                buff.append(groupConcatOrderExpression[i].getSQL());
 
                 if (groupConcatOrderDesc[i])
                     buff.append(" DESC");
@@ -184,7 +184,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         }
 
         if (groupConcatSeparator != null)
-            buff.append(" SEPARATOR ").append(groupConcatSeparator.getSQL(hideConst));
+            buff.append(" SEPARATOR ").append(groupConcatSeparator.getSQL());
 
         buff.append(')');
 

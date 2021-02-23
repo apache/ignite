@@ -102,12 +102,12 @@ public class GridSqlUnion extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
-        char delim = delimeter(hideConst);
+    @Override public String getSQL() {
+        char delim = delimeter();
 
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " + delim : "");
 
-        buff.append('(').append(left.getSQL(hideConst)).append(')');
+        buff.append('(').append(left.getSQL()).append(')');
 
         switch (unionType()) {
             case UNION_ALL:
@@ -130,9 +130,9 @@ public class GridSqlUnion extends GridSqlQuery {
                 throw new CacheException("type=" + unionType);
         }
 
-        buff.append('(').append(right.getSQL(hideConst)).append(')');
+        buff.append('(').append(right.getSQL()).append(')');
 
-        getSortLimitSQL(buff, hideConst);
+        getSortLimitSQL(buff);
 
         return buff.toString();
     }

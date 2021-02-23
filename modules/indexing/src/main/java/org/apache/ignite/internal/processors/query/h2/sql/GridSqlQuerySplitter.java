@@ -1452,7 +1452,7 @@ public class GridSqlQuerySplitter {
             normalizeQuery(((GridSqlSubquery)from).subquery());
 
             if (!parentAlias) // H2 generates aliases for subqueries in FROM clause.
-                throw new IllegalStateException("No alias for subquery: " + from);
+                throw new IllegalStateException("No alias for subquery: " + from.getSQL());
         }
         else if (from instanceof GridSqlJoin) {
             // Left and right.
@@ -1468,7 +1468,7 @@ public class GridSqlQuerySplitter {
                 generateUniqueAlias(parent, childIdx);
         }
         else
-            throw new IllegalStateException(from.getClass().getName() + " : " + from);
+            throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
     }
 
     /**

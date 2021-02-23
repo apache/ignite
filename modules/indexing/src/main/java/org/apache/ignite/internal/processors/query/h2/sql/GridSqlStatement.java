@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.IgniteSystemProperties;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
-
 /**
  * SQL statement to query or update grid caches.
  */
@@ -39,15 +34,13 @@ public abstract class GridSqlStatement {
     private boolean explain;
 
     /**
-     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
      * @return Generate sql.
      */
-    public abstract String getSQL(boolean hideConst);
+    public abstract String getSQL();
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getSQL(
-            !IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE));
+        return getSQL();
     }
 
     /**
@@ -82,11 +75,10 @@ public abstract class GridSqlStatement {
     }
 
     /**
-     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
      * @return Delimeter to use.
      */
-    public static char delimeter(boolean hideConst) {
-        if (hideConst)
+    public static char delimeter() {
+        if (!GridSqlElement.INCL_SENS || !GridSqlElement.INCL_SENS_TL.get())
             return SPACE_DELIM;
 
         return DEFAULT_DELIM;

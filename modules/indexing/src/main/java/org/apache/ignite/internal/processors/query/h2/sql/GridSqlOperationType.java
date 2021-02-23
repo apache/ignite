@@ -79,10 +79,9 @@ public enum GridSqlOperationType {
 
     /**
      * @param operation Operation.
-     * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
      */
-    public String toSql(GridSqlOperation operation, boolean hideConst) {
-        return sqlGenerator.getSql(operation, hideConst);
+    public String toSql(GridSqlOperation operation) {
+        return sqlGenerator.getSql(operation);
     }
 
     /**
@@ -99,9 +98,8 @@ public enum GridSqlOperationType {
 
         /**
          * @param operation Operation expression.
-         * @param hideConst If {@code true} then constants should be replaced with '?' chars to hide possibly sensitive data.
          */
-        public String getSql(GridSqlOperation operation, boolean hideConst);
+        public String getSql(GridSqlOperation operation);
     }
 
     /**
@@ -120,10 +118,10 @@ public enum GridSqlOperationType {
         }
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridSqlOperation operation, boolean hideConst) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 2;
 
-            return '(' + operation.child(0).getSQL(hideConst) + " " + delim + " " + operation.child(1).getSQL(hideConst) + ')';
+            return '(' + operation.child(0).getSQL() + " " + delim + " " + operation.child(1).getSQL() + ')';
         }
     }
 
@@ -133,10 +131,10 @@ public enum GridSqlOperationType {
     private static class IntersectsSqlGenerator implements SqlGenerator {
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridSqlOperation operation, boolean hideConst) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 2;
 
-            return "(INTERSECTS(" + operation.child(0).getSQL(hideConst) + ", " + operation.child(1).getSQL(hideConst) + "))";
+            return "(INTERSECTS(" + operation.child(0).getSQL() + ", " + operation.child(1).getSQL() + "))";
         }
     }
 
@@ -160,7 +158,7 @@ public enum GridSqlOperationType {
         }
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridSqlOperation operation, boolean hideConst) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 1;
 
             StringBuilder b = new StringBuilder();
@@ -170,7 +168,7 @@ public enum GridSqlOperationType {
             if (addSpace)
                 b.append(' ');
 
-            b.append(operation.child(0).getSQL(hideConst)).append(')');
+            b.append(operation.child(0).getSQL()).append(')');
 
             return b.toString();
         }
@@ -191,10 +189,10 @@ public enum GridSqlOperationType {
         }
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridSqlOperation operation, boolean hideConst) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 1;
 
-            return '(' + operation.child(0).getSQL(hideConst) + ' ' + text + ')';
+            return '(' + operation.child(0).getSQL() + ' ' + text + ')';
         }
     }
 
@@ -204,22 +202,22 @@ public enum GridSqlOperationType {
     private static class ConditionInSqlGenerator implements SqlGenerator {
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridSqlOperation operation, boolean hideConst) {
+        @Override public String getSql(GridSqlOperation operation) {
             StatementBuilder buff = new StatementBuilder("(");
 
-            buff.append(operation.child(0).getSQL(hideConst)).append(" IN(");
+            buff.append(operation.child(0).getSQL()).append(" IN(");
 
             assert operation.size() > 1;
 
             if (operation.size() == 2) {
-                String child = operation.child(1).getSQL(hideConst);
+                String child = operation.child(1).getSQL();
 
                 buff.append(' ').append(StringUtils.unEnclose(child)).append(' ');
             }
             else {
                 for (int i = 1; i < operation.size(); i++) {
                     buff.appendExceptFirst(", ");
-                    buff.append(operation.child(i).getSQL(hideConst));
+                    buff.append(operation.child(i).getSQL());
                 }
             }
 

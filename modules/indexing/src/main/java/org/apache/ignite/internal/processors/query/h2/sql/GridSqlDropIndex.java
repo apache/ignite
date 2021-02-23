@@ -75,7 +75,7 @@ public class GridSqlDropIndex extends GridSqlStatement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
+    @Override public String getSQL() {
         return "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + Parser.quoteIdentifier(schemaName) + '.' +
             Parser.quoteIdentifier(idxName);
     }

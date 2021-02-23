@@ -103,18 +103,18 @@ public class GridSqlJoin extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
-        char delim = delimeter(hideConst);
+    @Override public String getSQL() {
+        char delim = delimeter();
 
         StatementBuilder buff = new StatementBuilder();
 
-        buff.append(leftTable().getSQL(hideConst));
+        buff.append(leftTable().getSQL());
 
         buff.append(" ").append(delim).append(leftOuter ? " LEFT OUTER JOIN " : " INNER JOIN ");
 
-        buff.append(rightTable().getSQL(hideConst));
+        buff.append(rightTable().getSQL());
 
-        buff.append(" ").append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL(hideConst)));
+        buff.append(" ").append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL()));
 
         return buff.toString();
     }

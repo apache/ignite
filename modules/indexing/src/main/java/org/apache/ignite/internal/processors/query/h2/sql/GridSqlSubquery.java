@@ -33,8 +33,8 @@ public class GridSqlSubquery extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
-        return "(" + subquery().getSQL(hideConst) + ")";
+    @Override public String getSQL() {
+        return "(" + subquery().getSQL() + ")";
     }
 
     /**

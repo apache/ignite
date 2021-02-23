@@ -200,7 +200,7 @@ public class SplitterUtils {
     public static void checkNoDataTablesInReduceQuery(GridSqlAst ast, String rdcQry) {
         if (ast instanceof GridSqlTable) {
             if (((GridSqlTable)ast).dataTable() != null)
-                throw new IgniteException("Failed to generate REDUCE query. Data table found: " + ast +
+                throw new IgniteException("Failed to generate REDUCE query. Data table found: " + ast.getSQL() +
                     " \n" + rdcQry);
         }
         else {

@@ -39,7 +39,7 @@ public class GridSqlPlaceholder extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL(boolean hideConst) {
+    @Override public String getSQL() {
         return sql;
     }
 

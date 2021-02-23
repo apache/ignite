@@ -28,8 +28,11 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  */
 public abstract class GridSqlElement implements GridSqlAst {
     /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
-    private static final boolean INCL_SENS =
+    public static final boolean INCL_SENS =
         IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
+
+    /** */
+    public static final ThreadLocal<Boolean> INCL_SENS_TL = ThreadLocal.withInitial(() -> INCL_SENS);
 
     /** */
     private final List<GridSqlAst> children;
@@ -100,7 +103,7 @@ public abstract class GridSqlElement implements GridSqlAst {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getSQL(INCL_SENS);
+        return getSQL();
     }
 
     /** {@inheritDoc} */
