@@ -56,7 +56,7 @@ public class GridSqlConst extends GridSqlElement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        if (hideConst)
+        if (!GridSqlElement.INCL_SENS && !GridSqlElement.INCL_SENS_TL.get())
             return "?";
 
         return val.getSQL();

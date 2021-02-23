@@ -532,14 +532,14 @@ public class QueryParser {
                     ((GridSqlSelect)selectStmt).forUpdate(false);
 
                     // Remember sql string without FOR UPDATE clause.
-                    forUpdateQryOutTx = selForUpdate.getSQL(false);
+                    forUpdateQryOutTx = selForUpdate.getSQL();
 
                     GridSqlAlias keyCol = keyColumn(selForUpdate);
 
                     selForUpdate.addColumn(keyCol, true);
 
                     // Remember sql string without FOR UPDATE clause and with _key column.
-                    forUpdateQryTx = selForUpdate.getSQL(false);
+                    forUpdateQryTx = selForUpdate.getSQL();
 
                     // Prepare additional two-step query for FOR UPDATE case.
                     if (splitNeeded) {

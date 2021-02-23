@@ -32,7 +32,7 @@ public abstract class GridSqlElement implements GridSqlAst {
         IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
     /** */
-    public static final ThreadLocal<Boolean> INCL_SENS_TL = ThreadLocal.withInitial(() -> INCL_SENS);
+    public static final ThreadLocal<Boolean> INCL_SENS_TL = ThreadLocal.withInitial(() -> true);
 
     /** */
     private final List<GridSqlAst> children;

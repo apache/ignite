@@ -144,6 +144,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -200,6 +202,7 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
@@ -718,7 +721,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(
-            INCL_SENS ? qry : dml.statement().getSQL(true),
+            INCL_SENS ? qry : sqlWithoutConst(dml.statement()),
             GridCacheQueryType.SQL_FIELDS,
             schemaName,
             true,
@@ -1580,7 +1583,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         @Nullable GridSqlStatement stmnt
     ) {
-        String qry = INCL_SENS || stmnt == null ? qryDesc.sql() : stmnt.getSQL(true);
+        String qry = !INCL_SENS && stmnt != null ? sqlWithoutConst(stmnt) : qryDesc.sql();
 
         Long res = runningQryMgr.register(
             qry,
@@ -1600,6 +1603,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return res;
+    }
+
+    /**
+     * @param stmnt Statement to print.
+     * @return SQL query where constant replaced with '?' char.
+     * @see GridSqlConst#getSQL()
+     */
+    private String sqlWithoutConst(@NotNull GridSqlStatement stmnt) {
+        GridSqlElement.INCL_SENS_TL.set(false);
+
+        try {
+            return stmnt.getSQL();
+        }
+        finally {
+            GridSqlElement.INCL_SENS_TL.set(true);
+        }
     }
 
     /**

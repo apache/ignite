@@ -114,7 +114,7 @@ public final class UpdatePlanBuilder {
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
             return planForUpdate(planKey, stmt, idx, mvccEnabled, log);
         else
-            throw new IgniteSQLException("Unsupported operation: " + stmt,
+            throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
@@ -262,7 +262,7 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
-        String selectSql = sel != null ? sel.getSQL(false) : null;
+        String selectSql = sel != null ? sel.getSQL() : null;
 
         DmlDistributedPlanInfo distributed = null;
 
@@ -444,7 +444,7 @@ public final class UpdatePlanBuilder {
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate)stmt);
 
-                String selectSql = sel.getSQL(false);
+                String selectSql = sel.getSQL();
 
                 DmlDistributedPlanInfo distributed = null;
 
@@ -480,7 +480,7 @@ public final class UpdatePlanBuilder {
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete)stmt);
 
-                String selectSql = sel.getSQL(false);
+                String selectSql = sel.getSQL();
 
                 DmlDistributedPlanInfo distributed = null;
 

@@ -78,7 +78,7 @@ public abstract class GridSqlStatement {
      * @return Delimeter to use.
      */
     public static char delimeter() {
-        if (!GridSqlElement.INCL_SENS || !GridSqlElement.INCL_SENS_TL.get())
+        if (!GridSqlElement.INCL_SENS && !GridSqlElement.INCL_SENS_TL.get())
             return SPACE_DELIM;
 
         return DEFAULT_DELIM;
