@@ -78,9 +78,14 @@ public abstract class GridSqlStatement {
      * @return Delimeter to use.
      */
     public static char delimeter() {
-        if (GridSqlElement.INCLUDE_SENSITIVE || GridSqlElement.INCLUDE_SENSITIVE_TL.get())
-            return DEFAULT_DELIM;
+        if (secureOutputToLog())
+            return SPACE_DELIM;
 
-        return SPACE_DELIM;
+        return DEFAULT_DELIM;
+    }
+
+    /** @return {@code True} if output is for log. */
+    public static boolean secureOutputToLog() {
+        return !GridSqlElement.INCLUDE_SENSITIVE && !GridSqlElement.INCLUDE_SENSITIVE_TL.get();
     }
 }

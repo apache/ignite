@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
@@ -37,6 +41,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  * will be deleted from query before logging it to history, events, profiling tool.
  */
 public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVT_SQL_QUERY_EXECUTION);
+    }
+
+    /**  */
     @Test
     @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testConstantRemoved() throws Exception {
@@ -85,10 +95,22 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             F.t("KILL SERVICE 'my_service'", null)
         );
 
+        AtomicReference<String> lastQryFromEvt = new AtomicReference<>();
+
+        ignite.events().localListen(evt -> {
+            assertTrue(evt instanceof SqlQueryExecutionEvent);
+
+            lastQryFromEvt.set(((SqlQueryExecutionEvent)evt).text());
+
+            return true;
+        }, EventType.EVT_SQL_QUERY_EXECUTION);
+
         for (IgniteBiTuple<String, String> qry : qries) {
             execSql(ignite, qry.get1());
 
             String expHist = qry.get2() == null ? qry.get1() : qry.get2();
+
+            assertEquals(expHist, lastQryFromEvt.get());
 
             List<List<?>> hist = execSql(ignite, "SELECT sql FROM SYS.SQL_QUERIES_HISTORY WHERE sql = ?", expHist);
 
@@ -96,7 +118,6 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             assertEquals(1, hist.size());
             assertEquals(hist.get(0).get(0), expHist);
 
-            //TODO: check events.
         }
     }
 

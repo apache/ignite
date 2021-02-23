@@ -23,6 +23,8 @@ import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueNull;
 
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement.secureOutputToLog;
+
 /**
  * Constant value.
  */
@@ -56,9 +58,9 @@ public class GridSqlConst extends GridSqlElement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        if (GridSqlElement.INCLUDE_SENSITIVE || GridSqlElement.INCLUDE_SENSITIVE_TL.get())
-            return val.getSQL();
+        if (secureOutputToLog())
+            return "?";
 
-        return "?";
+        return val.getSQL();
     }
 }
