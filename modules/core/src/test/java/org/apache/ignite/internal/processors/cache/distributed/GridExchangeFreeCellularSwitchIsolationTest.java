@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -69,7 +68,126 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
     }
 
     /**
+     * Tests checks that switch finished only when all transactions required recovery are recovered.
+     * Based on corner case found at TeamCity runs:
      *
+     * We have 2 cells, the first contains partitions for k1, second for k2.
+     * Tx with put(k1,v1) and put(k2,v2) started and prepared.
+     * Then node from the first cell, which is the primary for k1, failed.
+     * The second cell (with key2) should NOT finish the cellular switch before tx recovered,
+     * otherwice stale data read is possible.
+     */
+    @Test
+    public void testMutliKeyTxRecoveryHappenBeforeTheSwitchOnCellularSwitch() throws Exception {
+        int nodes = 6;
+
+        startGridsMultiThreaded(nodes);
+
+        blockRecoveryMessages();
+
+        CellularCluster cluster = resolveCellularCluster(nodes, startFrom);
+
+        Ignite orig = cluster.orig;
+        Ignite failed = cluster.failed;
+        List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
+        List<Ignite> aliveCellNodes = cluster.aliveCellNodes;
+
+        CountDownLatch prepLatch = new CountDownLatch(1);
+        CountDownLatch commitLatch = new CountDownLatch(1);
+
+        AtomicInteger key = new AtomicInteger();
+
+        // Puts 2 entries, each on it's own cell.
+        IgniteInternalFuture<?> putFut = multithreadedAsync(() -> {
+            try {
+                Transaction tx = orig.transactions().txStart();
+
+                IgniteCache<Integer, Integer> cache = orig.getOrCreateCache(PART_CACHE_NAME);
+
+                cache.put(primaryKey(failed.getOrCreateCache(PART_CACHE_NAME)), 42);
+
+                key.set(primaryKey(aliveCellNodes.get(0).getOrCreateCache(PART_CACHE_NAME)));
+
+                cache.put(key.get(), key.get());
+
+                ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+                prepLatch.countDown();
+
+                commitLatch.await();
+
+                if (orig != failed)
+                    ((TransactionProxyImpl<?, ?>)tx).commit();
+            }
+            catch (Exception e) {
+                fail("Should not happen [exception=" + e + "]");
+            }
+        }, 1);
+
+        prepLatch.await();
+
+        // Should be null white tx is uncommitted/unrecovered.
+        assertNull(aliveCellNodes.get(0).getOrCreateCache(PART_CACHE_NAME).get(key.get()));
+
+        failed.close(); // Stopping node.
+
+        awaitForSwitchOnNodeLeft(failed);
+
+        checkTransactionsCount( // Making sure txs still unrecovered.
+            null, 0,
+            brokenCellNodes, 1,
+            aliveCellNodes, 1,
+            null /*any*/);
+
+        CountDownLatch getLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> getFut = multithreadedAsync(() -> {
+            try {
+                IgniteCache<Integer, Integer> cache = aliveCellNodes.get(0).getOrCreateCache(PART_CACHE_NAME);
+
+                // Should be available for reading only after recovery happen (should be not null).
+                assertEquals((Integer)key.get(), cache.get(key.get()));
+
+                getLatch.countDown();
+            }
+            catch (Exception e) {
+                fail("Should not happen [exception=" + e + "]");
+            }
+        }, 1);
+
+        // Get should not happen while tx is not recovered.
+        assertFalse(getLatch.await(10, TimeUnit.SECONDS));
+
+        // Allowing recovery.
+        for (Ignite ignite : G.allGrids()) {
+            TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+            spi.stopBlock(true, blockedMsg -> true);
+        }
+
+        // Allowing commit.
+        commitLatch.countDown();
+
+        putFut.get();
+
+        // Awaiting for get on alive cell.
+        getLatch.await();
+
+        // Making sure get finished with recovered value.
+        getFut.get();
+
+        // Final check that any transactions are absent.
+        checkTransactionsCount(
+            null, 0,
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            null /*any*/);
+    }
+
+    /**
+     * Test checks than non-affected nodes (alive cells) finishes the switch asap,
+     * that they wait only for the recovery related to these nodes (eg. replicated caches recovery that affects every node).
      */
     @Test
     public void testOnlyAffectedNodesWaitForRecovery() throws Exception {
@@ -78,8 +196,8 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
         String recoveryStatusMsg = "TxRecovery Status and Timings [txs=";
 
         LogListener lsnrAny = matches(recoveryStatusMsg).build(); // Any.
-        LogListener lsnrBackup = matches(recoveryStatusMsg).times((nodes / 2) - 1).build(); // Cell 1 (backups).
-        LogListener lsnrNear = matches(recoveryStatusMsg).times((nodes / 2)).build(); // Cell 2 (near).
+        LogListener lsnrBrokenCell = matches(recoveryStatusMsg).times((nodes / 2) - 1 /*failed*/).build();
+        LogListener lsnrAliveCell = matches(recoveryStatusMsg).times((nodes / 2)).build();
 
         listeningLog.registerListener(lsnrAny);
 
@@ -87,92 +205,48 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         blockRecoveryMessages();
 
-        Ignite failed = G.allGrids().get(new Random().nextInt(nodes));
+        CellularCluster cluster = resolveCellularCluster(nodes, startFrom);
 
-        Integer partKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
-        Integer replKey = primaryKey(failed.getOrCreateCache(REPL_CACHE_NAME));
+        Ignite orig = cluster.orig;
+        Ignite failed = cluster.failed;
+        List<Ignite> brokenCellNodes = cluster.brokenCellNodes;
+        List<Ignite> aliveCellNodes = cluster.aliveCellNodes;
 
-        List<Ignite> backupNodes = backupNodes(partKey, PART_CACHE_NAME);
-        List<Ignite> nearNodes = new ArrayList<>(G.allGrids());
+        List<Integer> partKeys = new ArrayList<>();
+        List<Integer> replKeys = new ArrayList<>();
 
-        nearNodes.remove(failed);
-        nearNodes.removeAll(backupNodes);
-
-        assertTrue(Collections.disjoint(backupNodes, nearNodes));
-        assertEquals(nodes / 2 - 1, backupNodes.size()); // Cell 1.
-        assertEquals(nodes / 2, nearNodes.size()); // Cell 2.
-
-        Ignite orig;
-
-        switch (startFrom) {
-            case PRIMARY:
-                orig = failed;
-
-                break;
-
-            case BACKUP:
-                orig = backupNodes.get(0);
-
-                break;
-
-            case NEAR:
-                orig = nearNodes.get(0);
-
-                break;
-
-            case CLIENT:
-                orig = startClientGrid();
-
-                break;
-
-            default:
-                throw new UnsupportedOperationException();
+        for (Ignite node : G.allGrids()) {
+            if (!node.configuration().isClientMode()) {
+                partKeys.add(primaryKey(node.getOrCreateCache(PART_CACHE_NAME)));
+                replKeys.add(primaryKey(node.getOrCreateCache(REPL_CACHE_NAME)));
+            }
         }
 
-        Set<GridCacheVersion> vers = new GridConcurrentHashSet<>();
+        CountDownLatch partPreparedLatch = new CountDownLatch(nodes);
+        CountDownLatch replPreparedLatch = new CountDownLatch(nodes);
 
-        CountDownLatch partPreparedLatch = new CountDownLatch(1);
         CountDownLatch partCommitLatch = new CountDownLatch(1);
-        CountDownLatch replPreparedLatch = new CountDownLatch(1);
         CountDownLatch replCommitLatch = new CountDownLatch(1);
+
+        AtomicInteger partKeyIdx = new AtomicInteger();
+        AtomicInteger replKeyIdx = new AtomicInteger();
+
+        Set<GridCacheVersion> partTxVers = new GridConcurrentHashSet<>();
+        Set<GridCacheVersion> replTxVers = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<?> partFut = multithreadedAsync(() -> {
             try {
-                checkTransactionsCount(
-                    orig, 0,
-                    failed, 0,
-                    backupNodes, 0,
-                    nearNodes, 0,
-                    vers);
+                int idx = partKeyIdx.getAndIncrement();
 
                 Transaction tx = orig.transactions().txStart();
 
-                vers.add(((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion());
+                partTxVers.add(((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion());
 
-                checkTransactionsCount(
-                    orig, 1,
-                    failed, 0,
-                    backupNodes, 0,
-                    nearNodes, 0,
-                    vers);
+                int key = partKeys.get(idx);
 
-                orig.getOrCreateCache(PART_CACHE_NAME).put(partKey, 42);
-
-                checkTransactionsCount(
-                    orig, 1,
-                    failed, 1,
-                    backupNodes, 0,
-                    nearNodes, 0,
-                    vers);
+                orig.getOrCreateCache(PART_CACHE_NAME).put(key, key);
 
                 ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
-
-                checkTransactionsCount(
-                    orig, 1,
-                    failed, 1,
-                    backupNodes, 1,
-                    nearNodes, 0,
-                    vers);
 
                 partPreparedLatch.countDown();
 
@@ -184,51 +258,21 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             catch (Exception e) {
                 fail("Should not happen [exception=" + e + "]");
             }
-        }, 1);
-
-        AtomicReference<GridCacheVersion> replTxVer = new AtomicReference<>();
+        }, nodes);
 
         IgniteInternalFuture<?> replFut = multithreadedAsync(() -> {
             try {
-                partPreparedLatch.await(); // Waiting for partitioned cache tx preparation.
-
-                checkTransactionsCount(
-                    orig, 1,
-                    failed, 1,
-                    backupNodes, 1,
-                    nearNodes, 0,
-                    vers);
+                int idx = replKeyIdx.getAndIncrement();
 
                 Transaction tx = orig.transactions().txStart();
 
-                replTxVer.set(((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion());
+                replTxVers.add(((TransactionProxyImpl<?, ?>)tx).tx().nearXidVersion());
 
-                vers.add(replTxVer.get());
+                int key = replKeys.get(idx);
 
-                checkTransactionsCount(
-                    orig, 2,
-                    failed, 1,
-                    backupNodes, 1,
-                    nearNodes, 0,
-                    vers);
-
-                orig.getOrCreateCache(REPL_CACHE_NAME).put(replKey, 43);
-
-                checkTransactionsCount(
-                    orig, 2,
-                    failed, 2,
-                    backupNodes, 1,
-                    nearNodes, 0,
-                    vers);
+                orig.getOrCreateCache(REPL_CACHE_NAME).put(key, key);
 
                 ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
-
-                checkTransactionsCount(
-                    orig, 2,
-                    failed, 2,
-                    backupNodes, 2,
-                    nearNodes, 1,
-                    vers);
 
                 replPreparedLatch.countDown();
 
@@ -240,32 +284,47 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             catch (Exception e) {
                 fail("Should not happen [exception=" + e + "]");
             }
-        }, 1);
+        }, nodes);
 
         partPreparedLatch.await();
         replPreparedLatch.await();
 
         checkTransactionsCount(
-            orig, 2,
-            failed, 2,
-            backupNodes, 2,
-            nearNodes, 1,
-            vers);
+            orig, nodes,
+            brokenCellNodes, nodes / 2,
+            aliveCellNodes, nodes / 2,
+            partTxVers);
+
+        checkTransactionsCount(
+            orig, nodes,
+            brokenCellNodes, nodes,
+            aliveCellNodes, nodes,
+            replTxVers);
 
         assertFalse(lsnrAny.check());
 
-        listeningLog.registerListener(lsnrNear);
+        listeningLog.registerListener(lsnrAliveCell);
 
         failed.close(); // Stopping node.
 
         awaitForSwitchOnNodeLeft(failed);
 
+        // In case of originating node failed all alive primaries will recover (commit) txs on tx cordinator falure.
+        // Txs with failed primary will start recovery, but can't finish it since recovery messages are blocked.
+
+        // Broken cell's nodes will have 1 unrecovered tx for partitioned cache.
         checkTransactionsCount(
-            orig != failed ? orig : null /*stopped*/, 2 /* replicated + partitioned */,
-            null /*stopped*/, 0,
-            backupNodes, 2 /* replicated + partitioned */,
-            nearNodes, 1 /* replicated */,
-            vers);
+            orig != failed ? orig : null /*stopped*/, nodes,
+            brokenCellNodes, orig == failed ? 1 : nodes / 2,
+            aliveCellNodes, orig == failed ? 0 : nodes / 2,
+            partTxVers);
+
+        // All cell's nodes will have 1 unrecovered tx for replicated cache.
+        checkTransactionsCount(
+            orig != failed ? orig : null /*stopped*/, nodes,
+            brokenCellNodes, orig == failed ? 1 : nodes,
+            aliveCellNodes, orig == failed ? 1 : nodes,
+            replTxVers);
 
         BiConsumer<T2<Ignite, String>, T3<CountDownLatch, CountDownLatch, CountDownLatch>> txRun = // Counts tx's creations and preparations.
             (T2<Ignite, String> pair, T3</*create*/CountDownLatch, /*put*/CountDownLatch, /*commit*/CountDownLatch> latches) -> {
@@ -278,7 +337,8 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
                     try (Transaction tx = ignite.transactions().txStart()) {
                         latches.get1().countDown(); // Create.
 
-                        cache.put(primaryKeys(cache, 100).get(99), 2);
+                        // Avoiding intersection with prepared keys.
+                        cache.put(primaryKeys(cache, 1, 1_000).get(0), 42);
 
                         latches.get2().countDown(); // Put.
 
@@ -292,63 +352,69 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
                 }
             };
 
-        CountDownLatch replBackupCreateLatch = new CountDownLatch(backupNodes.size());
-        CountDownLatch replBackupPutLatch = new CountDownLatch(backupNodes.size());
-        CountDownLatch replBackupCommitLatch = new CountDownLatch(backupNodes.size());
-        CountDownLatch replNearCreateLatch = new CountDownLatch(nearNodes.size());
-        CountDownLatch replNearPutLatch = new CountDownLatch(nearNodes.size());
-        CountDownLatch replNearCommitLatch = new CountDownLatch(nearNodes.size());
+        CountDownLatch partBrokenCellCreateLatch = new CountDownLatch(brokenCellNodes.size());
+        CountDownLatch partBrokenCellPutLatch = new CountDownLatch(brokenCellNodes.size());
+        CountDownLatch partBrokenCellCommitLatch = new CountDownLatch(brokenCellNodes.size());
+        CountDownLatch partAliveCellCreateLatch = new CountDownLatch(aliveCellNodes.size());
+        CountDownLatch partAliveCellPutLatch = new CountDownLatch(aliveCellNodes.size());
+        CountDownLatch partAliveCellCommitLatch = new CountDownLatch(aliveCellNodes.size());
 
-        CountDownLatch partBackupCreateLatch = new CountDownLatch(backupNodes.size());
-        CountDownLatch partBackupPutLatch = new CountDownLatch(backupNodes.size());
-        CountDownLatch partBackupCommitLatch = new CountDownLatch(backupNodes.size());
-        CountDownLatch partNearCreateLatch = new CountDownLatch(nearNodes.size());
-        CountDownLatch partNearPutLatch = new CountDownLatch(nearNodes.size());
-        CountDownLatch partNearCommitLatch = new CountDownLatch(nearNodes.size());
+        CountDownLatch replBrokenCellCreateLatch = new CountDownLatch(brokenCellNodes.size());
+        CountDownLatch replBrokenCellPutLatch = new CountDownLatch(brokenCellNodes.size());
+        CountDownLatch replBrokenCellCommitLatch = new CountDownLatch(brokenCellNodes.size());
+        CountDownLatch replAliveCellCreateLatch = new CountDownLatch(aliveCellNodes.size());
+        CountDownLatch replAliveCellPutLatch = new CountDownLatch(aliveCellNodes.size());
+        CountDownLatch replAliveCellCommitLatch = new CountDownLatch(aliveCellNodes.size());
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (Ignite backup : backupNodes) {
+        for (Ignite brokenCellNode : brokenCellNodes) {
             futs.add(multithreadedAsync(() ->
-                txRun.accept(new T2<>(backup, REPL_CACHE_NAME),
-                    new T3<>(replBackupCreateLatch, replBackupPutLatch, replBackupCommitLatch)), 1));
+                txRun.accept(new T2<>(brokenCellNode, REPL_CACHE_NAME),
+                    new T3<>(replBrokenCellCreateLatch, replBrokenCellPutLatch, replBrokenCellCommitLatch)), 1));
             futs.add(multithreadedAsync(() ->
-                txRun.accept(new T2<>(backup, PART_CACHE_NAME),
-                    new T3<>(partBackupCreateLatch, partBackupPutLatch, partBackupCommitLatch)), 1));
+                txRun.accept(new T2<>(brokenCellNode, PART_CACHE_NAME),
+                    new T3<>(partBrokenCellCreateLatch, partBrokenCellPutLatch, partBrokenCellCommitLatch)), 1));
         }
 
-        for (Ignite near : nearNodes) {
+        for (Ignite aliveCellNode : aliveCellNodes) {
             futs.add(multithreadedAsync(() ->
-                txRun.accept(new T2<>(near, REPL_CACHE_NAME),
-                    new T3<>(replNearCreateLatch, replNearPutLatch, replNearCommitLatch)), 1));
+                txRun.accept(new T2<>(aliveCellNode, REPL_CACHE_NAME),
+                    new T3<>(replAliveCellCreateLatch, replAliveCellPutLatch, replAliveCellCommitLatch)), 1));
             futs.add(multithreadedAsync(() ->
-                txRun.accept(new T2<>(near, PART_CACHE_NAME),
-                    new T3<>(partNearCreateLatch, partNearPutLatch, partNearCommitLatch)), 1));
+                txRun.accept(new T2<>(aliveCellNode, PART_CACHE_NAME),
+                    new T3<>(partAliveCellCreateLatch, partAliveCellPutLatch, partAliveCellCommitLatch)), 1));
         }
 
         // Switch in progress cluster-wide.
+        // Alive nodes switch blocked until replicated caches recovery happen.
         checkUpcomingTransactionsState(
-            replBackupCreateLatch, 0, // Started.
-            replBackupPutLatch, backupNodes.size(),
-            replBackupCommitLatch, backupNodes.size(),
-            replNearCreateLatch, 0, // Started.
-            replNearPutLatch, nearNodes.size(),
-            replNearCommitLatch, nearNodes.size());
+            partBrokenCellCreateLatch, 0, // Started.
+            partBrokenCellPutLatch, brokenCellNodes.size(),
+            partBrokenCellCommitLatch, brokenCellNodes.size(),
+            partAliveCellCreateLatch, 0, // Started. Blocked by replicated cache recovery.
+            partAliveCellPutLatch, aliveCellNodes.size(),
+            partAliveCellCommitLatch, aliveCellNodes.size());
 
         checkUpcomingTransactionsState(
-            partBackupCreateLatch, 0, // Started.
-            partBackupPutLatch, backupNodes.size(),
-            partBackupCommitLatch, backupNodes.size(),
-            partNearCreateLatch, 0, // Started.
-            partNearPutLatch, nearNodes.size(),
-            partNearCommitLatch, nearNodes.size());
+            replBrokenCellCreateLatch, 0, // Started.
+            replBrokenCellPutLatch, brokenCellNodes.size(),
+            replBrokenCellCommitLatch, brokenCellNodes.size(),
+            replAliveCellCreateLatch, 0, // Started. Blocked by replicated cache recovery.
+            replAliveCellPutLatch, aliveCellNodes.size(),
+            replAliveCellCommitLatch, aliveCellNodes.size());
 
         checkTransactionsCount(
-            orig != failed ? orig : null, 2 /* replicated + partitioned */,
-            null, 0,
-            backupNodes, 2 /* replicated + partitioned */,
-            nearNodes, 1 /* replicated */,
-            vers);
+            orig != failed ? orig : null /*stopped*/, nodes,
+            brokenCellNodes, orig == failed ? 1 : nodes / 2,
+            aliveCellNodes, orig == failed ? 0 : nodes / 2,
+            partTxVers);
+
+        checkTransactionsCount(
+            orig != failed ? orig : null /*stopped*/, nodes,
+            brokenCellNodes, orig == failed ? 1 : nodes,
+            aliveCellNodes, orig == failed ? 1 : nodes,
+            replTxVers);
 
         // Replicated recovery.
         for (Ignite ignite : G.allGrids()) {
@@ -358,7 +424,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             spi.stopBlock(true, blockedMsg -> {
                 Message msg = blockedMsg.ioMessage().message();
 
-                return ((GridCacheTxRecoveryRequest)msg).nearXidVersion().equals(replTxVer.get());
+                return replTxVers.contains(((GridCacheTxRecoveryRequest)msg).nearXidVersion());
             });
         }
 
@@ -366,41 +432,51 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
         replFut.get();
 
         // Switch partially finished.
-        // Cell 1 (backups) still in switch.
-        // Cell 2 (near nodes) finished the switch.
+        // Broken cell still in switch.
+        // Alive cell finished the switch.
         checkUpcomingTransactionsState(
-            replBackupCreateLatch, 0, // Started.
-            replBackupPutLatch, backupNodes.size(),
-            replBackupCommitLatch, backupNodes.size(),
-            replNearCreateLatch, 0, // Started.
-            replNearPutLatch, 0, // Near nodes able to start transactions on primaries (Cell 2),
-            replNearCommitLatch, nearNodes.size()); // But not able to commit, since some backups (Cell 1) still in switch.
+            partBrokenCellCreateLatch, 0, // Started.
+            partBrokenCellPutLatch, brokenCellNodes.size(),
+            partBrokenCellCommitLatch, brokenCellNodes.size(),
+            partAliveCellCreateLatch, 0, // Started.
+            partAliveCellPutLatch, 0, // Alive cell nodes's able to start transactions on primaries,
+            partAliveCellCommitLatch, 0); // Able to commit, since all primaries and backups are inside the alive cell.
 
         checkUpcomingTransactionsState(
-            partBackupCreateLatch, 0, // Started.
-            partBackupPutLatch, backupNodes.size(),
-            partBackupCommitLatch, backupNodes.size(),
-            partNearCreateLatch, 0, // Started.
-            partNearPutLatch, 0, // Near nodes able to start transactions on primaries (Cell 2),
-            partNearCommitLatch, 0); // Able to commit, since all primaries and backups are in Cell 2.
+            replBrokenCellCreateLatch, 0, // Started.
+            replBrokenCellPutLatch, brokenCellNodes.size(),
+            replBrokenCellCommitLatch, brokenCellNodes.size(),
+            replAliveCellCreateLatch, 0, // Started.
+            replAliveCellPutLatch, 0, // Alive cell's nodes able to start transactions on primaries,
+            replAliveCellCommitLatch, aliveCellNodes.size()); // But not able to commit, since broken cell's nodes still in switch.
 
         checkTransactionsCount(
-            orig != failed ? orig : null, 1 /* partitioned */,
-            null, 0,
-            backupNodes, 1 /* partitioned */,
-            nearNodes, 0,
-            vers);
+            orig != failed ? orig : null /*stopped*/, nodes,
+            brokenCellNodes, orig == failed ? 1 : nodes / 2,
+            aliveCellNodes, orig == failed ? 0 : nodes / 2 /*to be committed*/, // New txs able to start while previous are in progress.
+            partTxVers);
 
-        assertTrue(waitForCondition(lsnrNear::check, 5000));
+        checkTransactionsCount(
+            orig != failed ? orig : null /*stopped*/, 0,
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            replTxVers);
 
-        listeningLog.registerListener(lsnrBackup);
+        // Recovery finished on alive cell.
+        assertTrue(waitForCondition(lsnrAliveCell::check, 5000));
+
+        listeningLog.registerListener(lsnrBrokenCell);
 
         // Partitioned recovery.
         for (Ignite ignite : G.allGrids()) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-            spi.stopBlock(true, blockedMsg -> true);
+            spi.stopBlock(true, blockedMsg -> {
+                Message msg = blockedMsg.ioMessage().message();
+
+                return partTxVers.contains(((GridCacheTxRecoveryRequest)msg).nearXidVersion());
+            });
         }
 
         partCommitLatch.countDown();
@@ -408,79 +484,87 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         // Switches finished cluster-wide, all transactions can be committed.
         checkUpcomingTransactionsState(
-            replBackupCreateLatch, 0,
-            replBackupPutLatch, 0,
-            replBackupCommitLatch, 0,
-            replNearCreateLatch, 0,
-            replNearPutLatch, 0,
-            replNearCommitLatch, 0);
+            replBrokenCellCreateLatch, 0,
+            replBrokenCellPutLatch, 0,
+            replBrokenCellCommitLatch, 0,
+            replAliveCellCreateLatch, 0,
+            replAliveCellPutLatch, 0,
+            replAliveCellCommitLatch, 0);
 
         checkUpcomingTransactionsState(
-            partBackupCreateLatch, 0,
-            partBackupPutLatch, 0,
-            partBackupCommitLatch, 0,
-            partNearCreateLatch, 0,
-            partNearPutLatch, 0,
-            partNearCommitLatch, 0);
+            partBrokenCellCreateLatch, 0,
+            partBrokenCellPutLatch, 0,
+            partBrokenCellCommitLatch, 0,
+            partAliveCellCreateLatch, 0,
+            partAliveCellPutLatch, 0,
+            partAliveCellCommitLatch, 0);
 
         // Check that pre-failure transactions are absent.
         checkTransactionsCount(
-            orig != failed ? orig : null, 0,
-            null, 0,
-            backupNodes, 0,
-            nearNodes, 0,
-            vers);
+            orig != failed ? orig : null /*stopped*/, 0,
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            partTxVers);
 
-        assertTrue(waitForCondition(lsnrBackup::check, 5000));
+        checkTransactionsCount(
+            orig != failed ? orig : null /*stopped*/, 0,
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            replTxVers);
+
+        // Recovery finished on broken cell.
+        assertTrue(waitForCondition(lsnrBrokenCell::check, 5000));
 
         for (IgniteInternalFuture<?> fut : futs)
             fut.get();
 
         for (Ignite node : G.allGrids()) {
-            assertEquals(42, node.getOrCreateCache(PART_CACHE_NAME).get(partKey));
-            assertEquals(43, node.getOrCreateCache(REPL_CACHE_NAME).get(replKey));
+            for (int key : partKeys)
+                assertEquals(key, node.getOrCreateCache(PART_CACHE_NAME).get(key));
+
+            for (int key : replKeys)
+                assertEquals(key, node.getOrCreateCache(REPL_CACHE_NAME).get(key));
         }
 
         // Final check that any transactions are absent.
         checkTransactionsCount(
             null, 0,
-            null, 0,
-            backupNodes, 0,
-            nearNodes, 0,
-            null);
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            null /*any*/);
     }
 
     /**
      *
      */
     private void checkUpcomingTransactionsState(
-        CountDownLatch backupCreateLatch,
-        int backupCreateCnt,
-        CountDownLatch backupPutLatch,
-        int backupPutCnt,
-        CountDownLatch backupCommitLatch,
-        int backupCommitCnt,
-        CountDownLatch nearCreateLatch,
-        int nearCreateCnt,
-        CountDownLatch nearPutLatch,
-        int nearPutCnt,
-        CountDownLatch nearCommitLatch,
-        int nearCommitCnt) throws InterruptedException {
-        checkTransactionsState(backupCreateLatch, backupCreateCnt);
-        checkTransactionsState(backupPutLatch, backupPutCnt);
-        checkTransactionsState(backupCommitLatch, backupCommitCnt);
-        checkTransactionsState(nearCreateLatch, nearCreateCnt);
-        checkTransactionsState(nearPutLatch, nearPutCnt);
-        checkTransactionsState(nearCommitLatch, nearCommitCnt);
+        CountDownLatch brokenCellCreateLatch,
+        int brokenCellCreateCnt,
+        CountDownLatch brokenCellPutLatch,
+        int brokenCellPutCnt,
+        CountDownLatch brokenCellCommitLatch,
+        int brokenCellCommitCnt,
+        CountDownLatch aliveCellCreateLatch,
+        int aliveCellCreateCnt,
+        CountDownLatch aliveCellPutLatch,
+        int aliveCellPutCnt,
+        CountDownLatch aliveCellCommitLatch,
+        int aliveCellCommitCnt) throws InterruptedException {
+        checkTransactionsState(brokenCellCreateLatch, brokenCellCreateCnt);
+        checkTransactionsState(brokenCellPutLatch, brokenCellPutCnt);
+        checkTransactionsState(brokenCellCommitLatch, brokenCellCommitCnt);
+        checkTransactionsState(aliveCellCreateLatch, aliveCellCreateCnt);
+        checkTransactionsState(aliveCellPutLatch, aliveCellPutCnt);
+        checkTransactionsState(aliveCellCommitLatch, aliveCellCommitCnt);
     }
 
     /**
      *
      */
     private void checkTransactionsState(CountDownLatch latch, int cnt) throws InterruptedException {
-        if (cnt > 0)
-            assertEquals(cnt, latch.getCount()); // Switch in progress.
-        else
-            latch.await(); // Switch finished (finishing).
+        if (cnt == 0)
+            latch.await(10, TimeUnit.SECONDS); // Switch finished (finishing).
+
+        assertEquals(cnt, latch.getCount()); // Switch in progress.
     }
 }

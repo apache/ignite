@@ -112,7 +112,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -918,11 +917,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param topVer Topology version.
      * @param node Failed node.
-     * @param filter Recovery filter.
      * @return Future that will be completed when all affected transactions are recovered.
      */
-    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node,
-        IgnitePredicate<IgniteInternalTx> filter) {
+    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
 
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
@@ -939,11 +936,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
+            if (tx.state() == PREPARED /* recovery may be needed */
+                // (primary (not on originating) or backup) || (primary on originating).
+                && (tx.dht() || (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped()))
+                && tx.transactionNodes().containsKey(node.id()) /* one of tx's primaries is failed */) {
                 assert needWaitTransaction(tx, topVer);
 
-                if (filter == null || filter.apply(tx))
-                    res.add(tx.finishFuture());
+                res.add(tx.finishFuture());
             }
         }
 
@@ -2470,26 +2469,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else if (!tx.local())
-            // remote (backup) transaction sends partition counters to other backup transaction on recovery rollback
-            // in order to keep counters consistent
-            neighborcastPartitionCountersAndRollback(tx);
-        else
-            tx.rollbackAsync();
-    }
+        else if (!tx.local()) {
+            // This tx was rolled back on recovery because of primary node fail, other backups may be not aware of it.
+            TxCounters cnts = tx.txCounters(false);
 
-    /** */
-    private void neighborcastPartitionCountersAndRollback(IgniteInternalTx tx) {
-        TxCounters txCounters = tx.txCounters(false);
+            if (cnts != null)
+                // Skipping counters update to keep them the same everywhere without any sync.
+                // Tx counters will be finalized (gaps removed) on local txs recovery finish.
+                // Each node will have counters equals to latest successful transactions counters.
+                cnts.updateCounters().clear();
+        }
 
-        if (txCounters == null || txCounters.updateCounters() == null)
-            tx.rollbackAsync();
-
-        PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(tx, cctx);
-
-        fut.listen(fut0 -> tx.rollbackAsync());
-
-        fut.init();
+        tx.rollbackAsync();
     }
 
     /**
