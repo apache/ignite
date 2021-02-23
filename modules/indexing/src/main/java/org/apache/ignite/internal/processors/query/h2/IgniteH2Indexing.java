@@ -714,7 +714,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(
-            GridSqlElement.INCL_SENS ? qry : sqlWithoutConst(dml.statement()),
+            GridSqlElement.INCLUDE_SENSITIVE ? qry : sqlWithoutConst(dml.statement()),
             GridCacheQueryType.SQL_FIELDS,
             schemaName,
             true,
@@ -1576,7 +1576,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         @Nullable GridSqlStatement stmnt
     ) {
-        String qry = GridSqlElement.INCL_SENS || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
+        String qry = GridSqlElement.INCLUDE_SENSITIVE || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
 
         Long res = runningQryMgr.register(
             qry,
@@ -1604,13 +1604,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @see GridSqlConst#getSQL()
      */
     private String sqlWithoutConst(GridSqlStatement stmnt) {
-        GridSqlElement.INCL_SENS_TL.set(false);
+        GridSqlElement.INCLUDE_SENSITIVE_TL.set(false);
 
         try {
             return stmnt.getSQL();
         }
         finally {
-            GridSqlElement.INCL_SENS_TL.set(true);
+            GridSqlElement.INCLUDE_SENSITIVE_TL.set(true);
         }
     }
 
