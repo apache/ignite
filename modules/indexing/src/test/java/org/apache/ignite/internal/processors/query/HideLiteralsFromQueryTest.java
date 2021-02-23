@@ -47,8 +47,13 @@ public class HideLiteralsFromQueryTest extends AbstractIndexingCommonTest {
         List<IgniteBiTuple<String, String>> qries = Arrays.asList(
             F.t("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null),
 
+            F.t("CREATE TABLE TST2(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null),
+
             F.t("INSERT INTO TST(id, name, age) VALUES(1, 'John Connor', 16)",
                 "INSERT INTO PUBLIC.TST( ID, NAME, AGE ) VALUES (?, ?, ?)"),
+
+            F.t("INSERT INTO TST SELECT id, name, age FROM TST2 WHERE name = 'John Connor'",
+                "INSERT INTO PUBLIC.TST( ID, NAME, AGE )  SELECT ID, NAME, AGE FROM PUBLIC.TST2 WHERE NAME = ?"),
 
             F.t("UPDATE TST SET name = 'Sarah Connor' WHERE id = 1",
                 "UPDATE PUBLIC.TST SET NAME = ? WHERE ID = ?"),
@@ -62,8 +67,13 @@ public class HideLiteralsFromQueryTest extends AbstractIndexingCommonTest {
             F.t("SELECT * FROM TST WHERE name = SUBSTR('Sarah Connor', 0, 2)",
                 "SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 WHERE __Z0.NAME = ?"),
 
-            F.t("SELECT * FROM TST GROUP BY id HAVING name = 'XXX'",
+            F.t("SELECT * FROM TST GROUP BY id HAVING name = 'X'",
                 "SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 GROUP BY __Z0.ID HAVING __Z0.NAME = ?"),
+
+            F.t("SELECT * FROM TST GROUP BY id HAVING name = 'X' UNION SELECT * FROM TST GROUP BY id HAVING name = 'Y'",
+                "(SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 GROUP BY __Z0.ID HAVING __Z0.NAME = ?)" +
+                    " UNION " +
+                    "(SELECT __Z1.ID, __Z1.NAME, __Z1.AGE FROM PUBLIC.TST __Z1 GROUP BY __Z1.ID HAVING __Z1.NAME = ?)"),
 
             F.t("SELECT CONCAT(name, 'xxx') FROM TST",
                 "SELECT CONCAT(__Z0.NAME, ?) FROM PUBLIC.TST __Z0"),
