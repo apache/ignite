@@ -144,10 +144,8 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
      * @param buff Statement builder.
      */
     protected void getSortLimitSQL(StatementBuilder buff) {
-        char delim = delimeter();
-
         if (!sort.isEmpty()) {
-            buff.append(delim).append("ORDER BY ");
+            buff.append(delimeter()).append("ORDER BY ");
 
             int visibleCols = visibleColumns();
 

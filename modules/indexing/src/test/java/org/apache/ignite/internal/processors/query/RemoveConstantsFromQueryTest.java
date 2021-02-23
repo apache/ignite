@@ -36,10 +36,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  * Tests check that with {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} == false literals from query
  * will be deleted from query before logging it to history, events, profiling tool.
  */
-public class HideLiteralsFromQueryTest extends AbstractIndexingCommonTest {
+public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
     @Test
     @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
-    public void testIoStatisticsViews() throws Exception {
+    public void testConstantRemoved() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);

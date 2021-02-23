@@ -210,7 +210,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
@@ -234,7 +233,6 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_DML_QRY
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_OPEN;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_EXECUTE;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -246,10 +244,6 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * For each table it will create indexes declared in {@link GridQueryTypeDescriptor#indexes()}.
  */
 public class IgniteH2Indexing implements GridQueryIndexing {
-    /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
-    private static final boolean INCL_SENS =
-        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
-
     /*
      * Register IO for indexes.
      */
@@ -720,7 +714,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(
-            INCL_SENS ? qry : sqlWithoutConst(dml.statement()),
+            GridSqlElement.INCL_SENS ? qry : sqlWithoutConst(dml.statement()),
             GridCacheQueryType.SQL_FIELDS,
             schemaName,
             true,
@@ -1582,7 +1576,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         @Nullable GridSqlStatement stmnt
     ) {
-        String qry = !INCL_SENS && stmnt != null ? sqlWithoutConst(stmnt) : qryDesc.sql();
+        String qry = GridSqlElement.INCL_SENS || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
 
         Long res = runningQryMgr.register(
             qry,

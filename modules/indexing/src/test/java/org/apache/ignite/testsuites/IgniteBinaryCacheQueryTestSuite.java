@@ -193,7 +193,7 @@ import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpda
 import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.query.HideLiteralsFromQueryTest;
+import org.apache.ignite.internal.processors.query.RemoveConstantsFromQueryTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOffTest;
@@ -629,7 +629,7 @@ import org.junit.runners.Suite;
     //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
-    HideLiteralsFromQueryTest.class,
+    RemoveConstantsFromQueryTest.class,
 
     SqlIncompatibleDataTypeExceptionTest.class,
 
