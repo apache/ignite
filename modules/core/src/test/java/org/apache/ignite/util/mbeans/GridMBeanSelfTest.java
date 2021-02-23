@@ -192,7 +192,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests correct MBean interface.
+     * Test MBean interface creation
      *
      * @throws Exception Thrown if test fails.
      */

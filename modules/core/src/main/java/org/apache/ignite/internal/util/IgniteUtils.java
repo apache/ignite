@@ -4765,7 +4765,13 @@ public abstract class IgniteUtils {
         return new ObjectName(sb.toString());
     }
 
-    public static @Nullable String getInstanceNameFromContext(GridKernalContext ctx){
+    /**
+     * Get String name of instance from GridKernakContext.
+     *
+     * @param ctx Ignte kernal context.
+     * @return value for instance name..
+     */
+    public static @Nullable String getInstanceNameFromContext(GridKernalContext ctx) {
         Object igniteInstanceName = null;
         if (ctx != null) {
              igniteInstanceName = ctx.igniteInstanceName();
