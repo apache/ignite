@@ -41,7 +41,7 @@ import org.junit.Test;
  */
 public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFreeCellularSwitchAbstractTest {
     /**
-     *
+     * Test checks that partition counters are the same across the cluster after the partial prepared txs rollback.
      */
     @Test
     public void testPartitionCountersSynchronizationOnPmeFreeSwitch() throws Exception {
@@ -64,7 +64,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
 
         int part = -1;
 
-        do {
+        do { // Getting keys related to the primary partition on failed node.
             keys = partitionKeys(failed.getOrCreateCache(PART_CACHE_NAME), ++part, 40, 0);
         }
         while (!(failed.equals(primaryNode(keys.get(0), PART_CACHE_NAME))));
@@ -121,7 +121,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
                 assertEquals(null, cache.get(key)); // Rolled back due to partial preparation. Cnts 30 - 40.
         }
 
-        // Finalized to last update. Gaps (11-20) filled. Tail (30-40) dropped.
+        // Finalized to last update. Gaps (11-20) filled. Gaps tail (30-40) dropped.
         assertCountersAsExpected(part, true, PART_CACHE_NAME, 30, 30);
 
         assertPartitionsSame(idleVerify(aliveCellNodes.get(0), PART_CACHE_NAME));
@@ -165,6 +165,7 @@ public class GridExchangeFreeCellularSwitchTxCountersTest extends GridExchangeFr
         CountDownLatch prepMsgLatch = new CountDownLatch(2 /*one per node*/);
         AtomicInteger blockedMsgCnt = new AtomicInteger();
 
+        // Blocking messages to have tx partially prepared.
         blockPrepareMessages(blockedBackup, prepMsgLatch, blockedMsgCnt);
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
