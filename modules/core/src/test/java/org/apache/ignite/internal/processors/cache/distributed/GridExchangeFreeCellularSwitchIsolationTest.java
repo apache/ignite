@@ -186,7 +186,8 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
     }
 
     /**
-     *
+     * Test checks than non-affected nodes (alive cells) finishes the switch asap,
+     * that they wait only for the recovery related to these nodes (eg. replicated caches recovery that affects every node).
      */
     @Test
     public void testOnlyAffectedNodesWaitForRecovery() throws Exception {
@@ -310,14 +311,15 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
 
         // In case of originating node failed all alive primaries will recover (commit) txs on tx cordinator falure.
         // Txs with failed primary will start recovery, but can't finish it since recovery messages are blocked.
-        // Broken cell's nodes will have 1 unrecovered tx for partitioned cache,
-        // All cell's nodes will have 1 unrecovered tx for replicated cache.
+
+        // Broken cell's nodes will have 1 unrecovered tx for partitioned cache.
         checkTransactionsCount(
             orig != failed ? orig : null /*stopped*/, nodes,
             brokenCellNodes, orig == failed ? 1 : nodes / 2,
             aliveCellNodes, orig == failed ? 0 : nodes / 2,
             partTxVers);
 
+        // All cell's nodes will have 1 unrecovered tx for replicated cache.
         checkTransactionsCount(
             orig != failed ? orig : null /*stopped*/, nodes,
             brokenCellNodes, orig == failed ? 1 : nodes,
@@ -385,11 +387,12 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
         }
 
         // Switch in progress cluster-wide.
+        // Alive nodes switch blocked until replicated caches recovery happen.
         checkUpcomingTransactionsState(
             partBrokenCellCreateLatch, 0, // Started.
             partBrokenCellPutLatch, brokenCellNodes.size(),
             partBrokenCellCommitLatch, brokenCellNodes.size(),
-            partAliveCellCreateLatch, 0, // Started.
+            partAliveCellCreateLatch, 0, // Started. Blocked by replicated cache recovery.
             partAliveCellPutLatch, aliveCellNodes.size(),
             partAliveCellCommitLatch, aliveCellNodes.size());
 
@@ -397,7 +400,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             replBrokenCellCreateLatch, 0, // Started.
             replBrokenCellPutLatch, brokenCellNodes.size(),
             replBrokenCellCommitLatch, brokenCellNodes.size(),
-            replAliveCellCreateLatch, 0, // Started.
+            replAliveCellCreateLatch, 0, // Started. Blocked by replicated cache recovery.
             replAliveCellPutLatch, aliveCellNodes.size(),
             replAliveCellCommitLatch, aliveCellNodes.size());
 
@@ -437,7 +440,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             partBrokenCellCommitLatch, brokenCellNodes.size(),
             partAliveCellCreateLatch, 0, // Started.
             partAliveCellPutLatch, 0, // Alive cell nodes's able to start transactions on primaries,
-            partAliveCellCommitLatch, 0); // Able to commit, since all primaries and backups are in alive cell.
+            partAliveCellCommitLatch, 0); // Able to commit, since all primaries and backups are inside the alive cell.
 
         checkUpcomingTransactionsState(
             replBrokenCellCreateLatch, 0, // Started.
@@ -450,7 +453,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
         checkTransactionsCount(
             orig != failed ? orig : null /*stopped*/, nodes,
             brokenCellNodes, orig == failed ? 1 : nodes / 2,
-            aliveCellNodes, orig == failed ? 0 : nodes / 2,
+            aliveCellNodes, orig == failed ? 0 : nodes / 2 /*to be committed*/, // New txs able to start while previous are in progress.
             partTxVers);
 
         checkTransactionsCount(
@@ -459,6 +462,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             aliveCellNodes, 0,
             replTxVers);
 
+        // Recovery finished on alive cell.
         assertTrue(waitForCondition(lsnrAliveCell::check, 5000));
 
         listeningLog.registerListener(lsnrBrokenCell);
@@ -508,6 +512,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             aliveCellNodes, 0,
             replTxVers);
 
+        // Recovery finished on broken cell.
         assertTrue(waitForCondition(lsnrBrokenCell::check, 5000));
 
         for (IgniteInternalFuture<?> fut : futs)
