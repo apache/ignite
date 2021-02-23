@@ -600,7 +600,7 @@ public final class DmlAstUtils {
         else if (from instanceof GridSqlFunction)
             return false;
 
-        throw new IllegalStateException(from.getClass().getName() + " : " + from.toString());
+        throw new IllegalStateException(from.getClass().getName() + " : " + from);
     }
 
     /**

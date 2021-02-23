@@ -114,7 +114,7 @@ public final class UpdatePlanBuilder {
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
             return planForUpdate(planKey, stmt, idx, mvccEnabled, log);
         else
-            throw new IgniteSQLException("Unsupported operation: " + stmt.toString(),
+            throw new IgniteSQLException("Unsupported operation: " + stmt,
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
