@@ -202,7 +202,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
@@ -1610,7 +1609,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return SQL query where constant replaced with '?' char.
      * @see GridSqlConst#getSQL()
      */
-    private String sqlWithoutConst(@NotNull GridSqlStatement stmnt) {
+    private String sqlWithoutConst(GridSqlStatement stmnt) {
         GridSqlElement.INCL_SENS_TL.set(false);
 
         try {
