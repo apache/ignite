@@ -58,8 +58,8 @@ public class GridSqlInsert extends GridSqlStatement {
 
         for (GridSqlColumn col : cols) {
             buff.appendExceptFirst(",");
-            buff.append(delim);
-            buff.append(col.getSQL());
+            buff.append(delim)
+                .append(col.getSQL());
         }
         buff.append(delim).append(")").append(delim);
 
