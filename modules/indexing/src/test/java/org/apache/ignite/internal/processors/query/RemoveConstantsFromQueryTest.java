@@ -142,28 +142,48 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             String expHist = qry.get2() == null ? qry.get1() : qry.get2();
             String qryFromEvt = lastQryFromEvt.get();
 
-            List<List<?>> hist = execSql(ignite, "SELECT sql FROM SYS.SQL_QUERIES_HISTORY ORDER BY LAST_START_TIME DESC LIMIT 1");
+            List<List<?>> hist = execSql(ignite, "SELECT SQL FROM SYS.SQL_QUERIES_HISTORY WHERE LAST_START_TIME = " +
+                "(SELECT MAX(LAST_START_TIME) FROM SYS.SQL_QUERIES_HISTORY)");
 
             assertNotNull(hist);
-            assertEquals(1, hist.size());
+            assertFalse(hist.isEmpty());
 
-            String qryFromHist = hist.get(0).get(0).toString();
+            boolean found = false;
 
-            if (qry.get2() != null) {
-                Pattern ptrn = Pattern.compile(qry.get2());
+            for (List<?> h : hist) {
+                String qryFromHist = h.get(0).toString();
 
-                assertTrue(qry.get2() + " should match " + qryFromHist, ptrn.matcher(qryFromHist).find());
-                assertTrue(qry.get2() + " should match " + qryFromEvt, ptrn.matcher(qryFromEvt).find());
+                if (qry.get2() != null) {
+                    Pattern ptrn = Pattern.compile(qry.get2());
+
+                    if (!ptrn.matcher(qryFromHist).find())
+                        continue;
+
+                    found = true;
+
+                    assertTrue(qry.get2() + " should match " + qryFromHist, ptrn.matcher(qryFromHist).find());
+                    assertTrue(qry.get2() + " should match " + qryFromEvt, ptrn.matcher(qryFromEvt).find());
+                }
+                else {
+                    if (!qryFromHist.equals(expHist))
+                        continue;
+
+                    found = true;
+
+                    assertEquals(qryFromHist, expHist);
+                    assertEquals(qryFromEvt, expHist);
+                }
+
+                if (qry.get3() != null) {
+                    assertFalse(qryFromHist.contains(qry.get3()));
+                    assertFalse(qryFromEvt.contains(qry.get3()));
+                }
+
+                if (found)
+                    break;
             }
-            else {
-                assertEquals(qryFromHist, expHist);
-                assertEquals(qryFromEvt, expHist);
-            }
 
-            if (qry.get3() != null) {
-                assertFalse(qryFromHist.contains(qry.get3()));
-                assertFalse(qryFromEvt.contains(qry.get3()));
-            }
+            assertTrue(found);
         }
 
         Set<String> qriesFromStats = new HashSet<>();
@@ -187,7 +207,8 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
         // so the sizes of two collection should be equal.
         assertEquals(qries.size(), qriesFromStats.size());
 
-        assertTrue(qriesFromStats.contains("SELECT SQL FROM SYS.SQL_QUERIES_HISTORY ORDER BY =LAST_START_TIME DESC LIMIT ?"));
+        assertTrue(qriesFromStats.contains("SELECT SQL FROM SYS.SQL_QUERIES_HISTORY WHERE LAST_START_TIME = " +
+            "(SELECT MAX(LAST_START_TIME) FROM SYS.SQL_QUERIES_HISTORY)"));
 
         for (GridTuple3<String, String, String> qry : qries) {
             boolean found = false;
