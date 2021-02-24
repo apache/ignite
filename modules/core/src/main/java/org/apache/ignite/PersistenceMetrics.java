@@ -22,7 +22,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 /**
  * Persistence metrics used to obtain statistics on persistence.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.datastorage" instead.
  */
 @Deprecated
 public interface PersistenceMetrics {
