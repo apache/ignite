@@ -673,8 +673,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         IgniteFuture<T> future = callable.call();
 
         future.listen(new IgniteInClosure<IgniteFuture<T>>() {
-            @Override
-            public void apply(IgniteFuture<T> IgniteFuture) {
+            @Override public void apply(IgniteFuture<T> IgniteFuture) {
                 if (IgniteFuture.isCancelled() || IgniteFuture.isDone()) {
                     release(numPermits);
                 }

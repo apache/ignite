@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
