@@ -1550,6 +1550,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testClientQueryExecutedEvents() throws Exception {
+        S.clearClassCache();
+
         doTestClientQueryExecutedEvents(false);
     }
 
