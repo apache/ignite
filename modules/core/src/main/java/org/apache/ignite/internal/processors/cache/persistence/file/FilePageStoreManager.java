@@ -180,7 +180,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * File IO factory for page store, by default is taken from {@link #dsCfg}.
-     * May be overriden by block read/write.
+     * May be overridden by block read/write.
      */
     private FileIOFactory pageStoreFileIoFactory;
 
@@ -680,7 +680,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param encrypted {@code true} if cache group encryption enabled.
      * @return Factory to create page stores.
      */
-    public FilePageStoreFactory getPageStoreFactory(int grpId, boolean encrypted) {
+    public FileVersionCheckingFactory getPageStoreFactory(int grpId, boolean encrypted) {
         FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
@@ -745,7 +745,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FilePageStoreFactory pageStoreFactory = getPageStoreFactory(grpId, encrypted);
+            FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(grpId, encrypted);
 
             PageStore idxStore =
                 pageStoreFactory.createPageStore(

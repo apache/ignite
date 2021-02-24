@@ -89,8 +89,8 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRowPersistenc
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -273,7 +273,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** Factory to create page store for restore. */
-    private volatile BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory;
+    private volatile BiFunction<Integer, Boolean, FileVersionCheckingFactory> storeFactory;
 
     /** Snapshot thread pool to perform local partition snapshots. */
     private ExecutorService snpRunner;
