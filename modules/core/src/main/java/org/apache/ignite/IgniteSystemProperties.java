@@ -493,7 +493,7 @@ public final class IgniteSystemProperties {
      * concurrency level for structure holding job metrics snapshots.
      * Default value is {@code 64}.
      *
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "compute.jobs" instead.
      */
     @Deprecated
     @SystemProperty(value = "Job metrics processor property defining concurrency level " +
