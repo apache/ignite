@@ -29,7 +29,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
  *
- * @deprecated Check the {@link JmxMetricExporterSpi} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} "cacheGroups.{cache_group_name}" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
