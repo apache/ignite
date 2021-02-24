@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  *
  */
 public class GroupKey {
+    /** */
+    public static final GroupKey EMPTY_GRP_KEY = new GroupKey(X.EMPTY_OBJECT_ARRAY);
+
     /** */
     private final Object[] fields;
 
