@@ -157,23 +157,13 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
 
                 initNode(ignite);
             }
-            else {
-                Ignite ignite = startGrid(1, verFormatted, this::processRemoteConfiguration, this::initNode);
-
-                proxy = IgniteProcessProxy.ignite(ignite.name());
-            }
+            else
+                startGrid(1, verFormatted, this::processRemoteConfiguration, this::initNode);
 
             testClient(verFormatted);
         }
         finally {
             stopAllGrids();
-
-            if (proxy != null) {
-                Process proc = proxy.getProcess().getProcess();
-
-                // We should wait until process exits, or it can affect next tests.
-                assertTrue(GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L));
-            }
         }
     }
 
