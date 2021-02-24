@@ -184,11 +184,6 @@ public class GridToStringBuilder {
         return Holder.INCL_SENS_SUP.get();
     }
 
-    /** Clears cache of the classes descriptions. */
-    public static void clearClassCache() {
-        classCache.clear();
-    }
-
     /**
      * @param obj Object.
      * @return Hexed identity hashcode.
