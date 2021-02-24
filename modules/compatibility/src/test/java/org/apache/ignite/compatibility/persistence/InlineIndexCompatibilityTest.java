@@ -36,10 +36,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -154,13 +151,13 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
      */
     protected void doTestStartupWithOldVersion(String igniteVer, PostStartupClosure closure) throws Exception {
         try {
-            IgniteEx ignite = startGrid(1, igniteVer,
+            startGrid(1, igniteVer,
                 new PersistenceBasicCompatibilityTest.ConfigurationClosure(true),
                 closure);
 
-            stopRemoteGrid(ignite);
+            stopAllGrids();
 
-            ignite = startGrid(0);
+            IgniteEx ignite = startGrid(0);
 
             assertEquals(1, ignite.context().discovery().topologyVersion());
 
@@ -171,18 +168,6 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         finally {
             stopAllGrids();
         }
-    }
-
-    /** */
-    private void stopRemoteGrid(Ignite ignite) throws IgniteInterruptedCheckedException {
-        IgniteProcessProxy proxy = IgniteProcessProxy.ignite(ignite.name());
-
-        stopAllGrids();
-
-        Process proc = proxy.getProcess().getProcess();
-
-        // We should wait until process exits, or it can affect next tests.
-        assertTrue(GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L));
     }
 
     /**
