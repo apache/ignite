@@ -114,7 +114,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     InlineIndexTree tree = new InlineIndexTree(
                         null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
                         cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, null, new NoopRowHandlerFactory(), null);
+                        rootPage, false, 0, true, null, new NoopRowHandlerFactory(), null);
 
                     trees0.add(tree);
                 }

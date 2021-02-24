@@ -240,7 +240,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         else if (row instanceof H2CacheRow)
             return new IndexRowImpl(rowHnd, (CacheDataRow) row);
-
         else
             return preparePlainIndexKey(row, rowHnd);
     }

@@ -22,7 +22,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 import org.h2.table.IndexColumn;
@@ -31,16 +34,19 @@ import org.h2.table.IndexColumn;
  * This class is entrypoint for creating geo spatial index.
  */
 public class GeoSpatialUtils {
+    /** Dummy key types. */
+    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings(true, true, true);
+
     /** */
     public static GridH2SpatialIndex createIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         try {
             IndexName name = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
 
-            QueryIndexKeyDefinitionProvider keyProvider = new QueryIndexKeyDefinitionProvider(tbl, cols);
+            List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(tbl, cols).get();
 
-            List<InlineIndexKeyType> idxKeyType = keyProvider.getTypes();
+            List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, DUMMY_SETTINGS);
 
-            QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyProvider.get(), idxKeyType);
+            QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyDefs, idxKeyTypes);
 
             final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
 

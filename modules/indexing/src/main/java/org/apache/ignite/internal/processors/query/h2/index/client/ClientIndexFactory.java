@@ -21,7 +21,10 @@ import java.util.List;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
@@ -33,6 +36,9 @@ public class ClientIndexFactory implements IndexFactory {
     /** Instance. */
     public static final ClientIndexFactory INSTANCE = new ClientIndexFactory();
 
+    /** Dummy key types. */
+    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings(true, true, true);
+
     /** Forbidden constructor. */
     private ClientIndexFactory() {}
 
@@ -40,8 +46,9 @@ public class ClientIndexFactory implements IndexFactory {
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
-        List<InlineIndexKeyType> keyTypes = new QueryIndexKeyDefinitionProvider(def.getTable(), def.getColumns())
-            .getTypes();
+        List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(def.getTable(), def.getColumns()).get();
+
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, DUMMY_SETTINGS);
 
         int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, def.getCfgInlineSize(), def.getMaxInlineSize());
 

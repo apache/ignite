@@ -21,11 +21,15 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
@@ -45,6 +49,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ObjectByt
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ObjectHashInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ShortInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.StringInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.StringNoCompareInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.TimeInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.TimestampInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.UuidInlineIndexKeyType;
@@ -65,6 +70,12 @@ public class InlineIndexKeyTypeRegistry {
     /** Object key type does not map to known java type. */
     private static final ObjectByteArrayInlineIndexKeyType legacyObjectType = new ObjectByteArrayInlineIndexKeyType();
 
+    /** Default String key type use optimized algorithm for comparison. */
+    private static final StringInlineIndexKeyType optimizedCompareStringType = new StringInlineIndexKeyType();
+
+    /** Do not compare inlined String keys. */
+    private static final StringNoCompareInlineIndexKeyType noCompareStringType = new StringNoCompareInlineIndexKeyType();
+
     static {
         register(IndexKeyTypes.BOOLEAN, new BooleanInlineIndexKeyType(), boolean.class, Boolean.class);
         register(IndexKeyTypes.BYTE, new ByteInlineIndexKeyType(), byte.class, Byte.class);
@@ -81,7 +92,6 @@ public class InlineIndexKeyTypeRegistry {
         register(IndexKeyTypes.TIMESTAMP, new LocalDateTimeInlineIndexKeyType(), LocalDateTime.class);
         register(IndexKeyTypes.TIMESTAMP, new TimestampInlineIndexKeyType(), Timestamp.class);
         register(IndexKeyTypes.BYTES, new BytesInlineIndexKeyType(), byte[].class);
-        register(IndexKeyTypes.STRING, new StringInlineIndexKeyType(), String.class);
         register(IndexKeyTypes.UUID, new UuidInlineIndexKeyType(), UUID.class);
     }
 
@@ -100,10 +110,17 @@ public class InlineIndexKeyTypeRegistry {
      * @param clazz Class of a key.
      * @param expType Expected type of a key.
      */
-    public static InlineIndexKeyType get(Class<?> clazz, int expType, boolean legacyObj) {
+    public static InlineIndexKeyType get(Class<?> clazz, int expType, IndexKeyTypeSettings keyTypeSettings) {
+        boolean legacyObj = !keyTypeSettings.inlineObjHash();
+        boolean optimizedCompareStr = keyTypeSettings.useStringOptimizedCompare();
+
         if (clazz == NullKey.class) {
             if (expType == IndexKeyTypes.JAVA_OBJECT)
                 return getJavaObjectType(legacyObj);
+
+            else if (expType == IndexKeyTypes.STRING)
+                return getStringType(optimizedCompareStr);
+
             else
                 // Actually it's wrong to get typeMapping due to collisions (Date, LocalDate classes map to single type).
                 // But the object is null and then it's safe to use it as no type-specific code will be executed.
@@ -125,6 +142,9 @@ public class InlineIndexKeyTypeRegistry {
         if (key != null && key.type() == IndexKeyTypes.JAVA_OBJECT)
             return getJavaObjectType(legacyObj);
 
+        if (key == null && expType == IndexKeyTypes.STRING)
+            return getStringType(legacyObj);
+
         return key;
     }
 
@@ -143,6 +163,13 @@ public class InlineIndexKeyTypeRegistry {
     }
 
     /**
+     * Get key type for a String type.
+     */
+    private static InlineIndexKeyType getStringType(boolean useOptimizedCompare) {
+        return useOptimizedCompare ? optimizedCompareStringType : noCompareStringType;
+    }
+
+    /**
      * Validates that specified type and specified class are the same InlineIndexKeyType.
      */
     public static boolean validate(int type, Class<?> clazz) {
@@ -152,11 +179,30 @@ public class InlineIndexKeyTypeRegistry {
         if (clazz == BinaryObjectImpl.class || clazz == JavaObjectKey.class)
             return type == IndexKeyTypes.JAVA_OBJECT;
 
+        if (clazz == String.class)
+            return type == IndexKeyTypes.STRING;
+
         InlineIndexKeyType key = classMapping.get(clazz);
 
         if (key == null)
             throw new IgniteException("There is no InlineIndexKey mapping for class " + clazz);
 
         return typeMapping.get(type).type() == key.type();
+    }
+
+    /**
+     * Return list of key types for specified key definitions and key type settings.
+     * */
+    public static List<InlineIndexKeyType> getTypes(List<IndexKeyDefinition> keyDefs, IndexKeyTypeSettings settings) {
+        List<InlineIndexKeyType> keyTypes = new ArrayList<>();
+
+        for (IndexKeyDefinition keyDef: keyDefs) {
+            if (!supportInline(keyDef.getIdxType()))
+                break;
+
+            keyTypes.add(get(keyDef.getIdxClass(), keyDef.getIdxType(), settings));
+        }
+
+        return keyTypes;
     }
 }

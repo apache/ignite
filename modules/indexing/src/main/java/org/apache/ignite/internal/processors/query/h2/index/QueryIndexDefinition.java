@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.index;
 import java.util.List;
 import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
+import org.h2.value.CompareMode;
 
 /**
  * Define H2 query index.
@@ -148,6 +150,11 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean useStrOptimizedCompare() {
+        return CompareMode.OFF.equals(table.getCompareMode().getName());
+    }
+
+    /** {@inheritDoc} */
     @Override public IndexName getIdxName() {
         return idxName;
     }
@@ -161,14 +168,14 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
      * This method should be invoked from row handler to finally configure definition.
      * In case of multiple segments within signle index it affects only once.
      */
-    public void setUpFlags(boolean useUnWrapPK, boolean inlineObjHash) {
+    public void setUpFlags(boolean useUnWrapPK, IndexKeyTypeSettings keyTypeSettings) {
         if (keyDefs == null) {
             if (useUnWrapPK)
                 keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).get();
             else
                 keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).get();
 
-            rowComparator = new H2RowComparator(table, inlineObjHash);
+            rowComparator = new H2RowComparator(table, keyTypeSettings);
         }
     }
 }

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.index.sorted.NullsOrder;
 import org.apache.ignite.cache.query.index.sorted.Order;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -45,10 +46,10 @@ public class QueryIndexKeyDefinitionProvider {
     private List<IndexKeyDefinition> keyDefs;
 
     /** */
-    public QueryIndexKeyDefinitionProvider(GridH2Table table, List<IndexColumn> h2IndexColumns) {
+    public QueryIndexKeyDefinitionProvider(GridH2Table table, List<IndexColumn> h2IdxColumns) {
         this.table = table;
         cacheDesc = table.rowDescriptor();
-        h2IdxColumns = h2IndexColumns;
+        this.h2IdxColumns = h2IdxColumns;
     }
 
     /**
@@ -73,7 +74,7 @@ public class QueryIndexKeyDefinitionProvider {
     /**
      * @return List of inlined index key types.
      */
-    public List<InlineIndexKeyType> getTypes() {
+    public List<InlineIndexKeyType> getTypes(IndexKeyTypeSettings keyTypeSettings) {
         List<InlineIndexKeyType> keyTypes = new ArrayList<>();
 
         for (IndexKeyDefinition keyDef: get()) {
@@ -81,7 +82,7 @@ public class QueryIndexKeyDefinitionProvider {
                 break;
 
             keyTypes.add(
-                InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType(), false));
+                InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType(), keyTypeSettings));
         }
 
         return keyTypes;

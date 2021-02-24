@@ -90,6 +90,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             oldIdx.inlineSize(),
+            def.useStrOptimizedCompare(),
             null,
             rowHndFactory,
             null

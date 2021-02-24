@@ -32,18 +32,11 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<String>
     protected static final Charset CHARSET = StandardCharsets.UTF_8;
 
     /** Whether respect case or not while comparing. */
-    private final boolean compareIgnoreCase;
+    private static final boolean compareIgnoreCase = false;
 
     /** Constructor. */
     public StringInlineIndexKeyType() {
-        this(IndexKeyTypes.STRING, false);
-    }
-
-    /** Constructor. */
-    protected StringInlineIndexKeyType(int keyType, boolean compareIgnoreCase) {
-        super(keyType, (short) -1);  // -1 means variable length.
-
-        this.compareIgnoreCase = compareIgnoreCase;
+        super(IndexKeyTypes.STRING, (short) -1);  // -1 means variable length.
     }
 
     /** {@inheritDoc} */

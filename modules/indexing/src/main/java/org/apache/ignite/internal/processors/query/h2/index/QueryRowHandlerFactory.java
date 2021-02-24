@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
@@ -34,24 +34,16 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     /** {@inheritDoc} */
     @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args) {
         boolean useUnwrappedPk = (boolean) args[0];
-        boolean inlineObjHash = (boolean) args[1];
+        IndexKeyTypeSettings keyTypeSettings = (IndexKeyTypeSettings) args[1];
 
         QueryIndexDefinition def = (QueryIndexDefinition) sdef;
-        def.setUpFlags(useUnwrappedPk, inlineObjHash);
+        def.setUpFlags(useUnwrappedPk, keyTypeSettings);
 
         List<IndexKeyDefinition> keyDefs = def.getIndexKeyDefinitions();
 
         List<IndexColumn> h2IdxColumns = useUnwrappedPk ? def.h2UnwrappedCols : def.h2WrappedCols;
 
-        List<InlineIndexKeyType> keyTypes = new ArrayList<>();
-
-        for (IndexKeyDefinition keyDef: keyDefs) {
-            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType()))
-                break;
-
-            keyTypes.add(
-                InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType(), !inlineObjHash));
-        }
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, keyTypeSettings);
 
         return new QueryIndexRowHandler(def.getTable(), h2IdxColumns, keyDefs, keyTypes);
     }

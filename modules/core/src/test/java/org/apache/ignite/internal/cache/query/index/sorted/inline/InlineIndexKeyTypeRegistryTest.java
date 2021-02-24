@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.junit.Test;
@@ -29,71 +30,93 @@ import org.junit.Test;
 /** */
 public class InlineIndexKeyTypeRegistryTest {
     /** */
+    private static final IndexKeyTypeSettings pojoHashKeyTypeSettings =
+        new IndexKeyTypeSettings(true, true, true);
+
+    /** */
+    private static final IndexKeyTypeSettings pojoArrayKeyTypeSettings =
+        new IndexKeyTypeSettings(false, true, true);
+
+    /** */
+    private static final IndexKeyTypeSettings strNoCompareKeyTypeSettings =
+        new IndexKeyTypeSettings(false, true, false);
+
+    /** */
     @Test
     public void testNulls() {
-        int t = InlineIndexKeyTypeRegistry.get(NullKey.class, IndexKeyTypes.INT, false).type();
+        int t = InlineIndexKeyTypeRegistry.get(NullKey.class, IndexKeyTypes.INT, pojoArrayKeyTypeSettings).type();
         assert t == IndexKeyTypes.INT;
 
-        t = InlineIndexKeyTypeRegistry.get(NullKey.class, IndexKeyTypes.JAVA_OBJECT, false).type();
+        t = InlineIndexKeyTypeRegistry.get(NullKey.class, IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings).type();
         assert t == IndexKeyTypes.JAVA_OBJECT;
 
-        t = InlineIndexKeyTypeRegistry.get(NullKey.class, IndexKeyTypes.JAVA_OBJECT, true).type();
+        t = InlineIndexKeyTypeRegistry.get(NullKey.class, IndexKeyTypes.JAVA_OBJECT, pojoHashKeyTypeSettings).type();
         assert t == IndexKeyTypes.JAVA_OBJECT;
     }
 
     /** */
     @Test
     public void testObjectCheck() {
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Integer.class, IndexKeyTypes.JAVA_OBJECT, false);
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Integer.class, IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.INT;
 
-        t = InlineIndexKeyTypeRegistry.get(BinaryObjectImpl.class, IndexKeyTypes.JAVA_OBJECT, false);
+        t = InlineIndexKeyTypeRegistry.get(BinaryObjectImpl.class, IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.JAVA_OBJECT;
 
-        t = InlineIndexKeyTypeRegistry.get(BinaryObjectImpl.class, IndexKeyTypes.INT, false);
+        t = InlineIndexKeyTypeRegistry.get(BinaryObjectImpl.class, IndexKeyTypes.INT, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.JAVA_OBJECT;
 
-        t = InlineIndexKeyTypeRegistry.get(Integer.class, IndexKeyTypes.JAVA_OBJECT, true);
+        t = InlineIndexKeyTypeRegistry.get(Integer.class, IndexKeyTypes.JAVA_OBJECT, pojoHashKeyTypeSettings);
         assert t.type() == IndexKeyTypes.INT;
     }
 
     /** */
     @Test
     public void testNonRegistredClass() {
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(InlineIndexKeyTypeRegistryTest.class, IndexKeyTypes.INT, false);
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(InlineIndexKeyTypeRegistryTest.class, IndexKeyTypes.INT, pojoArrayKeyTypeSettings);
         assert t == null;
     }
 
     /** */
     @Test
     public void testMismatchType() {
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Integer.class, 11, false);
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Integer.class, 11, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.INT;
     }
 
     /** */
     @Test
     public void testDateTypes() {
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Date.class, IndexKeyTypes.TIMESTAMP, false);
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(Date.class, IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.TIMESTAMP;
 
-        t = InlineIndexKeyTypeRegistry.get(LocalDateTime.class, IndexKeyTypes.TIMESTAMP, false);
+        t = InlineIndexKeyTypeRegistry.get(LocalDateTime.class, IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.TIMESTAMP;
 
-        t = InlineIndexKeyTypeRegistry.get(Timestamp.class, IndexKeyTypes.TIMESTAMP, false);
+        t = InlineIndexKeyTypeRegistry.get(Timestamp.class, IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.TIMESTAMP;
 
-        t = InlineIndexKeyTypeRegistry.get(java.sql.Date.class, IndexKeyTypes.TIMESTAMP, false);
+        t = InlineIndexKeyTypeRegistry.get(java.sql.Date.class, IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.DATE;
 
-        t = InlineIndexKeyTypeRegistry.get(LocalDate.class, IndexKeyTypes.TIMESTAMP, false);
+        t = InlineIndexKeyTypeRegistry.get(LocalDate.class, IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.DATE;
     }
 
     /** */
     @Test
     public void testPrimitiveTypes() {
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(int.class, IndexKeyTypes.INT, false);
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(int.class, IndexKeyTypes.INT, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.INT;
+    }
+
+    /** */
+    @Test
+    public void testStrings() {
+        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(String.class, IndexKeyTypes.STRING, pojoArrayKeyTypeSettings);
+        assert t.type() == IndexKeyTypes.STRING;
+
+        t = InlineIndexKeyTypeRegistry.get(String.class, IndexKeyTypes.STRING, strNoCompareKeyTypeSettings);
+        assert t.type() == IndexKeyTypes.STRING;
     }
 }

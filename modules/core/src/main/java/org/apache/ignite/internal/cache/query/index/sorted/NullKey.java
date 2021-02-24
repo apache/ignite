@@ -33,4 +33,12 @@ public class NullKey implements Comparable<Object> {
     @Override public int compareTo(@NotNull Object o) {
         return o == INSTANCE ? 0 : -1;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (!(o instanceof NullKey))
+            return false;
+
+        return compareTo(o) == 0;
+    }
 }

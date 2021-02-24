@@ -37,6 +37,9 @@ public interface SortedIndexDefinition extends IndexDefinition {
     /** Index row handler. */
     public InlineIndexRowHandlerFactory getRowHandlerFactory();
 
+    /** Whether to use optimized algorithm for String comparisom. */
+    public boolean useStrOptimizedCompare();
+
     /** Amount of index tree segments.*/
     public int getSegments();
 

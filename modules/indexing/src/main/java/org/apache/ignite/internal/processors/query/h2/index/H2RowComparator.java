@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
@@ -51,13 +52,13 @@ public class H2RowComparator implements IndexRowComparator {
     /** Ignite H2 session. */
     private final SessionInterface ses;
 
-    /** */
-    private final boolean inlineObjHash;
+    /** Key type settings for this index. */
+    private final IndexKeyTypeSettings keyTypeSettings;
 
     /** */
-    public H2RowComparator(GridH2Table table, boolean inlineObjHash) {
+    public H2RowComparator(GridH2Table table, IndexKeyTypeSettings keyTypeSettings) {
         this.table = table;
-        this.inlineObjHash = inlineObjHash;
+        this.keyTypeSettings = keyTypeSettings;
         coctx = table.rowDescriptor().context().cacheObjectContext();
         ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
     }
@@ -70,7 +71,7 @@ public class H2RowComparator implements IndexRowComparator {
         if (v == NullKey.INSTANCE)
             return 1;
 
-        int objType = InlineIndexKeyTypeRegistry.get(v.getClass(), curType, !inlineObjHash).type();
+        int objType = InlineIndexKeyTypeRegistry.get(v.getClass(), curType, keyTypeSettings).type();
 
         int highOrder = Value.getHigherOrder(curType, objType);
 
@@ -81,7 +82,7 @@ public class H2RowComparator implements IndexRowComparator {
 
             Object objHighOrder = va.getObject();
 
-            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder.getClass(), highOrder, !inlineObjHash);
+            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder.getClass(), highOrder, keyTypeSettings);
 
             // The only way to invoke inline comparation again.
             return ((NullableInlineIndexKeyType) highType).compare0(pageAddr, off, objHighOrder);
