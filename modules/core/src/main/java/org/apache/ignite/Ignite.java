@@ -690,7 +690,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
