@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
@@ -34,10 +35,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
@@ -64,51 +66,64 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         cleanPerformanceStatisticsDir();
 
         startCollectStatistics();
 
-        List<IgniteBiTuple<String, String>> qries = Arrays.asList(
-            F.t("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null),
+        String john = "John Connor";
+        String sarah = "Sarah Connor";
 
-            F.t("CREATE TABLE TST2(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null),
+        // SQL query, Regexp to find, Constant that should be removed.
+        List<GridTuple3<String, String, String>> qries = Arrays.asList(
+            F.t("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null, null),
 
-            F.t("INSERT INTO TST(id, name, age) VALUES(1, 'John Connor', 16)",
-                "INSERT INTO PUBLIC.TST( ID, NAME, AGE ) VALUES (?, ?, ?)"),
+            F.t("CREATE TABLE TST2(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null, null),
+
+            F.t("INSERT INTO TST(id, name, age) VALUES(1, '" + john + "', 16)",
+                "INSERT INTO PUBLIC.TST.*VALUES.*",
+                john),
 
             F.t("INSERT INTO TST SELECT id, name, age FROM TST2 WHERE name = 'John Connor'",
-                "INSERT INTO PUBLIC.TST( ID, NAME, AGE )  SELECT ID, NAME, AGE FROM PUBLIC.TST2 WHERE NAME = ?"),
+                "INSERT INTO PUBLIC.TST.*SELECT.*FROM PUBLIC.TST2 WHERE.*",
+                john),
 
-            F.t("UPDATE TST SET name = 'Sarah Connor' WHERE id = 1",
-                "UPDATE PUBLIC.TST SET NAME = ? WHERE ID = ?"),
+            F.t("UPDATE TST SET name = '" + sarah + "' WHERE id = 1",
+                "UPDATE PUBLIC.TST SET NAME.*WHERE ID.*",
+                sarah),
 
-            F.t("DELETE FROM TST WHERE name = 'Sarah Connor'",
-                "DELETE FROM PUBLIC.TST WHERE NAME = ?"),
+            F.t("DELETE FROM TST WHERE name = '" + sarah + "'",
+                "DELETE FROM PUBLIC.TST WHERE NAME = ?",
+                sarah),
 
-            F.t("SELECT * FROM TST WHERE name = 'Sarah Connor'",
-                "SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 WHERE __Z0.NAME = ?"),
+            F.t("SELECT * FROM TST WHERE name = '" + sarah + "'",
+                "SELECT .* FROM PUBLIC.TST.*WHERE .*NAME = ?",
+                sarah),
 
-            F.t("SELECT * FROM TST WHERE name = SUBSTR('Sarah Connor', 0, 2)",
-                "SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 WHERE __Z0.NAME = ?"),
+            F.t("SELECT * FROM TST WHERE name = SUBSTR('" + sarah + "', 0, 2)",
+                "SELECT .* FROM PUBLIC.TST.*WHERE .*NAME = ?",
+                sarah.substring(0, 2)),
 
-            F.t("SELECT * FROM TST GROUP BY id HAVING name = 'X'",
-                "SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 GROUP BY __Z0.ID HAVING __Z0.NAME = ?"),
+            F.t("SELECT * FROM TST GROUP BY id HAVING name = '" + john + "'",
+                "SELECT .* FROM PUBLIC.TST.*GROUP BY .*ID HAVING .*NAME = ?",
+                john),
 
-            F.t("SELECT * FROM TST GROUP BY id HAVING name = 'X' UNION SELECT * FROM TST GROUP BY id HAVING name = 'Y'",
-                "(SELECT __Z0.ID, __Z0.NAME, __Z0.AGE FROM PUBLIC.TST __Z0 GROUP BY __Z0.ID HAVING __Z0.NAME = ?)" +
-                    " UNION " +
-                    "(SELECT __Z1.ID, __Z1.NAME, __Z1.AGE FROM PUBLIC.TST __Z1 GROUP BY __Z1.ID HAVING __Z1.NAME = ?)"),
+            F.t("SELECT * FROM TST GROUP BY id HAVING name = '" + sarah + "' UNION " +
+                    "SELECT * FROM TST GROUP BY id HAVING name = '" + john + "'",
+                ".*SELECT .* FROM PUBLIC.TST .* GROUP BY .*ID HAVING .*NAME = ?.* UNION " +
+                    ".*SELECT .* FROM PUBLIC.TST .* GROUP BY .*ID HAVING .*NAME = ?.*",
+                sarah),
 
-            F.t("SELECT CONCAT(name, 'xxx') FROM TST",
-                "SELECT CONCAT(__Z0.NAME, ?) FROM PUBLIC.TST __Z0"),
+            F.t("SELECT CONCAT(name, '" + sarah + "') FROM TST",
+                "SELECT CONCAT(.*) FROM PUBLIC.TST",
+                sarah),
 
-            F.t("ALTER TABLE TST ADD COLUMN department VARCHAR(200)", null),
+            F.t("ALTER TABLE TST ADD COLUMN department VARCHAR(200)", null, null),
 
-            F.t("DROP TABLE TST", null),
+            F.t("DROP TABLE TST", null, null),
 
-            F.t("KILL SERVICE 'my_service'", null)
+            F.t("KILL SERVICE 'my_service'", null, null)
         );
 
         AtomicReference<String> lastQryFromEvt = new AtomicReference<>();
@@ -121,18 +136,34 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             return true;
         }, EventType.EVT_SQL_QUERY_EXECUTION);
 
-        for (IgniteBiTuple<String, String> qry : qries) {
+        for (GridTuple3<String, String, String> qry : qries) {
             execSql(ignite, qry.get1());
 
             String expHist = qry.get2() == null ? qry.get1() : qry.get2();
+            String qryFromEvt = lastQryFromEvt.get();
 
-            assertEquals(expHist, lastQryFromEvt.get());
-
-            List<List<?>> hist = execSql(ignite, "SELECT sql FROM SYS.SQL_QUERIES_HISTORY WHERE sql = ?", expHist);
+            List<List<?>> hist = execSql(ignite, "SELECT sql FROM SYS.SQL_QUERIES_HISTORY ORDER BY LAST_START_TIME DESC LIMIT 1");
 
             assertNotNull(hist);
             assertEquals(1, hist.size());
-            assertEquals(hist.get(0).get(0), expHist);
+
+            String qryFromHist = hist.get(0).get(0).toString();
+
+            if (qry.get2() != null) {
+                Pattern ptrn = Pattern.compile(qry.get2());
+
+                assertTrue(qry.get2() + " should match " + qryFromHist, ptrn.matcher(qryFromHist).find());
+                assertTrue(qry.get2() + " should match " + qryFromEvt, ptrn.matcher(qryFromEvt).find());
+            }
+            else {
+                assertEquals(qryFromHist, expHist);
+                assertEquals(qryFromEvt, expHist);
+            }
+
+            if (qry.get3() != null) {
+                assertFalse(qryFromHist.contains(qry.get3()));
+                assertFalse(qryFromEvt.contains(qry.get3()));
+            }
         }
 
         Set<String> qriesFromStats = new HashSet<>();
@@ -156,10 +187,27 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
         // so the sizes of two collection should be equal.
         assertEquals(qries.size(), qriesFromStats.size());
 
-        assertTrue(qriesFromStats.contains("SELECT SQL FROM SYS.SQL_QUERIES_HISTORY WHERE SQL = ?1"));
+        assertTrue(qriesFromStats.contains("SELECT SQL FROM SYS.SQL_QUERIES_HISTORY ORDER BY =LAST_START_TIME DESC LIMIT ?"));
 
-        for (IgniteBiTuple<String, String> qry : qries)
-            assertTrue(qriesFromStats.contains(qry.get2() == null ? qry.get1() : qry.get2()));
+        for (GridTuple3<String, String, String> qry : qries) {
+            boolean found = false;
+
+            for (String qryFromStat : qriesFromStats) {
+                if (qry.get2() != null) {
+                    if (!Pattern.compile(qry.get2()).matcher(qryFromStat).find())
+                        continue;
+                }
+                else if (!qryFromStat.equals(qry.get1()))
+                    continue;
+
+                found = qry.get3() == null || !qryFromStat.contains(qry.get3());
+
+                if (found)
+                    break;
+            }
+
+            assertTrue(qry.get1() + " should be in statistics", found);
+        }
     }
 
     /**
@@ -167,9 +215,8 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      * @param args Args.
      */
-    @SuppressWarnings("unchecked")
     private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
