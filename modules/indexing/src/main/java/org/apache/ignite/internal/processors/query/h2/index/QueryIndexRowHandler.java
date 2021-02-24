@@ -90,26 +90,17 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     }
 
     /** */
-    protected Object getKey(int idx, CacheDataRow row) {
+    private Object getKey(int idx, CacheDataRow row) {
         int cacheIdx = h2IdxColumns.get(idx).column.getColumnId();
 
-        switch (cacheIdx) {
-            case QueryUtils.KEY_COL:
-                return key(row);
+        if (cacheDesc.isKeyColumn(cacheIdx))
+            return key(row);
 
-            case QueryUtils.VAL_COL:
-                return value(row);
+        else if (cacheDesc.isValueColumn(cacheIdx))
+            return value(row);
 
-            default:
-                if (cacheDesc.isKeyAliasColumn(cacheIdx))
-                    return key(row);
-
-                else if (cacheDesc.isValueAliasColumn(cacheIdx))
-                    return value(row);
-
-                // columnValue ignores default columns (_KEY, _VAL), so make this shift.
-                return cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
-        }
+        // columnValue ignores default columns (_KEY, _VAL), so make this shift.
+        return cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
     }
 
     /** {@inheritDoc} */
