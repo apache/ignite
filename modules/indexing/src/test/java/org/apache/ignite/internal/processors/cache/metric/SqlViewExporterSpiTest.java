@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogram;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -1209,7 +1208,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(0, execute(ignite0,
             "SELECT * FROM SYS.PAGES_TIMESTAMP_HISTOGRAM WHERE DATA_REGION_NAME = ?", "in-memory").size());
 
-        assertEquals(PageTimestampHistogram.DFLT_BUCKETS_CNT + 1, execute(ignite0,
+        // There should be two buckets after start: empty "out of bounds" bucket and current bucket.
+        assertEquals(2, execute(ignite0,
             "SELECT * FROM SYS.PAGES_TIMESTAMP_HISTOGRAM WHERE DATA_REGION_NAME = ?", "persistent").size());
 
         Timestamp ts = new Timestamp(U.currentTimeMillis());

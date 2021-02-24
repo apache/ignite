@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteException;
@@ -41,6 +43,9 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
     /** Test time supplier. */
     private static final LongSupplier timeSupplier = curTime::get;
 
+    /** Histogram. */
+    PageTimestampHistogram histogram;
+
     /** */
     @BeforeClass
     public static void beforeClass() {
@@ -53,11 +58,16 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
         GridTestClockTimer.timeSupplier(GridTestClockTimer.DFLT_TIME_SUPPLIER);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        histogram = new PageTimestampHistogram();
+
+        super.beforeTest();
+    }
+
     /** */
     @Test
     public void testConcurrentUpdate() throws Exception {
-        PageTimestampHistogram histogram = new PageTimestampHistogram();
-
         long interval = histogram.bucketsInterval();
         int bucketsCnt = histogram.bucketsCount();
         int threadCnt = 20;
@@ -85,14 +95,12 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
             }
         }, threadCnt, "histogram-updater");
 
-        assertEquals(threadCnt * iterations, Arrays.stream(histogram.histogram().get2()).sum());
+        assertEquals(threadCnt * iterations, Arrays.stream(buckets()).sum());
     }
 
     /** */
     @Test
     public void testConcurrentHistogram() throws Exception {
-        PageTimestampHistogram histogram = new PageTimestampHistogram();
-
         long interval = histogram.bucketsInterval();
         int bucketsCnt = histogram.bucketsCount();
         int threadCnt = 20;
@@ -107,7 +115,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
                 histogram.increment(ts);
         }
 
-        assertEquals(valPerBucket * bucketsCnt, Arrays.stream(histogram.histogram().get2()).sum());
+        assertEquals(valPerBucket * bucketsCnt, Arrays.stream(buckets()).sum());
 
         GridTestUtils.runMultiThreaded(() -> {
             for (int i = 0; i < iterations; i++) {
@@ -118,21 +126,69 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
                     histogram.decrement(ts - j * interval);
                 }
 
-                long sum = Arrays.stream(histogram.histogram().get2()).sum();
+                long sum = Arrays.stream(buckets()).sum();
 
                 // Check that no buckets were lost during concurrent calculation.
                 assertTrue("Unexpected pages count " + sum, sum >= valPerBucket * bucketsCnt);
             }
         }, threadCnt, "histogram-updater");
 
-        assertEquals(valPerBucket * bucketsCnt, Arrays.stream(histogram.histogram().get2()).sum());
+        assertEquals(valPerBucket * bucketsCnt, Arrays.stream(buckets()).sum());
+    }
+
+    /** */
+    @Test
+    public void testConcurrentReinit() throws Exception {
+        long interval = histogram.bucketsInterval();
+        int bucketsCnt = histogram.bucketsCount();
+        int threadCnt = 20;
+        int valPerBucket = 1000;
+        int iterations = 1000;
+
+        // Initial fill.
+        for (int i = 0; i < bucketsCnt; i++) {
+            long ts = addCurrentTime(interval);
+
+            for (int j = 0; j < valPerBucket; j++)
+                histogram.increment(ts);
+        }
+
+        assertEquals(valPerBucket * bucketsCnt, Arrays.stream(buckets()).sum());
+
+        AtomicBoolean finished = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            Random rnd = new Random();
+            while (!finished.get()) {
+                histogram.reinit(interval / 2 + rnd.nextInt((int)interval),
+                    bucketsCnt / 2 + rnd.nextInt(bucketsCnt));
+            }
+        });
+
+        try {
+            GridTestUtils.runMultiThreaded(() -> {
+                for (int i = 0; i < iterations; i++) {
+                    long ts = addCurrentTime(interval);
+
+                    for (int j = 0; j < valPerBucket; j++) {
+                        histogram.increment(ts);
+                        histogram.decrement(ts - j * interval);
+                    }
+                }
+            }, threadCnt, "histogram-updater");
+        }
+        finally {
+            finished.set(true);
+        }
+
+        fut.get();
+
+        assertEquals(valPerBucket * bucketsCnt, Arrays.stream(buckets()).sum());
     }
 
     /** */
     @Test
     public void testConcurrentLowerBoundBucketUpdate() throws Exception {
-        PageTimestampHistogram histogram = new PageTimestampHistogram();
-
         long interval = histogram.bucketsInterval();
         int bucketsCnt = histogram.bucketsCount();
         int threadCnt = 20;
@@ -168,8 +224,8 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
         for (int i = 0; i < iterations; i++) {
             barrier.await(1, TimeUnit.SECONDS);
 
-            assertEquals(i * threadCnt, Arrays.stream(histogram.histogram().get2()).sum());
-            assertEquals(i * threadCnt, histogram.histogram().get2()[0]);
+            assertEquals(i * threadCnt, Arrays.stream(buckets()).sum());
+            assertEquals(i * threadCnt, bucket(0));
 
             barrier.await(1, TimeUnit.SECONDS);
 
@@ -178,7 +234,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
 
             addCurrentTime(interval);
 
-            long[] hist = histogram.histogram().get2();
+            long[] hist = buckets();
 
             assertTrue("Unexpected pages count " + hist[0] + ", expected between " + (i * threadCnt) + " and " +
                 (i + 1) * threadCnt, hist[0] >= i * threadCnt && hist[0] <= (i + 1) * threadCnt);
@@ -193,10 +249,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testShiftOneBucket() {
-        PageTimestampHistogram histogram = new PageTimestampHistogram();
-
         long interval = histogram.bucketsInterval();
-        int bucketsCnt = histogram.bucketsCount();
 
         long ts = histogram.startTs();
 
@@ -206,12 +259,12 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
         histogram.increment(ts + 1);
         histogram.increment(ts + interval - 1);
 
-        assertEquals(3, histogram.histogram().get2()[bucketsCnt - 1]);
+        assertEquals(3, bucket(-1));
 
         addCurrentTime(1);
 
-        assertEquals(0, histogram.histogram().get2()[bucketsCnt - 1]);
-        assertEquals(3, histogram.histogram().get2()[bucketsCnt - 2]);
+        assertEquals(0, bucket(-1));
+        assertEquals(3, bucket(-2));
 
         ts = curTime.get();
 
@@ -222,21 +275,19 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
         histogram.increment(ts + interval / 2);
         histogram.increment(ts + interval - 1);
 
-        assertEquals(4, histogram.histogram().get2()[bucketsCnt - 1]);
-        assertEquals(3, histogram.histogram().get2()[bucketsCnt - 2]);
+        assertEquals(4, bucket(-1));
+        assertEquals(3, bucket(-2));
 
         addCurrentTime(1);
 
-        assertEquals(0, histogram.histogram().get2()[bucketsCnt - 1]);
-        assertEquals(4, histogram.histogram().get2()[bucketsCnt - 2]);
-        assertEquals(3, histogram.histogram().get2()[bucketsCnt - 3]);
+        assertEquals(0, bucket(-1));
+        assertEquals(4, bucket(-2));
+        assertEquals(3, bucket(-3));
     }
 
     /** */
     @Test
     public void testShiftMoreThanOneBucket() {
-        PageTimestampHistogram histogram = new PageTimestampHistogram();
-
         long interval = histogram.bucketsInterval();
         int bucketsCnt = histogram.bucketsCount();
 
@@ -244,36 +295,52 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
 
         histogram.increment(ts);
 
-        assertEquals(1, histogram.histogram().get2()[bucketsCnt - 1]);
+        assertEquals(1, bucket(-1));
 
         ts = addCurrentTime(interval);
 
         histogram.increment(ts);
 
-        assertEquals(1, histogram.histogram().get2()[bucketsCnt - 1]);
-        assertEquals(1, histogram.histogram().get2()[bucketsCnt - 2]);
+        assertEquals(1, bucket(-1));
+        assertEquals(1, bucket(-2));
 
         ts = addCurrentTime(interval * (bucketsCnt - 2));
 
         histogram.increment(ts);
 
-        assertEquals(1, histogram.histogram().get2()[bucketsCnt - 1]);
-        assertEquals(1, histogram.histogram().get2()[1]);
-        assertEquals(1, histogram.histogram().get2()[0]);
+        assertEquals(1, bucket(-1));
+        assertEquals(1, bucket(1));
+        assertEquals(1, bucket(0));
 
         for (int i = -1; i <= 1; i++) {
             ts = addCurrentTime(interval * (bucketsCnt + i));
 
             histogram.increment(ts);
 
-            assertEquals(1, histogram.histogram().get2()[bucketsCnt - 1]);
-            assertEquals(4 + i, histogram.histogram().get2()[0]);
+            assertEquals(1, bucket(-1));
+            assertEquals(4 + i, bucket(0));
         }
 
         addCurrentTime(interval * bucketsCnt);
 
         // Check shift without modification.
-        assertEquals(6, histogram.histogram().get2()[0]);
+        assertEquals(6, bucket(0));
+    }
+
+    /**
+     * Gets bucket values of current histogram.
+     */
+    private long[] buckets() {
+        return histogram.histogram().get2();
+    }
+
+    /**
+     * @param idx Bucket index (if < 0 - index from the end).
+     */
+    private long bucket(int idx) {
+        long[] buckets = buckets();
+
+        return idx >= 0 ? buckets[idx] : buckets[buckets.length + idx];
     }
 
     /**

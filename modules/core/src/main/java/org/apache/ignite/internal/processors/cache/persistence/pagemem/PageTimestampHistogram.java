@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  * Histogram to show count of pages last accessed in each time interval.
  */
+@SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "NonAtomicOperationOnVolatileField"})
 public class PageTimestampHistogram {
     /** Default buckets interval in milliseconds. */
     public static final long DFLT_BUCKETS_INTERVAL = 60L * 60 * 1000; // 60 mins.
@@ -32,26 +33,29 @@ public class PageTimestampHistogram {
     /** Default buckets count. */
     public static final int DFLT_BUCKETS_CNT = 24;
 
-    /** Starting point for bucket index calculation. */
-    private final long startTs;
-
     /** Buckets interval in milliseconds. */
-    private final long bucketsInterval;
+    private long bucketsInterval;
 
     /** Buckets count. */
-    private final int bucketsCnt;
+    private int bucketsCnt;
 
-    /** Upper bound for values stored in buckets array (excluding). */
-    private volatile long upperBoundTs;
+    /** Starting point for bucket index calculation. */
+    private volatile long startTs;
 
     /** Lower bound for values stored in buckets array (including). */
     private volatile long lowerBoundTs;
 
+    /** Upper bound for values stored in buckets array (excluding). */
+    private volatile long upperBoundTs;
+
     /** Out of bounds bucket. Contain count of pages which have last access time beyond lowerBoundTs. */
     private final AtomicLong outOfBoundsBucket = new AtomicLong();
 
+    /** Time of histogram creation. */
+    private final long createTs = U.currentTimeMillis();
+
     /** Buckets holder. */
-    private final AtomicLongArray buckets;
+    private volatile AtomicLongArray buckets;
 
     /**
      * Default constructor.
@@ -65,13 +69,44 @@ public class PageTimestampHistogram {
      * @param bucketsCnt Buckets count.
      */
     PageTimestampHistogram(long bucketsInterval, int bucketsCnt) {
+        reinit(bucketsInterval, bucketsCnt);
+
+        // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
+        // reservation mainly affects only tests (we can check buckets more predictevely).
+        startTs -= 1000L;
+        lowerBoundTs = startTs;
+        upperBoundTs = startTs + bucketsInterval;
+    }
+
+    /**
+     * @param bucketsInterval Buckets interval.
+     * @param bucketsCnt Buckets count.
+     */
+    public synchronized void reinit(long bucketsInterval, int bucketsCnt) {
+        startTs = U.currentTimeMillis();
+        lowerBoundTs = startTs;
+        upperBoundTs = startTs + bucketsInterval;
+
         this.bucketsInterval = bucketsInterval;
         this.bucketsCnt = bucketsCnt + 1; // One extra (dummy) bucket is reserved to deal with races.
-        // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask.
-        startTs = U.currentTimeMillis() - 1000L;
-        upperBoundTs = startTs + bucketsInterval;
-        lowerBoundTs = upperBoundTs - bucketsCnt * bucketsInterval;
+
+        AtomicLongArray oldBuckets = buckets;
+
         buckets = new AtomicLongArray(this.bucketsCnt);
+
+        if (oldBuckets != null) {
+            for (int i = 0; i < oldBuckets.length(); i++)
+                outOfBoundsBucket.addAndGet(oldBuckets.getAndSet(i, 0));
+        }
+    }
+
+    /**
+     * @param pagesCnt Total pages count.
+     */
+    public synchronized void reset(long pagesCnt) {
+        reinit(bucketsInterval, bucketsCnt);
+
+        outOfBoundsBucket.set(pagesCnt);
     }
 
     /**
@@ -93,51 +128,26 @@ public class PageTimestampHistogram {
      *
      * @return Tuple, where first item is array of bounds and second item is array of values.
      */
-    public IgniteBiTuple<long[], long[]> histogram() {
+    public synchronized IgniteBiTuple<long[], long[]> histogram() {
         long curTs = U.currentTimeMillis();
 
-        long upperBoundTs = this.upperBoundTs;
-
-        if (curTs >= upperBoundTs) {
+        if (curTs >= upperBoundTs)
             shiftBuckets();
 
-            upperBoundTs = this.upperBoundTs;
+        int cnt = (int)((upperBoundTs - lowerBoundTs) / bucketsInterval) + 1;
+
+        long[] res = new long[cnt];
+        long[] bounds = new long[cnt];
+
+        int dummyBucketIdx = dummyBucketIdx();
+
+        res[0] = outOfBoundsBucket.get() + buckets.get(dummyBucketIdx);
+        bounds[0] = createTs == lowerBoundTs ? createTs - bucketsInterval : createTs;
+
+        for (int i = 1; i < cnt; i++) { // Starting from 1 (dummyBucketIdx + 1 = index of the first backet).
+            res[i] = buckets.get((dummyBucketIdx + i) % bucketsCnt);
+            bounds[i] = lowerBoundTs + (i - 1) * bucketsInterval;
         }
-
-        long[] res = new long[bucketsCnt];
-        long[] bounds = new long[bucketsCnt];
-
-        long lowerBoundTs;
-
-        do {
-            lowerBoundTs = this.lowerBoundTs;
-
-            if (upperBoundTs - lowerBoundTs != (bucketsCnt - 1) * bucketsInterval) {
-                // Buckets shift in progress, wait for completion.
-                synchronized (this) {
-                    upperBoundTs = this.upperBoundTs;
-                    lowerBoundTs = this.lowerBoundTs;
-                }
-            }
-
-            assert upperBoundTs - lowerBoundTs == (bucketsCnt - 1) * bucketsInterval :
-                    "Unexpected buckets bounds [upperBoundTs" + upperBoundTs + ", lowerBoundTs" + lowerBoundTs + ']';
-
-            int bucketIdx = bucketIdx(upperBoundTs); // Index of the dummy bucket.
-
-            res[0] = outOfBoundsBucket.get() + buckets.get(bucketIdx);
-            bounds[0] = Math.min(startTs, lowerBoundTs - bucketsInterval);
-
-            for (int i = 1; i < bucketsCnt; i++) { // Starting from 1 (bucketIdx + 1 - index of the last backet).
-                res[i] = buckets.get((bucketIdx + i) % bucketsCnt);
-                bounds[i] = lowerBoundTs + (i - 1) * bucketsInterval;
-            }
-        }
-        // Retry if buckets shift started concurrently, in other case we can lost some buckets values or calculate some
-        // buckets twice.
-        // We can't atomically get values without locking, so, there is still can be some inconsistence between buckets,
-        // but no more then concurrently changed values by other threads.
-        while (lowerBoundTs != this.lowerBoundTs);
 
         return new IgniteBiTuple<>(bounds, res);
     }
@@ -165,11 +175,19 @@ public class PageTimestampHistogram {
 
     /**
      * Gets bucket index by timestamp.
+     *
+     * Note: Since this method is not synchronized, in case of concurrent reinitialization we can get wrong value here
+     * without external synchronyzation.
      */
     private int bucketIdx(long ts) {
-        assert ts >= startTs : "Unexpected timestamp [startTs=" + startTs + ", ts=" + ts + ']';
-
         return (int)((ts - startTs) / bucketsInterval) % bucketsCnt;
+    }
+
+    /**
+     * Gets index of dummy bucket.
+     */
+    private int dummyBucketIdx() {
+        return (bucketIdx(lowerBoundTs) + bucketsCnt - 1) % bucketsCnt;
     }
 
     /**
@@ -189,13 +207,32 @@ public class PageTimestampHistogram {
         if (ts < lowerBoundTs)
             outOfBoundsBucket.addAndGet(val);
         else {
+            AtomicLongArray buckets = this.buckets;
             int idx = bucketIdx(ts);
 
-            // There is a race between lowerBoundTs check and bucket modification, so we can modify dropped bucket
-            // in some cases (no more than one bucket behind lowerBoundTs). Dummy bucket was reserved for this purpose
-            // (to avoid interference of writes to dropped bucket and writes to most recent bucket).
-            // Values from dummy bucket will be flushed to outOfBoundsBucket during next shift.
-            buckets.addAndGet(idx, val);
+            if (ts <= startTs) { // Histogram was concurrently reinitialized.
+                if (ts == startTs) {
+                    synchronized (this) {
+                        // We can't be sure about correct buckets variable without the lock here, but this is the rare
+                        // case and will not affect performance much.
+                        this.buckets.addAndGet(0, val);
+                    }
+                }
+                else
+                    outOfBoundsBucket.addAndGet(val);
+            }
+            else {
+                // There is a race between lowerBoundTs check and bucket modification, so we can modify dropped bucket
+                // in some cases (no more than one bucket behind lowerBoundTs). Dummy bucket was reserved for this purpose
+                // (to avoid interference of writes to dropped bucket and writes to most recent bucket).
+                // Values from dummy bucket will be flushed to outOfBoundsBucket during next shift.
+                buckets.addAndGet(idx, val);
+
+                if (buckets != this.buckets) {
+                    // If histogram was concurrently reinitialized after bucket modification we can loose our change.
+                    outOfBoundsBucket.addAndGet(buckets.getAndSet(idx, 0L));
+                }
+            }
         }
     }
 
@@ -205,6 +242,7 @@ public class PageTimestampHistogram {
     private synchronized void shiftBuckets() {
         long curTs = U.currentTimeMillis();
 
+        long oldLowerBoundTs = lowerBoundTs;
         long oldUpperBoundTs = upperBoundTs;
 
         // Double check under the lock.
@@ -215,17 +253,21 @@ public class PageTimestampHistogram {
 
         long newUpperBoundTs = oldUpperBoundTs + bucketsSinceLastShift * bucketsInterval;
 
-        int bucketsToShift = Math.min(bucketsCnt, bucketsSinceLastShift);
+        long newLowerBoundTs = newUpperBoundTs - (bucketsCnt - 1) * bucketsInterval;
 
-        lowerBoundTs = newUpperBoundTs - (bucketsCnt - 1) * bucketsInterval;
+        if (newLowerBoundTs > oldLowerBoundTs) {
+            int bucketsToShift = Math.min(bucketsCnt, (int)((newLowerBoundTs - oldLowerBoundTs) / bucketsInterval));
 
-        int shiftBucketIdx = bucketIdx(oldUpperBoundTs);
+            int shiftBucketIdx = (bucketIdx(oldLowerBoundTs) + bucketsCnt - 1) % bucketsCnt; // Start with dummy bucket.
 
-        // Move content of all dropped buckets (including dummy bucket) to the "out of bounds" bucket.
-        for (int i = 0; i <= bucketsToShift; i++) {
-            outOfBoundsBucket.addAndGet(buckets.getAndSet(shiftBucketIdx, 0));
+            // Move content of all dropped buckets (including dummy bucket) to the "out of bounds" bucket.
+            for (int i = 0; i <= bucketsToShift; i++) {
+                outOfBoundsBucket.addAndGet(buckets.getAndSet(shiftBucketIdx, 0));
 
-            shiftBucketIdx = (shiftBucketIdx + 1) % bucketsCnt;
+                shiftBucketIdx = (shiftBucketIdx + 1) % bucketsCnt;
+            }
+
+            lowerBoundTs = newLowerBoundTs;
         }
 
         upperBoundTs = newUpperBoundTs;

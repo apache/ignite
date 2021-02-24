@@ -634,6 +634,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public void enableMetrics() {
         metricsEnabled = true;
+
+        if (pageTsHistogram != null)
+            pageTsHistogram.reset(getPhysicalMemoryPages());
     }
 
     /**
@@ -641,6 +644,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public void disableMetrics() {
         metricsEnabled = false;
+
+        if (pageTsHistogram != null)
+            pageTsHistogram.reset(0);
     }
 
     /**
