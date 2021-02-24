@@ -583,7 +583,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                 long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
                 indRowsCnt = io.getIndirectCount(pageAddr);
 
-
                 System.out.println("xxxxx idx=" + PageIdUtils.pageIndex(pageIdRef.get()) + ", freeSpace=" + freeSpace +
                     ", indRowsCnt=" + indRowsCnt + ", rows=" + rowsCnt + ", key=" + row.key().value(coctx, false));
 
