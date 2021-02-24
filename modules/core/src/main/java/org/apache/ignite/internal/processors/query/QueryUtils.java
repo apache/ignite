@@ -158,7 +158,6 @@ public class QueryUtils {
     public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
         ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
-
     /**
      * Creates SQL types set.
      *

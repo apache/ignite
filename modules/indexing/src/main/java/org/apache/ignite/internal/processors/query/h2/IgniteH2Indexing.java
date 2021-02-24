@@ -1601,7 +1601,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param stmnt Statement to print.
      * @return SQL query where constant replaced with '?' char.
      * @see GridSqlConst#getSQL()
-     * @see GridSqlStatement#secureOutputToLog()
+     * @see QueryUtils#includeSensitive()
      */
     private String sqlWithoutConst(GridSqlStatement stmnt) {
         QueryUtils.INCLUDE_SENSITIVE_TL.set(false);

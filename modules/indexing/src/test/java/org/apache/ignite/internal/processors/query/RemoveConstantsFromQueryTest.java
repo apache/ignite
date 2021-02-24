@@ -152,6 +152,9 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             }
         });
 
+        // `SELECT ... WHERE name  = 'X'` and `SELECT ... WHERE name = SUBSTR(...)` produces the same query text
+        // and we have one extra query `SELECT sql FROM SYS.SQL_QUERIES_HISTORY WHERE sql = ?`
+        // so the sizes of two collection should be equal.
         assertEquals(qries.size(), qriesFromStats.size());
 
         assertTrue(qriesFromStats.contains("SELECT SQL FROM SYS.SQL_QUERIES_HISTORY WHERE SQL = ?1"));
