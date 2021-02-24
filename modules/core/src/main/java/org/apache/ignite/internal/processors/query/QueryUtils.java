@@ -140,7 +140,7 @@ public class QueryUtils {
     public static final char SPACE_DELIM = ' ';
 
     /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
-    public static final boolean INCLUDE_SENSITIVE =
+    public static boolean INCLUDE_SENSITIVE =
         IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
     /**
@@ -1645,6 +1645,9 @@ public class QueryUtils {
     }
 
     /**
+     * Return space character as an SQL delimeter in case {@link #includeSensitive()} is {@code false}
+     * to make output SQL one line. Default multiline SQL output looks ugly in system view and other view tool.
+     *
      * @return Delimeter to use.
      */
     public static char delimeter() {

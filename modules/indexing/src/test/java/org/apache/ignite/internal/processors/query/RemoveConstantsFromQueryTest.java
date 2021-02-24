@@ -36,10 +36,8 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
@@ -61,8 +59,9 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
 
     /**  */
     @Test
-    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testConstantRemoved() throws Exception {
+        QueryUtils.INCLUDE_SENSITIVE = false;
+
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);

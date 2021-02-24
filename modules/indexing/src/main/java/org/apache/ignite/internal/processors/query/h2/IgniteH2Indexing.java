@@ -209,6 +209,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
@@ -232,6 +233,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_DML_QRY
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_OPEN;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_EXECUTE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
