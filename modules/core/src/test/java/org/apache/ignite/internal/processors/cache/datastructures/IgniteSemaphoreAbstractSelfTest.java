@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -325,6 +326,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
                 assert (semaphore.availablePermits() == 0);
 
                 Runnable runnable = new Runnable() {
+                    /** {@inheritDoc} */
                     @Override public void run() {
                         try {
                             Thread.sleep(1000);
@@ -347,6 +349,35 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         igniteFuture.get(7000, MILLISECONDS);
 
         assertTrue(igniteFuture.isDone());
+
+        assertTrue(semaphore.availablePermits() == 1);
+
+        executorService.shutdown();
+    }
+
+    /**
+     * Test to verify the {@link IgniteSemaphore#acquireAndExecute(IgniteCallable, int)}'s behaviour in case of a failure.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAcquireAndExecuteIfFailure() {
+        IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecuteIfFailure", 1, true, true);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
+            @Override public IgniteFuture<Integer> call() {
+                throw new RuntimeException("Foobar");
+            }
+        };
+
+        expectThrows(RuntimeException.class, () -> {
+            IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+
+            igniteFuture.get(7000, MILLISECONDS);
+
+            assertTrue(igniteFuture.isDone());
+        });
 
         assertTrue(semaphore.availablePermits() == 1);
 
