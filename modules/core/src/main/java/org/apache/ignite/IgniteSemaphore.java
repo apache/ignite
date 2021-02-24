@@ -17,11 +17,11 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteFuture;
-
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * This interface provides a rich API for working with distributed semaphore.
