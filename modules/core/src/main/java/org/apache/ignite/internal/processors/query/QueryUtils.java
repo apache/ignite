@@ -151,9 +151,7 @@ public class QueryUtils {
      * generated query - "SELECT * FROM TBL WHERE name = ?" - there is no parameter value in query.<br>
      * It's a desired behaviour, because, when {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} {@code = false}
      * we want to filter out all sensitive data and those data can be sitting in SQL constants.
-     *
-     * @see GridSqlConst#getSQL()
-     * @see IgniteH2Indexing#sqlWithoutConst(GridSqlStatement)
+     * Please, see {@code GridSqlConst#getSQL()}, {@code IgniteH2Indexing#sqlWithoutConst(GridSqlStatement)}.
      */
     public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
         ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
