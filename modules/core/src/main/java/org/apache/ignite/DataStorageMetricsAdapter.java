@@ -24,7 +24,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * Converter class from {@link DataStorageMetrics} to legacy {@link PersistenceMetrics}.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.datastorage" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

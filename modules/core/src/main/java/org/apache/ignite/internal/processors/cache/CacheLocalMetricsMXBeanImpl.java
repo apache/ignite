@@ -29,7 +29,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  *
- * @deprecated Check the {@link JmxMetricExporterSpi} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} "cache.{cache_name}" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

@@ -28,7 +28,7 @@ import org.apache.ignite.transactions.TransactionMetrics;
 /**
  * Transactions MXBean implementation.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} "tx" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
@@ -112,5 +112,4 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
         return transactionMetrics.getOwnerTransactionsNumber();
     }
 }
-
 

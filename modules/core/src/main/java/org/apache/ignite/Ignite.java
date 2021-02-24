@@ -683,21 +683,21 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return Collection of {@link MemoryMetrics} snapshots.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public PersistenceMetrics persistentStoreMetrics();
@@ -709,7 +709,7 @@ public interface Ignite extends AutoCloseable {
      * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
      *
      * @return Collection of {@link DataRegionMetrics} snapshots.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     public Collection<DataRegionMetrics> dataRegionMetrics();
 
@@ -727,7 +727,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return {@link DataStorageMetrics} snapshot.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.datastorage" instead.
      */
     public DataStorageMetrics dataStorageMetrics();
 
