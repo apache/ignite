@@ -15,7 +15,7 @@
  limitations under the License.
 #}
 
-{% macro ssl_factory(ctx) %}
+{% macro ssl_context(ctx) %}
 <bean class="org.apache.ignite.ssl.SslContextFactory">
     <property name="keyStoreFilePath" value="{{ ctx.key_store_path }}"/>
     <property name="keyStorePassword" value="{{ ctx.key_store_password }}"/>

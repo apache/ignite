@@ -22,7 +22,7 @@
 {% import 'cache_macro.j2' as cache_utils %}
 {% import 'datastorage_macro.j2' as datastorage_utils %}
 {% import 'misc_macro.j2' as misc_utils %}
-{% import 'ssl_factory_macro.j2' as ssl_factory_util %}
+{% import 'ssl_context_macro.j2' as ssl_context_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -69,7 +69,7 @@
 
         {% if config.ssl_context %}
             <property name="sslContextFactory">
-                {{ ssl_factory_util.ssl_factory(config.ssl_context) }}
+                {{ ssl_context_util.ssl_context(config.ssl_context) }}
             </property>
         {% endif %}
         {% if config.connector_configuration %}
