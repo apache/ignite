@@ -17,11 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-<<<<<<< HEAD
 import org.apache.ignite.internal.GridP2PAffinitySelfTest;
-import org.apache.ignite.internal.RaceOnDeployClassesWithSameAliases;
-=======
->>>>>>> e63d523d63d... GG-32092 Proper fix for IgniteCompute tasks with same name, running from one node and different ClassLoaders can lead to OOM.
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDifferentLocalDeploymentSelfTest;
 import org.apache.ignite.internal.managers.deployment.P2PCacheOperationIntoComputeTest;

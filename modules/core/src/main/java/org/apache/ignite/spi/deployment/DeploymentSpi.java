@@ -68,15 +68,6 @@ public interface DeploymentSpi extends IgniteSpi {
     public DeploymentResource findResource(String rsrcName);
 
     /**
-     * Finds class loader for the given class.
-     *
-     * @param rsrcName Class name or class alias to find class loader for.
-     * @param clsLdr desired class loader.
-     * @return Deployed class loader, or {@code null} if not deployed.
-     */
-    public DeploymentResource findResource(String rsrcName, @Nullable ClassLoader clsLdr);
-
-    /**
      * Registers a class loader with this SPI. This method exists
      * to be able to add external class loaders to deployment SPI.
      * Deployment SPI may also have its own class loaders. For example,
@@ -85,7 +76,7 @@ public interface DeploymentSpi extends IgniteSpi {
      * <p>
      * The array of classes passed in should be checked for presence of
      * {@link org.apache.ignite.compute.ComputeTaskName} annotations. The classes that have this annotation
-     * should be accessible by this name from {@link #findResource(String, ClassLoader)} method.
+     * should be accessible by this name from {@link #findResource(String)} method.
      *
      * @param ldr Class loader to register.
      * @param rsrc Class that should be checked for aliases.
