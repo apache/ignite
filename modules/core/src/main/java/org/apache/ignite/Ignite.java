@@ -697,7 +697,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public PersistenceMetrics persistentStoreMetrics();
