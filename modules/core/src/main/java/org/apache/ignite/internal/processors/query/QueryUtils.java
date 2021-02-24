@@ -1647,6 +1647,7 @@ public class QueryUtils {
     /**
      * Return space character as an SQL delimeter in case {@link #includeSensitive()} is {@code false}
      * to make output SQL one line. Default multiline SQL output looks ugly in system view and other view tool.
+     * See, {@code GridSqlConst} and {@code IgniteH2Indexing#sqlWithoutConst()} for details.
      *
      * @return Delimeter to use.
      */
