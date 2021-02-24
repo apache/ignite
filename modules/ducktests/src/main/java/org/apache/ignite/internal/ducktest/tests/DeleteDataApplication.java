@@ -78,7 +78,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
             futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
 
-            fromIdx = toIdx + 1;
+            fromIdx = toIdx;
         }
 
         futures.forEach(IgniteFuture::get);
