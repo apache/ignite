@@ -47,7 +47,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
  * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property or
  * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
  */
 @Deprecated
 public interface MemoryMetrics {
