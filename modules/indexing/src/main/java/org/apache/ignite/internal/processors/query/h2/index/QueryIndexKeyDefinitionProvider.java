@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.index.sorted.NullsOrder;
 import org.apache.ignite.cache.query.index.sorted.Order;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -42,7 +40,7 @@ public class QueryIndexKeyDefinitionProvider {
     /** H2 index columns. */
     private final List<IndexColumn> h2IdxColumns;
 
-    /** Index key definitions. */
+    /** Unmodified list of index key definitions. */
     private List<IndexKeyDefinition> keyDefs;
 
     /** */
@@ -66,26 +64,9 @@ public class QueryIndexKeyDefinitionProvider {
 
         IndexColumn.mapColumns(h2IdxColumns.toArray(new IndexColumn[0]), table);
 
-        keyDefs = idxKeyDefinitions;
+        keyDefs = Collections.unmodifiableList(idxKeyDefinitions);
 
         return keyDefs;
-    }
-
-    /**
-     * @return List of inlined index key types.
-     */
-    public List<InlineIndexKeyType> getTypes(IndexKeyTypeSettings keyTypeSettings) {
-        List<InlineIndexKeyType> keyTypes = new ArrayList<>();
-
-        for (IndexKeyDefinition keyDef: get()) {
-            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType()))
-                break;
-
-            keyTypes.add(
-                InlineIndexKeyTypeRegistry.get(keyDef.getIdxClass(), keyDef.getIdxType(), keyTypeSettings));
-        }
-
-        return keyTypes;
     }
 
     /** */

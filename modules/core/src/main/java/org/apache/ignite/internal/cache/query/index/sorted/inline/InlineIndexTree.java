@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -182,6 +183,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int off = io.offset(idx);
 
+        List<IndexKeyDefinition> keyDefs = def.getIndexKeyDefinitions();
+
+        List<InlineIndexKeyType> keyTypes = rowHnd.getInlineIndexKeyTypes();
+
         for (keyIdx = 0; keyIdx < searchKeysLength; keyIdx++) {
             try {
                 // If a search key is null then skip other keys (consider that null shows that we should get all
@@ -190,17 +195,17 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                     return 0;
 
                 // Other keys are not inlined. Should compare as rows.
-                if (keyIdx >= rowHnd.getInlineIndexKeyTypes().size())
+                if (keyIdx >= keyTypes.size())
                     break;
 
                 int maxSize = inlineSize - fieldOff;
 
-                InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(keyIdx);
+                InlineIndexKeyType keyType = keyTypes.get(keyIdx);
 
                 int cmp = COMPARE_UNSUPPORTED;
 
                 // By default do not compare different classes.
-                if (!def.getIndexKeyDefinitions().get(keyIdx).validate(row.getKey(keyIdx)))
+                if (!keyDefs.get(keyIdx).validate(row.getKey(keyIdx)))
                     break;
 
                 // Value can be set up by user in query with different data type.
@@ -233,7 +238,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                     break;
 
                 if (cmp != 0)
-                    return applySortOrder(cmp, def.getIndexKeyDefinitions().get(keyIdx).getOrder().getSortOrder());
+                    return applySortOrder(cmp, keyDefs.get(keyIdx).getOrder().getSortOrder());
 
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);

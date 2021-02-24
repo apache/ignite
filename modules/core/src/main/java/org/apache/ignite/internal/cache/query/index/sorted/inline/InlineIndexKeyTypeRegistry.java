@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -203,6 +204,6 @@ public class InlineIndexKeyTypeRegistry {
             keyTypes.add(get(keyDef.getIdxClass(), keyDef.getIdxType(), settings));
         }
 
-        return keyTypes;
+        return Collections.unmodifiableList(keyTypes);
     }
 }
