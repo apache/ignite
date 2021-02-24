@@ -15,9 +15,19 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains implementation of Spring cache abstraction and <code>@Cacheable</code> annotation.
- */
+package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-package org.apache.ignite.cache.spring;
+/**
+ * {@link SegmentedLruPageReplacementPolicy} factory.
+ */
+public class SegmentedLruPageReplacementPolicyFactory implements PageReplacementPolicyFactory {
+    /** {@inheritDoc} */
+    @Override public long requiredMemory(int pagesCnt) {
+        return SegmentedLruPageList.requiredMemory(pagesCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PageReplacementPolicy create(PageMemoryImpl.Segment seg, long ptr, int pagesCnt) {
+        return new SegmentedLruPageReplacementPolicy(seg, ptr, pagesCnt);
+    }
+}
