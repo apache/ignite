@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -38,8 +38,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTreeRun
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -53,6 +56,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CR
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
  * Cache data row adapter.
@@ -163,6 +168,64 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /**
      * @param io Data page IO.
+     * @param itemId Row item Id.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final void initFromPageBuffer(
+        IgniteInClosure2X<Long, ByteBuffer> reader,
+        GridCacheSharedContext<?, ?> sctx,
+        CacheObjectContext coctx,
+        ByteBuffer pageBuff,
+        ByteBuffer fragmentBuff,
+        DataPageIO io,
+        int itemId,
+        boolean readCacheId,
+        RowData rowData,
+        boolean skipVer
+    ) throws IgniteCheckedException {
+        long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
+        IncompleteObject<?> incomplete = readIncomplete(null, sctx, coctx, pageBuff.capacity(), pageBuff.capacity(),
+            pageAddr, itemId, io, rowData, readCacheId, skipVer);
+
+        if (incomplete == null)
+            return;
+
+        long nextLink = incomplete.getNextLink();
+
+        if (nextLink == 0)
+            return;
+
+        long fragmentAddr = GridUnsafe.bufferAddress(fragmentBuff);
+
+        do {
+            long pageId = pageId(nextLink);
+
+            fragmentBuff.clear();
+            reader.apply(pageId, fragmentBuff);
+
+            try {
+                DataPageIO io2 = PageIO.getPageIO(T_DATA, PageIO.getVersion(fragmentBuff));
+
+                incomplete = readIncomplete(incomplete, sctx, coctx, fragmentBuff.capacity(), fragmentBuff.capacity(),
+                    fragmentAddr, itemId(nextLink), io2, rowData, readCacheId, skipVer);
+
+                if (incomplete == null)
+                    return;
+
+                nextLink = incomplete.getNextLink();
+            }
+            catch (Exception e) {
+                throw new IgniteException("Error during reading DataRow [pageId=" + pageId + ']', e);
+            }
+        }
+        while (nextLink != 0);
+
+        assert isReady() : "ready";
+    }
+
+    /**
+     * @param io Data page IO.
      * @param pageAddr Data page address.
      * @param itemId Row item Id.
      * @param grp Cache group.
@@ -190,8 +253,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
-        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
-            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem.pageSize(),
+            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
         if (incomplete != null) {
             // Initialize the remaining part of the large row from other pages.
@@ -259,8 +322,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                         int itemId = itemId(nextLink);
 
-                        incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
-                            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+                        incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem.pageSize(),
+                            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
                         if (incomplete == null || (rowData == KEY_ONLY && key != null))
                             return;
@@ -300,8 +363,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param incomplete Incomplete object.
      * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
-     * @param pageMem Page memory.
-     * @param grpId Cache group Id.
+     * @param realPageSize Page size without overhead.
+     * @param pageSize Page size.
      * @param pageAddr Page address.
      * @param io Page IO.
      * @param rowData Required row data.
@@ -310,12 +373,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    private IncompleteObject<?> readIncomplete(
+    protected IncompleteObject<?> readIncomplete(
         IncompleteObject<?> incomplete,
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
-        PageMemory pageMem,
-        int grpId,
+        int pageSize,
+        int realPageSize,
         long pageAddr,
         int itemId,
         DataPageIO io,
@@ -323,7 +386,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean readCacheId,
         boolean skipVer
     ) throws IgniteCheckedException {
-        DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
+        DataPagePayload data = io.readPayload(pageAddr, itemId, realPageSize);
 
         long nextLink = data.nextLink();
 
@@ -344,7 +407,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 return null;
         }
 
-        ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+        ByteBuffer buf = wrapPointer(pageAddr, pageSize);
 
         int off = data.offset() + hdrLen;
         int payloadSize = data.payloadSize() - hdrLen;
@@ -354,12 +417,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         boolean keyOnly = rowData == RowData.KEY_ONLY;
 
-        // coctx can be null only when grp is null too, this means that
-        // we are in process of eviction and cacheId is mandatory part of data.
-        assert coctx != null || cacheId != 0;
-
-        incomplete = readFragment(() -> coctx == null ? sharedCtx.cacheContext(cacheId).cacheObjectContext() : coctx,
-            buf, keyOnly, readCacheId, incomplete, skipVer);
+        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete, skipVer);
 
         if (incomplete != null)
             incomplete.setNextLink(nextLink);
@@ -382,6 +440,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * @param sharedCtx Cache shared context.
+     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param keyOnly {@code true} If need to read only key object.
      * @param readCacheId {@code true} If need to read cache ID.
@@ -391,7 +451,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Read object.
      */
     protected IncompleteObject<?> readFragment(
-        Supplier<CacheObjectContext> coctxSup,
+        GridCacheSharedContext<?, ?> sharedCtx,
+        CacheObjectContext coctx,
         ByteBuffer buf,
         boolean keyOnly,
         boolean readCacheId,
@@ -409,9 +470,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = null;
         }
 
-        CacheObjectContext coctx = coctxSup.get();
+        if (coctx == null) {
+            // coctx can be null only when grp is null too, this means that
+            // we are in process of eviction and cacheId is mandatory part of data.
+            assert cacheId != 0;
 
-        assert coctx != null;
+            coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
+        }
 
         // Read key.
         if (key == null) {

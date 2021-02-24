@@ -21,16 +21,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -41,9 +43,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -52,22 +55,31 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /**
  * Default snapshot manager test.
@@ -391,9 +403,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         snpFut.get(5_000, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * @throws Exception If fails.
-     */
+    /** @throws Exception If fails */
     @Test
     public void testClusterSnapshotIterator() throws Exception {
         int keys = 127;
@@ -415,14 +425,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
-                row.value().finishUnmarshal(ignite.context()
-                        .cache().cache(dfltCacheCfg.getName()).context().cacheObjectContext(),
-                    U.resolveClassLoader(ignite.configuration()));
-
                 // Invariant for cache: cache key always equals to cache value.
                 assertEquals("Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']',
-                    row.key().value(coctx, false, null),
-                    row.value().value(coctx, false));
+                    row.key().value(coctx, false, U.resolveClassLoader(ignite.configuration())),
+                    (Integer)row.value().value(coctx, false));
 
                 rows++;
             }
@@ -431,9 +437,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         assertEquals("Invalid number of rows: " + rows, keys, rows);
     }
 
-    /**
-     * @throws Exception If fails.
-     */
+    /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotIteratorLargeRows() throws Exception {
         int keys = 2;
@@ -461,10 +465,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
-                row.value().finishUnmarshal(ignite.context()
-                        .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
-                    U.resolveClassLoader(ignite.configuration()));
-
                 assertEquals(12008, ((Value)row.value().value(coctx, false)).arr().length);
                 assertTrue((Integer)row.key().value(coctx, false, null) < 2);
 
@@ -475,31 +475,131 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         assertEquals("Invalid number of rows: " + rows, keys, rows);
     }
 
-    /**
-     * @param src Source node to calculate.
-     * @param grps Groups to collect owning parts.
-     * @param rmtNodeId Remote node id.
-     * @return Map of collected parts.
-     */
-    private static Map<Integer, Set<Integer>> owningParts(IgniteEx src, Set<Integer> grps, UUID rmtNodeId) {
-        Map<Integer, Set<Integer>> result = new HashMap<>();
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotIteratorDirectIndirectCounters() throws Exception {
+        int keys = 185;
+        int valSize = 33;
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
+            .setAffinity(new RendezvousAffinityFunction(false, 1));
 
-        for (Integer grpId : grps) {
-            Set<Integer> parts = src.context()
-                .cache()
-                .cacheGroup(grpId)
-                .topology()
-                .partitions(rmtNodeId)
-                .entrySet()
-                .stream()
-                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        IgniteEx ignite = startGridsWithoutCache(1);
 
-            result.put(grpId, parts);
+        for (int i = 0; i < keys; i++)
+            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[valSize]));
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+            getPartitionFileName(0));
+
+        AtomicReference<ByteBuffer> buffRef = new AtomicReference<>();
+        AtomicReference<Long> pageIdRef = new AtomicReference<>();
+
+        snapshotStoreFactory(ignite, new BiFunction<Integer, Boolean, FileVersionCheckingFactory>() {
+            @Override public FileVersionCheckingFactory apply(Integer grpId, Boolean encrypted) {
+                FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                return new FileVersionCheckingFactory(storeMgr.getPageStoreFileIoFactory(), storeMgr.getPageStoreFileIoFactory(), storeMgr::pageSize) {
+                    @Override public PageStore createPageStore(
+                        byte type,
+                        IgniteOutClosure<Path> pathProvider,
+                        LongConsumer allocatedTracker
+                    ) {
+                        return new FilePageStoreV2(
+                            type,
+                            pathProvider,
+                            storeMgr.getPageStoreFileIoFactory(),
+                            storeMgr.pageSize(),
+                            allocatedTracker
+                        ) {
+                            @Override public boolean read(
+                                long pageId,
+                                ByteBuffer pageBuf,
+                                boolean keepCrc
+                            ) throws IgniteCheckedException {
+                                buffRef.set(pageBuf);
+                                pageIdRef.set(pageId);
+
+                                return super.read(pageId, pageBuf, keepCrc);
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        int rows = 0;
+        int rowsCnt = 0;
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            dfltCacheCfg.getName(),
+            0)
+        ) {
+            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
+                int freeSpace = io.getFreeSpace(buffRef.get());
+                rowsCnt = io.getDirectCount(buffRef.get());
+
+                System.out.println(">>>>> idx=" + PageIdUtils.pageIndex(pageIdRef.get()) + ", freeSpace=" + freeSpace +
+                    ", rows=" + rowsCnt + ", key=" + row.key().value(coctx, false));
+
+                assertEquals(valSize, ((Value)row.value().value(coctx, false)).arr().length);
+
+                rows++;
+            }
         }
 
-        return result;
+        for (int k = 0; k < keys; k++) {
+            if (k % rowsCnt == 1 || k % rowsCnt == (rowsCnt - 1))
+                continue;
+
+            ignite.getOrCreateCache(ccfg).remove(k);
+        }
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME + 2).get();
+
+        int indRowsCnt = 0;
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME + 2,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            dfltCacheCfg.getName(),
+            0)
+        ) {
+            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
+                int freeSpace = io.getFreeSpace(buffRef.get());
+                rowsCnt = io.getDirectCount(buffRef.get());
+
+                long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
+                indRowsCnt = io.getIndirectCount(pageAddr);
+
+
+                System.out.println("xxxxx idx=" + PageIdUtils.pageIndex(pageIdRef.get()) + ", freeSpace=" + freeSpace +
+                    ", indRowsCnt=" + indRowsCnt + ", rows=" + rowsCnt + ", key=" + row.key().value(coctx, false));
+
+                assertEquals(valSize, ((Value)row.value().value(coctx, false)).arr().length);
+
+                rows++;
+            }
+        }
+    }
+
+    /**
+     * @param ignite Ignite instance to set factory.
+     * @param factory New factory to use.
+     */
+    private static void snapshotStoreFactory(IgniteEx ignite, BiFunction<Integer, Boolean, FileVersionCheckingFactory> factory) {
+        setFieldValue(snp(ignite), "storeFactory", factory);
     }
 
     /**

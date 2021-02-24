@@ -81,11 +81,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.DataRowPersistenceAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -102,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -1181,7 +1183,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
             false, false, false, false);
 
-        return new PageScanIterator(coctx, pageStore, partId);
+        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(kctx, null, null, null,
+            null, null, null, null, null, null,
+            null, null, null, null, null,
+            null, null, null, null, null, null);
+
+        return new PageScanIterator(sctx, coctx, pageStore, partId);
     }
 
     /**
@@ -1358,7 +1365,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+    private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -1368,6 +1375,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Page store partition id. */
         private final int partId;
+
+        /** Grid cache shared context. */
+        private final GridCacheSharedContext<?, ?> sctx;
 
         /** Cache object context for key/value deserialization. */
         private final CacheObjectContext coctx;
@@ -1402,13 +1412,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param partId Partition id.
          * @throws IgniteCheckedException If fails.
          */
-        public PageScanIterator(CacheObjectContext coctx, PageStore store, int partId) throws IgniteCheckedException {
+        public PageScanIterator(
+            GridCacheSharedContext<?, ?> sctx,
+            CacheObjectContext coctx,
+            PageStore store,
+            int partId
+        ) throws IgniteCheckedException {
             // CacheGroupContext may be null. It means that this cache group is under eviction for now.
             // Since the persisted cache groups and their partitions are guarded by external machinery we
             // can avoid it here.
             this.store = store;
             this.partId = partId;
             this.coctx = coctx;
+            this.sctx = sctx;
 
             store.sync();
             pages = store.pages();
@@ -1482,7 +1498,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     skipPages.touch(pageIdx);
 
                     for (int itemId = 0; itemId < rowsCnt; itemId++) {
-                        DataRowPersistenceAdapter row = new DataRowPersistenceAdapter();
+                        DataRow row = new DataRow();
 
                         row.partition(partId);
 
@@ -1499,11 +1515,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     skipPages.touch(PageIdUtils.pageIndex(nextPageId));
                                 }
                             },
+                            sctx,
                             coctx,
                             locBuff,
                             fragmentBuff,
                             io,
                             itemId,
+                            false,
+                            CacheDataRowAdapter.RowData.FULL,
                             false);
 
                         rows.add(row);
