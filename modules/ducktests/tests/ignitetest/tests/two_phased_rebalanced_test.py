@@ -37,7 +37,7 @@ from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9
 
 NUM_NODES_CELL = 4
 
-NUM_CELL = 1
+NUM_CELL = 4
 
 ATTRIBUTE = "CELL"
 
@@ -51,10 +51,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     # pylint: disable=R0914
     @cluster(num_nodes=NUM_NODES_CELL * NUM_CELL + 2)
-    @ignite_versions(
-        str(DEV_BRANCH),
-        str(LATEST_2_9)
-    )
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9))
     def two_phased_rebalancing_test(self, ignite_version):
         """
         Test case of two-phase rebalancing.
@@ -110,14 +107,13 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         node = cells[0].nodes[0]
 
-        try:
-            IgniteAwareService.await_event_on_node('Skipping checkpoint', node, timeout_sec=60)
-        except errors.TimeoutError as ex:
-            self.logger.warn(ex)
+        self.await_skipping_checkpoint(node)
 
         self.fix_pds_size(cells, "Step prepare, load data. PDS.")
 
         deleter.run()
+
+        self.await_skipping_checkpoint(node)
 
         dump_1 = fix_data(control_utility, node, cells[0].log_dir)
 
@@ -187,6 +183,16 @@ class TwoPhasedRebalancedTest(IgniteTest):
             self.logger.info(f'Host: {item[0]}, PDS {item[1]}mb')
 
         return res
+
+    def await_skipping_checkpoint(self, node: ClusterNode):
+        """
+        Await Skipping checkpoint.
+        :param node ClusterNode
+        """
+        try:
+            IgniteAwareService.await_event_on_node('Skipping checkpoint', node, timeout_sec=60)
+        except errors.TimeoutError as ex:
+            self.logger.warn(ex)
 
 
 def restart_with_clean_idx_node_on_cell(cells: [IgniteService], idxs: [int]):
