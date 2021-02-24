@@ -12055,25 +12055,4 @@ public abstract class IgniteUtils {
             return size;
         }
     }
-
-    /**
-     * Acquires the given semaphore, executes the given callable and schedules the release of permits asynchronously
-     */
-    public static <T> IgniteFuture<T> acquireAndExecute(IgniteSemaphore semaphore,
-                                          IgniteCallable<IgniteFuture<T>> callable, int numPermits) throws Exception {
-
-        semaphore.acquire(numPermits);
-
-        IgniteFuture<T> future = callable.call();
-
-        future.listen(new IgniteInClosure<IgniteFuture<T>>() {
-            @Override public void apply(IgniteFuture<T> IgniteFuture) {
-                if (IgniteFuture.isCancelled() || IgniteFuture.isDone()) {
-                    semaphore.release(numPermits);
-                }
-            }
-        });
-
-        return future;
-    }
 }

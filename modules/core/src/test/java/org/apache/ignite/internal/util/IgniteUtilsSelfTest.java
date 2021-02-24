@@ -1471,51 +1471,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test to verify the {@link U#acquireAndExecute(IgniteSemaphore, IgniteCallable, int)}.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testAcquireAndExecute() throws Exception {
-        IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-        IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
-            @Override public IgniteFuture<Integer> call() {
-                IgniteFutureImpl<Integer> igniteFuture = new IgniteFutureImpl<>(new GridFutureAdapter<>());
-
-                assert (semaphore.availablePermits() == 0);
-
-                Runnable runnable = new Runnable() {
-                    @Override public void run() {
-                        try {
-                            Thread.sleep(1000);
-                            GridFutureAdapter fut = (GridFutureAdapter) igniteFuture.internalFuture();
-                            fut.onDone(true);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e.getMessage());
-                        }
-                    }
-                };
-
-                executorService.submit(runnable);
-
-                return igniteFuture;
-            }
-        };
-
-        IgniteFuture<Integer> igniteFuture = U.acquireAndExecute(semaphore, callable, 1);
-
-        igniteFuture.get(7000, MILLISECONDS);
-
-        assertTrue(igniteFuture.isDone());
-
-        assertTrue(semaphore.availablePermits() == 1);
-
-        executorService.shutdown();
-    }
-
-    /**
      * Reading lines from a resource file and passing them to consumer.
      * If read string is {@code "null"}, it is converted to {@code null}.
      *

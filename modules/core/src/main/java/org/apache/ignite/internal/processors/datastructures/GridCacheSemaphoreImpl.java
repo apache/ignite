@@ -45,6 +45,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -660,6 +663,26 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<IgniteFuture<T>> callable,
+                                                           int numPermits) throws Exception {
+
+        acquire(numPermits);
+
+        IgniteFuture<T> future = callable.call();
+
+        future.listen(new IgniteInClosure<IgniteFuture<T>>() {
+            @Override
+            public void apply(IgniteFuture<T> IgniteFuture) {
+                if (IgniteFuture.isCancelled() || IgniteFuture.isDone()) {
+                    release(numPermits);
+                }
+            }
+        });
+
+        return future;
     }
 
     /** {@inheritDoc} */

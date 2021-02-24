@@ -25,6 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,9 +38,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -301,6 +307,51 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         }
 
         assertFalse(stringLogger.toString().contains(NullPointerException.class.getName()));
+    }
+
+    /**
+     * Test to verify the {@link IgniteSemaphore#acquireAndExecute(IgniteCallable, int)}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAcquireAndExecute() throws Exception {
+        IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
+            @Override public IgniteFuture<Integer> call() {
+                IgniteFutureImpl<Integer> igniteFuture = new IgniteFutureImpl<>(new GridFutureAdapter<>());
+
+                assert (semaphore.availablePermits() == 0);
+
+                Runnable runnable = new Runnable() {
+                    @Override public void run() {
+                        try {
+                            Thread.sleep(1000);
+                            GridFutureAdapter fut = (GridFutureAdapter) igniteFuture.internalFuture();
+                            fut.onDone(true);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e.getMessage());
+                        }
+                    }
+                };
+
+                executorService.submit(runnable);
+
+                return igniteFuture;
+            }
+        };
+
+        IgniteFuture<Integer> igniteFuture = semaphore.acquireAndExecute(callable, 1);
+
+        igniteFuture.get(7000, MILLISECONDS);
+
+        assertTrue(igniteFuture.isDone());
+
+        assertTrue(semaphore.availablePermits() == 1);
+
+        executorService.shutdown();
     }
 
     /**
