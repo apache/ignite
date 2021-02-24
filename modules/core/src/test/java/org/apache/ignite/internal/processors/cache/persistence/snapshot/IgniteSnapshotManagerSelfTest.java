@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -74,7 +73,6 @@ import org.junit.Test;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
@@ -405,7 +403,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails */
     @Test
-    public void testClusterSnapshotIterator() throws Exception {
+    public void testSnapshotIterator() throws Exception {
         int keys = 127;
 
         IgniteEx ignite = startGridsWithCache(2,
@@ -439,7 +437,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotIteratorLargeRows() throws Exception {
+    public void testSnapshotIteratorLargeRows() throws Exception {
         int keys = 2;
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -477,21 +475,22 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotIteratorDirectIndirectCounters() throws Exception {
-        int keys = 185;
-        int valSize = 33;
-        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
+    public void testSnapshotIteratorDirectIndirectCountersWithCacheGroup() throws Exception {
+        int keysPerCache = 3700;
+        int cacheValSize = 33;
+        int rowsOnPage = 37;
+
+        CacheConfiguration<Integer, Value> ccfg1 = txCacheConfig(new CacheConfiguration<Integer, Value>("tx1"))
+            .setAffinity(new RendezvousAffinityFunction(false, 1));
+        CacheConfiguration<Integer, Value> ccfg2 = txCacheConfig(new CacheConfiguration<Integer, Value>("tx2"))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
 
-        IgniteEx ignite = startGridsWithoutCache(1);
+        ccfg1.setGroupName(DEFAULT_CACHE_NAME);
+        ccfg2.setGroupName(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < keys; i++)
-            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[valSize]));
+        IgniteEx ignite = startGridsWithCache(1, keysPerCache, k -> new Value(new byte[cacheValSize]), ccfg1, ccfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(0));
 
         AtomicReference<ByteBuffer> buffRef = new AtomicReference<>();
         AtomicReference<Long> pageIdRef = new AtomicReference<>();
@@ -529,66 +528,63 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         });
 
-        int rows = 0;
-        int rowsCnt = 0;
+        int currRows = 0;
+        int rowsCnt;
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)
         ) {
-            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+            CacheObjectContext coctx = ignite.cachex("tx1").context().cacheObjectContext();
 
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
                 DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
-                int freeSpace = io.getFreeSpace(buffRef.get());
                 rowsCnt = io.getDirectCount(buffRef.get());
 
-                System.out.println(">>>>> idx=" + PageIdUtils.pageIndex(pageIdRef.get()) + ", freeSpace=" + freeSpace +
-                    ", rows=" + rowsCnt + ", key=" + row.key().value(coctx, false));
+                assertEquals(cacheValSize, ((Value)row.value().value(coctx, false)).arr().length);
+                assertEquals(rowsOnPage, rowsCnt);
 
-                assertEquals(valSize, ((Value)row.value().value(coctx, false)).arr().length);
-
-                rows++;
+                currRows++;
             }
         }
 
-        for (int k = 0; k < keys; k++) {
-            if (k % rowsCnt == 1 || k % rowsCnt == (rowsCnt - 1))
+        assertEquals(keysPerCache, currRows / 2);
+
+        // Remove all rows in the middle of the page.
+        for (int k = 0; k < keysPerCache; k++) {
+            if (k % rowsOnPage == 1 || k % rowsOnPage == (rowsOnPage - 1))
                 continue;
 
-            ignite.getOrCreateCache(ccfg).remove(k);
+            ignite.getOrCreateCache(ccfg1).remove(k);
+            ignite.getOrCreateCache(ccfg2).remove(k);
         }
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME + 2).get();
 
-        int indRowsCnt = 0;
+        int indRowsCnt;
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME + 2,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)
         ) {
-            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+            CacheObjectContext coctx = ignite.cachex("tx1").context().cacheObjectContext();
 
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
                 DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
-                int freeSpace = io.getFreeSpace(buffRef.get());
                 rowsCnt = io.getDirectCount(buffRef.get());
 
                 long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
                 indRowsCnt = io.getIndirectCount(pageAddr);
 
-                System.out.println("xxxxx idx=" + PageIdUtils.pageIndex(pageIdRef.get()) + ", freeSpace=" + freeSpace +
-                    ", indRowsCnt=" + indRowsCnt + ", rows=" + rowsCnt + ", key=" + row.key().value(coctx, false));
-
-                assertEquals(valSize, ((Value)row.value().value(coctx, false)).arr().length);
-
-                rows++;
+                assertEquals(cacheValSize, ((Value)row.value().value(coctx, false)).arr().length);
+                assertEquals(2, rowsCnt);
+                assertEquals(2, indRowsCnt);
             }
         }
     }
