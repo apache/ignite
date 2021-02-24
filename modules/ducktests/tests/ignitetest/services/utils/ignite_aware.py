@@ -42,7 +42,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     """
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, thick_client=True, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -61,6 +61,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self.disconnected_nodes = []
         self.killed = False
+
+        self.thick_client = thick_client
 
     @property
     def version(self):
@@ -81,8 +83,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().start(**kwargs)
 
     def start(self, **kwargs):
-        self.start_async(**kwargs)
-        self.await_started()
+        if self.thick_client:
+            self.logger.info("thick_client = {}".format(self.thick_client))
+            self.start_async(**kwargs)
+            self.await_started()
+        else:
+            self.logger.info("thick_client = {}".format(self.thick_client))
+            self.start_async(**kwargs)
+            time.sleep(self.startup_timeout_sec)
 
     def await_started(self):
         """
@@ -110,11 +118,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().stop(**kwargs)
 
     def stop(self, **kwargs):
-        if not self.killed:
-            self.stop_async(**kwargs)
-            self.await_stopped()
+        if self.thick_client:
+            self.logger.info("stop: thick_client = {}".format(self.thick_client))
+            if not self.killed:
+                self.stop_async(**kwargs)
+                self.await_stopped()
+            else:
+                self.logger.debug("Skipping node stop since it already killed.")
         else:
-            self.logger.debug("Skipping node stop since it already killed.")
+            self.logger.info("stop: thick_client = {}".format(self.thick_client))
+            if not self.killed:
+                self.stop_async(**kwargs)
+            else:
+                self.logger.debug("Skipping node stop since it already killed.")
 
     def await_stopped(self):
         """

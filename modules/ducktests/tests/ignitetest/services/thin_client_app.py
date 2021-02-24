@@ -23,10 +23,10 @@ import re
 from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
-from ignitetest.services.utils.thin_client_aware import ThinClientAwareService
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
-class ThinClientService(ThinClientAwareService):
+class ThinClientService(IgniteAwareService):
     """
     The base class to build Ignite aware application written on java.
     """
@@ -36,10 +36,10 @@ class ThinClientService(ThinClientAwareService):
     # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=10, modules=None, servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
-                 start_ignite=True):
+                 start_ignite=True, thick_client=False):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
-                         jvm_opts=jvm_opts, start_ignite=start_ignite)
+                         jvm_opts=jvm_opts, start_ignite=start_ignite, thick_client=thick_client)
 
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
