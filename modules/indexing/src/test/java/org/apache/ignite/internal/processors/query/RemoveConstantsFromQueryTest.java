@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -29,12 +32,17 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
 
 /**
  * Tests check that with {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} == false literals from query
@@ -46,6 +54,11 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
         return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVT_SQL_QUERY_EXECUTION);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        cleanPerformanceStatisticsDir();
+    }
+
     /**  */
     @Test
     @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
@@ -53,6 +66,10 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
+
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
 
         List<IgniteBiTuple<String, String>> qries = Arrays.asList(
             F.t("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null),
@@ -117,8 +134,30 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             assertNotNull(hist);
             assertEquals(1, hist.size());
             assertEquals(hist.get(0).get(0), expHist);
-
         }
+
+        Set<String> qriesFromStats = new HashSet<>();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long startTime,
+                long duration,
+                boolean success
+            ) {
+                qriesFromStats.add(text);
+            }
+        });
+
+        assertEquals(qries.size(), qriesFromStats.size());
+
+        assertTrue(qriesFromStats.contains("SELECT SQL FROM SYS.SQL_QUERIES_HISTORY WHERE SQL = ?1"));
+
+        for (IgniteBiTuple<String, String> qry : qries)
+            assertTrue(qriesFromStats.contains(qry.get2() == null ? qry.get1() : qry.get2()));
     }
 
     /**
