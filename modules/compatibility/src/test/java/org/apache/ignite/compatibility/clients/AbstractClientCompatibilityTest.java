@@ -34,7 +34,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -149,8 +148,6 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
      */
     @Test
     public void testCurrentClientToOldServer() throws Exception {
-        IgniteProcessProxy proxy = null;
-
         try {
             if (verFormatted.equals(IgniteVersionUtils.VER_STR)) {
                 Ignite ignite = startGrid(0);
