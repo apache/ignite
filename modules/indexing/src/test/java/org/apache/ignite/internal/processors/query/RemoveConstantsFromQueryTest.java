@@ -82,41 +82,41 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
             F.t("CREATE TABLE TST2(id INTEGER PRIMARY KEY, name VARCHAR, age integer)", null, null),
 
             F.t("INSERT INTO TST(id, name, age) VALUES(1, '" + john + "', 16)",
-                "INSERT INTO PUBLIC.TST.*VALUES.*",
+                "INSERT INTO .*TST.*VALUES.*",
                 john),
 
             F.t("INSERT INTO TST SELECT id, name, age FROM TST2 WHERE name = 'John Connor'",
-                "INSERT INTO PUBLIC.TST.*SELECT.*FROM PUBLIC.TST2 WHERE.*",
+                "INSERT INTO .*TST.*SELECT.*FROM .*TST2 WHERE.*",
                 john),
 
             F.t("UPDATE TST SET name = '" + sarah + "' WHERE id = 1",
-                "UPDATE PUBLIC.TST SET NAME.*WHERE ID.*",
+                "UPDATE .*TST SET NAME.*WHERE ID.*",
                 sarah),
 
             F.t("DELETE FROM TST WHERE name = '" + sarah + "'",
-                "DELETE FROM PUBLIC.TST WHERE NAME = ?",
+                "DELETE FROM .*TST WHERE NAME = ?",
                 sarah),
 
             F.t("SELECT * FROM TST WHERE name = '" + sarah + "'",
-                "SELECT .* FROM PUBLIC.TST.*WHERE .*NAME = ?",
+                "SELECT .* FROM .*TST.*WHERE .*NAME = ?",
                 sarah),
 
             F.t("SELECT * FROM TST WHERE name = SUBSTR('" + sarah + "', 0, 2)",
-                "SELECT .* FROM PUBLIC.TST.*WHERE .*NAME = ?",
+                "SELECT .* FROM .*TST.*WHERE .*NAME = ?",
                 sarah.substring(0, 2)),
 
             F.t("SELECT * FROM TST GROUP BY id HAVING name = '" + john + "'",
-                "SELECT .* FROM PUBLIC.TST.*GROUP BY .*ID HAVING .*NAME = ?",
+                "SELECT .* FROM .*TST.*GROUP BY .*ID HAVING .*NAME = ?",
                 john),
 
             F.t("SELECT * FROM TST GROUP BY id HAVING name = '" + sarah + "' UNION " +
                     "SELECT * FROM TST GROUP BY id HAVING name = '" + john + "'",
-                ".*SELECT .* FROM PUBLIC.TST .* GROUP BY .*ID HAVING .*NAME = ?.* UNION " +
-                    ".*SELECT .* FROM PUBLIC.TST .* GROUP BY .*ID HAVING .*NAME = ?.*",
+                ".*SELECT .* FROM .*TST .* GROUP BY .*ID HAVING .*NAME = ?.* UNION " +
+                    ".*SELECT .* FROM .*TST .* GROUP BY .*ID HAVING .*NAME = ?.*",
                 sarah),
 
             F.t("SELECT CONCAT(name, '" + sarah + "') FROM TST",
-                "SELECT CONCAT(.*) FROM PUBLIC.TST",
+                "SELECT CONCAT(.*) FROM .*TST",
                 sarah),
 
             F.t("ALTER TABLE TST ADD COLUMN department VARCHAR(200)", null, null),
