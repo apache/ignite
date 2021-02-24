@@ -73,7 +73,8 @@ public class GridExchangeFreeCellularSwitchTxContinuationTest extends GridExchan
     }
 
     /**
-     *
+     * Tests checks that txs started before the switch can be continued after the switch if they are not affected by
+     * node fail.
      */
     @Test
     public void testAlreadyStartedTxsContinuationDuringAndAfterTheSwitch() throws Exception {
@@ -89,13 +90,14 @@ public class GridExchangeFreeCellularSwitchTxContinuationTest extends GridExchan
         Ignite failed = cluster.failed;
 
         int txCnt = 1024;
-        int keysPerTx = 6;
+        int keysPerTx = 6; // See puts count inside the closure.
         int prepTxCnt = 100;
         int dataAmount = txCnt * keysPerTx + prepTxCnt;
         int totalDataAmount = dataAmount + prepTxCnt;
 
         Queue<Integer> keys = new ConcurrentLinkedDeque<>();
         Queue<Integer> primaryOnFailedKeys = new ConcurrentLinkedDeque<>();
+
         Queue<Integer> keysToCheck = new ConcurrentLinkedDeque<>();
 
         for (int i = 0; keys.size() < dataAmount; i++)
@@ -240,6 +242,7 @@ public class GridExchangeFreeCellularSwitchTxContinuationTest extends GridExchan
 
         assertTrue(keys.isEmpty());
         assertTrue(primaryOnFailedKeys.isEmpty());
+
         assertEquals(totalDataAmount, keysToCheck.size());
 
         IgniteCache<Integer, Integer> cache = orig.getOrCreateCache(PART_CACHE_NAME);
