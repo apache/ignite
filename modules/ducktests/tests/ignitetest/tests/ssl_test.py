@@ -61,8 +61,8 @@ class SslTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication",
             startup_timeout_sec=180)
 
-        server_ssl = SslContext(root_dir=root_dir, key_store_jks="admin.jks")
-        control_utility = ControlUtility(cluster=ignite, ssl_context=server_ssl)
+        admin_ssl = SslContext(root_dir=root_dir, key_store_jks="admin.jks")
+        control_utility = ControlUtility(cluster=ignite, ssl_context=admin_ssl)
 
         ignite.start()
         app.start()
