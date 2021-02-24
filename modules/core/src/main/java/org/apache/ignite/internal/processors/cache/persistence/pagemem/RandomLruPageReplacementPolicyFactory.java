@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.spring;
-
-import java.lang.reflect.Method;
-import org.springframework.cache.interceptor.KeyGenerator;
+package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 /**
- * Key generator.
+ * {@link RandomLruPageReplacementPolicy} factory.
  */
-public class GridSpringCacheTestKeyGenerator implements KeyGenerator {
+public class RandomLruPageReplacementPolicyFactory implements PageReplacementPolicyFactory {
     /** {@inheritDoc} */
-    @Override public Object generate(Object target, Method mtd, Object... params) {
-        assert params != null;
-        assert params.length > 0;
+    @Override public long requiredMemory(int pagesCnt) {
+        return 0;
+    }
 
-        if (params.length == 1)
-            return params[0];
-        else {
-            assert params.length == 2;
-
-            return new GridSpringCacheTestKey((Integer)params[0], (String)params[1]);
-        }
+    /** {@inheritDoc} */
+    @Override public PageReplacementPolicy create(PageMemoryImpl.Segment seg, long ptr, int pagesCnt) {
+        return new RandomLruPageReplacementPolicy(seg);
     }
 }

@@ -1943,7 +1943,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <param name="val">The value.</param>
             public unsafe JavaGuid(Guid val)
             {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
+                // .NET returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
                 // And _a, _b and _c are always in little endian format irrespective of system configuration.
                 // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _f, _e, _d.
                 var accessor = *((GuidAccessor*)&val);
