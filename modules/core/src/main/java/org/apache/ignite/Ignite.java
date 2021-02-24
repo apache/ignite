@@ -709,7 +709,7 @@ public interface Ignite extends AutoCloseable {
      * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
      *
      * @return Collection of {@link DataRegionMetrics} snapshots.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
      */
     public Collection<DataRegionMetrics> dataRegionMetrics();
 
