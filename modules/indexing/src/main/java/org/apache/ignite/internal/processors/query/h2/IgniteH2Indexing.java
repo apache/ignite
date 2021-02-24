@@ -145,7 +145,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -714,7 +713,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(
-            GridSqlElement.INCLUDE_SENSITIVE ? qry : sqlWithoutConst(dml.statement()),
+            QueryUtils.INCLUDE_SENSITIVE ? qry : sqlWithoutConst(dml.statement()),
             GridCacheQueryType.SQL_FIELDS,
             schemaName,
             true,
@@ -1576,7 +1575,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         @Nullable GridSqlStatement stmnt
     ) {
-        String qry = GridSqlElement.INCLUDE_SENSITIVE || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
+        String qry = QueryUtils.INCLUDE_SENSITIVE || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
 
         Long res = runningQryMgr.register(
             qry,
@@ -1605,13 +1604,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @see GridSqlStatement#secureOutputToLog()
      */
     private String sqlWithoutConst(GridSqlStatement stmnt) {
-        GridSqlElement.INCLUDE_SENSITIVE_TL.set(false);
+        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
 
         try {
             return stmnt.getSQL();
         }
         finally {
-            GridSqlElement.INCLUDE_SENSITIVE_TL.set(true);
+            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
         }
     }
 

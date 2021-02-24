@@ -21,12 +21,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
  * SQL statement to query or update grid caches.
  */
 public abstract class GridSqlStatement {
-    /** Default SQL delimeter. */
-    public static final char DEFAULT_DELIM = '\n';
-
-    /** Space SQL delimeter. */
-    public static final char SPACE_DELIM = ' ';
-
     /** */
     protected GridSqlAst limit;
 
@@ -72,20 +66,5 @@ public abstract class GridSqlStatement {
      */
     public GridSqlAst limit() {
         return limit;
-    }
-
-    /**
-     * @return Delimeter to use.
-     */
-    public static char delimeter() {
-        if (secureOutputToLog())
-            return SPACE_DELIM;
-
-        return DEFAULT_DELIM;
-    }
-
-    /** @return {@code True} if output is for log. */
-    public static boolean secureOutputToLog() {
-        return !GridSqlElement.INCLUDE_SENSITIVE && !GridSqlElement.INCLUDE_SENSITIVE_TL.get();
     }
 }

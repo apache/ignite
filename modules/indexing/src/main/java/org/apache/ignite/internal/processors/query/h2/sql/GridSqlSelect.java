@@ -24,6 +24,8 @@ import java.util.Set;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * Plain SELECT query.
  */

@@ -22,7 +22,7 @@ import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement.delimeter;
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
 
 /**
  * Join of two tables or subqueries.

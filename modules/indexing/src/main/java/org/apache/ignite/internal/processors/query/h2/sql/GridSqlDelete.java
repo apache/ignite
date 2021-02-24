@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /** */
 public class GridSqlDelete extends GridSqlStatement {
     /** */

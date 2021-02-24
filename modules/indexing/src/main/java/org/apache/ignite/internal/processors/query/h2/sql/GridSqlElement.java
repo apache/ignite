@@ -28,25 +28,6 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * Base class for all SQL AST nodes.
  */
 public abstract class GridSqlElement implements GridSqlAst {
-    /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
-    public static final boolean INCLUDE_SENSITIVE =
-        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
-
-    /**
-     * Enables {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} mode for current thread.
-     * Note, setting {@code INCL_SENS_TL} to {@code false} will lead to generation of invalid SQL query.
-     * For example:<br>
-     * source query - "SELECT * FROM TBL WHERE name = 'Name'"<br>
-     * generated query - "SELECT * FROM TBL WHERE name = ?" - there is no parameter value in query.<br>
-     * It's a desired behaviour, because, when {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} {@code = false}
-     * we want to filter out all sensitive data and those data can be sitting in SQL constants.
-     *
-     * @see GridSqlConst#getSQL()
-     * @see IgniteH2Indexing#sqlWithoutConst(GridSqlStatement)
-     */
-    public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
-        ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
-
     /** */
     private final List<GridSqlAst> children;
 

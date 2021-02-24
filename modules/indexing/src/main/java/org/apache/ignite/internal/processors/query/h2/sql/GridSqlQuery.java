@@ -22,6 +22,8 @@ import java.util.List;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * SQL Query AST.
  */

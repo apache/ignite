@@ -21,6 +21,8 @@ import javax.cache.CacheException;
 import org.h2.command.dml.SelectUnion;
 import org.h2.util.StatementBuilder;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * Select query with UNION.
  */
