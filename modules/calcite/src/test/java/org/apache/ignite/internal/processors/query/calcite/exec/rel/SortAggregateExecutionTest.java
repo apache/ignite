@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -28,16 +26,12 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
@@ -148,51 +142,5 @@ public class SortAggregateExecutionTest extends BaseAggregateTest {
         aggRdc.register(aggMap);
 
         return aggRdc;
-    }
-
-    /** */
-    @Test
-    public void test() {
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-            row(0, 200),
-            row(1, 300),
-            row(2, 1400),
-            row(3, 1000)
-        ));
-
-        AggregateCall call = AggregateCall.create(
-            SqlStdOperatorTable.MIN,
-            false,
-            false,
-            false,
-            ImmutableIntList.of(0),
-            -1,
-            RelCollations.EMPTY,
-            tf.createJavaType(int.class),
-            null);
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
-
-        RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
-
-        SingleNode<Object[]> aggChain = createSingleAggregateNodesChain(
-            ctx,
-            grpSets,
-            call,
-            rowType,
-            aggRowType,
-            rowFactory(),
-            scan
-        );
-
-        RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
-        root.register(aggChain);
-
-        while (root.hasNext())
-            root.next();
-
     }
 }

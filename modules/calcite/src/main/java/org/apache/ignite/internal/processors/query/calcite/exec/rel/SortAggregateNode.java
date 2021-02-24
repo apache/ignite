@@ -98,8 +98,13 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
             requested = rowsCnt;
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
+            if (waiting == 0) {
+                waiting = requested;
+
+                source().request(requested);
+            }
+            else
+                downstream().end();
         }
         catch (Exception e) {
             onError(e);
@@ -137,8 +142,11 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
             prevRow = row;
 
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
+            if (waiting == 0 && requested > 0) {
+                waiting = requested;
+
+                context().execute(() -> source().request(requested), this::onError);
+            }
         }
         catch (Exception e) {
             onError(e);
