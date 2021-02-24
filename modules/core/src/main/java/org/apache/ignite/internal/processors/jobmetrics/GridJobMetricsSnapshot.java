@@ -27,7 +27,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * Job metrics snapshot.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} "compute.jobs" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
