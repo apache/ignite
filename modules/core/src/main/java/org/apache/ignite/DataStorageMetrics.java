@@ -25,7 +25,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.datastorage" instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

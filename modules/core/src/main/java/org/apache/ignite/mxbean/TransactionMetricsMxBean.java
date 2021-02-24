@@ -27,7 +27,7 @@ import org.apache.ignite.transactions.TransactionMetrics;
 /**
  * Transactions MXBean interface.
  *
- * @deprecated Check the {@link JmxMetricExporterSpi} "tx" instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=\"tx\"" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

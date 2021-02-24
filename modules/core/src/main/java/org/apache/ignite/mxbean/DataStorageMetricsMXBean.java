@@ -27,7 +27,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * An MX bean allowing to monitor and tune persistence metrics.
  *
- * @deprecated Check the {@link JmxMetricExporterSpi} "io.datastorage" instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=io.datastorage" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

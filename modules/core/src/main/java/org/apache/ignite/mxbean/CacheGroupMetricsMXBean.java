@@ -22,16 +22,14 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
  *
- * @deprecated Check the {@link JmxMetricExporterSpi} "cacheGroups.{cache_group_name}" instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cacheGroups.{cache_group_name}" instead.
  *
- * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
  * @see JmxMetricExporterSpi
  * @see MetricExporterSpi

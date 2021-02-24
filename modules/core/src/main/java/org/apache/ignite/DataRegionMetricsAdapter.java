@@ -26,7 +26,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 /**
  * Converter class from {@link DataRegionMetrics} to legacy {@link MemoryMetrics}.
  *
- * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.dataregion.{data_region_name}" instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

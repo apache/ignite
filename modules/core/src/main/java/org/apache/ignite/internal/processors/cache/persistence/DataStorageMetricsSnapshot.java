@@ -24,7 +24,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * @deprecated Check the {@link ReadOnlyMetricRegistry} "io.datastorage" instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
