@@ -110,11 +110,11 @@ public class GridSqlJoin extends GridSqlElement {
 
         buff.append(leftTable().getSQL());
 
-        buff.append(" ").append(delim).append(leftOuter ? " LEFT OUTER JOIN " : " INNER JOIN ");
+        buff.append(' ').append(delim).append(leftOuter ? " LEFT OUTER JOIN " : " INNER JOIN ");
 
         buff.append(rightTable().getSQL());
 
-        buff.append(" ").append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL()));
+        buff.append(' ').append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL()));
 
         return buff.toString();
     }

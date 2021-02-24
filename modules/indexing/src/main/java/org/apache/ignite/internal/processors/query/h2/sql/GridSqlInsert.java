@@ -63,7 +63,7 @@ public class GridSqlInsert extends GridSqlStatement {
             buff.append(delim)
                 .append(col.getSQL());
         }
-        buff.append(delim).append(")").append(delim);
+        buff.append(delim).append(')').append(delim);
 
         if (direct)
             buff.append("DIRECT ");

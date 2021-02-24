@@ -43,14 +43,14 @@ public class GridSqlMerge extends GridSqlStatement {
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("MERGE INTO ")
             .append(into.getSQL())
-            .append("(");
+            .append('(');
 
         for (GridSqlColumn col : cols) {
             buff.appendExceptFirst(", ");
             buff.append(delim)
                 .append(col.getSQL());
         }
-        buff.append(delim).append(")").append(delim);
+        buff.append(delim).append(')').append(delim);
 
         if (!rows.isEmpty()) {
             buff.append("VALUES").append(delim);
