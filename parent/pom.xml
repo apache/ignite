@@ -71,6 +71,7 @@
         <spoon.framework.version>8.3.0</spoon.framework.version>
         <typesafe.version>1.4.1</typesafe.version>
         <hamcrest.version>2.2</hamcrest.version>
+        <scalecube.version>2.6.6</scalecube.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -240,6 +241,12 @@
                 <groupId>org.hamcrest</groupId>
                 <artifactId>hamcrest-library</artifactId>
                 <version>${hamcrest.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.scalecube</groupId>
+                <artifactId>scalecube-cluster</artifactId>
+                <version>${scalecube.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

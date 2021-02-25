@@ -40,6 +40,7 @@
         <module>modules/configuration-annotation-processor</module>
         <module>modules/rest</module>
         <module>modules/runner</module>
+        <module>modules/network</module>
     </modules>
 
     <build>
