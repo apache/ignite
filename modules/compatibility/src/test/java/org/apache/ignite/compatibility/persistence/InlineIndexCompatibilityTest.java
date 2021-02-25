@@ -54,6 +54,12 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
     /** */
     private static final int ROWS_CNT = 100;
 
+    /** Index to test. */
+    private static final String INDEX_NAME = "intval1_val_intval2";
+
+    /** Index to test with configured inline size. */
+    private static final String INDEX_SIZED_NAME = "intval1_val_intval2_sized";
+
     /** Parametrized run param: Ignite version. */
     @Parameterized.Parameter(0)
     public String igniteVer;
@@ -94,7 +100,9 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
     @Test
     public void testQueryOldInlinedIndex() throws Exception {
         PostStartupClosure closure = cfgInlineSize ? new PostStartupClosureSized() : new PostStartupClosure();
-        doTestStartupWithOldVersion(igniteVer, closure);
+        String idxName = cfgInlineSize ? INDEX_SIZED_NAME : INDEX_NAME;
+
+        doTestStartupWithOldVersion(igniteVer, closure, idxName);
     }
 
     /** {@inheritDoc} */
@@ -149,7 +157,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
      * @param igniteVer 3-digits version of ignite
      * @throws Exception If failed.
      */
-    protected void doTestStartupWithOldVersion(String igniteVer, PostStartupClosure closure) throws Exception {
+    protected void doTestStartupWithOldVersion(String igniteVer, PostStartupClosure closure, String idxName) throws Exception {
         try {
             startGrid(1, igniteVer,
                 new PersistenceBasicCompatibilityTest.ConfigurationClosure(true),
@@ -163,7 +171,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
 
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            validateResultingCacheData(ignite.cache(TEST_CACHE_NAME));
+            validateResultingCacheData(ignite.cache(TEST_CACHE_NAME), idxName);
         }
         finally {
             stopAllGrids();
@@ -174,23 +182,26 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
      * Asserts cache contained all expected values as it was saved before.
      *
      * @param cache Cache to check.
+     * @param idxName Name of index to check.
      */
-    public static void validateResultingCacheData(IgniteCache<Object, Object> cache) {
-        validateRandomRow(cache);
-        validateRandomRange(cache);
+    private void validateResultingCacheData(IgniteCache<Object, Object> cache, String idxName) {
+        validateRandomRow(cache, idxName);
+        validateRandomRange(cache, idxName);
     }
 
     /** */
-    private static void validateRandomRow(IgniteCache<Object, Object> cache) {
+    private void validateRandomRow(IgniteCache<Object, Object> cache, String idxName) {
         int val = new Random().nextInt(ROWS_CNT);
 
-        List<List<?>> result = cache.query(
-            // Select by quering complex index.
-            new SqlFieldsQuery(
-                "SELECT * FROM \"" + TEST_CACHE_NAME + "\".EntityValueValue v " +
-                    "WHERE v.intVal1 = ? and v.val = ? and v.intVal2 = ?;")
-                .setArgs(val, new EntityValue(val + 2), val + 1)
-        ).getAll();
+        // Select by quering complex index.
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "SELECT * FROM \"" + TEST_CACHE_NAME + "\".EntityValueValue v " +
+                "WHERE v.intVal1 = ? and v.val = ? and v.intVal2 = ?;")
+            .setArgs(val, new EntityValue(val + 2), val + 1);
+
+        checkIndexUsed(cache, qry, idxName);
+
+        List<List<?>> result = cache.query(qry).getAll();
 
         assertTrue(result.size() == 1);
 
@@ -202,17 +213,19 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
     }
 
     /** */
-    private static void validateRandomRange(IgniteCache<Object, Object> cache) {
+    private void validateRandomRange(IgniteCache<Object, Object> cache, String idxName) {
         int pivot = new Random().nextInt(ROWS_CNT);
 
-        List<List<?>> result = cache.query(
-            // Select by quering complex index.
-            new SqlFieldsQuery(
-                "SELECT * FROM \"" + TEST_CACHE_NAME + "\".EntityValueValue v " +
+        // Select by quering complex index.
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "SELECT * FROM \"" + TEST_CACHE_NAME + "\".EntityValueValue v " +
                 "WHERE v.intVal1 > ? and v.val > ? and v.intVal2 > ? " +
                 "ORDER BY v.val, v.intVal1, v.intVal2;")
-                .setArgs(pivot, new EntityValue(pivot), pivot)
-        ).getAll();
+            .setArgs(pivot, new EntityValue(pivot), pivot);
+
+        checkIndexUsed(cache, qry, idxName);
+
+        List<List<?>> result = cache.query(qry).getAll();
 
         // For strict comparison. There was an issues with >= comparison for some versions.
         pivot += 1;
@@ -226,6 +239,11 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
             assertTrue(row.get(1).equals(pivot + i));
             assertTrue(row.get(2).equals(pivot + i + 1));
         }
+    }
+
+    /** */
+    private void checkIndexUsed(IgniteCache<?, ?> cache, SqlFieldsQuery qry, String idxName) {
+        assertTrue("Query does not use index.", queryPlan(cache, qry).toLowerCase().contains(idxName.toLowerCase()));
     }
 
     /** */
@@ -258,7 +276,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         /**
          * Create a complex index (int, pojo, int). Check that middle POJO object is correctly available from inline.
          *
-         * @param cache to be filled with data. Results may be validated in {@link #validateResultingCacheData(IgniteCache)}.
+         * @param cache to be filled with data. Results may be validated in {@link #validateResultingCacheData(IgniteCache, String)}.
          */
         protected void saveCacheData(IgniteCache<Object, Object> cache) {
             for (int i = 0; i < ROWS_CNT; i++)
@@ -266,7 +284,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
 
             // Create index (int, pojo, int).
             cache.query(new SqlFieldsQuery(
-                "CREATE INDEX intval1_val_intval2 ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
+                    "CREATE INDEX " + INDEX_NAME + " ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
                     "(intVal1, val, intVal2)")).getAll();
         }
     }
@@ -280,7 +298,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
 
             // Create index (int, pojo, int) with configured inline size.
             cache.query(new SqlFieldsQuery(
-                "CREATE INDEX intval1_val_intval2_sized ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
+                "CREATE INDEX " + INDEX_SIZED_NAME + " ON \"" + TEST_CACHE_NAME + "\".EntityValueValue " +
                     "(intVal1, val, intVal2) " +
                     "INLINE_SIZE 100")).getAll();
         }
