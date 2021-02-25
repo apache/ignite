@@ -88,6 +88,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         public IList<T> GetAll()
         {
+            return WithReg(() => GetAll0(), _keepBinary);
+        }
+
+        private IList<T> GetAll0()
+        {
             if (_getAllCalled)
                 throw new InvalidOperationException("Failed to get all entries because GetAll() " +
                                                     "method has already been called.");
@@ -258,6 +263,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <returns>Result.</returns>
         protected T[] ConvertGetBatch(IBinaryStream stream)
         {
+            return WithReg(() => ConvertGetBatch0(stream), _keepBinary);
+        }
+
+        /// <summary>
+        /// Converter for GET_BATCH operation.
+        /// </summary>
+        private T[] ConvertGetBatch0(IBinaryStream stream)
+        {
             var reader = _marsh.StartUnmarshal(stream, _keepBinary);
 
             var size = reader.ReadInt();
@@ -324,6 +337,31 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
+            }
+        }
+
+        /// <summary>
+        /// Enables Register Same Java Type mode is keepBinary = false.
+        /// </summary>
+        /// <param name="action">Action.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        /// <returns></returns>
+        private static TK WithReg<TK>(Func<TK> action, bool keepBinary)
+        {
+            if (keepBinary)
+                return action.Invoke();
+
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                return action.Invoke();
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
             }
         }
     }
