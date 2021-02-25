@@ -151,10 +151,10 @@ public class SnapshotPartitionsVerifyTask
         private IgniteLogger log;
 
         /** Snapshot name to validate. */
-        private String snpName;
+        private final String snpName;
 
         /** Consistent snapshot metadata file name. */
-        private String consId;
+        private final String consId;
 
         /**
          * @param snpName Snapshot name to validate.
@@ -238,8 +238,10 @@ public class SnapshotPartitionsVerifyTask
                                 PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
                                 GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
 
-                                if (partState != OWNING)
-                                    throw new IgniteCheckedException("Snapshot partitions must be in OWNING state only: " + partState);
+                                if (partState != OWNING) {
+                                    throw new IgniteCheckedException("Snapshot partitions must be in the OWNING " +
+                                        "state only: " + partState);
+                                }
 
                                 long updateCntr = io.getUpdateCounter(pageAddr);
                                 long size = io.getSize(pageAddr);

@@ -245,6 +245,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 printer.accept("Partition instances: " + entry.getValue() + "\n");
             }
+
+            printer.accept("\n");
         }
     }
 
@@ -265,6 +267,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 printer.accept("Partition instances: " + entry.getValue() + "\n");
             }
+
+            printer.accept("\n");
         }
 
         if (!F.isEmpty(hashConflicts())) {
