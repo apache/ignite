@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System.IO;
+    using System.Linq;
     using System.Text.RegularExpressions;
 
     /// <summary>
@@ -49,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         public static string GetAssemblyPath(string projFile)
         {
-            var targetFw = GetTargetFrameworks(projFile);
+            var targetFw = GetTargetFrameworks(projFile).Split(';').First();
             var name = Path.GetFileNameWithoutExtension(projFile);
             var path = Path.GetDirectoryName(projFile);
 
