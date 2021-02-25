@@ -50,6 +50,12 @@ pip install -e .
 - For checking codestyle invoke `flake8` in `${DUCKTESTS_DIR}`.
 - For running linter invoke `pylint --rcfile=tox.ini ignitetests checks` in `${DUCKTESTS_DIR}`.
 
+## Clean up development environment
+- Tear down all the currently active ducker-ignite nodes using a following command:
+```
+./docker/clean_up.sh
+```
+
 #### Run checks over multiple python's versions using tox (optional)
 All commits and PR's are checked against multiple python's version, namely 3.6, 3.7 and 3.8.
 If you want to check your PR as it will be checked on Travis CI, you should do following steps:
