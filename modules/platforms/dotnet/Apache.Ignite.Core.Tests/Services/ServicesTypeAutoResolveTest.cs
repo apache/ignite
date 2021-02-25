@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
@@ -314,6 +316,53 @@ namespace Apache.Ignite.Core.Tests.Services
                 else
                     Assert.AreEqual("2", entry.Value.Name);
             }
+
+            var v13 = _grid1.GetCache<int, V13>("V13").Query(new ScanQuery<int, V13>()).GetAll();
+
+            Assert.AreEqual(2, v13.Count);
+
+            foreach (var entry in v13)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            var v14 = _grid1.GetCache<int, V14>("V14").Query(new ScanQuery<int, V14>());
+
+            foreach (var entry in v14)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            var v15 = _grid1.GetCache<int, V15>("V15")
+                .Query(new ScanQuery<int, V15>(new CacheEntryFilter())).GetAll();
+
+            Assert.AreEqual(1, v15.Count);
+
+            foreach (var entry in v15)
+            {
+                Assert.AreEqual("1", entry.Value.Name);
+            }
+
+            var v16 = _grid1.GetCache<int, V16>("V16").Query(new SqlFieldsQuery("SELECT _KEY, _VAL FROM V16"));
+
+            var cnt = 0;
+
+            foreach (var entry in v16)
+            {
+                cnt++;
+                if ((int) entry[0] == 1)
+                    Assert.AreEqual("1", ((V16) entry[1]).Name);
+                else
+                    Assert.AreEqual("2", ((V16) entry[1]).Name);
+            }
+
+            Assert.AreEqual(2, cnt);
         }
 
         /// <summary>
@@ -459,6 +508,18 @@ namespace Apache.Ignite.Core.Tests.Services
         public ServicesTypeAutoResolveTestBinaryArrays() : base(true)
         {
             // No-op.
+        }
+    }
+
+    /// <summary>
+    /// Cache entry filter.
+    /// </summary>
+    class CacheEntryFilter : ICacheEntryFilter<int, V15>
+    {
+        /** <inheritDoc /> */
+        public bool Invoke(ICacheEntry<int, V15> entry)
+        {
+            return entry.Value.Name.Equals("1");
         }
     }
 }
