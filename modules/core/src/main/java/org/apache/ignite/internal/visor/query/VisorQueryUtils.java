@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -360,7 +361,7 @@ public class VisorQueryUtils {
         final VisorQueryTaskArg arg,
         final GridQueryCancel cancel
     ) {
-        ignite.context().closure().runLocalSafe(() -> {
+        ignite.context().closure().runLocalSafe((GridPlainRunnable)() -> {
             try {
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
 
@@ -440,7 +441,7 @@ public class VisorQueryUtils {
         final VisorQueryHolder holder,
         final VisorScanQueryTaskArg arg
     ) {
-        ignite.context().closure().runLocalSafe(() -> {
+        ignite.context().closure().runLocalSafe((GridPlainRunnable)() -> {
             try {
                 IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
                 String filterText = arg.getFilter();

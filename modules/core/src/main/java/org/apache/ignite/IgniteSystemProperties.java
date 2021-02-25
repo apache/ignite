@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
@@ -112,7 +113,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxM
 import static org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.DFLT_TX_DEADLOCK_DETECTION_TIMEOUT;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_UPDATE_NOTIFIER;
-import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher.DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater.DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
 import static org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl.DFLT_ATOMIC_CACHE_QUERY_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DFLT_DUMP_PAGE_LOCK_ON_FAILURE;
 import static org.apache.ignite.internal.processors.failure.FailureProcessor.DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;
@@ -1526,8 +1527,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty("When set to true, Ignite will allow execute DML operation " +
-        "(MERGE|INSERT|UPDATE|DELETE) within transaction for non MVCC mode")
+    @SystemProperty("When set to true, Ignite will allow executing DML operation " +
+        "(MERGE|INSERT|UPDATE|DELETE) within transactions for non MVCC mode")
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
     /**
@@ -1596,7 +1597,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables start caches in parallel",
+    @SystemProperty(value = "Allows to start multiple caches in parallel",
         defaults = "" + DFLT_ALLOW_START_CACHES_IN_PARALLEL)
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
@@ -1891,6 +1892,14 @@ public final class IgniteSystemProperties {
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
     /**
+     * Disable group state lazy store. It means that group state won't be cached for {@link CheckpointEntry} and will be
+     * read from wal every time. Should be used for test purposes only.
+     */
+    @SystemProperty(value = "Disable group state lazy store. It means that group state won't be cached " +
+        "and will be read from wal every time", defaults = "false")
+    public static final String IGNITE_DISABLE_GRP_STATE_LAZY_STORE = "IGNITE_DISABLE_GRP_STATE_LAZY_STORE";
+
+    /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.
      * <p/>
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node
@@ -1971,11 +1980,11 @@ public final class IgniteSystemProperties {
         "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
 
     /**
-     * Performance statistics maximum file size in bytes. Performance statistics will be stopped when the size exceeded.
-     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
+     * Maximum performance statistics file size in bytes. Performance statistics collection is stopped when the
+     * file size is exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
      */
-    @SystemProperty(value = "Performance statistics maximum file size in bytes. Performance statistics will be " +
-        "stopped when the size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
+    @SystemProperty(value = "Maximum performance statistics file size in bytes. Performance statistics collection " +
+        "is stopped when the file size is exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
     public static final String IGNITE_PERF_STAT_FILE_MAX_SIZE = "IGNITE_PERF_STAT_FILE_MAX_SIZE";
 
     /**
@@ -1987,19 +1996,19 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERF_STAT_BUFFER_SIZE = "IGNITE_PERF_STAT_BUFFER_SIZE";
 
     /**
-     * Performance statistics minimal batch size to flush in bytes. The default value is
+     * Minimal performance statistics batch size to be flushed in bytes. The default value is
      * {@link FilePerformanceStatisticsWriter#DFLT_FLUSH_SIZE}.
      */
-    @SystemProperty(value = "Performance statistics minimal batch size to flush in bytes", type = Integer.class,
+    @SystemProperty(value = "Minimal performance statistics batch size to be flushed in bytes", type = Integer.class,
         defaults = "" + DFLT_FLUSH_SIZE)
     public static final String IGNITE_PERF_STAT_FLUSH_SIZE = "IGNITE_PERF_STAT_FLUSH_SIZE";
 
     /**
-     * Performance statistics maximum cached strings threshold. String caching will stop on threshold excess.
-     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
+     * Maximum performance statistics cached strings threshold. String caching is stopped when the threshold
+     * is exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
      */
-    @SystemProperty(value = "Performance statistics maximum cached strings threshold. String caching will stop on " +
-        "threshold excess", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
+    @SystemProperty(value = "Maximum performance statistics cached strings threshold. String caching is " +
+        "stopped when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
     /**

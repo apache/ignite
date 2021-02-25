@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class Marshaller
     {
         /** Register same java type flag. */
-        public static readonly ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+        public static readonly ThreadLocal<Boolean> RegisterSameJavaTypeTl = new ThreadLocal<Boolean>(() => false);
 
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
@@ -69,6 +69,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** */
         private readonly ILogger _log;
+
+        /** */
+        private readonly bool _registerSameJavaType;
 
         /// <summary>
         /// Constructor.
@@ -109,6 +112,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (typeNames != null)
                 foreach (string typeName in typeNames)
                     AddUserType(new BinaryTypeConfiguration(typeName), typeResolver);
+
+            _registerSameJavaType = _cfg.NameMapper == null ||
+                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName &&
+                 _cfg.IdMapper == null;
         }
 
         /// <summary>
@@ -150,6 +157,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public ITimestampConverter TimestampConverter
         {
             get { return _cfg.TimestampConverter; }
+        }
+
+        /// <summary>
+        /// Returns register same java type flag value.
+        /// </summary>
+        public bool RegisterSameJavaType
+        {
+            get { return _registerSameJavaType && RegisterSameJavaTypeTl.Value; }
         }
 
         /// <summary>
@@ -534,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId);
+                    typeName = typeName ?? GetTypeName(typeId);
 
                     if (typeName != null)
                     {
@@ -571,6 +586,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the type name by id.
+        /// </summary>
+        private string GetTypeName(int typeId)
+        {
+            var errorAction = RegisterSameJavaType
+                ? ex =>
+                {
+                    // Try to get java type name and register corresponding DotNet type.
+                    var javaTypeName =
+                        _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId);
+
+                    _ignite.BinaryProcessor.RegisterType(typeId, javaTypeName, false);
+
+                    return javaTypeName;
+                }
+                : (Func<Exception, string>) null;
+
+            return _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.DotNetPlatformId, errorAction);
+        }
+
+        /// <summary>
         /// Registers the type.
         /// </summary>
         /// <param name="type">The type.</param>
@@ -582,7 +618,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType.Value);
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType);
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }

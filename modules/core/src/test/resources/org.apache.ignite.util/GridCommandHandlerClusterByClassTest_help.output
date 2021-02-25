@@ -1,5 +1,5 @@
 Control utility [ver. <!any!>
-2020 Copyright(C) Apache Software Foundation
+2021 Copyright(C) Apache Software Foundation
 User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
@@ -250,6 +250,15 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
 
   Cancel scheduled or active PDS defragmentation on underlying node:
     control.(sh|bat) --defragmentation cancel
+
+  Start collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics start
+
+  Stop collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics stop
+
+  Get status of collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics status
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

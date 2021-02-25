@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
@@ -1639,7 +1641,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /**
      * @param entry Transaction entry.
      */
-    private void map(IgniteTxEntry entry) {
+    private void map(IgniteTxEntry entry) throws IgniteTxRollbackCheckedException {
         if (entry.cached().isLocal())
             return;
 
@@ -1660,6 +1662,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         while (true) {
             try {
                 List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
+
+                GridDhtPartitionTopology top = cacheCtx.topology();
+
+                GridDhtLocalPartition part = top.localPartition(cached.partition());
+
+                if (part != null && !part.primary(top.readyTopologyVersion())) {
+                    log.warning("Failed to map a transaction on outdated topology, rolling back " +
+                        "[tx=" + CU.txString(tx) +
+                        ", readyTopVer=" + top.readyTopologyVersion() +
+                        ", lostParts=" + top.lostPartitions() +
+                        ", part=" + part.toString() + ']');
+
+                    throw new IgniteTxRollbackCheckedException("Failed to map a transaction on outdated " +
+                        "topology, please try again [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']');
+                }
 
                 assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) :
                     "cacheId=" + cacheCtx.cacheId() + ", localNode = " + cctx.localNodeId() + ", dhtNodes = " + dhtNodes;

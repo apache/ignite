@@ -25,8 +25,10 @@ using Apache.Ignite.Core.Cache.Query;
 using Apache.Ignite.Core.Client;
 using Apache.Ignite.Core.Client.Cache;
 using Apache.Ignite.Core.Client.Compute;
+using Apache.Ignite.Core.Client.Services;
 using Apache.Ignite.Core.Configuration;
 using Apache.Ignite.Core.Log;
+using Apache.Ignite.Core.Services;
 
 namespace dotnet_helloworld
 {
@@ -346,6 +348,23 @@ namespace dotnet_helloworld
             IComputeClient compute = client.GetCompute();
             int result = compute.ExecuteJavaTask<int>("org.foo.bar.AddOneTask", 1);
             //end::client-compute-task[]
+        }
+
+        public static void Services()
+        {
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-services[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IServicesClient services = client.GetServices();
+            IMyService serviceProxy = services.GetServiceProxy<IMyService>("MyService");
+            serviceProxy.MyServiceMethod("hello");
+            //end::client-services[]
+
+        }
+
+        private interface IMyService
+        {
+            void MyServiceMethod(string val);
         }
     }
 }

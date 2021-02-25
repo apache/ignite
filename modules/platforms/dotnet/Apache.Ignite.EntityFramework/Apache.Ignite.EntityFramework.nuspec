@@ -46,7 +46,7 @@ More info: https://apacheignite-net.readme.io/
         <summary>
             Apache Ignite EntityFramework Integration
         </summary>
-        <copyright>Copyright 2020</copyright>
+        <copyright>Copyright 2021</copyright>
         <tags>EntityFramework Second-Level Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
         <repository type="git" url="https://github.com/apache/ignite.git" />
         <dependencies>

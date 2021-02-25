@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.io.File;
 import java.util.Collections;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -71,6 +72,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 
