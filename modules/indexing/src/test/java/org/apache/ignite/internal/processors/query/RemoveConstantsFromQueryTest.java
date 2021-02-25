@@ -43,6 +43,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Tests check that with {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} == false literals from query
@@ -57,13 +58,19 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPerformanceStatisticsDir();
+
+        QueryUtils.INCLUDE_SENSITIVE = false;
+    }
+
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        QueryUtils.INCLUDE_SENSITIVE = DFLT_TO_STRING_INCLUDE_SENSITIVE;
     }
 
     /**  */
     @Test
     public void testConstantRemoved() throws Exception {
-        QueryUtils.INCLUDE_SENSITIVE = false;
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ACTIVE);
