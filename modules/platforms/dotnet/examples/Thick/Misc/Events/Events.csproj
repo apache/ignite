@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net5</TargetFrameworks>
     <RootNamespace>Apache.Ignite.Examples.Thick.Misc.Events</RootNamespace>
   </PropertyGroup>
 
