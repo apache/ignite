@@ -96,13 +96,16 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
     /** */
     private void push() throws Exception {
+        if (isClosed())
+            return;
+
         inLoop = true;
         try {
             if (it == null)
                 it = src.iterator();
 
             int processed = 0;
-            while (requested > 0 && it.hasNext()) {
+            while (requested > 0 && it.hasNext() && !isClosed()) {
                 checkState();
 
                 requested--;
@@ -125,6 +128,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
             it = null;
 
             requested = 0;
+
             downstream().end();
         }
     }

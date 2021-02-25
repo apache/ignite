@@ -115,7 +115,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         inLoop = true;
         try {
-            while (requested > 0 && !rows.isEmpty()) {
+            while (requested > 0 && !rows.isEmpty() && !isClosed()) {
                 checkState();
 
                 requested--;

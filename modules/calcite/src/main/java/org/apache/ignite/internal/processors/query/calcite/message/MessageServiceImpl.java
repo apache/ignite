@@ -214,6 +214,11 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** {@inheritDoc} */
+    @Override public UUID localNode() {
+        return localNodeId;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean alive(UUID nodeId) {
         try {
             return !ioManager().checkNodeLeft(nodeId, null, false);

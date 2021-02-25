@@ -90,6 +90,20 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     }
 
     /**
+     * Submits a {@link Runnable} task for execution and returns a {@link Future} representing that task.
+     * The command with the same {@code index} will be executed in the same thread.
+     *
+     * @param task The task to submit.
+     * @return a {@link Future} representing pending completion of the task.
+     * @throws RejectedExecutionException if the task cannot be
+     *         scheduled for execution.
+     * @throws NullPointerException if the task is {@code null}.
+     */
+    public Future<?> submit(Runnable task, int idx) {
+        return execs[threadId(idx)].submit(task);
+    }
+
+    /**
      * @param idx Index.
      * @return Stripped thread ID.
      */
