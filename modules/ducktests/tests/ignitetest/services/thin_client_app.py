@@ -24,6 +24,7 @@ from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_CLIENT_KEYSTORE
 
 
 class ThinClientService(IgniteAwareService):
@@ -97,3 +98,7 @@ class ThinClientService(IgniteAwareService):
                 res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 
         return res
+
+    def update_config_with_globals(self):
+        if self.globals.get("use_ssl", False):
+            self._update_ssl_config_with_globals("client", DEFAULT_CLIENT_KEYSTORE)
