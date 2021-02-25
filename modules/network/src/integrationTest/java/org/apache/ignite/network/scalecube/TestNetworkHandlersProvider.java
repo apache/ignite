@@ -35,7 +35,7 @@ class TestNetworkHandlersProvider implements NetworkHandlersProvider {
     private final String localName;
 
     /** */
-    public TestNetworkHandlersProvider(String name) {
+    TestNetworkHandlersProvider(String name) {
         localName = name;
     }
 

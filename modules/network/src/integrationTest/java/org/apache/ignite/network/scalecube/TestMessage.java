@@ -27,7 +27,7 @@ class TestMessage implements Serializable {
     private final String msg;
 
     /** */
-    public TestMessage(String msg) {
+    TestMessage(String msg) {
         this.msg = msg;
     }
 
