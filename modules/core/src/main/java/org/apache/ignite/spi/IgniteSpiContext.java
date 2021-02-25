@@ -29,7 +29,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -381,12 +380,11 @@ public interface IgniteSpiContext {
     public void resolveCommunicationFailure(ClusterNode node, Exception err);
 
     /**
-     * Returns exisiting or newly created instance of metric registry with given name.
+     * Returns existing or newly created instance of metric registry with given name.
      *
      * @param name Metric registry name.
-     * @return Exisiting or newly created instance of metric registry.
+     * @return Existing or newly created instance of metric registry.
      */
-    @IgniteExperimental
     public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name);
 
     /**
@@ -394,7 +392,6 @@ public interface IgniteSpiContext {
      *
      * @param name Metric registry name.
      */
-    @IgniteExperimental
     public void removeMetricRegistry(String name);
 
     /**
@@ -402,7 +399,6 @@ public interface IgniteSpiContext {
      *
      * @return All registered metric registries.
      */
-    @IgniteExperimental
     public Iterable<ReadOnlyMetricRegistry> metricRegistries();
 
     /**
@@ -410,6 +406,5 @@ public interface IgniteSpiContext {
      *
      * @param lsnr Listener.
      */
-    @IgniteExperimental
     public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 }

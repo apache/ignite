@@ -21,12 +21,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cacheGroups.{cache_group_name}" instead.
+ *
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 @MXBeanDescription("MBean that provides access to cache group descriptor.")
