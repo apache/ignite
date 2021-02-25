@@ -20,7 +20,7 @@ For development process requirements are `python` >= 3.7.
 
 ## Run tests locally
 - Change a current directory to`${IGNITE_HOME}`
-- Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build.sh`
+- Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
 - Change a current directory to `${IGNITE_HOME}/modules/ducktests/tests`
 - Run tests in docker containers using a following command:
 ```
