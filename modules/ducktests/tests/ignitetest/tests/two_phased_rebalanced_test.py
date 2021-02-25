@@ -269,7 +269,7 @@ def start_idx_node_on_cell(cells: [IgniteService], idxs: [int]):
 
 def fix_data(control_utility: ControlUtility, node: ClusterNode, log_dir: str) -> str:
     """
-    Start cell.
+    Creates a dump file and copies it to the log directory.
     :param control_utility ControlUtility.
     :param node ClusterNode.
     :param log_dir Path to log directory.
