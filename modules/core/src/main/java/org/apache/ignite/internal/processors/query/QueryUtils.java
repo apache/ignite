@@ -79,10 +79,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Utility methods for queries.
@@ -130,6 +132,29 @@ public class QueryUtils {
 
     /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
+    /** Default SQL delimeter. */
+    public static final char DEFAULT_DELIM = '\n';
+
+    /** Space SQL delimeter. */
+    public static final char SPACE_DELIM = ' ';
+
+    /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
+    public static boolean INCLUDE_SENSITIVE =
+        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
+
+    /**
+     * Enables {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} mode for current thread.
+     * Note, setting {@code INCL_SENS_TL} to {@code false} will lead to generation of invalid SQL query.
+     * For example:<br>
+     * source query - "SELECT * FROM TBL WHERE name = 'Name'"<br>
+     * generated query - "SELECT * FROM TBL WHERE name = ?" - there is no parameter value in query.<br>
+     * It's a desired behaviour, because, when {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} {@code = false}
+     * we want to filter out all sensitive data and those data can be sitting in SQL constants.
+     * Please, see {@code GridSqlConst#getSQL()}, {@code IgniteH2Indexing#sqlWithoutConst(GridSqlStatement)}.
+     */
+    public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
+        ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
     /**
      * Creates SQL types set.
@@ -1603,6 +1628,27 @@ public class QueryUtils {
             qry.setTimeout(timeout, timeUnit);
 
         return qry;
+    }
+
+    /**
+     * @return {@code True} if output sensitive data allowed.
+     */
+    public static boolean includeSensitive() {
+        return INCLUDE_SENSITIVE || INCLUDE_SENSITIVE_TL.get();
+    }
+
+    /**
+     * Return space character as an SQL delimeter in case {@link #includeSensitive()} is {@code false}
+     * to make output SQL one line. Default multiline SQL output looks ugly in system view and other view tool.
+     * See, {@code GridSqlConst} and {@code IgniteH2Indexing#sqlWithoutConst()} for details.
+     *
+     * @return Delimeter to use.
+     */
+    public static char delimeter() {
+        if (!includeSensitive())
+            return SPACE_DELIM;
+
+        return DEFAULT_DELIM;
     }
 
     /**
