@@ -45,6 +45,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryArray;
@@ -65,6 +66,10 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.V10;
 import org.apache.ignite.platform.model.V11;
 import org.apache.ignite.platform.model.V12;
+import org.apache.ignite.platform.model.V13;
+import org.apache.ignite.platform.model.V14;
+import org.apache.ignite.platform.model.V15;
+import org.apache.ignite.platform.model.V16;
 import org.apache.ignite.platform.model.V5;
 import org.apache.ignite.platform.model.V6;
 import org.apache.ignite.platform.model.V7;
@@ -704,6 +709,30 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Obje
 
             v12.put(1, new V12("1"));
             v12.put(2, new V12("2"));
+
+            IgniteCache<Integer, V13> v13 = ignite.getOrCreateCache("V13");
+
+            v13.put(1, new V13("1"));
+            v13.put(2, new V13("2"));
+
+            IgniteCache<Integer, V14> v14 = ignite.getOrCreateCache("V14");
+
+            v14.put(1, new V14("1"));
+            v14.put(2, new V14("2"));
+
+            IgniteCache<Integer, V15> v15 = ignite.getOrCreateCache("V15");
+
+            v15.put(1, new V15("1"));
+            v15.put(2, new V15("2"));
+
+            CacheConfiguration<Integer, V16> ccfg = new CacheConfiguration<>("V16");
+
+            ccfg.setIndexedTypes(Integer.class, V16.class);
+
+            IgniteCache<Integer, V16> v16 = ignite.getOrCreateCache(ccfg);
+
+            v16.put(1, new V16("1"));
+            v16.put(2, new V16("2"));
         }
 
         /** */
