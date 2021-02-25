@@ -42,16 +42,15 @@ public class ThinClientCachePut extends ThinClientApplication {
 
         markInitialized();
 
-        System.out.println();
-        System.out.println(">>> Cache test started.");
+        log.info(">>> Cache test started.");
 
         ClientCacheConfiguration cfg = new ClientCacheConfiguration();
         cfg.setName(cacheName);
 
-        System.out.println(">>> Cache requested  [cacheName=" + cacheName + ']');
-        System.out.println(">>>                  [cacheMode=" + cacheMode + ']');
-        System.out.println(">>>                  [cacheAtomcityMode=" + cacheAtomcityMode + ']');
-        System.out.println(">>>                  [backups=" + backups + ']');
+        log.info(">>> Cache requested  [cacheName=" + cacheName + ']');
+        log.info(">>>                  [cacheMode=" + cacheMode + ']');
+        log.info(">>>                  [cacheAtomcityMode=" + cacheAtomcityMode + ']');
+        log.info(">>>                  [backups=" + backups + ']');
 
         if (cacheMode.equals(CacheMode.REPLICATED.toString())) { cfg.setCacheMode(CacheMode.REPLICATED);}
         else if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
@@ -59,26 +58,26 @@ public class ThinClientCachePut extends ThinClientApplication {
             cfg.setBackups(backups);
         }
         else {
-            System.out.println(">>> CacheMode is not correct:" + cacheMode);
+            log.info(">>> CacheMode is not correct:" + cacheMode);
         }
 
         if (cacheAtomcityMode.equals(CacheAtomicityMode.ATOMIC.toString())) { cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);}
         else if (cacheAtomcityMode.equals(CacheAtomicityMode.TRANSACTIONAL.toString())) { cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);}
         else {
-            System.out.println(">>> CacheAtomicityMode is not correct:" + cacheAtomcityMode);
+            log.info(">>> CacheAtomicityMode is not correct:" + cacheAtomcityMode);
         }
 
-        System.out.println(">>> Cache configured [cacheName=" + cfg.getName() + ']');
-        System.out.println(">>>                  [cacheMode=" + cfg.getCacheMode() + ']');
-        System.out.println(">>>                  [cacheAtomcityMode=" + cfg.getAtomicityMode() + ']');
-        System.out.println(">>>                  [backups=" + cfg.getBackups() + ']');
+        log.info(">>> Cache configured [cacheName=" + cfg.getName() + ']');
+        log.info(">>>                  [cacheMode=" + cfg.getCacheMode() + ']');
+        log.info(">>>                  [cacheAtomcityMode=" + cfg.getAtomicityMode() + ']');
+        log.info(">>>                  [backups=" + cfg.getBackups() + ']');
 
         ClientCache<Long, Long> cache = client.getOrCreateCache(cfg);
 
-        System.out.println(">>> Cache created    [cacheName=" + cache.getName() + ']');
-        System.out.println(">>>                  [cacheMode=" + cache.getConfiguration().getCacheMode() + ']');
-        System.out.println(">>>                  [cacheAtomcityMode=" + cache.getConfiguration().getAtomicityMode() + ']');
-        System.out.println(">>>                  [backups=" + cache.getConfiguration().getBackups() + ']');
+        log.info(">>> Cache created    [cacheName=" + cache.getName() + ']');
+        log.info(">>>                  [cacheMode=" + cache.getConfiguration().getCacheMode() + ']');
+        log.info(">>>                  [cacheAtomcityMode=" + cache.getConfiguration().getAtomicityMode() + ']');
+        log.info(">>>                  [backups=" + cache.getConfiguration().getBackups() + ']');
 
         assert (cacheMode.equals(cache.getConfiguration().getCacheMode().toString()));
         assert (cacheAtomcityMode.equals(cache.getConfiguration().getAtomicityMode().toString()));
@@ -101,13 +100,12 @@ public class ThinClientCachePut extends ThinClientApplication {
      * Fills cache.
      */
     public static void fillCache(ClientCache<Long, Long> cache, int entry_num) {
-        System.out.println();
-        System.out.println(">>> Fill cache with values [cacheName=" + cache.getName() + ']');
+        log.info(">>> Fill cache with values [cacheName=" + cache.getName() + ']');
 
         for (long i = 0; i < entry_num; i++) {
             cache.put(i, i);
 
-            System.out.println("Put [key=" + i + ", val=" + i + ']');
+            log.info("Put [key=" + i + ", val=" + i + ']');
         }
     }
 
@@ -115,17 +113,16 @@ public class ThinClientCachePut extends ThinClientApplication {
      * Checks cache data.
      */
     public static void checkCacheData(ClientCache<Long, Long> cache, int entry_num) {
-        System.out.println();
-        System.out.println(">>> Check cache data [cacheName=" + cache.getName() + ']');
-        System.out.println(">>> Check cache data [entry_num=" + entry_num + ']');
-        System.out.println(">>> Check cache data [cache.size=" + cache.size() + ']');
+        log.info(">>> Check cache data [cacheName=" + cache.getName() + ']');
+        log.info(">>> Check cache data [entry_num=" + entry_num + ']');
+        log.info(">>> Check cache data [cache.size=" + cache.size() + ']');
 
         assert (entry_num == cache.size());
 
         for (long i = 0; i < entry_num; i++) {
             Long val = cache.get(i);
 
-            System.out.println("Got [key=" + i + ", val=" + val + ']');
+            log.info("Got [key=" + i + ", val=" + val + ']');
 
             assert (i == val);
         }
