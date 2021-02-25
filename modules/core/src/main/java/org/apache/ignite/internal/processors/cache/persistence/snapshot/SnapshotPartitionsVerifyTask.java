@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -110,19 +109,14 @@ public class SnapshotPartitionsVerifyTask
                 new IgniteException("Some metadata is missing from the snapshot: " + missed)));
         }
 
-        for (int idx = 0; !allMetas.isEmpty(); idx++) {
+        while (!allMetas.isEmpty()) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
-                if (e.getValue().size() < idx)
+                SnapshotMetadata meta = F.find(e.getValue(), null, allMetas::remove);
+
+                if (meta == null)
                     continue;
 
-                Optional<SnapshotMetadata> meta = e.getValue().stream()
-                    .filter(allMetas::contains)
-                    .findFirst();
-
-                if (meta.isPresent() && allMetas.remove(meta.get())) {
-                    jobs.put(new VisorVerifySnapshotPartitionsJob(meta.get().snapshotName(), meta.get().consistentId()),
-                        e.getKey());
-                }
+                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId()), e.getKey());
 
                 if (allMetas.isEmpty())
                     break;
