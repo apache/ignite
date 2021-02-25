@@ -39,7 +39,7 @@ from ignitetest.utils.enum import constructible
 
 # pylint: disable=too-many-public-methods
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_context import get_ssl_context_from_globals
+from ignitetest.services.utils.ssl.ssl_params import get_ssl_params_from_globals
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
@@ -420,13 +420,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Update ssl configuration.
         """
-        ssl_context = None
-        if self.config.ssl_context is None:
-            ssl_context = get_ssl_context_from_globals(self.globals, dict_name)
-        if ssl_context:
-            self.config = self.config._replace(ssl_context=ssl_context)
+        ssl_params = None
+        if self.config.ssl_params is None:
+            ssl_params = get_ssl_params_from_globals(self.globals, dict_name)
+        if ssl_params:
+            self.config = self.config._replace(ssl_params=ssl_params)
             self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
-                ssl_enabled=True, ssl_context=ssl_context))
+                ssl_enabled=True, ssl_params=ssl_params))
 
     @staticmethod
     def exec_command(node, cmd):

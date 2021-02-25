@@ -14,29 +14,42 @@
 # limitations under the License
 
 """
-This module contains classes and utilities for SslContextFactory.
+This module contains classes and utilities for Ignite SslContextFactory.
+
+This file contains three user presets:
+1. server for Ignite(clientMode=False)
+2. client for Ignte(clientMode=True) node and ThinClient
+3. admin for GridClient and console utils (control.sh)
+
+Keystores for this presets are generated automaticaly on creating envoriment
+If you like to specify different certificate for preset you can pass them throw globals
+If you specyfy ssl_params in test, you override globals
 """
 import os
 
+
+DEFAULT_KEYSTORE = 'server.jks'
+DEFAULT_CLIENT_KEYSTORE = 'client.jks'
+DEFAULT_ADMIN_KEYSTORE = 'admin.jks'
 DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
 DEFAULT_ROOT = "/opt/"
 
 default_keystore = {
-    'server': 'server.jks',
-    'client': 'client.jks',
-    'admin': 'admin.jks'
+    'server': DEFAULT_KEYSTORE,
+    'client': DEFAULT_CLIENT_KEYSTORE,
+    'admin': DEFAULT_ADMIN_KEYSTORE
 }
 
 
-class SslContext:
+class SslParams:
     """
-    Ignite SslContextFactory.
+    Params for Ignite SslContextFactory.
     """
 
     # pylint: disable=R0913
     def __init__(self, root_dir: str = DEFAULT_ROOT,
-                 key_store_jks: str = default_keystore['server'], key_store_password: str = DEFAULT_PASSWORD,
+                 key_store_jks: str = DEFAULT_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
                  key_store_path: str = None, trust_store_path: str = None):
         certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")
@@ -49,7 +62,7 @@ class SslContext:
         self.trust_store_password = trust_store_password
 
 
-def get_ssl_context_from_globals(_globals: dict, user: str = 'server'):
+def get_ssl_params_from_globals(_globals: dict, user: str):
     """
     Parse globals with structure like that.
     {
@@ -71,4 +84,4 @@ def get_ssl_context_from_globals(_globals: dict, user: str = 'server'):
         else:
             ssl_param = {'key_store_jks': default_keystore[user]}
 
-    return SslContext(root_dir, **ssl_param) if ssl_param else None
+    return SslParams(root_dir, **ssl_param) if ssl_param else None

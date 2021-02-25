@@ -26,7 +26,7 @@ from typing import NamedTuple
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.auth import get_credentials_from_globals, DEFAULT_AUTH_PASSWORD
-from ignitetest.services.utils.ssl.ssl_context import get_ssl_context_from_globals
+from ignitetest.services.utils.ssl.ssl_params import get_ssl_params_from_globals
 from ignitetest.services.utils.jmx_utils import JmxClient
 
 
@@ -37,14 +37,14 @@ class ControlUtility:
     BASE_COMMAND = "control.sh"
 
     # pylint: disable=R0913
-    def __init__(self, cluster, ssl_context=None, username=None, password=DEFAULT_AUTH_PASSWORD):
+    def __init__(self, cluster, ssl_params=None, username=None, password=DEFAULT_AUTH_PASSWORD):
         self._cluster = cluster
         self.logger = cluster.context.logger
 
-        if not ssl_context:
-            self.ssl_context = get_ssl_context_from_globals(cluster.context.globals, 'admin')
+        if not ssl_params:
+            self.ssl_params = get_ssl_params_from_globals(cluster.context.globals, 'admin')
         else:
-            self.ssl_context = ssl_context
+            self.ssl_params = ssl_params
 
         if not username:
             self.username, self.password = get_credentials_from_globals(cluster.context.globals, 'admin')
@@ -341,11 +341,11 @@ class ControlUtility:
 
     def __form_cmd(self, node_ip, cmd):
         ssl = ""
-        if self.ssl_context:
-            ssl = f" --keystore {self.ssl_context.key_store_path} " \
-                  f"--keystore-password {self.ssl_context.key_store_password} " \
-                  f"--truststore {self.ssl_context.trust_store_path} " \
-                  f"--truststore-password {self.ssl_context.trust_store_password}"
+        if self.ssl_params:
+            ssl = f" --keystore {self.ssl_params.key_store_path} " \
+                  f"--keystore-password {self.ssl_params.key_store_password} " \
+                  f"--truststore {self.ssl_params.trust_store_path} " \
+                  f"--truststore-password {self.ssl_params.trust_store_password}"
         auth = ""
         if self.username:
             auth = f" --user {self.username} --password {self.password} "

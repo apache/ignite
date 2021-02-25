@@ -21,18 +21,14 @@ DEFAULT_AUTH_PASSWORD = "ignite"
 DEFAULT_AUTH_USERNAME = "ignite"
 
 
-def get_credentials_from_globals(_globals: dict = None, user: str = 'server'):
+def get_credentials_from_globals(_globals: dict, user: str):
     """
     Parse globals with structure like that.
     {
-        "use_ssl": True,
+        "use_auth": True,
         "admin": {
-            "credentials": ["username", "qwerty_123"],
-            "ssl": {
-                "key_store_jks": ....
-            }
+            "credentials": ["username", "qwerty_123"]
         }
-
     }
     """
     username, password = None, None

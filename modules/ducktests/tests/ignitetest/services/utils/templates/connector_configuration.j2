@@ -15,14 +15,14 @@
  limitations under the License.
 #}
 
-{% import 'ssl_context_macro.j2' as ssl_context_util %}
+{% import 'ssl_params_macro.j2' as ssl_params_util %}
 
 {% macro connector_configuration(config) %}
         <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
                 <property name="sslEnabled" value="{{ config.ssl_enabled }}"/>
                 {% if config.ssl_enabled %}
                 <property name="sslFactory">
-                    {{ ssl_context_util.ssl_context(config.ssl_context) }}
+                    {{ ssl_params_util.ssl_params(config.ssl_params) }}
                 </property>
                 {% endif %}
         </bean>

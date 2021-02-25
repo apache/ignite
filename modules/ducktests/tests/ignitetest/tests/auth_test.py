@@ -24,6 +24,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
+from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_USERNAME
 
 
 # pylint: disable=W0223
@@ -55,7 +56,8 @@ class AuthenticationTests(IgniteTest):
 
         servers.start()
 
-        control_utility = ControlUtility(cluster=servers, username="ignite", password="ignite")
+        control_utility = ControlUtility(cluster=servers,
+                                         username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD)
         control_utility.activate()
 
     @cluster(num_nodes=NUM_NODES)
@@ -81,7 +83,7 @@ class AuthenticationTests(IgniteTest):
 
         servers.start()
 
-        control_utility = ControlUtility(cluster=servers, username="ignite", password="wrong_password")
+        control_utility = ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password="wrong_password")
 
         try:
             control_utility.activate()
