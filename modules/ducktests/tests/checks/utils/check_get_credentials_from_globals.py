@@ -18,7 +18,7 @@ Check that get_credentials_from_globals correctly parse Credentials from globals
 """
 
 import pytest
-from ignitetest.services.utils.auth import get_credentials_from_globals
+from ignitetest.services.utils.auth import get_credentials_from_globals, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD
 
 
 class TestParams:
@@ -36,8 +36,8 @@ class TestParams:
 
     expected_username = 'client'
     expected_password = 'qwe123'
-    expected_username_default = 'ignite'
-    expected_password_default = 'ignite'
+    expected_username_default = DEFAULT_AUTH_USERNAME
+    expected_password_default = DEFAULT_AUTH_PASSWORD
 
 
 class CheckCaseJks:

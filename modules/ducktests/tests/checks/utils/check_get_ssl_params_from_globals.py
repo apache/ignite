@@ -18,7 +18,8 @@ Check that SslParams correctly parse SSL params from globals
 """
 
 import pytest
-from ignitetest.services.utils.ssl.ssl_params import get_ssl_params_from_globals, SslParams
+from ignitetest.services.utils.ssl.ssl_params import get_ssl_params_from_globals, SslParams, DEFAULT_TRUSTSTORE, \
+    DEFAULT_CLIENT_KEYSTORE, DEFAULT_PASSWORD
 
 INSTALL_ROOT = '/opt'
 CERTIFICATE_DIR = '/opt/ignite-dev/modules/ducktests/tests/certs/'
@@ -73,10 +74,10 @@ class TestParams:
                                 'key_store_password': 'qwe123',
                                 'trust_store_path': '/opt/certs/truststore.jks',
                                 'trust_store_password': 'qwe123'}
-    expected_ssl_params_default = {'key_store_path': CERTIFICATE_DIR + 'client.jks',
-                                   'key_store_password': '123456',
-                                   'trust_store_path': CERTIFICATE_DIR + 'truststore.jks',
-                                   'trust_store_password': '123456'}
+    expected_ssl_params_default = {'key_store_path': CERTIFICATE_DIR + DEFAULT_CLIENT_KEYSTORE,
+                                   'key_store_password': DEFAULT_PASSWORD,
+                                   'trust_store_path': CERTIFICATE_DIR + DEFAULT_TRUSTSTORE,
+                                   'trust_store_password': DEFAULT_PASSWORD}
     expected_ssl_params_none = None
 
 
