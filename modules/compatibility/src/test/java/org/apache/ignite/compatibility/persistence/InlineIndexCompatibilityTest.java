@@ -321,7 +321,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return 1 + val;
+            return val;
         }
 
         /** {@inheritDoc} */

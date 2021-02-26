@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -28,7 +29,7 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
 /**
- * This class helps detects whether tree contains inline JO type.
+ * This class helps to detect whether tree contains inlined JO type.
  *
  * When starting on old Ignite versions it's impossible to discover whether JO type was inlined or not.
  * Then try to find that with 2 steps:
@@ -57,6 +58,8 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<H2Row
     /**
      * @param inlineSize Inline size.
      * @param inlineCols Inline columns.
+     * @param idxName Index name.
+     * @param log Ignite logger.
      */
     InlineObjectBytesDetector(int inlineSize, List<InlineIndexColumn> inlineCols, String tblName, String idxName,
         IgniteLogger log) {
@@ -117,12 +120,10 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<H2Row
                 // Try compare byte by byte for fully or partial inlined object.
                 byte[] inlineBytes = PageUtils.getBytes(pageAddr, off + fieldOff + 3, len);
 
-                for (int i = 0; i < len; i++) {
-                    if (inlineBytes[i] != originalObjBytes[i]) {
-                        inlineObjectSupportedDecision(false, i + " byte compare");
+                if (!Arrays.equals(inlineBytes, originalObjBytes)) {
+                    inlineObjectSupportedDecision(false, "byte compare");
 
-                        return true;
-                    }
+                    return true;
                 }
 
                 inlineObjectSupportedDecision(true, len + " bytes compared");
@@ -131,9 +132,9 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<H2Row
             }
 
             if (type == Value.UNKNOWN && varLenPresents) {
-                // we can't guarantee in case unknown type and should check next row:
-                //1: long string, UNKNOWN for java object.
-                //2: short string, inlined java object
+                // We can't guarantee in case unknown type and should check next row:
+                // 1: long string, UNKNOWN for java object.
+                // 2: short string, inlined java object
                 return false;
             }
 
