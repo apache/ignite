@@ -1190,21 +1190,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
-     * @return The list of cache or cache group names in given snapshot on local node.
-     */
-    public List<File> snapshotCacheDirectories(String snpName) {
-        File snpDir = snapshotLocalDir(snpName);
-
-        if (!snpDir.exists())
-            return Collections.emptyList();
-
-        File nodeDir = new File(snpDir, databaseRelativePath(pdsSettings.folderName()));
-
-        return cacheDirectories(nodeDir);
-    }
-
-    /**
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.

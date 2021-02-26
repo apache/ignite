@@ -131,7 +131,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(4096))
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_ALL)
+            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
             .setDiscoverySpi(discoSpi);
     }
 

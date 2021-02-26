@@ -311,7 +311,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param flags Flags.
      * @return Row data.
      */
-    public static CacheDataRowAdapter.RowData asRowData(Object flags) {
+    private static CacheDataRowAdapter.RowData asRowData(Object flags) {
         return flags != null ? (CacheDataRowAdapter.RowData)flags :
             CacheDataRowAdapter.RowData.FULL;
     }
