@@ -209,9 +209,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot metrics prefix. */
     public static final String SNAPSHOT_METRICS = "snapshot";
 
-    /** Empty array of cache rows for partition page store. */
-    private static final CacheDataRow[] EMPTY_ROWS = {};
-
     /** Snapshot metafile extension. */
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 

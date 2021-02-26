@@ -69,6 +69,8 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.GridMutableLong;
+import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -772,20 +774,27 @@ public class GridDhtPartitionDemander {
     /**
      * Adds mvcc entries with theirs history to partition p.
      *
+     * @param topVer Topology version.
      * @param node Node which sent entry.
      * @param p Partition id.
      * @param infos Entries info for preload.
-     * @param topVer Topology version.
-     * @throws IgniteInterruptedCheckedException If interrupted.
+     * @throws IgniteCheckedException If failed.
      */
-    private void mvccPreloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+    private void mvccPreloadEntries(
+        AffinityTopologyVersion topVer,
+        ClusterNode node,
+        int p,
+        Iterator<GridCacheEntryInfo> infos
+    ) throws IgniteCheckedException {
         if (!infos.hasNext())
             return;
 
+        // Received keys by caches, for statistics.
+        IntHashMap<GridMutableLong> receivedKeys = new IntHashMap<>();
+
         List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
-        GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
+        GridCacheContext<?, ?> cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
         // Loop through all received entries and try to preload them.
         while (infos.hasNext() || !entryHist.isEmpty()) {
@@ -828,13 +837,13 @@ public class GridDhtPartitionDemander {
 
                             rebalanceFut.onReceivedKeys(p, 1, node);
 
-                            updateGroupMetrics();
+                            receivedKeys.computeIfAbsent(cacheId, cid -> new GridMutableLong()).incrementAndGet();
                         }
 
-                        if (!hasMore)
-                            return;
-
                         entryHist.clear();
+
+                        if (!hasMore)
+                            break;
                     }
 
                     entryHist.add(entry);
@@ -844,6 +853,8 @@ public class GridDhtPartitionDemander {
                 ctx.database().checkpointReadUnlock();
             }
         }
+
+        updateKeyReceivedMetrics(grp, receivedKeys);
     }
 
     /**
@@ -854,14 +865,24 @@ public class GridDhtPartitionDemander {
      * @param infos Entries info for preload.
      * @throws IgniteCheckedException If failed.
      */
-    private void preloadEntries(AffinityTopologyVersion topVer, int p,
-        Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+    private void preloadEntries(
+        AffinityTopologyVersion topVer,
+        int p,
+        Iterator<GridCacheEntryInfo> infos
+    ) throws IgniteCheckedException {
+        // Received keys by caches, for statistics.
+        IntHashMap<GridMutableLong> receivedKeys = new IntHashMap<>();
 
         grp.offheap().storeEntries(p, infos, new IgnitePredicateX<CacheDataRow>() {
+            /** {@inheritDoc} */
             @Override public boolean applyx(CacheDataRow row) throws IgniteCheckedException {
+                receivedKeys.computeIfAbsent(row.cacheId(), cid -> new GridMutableLong()).incrementAndGet();
+
                 return preloadEntry(row, topVer);
             }
         });
+
+        updateKeyReceivedMetrics(grp, receivedKeys);
     }
 
     /**
@@ -876,9 +897,7 @@ public class GridDhtPartitionDemander {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        updateGroupMetrics();
-
-        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
+        GridCacheContext<?, ?> cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
         if (cctx == null)
             return false;
@@ -1031,15 +1050,17 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Update rebalancing metrics.
+     * Updating metrics of received keys on rebalance.
+     *
+     * @param grpCtx Cache group context.
+     * @param receivedKeys Statistics of received keys by caches.
      */
-    private void updateGroupMetrics() {
-        // TODO: IGNITE-11330: Update metrics for touched cache only.
-        // Due to historical rebalancing "EstimatedRebalancingKeys" metric is currently calculated for the whole cache
-        // group (by partition counters), so "RebalancedKeys" and "RebalancingKeysRate" is calculated in the same way.
-        for (GridCacheContext cctx0 : grp.caches()) {
-            if (cctx0.statisticsEnabled())
-                cctx0.cache().metrics0().onRebalanceKeyReceived();
+    private void updateKeyReceivedMetrics(CacheGroupContext grpCtx, IntHashMap<GridMutableLong> receivedKeys) {
+        if (!receivedKeys.isEmpty()) {
+            for (GridCacheContext<?, ?> cacheCtx : grpCtx.caches()) {
+                if (cacheCtx.statisticsEnabled() && receivedKeys.containsKey(cacheCtx.cacheId()))
+                    cacheCtx.cache().metrics0().onRebalanceKeyReceived(receivedKeys.get(cacheCtx.cacheId()).get());
+            }
         }
     }
 
