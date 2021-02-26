@@ -54,7 +54,7 @@ import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPL
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /**
- * Tests tracing of SQL quries execution via JDBC.
+ * Tests tracing of SQL queries execution via JDBC.
  */
 public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest {
     /** JDBC URL prefix. */
