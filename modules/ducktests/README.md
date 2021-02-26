@@ -1,4 +1,4 @@
-## Overview
+# Overview
 The `ignitetest` framework provides basic functionality and services
 to write integration tests for Apache Ignite. This framework bases on 
 the `ducktape` test framework, for information about it check the links:
@@ -11,6 +11,7 @@ Structure of the `tests` directory is:
 - `./ignitetest/tests` contains tests.
 - `./checks` contains unit tests of utils, tests' decorators etc. 
 
+# Local run
 Docker is used to emulate distributed environment. Single container represents 
 a running node.
 
@@ -18,9 +19,9 @@ a running node.
 To just start tests locally the only requirement is preinstalled `docker`. 
 For development process requirements are `python` >= 3.7.
 
-## Run tests locally
+## Run tests
 - Change a current directory to`${IGNITE_HOME}`
-- Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build.sh`
+- Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
 - Change a current directory to `${IGNITE_HOME}/modules/ducktests/tests`
 - Run tests in docker containers using a following command:
 ```
@@ -32,6 +33,44 @@ For development process requirements are `python` >= 3.7.
 ```
 - Test reports, including service logs, are located in the `${IGNITE_HOME}/results` directory.
 
+## Runned tests management
+- Tear down all the currently active ducker-ignite nodes using a following command:
+```
+./docker/clean_up.sh
+```
+
+# Real environment run
+[Ducktape](https://ducktape-docs.readthedocs.io/en/latest/index.html) allow runs on 
+Custom cluster, Vagrant, K8s, Mesos, Docker, cloud providers, etc.
+
+## Requirements
+- Set up the cluster.
+  See `./docker/Dockerfile` for servers setup hints.
+
+## Run tests
+- Change a current directory to`${IGNITE_HOME}`
+- Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
+- Run tests using [Ducktape](https://ducktape-docs.readthedocs.io/en/latest/run_tests.html). 
+  For example:
+  ```
+  ducktape --results-root=./results --cluster-file=./cluster.json --repeat 1 --max-parallel 16 ./modules/ducktests/tests/ignitetest
+  ```
+# Custom Ignites (forks) testing
+## Run all tests
+TBD
+
+## Run tests from the external source/repository
+TBD
+
+# Special runs
+## Run with enabled security
+### Run with SSL enabled
+TBD
+
+### Run with build-in authentication enabled
+TBD
+
+# Development
 ## Preparing development environment
 - Create a virtual environment and activate it using following commands:
 ```
