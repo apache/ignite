@@ -130,7 +130,7 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
                     if (cmpRes == 0)
                         cmpRes = cmp;
                     else
-                        assert cmp == cmpRes : "Input not sorted";
+                        assert Integer.signum(cmp) == Integer.signum(cmpRes): "Input not sorted";
 
                     doPush();
 
