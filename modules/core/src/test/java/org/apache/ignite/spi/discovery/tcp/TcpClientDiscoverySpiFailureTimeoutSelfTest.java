@@ -294,6 +294,10 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             firstSpi = (TestTcpDiscoverySpi2)(G.ignite("server-0").configuration().getDiscoverySpi());
             secondSpi = (TestTcpDiscoverySpi2)(G.ignite("server-1").configuration().getDiscoverySpi());
 
+            // this need for {@link TcpClientDiscoverySpiFailureTimeoutSelfTest#testFailureTimeoutWorkabilityAvgTimeout}
+            // correcty passed, seems further refactoring is needed.
+            secondSpi.setSoLinger(5);
+
             assert firstSpi.err == null;
 
             secondSpi.readDelay = failureDetectionTimeout() + 5000;
@@ -443,6 +447,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** */
         private volatile long readDelay;
 
+        /** */
         private volatile long writeToSocketDelay;
 
         /** */
