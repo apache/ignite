@@ -87,7 +87,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /**
  *
  */
-class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements CheckpointListener {
+class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implements CheckpointListener {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -268,7 +268,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -620,7 +620,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
         if (closeFut == null) {
             Throwable err0 = err.get();
 
-            closeFut = CompletableFuture.runAsync(() -> onDone(true, err0),
+            closeFut = CompletableFuture.runAsync(() -> onDone(partFileLengths.keySet(), err0),
                 cctx.kernalContext().getSystemExecutorService());
         }
 
