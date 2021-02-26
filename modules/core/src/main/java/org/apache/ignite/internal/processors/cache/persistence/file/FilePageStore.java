@@ -119,7 +119,7 @@ public class FilePageStore implements PageStore {
     private volatile int tag;
 
     /** */
-    private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC);
+    private final boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC);
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -478,6 +478,18 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        return read(pageId, pageBuf, !skipCrc, keepCrc);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to read into.
+     * @param checkCrc Check CRC on page.
+     * @param keepCrc By default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
+     * @return {@code true} if page has been read successfully, {@code false} if page hasn't been written yet.
+     * @throws IgniteCheckedException If reading failed (IO error occurred).
+     */
+    public boolean read(long pageId, ByteBuffer pageBuf, boolean checkCrc, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -506,7 +518,7 @@ public class FilePageStore implements PageStore {
 
             pageBuf.position(0);
 
-            if (!skipCrc) {
+            if (checkCrc) {
                 int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageId, pageBuf));
 
                 if ((savedCrc32 ^ curCrc32) != 0)

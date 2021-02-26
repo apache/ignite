@@ -229,7 +229,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
         CountDownLatch startTaskLatch = waitForTaskEvent(ignite, IDLE_VERIFY_TASK_V2);
 
-        LogListener lnsrValidationCancelled = LogListener.matches("Idle verify was cancelled.").build();
+        LogListener lnsrValidationCancelled = LogListener.matches("The check procedure was cancelled.").build();
 
         lnsrLog.registerListener(lnsrValidationCancelled);
 
