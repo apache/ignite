@@ -345,24 +345,38 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
         /** */
         TestTable(int rowsCnt, RelDataType rowType) {
+            this(
+                rowsCnt,
+                rowType,
+                rowType.getFieldList().stream()
+                    .map((Function<RelDataTypeField, Function<Integer, Object>>)(t) -> {
+                        switch (t.getType().getSqlTypeName().getFamily()) {
+                            case NUMERIC:
+                                return TestTable::intField;
+
+                            case CHARACTER:
+                                return TestTable::stringField;
+
+                            default:
+                                assert false : "Not supported type for test: " + t;
+                                return null;
+                        }
+                    })
+                    .collect(Collectors.toList()).toArray(new Function[rowType.getFieldCount()])
+            );
+        }
+
+        /** */
+        TestTable(int rowsCnt, RelDataType rowType, Function<Integer, Object>... fieldCreators) {
             this.rowsCnt = rowsCnt;
             this.rowType = rowType;
+            this.fieldCreators = fieldCreators;
+        }
 
-            fieldCreators = rowType.getFieldList().stream()
-                .map((Function<RelDataTypeField, Function<Integer, Object>>) (t) -> {
-                    switch (t.getType().getSqlTypeName().getFamily()) {
-                        case NUMERIC:
-                            return TestTable::intField;
 
-                        case CHARACTER:
-                            return TestTable::stringField;
-
-                        default:
-                            assert false : "Not supported type for test: " + t;
-                            return null;
-                    }
-                })
-                .collect(Collectors.toList()).toArray(new Function[rowType.getFieldCount()]);
+        /** */
+        private static Object field(Integer rowNum) {
+            return "val_" + rowNum;
         }
 
         /** */

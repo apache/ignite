@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
@@ -31,6 +34,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -39,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
 import org.junit.Before;
@@ -283,6 +288,79 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertFalse(root.hasNext());
     }
+
+    /** */
+    @Test
+    public void sumOnDifferentRowsCount() throws IgniteCheckedException {
+        int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
+
+        int[] grpsCount = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
+        int[] rowsInGroups = {1, 5, bufSize};
+//        int[] grpsCount = {1};
+//        int[] rowsInGroups = {1};
+
+        for (int grps : grpsCount) {
+            for (int rowsInGroup : rowsInGroups) {
+                log.info("Check: [grps=" + grps + ", rowsInGroup=" + rowsInGroup + ']');
+
+                ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+                IgniteTypeFactory tf = ctx.getTypeFactory();
+                RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
+
+                ScanNode<Object[]> scan = new ScanNode<>(
+                    ctx,
+                    rowType,
+                    new TestTable(
+                        grps * rowsInGroup,
+                        rowType,
+                        (r) -> r / rowsInGroup,
+                        (r) -> r % rowsInGroup
+                    )
+                );
+
+                AggregateCall call = AggregateCall.create(
+                    SqlStdOperatorTable.SUM,
+                    false,
+                    false,
+                    false,
+                    ImmutableIntList.of(1),
+                    -1,
+                    RelCollations.EMPTY,
+                    tf.createJavaType(int.class),
+                    null);
+
+                ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+
+                RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
+
+                SingleNode<Object[]> aggChain = createAggregateNodesChain(
+                    ctx,
+                    grpSets,
+                    call,
+                    rowType,
+                    aggRowType,
+                    rowFactory(),
+                    scan
+                );
+
+                RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
+                root.register(aggChain);
+
+                Set<Integer> grpId = IntStream.range(0, grps).boxed().collect(Collectors.toSet());
+
+                while (root.hasNext()) {
+                    Object[] row = root.next();
+
+                    grpId.remove(row[0]);
+
+                    assertEquals((rowsInGroup - 1) * rowsInGroup / 2, row[1]);
+                }
+
+                assertTrue(grpId.isEmpty());
+            }
+        }
+    }
+
 
     /** */
     private SingleNode<Object[]> createAggregateNodesChain(

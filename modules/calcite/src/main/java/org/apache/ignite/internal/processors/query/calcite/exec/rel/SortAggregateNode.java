@@ -166,6 +166,9 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
             if (grp != null)
                 doPush();
 
+            if (requested > 0)
+                downstream().end();
+
             grp = null;
             prevRow = null;
         }
