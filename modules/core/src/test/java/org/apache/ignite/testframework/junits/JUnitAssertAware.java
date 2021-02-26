@@ -17,7 +17,12 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.Collections;
+import java.util.List;
+
+import junit.framework.AssertionFailedError;
 import org.junit.Assert;
+import org.junit.AssumptionViolatedException;
 
 /**
  * Provides the basic functionality of {@link Assert} methods in org.junit package.
@@ -202,5 +207,65 @@ class JUnitAssertAware {
     /** See {@link Assert#assertNotSame(String, Object, Object)} javadocs. */
     protected static void assertNotSame(String msg, Object exp, Object actual) {
         Assert.assertNotSame(msg, exp, actual);
+    }
+
+    /** A runnable that can throw any checked exception. */
+    @FunctionalInterface
+    public interface ThrowingRunnable {
+        void run() throws Throwable;
+    }
+
+    /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+    public static <T extends Throwable> T expectThrows(
+            Class<T> expectedType, ThrowingRunnable runnable) {
+        return expectThrows(
+                expectedType,
+                "Expected exception " + expectedType.getSimpleName() + " but no exception was thrown",
+                runnable);
+    }
+
+    /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+    public static <T extends Throwable> T expectThrows(
+            Class<T> expectedType, String noExceptionMessage, ThrowingRunnable runnable) {
+        final Throwable thrown = _expectThrows(Collections.singletonList(expectedType), runnable);
+        if (expectedType.isInstance(thrown)) {
+            return expectedType.cast(thrown);
+        }
+        if (null == thrown) {
+            throw new AssertionFailedError(noExceptionMessage);
+        }
+        AssertionFailedError assertion =
+                new AssertionFailedError(
+                        "Unexpected exception type, expected "
+                                + expectedType.getSimpleName()
+                                + " but got "
+                                + thrown);
+        assertion.initCause(thrown);
+        throw assertion;
+    }
+
+    /**
+     * Helper method for {@link #expectThrows} that takes care of
+     * propagating any {@link AssertionError} or {@link AssumptionViolatedException} instances thrown
+     * if and only if they are super classes of the <code>expectedTypes</code>. Otherwise simply
+     * returns any {@link Throwable} thrown, regardless of type, or null if the <code>runnable</code>
+     * completed w/o error.
+     */
+    private static Throwable _expectThrows(
+            List<? extends Class<?>> expectedTypes, ThrowingRunnable runnable) {
+
+        try {
+            runnable.run();
+        } catch (AssertionError | AssumptionViolatedException ae) {
+            for (Class<?> expectedType : expectedTypes) {
+                if (expectedType.isInstance(ae)) { // user is expecting this type explicitly
+                    return ae;
+                }
+            }
+            throw ae;
+        } catch (Throwable e) {
+            return e;
+        }
+        return null;
     }
 }
