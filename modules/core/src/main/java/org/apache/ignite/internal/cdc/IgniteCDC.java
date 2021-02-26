@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cdc.CDCConsumer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -81,7 +82,7 @@ public class IgniteCDC implements Runnable {
     private final IgniteWalIteratorFactory factory;
 
     /** Events consumers. */
-    private final CDCConsumer consumer;
+    private final WALRecordsConsumer<?, ?> consumer;
 
     /** Keep binary flag. */
     private boolean keepBinary;
@@ -114,9 +115,9 @@ public class IgniteCDC implements Runnable {
      * @param cfg Ignite configuration.
      * @param consumer Event consumer.
      */
-    public IgniteCDC(IgniteConfiguration cfg, CDCConsumer consumer) {
+    public IgniteCDC(IgniteConfiguration cfg, CDCConsumer<?, ?> consumer) {
         this.cfg = cfg;
-        this.consumer = consumer;
+        this.consumer = new WALRecordsConsumer<>(consumer);
 
         log = logger(cfg, workDir(cfg));
         factory = new IgniteWalIteratorFactory(log);

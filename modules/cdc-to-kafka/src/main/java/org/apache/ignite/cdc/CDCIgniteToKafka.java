@@ -37,13 +37,13 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
-import static org.apache.ignite.cdc.Utils.property;
 import static org.apache.ignite.cdc.Utils.properties;
+import static org.apache.ignite.cdc.Utils.property;
 
 /**
  * CDC consumer that streams all data changes to Kafka.
  */
-public class CDCIgniteToKafka implements DataChangeListener<BinaryObject, BinaryObject> {
+public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject> {
     /** Default kafka topic name. */
     private static final String DFLT_TOPIC_NAME = "cdc-ignite";
 

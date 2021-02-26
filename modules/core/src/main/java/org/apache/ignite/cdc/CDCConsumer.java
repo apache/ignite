@@ -24,7 +24,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 
 /** Consumer of data change events. */
 @IgniteExperimental
-public interface DataChangeListener<K, V> {
+public interface CDCConsumer<K, V> {
     /**
      * @return Consumer ID.
      */

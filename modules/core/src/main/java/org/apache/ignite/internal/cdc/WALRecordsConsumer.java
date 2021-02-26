@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cdc;
 import java.util.EnumSet;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.DataChangeListener;
+import org.apache.ignite.cdc.CDCConsumer;
 import org.apache.ignite.cdc.EntryEvent;
 import org.apache.ignite.cdc.EntryEventOrder;
 import org.apache.ignite.cdc.EntryEventType;
@@ -41,14 +41,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
- * CDC consumer that log all records.
+ * Transform {@link DataEntry} to {@link EntryEvent} and send it to {@link CDCConsumer}.
  */
-public class DataChangeConsumer<K, V> implements CDCConsumer {
+public class WALRecordsConsumer<K, V> {
     /** Ignite logger. */
     private IgniteLogger log;
 
     /** Data change events consumer. */
-    private final DataChangeListener<K, V> dataConsumer;
+    private final CDCConsumer<K, V> dataConsumer;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -65,12 +65,20 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
     };
 
     /** Empty constructor. */
-    public DataChangeConsumer(DataChangeListener<K, V> dataConsumer) {
+    public WALRecordsConsumer(CDCConsumer<K, V> dataConsumer) {
         this.dataConsumer = dataConsumer;
     }
 
-    /** {@inheritDoc} */
-    @Override public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
+    /**
+     * Handles record from the WAL.
+     * If this method return {@code true} then current offset in WAL will be stored and WAL iteration will be
+     * started from it on CDC application fail/restart.
+     *
+     * @param records WAL records iterator.
+     * @param <T> Record type.
+     * @return {@code True} if current offset in WAL should be commited.
+     */
+    public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
         return dataConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
@@ -110,13 +118,19 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
         }, true, OPS_FILTER), true, DATA_REC_FILTER)));
     }
 
-    /** {@inheritDoc} */
-    @Override public String id() {
+    /**
+     * @return Consumer ID.
+     */
+    public String id() {
         return dataConsumer.id();
     }
 
-    /** {@inheritDoc} */
-    @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+    /**
+     * Starts the consumer.
+     *
+     * @param configuration Ignite configuration.
+     */
+    public void start(IgniteConfiguration configuration, IgniteLogger log) {
         this.log = log;
 
         dataConsumer.start(configuration, log);
@@ -124,13 +138,18 @@ public class DataChangeConsumer<K, V> implements CDCConsumer {
         log.info("DataChangeConsumer started[id=" + dataConsumer.id() + ']');
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean keepBinary() {
+    /**
+     * @return {@code True} if entry key and value should be keeped in binary format.
+     */
+    public boolean keepBinary() {
         return dataConsumer.keepBinary();
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop() {
+    /**
+     * Stops the consumer.
+     * This methods can be invoked only after {@link #start(IgniteConfiguration, IgniteLogger)}.
+     */
+    public void stop() {
         dataConsumer.stop();
 
         log.info("DataChangeConsumer stoped[id=" + dataConsumer.id() + ']');

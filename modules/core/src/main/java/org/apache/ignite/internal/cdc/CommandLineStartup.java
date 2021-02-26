@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.DataChangeListener;
+import org.apache.ignite.cdc.CDCConsumer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -88,9 +88,7 @@ public class CommandLineStartup {
 
             IgniteConfiguration cfg = cfgTuple.get1().iterator().next();
 
-            CDCConsumer consumer = consumer(cfgUrl, spring);
-
-            Thread appThread = new Thread(new IgniteCDC(cfg, consumer));
+            Thread appThread = new Thread(new IgniteCDC(cfg, consumer(cfgUrl, spring)));
 
             appThread.start();
 
@@ -114,22 +112,13 @@ public class CommandLineStartup {
      * @return CDC consumer defined in spring configuration.
      * @throws IgniteCheckedException
      */
-    private static CDCConsumer consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
-        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, DataChangeListener.class);
-
-        if (consumersMap != null && consumersMap.size() == 1) {
-            return new DataChangeConsumer<>((DataChangeListener<?, ?>)consumersMap.values().iterator().next());
-        } else if (consumersMap != null && consumersMap.size() > 1)
-            exit("Exact 1 consumer should be defined", false, 1);
-
-        consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
+    private static CDCConsumer<?, ?> consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
+        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
 
         if (consumersMap == null || consumersMap.size() != 1)
             exit("Exact 1 consumer should be defined", false, 1);
 
-        Object cdcConsumer = consumersMap.values().iterator().next();
-
-        return (CDCConsumer)cdcConsumer;
+        return (CDCConsumer<?, ?>)consumersMap.values().iterator().next();
     }
 
     /**

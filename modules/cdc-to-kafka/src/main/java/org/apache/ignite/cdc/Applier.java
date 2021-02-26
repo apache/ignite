@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -79,7 +80,7 @@ class Applier implements Runnable, AutoCloseable {
     private final List<KafkaConsumer<Integer, byte[]>> consumers = new ArrayList<>();
 
     /** */
-    private long rcvdEvts;
+    private static AtomicLong rcvdEvts = new AtomicLong();
 
     /** */
     public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches) {
@@ -114,8 +115,6 @@ class Applier implements Runnable, AutoCloseable {
             assert !consumers.isEmpty();
 
             Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
-
-            System.out.println("consumers = " + consumers);
 
             while (!closed) {
                 log.warning("Fetching data from " + Thread.currentThread().getName() + '!');
@@ -153,7 +152,7 @@ class Applier implements Runnable, AutoCloseable {
      * @param consumer Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
-        log.warning("Polling from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts + ']');
+        log.warning("Polling from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.get() + ']');
 
         //TODO: try to reconnect on fail. Exit if no success.
         ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(3));
@@ -162,7 +161,7 @@ class Applier implements Runnable, AutoCloseable {
             if (!caches.contains(rec.key()))
                 continue;
 
-            try(ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
+            try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
                 apply((EntryEvent<BinaryObject, BinaryObject>)is.readObject());
             }
             catch (ClassNotFoundException | IOException e) {
@@ -177,7 +176,7 @@ class Applier implements Runnable, AutoCloseable {
      * @param evt Applies event to Ignite.
      */
     private void apply(EntryEvent<BinaryObject, BinaryObject> evt) throws IgniteCheckedException {
-        rcvdEvts++;
+        rcvdEvts.incrementAndGet();
 
         IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
             for (String cacheName : ign.cacheNames()) {
