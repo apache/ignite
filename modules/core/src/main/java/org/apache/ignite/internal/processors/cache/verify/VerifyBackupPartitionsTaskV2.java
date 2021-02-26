@@ -149,7 +149,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** */
-    private IdleVerifyResultV2 checkConflicts(
+    public static IdleVerifyResultV2 checkConflicts(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         Map<ClusterNode, Exception> exceptions
     ) {

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -386,6 +388,80 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         cpLatch.countDown();
 
         snpFut.get(5_000, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testClusterSnapshotIterator() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int grpId = ignite.cachex(dfltCacheCfg.getName()).context().groupId();
+
+        int rows = 0;
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getPartitionDataRows(SNAPSHOT_NAME, grpId, 0)) {
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                row.value().finishUnmarshal(ignite.context()
+                        .cache().cache(dfltCacheCfg.getName()).context().cacheObjectContext(),
+                    U.resolveClassLoader(ignite.configuration()));
+
+                rows++;
+            }
+        }
+
+        assertTrue("Invalid number of rows: " + rows,
+            rows == (CACHE_KEYS_RANGE / dfltCacheCfg.getAffinity().partitions()));
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testClusterSnapshotIteratorLargeRows() throws Exception {
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
+            .setAffinity(new RendezvousAffinityFunction(false, 1));
+
+        IgniteEx ignite = startGridsWithoutCache(2);
+
+        for (int i = 0; i < 2; i++)
+            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[12008]));
+
+        forceCheckpoint();
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int grpId = ignite.cachex(DEFAULT_CACHE_NAME).context().groupId();
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getPartitionDataRows(SNAPSHOT_NAME, grpId, 0)) {
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                row.value().finishUnmarshal(ignite.context()
+                        .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
+                    U.resolveClassLoader(ignite.configuration()));
+
+                System.out.println("row = " + row);
+            }
+        }
+    }
+
+    /** */
+    private static class Value {
+        /** */
+        private final byte[] arr;
+
+        /**
+         * @param arr Test array.
+         */
+        public Value(byte[] arr) {
+            this.arr = arr;
+        }
     }
 
     /**

@@ -164,7 +164,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
 
-        cleanPersistenceDir();
+//        cleanPersistenceDir();
     }
 
     /**
