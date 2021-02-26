@@ -17,12 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.util.Collections;
-import java.util.List;
-
-import junit.framework.AssertionFailedError;
 import org.junit.Assert;
-import org.junit.internal.AssumptionViolatedException;
 
 /**
  * Provides the basic functionality of {@link Assert} methods in org.junit package.
