@@ -130,6 +130,7 @@
         <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
+        <surefire.version>3.0.0-M4</surefire.version>
         <tomcat.version>9.0.10</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
@@ -598,7 +599,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M4</version>
+                <version>${surefire.version}</version>
                 <configuration>
                     <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
@@ -608,6 +609,10 @@
                             <value>org.apache.ignite.tools.junit.JUnitTeamcityReporter</value>
                         </property>
                     </properties>
+                    <includes>
+                        <!-- Check all classes that may have any test. -->
+                        <include>**/*.java</include>
+                    </includes>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -708,7 +713,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>2.8.2</version>
-                <inherited>false</inherited>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
@@ -1292,6 +1296,12 @@
                     </plugins>
                 </pluginManagement>
             </build>
+        </profile>
+        <profile>
+            <id>skip-docs</id>
+            <properties>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+            </properties>
         </profile>
     </profiles>
 </project>

@@ -29,6 +29,7 @@ The following Ignite APIs are instrumented for tracing:
 * Communication
 * Exchange
 * Transactions
+* SQL queries
 
 
 To view traces, you must export them into an external system.
@@ -114,6 +115,7 @@ The following APIs are instrumented for tracing:
 * `EXCHANGE` —  exchange events
 * `COMMUNICATION` — communication events
 * `TX` — transactions
+* `SQL` — SQL queries
 
 The `--sampling-rate` is the probabilistic sampling rate, a number between `0` and `1`:
 
@@ -172,6 +174,69 @@ You can click on each span to view the annotations and tags attached to it.
 
 
 image::images/span.png[Span]
+
+
+== Tracing SQL Queries
+
+To enable SQL queries tracing, use `SQL` as a value of the `scope` parameter during the link:https://ignite.apache.org/docs/latest/monitoring-metrics/tracing#enabling-trace-sampling[trace sampling configuration, window=_blank].
+If tracing of SQL queries is enabled, execution of each SQL query on any cluster node will produce a separate trace.
+
+[IMPORTANT]
+====
+[discrete]
+Enabling tracing for SQL queries imposes a severe degradation on SQL engine performance.
+====
+
+The table below provides descriptions, a list of tags, and annotations for each span that can be a part of the SQL query trace tree.
+
+[NOTE]
+====
+[discrete]
+Depending on the SQL query type and its execution plan, some spans may not be present in the SQL query span tree.
+====
+
+[cols="2,5,5",opts="header"]
+|===
+|Span Name | Description | Tags and Annotations
+| sql.query | Execution of an SQL query from the moment of registration until the used resources on the query initiator node are released a|
+* sql.query.text - SQL query text
+* sql.schema - SQL schema
+| sql.cursor.open | SQL query cursor opening |
+| sql.cursor.close | SQL query cursor closure |
+| sql.cursor.cancel | SQL query cursor cancellation |
+| sql.query.parse | Parsing of SQL query a|
+* sql.parser.cache.hit - Whether parsing of the SQL query was skipped due to the cached result
+| sql.query.execute.request | Processing of SQL query execution request a|
+* sql.query.text - SQL query text
+| sql.next.page.request | Processing of the request for obtaining the next page of local SQL query execution result  |
+| sql.page.response | Processing of the message with a node local SQL query execution result page |
+| sql.query.execute | Execution of query by H2 SQL engine a|
+* sql.query.text - SQL query text
+| sql.page.prepare | Reading rows from the cursor and preparing a result page a|
+* sql.page.rows - Number of rows that a result page contains
+| sql.fail.response | Processing of a message that indicates failure of SQL query execution |
+| sql.dml.query.execute.request | Processing of SQL DML query execution request a|
+* sql.query.text - SQL query text
+| sql.dml.query.response | Processing of SQL DML query execution result by query initiator node |
+| sql.query.cancel.request | Processing of SQL query cancel request |
+| sql.iterator.open | SQL query iterator opening |
+| sql.iterator.close | SQL query iterator closure |
+| sql.page.fetch | Fetching SQL query result page a|
+* sql.page.rows - Number of rows that result page contains
+| sql.page.wait | Waiting for SQL query results page to be received from remote node |
+| sql.index.range.request | Processing SQL index range request a|
+* sql.index - SQL index name
+* sql.table - SQL table name
+* sql.index.range.rows - Number of rows that an index range request result contains
+| sql.index.range.response | Processing SQL index range responce |
+| sql.dml.query.execute |  Execution of SQL DML query |
+| sql.command.query.execute | Execution of an SQL command query, which is either a DDL query or an Ignite native command |
+| sql.partitions.reserve | Reservation of data partitions used to execute a query a|
+* Annotation message that indicates reservation of data partitions for a particular cache - `Cache partitions were reserved [cache=<name of the cache>, partitions=[<partitions numbers>]`
+| sql.cache.update | Cache update as a result of SQL DML query execution a|
+* sql.cache.updates - Number of cache entries to be updated as a result of DML query
+| sql.batch.process| Processing of SQL batch update |
+|===
 
 ////
 TODO: describe annotations and tags

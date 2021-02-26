@@ -49,12 +49,9 @@ import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.IDLE_VERIFY;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_CRC;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_SIZES;
@@ -67,13 +64,9 @@ public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.A
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
-        String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
-            "caches/cache groups on an idle cluster and print out the differences, if any. " +
-            "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
-            "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " +
-            EXCLUDE_CACHES + " is empty set. Default value for " + CACHE_FILTER + " is no filtering. Therefore, " +
-            "the set of all caches is sequently filtered by cache name " +
-            "regexps, by cache type and after all by exclude regexps.";
+        String description = "Validates indexes for the specified caches/cache groups on an idle cluster " +
+            "on all or specified cluster nodes. " + VALIDATE_INDEXES + " checks consistence between primary/secondary " +
+            "indexes against each other and data entries.";
 
         Map<String, String> map = U.newLinkedHashMap(16);
 
