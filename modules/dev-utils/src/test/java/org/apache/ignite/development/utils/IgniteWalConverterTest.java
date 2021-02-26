@@ -40,6 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.Collections.emptyList;
+
 /**
  * Test for IgniteWalConverter
  */
@@ -159,7 +161,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, null, true,true
+            null, null, null, null, true,true, emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);
@@ -222,7 +224,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null,
             false,
             null,
-            null, null, null, null, true,true
+            null, null, null, null, true,true, emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);
@@ -338,7 +340,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, null, true,true
+            null, null, null, null, true,true, emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);
@@ -442,7 +444,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, null, true,true
+            null, null, null, null, true,true, emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);
