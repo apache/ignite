@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -222,12 +220,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                     printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
                     printer.accept(msg == null ? "" : msg + "\n");
-
-                    StringWriter writer = new StringWriter();
-
-                    e.getValue().printStackTrace(new PrintWriter(writer));
-
-                    printer.accept("With stacktrace: " + writer.toString());
                 }
             }
         }
