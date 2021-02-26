@@ -53,7 +53,7 @@ Custom cluster, Vagrant, K8s, Mesos, Docker, cloud providers, etc.
 - Run tests using [Ducktape](https://ducktape-docs.readthedocs.io/en/latest/run_tests.html). 
   For example:
   ```
-  ducktape --results-root=./results --cluster-file=./cluster.json --repeat 1 --max-parallel 16 ./ignite-dev/modules/ducktests/tests/ignitetest
+  ducktape --results-root=./results --cluster-file=./cluster.json --repeat 1 --max-parallel 16 ./modules/ducktests/tests/ignitetest
   ```
 # Custom Ignites (forks) testing
 ## Run all tests
