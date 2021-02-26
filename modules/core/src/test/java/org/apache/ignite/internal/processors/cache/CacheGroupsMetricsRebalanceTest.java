@@ -48,6 +48,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -175,11 +176,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks the correctness of {@link CacheMetrics#getRebalancingKeysRate}.
+     *
      * @throws Exception If failed.
      */
     @Test
     public void testRebalance() throws Exception {
-        Ignite ignite = startGrids(4);
+        Ignite ignite = startGrid(0);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
         IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
@@ -191,45 +194,48 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 cache2.put(i, CACHE2 + "-" + i);
         }
 
-        final CountDownLatch l1 = new CountDownLatch(1);
-        final CountDownLatch l2 = new CountDownLatch(1);
+        final CountDownLatch startStopRebalanceLatch = new CountDownLatch(1);
+        final CountDownLatch finishStopRebalanceLatch = new CountDownLatch(1);
+        GridFutureAdapter<Void> stopRebalanceResFut = new GridFutureAdapter<>();
 
-        startGrid(4).events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                l1.countDown();
+        ignite = startGrid(1, cfg -> {
+            cfg.setLocalEventListeners(Collections.singletonMap(
+                (IgnitePredicate<Event>)evt -> {
+                    startStopRebalanceLatch.countDown();
 
-                try {
-                    assertTrue(l2.await(5, TimeUnit.SECONDS));
-                }
-                catch (InterruptedException e) {
-                    throw new AssertionError();
-                }
+                    try {
+                        assertTrue(finishStopRebalanceLatch.await(getTestTimeout(), TimeUnit.SECONDS));
 
-                return false;
-            }
-        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
+                        stopRebalanceResFut.onDone();
+                    }
+                    catch (Throwable e) {
+                        stopRebalanceResFut.onDone(e);
+                    }
 
-        assertTrue(l1.await(5, TimeUnit.SECONDS));
+                    return false;
+                },
+                new int[] {EventType.EVT_CACHE_REBALANCE_STOPPED}
+            ));
+        });
 
-        ignite = ignite(4);
+        assertTrue(startStopRebalanceLatch.await(getTestTimeout(), TimeUnit.SECONDS));
 
         CacheMetrics metrics1 = ignite.cache(CACHE1).localMetrics();
         CacheMetrics metrics2 = ignite.cache(CACHE2).localMetrics();
 
-        l2.countDown();
+        finishStopRebalanceLatch.countDown();
 
         long rate1 = metrics1.getRebalancingKeysRate();
         long rate2 = metrics2.getRebalancingKeysRate();
 
         assertTrue(rate1 > 0);
         assertTrue(rate2 > 0);
+        assertTrue(rate1 > rate2);
 
-        // rate1 has to be roughly the same as rate2
-        double ratio = ((double)rate2 / rate1);
+        assertEquals(metrics1.getRebalancedKeys(), rate1);
+        assertEquals(metrics2.getRebalancedKeys(), rate2);
 
-        log.info("Ratio: " + ratio);
-
-        assertTrue(ratio > 0.9 && ratio < 1.1);
+        stopRebalanceResFut.get(getTestTimeout());
     }
 
     /**
