@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -172,11 +172,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromPageBuffer(
-        IgniteInClosure2X<Long, ByteBuffer> reader,
         GridCacheSharedContext<?, ?> sctx,
         CacheObjectContext coctx,
+        IgniteThrowableFunction<Long, ByteBuffer> reader,
         ByteBuffer pageBuff,
-        ByteBuffer fragmentBuff,
         DataPageIO io,
         int itemId,
         boolean readCacheId,
@@ -196,15 +195,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (nextLink == 0)
             return;
 
-        long fragmentAddr = GridUnsafe.bufferAddress(fragmentBuff);
-
         do {
             long pageId = pageId(nextLink);
 
-            fragmentBuff.clear();
-            reader.apply(pageId, fragmentBuff);
-
             try {
+                ByteBuffer fragmentBuff = reader.apply(pageId);
+
+                long fragmentAddr = GridUnsafe.bufferAddress(fragmentBuff);
                 DataPageIO io2 = PageIO.getPageIO(T_DATA, PageIO.getVersion(fragmentBuff));
 
                 incomplete = readIncomplete(incomplete, sctx, coctx, fragmentBuff.capacity(), fragmentBuff.capacity(),

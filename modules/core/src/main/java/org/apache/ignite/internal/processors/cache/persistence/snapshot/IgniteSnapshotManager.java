@@ -121,7 +121,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1488,22 +1488,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         row.partition(partId);
 
                         row.initFromPageBuffer(
-                            new IgniteInClosure2X<Long, ByteBuffer>() {
-                                @Override public void applyx(Long nextPageId, ByteBuffer buff) throws IgniteCheckedException {
-                                    buff.clear();
+                            sctx,
+                            coctx,
+                            new IgniteThrowableFunction<Long, ByteBuffer>() {
+                                @Override public ByteBuffer apply(Long nextPageId) throws IgniteCheckedException {
+                                    fragmentBuff.clear();
 
-                                    boolean read = store.read(nextPageId, buff, true);
+                                    boolean read = store.read(nextPageId, fragmentBuff, true);
 
                                     assert read : nextPageId;
 
                                     // Fragment of page has been read, might be skipped further.
                                     skipPages.touch(PageIdUtils.pageIndex(nextPageId));
+
+                                    return fragmentBuff;
                                 }
                             },
-                            sctx,
-                            coctx,
                             locBuff,
-                            fragmentBuff,
                             io,
                             itemId,
                             false,
