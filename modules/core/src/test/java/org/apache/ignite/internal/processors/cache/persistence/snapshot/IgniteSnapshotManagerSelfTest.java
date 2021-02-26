@@ -542,7 +542,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                 CacheDataRow row = iter.next();
 
                 DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
-                rowsCnt = io.getDirectCount(buffRef.get());
+
+                long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
+                rowsCnt = io.getDirectCount(pageAddr);
 
                 assertEquals(cacheValSize, ((Value)row.value().value(coctx, false)).arr().length);
                 assertEquals(rowsOnPage, rowsCnt);
@@ -577,9 +579,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                 CacheDataRow row = iter.next();
 
                 DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
-                rowsCnt = io.getDirectCount(buffRef.get());
-
                 long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
+
+                rowsCnt = io.getDirectCount(pageAddr);
                 indRowsCnt = io.getIndirectCount(pageAddr);
 
                 assertEquals(cacheValSize, ((Value)row.value().value(coctx, false)).arr().length);

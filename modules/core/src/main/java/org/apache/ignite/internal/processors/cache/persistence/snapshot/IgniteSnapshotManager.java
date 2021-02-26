@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1468,9 +1469,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         continue;
                     }
 
+                    long pageAddr = GridUnsafe.bufferAddress(locBuff);
+
                     DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
-                    int freeSpace = io.getFreeSpace(locBuff);
-                    int rowsCnt = io.getDirectCount(locBuff);
+                    int freeSpace = io.getFreeSpace(pageAddr);
+                    int rowsCnt = io.getDirectCount(pageAddr);
 
                     if (firstScan && rowsCnt == 0) {
                         skipPages.touch(pageIdx);
@@ -1482,7 +1485,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     // the rowsCnt will always be equal to 1. Skip such pages and read them
                     // on the second iteration.
                     if (firstScan && freeSpace == 0 && rowsCnt == 1) {
-                        DataPagePayload payload = io.readPayload(locBuff, 0);
+                        DataPagePayload payload = io.readPayload(pageAddr, 0, locBuff.capacity());
 
                         long link = payload.nextLink();
 
