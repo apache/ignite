@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import com.google.common.base.Strings;
 import org.apache.ignite.IgniteCache;
@@ -25,6 +26,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -38,6 +42,9 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
     /** Checkpoint threads. */
     public int cpThreads = DFLT_CHECKPOINT_THREADS;
 
+    /** Checkpoint period. */
+    public long cpFrequency = TimeUnit.SECONDS.toMillis(10);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
@@ -45,7 +52,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
                 .setPageSize(4 * 1024)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true))
-                .setCheckpointFrequency(TimeUnit.SECONDS.toMillis(10)));
+                .setCheckpointFrequency(cpFrequency));
 
         if (cpThreads != DFLT_CHECKPOINT_THREADS) {
             cfg.getDataStorageConfiguration()
@@ -85,6 +92,56 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
         cpThreads = 10;
 
         checkCheckpointThreads();
+    }
+
+    /**
+     * Checks that all checkpoints in the different node spaced apart of enough amount of time.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStartCheckpointDelay() throws Exception {
+        cpFrequency = TimeUnit.SECONDS.toMillis(2);
+
+        int nodes = 4;
+
+        IgniteEx ignite0 = startGrids(nodes);
+
+        ignite0.cluster().state(ClusterState.ACTIVE);
+
+        SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ignite0).context().cache().context().database(),
+            "cpFreqDeviation");
+
+        cpFreqDeviation.propagate(25);
+
+        doSleep(cpFrequency * 2);
+
+        TreeSet<Long> cpStartTimes = new TreeSet<>();
+
+        for (int i = 0; i < nodes; i++)
+            cpStartTimes.add(getLatCheckpointStartTime(ignite(i)));
+
+        assertEquals(nodes, cpStartTimes.size());
+
+        Long prev = 0L;
+
+        for (Long st : cpStartTimes) {
+            assertTrue("There was nothing checkpoint in this node yet.", st != 0);
+
+            assertTrue("Checkpoint started so close on different nodes [one=" + prev + ", other=" + st + ']',
+                st - prev > 200);
+        }
+    }
+
+    /**
+     * Gets a timestamp where latest checkpoint occurred.
+     *
+     * @param ignite Ignite.
+     * @return Latest checkpoint start time.
+     */
+    private Long getLatCheckpointStartTime(IgniteEx ignite) {
+        return U.field(((GridCacheDatabaseSharedManager)ignite.context().cache().context().database()).getCheckpointer(),
+            "lastCpTs");
     }
 
     /**
