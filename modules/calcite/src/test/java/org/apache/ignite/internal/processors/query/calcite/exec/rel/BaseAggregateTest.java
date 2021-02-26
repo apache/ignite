@@ -296,8 +296,6 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         int[] grpsCount = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
         int[] rowsInGroups = {1, 5, bufSize};
-//        int[] grpsCount = {1};
-//        int[] rowsInGroups = {1};
 
         for (int grps : grpsCount) {
             for (int rowsInGroup : rowsInGroups) {
