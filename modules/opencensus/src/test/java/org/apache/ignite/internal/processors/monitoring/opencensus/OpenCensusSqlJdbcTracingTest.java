@@ -23,6 +23,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+
 import io.opencensus.trace.SpanId;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.internal.IgniteEx;
@@ -76,7 +78,9 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
 
         SpanId rootSpan = executeAndCheckRootSpan("SELECT orgVal FROM " + orgTable, TEST_SCHEMA, false, false, true);
 
-        assertTrue(Long.parseLong(getAttribute(rootSpan, SQL_QRY_ID)) > 0);
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+        UUID.fromString(qryId.substring(0, qryId.indexOf('_')));
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CURSOR_OPEN, rootSpan);

@@ -286,7 +286,9 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             "SELECT * FROM " + prsnTable + " AS p JOIN " + orgTable + " AS o ON o.orgId = p.prsnId",
             TEST_SCHEMA, false, true, true);
 
-        assertTrue(Long.parseLong(getAttribute(rootSpan, SQL_QRY_ID)) > 0);
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+        UUID.fromString(qryId.substring(0, qryId.indexOf('_')));
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
@@ -550,7 +552,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     protected void checkBasicSelectQuerySpanTree(SpanId rootSpan, int expRows) {
         int fetchedRows = 0;
 
-        assertTrue(Long.parseLong(getAttribute(rootSpan, SQL_QRY_ID)) > 0);
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
 
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
 

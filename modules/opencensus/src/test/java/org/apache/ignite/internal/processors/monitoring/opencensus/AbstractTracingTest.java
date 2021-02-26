@@ -285,15 +285,6 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
      * @param spanData Span data to check.
      * @param expAttrs Attributes to check.
      */
-    private void checkSpanAttributes(SpanData spanData, /* tagName: tagValue*/ Map<String, String> expAttrs) {
-        checkSpanAttributes(spanData, expAttrs, CheckAttributes.EQUALS);
-    }
-
-    /**
-     * Verify that given spanData contains all (and only) propagated expected attributes.
-     * @param spanData Span data to check.
-     * @param expAttrs Attributes to check.
-     */
     private void checkSpanAttributes(
         SpanData spanData,
         /* tagName: tagValue*/ Map<String, String> expAttrs,

@@ -148,7 +148,7 @@ public class RunningQueryManager {
         @Nullable GridQueryCancel cancel) {
         long qryId = qryIdGen.incrementAndGet();
 
-        GridRunningQueryInfo run = new GridRunningQueryInfo(
+        final GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
             localNodeId,
             qry,
@@ -167,7 +167,7 @@ public class RunningQueryManager {
 
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
-        run.span().addTag(SQL_QRY_ID, () -> Long.toString(qryId));
+        run.span().addTag(SQL_QRY_ID, run::globalQueryId);
 
         return qryId;
     }
