@@ -370,13 +370,21 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             }
         };
 
-        expectThrows(RuntimeException.class, () -> {
+        //TODO: Move this to a better state after IGNITE-14225
+        boolean exceptionRaised = false;
+
+        try {
             IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
 
             igniteFuture.get(7000, MILLISECONDS);
 
             assertTrue(igniteFuture.isDone());
-        });
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("Foobar"));
+            exceptionRaised = true;
+        }
+
+        assertTrue(exceptionRaised);
 
         assertTrue(semaphore.availablePermits() == 1);
 
