@@ -1044,6 +1044,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
+            // TODO: 26.02.2021 Кажется тут
+
             if (!clearDbObjects)
                 ctx.kernalContext().query().getIndexing().closeCacheOnClient(ctx.name());
             else
