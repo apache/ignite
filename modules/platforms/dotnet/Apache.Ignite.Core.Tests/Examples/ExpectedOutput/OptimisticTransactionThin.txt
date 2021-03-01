@@ -1,7 +1,7 @@
 >>> Optimistic transaction example started.
 
->>> Thread 1 successfully incremented cached value.
+successfully incremented cached value.
 
->>> Thread 2 failed to increment cached value. Caught an expected optimistic exception: Failed to prepare transaction
+failed to increment cached value. Caught an expected optimistic exception: Failed to prepare transaction
 
 >>> Resulting value in cache: 1

@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class ThinExamplesTest : ExamplesTestBase
     {
         /** */
-        private static readonly Example[] ThinExamples = Example.AllExamples.Where(e => e.IsThin).ToArray();
+        public static readonly Example[] ThinExamples = Example.AllExamples.Where(e => e.IsThin).ToArray();
 
         /** */
         private readonly int _serverCount;
