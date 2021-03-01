@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.PERFORMANCE_STATISTICS;
+import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.ROTATE;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.START;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STATUS;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STOP;
@@ -67,6 +68,16 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
         assertEquals(EXIT_CODE_OK, res);
 
         waitForStatisticsEnabled(true);
+
+        res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(STATUS_ENABLED, lastOperationResult);
+
+        res = execute(PERFORMANCE_STATISTICS.text(), ROTATE.toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+        assertEquals("File rotated.", lastOperationResult);
 
         res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
 

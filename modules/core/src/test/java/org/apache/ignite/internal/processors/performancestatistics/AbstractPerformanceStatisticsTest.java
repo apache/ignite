@@ -81,8 +81,17 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         waitForStatisticsEnabled(true);
     }
 
-    /** Stops and reads collecting performance statistics. */
-    public static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
+    /** Rotate file collecting performance statistics. */
+    public static void rotateCollectStatistics() throws Exception {
+        List<Ignite> grids = G.allGrids();
+
+        assertFalse(grids.isEmpty());
+
+        statisticsMBean(grids.get(0).name()).rotate();
+    }
+
+    /** Stops collecting performance statistics. */
+    public static void stopCollectStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -90,10 +99,20 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         statisticsMBean(grids.get(0).name()).stop();
 
         waitForStatisticsEnabled(false);
+    }
+
+    /** Stops and reads collecting performance statistics. */
+    public static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
+        stopCollectStatistics();
 
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
-        new FilePerformanceStatisticsReader(handlers).read(singletonList(dir));
+        readFiles(singletonList(dir), handlers);
+    }
+
+    /** Stops and reads collecting performance statistics. */
+    public static void readFiles(List<File> files, TestHandler... handlers) throws Exception {
+        new FilePerformanceStatisticsReader(handlers).read(files);
     }
 
     /** Wait for statistics started/stopped in the cluster. */

@@ -78,7 +78,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     if (!ctx.discovery().localJoinFuture().isDone())
                         return;
 
-                    onMetastorageUpdate((boolean)newVal);
+                    onMetastorageUpdate((PerformanceStatisticsKey)newVal);
                 });
             }
 
@@ -86,7 +86,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 PerformanceStatisticsProcessor.this.metastorage = metastorage;
 
                 try {
-                    Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
+                    PerformanceStatisticsKey performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
 
                     if (performanceStatsEnabled == null)
                         return;
@@ -197,7 +197,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(PERF_STAT_KEY, true);
+        metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.START);
     }
 
     /**
@@ -211,7 +211,21 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(PERF_STAT_KEY, false);
+        metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.STOP);
+    }
+
+    /**
+     * Rotate file collecting performance statistics.
+     *
+     * @throws IgniteCheckedException If stopping failed.
+     */
+    public void rotateCollectStatistics() throws IgniteCheckedException {
+        A.notNull(metastorage, "Metastorage not ready. Node not started?");
+
+        if (ctx.isStopping())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+        metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.ROTATE);
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -232,12 +246,24 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Starts or stops collecting statistics on metastorage update. */
-    private void onMetastorageUpdate(boolean start) {
+    private void onMetastorageUpdate(PerformanceStatisticsKey key) {
         ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
-            if (start)
-                startWriter();
-            else
-                stopWriter();
+            switch (key){
+                case START:
+                    startWriter();
+                    break;
+
+                case STOP:
+                    stopWriter();
+                    break;
+
+                case ROTATE:
+                    updateWriter();
+                    break;
+
+                default:
+                    throw new AssertionError("Unexpected key: " + key);
+            }
         });
     }
 
@@ -278,6 +304,27 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         log.info("Performance statistics writer stopped.");
     }
 
+    /** Update performance statistics writer. */
+    private void updateWriter() {
+        assert writer != null;
+
+        try {
+            synchronized (mux) {
+                FilePerformanceStatisticsWriter oldWriter = writer;
+
+                writer = new FilePerformanceStatisticsWriter(ctx);
+
+                writer.start();
+
+                oldWriter.stop();
+            }
+            log.info("Performance statistics writer updated.");
+        }
+        catch (Exception e) {
+            log.error("Failed to update performance statistics writer.", e);
+        }
+    }
+
     /** Writes statistics through passed writer. */
     private void write(Consumer<FilePerformanceStatisticsWriter> c) {
         FilePerformanceStatisticsWriter writer = this.writer;
@@ -290,5 +337,15 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
+    }
+
+    /** Performance statistics keys. */
+    public enum PerformanceStatisticsKey {
+        /** Start. */
+        START,
+        /** Stop. */
+        STOP,
+        /** Rotate. */
+        ROTATE
     }
 }
