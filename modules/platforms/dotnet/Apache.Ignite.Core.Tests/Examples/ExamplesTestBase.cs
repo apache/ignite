@@ -27,9 +27,15 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public abstract class ExamplesTestBase
     {
+        /** */
         private StringBuilder _outSb;
+
+        /** */
         private TextWriter _oldOut;
 
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
         [SetUp]
         public void SetUp()
         {
@@ -38,11 +44,24 @@ namespace Apache.Ignite.Core.Tests.Examples
             Console.SetOut(new StringWriter(_outSb));
         }
 
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
         [TearDown]
         public void TearDown()
         {
             Console.SetOut(_oldOut);
             Console.WriteLine(_outSb);
+
+            StringAssert.Contains(">>> Example finished, press any key to exit ...", GetOutput());
+        }
+
+        /// <summary>
+        /// Gets the example output.
+        /// </summary>
+        protected string GetOutput()
+        {
+            return _outSb.ToString();
         }
     }
 }
