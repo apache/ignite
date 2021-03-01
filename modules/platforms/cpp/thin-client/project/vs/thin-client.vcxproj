@@ -169,6 +169,7 @@
     <ClCompile Include="..\..\src\impl\protocol_version.cpp" />
     <ClCompile Include="..\..\src\impl\remote_type_updater.cpp" />
     <ClCompile Include="..\..\src\impl\utility.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp" />
     <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
     <ClCompile Include="..\..\src\impl\transactions\transactions_proxy.cpp" />
   </ItemGroup>
