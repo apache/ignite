@@ -113,6 +113,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryC
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -842,15 +843,29 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
-        PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(), msg.root(), msg.parameters());
+        try {
+            PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(), msg.root(), msg.parameters());
 
-        List<QueryPlan> qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareFragment);
+            List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
+                pctx,
+                new CacheKey(pctx.schemaName(), pctx.query()),
+                this::prepareFragment
+            );
 
-        assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
+            assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
 
-        FragmentPlan plan = (FragmentPlan)qryPlans.get(0);
+            FragmentPlan plan = (FragmentPlan)qryPlans.get(0);
 
-        executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
+            executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
+        }
+        catch (Throwable ex) {
+            try {
+                exchangeSvc.sendError(nodeId, msg.queryId(), msg.fragmentId(), ex);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
+            }
+        }
     }
 
     /** */

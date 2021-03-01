@@ -96,6 +96,7 @@ import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -520,12 +521,15 @@ class RelJson {
         SqlKind sqlKind = toEnum(map.get("kind"));
         SqlSyntax sqlSyntax = toEnum(map.get("syntax"));
         List<SqlOperator> operators = new ArrayList<>();
-        SqlStdOperatorTable.instance().lookupOperatorOverloads(
+
+        CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable().lookupOperatorOverloads(
             new SqlIdentifier(name, new SqlParserPos(0, 0)),
             null,
             sqlSyntax,
             operators,
-            SqlNameMatchers.liberal());
+            SqlNameMatchers.liberal()
+        );
+
         for (SqlOperator operator : operators)
             if (operator.kind == sqlKind)
                 return operator;

@@ -41,6 +41,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexFieldAccess;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -71,6 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
@@ -2780,6 +2784,41 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
             assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+
+            checkSplitAndSerialization(phys, publicSchema);
+        }
+    }
+
+    /** */
+    @Test
+    public void testNotStandardFunctions() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "TEST",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "TEST", "hash");
+                }
+            }
+        );
+
+        String queries[] = {
+            "select REVERSE(val) from TEST", // MYSQL
+            "select TO_DATE(val, 'yyyymmdd') from TEST" // ORACLE
+        };
+
+        for (String sql : queries) {
+            IgniteRel phys = physicalPlan(
+                sql,
+                publicSchema
+            );
 
             checkSplitAndSerialization(phys, publicSchema);
         }
