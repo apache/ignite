@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -96,6 +97,17 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritdoc /> */
         public MutableCacheEntryState State { get; private set; }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        public override string ToString()
+        {
+            return string.Format(CultureInfo.CurrentCulture, 
+                "Mutable Cache Entry [Key = {0}, Value {1}, Exists = {2}, State = {3}",
+                Key, Value, Exists, State.ToString());
+        }
     }
 
     /// <summary>
