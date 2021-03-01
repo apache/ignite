@@ -34,11 +34,25 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private readonly StringBuilder _out = new StringBuilder();
 
-        public TextWriterProxy(TextWriter inner)
+        /** */
+        private readonly Action _disposeAction;
+
+        public TextWriterProxy(TextWriter inner, Action disposeAction = null)
         {
             Debug.Assert(inner != null);
 
             _inner = inner;
+            _disposeAction = disposeAction;
+        }
+
+        public static TextWriterProxy RedirectConsoleOut()
+        {
+            var oldOut = Console.Out;
+
+            var proxy = new TextWriterProxy(oldOut, () => Console.SetOut(oldOut));
+            Console.SetOut(proxy);
+
+            return proxy;
         }
 
         public string GetText() => _out.ToString();
@@ -74,9 +88,10 @@ namespace Apache.Ignite.Core.Tests
             set => _inner.NewLine = value;
         }
 
-        public override object InitializeLifetimeService()
+        protected override void Dispose(bool disposing)
         {
-            return _inner.InitializeLifetimeService();
+            _disposeAction?.Invoke();
+            base.Dispose(disposing);
         }
     }
 }
