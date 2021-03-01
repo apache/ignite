@@ -102,28 +102,9 @@
     <None Update="Config\binary-custom-name-mapper2.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Examples\ExpectedOutput\AtomicLong.txt">
+    <None Update="Examples\ExpectedOutput\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Examples\ExpectedOutput\AtomicReference.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Examples\ExpectedOutput\AtomicSequence.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Examples\ExpectedOutput\BinaryMode.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Examples\ExpectedOutput\ClientReconnect.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Examples\ExpectedOutput\DataStreamer.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Examples\ExpectedOutput\Ddl.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
   </ItemGroup>
 
   <ItemGroup>
