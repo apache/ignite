@@ -108,6 +108,9 @@
     <None Update="Examples\ExpectedOutput\AtomicReference.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Examples\ExpectedOutput\AtomicSequence.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
 
   </ItemGroup>
 

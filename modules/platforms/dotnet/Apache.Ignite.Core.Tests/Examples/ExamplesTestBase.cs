@@ -57,14 +57,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
-        /// Gets the example output.
-        /// </summary>
-        protected string GetOutput()
-        {
-            return _outSb.ToString();
-        }
-
-        /// <summary>
         ///
         /// </summary>
         /// <param name="example"></param>
@@ -80,18 +72,22 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name) + ".txt";
 
-            // TODO: Make this required
-            // Assert.IsTrue(File.Exists(expectedOutputFile), $"File.Exists({expectedOutputFile})");
+            Assert.IsTrue(File.Exists(expectedOutputFile), $"File.Exists({expectedOutputFile})");
 
-            if (File.Exists(expectedOutputFile))
+            var expectedLines = File.ReadAllLines(expectedOutputFile);
+
+            foreach (var line in expectedLines)
             {
-                var expectedLines = File.ReadAllLines(expectedOutputFile);
-
-                foreach (var line in expectedLines)
-                {
-                    StringAssert.Contains(line, output);
-                }
+                StringAssert.Contains(line, output);
             }
+        }
+
+        /// <summary>
+        /// Gets the example output.
+        /// </summary>
+        private string GetOutput()
+        {
+            return _outSb.ToString();
         }
     }
 }
