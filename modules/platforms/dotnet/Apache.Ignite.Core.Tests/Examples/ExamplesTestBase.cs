@@ -57,11 +57,22 @@ namespace Apache.Ignite.Core.Tests.Examples
             StringAssert.Contains(">>> Example finished, press any key to exit ...", GetOutput());
         }
 
+        /// <summary>
+        /// Checks the test output.
+        /// </summary>
+        /// <param name="example">Example.</param>
+        /// <param name="requiredLines">Optional extra lines to check for.</param>
         protected void CheckOutput(Example example, params string[] requiredLines)
         {
             CheckOutput(null, example, requiredLines);
         }
 
+        /// <summary>
+        /// Checks the test output.
+        /// </summary>
+        /// <param name="expectedOutputFileNameSuffix">Optional suffix for the file with the expected output text.</param>
+        /// <param name="example">Example.</param>
+        /// <param name="requiredLines">Optional extra lines to check for.</param>
         protected void CheckOutput(string expectedOutputFileNameSuffix, Example example, params string[] requiredLines)
         {
             var output = GetOutput();
