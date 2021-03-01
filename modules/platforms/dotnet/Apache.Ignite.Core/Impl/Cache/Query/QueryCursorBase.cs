@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="action">Action.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns></returns>
-        private static T WithReg<T>(Func<T> action, bool keepBinary)
+        private static K WithReg<K>(Func<K> action, bool keepBinary)
         {
             if (keepBinary)
                 return action.Invoke();
