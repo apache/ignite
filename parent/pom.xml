@@ -394,6 +394,7 @@
                     <excludes>
                         <exclude>**/IT*.java</exclude>
                     </excludes>
+                    <skipTests>${skip.surefire.tests}</skipTests>
                 </configuration>
             </plugin>
 
