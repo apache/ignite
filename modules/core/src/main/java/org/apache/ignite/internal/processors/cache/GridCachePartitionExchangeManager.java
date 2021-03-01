@@ -981,6 +981,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.join(exchWorker, log);
 
+        if (cctx.kernalContext().clientDisconnected())
+            cctx.affinity().removeGroupHolders();
+
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
