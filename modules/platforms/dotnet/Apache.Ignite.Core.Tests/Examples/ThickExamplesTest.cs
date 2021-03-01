@@ -41,7 +41,9 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             example.Run();
 
-            StringAssert.Contains("Ignite node started OK", GetOutput());
+            var output = GetOutput();
+            StringAssert.Contains("Ignite node started OK", output);
+            StringAssert.Contains("Topology snapshot [ver=1", output);
         }
     }
 }
