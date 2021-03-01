@@ -18,11 +18,11 @@ package org.apache.ignite.configuration.processor.internal;
 
 import com.google.testing.compile.Compilation;
 import com.squareup.javapoet.ClassName;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.processor.internal.HasFieldMatcher.hasFields;
 import static org.apache.ignite.configuration.processor.internal.HasMethodMatcher.hasMethods;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,56 +46,40 @@ public class ITProcessorTest extends AbstractProcessorTest {
 
         assertNotEquals(Compilation.Status.FAILURE, status.status());
 
-        assertEquals(11, batch.generated().size());
+        assertEquals(6, batch.generated().size());
 
         final ConfigSet classSet = batch.getBySchema(testConfigurationSchema);
 
         assertTrue(classSet.allGenerated());
 
-        MatcherAssert.assertThat(
-            classSet.getViewClass(),
+        assertThat(
+            classSet.getNodeClass(),
             hasFields(
-                "value1", Types.STRING,
-                "primitiveLong", Types.LONG,
-                "primitiveInt", Types.INT,
-                "stringArray", Types.STRING_ARRAY
+                "value1", String.class.getCanonicalName(),
+                "primitiveLong", Long.class.getCanonicalName(),
+                "primitiveInt", Integer.class.getCanonicalName(),
+                "stringArray", String[].class.getCanonicalName()
             )
         );
 
-        MatcherAssert.assertThat(
-            classSet.getViewClass(),
+        String nodeClassName = classSet.getNodeClass().getClassName();
+
+        assertThat(
+            classSet.getNodeClass(),
             hasMethods(
-                "value1()", Types.STRING,
-                "primitiveLong()", Types.LONG,
-                "primitiveInt()", Types.INT,
-                "stringArray()", Types.STRING_ARRAY
-            )
-        );
-
-        MatcherAssert.assertThat(
-            classSet.getInitClass(),
-            hasFields(
-                "value1", Types.STRING,
-                "primitiveLong", Types.LONG,
-                "primitiveInt", Types.INT,
-                "stringArray", Types.STRING_ARRAY
-            )
-        );
-
-        String initTypeName = Types.typeName(packageName, "InitTest");
-
-        MatcherAssert.assertThat(
-            classSet.getInitClass(),
-            hasMethods(
-                "value1()", Types.STRING,
-                "primitiveLong()", Types.LONG,
-                "primitiveInt()", Types.INT,
-                "withValue1(java.lang.String)", initTypeName,
-                "withPrimitiveLong(java.lang.Long)", initTypeName,
-                "withPrimitiveInt(java.lang.Integer)", initTypeName,
-                "withStringArray(java.lang.String[])", initTypeName
+                "value1()", String.class.getCanonicalName(),
+                "primitiveLong()", long.class.getCanonicalName(),
+                "primitiveInt()", int.class.getCanonicalName(),
+                "stringArray()", String[].class.getCanonicalName(),
+                "initValue1(java.lang.String)", nodeClassName,
+                "initPrimitiveLong(long)", nodeClassName,
+                "initPrimitiveInt(int)", nodeClassName,
+                "initStringArray(java.lang.String[])", nodeClassName,
+                "changeValue1(java.lang.String)", nodeClassName,
+                "changePrimitiveLong(long)", nodeClassName,
+                "changePrimitiveInt(int)", nodeClassName,
+                "changeStringArray(java.lang.String[])", nodeClassName
             )
         );
     }
-
 }

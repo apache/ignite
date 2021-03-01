@@ -20,116 +20,41 @@ package org.apache.ignite.configuration.internal;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.RandomAccess;
+import java.util.concurrent.Future;
+import org.apache.ignite.configuration.ConfigurationChanger;
+import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationValue;
-import org.apache.ignite.configuration.Configurator;
 import org.apache.ignite.configuration.PropertyListener;
-import org.apache.ignite.configuration.internal.selector.BaseSelectors;
-import org.apache.ignite.configuration.internal.validation.MemberKey;
+import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.tree.ConfigurationSource;
+import org.apache.ignite.configuration.tree.ConstructableTreeNode;
+import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.configuration.validation.FieldValidator;
 
 /**
  * Holder for property value. Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.
  */
-public class DynamicProperty<T extends Serializable> implements Modifier<T, T, T>, ConfigurationValue<T> {
-    /** Name of property. */
-    private final String name;
-
-    /** Member key. */
-    private final MemberKey memberKey;
-
-    /** Full name with prefix. */
-    private final String qualifiedName;
-
-    /** Property value. */
-    protected volatile T val;
-
+public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T> implements ConfigurationProperty<T, T>, ConfigurationValue<T> {
     /** Listeners of property update. */
     private final List<PropertyListener<T, T>> updateListeners = new ArrayList<>();
 
-    /** Configurator that this configuration is attached to. */
-    protected final Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator;
-
-    /** Configuration root. */
-    protected final DynamicConfiguration<?, ?, ?> root;
-
     /**
      * Constructor.
      * @param prefix Property prefix.
-     * @param name Property name.
-     * @param memberKey Property member key.
-     * @param configurator Configurator to attach to.
-     * @param root Configuration root.
+     * @param key Property name.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
      */
     public DynamicProperty(
-        String prefix,
-        String name,
-        MemberKey memberKey,
-        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator,
-        DynamicConfiguration<?, ?, ?> root
+        List<String> prefix,
+        String key,
+        RootKey<?> rootKey,
+        ConfigurationChanger changer
     ) {
-        this(prefix, name, memberKey, null, configurator, root);
-    }
-
-    /**
-     * Constructor.
-     * @param prefix Property prefix.
-     * @param name Property name.
-     * @param memberKey Property member key.
-     * @param defaultValue Default value for the property.
-     * @param configurator Configurator to attach to.
-     * @param root Configuration root.
-     */
-    public DynamicProperty(
-        String prefix,
-        String name,
-        MemberKey memberKey,
-        T defaultValue,
-        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator,
-        DynamicConfiguration<?, ?, ?> root
-    ) {
-        this(defaultValue, name, memberKey, String.format("%s.%s", prefix, name), configurator, root, false);
-    }
-
-    /**
-     * Copy constructor.
-     * @param base Property to copy from.
-     * @param root Configuration root.
-     */
-    private DynamicProperty(
-        DynamicProperty<T> base,
-        DynamicConfiguration<?, ?, ?> root
-    ) {
-        this(base.val, base.name, base.memberKey, base.qualifiedName, base.configurator, root, true);
-    }
-
-    /**
-     * Constructor.
-     * @param value Property value.
-     * @param name Property name.
-     * @param memberKey Member key.
-     * @param qualifiedName Fully qualified name of the property.
-     * @param configurator Configurator.
-     * @param root Configuration root.
-     */
-    private DynamicProperty(
-        T value,
-        String name,
-        MemberKey memberKey,
-        String qualifiedName,
-        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator,
-        DynamicConfiguration<?, ?, ?> root,
-        boolean isCopy
-    ) {
-        this.name = name;
-        this.memberKey = memberKey;
-        this.qualifiedName = qualifiedName;
-        this.val = value;
-        this.configurator = configurator;
-        this.root = root;
-
-        if (isCopy)
-            configurator.onAttached(this);
+        super(prefix, key, rootKey, changer);
     }
 
     /**
@@ -142,61 +67,46 @@ public class DynamicProperty<T extends Serializable> implements Modifier<T, T, T
 
     /** {@inheritDoc} */
     @Override public T value() {
-        return val;
+        return refreshValue();
     }
 
     /** {@inheritDoc} */
-    @Override public void change(T object) throws ConfigurationValidationException {
-        configurator.set(BaseSelectors.find(qualifiedName), object);
-    }
+    @Override public Future<Void> update(T newValue) throws ConfigurationValidationException {
+        Objects.requireNonNull(newValue, "Configuration value cannot be null.");
 
-    /** {@inheritDoc} */
-    @Override public void init(T object) throws ConfigurationValidationException {
-        this.val = object;
-    }
+        InnerNode rootNodeChange = ((RootKeyImpl)rootKey).createRootNode();
 
-    /** {@inheritDoc} */
-    @Override public void changeWithoutValidation(T object) {
-        this.val = object;
+        assert keys instanceof RandomAccess;
+        assert !keys.isEmpty();
 
-        for (PropertyListener<T, T> listener : updateListeners)
-            listener.update(object, this);
-    }
+        rootNodeChange.construct(keys.get(1), new ConfigurationSource() {
+            private int i = 1;
 
-    /** {@inheritDoc} */
-    @Override public void validate(DynamicConfiguration<?, ?, ?> oldRoot) throws ConfigurationValidationException {
-        final List<? extends FieldValidator<? extends Serializable, ? extends DynamicConfiguration<?, ?, ?>>> validators = configurator.validators(memberKey);
+            @Override public void descend(ConstructableTreeNode node) {
+                assert i < keys.size() - 1;
 
-        for (FieldValidator<? extends Serializable, ? extends DynamicConfiguration<?, ?, ?>> validator : validators)
-            ((FieldValidator<T, DynamicConfiguration<?, ?, ?>>) validator).validate(val, root, oldRoot);
+                node.construct(keys.get(++i), this);
+            }
+
+            @Override public <T> T unwrap(Class<T> clazz) {
+                assert i == keys.size() - 1;
+
+                assert clazz.isInstance(newValue);
+
+                return clazz.cast(newValue);
+            }
+        });
+
+        return changer.change(Map.of(rootKey, rootNodeChange));
     }
 
     /** {@inheritDoc} */
     @Override public String key() {
-        return name;
+        return key;
     }
 
-    /**
-     * Get fully qualified name of this property.
-     * @return Fully qualified name.
-     */
-    public String qualifiedName() {
-        return qualifiedName;
-    }
-
-    public void setSilently(T serializable) {
-        val = serializable;
-
-        for (PropertyListener<T, T> listener : updateListeners)
-            listener.update(val, this);
-    }
-
-    /**
-     * Create a deep copy of this DynamicProperty, but attaching it to another configuration root.
-     * @param newRoot New configuration root.
-     * @return Copy of this property.
-     */
-    public DynamicProperty<T> copy(DynamicConfiguration<?, ?, ?> newRoot) {
-        return new DynamicProperty<>(this, newRoot);
+    /** {@inheritDoc} */
+    @Override protected void refreshValue0(T newValue) {
+        // No-op.
     }
 }

@@ -20,12 +20,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.ignite.network.MessageHandlerHolder;
 import org.apache.ignite.network.NetworkCluster;
+import org.apache.ignite.network.NetworkClusterFactory;
 import org.apache.ignite.network.NetworkMember;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.MessageHandlerHolder;
-import org.apache.ignite.network.NetworkClusterFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,6 +51,7 @@ class ITScaleCubeNetworkClusterMessagingTest {
 
     /** */
     @Test
+    @Disabled
     public void messageWasSentToAllMembersSuccessfully() {
         //Given: Three started member which are gathered to cluster.
         List<String> addresses = List.of("localhost:3344", "localhost:3345", "localhost:3346");

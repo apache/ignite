@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 /** */
 public final class NamedListNode<N extends InnerNode> implements NamedListView<N>, NamedListChange<N, N>, TraversableTreeNode, ConstructableTreeNode {
     /** */
-    private final Supplier<N> valSupplier;
+    public final Supplier<N> valSupplier;
 
     /** */
     private final Map<String, N> map;

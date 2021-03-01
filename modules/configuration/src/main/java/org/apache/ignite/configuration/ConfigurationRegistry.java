@@ -17,35 +17,41 @@
 
 package org.apache.ignite.configuration;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
+import org.apache.ignite.configuration.internal.RootKeyImpl;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
 public class ConfigurationRegistry {
     /** */
-    private final Map<String, Configurator<?>> configs = new HashMap<>();
+    private final Map<String, DynamicConfiguration<?, ?, ?>> configs = new HashMap<>();
 
     /** */
-    public <T extends DynamicConfiguration<?, ?, ?>> void registerConfigurator(Configurator<T> unitConfig) {
-        String key = unitConfig.getRoot().key();
+    private final ConfigurationChanger changer = new ConfigurationChanger();
 
-        configs.put(key, unitConfig);
+    /** */
+    public void registerRootKey(RootKey<?> rootKey) {
+        changer.addRootKey(rootKey);
+
+        configs.put(rootKey.key(), (DynamicConfiguration<?, ?, ?>)rootKey.createPublicRoot(changer));
+
+        //TODO IGNITE-14180 link these two entities.
+    }
+
+    /** */
+    public void registerStorage(ConfigurationStorage configurationStorage) {
+        changer.init(configurationStorage);
     }
 
     /** */
     public <V, C, T extends ConfigurationTree<V, C>> T getConfiguration(RootKey<T> rootKey) {
-        return (T) configs.get(rootKey.key()).getRoot();
-    }
-
-    /** */
-    public Map<String, Configurator<? extends DynamicConfiguration<?, ?, ?>>> getConfigurators() {
-        return Collections.unmodifiableMap(configs);
+        return (T)configs.get(rootKey.key());
     }
 
     /**
@@ -53,14 +59,16 @@ public class ConfigurationRegistry {
      * Does not register this root anywhere, used for static object initialization only.
      *
      * @param rootName Name of the root as described in {@link ConfigurationRoot#rootName()}.
-     * @param storageType Storage class as descried in {@link ConfigurationRoot#storage()}.
+     * @param storageType Storage class as described in {@link ConfigurationRoot#storage()}.
      * @param rootSupplier Closure to instantiate internal configuration tree roots.
+     * @param publicRootCreator Function to create public user-facing tree instance.
      */
     public static <T extends ConfigurationTree<?, ?>> RootKey<T> newRootKey(
         String rootName,
         Class<? extends ConfigurationStorage> storageType,
-        Supplier<InnerNode> rootSupplier
+        Supplier<InnerNode> rootSupplier,
+        BiFunction<RootKey<T>, ConfigurationChanger, T> publicRootCreator
     ) {
-        return new RootKeyImpl<>(rootName, storageType, rootSupplier);
+        return new RootKeyImpl<>(rootName, storageType, rootSupplier, publicRootCreator);
     }
 }

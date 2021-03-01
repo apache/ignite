@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.sample.storage.AConfiguration.KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -89,12 +90,12 @@ public class ConfigurationChangerTest {
             .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
             .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
 
-        final ConfigurationChanger changer = new ConfigurationChanger(storage);
-        changer.init(KEY);
+        final ConfigurationChanger changer = new ConfigurationChanger(KEY);
+        changer.init(storage);
 
         changer.registerConfiguration(KEY, configurator);
 
-        changer.change(Collections.singletonMap(KEY, data)).get();
+        changer.change(Collections.singletonMap(KEY, data)).get(1, SECONDS);
 
         ANode newRoot = (ANode)changer.getRootNode(KEY);
 
@@ -124,17 +125,17 @@ public class ConfigurationChangerTest {
                 .create("b", init -> init.initStrCfg("2"))
             );
 
-        final ConfigurationChanger changer1 = new ConfigurationChanger(storage);
-        changer1.init(KEY);
+        final ConfigurationChanger changer1 = new ConfigurationChanger(KEY);
+        changer1.init(storage);
 
-        final ConfigurationChanger changer2 = new ConfigurationChanger(storage);
-        changer2.init(KEY);
+        final ConfigurationChanger changer2 = new ConfigurationChanger(KEY);
+        changer2.init(storage);
 
         changer1.registerConfiguration(KEY, configurator);
         changer2.registerConfiguration(KEY, configurator);
 
-        changer1.change(Collections.singletonMap(KEY, data1)).get();
-        changer2.change(Collections.singletonMap(KEY, data2)).get();
+        changer1.change(Collections.singletonMap(KEY, data1)).get(1, SECONDS);
+        changer2.change(Collections.singletonMap(KEY, data2)).get(1, SECONDS);
 
         ANode newRoot1 = (ANode)changer1.getRootNode(KEY);
 
@@ -172,20 +173,20 @@ public class ConfigurationChangerTest {
                 .create("b", init -> init.initStrCfg("2"))
             );
 
-        final ConfigurationChanger changer1 = new ConfigurationChanger(storage);
-        changer1.init(KEY);
+        final ConfigurationChanger changer1 = new ConfigurationChanger(KEY);
+        changer1.init(storage);
 
-        final ConfigurationChanger changer2 = new ConfigurationChanger(storage);
-        changer2.init(KEY);
+        final ConfigurationChanger changer2 = new ConfigurationChanger(KEY);
+        changer2.init(storage);
 
         changer1.registerConfiguration(KEY, configurator);
         changer2.registerConfiguration(KEY, configurator);
 
-        changer1.change(Collections.singletonMap(KEY, data1)).get();
+        changer1.change(Collections.singletonMap(KEY, data1)).get(1, SECONDS);
 
         configuratorController.hasIssues(true);
 
-        assertThrows(ExecutionException.class, () -> changer2.change(Collections.singletonMap(KEY, data2)).get());
+        assertThrows(ExecutionException.class, () -> changer2.change(Collections.singletonMap(KEY, data2)).get(1, SECONDS));
 
         ANode newRoot = (ANode)changer2.getRootNode(KEY);
 
@@ -206,21 +207,21 @@ public class ConfigurationChangerTest {
 
         ANode data = new ANode().initChild(child -> child.initIntCfg(1));
 
-        final ConfigurationChanger changer = new ConfigurationChanger(storage);
+        final ConfigurationChanger changer = new ConfigurationChanger(KEY);
 
         storage.fail(true);
 
-        assertThrows(ConfigurationChangeException.class, () -> changer.init(KEY));
+        assertThrows(ConfigurationChangeException.class, () -> changer.init(storage));
 
         storage.fail(false);
 
-        changer.init(KEY);
+        changer.init(storage);
 
         changer.registerConfiguration(KEY, configurator);
 
         storage.fail(true);
 
-        assertThrows(ExecutionException.class, () -> changer.change(Collections.singletonMap(KEY, data)).get());
+        assertThrows(ExecutionException.class, () -> changer.change(Collections.singletonMap(KEY, data)).get(1, SECONDS));
 
         storage.fail(false);
 

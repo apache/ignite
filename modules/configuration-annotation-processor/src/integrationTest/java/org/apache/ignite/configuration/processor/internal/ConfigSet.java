@@ -29,6 +29,9 @@ public class ConfigSet {
     /** Configuration class. */
     private final JavaFileObject configurationClass;
 
+    /** Configuration node class. */
+    private final JavaFileObject nodeClass;
+
     /** VIEW class. */
     private final JavaFileObject viewClass;
 
@@ -41,41 +44,26 @@ public class ConfigSet {
     /** Parsed configuration class. */
     private final ParsedClass conf;
 
-    /** Parsed VIEW class. */
-    private final ParsedClass view;
-
-    /** Parsed INIT class. */
-    private final ParsedClass init;
-
-    /** Parsed CHANGE class. */
-    private final ParsedClass change;
+    /** Parsed node class. */
+    private final ParsedClass node;
 
     /** Constructor. */
-    public ConfigSet(JavaFileObject configurationClass, JavaFileObject viewClass, JavaFileObject initClass, JavaFileObject changeClass) {
+    public ConfigSet(JavaFileObject configurationClass, JavaFileObject nodeClass, JavaFileObject viewClass, JavaFileObject initClass, JavaFileObject changeClass) {
         this.configurationClass = configurationClass;
         this.viewClass = viewClass;
         this.initClass = initClass;
         this.changeClass = changeClass;
+        this.nodeClass = nodeClass;
 
         if (configurationClass != null)
             this.conf = parse(configurationClass);
         else
             this.conf = null;
 
-        if (viewClass != null)
-            this.view = parse(viewClass);
+        if (nodeClass != null)
+            this.node = parse(nodeClass);
         else
-            this.view = null;
-
-        if (initClass != null)
-            this.init = parse(initClass);
-        else
-            this.init = null;
-
-        if (changeClass != null)
-            this.change = parse(changeClass);
-        else
-            this.change = null;
+            this.node = null;
     }
 
     /**
@@ -98,7 +86,7 @@ public class ConfigSet {
      * @return {@code true} if all required classes were generated.
      */
     public boolean allGenerated() {
-        return configurationClass != null && viewClass != null && initClass != null && changeClass != null;
+        return configurationClass != null && nodeClass != null && viewClass != null && initClass != null && changeClass != null;
     }
 
     /** */
@@ -106,18 +94,7 @@ public class ConfigSet {
         return conf;
     }
 
-    /** */
-    public ParsedClass getViewClass() {
-        return view;
-    }
-
-    /** */
-    public ParsedClass getInitClass() {
-        return init;
-    }
-
-    /** */
-    public ParsedClass getChangeClass() {
-        return change;
+    public ParsedClass getNodeClass() {
+        return node;
     }
 }

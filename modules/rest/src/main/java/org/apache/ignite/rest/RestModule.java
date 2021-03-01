@@ -20,13 +20,10 @@ package org.apache.ignite.rest;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import java.io.Reader;
+import java.util.Collections;
 import org.apache.ignite.configuration.ConfigurationRegistry;
-import org.apache.ignite.configuration.Configurator;
-import org.apache.ignite.configuration.internal.selector.SelectorNotFoundException;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.rest.configuration.InitRest;
 import org.apache.ignite.rest.configuration.RestConfigurationImpl;
-import org.apache.ignite.rest.configuration.Selectors;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.apache.ignite.rest.presentation.FormatConverter;
 import org.apache.ignite.rest.presentation.json.JsonConverter;
@@ -65,23 +62,16 @@ public class RestModule {
 
     /** */
     public void prepareStart(ConfigurationRegistry sysConfig, Reader moduleConfReader) {
-        try {
-            Class.forName(Selectors.class.getName());
-        }
-        catch (ClassNotFoundException e) {
-            // No-op.
-        }
-
         sysConf = sysConfig;
 
-        presentation = new JsonPresentation(sysConfig.getConfigurators());
+        presentation = new JsonPresentation(Collections.emptyMap());
 
-        FormatConverter converter = new JsonConverter();
-
-        Configurator<RestConfigurationImpl> restConf = Configurator.create(RestConfigurationImpl::new,
-            converter.convertFrom(moduleConfReader, "rest", InitRest.class));
-
-        sysConfig.registerConfigurator(restConf);
+//        FormatConverter converter = new JsonConverter();
+//
+//        Configurator<RestConfigurationImpl> restConf = Configurator.create(RestConfigurationImpl::new,
+//            converter.convertFrom(moduleConfReader, "rest", InitRest.class));
+//
+//        sysConfig.registerConfigurator(restConf);
     }
 
     /** */
@@ -100,7 +90,7 @@ public class RestModule {
             try {
                 ctx.result(presentation.representByPath(configPath));
             }
-            catch (SelectorNotFoundException | IllegalArgumentException pathE) {
+            catch (IllegalArgumentException pathE) {
                 ErrorResult eRes = new ErrorResult("CONFIG_PATH_UNRECOGNIZED", pathE.getMessage());
 
                 ctx.status(400).result(converter.convertTo("error", eRes));
@@ -111,7 +101,7 @@ public class RestModule {
             try {
                 presentation.update(ctx.body());
             }
-            catch (SelectorNotFoundException | IllegalArgumentException argE) {
+            catch (IllegalArgumentException argE) {
                 ErrorResult eRes = new ErrorResult("CONFIG_PATH_UNRECOGNIZED", argE.getMessage());
 
                 ctx.status(400).result(converter.convertTo("error", eRes));

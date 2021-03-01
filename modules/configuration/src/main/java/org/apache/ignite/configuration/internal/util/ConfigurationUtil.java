@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration.internal.util;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -332,6 +333,24 @@ public class ConfigurationUtil {
             }
         });
         return values;
+    }
+
+    /**
+     * Creates new list that is a conjunction of given list and element.
+     *
+     * @param prefix Head of the new list.
+     * @param key Tail element of the new list.
+     * @return New list.
+     */
+    public static List<String> appendKey(List<String> prefix, String key) {
+        if (prefix.isEmpty())
+            return List.of(key);
+
+        List<String> res = new ArrayList<>(prefix.size() + 1);
+        res.addAll(prefix);
+        res.add(key);
+
+        return res;
     }
 
     /**

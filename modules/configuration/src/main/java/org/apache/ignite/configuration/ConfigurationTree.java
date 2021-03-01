@@ -18,6 +18,9 @@
 package org.apache.ignite.configuration;
 
 import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 
 /**
  * Configuration tree with configuration values and other configuration trees as child nodes.
@@ -27,4 +30,11 @@ import java.util.Map;
 public interface ConfigurationTree<VALUE, CHANGE> extends ConfigurationProperty<VALUE, CHANGE> {
     /** Children of the tree. */
     Map<String, ConfigurationProperty<?, ?>> members();
+
+    /**
+     * Change this configuration node value.
+     * @param change CHANGE object.
+     * @throws ConfigurationValidationException If validation failed.
+     */
+    Future<Void> change(Consumer<CHANGE> change) throws ConfigurationValidationException;
 }

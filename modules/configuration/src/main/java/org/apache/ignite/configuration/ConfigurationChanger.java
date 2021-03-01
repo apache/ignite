@@ -18,6 +18,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,6 +51,9 @@ public class ConfigurationChanger {
     @Deprecated
     private final Map<RootKey<?>, Configurator<?>> configurators = new HashMap<>();
 
+    /** */
+    private final Set<RootKey<?>> rootKeys = new HashSet<>();
+
     /** Map that has all the trees in accordance to their storages. */
     private final Map<Class<? extends ConfigurationStorage>, StorageRoots> storagesRootsMap = new ConcurrentHashMap<>();
 
@@ -74,63 +78,63 @@ public class ConfigurationChanger {
     private final Map<Class<? extends ConfigurationStorage>, ConfigurationStorage> storageInstances = new HashMap<>();
 
     /** Constructor. */
-    public ConfigurationChanger(ConfigurationStorage... configurationStorages) {
-        for (ConfigurationStorage storage : configurationStorages)
-            storageInstances.put(storage.getClass(), storage);
+    public ConfigurationChanger(RootKey<?>... rootKeys) {
+        this.rootKeys.addAll(Arrays.asList(rootKeys));
+    }
+
+    /** */
+    public void addRootKey(RootKey<?> rootKey) {
+        assert !storageInstances.containsKey(rootKey.getStorageType());
+
+        rootKeys.add(rootKey);
     }
 
     /**
      * Initialize changer.
      */
     // ConfigurationChangeException, really?
-    public void init(RootKey<?>... rootKeys) throws ConfigurationChangeException {
-        Map<Class<? extends ConfigurationStorage>, Set<RootKey<?>>> rootsByStorage = new HashMap<>();
+    public void init(ConfigurationStorage configurationStorage) throws ConfigurationChangeException {
+        storageInstances.put(configurationStorage.getClass(), configurationStorage);
 
-        for (RootKey<?> rootKey : rootKeys) {
-            Class<? extends ConfigurationStorage> storageType = rootKey.getStorageType();
+        Set<RootKey<?>> storageRootKeys = rootKeys.stream().filter(
+            rootKey -> configurationStorage.getClass() == rootKey.getStorageType()
+        ).collect(Collectors.toSet());
 
-            rootsByStorage.computeIfAbsent(storageType, c -> new HashSet<>()).add(rootKey);
+        Data data;
+
+        try {
+            data = configurationStorage.readAll();
+        }
+        catch (StorageException e) {
+            throw new ConfigurationChangeException("Failed to initialize configuration: " + e.getMessage(), e);
         }
 
-        for (ConfigurationStorage configurationStorage : storageInstances.values()) {
-            Data data;
+        Map<RootKey<?>, InnerNode> storageRootsMap = new HashMap<>();
 
-            try {
-                data = configurationStorage.readAll();
+        Map<String, ?> dataValuesPrefixMap = ConfigurationUtil.toPrefixMap(data.values());
+
+        for (RootKey<?> rootKey : storageRootKeys) {
+            Map<String, ?> rootPrefixMap = (Map<String, ?>)dataValuesPrefixMap.get(rootKey.key());
+
+            if (rootPrefixMap == null) {
+                //TODO IGNITE-14193 Init with defaults.
+                storageRootsMap.put(rootKey, rootKey.createRootNode());
             }
-            catch (StorageException e) {
-                throw new ConfigurationChangeException("Failed to initialize configuration: " + e.getMessage(), e);
+            else {
+                InnerNode rootNode = rootKey.createRootNode();
+
+                ConfigurationUtil.fillFromPrefixMap(rootNode, rootPrefixMap);
+
+                storageRootsMap.put(rootKey, rootNode);
             }
-
-            Map<RootKey<?>, InnerNode> storageRootsMap = new HashMap<>();
-
-            Map<String, ?> dataValuesPrefixMap = ConfigurationUtil.toPrefixMap(data.values());
-
-            for (RootKey<?> rootKey : rootsByStorage.get(configurationStorage.getClass())) {
-                Map<String, ?> rootPrefixMap = (Map<String, ?>)dataValuesPrefixMap.get(rootKey.key());
-
-                if (rootPrefixMap == null) {
-                    //TODO IGNITE-14193 Init with defaults.
-                    storageRootsMap.put(rootKey, rootKey.createRootNode());
-                }
-                else {
-                    InnerNode rootNode = rootKey.createRootNode();
-
-                    ConfigurationUtil.fillFromPrefixMap(rootNode, rootPrefixMap);
-
-                    storageRootsMap.put(rootKey, rootNode);
-                }
-            }
-
-            storagesRootsMap.put(configurationStorage.getClass(), new StorageRoots(storageRootsMap, data.version()));
-
-            configurationStorage.addListener(changedEntries -> updateFromListener(
-                configurationStorage.getClass(),
-                changedEntries
-            ));
-
-            // TODO: IGNITE-14118 iterate over data and fill Configurators
         }
+
+        storagesRootsMap.put(configurationStorage.getClass(), new StorageRoots(storageRootsMap, data.version()));
+
+        configurationStorage.addListener(changedEntries -> updateFromListener(
+            configurationStorage.getClass(),
+            changedEntries
+        ));
     }
 
     /**
@@ -266,7 +270,8 @@ public class ConfigurationChanger {
      * @param changes Configuration changes.
      * @return Validation results.
      */
-    @SuppressWarnings("unused") // Will be used in the future, I promise (IGNITE-14183).
+    // Will be used in the future, I promise (IGNITE-14183).
+    @SuppressWarnings("unused")
     private ValidationResult validate(
         StorageRoots storageRoots,
         Map<RootKey<?>, TraversableTreeNode> changes
@@ -279,8 +284,11 @@ public class ConfigurationChanger {
 
             final Configurator<?> configurator = configurators.get(rootKey);
 
-            List<ValidationIssue> list = configurator.validateChanges(changesForRoot);
-            issues.addAll(list);
+            // TODO IGNITE-14183 This will be fixed later
+            if (configurator != null) {
+                List<ValidationIssue> list = configurator.validateChanges(changesForRoot);
+                issues.addAll(list);
+            }
         }
 
         return new ValidationResult(issues);

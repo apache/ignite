@@ -18,8 +18,6 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,11 +25,8 @@ import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.configuration.internal.DynamicProperty;
-import org.apache.ignite.configuration.internal.Modifier;
-import org.apache.ignite.configuration.internal.selector.Selector;
 import org.apache.ignite.configuration.internal.validation.MemberKey;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.FieldValidator;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 
@@ -59,24 +54,7 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
     public static <VIEW, INIT, CHANGE, CONF extends DynamicConfiguration<VIEW, INIT, CHANGE>> Configurator<CONF> create(
         Function<Configurator<CONF>, CONF> rootBuilder
     ) {
-        return new Configurator<>(rootBuilder, null);
-    }
-
-    /**
-     *
-     * @param rootBuilder
-     * @param init
-     * @param <VIEW>
-     * @param <INIT>
-     * @param <CHANGE>
-     * @param <CONF>
-     * @return
-     */
-    public static <VIEW, INIT, CHANGE, CONF extends DynamicConfiguration<VIEW, INIT, CHANGE>> Configurator<CONF> create(
-        Function<Configurator<CONF>, CONF> rootBuilder,
-        INIT init
-    ) {
-        return new Configurator<>(rootBuilder, init);
+        return new Configurator<>(rootBuilder);
     }
 
     /**
@@ -84,83 +62,11 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
      * @param rootBuilder Function, that creates configuration root.
      */
     private <VIEW, INIT, CHANGE, CONF extends DynamicConfiguration<VIEW, INIT, CHANGE>> Configurator(
-        Function<Configurator<CONF>, CONF> rootBuilder,
-        INIT init
+        Function<Configurator<CONF>, CONF> rootBuilder
     ) {
         final CONF built = rootBuilder.apply((Configurator<CONF>) this);
 
-        if (init != null)
-            built.init(init);
-
         root = (T) built;
-    }
-
-    /**
-     *
-     * @param selector
-     * @param <TARGET>
-     * @param <VIEW>
-     * @param <INIT>
-     * @param <CHANGE>
-     * @return
-     */
-    public <TARGET extends Modifier<VIEW, INIT, CHANGE>, VIEW, INIT, CHANGE> VIEW getPublic(
-        Selector<T, TARGET, VIEW, INIT, CHANGE> selector
-    ) {
-        return selector.select(root).value();
-    }
-
-    /**
-     *
-     */
-    public Class<?> getChangeType() {
-        Type sClass = root.getClass().getGenericSuperclass();
-
-        assert sClass instanceof ParameterizedType;
-
-        ParameterizedType pt = (ParameterizedType)sClass;
-
-        assert pt.getActualTypeArguments().length == 3;
-
-        return (Class<?>) pt.getActualTypeArguments()[2];
-    }
-
-    /**
-     *
-     * @param selector
-     * @param newValue
-     * @param <TARGET>
-     * @param <VIEW>
-     * @param <INIT>
-     * @param <CHANGE>
-     * @throws ConfigurationValidationException
-     */
-    public <TARGET extends Modifier<VIEW, INIT, CHANGE>, VIEW, INIT, CHANGE> void set(
-        Selector<T, TARGET, VIEW, INIT, CHANGE> selector,
-        CHANGE newValue
-    ) throws ConfigurationValidationException {
-        final T copy = (T) root.copy();
-
-        final TARGET select = selector.select(copy);
-        select.changeWithoutValidation(newValue);
-        copy.validate(root);
-
-        selector.select(root).changeWithoutValidation(newValue);
-    }
-
-    /**
-     *
-     * @param selector
-     * @param <TARGET>
-     * @param <VIEW>
-     * @param <INIT>
-     * @param <CHANGE>
-     * @return
-     */
-    public <TARGET extends Modifier<VIEW, INIT, CHANGE>, VIEW, INIT, CHANGE> ConfigurationProperty<VIEW, CHANGE> getInternal(
-        Selector<T, TARGET, VIEW, INIT, CHANGE> selector
-    ) {
-        return selector.select(root);
     }
 
     /**

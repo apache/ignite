@@ -17,15 +17,14 @@
 
 package org.apache.ignite.configuration.sample;
 
-import java.util.Collections;
 import org.apache.ignite.configuration.ConfigurationRegistry;
-import org.apache.ignite.configuration.Configurator;
-import org.apache.ignite.configuration.internal.NamedList;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.junit.jupiter.api.Assertions;
+import org.apache.ignite.configuration.sample.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.Test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple usage test of generated configuration schema.
@@ -35,74 +34,88 @@ public class UsageTest {
      * Test creation of configuration and calling configuration API methods.
      */
     @Test
-    public void test() {
-        InitLocal initLocal = new InitLocal().withBaseline(
-            new InitBaseline()
-                .withNodes(
-                    new NamedList<>(
-                        Collections.singletonMap("node1", new InitNode().withConsistentId("test").withPort(1000))
+    public void test() throws Exception {
+        var registry = new ConfigurationRegistry();
+
+        registry.registerRootKey(LocalConfiguration.KEY);
+
+        registry.registerStorage(new TestConfigurationStorage());
+
+        LocalConfiguration root = registry.getConfiguration(LocalConfiguration.KEY);
+
+        root.change(local ->
+            local.changeBaseline(baseline ->
+                baseline.changeNodes(nodes ->
+                    nodes.create("node1", node ->
+                        node.initConsistentId("test").initPort(1000)
                     )
+                ).changeAutoAdjust(autoAdjust ->
+                    autoAdjust.changeEnabled(true).changeTimeout(100_000L)
                 )
-                .withAutoAdjust(new InitAutoAdjust().withEnabled(true).withTimeout(100000L))
-        );
+            )
+        ).get(1, SECONDS);
+        assertTrue(root.baseline().autoAdjust().enabled().value());
 
-        final Configurator<LocalConfigurationImpl> configurator = Configurator.create(
-            LocalConfigurationImpl::new,
-            initLocal
-        );
+        root.baseline().autoAdjust().enabled().update(false).get(1, SECONDS);
 
-        final LocalConfiguration root = configurator.getRoot();
-        root.baseline().autoAdjust().enabled().value();
+        assertFalse(root.value().baseline().autoAdjust().enabled());
+        assertFalse(root.baseline().value().autoAdjust().enabled());
+        assertFalse(root.baseline().autoAdjust().value().enabled());
+        assertFalse(root.baseline().autoAdjust().enabled().value());
 
-        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
-            configurator.set(Selectors.LOCAL_BASELINE_AUTO_ADJUST_ENABLED, false);
-        });
-        configurator.set(Selectors.LOCAL_BASELINE_AUTO_ADJUST, new ChangeAutoAdjust().withEnabled(false).withTimeout(0L));
-        configurator.getRoot().baseline().nodes().get("node1").autoAdjustEnabled(false);
-        configurator.getRoot().baseline().autoAdjust().enabled(true);
-        configurator.getRoot().baseline().nodes().get("node1").autoAdjustEnabled(true);
+        root.baseline().nodes().get("node1").autoAdjustEnabled().update(true).get(1, SECONDS);
 
-        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
-            configurator.getRoot().baseline().autoAdjust().enabled(false);
-        });
+        assertTrue(root.value().baseline().nodes().get("node1").autoAdjustEnabled());
+        assertTrue(root.baseline().value().nodes().get("node1").autoAdjustEnabled());
+        assertTrue(root.baseline().nodes().value().get("node1").autoAdjustEnabled());
+        assertTrue(root.baseline().nodes().get("node1").value().autoAdjustEnabled());
+        assertTrue(root.baseline().nodes().get("node1").autoAdjustEnabled().value());
+
+        root.baseline().nodes().get("node1").change(node -> node.changeAutoAdjustEnabled(false)).get(1, SECONDS);
+        assertFalse(root.value().baseline().nodes().get("node1").autoAdjustEnabled());
     }
 
     /**
      * Test to show an API to work with multiroot configurations.
      */
     @Test
-    public void multiRootConfigurationTest() {
-        ConfigurationRegistry sysConf = new ConfigurationRegistry();
-
+    public void multiRootConfiguration() throws Exception {
         int failureDetectionTimeout = 30_000;
         int joinTimeout = 10_000;
 
         long autoAdjustTimeout = 30_000L;
 
-        InitNetwork initNetwork = new InitNetwork().withDiscovery(
-            new InitDiscovery()
-                .withFailureDetectionTimeout(failureDetectionTimeout)
-                .withJoinTimeout(joinTimeout)
+        ConfigurationRegistry registry = new ConfigurationRegistry();
+
+        registry.registerRootKey(NetworkConfiguration.KEY);
+        registry.registerRootKey(LocalConfiguration.KEY);
+
+        registry.registerStorage(new TestConfigurationStorage());
+
+        registry.getConfiguration(LocalConfiguration.KEY).change(local ->
+            local.changeBaseline(baseline ->
+                baseline.changeAutoAdjust(autoAdjust ->
+                    autoAdjust.changeEnabled(true).changeTimeout(autoAdjustTimeout)
+                )
+            )
+        ).get(1, SECONDS);
+
+        registry.getConfiguration(NetworkConfiguration.KEY).change(network ->
+            network.changeDiscovery(discovery ->
+                discovery
+                    .changeFailureDetectionTimeout(failureDetectionTimeout)
+                    .changeJoinTimeout(joinTimeout)
+            )
+        ).get(1, SECONDS);
+
+        assertEquals(
+            failureDetectionTimeout,
+            registry.getConfiguration(NetworkConfigurationImpl.KEY).discovery().failureDetectionTimeout().value()
         );
 
-        InitLocal initLocal = new InitLocal().withBaseline(
-            new InitBaseline().withAutoAdjust(
-                new InitAutoAdjust().withEnabled(true)
-                    .withTimeout(autoAdjustTimeout))
+        assertEquals(
+            autoAdjustTimeout,
+            registry.getConfiguration(LocalConfigurationImpl.KEY).baseline().autoAdjust().timeout().value()
         );
-
-        Configurator<LocalConfigurationImpl> localConf = Configurator.create(LocalConfigurationImpl::new, initLocal);
-
-        sysConf.registerConfigurator(localConf);
-
-        Configurator<NetworkConfigurationImpl> networkConf = Configurator.create(NetworkConfigurationImpl::new, initNetwork);
-
-        sysConf.registerConfigurator(networkConf);
-
-        assertEquals(failureDetectionTimeout,
-            sysConf.getConfiguration(NetworkConfigurationImpl.KEY).discovery().failureDetectionTimeout().value());
-
-        assertEquals(autoAdjustTimeout,
-            sysConf.getConfiguration(LocalConfigurationImpl.KEY).baseline().autoAdjust().timeout().value());
     }
 }

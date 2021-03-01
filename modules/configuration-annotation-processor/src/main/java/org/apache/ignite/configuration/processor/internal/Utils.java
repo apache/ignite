@@ -142,6 +142,14 @@ public class Utils {
         );
     }
 
+    /** */
+    public static ClassName getNodeName(ClassName schemaClassName) {
+        return ClassName.get(
+            schemaClassName.packageName() + ".impl",
+            schemaClassName.simpleName().replace("ConfigurationSchema", "Node")
+        );
+    }
+
     /**
      * Get {@link ClassName} for configuration VIEW object class.
      *
@@ -151,7 +159,7 @@ public class Utils {
     public static ClassName getViewName(ClassName schemaClassName) {
         return ClassName.get(
             schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("ConfigurationSchema", "")
+            schemaClassName.simpleName().replace("ConfigurationSchema", "View")
         );
     }
 
@@ -164,7 +172,7 @@ public class Utils {
     public static ClassName getInitName(ClassName schemaClassName) {
         return ClassName.get(
             schemaClassName.packageName(),
-            "Init" + schemaClassName.simpleName().replace("ConfigurationSchema", "")
+            schemaClassName.simpleName().replace("ConfigurationSchema", "Init")
         );
     }
 
@@ -177,7 +185,7 @@ public class Utils {
     public static ClassName getChangeName(ClassName schemaClassName) {
         return ClassName.get(
             schemaClassName.packageName(),
-            "Change" + schemaClassName.simpleName().replace("ConfigurationSchema", "")
+            schemaClassName.simpleName().replace("ConfigurationSchema", "Change")
         );
     }
 

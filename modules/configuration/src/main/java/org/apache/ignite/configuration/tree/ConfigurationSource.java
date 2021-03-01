@@ -27,7 +27,9 @@ public interface ConfigurationSource {
      * @param clazz Class instance of type to convert to.
      * @return Converted leaf object.
      */
-    <T> T unwrap(Class<T> clazz);
+    default <T> T unwrap(Class<T> clazz) {
+        throw new UnsupportedOperationException("unwrap");
+    }
 
     /**
      * Treats current configuration source as an inner node. Tries to construct the content of {@code node} using

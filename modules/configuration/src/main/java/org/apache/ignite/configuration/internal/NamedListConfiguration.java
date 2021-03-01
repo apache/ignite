@@ -18,78 +18,43 @@
 package org.apache.ignite.configuration.internal;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import org.apache.ignite.configuration.Configurator;
+import org.apache.ignite.configuration.ConfigurationChanger;
+import org.apache.ignite.configuration.ConfigurationProperty;
+import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.tree.NamedListChange;
+import org.apache.ignite.configuration.tree.NamedListInit;
+import org.apache.ignite.configuration.tree.NamedListView;
 
 /**
  * Named configuration wrapper.
  */
-public class NamedListConfiguration<VIEW, T extends Modifier<VIEW, INIT, CHANGE>, INIT, CHANGE>
-    extends DynamicConfiguration<NamedList<VIEW>, NamedList<INIT>, NamedList<CHANGE>> {
+public class NamedListConfiguration<VIEW, T extends ConfigurationProperty<VIEW, CHANGE>, INIT, CHANGE>
+    extends DynamicConfiguration<NamedListView<VIEW>, NamedListInit<INIT>, NamedListChange<CHANGE, INIT>> {
     /** Creator of named configuration. */
-    private final BiFunction<String, String, T> creator;
+    private final BiFunction<List<String>, String, T> creator;
 
     /** Named configurations. */
-    private final Map<String, T> values = new HashMap<>();
+    private volatile Map<String, T> values = new HashMap<>();
 
     /**
      * Constructor.
      * @param prefix Configuration prefix.
      * @param key Configuration key.
-     * @param configurator Configurator that this object is attached to.
-     * @param root Root configuration.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
      * @param creator Underlying configuration creator function.
      */
     public NamedListConfiguration(
-        String prefix,
+        List<String> prefix,
         String key,
-        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator,
-        DynamicConfiguration<?, ?, ?> root,
-        BiFunction<String, String, T> creator
-    ) {
-        super(prefix, key, false, configurator, root);
+        RootKey<?> rootKey,
+        ConfigurationChanger changer,
+        BiFunction<List<String>, String, T> creator) {
+        super(prefix, key, rootKey, changer);
         this.creator = creator;
-    }
-
-    /**
-     * Copy constructor.
-     * @param base Base to copy from.
-     * @param configurator Configurator to attach to.
-     * @param root Root of the configuration.
-     */
-    private NamedListConfiguration(
-        NamedListConfiguration<VIEW, T, INIT, CHANGE> base,
-        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator,
-        DynamicConfiguration<?, ?, ?> root
-    ) {
-        super(base.prefix, base.key, false, configurator, root);
-
-        this.creator = base.creator;
-
-        for (Map.Entry<String, T> entry : base.values.entrySet()) {
-            String k = entry.getKey();
-            T value = entry.getValue();
-
-            final T copy = (T) ((DynamicConfiguration<VIEW, INIT, CHANGE>) value).copy(root);
-            add(copy);
-
-            this.values.put(k, copy);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void init(NamedList<INIT> list) {
-        list.getValues().forEach((key, init) -> {
-            if (!values.containsKey(key)) {
-                final T created = creator.apply(qualifiedName, key);
-                add(created);
-                values.put(key, created);
-            }
-
-            values.get(key).init(init);
-        });
     }
 
     /**
@@ -98,29 +63,26 @@ public class NamedListConfiguration<VIEW, T extends Modifier<VIEW, INIT, CHANGE>
      * @return Configuration.
      */
     public T get(String name) {
+        refreshValue();
+
+        //TODO IGNITE-14182 Exceptions.
         return values.get(name);
     }
 
     /** {@inheritDoc} */
-    @Override public NamedList<VIEW> value() {
-        return new NamedList<>(values.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, it -> it.getValue().value())));
-    }
+    @Override protected synchronized void refreshValue0(NamedListView<VIEW> newValue) {
+        Map<String, T> oldValues = this.values;
+        Map<String, T> newValues = new HashMap<>();
 
-    /** {@inheritDoc} */
-    @Override public void changeWithoutValidation(NamedList<CHANGE> list) {
-        list.getValues().forEach((key, change) -> {
-            if (!values.containsKey(key)) {
-                final T created = creator.apply(qualifiedName, key);
-                add(created);
-                values.put(key, created);
-            }
+        for (String key : newValue.namedListKeys()) {
+            T oldElement = oldValues.get(key);
 
-            values.get(key).changeWithoutValidation(change);
-        });
-    }
+            if (oldElement != null)
+                newValues.put(key, oldElement);
+            else
+                newValues.put(key, creator.apply(keys, key));
+        }
 
-    /** {@inheritDoc} */
-    @Override public NamedListConfiguration<VIEW, T, INIT, CHANGE> copy(DynamicConfiguration<?, ?, ?> root) {
-        return new NamedListConfiguration<>(this, configurator, root);
+        this.values = newValues;
     }
 }

@@ -26,8 +26,11 @@ public abstract class RootKey<T extends ConfigurationTree<?, ?>> {
     public abstract String key();
 
     /** */
-    abstract Class<? extends ConfigurationStorage> getStorageType();
+    protected abstract Class<? extends ConfigurationStorage> getStorageType();
 
     /** */
-    abstract InnerNode createRootNode();
+    protected abstract InnerNode createRootNode();
+
+    /** */
+    protected abstract T createPublicRoot(ConfigurationChanger changer);
 }

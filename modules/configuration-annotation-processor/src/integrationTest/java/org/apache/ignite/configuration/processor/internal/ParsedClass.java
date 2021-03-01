@@ -46,12 +46,17 @@ public class ParsedClass {
     /** Class constructors by signature. */
     private final Map<String, CtConstructor<?>> constructors;
 
+    /** Class name. */
+    private final String qualifiedName;
+
     /**
      * Constructor.
      * @param cls Class info.
      */
     public ParsedClass(CtClass<?> cls) {
         this.cls = cls;
+
+        this.qualifiedName = cls.getQualifiedName();
 
         this.fields = cls.getAllFields()
             .stream()
@@ -64,6 +69,13 @@ public class ParsedClass {
         this.constructors = cls.getConstructors()
             .stream()
             .collect(Collectors.toMap(this::getMethodName, Functions.identity()));
+    }
+
+    /**
+     * @return Qualified class name.
+     */
+    public String getClassName() {
+        return qualifiedName;
     }
 
     /**

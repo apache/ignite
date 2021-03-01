@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.configuration.internal;
 
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import org.apache.ignite.configuration.ConfigurationChanger;
+import org.apache.ignite.configuration.ConfigurationTree;
+import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
-class RootKeyImpl<T extends ConfigurationTree<?, ?>> extends RootKey<T> {
+public class RootKeyImpl<T extends ConfigurationTree<?, ?>> extends RootKey<T> {
     /** */
     private final String rootName;
 
@@ -33,10 +37,19 @@ class RootKeyImpl<T extends ConfigurationTree<?, ?>> extends RootKey<T> {
     private final Supplier<InnerNode> rootSupplier;
 
     /** */
-    RootKeyImpl(String rootName, Class<? extends ConfigurationStorage> storageType, Supplier<InnerNode> rootSupplier) {
+    private final BiFunction<RootKey<T>, ConfigurationChanger, T> publicRootCreator;
+
+    /** */
+    public RootKeyImpl(
+        String rootName,
+        Class<? extends ConfigurationStorage> storageType,
+        Supplier<InnerNode> rootSupplier,
+        BiFunction<RootKey<T>, ConfigurationChanger, T> publicRootCreator
+    ) {
         this.rootName = rootName;
         this.storageType = storageType;
         this.rootSupplier = rootSupplier;
+        this.publicRootCreator = publicRootCreator;
     }
 
     /** {@inheritDoc} */
@@ -45,12 +58,17 @@ class RootKeyImpl<T extends ConfigurationTree<?, ?>> extends RootKey<T> {
     }
 
     /** {@inheritDoc} */
-    @Override Class<? extends ConfigurationStorage> getStorageType() {
+    @Override protected Class<? extends ConfigurationStorage> getStorageType() {
         return storageType;
     }
 
     /** {@inheritDoc} */
-    @Override InnerNode createRootNode() {
+    @Override protected InnerNode createRootNode() {
         return rootSupplier.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected T createPublicRoot(ConfigurationChanger changer) {
+        return publicRootCreator.apply(this, changer);
     }
 }
