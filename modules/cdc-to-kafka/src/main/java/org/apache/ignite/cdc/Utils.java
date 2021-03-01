@@ -82,7 +82,7 @@ public class Utils {
             int delimIdx = pattern.indexOf('-');
             if (delimIdx != -1) {
                 int first = Integer.parseInt(pattern.substring(0, delimIdx));
-                int second = Integer.parseInt(pattern.substring(delimIdx+1));
+                int second = Integer.parseInt(pattern.substring(delimIdx + 1));
 
                 if (first > second) {
                     throw new IllegalArgumentException("Pattern " + pattern + " is wrong. " +

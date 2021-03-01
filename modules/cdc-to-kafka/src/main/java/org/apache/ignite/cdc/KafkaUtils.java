@@ -19,9 +19,9 @@ package org.apache.ignite.cdc;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -82,8 +82,13 @@ public class KafkaUtils {
             return map.get(topic).partitions().size();
         }
         catch (ExecutionException e) {
+            e.printStackTrace();
+
             if (!(e.getCause() instanceof UnknownTopicOrPartitionException))
                 throw e;
+
+            // Waits some time for concurrent topic creation.
+            Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
 
             return createTopic(topic, props, adminCli, guard);
         }
@@ -116,11 +121,13 @@ public class KafkaUtils {
             return kafkaPartitionsNum;
         }
         catch (ExecutionException e) {
+            e.printStackTrace();
+
             if (!(e.getCause() instanceof TopicExistsException))
                 throw e;
 
             // Waits some time for concurrent topic creation.
-            Thread.sleep(1_000);
+            Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
 
             return initTopic0(topic, props, adminCli, guard - 1);
         }

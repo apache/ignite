@@ -28,7 +28,7 @@ import org.apache.kafka.common.serialization.Serializer;
  */
 public class JavaObjectSerializer implements Serializer<Serializable> {
     /** {@inheritDoc} */
-    public byte[] serialize(String s, Serializable o) {
+    @Override public byte[] serialize(String s, Serializable o) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(baos)) {
 

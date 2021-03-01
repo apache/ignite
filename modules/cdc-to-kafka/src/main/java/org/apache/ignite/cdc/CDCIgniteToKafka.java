@@ -59,6 +59,9 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     /** Ignite to Kafka only primary flag. */
     public static final String IGNITE_TO_KAFKA_CACHES = "ignite.to.kafka.caches";
 
+    /** Ignite to Kafka Data Center Replication ID. */
+    public static final String IGNITE_TO_KAFKA_DR_ID = "ignite.to.kafka.drid";
+
     /** Error message. */
     private static final String ERR_MSG = CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS +
         " should point to the Kafka properties file.";
@@ -80,6 +83,9 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
 
     /** Number Kafka topic partitions. */
     private int kafkaPartitionsNum;
+
+    /** Data center replication id. */
+    private int drId;
 
     /** */
     private Set<Integer> cachesIds;
@@ -132,6 +138,8 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
         topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps, DFLT_TOPIC_NAME);
 
         onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, kafkaProps, "false"));
+
+        drId = Integer.parseInt(property(IGNITE_TO_KAFKA_DR_ID, kafkaProps, "1"));
 
         kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 

@@ -129,7 +129,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
         cluster1 = new IgniteEx[] {
             startGrid(1),
-            //startGrid(2),
+            startGrid(2),
             startClientGrid(3)
         };
 
@@ -164,17 +164,16 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     public void testBasicReplication() throws Exception {
 
         CDCIgniteToKafka cdc1 = new CDCIgniteToKafka();
-        //CDCIgniteToKafka cdc2 = new CDCIgniteToKafka();
+        CDCIgniteToKafka cdc2 = new CDCIgniteToKafka();
 
         cdc1.setKafkaProps(props);
-        //cdc2.setKafkaProps(props);
+        cdc2.setKafkaProps(props);
 
         IgniteInternalFuture<?> fut1 =
             runAsync(new IgniteCDC(cluster1[0].configuration(), cdc1));
-/*
+
         IgniteInternalFuture<?> fut2 =
-            runAsync(new IgniteCDC(ign2.configuration(), new DataChangeConsumer<>(cdc2)));
-*/
+            runAsync(new IgniteCDC(cluster1[1].configuration(), cdc2));
 
         Function<String, Runnable> genData = cacheName -> () -> {
             IgniteCache<Integer, Data> cache = cluster1[cluster1.length - 1].createCache(cacheName);

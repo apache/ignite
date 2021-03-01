@@ -96,7 +96,6 @@ class Applier implements Runnable, AutoCloseable {
         for (int kafkaPart : kafkaParts) {
             Properties props = (Properties)commonProps.clone();
 
-            // TODO: move to the config.
             KafkaConsumer<Integer, byte[]> consumer = new KafkaConsumer<>(props);
 
             consumer.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
@@ -174,6 +173,7 @@ class Applier implements Runnable, AutoCloseable {
 
     /**
      * @param evt Applies event to Ignite.
+     * @param drId Data center replication id.
      */
     private void apply(EntryEvent<BinaryObject, BinaryObject> evt) throws IgniteCheckedException {
         rcvdEvts.incrementAndGet();
