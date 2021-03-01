@@ -52,7 +52,7 @@ public class KafkaUtils {
     public static int initTopic(String topic, Properties props)
         throws InterruptedException, ExecutionException, TimeoutException {
         try (AdminClient adminCli = AdminClient.create(props)) {
-            return initTopic0(topic, props, adminCli, 3);
+            return createTopic(topic, props, adminCli);
         }
     }
 
@@ -66,7 +66,7 @@ public class KafkaUtils {
      * @throws TimeoutException
      * @throws ExecutionException
      */
-    private static int initTopic0(String topic, Properties props, AdminClient adminCli, int guard)
+    private static int describeTopic(String topic, AdminClient adminCli, int guard)
         throws InterruptedException, TimeoutException, ExecutionException {
         if (guard == 0)
             throw new IllegalStateException("guard == 0");
@@ -82,15 +82,13 @@ public class KafkaUtils {
             return map.get(topic).partitions().size();
         }
         catch (ExecutionException e) {
-            e.printStackTrace();
-
             if (!(e.getCause() instanceof UnknownTopicOrPartitionException))
                 throw e;
 
             // Waits some time for concurrent topic creation.
-            Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
+            Thread.sleep(1000 + ThreadLocalRandom.current().nextInt(500));
 
-            return createTopic(topic, props, adminCli, guard);
+            return describeTopic(topic, adminCli, guard - 1);
         }
     }
 
@@ -99,13 +97,12 @@ public class KafkaUtils {
      * @param topic
      * @param props
      * @param adminCli
-     * @param guard
      * @return
      * @throws InterruptedException
      * @throws ExecutionException
      * @throws TimeoutException
      */
-    private static int createTopic(String topic, Properties props, AdminClient adminCli, int guard)
+    private static int createTopic(String topic, Properties props, AdminClient adminCli)
         throws InterruptedException, ExecutionException, TimeoutException {
         int kafkaPartitionsNum = Integer.parseInt(property(IGNITE_TO_KAFKA_NUM_PARTITIONS, props, "32"));
 
@@ -121,15 +118,13 @@ public class KafkaUtils {
             return kafkaPartitionsNum;
         }
         catch (ExecutionException e) {
-            e.printStackTrace();
-
             if (!(e.getCause() instanceof TopicExistsException))
                 throw e;
 
             // Waits some time for concurrent topic creation.
             Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
 
-            return initTopic0(topic, props, adminCli, guard - 1);
+            return describeTopic(topic, adminCli, 5);
         }
     }
 }

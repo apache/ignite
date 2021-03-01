@@ -22,9 +22,10 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.serde.JavaObjectSerializer;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,6 +49,9 @@ import org.junit.Test;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_CACHES;
+import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -58,13 +62,22 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     /** */
+    public static final String AP_TOPIC_NAME = "active-passive-topic";
+
+    /** */
+    public static final String AP_CACHE = "active-passive-cache";
+
+    /** */
+    public static final String ACTIVE_ACTIVE_CACHE = "active-active-cache";
+
+    /** */
     private static Properties props;
 
     /** */
-    private static IgniteEx[] cluster1;
+    private static IgniteEx[] source;
 
     /** */
-    private static IgniteEx[] cluster2;
+    private static IgniteEx[] dest;
 
     /** */
     @ClassRule
@@ -127,27 +140,27 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10_000);
         }
 
-        cluster1 = new IgniteEx[] {
+        source = new IgniteEx[] {
             startGrid(1),
             startGrid(2),
             startClientGrid(3)
         };
 
-        cluster1[0].cluster().state(ClusterState.ACTIVE);
-        cluster1[0].cluster().tag("source");
+        source[0].cluster().state(ACTIVE);
+        source[0].cluster().tag("source");
 
         discoPort += DFLT_PORT_RANGE + 1;
         commPort += DFLT_PORT_RANGE + 1;
 
-        cluster2 = new IgniteEx[] {
+        dest = new IgniteEx[] {
             startGrid(4),
             startGrid(5)
         };
 
-        assertFalse("source".equals(cluster2[0].cluster().tag()));
+        assertFalse("source".equals(dest[0].cluster().tag()));
 
-        cluster2[0].cluster().state(ClusterState.ACTIVE);
-        cluster2[0].cluster().tag("destination");
+        dest[0].cluster().state(ACTIVE);
+        dest[0].cluster().tag("destination");
     }
 
     /** {@inheritDoc} */
@@ -159,24 +172,14 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC, value = "replication-data")
-    @WithSystemProperty(key = CDCIgniteToKafka.IGNITE_TO_KAFKA_CACHES, value = "cache-2")
-    public void testBasicReplication() throws Exception {
-
-        CDCIgniteToKafka cdc1 = new CDCIgniteToKafka();
-        CDCIgniteToKafka cdc2 = new CDCIgniteToKafka();
-
-        cdc1.setKafkaProps(props);
-        cdc2.setKafkaProps(props);
-
-        IgniteInternalFuture<?> fut1 =
-            runAsync(new IgniteCDC(cluster1[0].configuration(), cdc1));
-
-        IgniteInternalFuture<?> fut2 =
-            runAsync(new IgniteCDC(cluster1[1].configuration(), cdc2));
+    @WithSystemProperty(key = IGNITE_TO_KAFKA_TOPIC, value = AP_TOPIC_NAME)
+    @WithSystemProperty(key = IGNITE_TO_KAFKA_CACHES, value = AP_CACHE)
+    public void testActivePassiveReplication() throws Exception {
+        streamToKafka(source[0], AP_TOPIC_NAME, AP_CACHE);
+        streamToKafka(source[1], AP_TOPIC_NAME, AP_CACHE);
 
         Function<String, Runnable> genData = cacheName -> () -> {
-            IgniteCache<Integer, Data> cache = cluster1[cluster1.length - 1].createCache(cacheName);
+            IgniteCache<Integer, Data> cache = source[source.length - 1].createCache(cacheName);
 
             FastCrc crc = new FastCrc();
 
@@ -193,24 +196,87 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             }
         };
 
+        IgniteCache<Integer, Data> destCache1 = dest[0].createCache(AP_CACHE);
+
+        destCache1.put(1, new Data(null, 0));
+        destCache1.remove(1);
+
         runAsync(genData.apply("cache-1"));
-        runAsync(genData.apply("cache-2"));
+        runAsync(genData.apply(AP_CACHE));
 
-        IgniteCache<Integer, Data> destCache1 = cluster2[0].createCache("cache-2");
-
-        IgniteInternalFuture<?> kafkaToIgniteFut =
-            runAsync(new CDCKafkaToIgnite(cluster2[0], props, "cache-2"));
+        IgniteInternalFuture<?> kafkaToIgniteFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_CACHE));
 
         waitForCondition(() -> {
+            FastCrc crc = new FastCrc();
+
             for (int i = 0; i < 50; i++) {
                 if (!destCache1.containsKey(i))
                     return false;
+
+                Data data = destCache1.get(i);
+
+                crc.reset();
+                crc.update(ByteBuffer.wrap(data.payload), data.payload.length);
+
+                assertEquals(crc.getValue(), data.crc);
             }
 
             return true;
         }, getTestTimeout());
 
         kafkaToIgniteFut.cancel();
+    }
+
+    /** */
+    @Test
+    public void testActiveActiveReplication() throws Exception {
+        streamToKafka(source[0], "source-dest", ACTIVE_ACTIVE_CACHE);
+        streamToKafka(source[1], "source-dest", ACTIVE_ACTIVE_CACHE);
+
+        streamToKafka(dest[0], "dest-source", ACTIVE_ACTIVE_CACHE);
+        streamToKafka(dest[1], "dest-source", ACTIVE_ACTIVE_CACHE);
+
+    }
+
+    /**
+     * @param ign Ignite instance to watch for.
+     * @param topic Kafka topic name.
+     * @param caches Caches names to stream to kafka.
+     * @return Future for CDC application.
+     */
+    private IgniteInternalFuture<?> streamToKafka(IgniteEx ign, String topic, String...caches) {
+        return withSystemProperty(IGNITE_TO_KAFKA_TOPIC, topic, () ->
+            withSystemProperty(IGNITE_TO_KAFKA_CACHES, String.join(",", caches), () -> {
+                CDCIgniteToKafka cdc = new CDCIgniteToKafka();
+
+                cdc.setKafkaProps(props);
+
+                return runAsync(new IgniteCDC(ign.configuration(), cdc));
+            })
+        );
+    }
+
+    /**
+     * @param key
+     * @param value
+     * @param run
+     * @param <R>
+     * @return
+     */
+    private static <R> R withSystemProperty(String key, String value, Supplier<R> run) {
+        String prevVal = IgniteSystemProperties.getString(key);
+
+        try {
+            System.setProperty(key, value);
+
+            return run.get();
+        }
+        finally {
+            if (prevVal == null)
+                System.clearProperty(key);
+            else
+                System.setProperty(key, prevVal);
+        }
     }
 
     /** */
@@ -225,16 +291,6 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         public Data(byte[] payload, int crc) {
             this.payload = payload;
             this.crc = crc;
-        }
-
-        /** */
-        public byte[] getPayload() {
-            return payload;
-        }
-
-        /** */
-        public int getCrc() {
-            return crc;
         }
     }
 }
