@@ -52,6 +52,10 @@ namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
 
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
+                if (ignite.GetCluster().GetNodes().Count > 1)
+                    throw new Exception("Extra nodes detected. " +
+                                        "ClientReconnect example should be run without external nodes.");
+
                 var cacheCfg = new CacheConfiguration
                 {
                     Name = CacheName,
