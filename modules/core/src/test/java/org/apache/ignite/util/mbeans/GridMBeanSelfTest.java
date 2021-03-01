@@ -17,8 +17,15 @@
 
 package org.apache.ignite.util.mbeans;
 
-import javax.management.*;
-
+import java.util.Set;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectInstance;
+import javax.management.ObjectName;
+import javax.management.StandardMBean;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
@@ -29,8 +36,6 @@ import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -216,8 +221,8 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
                 .stream()
                 .map(ObjectInstance::getObjectName)
                 .map(ObjectName::toString)
-                .filter(o->(!o.contains("igniteInstanceName=")))
-                .filter(o->(!"org.apache:group=Kernal,name=Ignition".equals(o)))
+                .filter(o -> (!o.contains("igniteInstanceName=")))
+                .filter(o -> (!"org.apache:group=Kernal,name=Ignition".equals(o)))
                 .collect(toSet());
 
         assertTrue("There are mbeans without instanceName for case when instanceName=" + instanceName + " and consistanceId=" + consistanceId + ":" + beans, beans.isEmpty());
