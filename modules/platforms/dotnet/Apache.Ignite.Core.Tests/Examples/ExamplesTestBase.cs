@@ -63,5 +63,30 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             return _outSb.ToString();
         }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="example"></param>
+        /// <param name="requiredLines"></param>
+        protected void CheckOutput(Example example, params string[] requiredLines)
+        {
+            var output = GetOutput();
+
+            foreach (var line in requiredLines)
+            {
+                StringAssert.Contains(line, output);
+            }
+
+            var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name) + ".txt";
+
+            // TODO: Make this required
+            if (File.Exists(expectedOutputFile))
+            {
+                var expectedOutput = File.ReadAllText(expectedOutputFile);
+
+                StringAssert.Contains(expectedOutput, output);
+            }
+        }
     }
 }
