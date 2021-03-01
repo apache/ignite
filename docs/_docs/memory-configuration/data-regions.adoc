@@ -132,7 +132,7 @@ tab:C++[unsupported]
 --
 
 
-To disable the warm-up for all data regions, pass the configuration parameter `NoOpWarmUpConfiguration` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
+To stop the warm-up for all data regions, pass the configuration parameter `NoOpWarmUpConfiguration` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
 
 
 [tabs]
@@ -153,7 +153,7 @@ tab:C++[unsupported]
 --
 
 
-To disable the warm-up for a specific data region, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+To stop the warm-up for a specific data region, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
 
 [tabs]
 --
@@ -173,10 +173,10 @@ tab:C++[unsupported]
 --
 
 
-You can also disable the cache warm-up by using `control.sh` and JMX.
+You can also stop the cache warm-up by using `control.sh` and JMX.
 
 
-To disable the warm-up using control.sh:
+To stop the warm-up using control.sh:
 
 [tabs]
 --
@@ -193,8 +193,7 @@ control.bat --warm-up --stop --yes
 --
 
 
-To disable the warm-up using JMX, use the method:
-
+To stop the warm-up using JMX, use the method:
 
 [source, java]
 ----
