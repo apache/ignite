@@ -248,7 +248,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Starts or stops collecting statistics on metastorage update. */
     private void onMetastorageUpdate(PerformanceStatisticsKey key) {
         ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
-            switch (key){
+            switch (key) {
                 case START:
                     startWriter();
                     break;
