@@ -649,6 +649,23 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
+        
+        /// <summary>
+        /// Deploys the Java service.
+        /// </summary>
+        public static string DeployJavaService(IIgnite ignite)
+        {
+            const string serviceName = "javaService";
+            
+            ignite.GetCompute()
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
+            
+            var services = ignite.GetServices();
+
+            WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
+
+            return serviceName;
+        }
 
         /// <summary>
         /// Logs to test progress. Produces immediate console output on .NET Core.

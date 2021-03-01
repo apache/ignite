@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -53,6 +54,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean client;
+
+    /** */
+    private WALMode walMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -71,7 +75,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY)
+            .setWalMode(walMode)
             .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -96,6 +100,13 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        walMode = WALMode.LOG_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -512,5 +523,30 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         assert released;
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+    public void testCheckpointsNotReserveWithWalModeNone() throws Exception {
+        walMode = WALMode.NONE;
+
+        IgniteEx grid = startGrids(2);
+
+        grid.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = grid.createCache(new CacheConfiguration<>("cache").setBackups(1));
+
+        for (int i = 0; i < 1000; i++)
+            cache.put(i, i);
+
+        stopGrid(1);
+
+        for (int i = 1000; i < 2000; i++)
+            cache.put(i, i);
+
+        startGrid(1);
     }
 }

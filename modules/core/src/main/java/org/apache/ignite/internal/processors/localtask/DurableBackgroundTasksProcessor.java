@@ -26,6 +26,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -42,7 +44,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.awaitForWorkersStop;
  * Processor that is responsible for durable background tasks that are executed on local node
  * and should be continued even after node restart.
  */
-public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
+public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener,
+    CheckpointListener {
     /** Prefix for metastorage keys for durable background tasks. */
     private static final String STORE_DURABLE_BACKGROUND_TASK_PREFIX = "durable-background-task-";
 
@@ -74,8 +77,10 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     private void asyncDurableBackgroundTasksExecution() {
         assert durableBackgroundTasks != null;
 
-        for (DurableBackgroundTask task : durableBackgroundTasks.values())
-            asyncDurableBackgroundTaskExecute(task, false);
+        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
+            if (!task.isCompleted())
+                asyncDurableBackgroundTaskExecute(task, false);
+        }
     }
 
     /**
@@ -93,9 +98,9 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
                     task.execute(ctx);
 
-                    log.info("Execution of durable background task completed: " + task.shortName());
+                    task.complete();
 
-                    removeDurableBackgroundTask(task);
+                    log.info("Execution of durable background task completed: " + task.shortName());
                 }
                 catch (Throwable e) {
                     log.error("Could not execute durable background task: " + task.shortName(), e);
@@ -171,6 +176,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 throw new IgniteException("Failed to read key from durable background tasks storage.", e);
             }
         }
+
+        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
 
         this.metastorage = metastorage;
     }
@@ -261,5 +268,23 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
             addDurableBackgroundTask(task);
 
         asyncDurableBackgroundTaskExecute(task, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMarkCheckpointBegin(Context ctx) {
+        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
+            if (task.isCompleted())
+                removeDurableBackgroundTask(task);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCheckpointBegin(Context ctx) {
+        /* No op. */
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) {
+        /* No op. */
     }
 }

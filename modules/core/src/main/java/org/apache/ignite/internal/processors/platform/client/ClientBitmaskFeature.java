@@ -39,8 +39,17 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     /** Cluster groups. */
     CLUSTER_GROUPS(4),
 
-    /** Service invocation. */
-    SERVICE_INVOKE(5);
+    /** Service invocation. This flag is not necessary and exists for legacy reasons. */
+    SERVICE_INVOKE(5),
+
+    /** Feature for use default query timeout if the qry timeout isn't set explicitly. */
+    DEFAULT_QRY_TIMEOUT(6),
+
+    /** Additional SqlFieldsQuery properties: partitions, updateBatchSize. */
+    QRY_PARTITIONS_BATCH_SIZE(7),
+
+    /** Binary configuration retrieval. */
+    BINARY_CONFIGURATION(8);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

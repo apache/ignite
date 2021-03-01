@@ -1,0 +1,60 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#tag::config-block[]
+# An example of a Kubernetes configuration for pod deployment.
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  # Cluster name.
+  name: ignite-cluster
+  namespace: ignite
+spec:
+  # The initial number of pods to be started by Kubernetes.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ignite
+  template:
+    metadata:
+      labels:
+        app: ignite 
+    spec:
+      serviceAccountName: ignite 
+      terminationGracePeriodSeconds: 60000 
+      containers:
+        # Custom pod name.
+      - name: ignite-node
+        image: apacheignite/ignite:{version}
+        env:
+        - name: OPTION_LIBS
+          value: ignite-kubernetes,ignite-rest-http
+        - name: CONFIG_URI
+          value: file:///ignite/config/node-configuration.xml
+        ports:
+        # Ports to open.
+        - containerPort: 47100 # communication SPI port
+        - containerPort: 47500 # discovery SPI port
+        - containerPort: 49112 # dafault JMX port
+        - containerPort: 10800 # thin clients/JDBC driver port
+        - containerPort: 8080 # REST API
+        volumeMounts:
+        - mountPath: /ignite/config
+          name: config-vol
+      volumes:
+      - name: config-vol
+        configMap:
+          name: ignite-config
+#end::config-block[]

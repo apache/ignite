@@ -50,9 +50,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
-import org.apache.ignite.testframework.junits.SystemPropertiesList;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -73,12 +73,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@SystemPropertiesList(value = {
-    @WithSystemProperty(key = IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD, value = "999"),
-    @WithSystemProperty(key = IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT, value = "1.0"),
-    @WithSystemProperty(key = IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT, value = "5"),
-    @WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = "500")
-})
+@WithSystemProperty(key = IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD, value = "999")
+@WithSystemProperty(key = IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT, value = "1.0")
+@WithSystemProperty(key = IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT, value = "5")
+@WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = "500")
 public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "test";
@@ -265,7 +263,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * @param userDelay User delay for each transaction.
      */
     private void doAsyncTransactions(Ignite client, int txCnt, long userDelay) {
-        ExecutorService executorSrvc = Executors.newFixedThreadPool(txCnt);
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(txCnt, new IgniteThreadFactory("testscope", "async-tx-with-delay"));
 
         for (int i = 0; i < txCnt; i++) {
             executorSrvc.submit(() -> {

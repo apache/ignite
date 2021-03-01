@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.util;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This is an utility class for 'splitting' locking of some
@@ -59,7 +58,7 @@ public class GridClientStripedLock {
      * @return Lock.
      */
     public Lock getLock(int key) {
-        return locks[U.safeAbs(key) % locks.length];
+        return locks[GridClientUtils.safeAbs(key) % locks.length];
     }
 
     /**
@@ -68,7 +67,7 @@ public class GridClientStripedLock {
      * @return Lock.
      */
     public Lock getLock(long key) {
-        return locks[U.safeAbs((int)(key % locks.length))];
+        return locks[GridClientUtils.safeAbs((int)(key % locks.length))];
     }
 
     /**

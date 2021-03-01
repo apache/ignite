@@ -118,13 +118,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
-    @Override public void forceKeyCheck() {
-        super.forceKeyCheck();
-
-        dht().forceKeyCheck();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onReconnected() {
         map = new GridCacheLocalConcurrentMap(
             ctx,
@@ -378,21 +371,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
         return dht().offHeapAllocatedSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return dht().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgfsDataSizeChanged(long delta) {
-        dht().onIgfsDataSizeChanged(delta);
     }
 
     /** {@inheritDoc} */

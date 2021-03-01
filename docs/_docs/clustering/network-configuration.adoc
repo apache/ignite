@@ -1,0 +1,198 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Network Configuration
+:javaFile: {javaCodeDir}/NetworkConfiguration.java
+:xmlFile: code-snippets/xml/network-configuration.xml
+
+== IPv4 vs IPv6
+
+Ignite tries to support IPv4 and IPv6 but this can sometimes lead to issues where the cluster becomes detached. A possible solution — unless you require IPv6 — is to restrict Ignite to IPv4 by setting the `-Djava.net.preferIPv4Stack=true` JVM parameter.
+
+
+== Discovery
+This section describes the network parameters of the default discovery mechanism, which uses the TCP/IP protocol to exahcange discovery messages and is implemented in the `TcpDiscoverySpi` class.
+
+You can change the properties of the discovery mechanism as follows:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;discovery, indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=discovery, indent=0]
+
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+
+--
+
+The following table describes some most important properties of `TcpDiscoverySpi`.
+You can find the complete list of properties in the javadoc:org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi[] javadoc.
+
+[CAUTION]
+====
+You should initialize the `IgniteConfiguration.localHost` or `TcpDiscoverySpi.localAddress` parameter with the network
+interface that will be used for inter-node communication. By default, a node binds to and listens on all available IP
+addresses of an environment it's running on. It can prolong node failures detection if some of the node's addresses are
+not reachable from other cluster nodes.
+====
+
+[cols="1,2,1",opts="header"]
+|===
+|Property | Description| Default Value
+| `localAddress`| Local host IP address used for discovery. If set, overrides the `IgniteConfiguration.localHost` setting. | By default, a node binds to all available network addresses. If there is a non-loopback address available, then java.net.InetAddress.getLocalHost() is used.
+| `localPort`  | The port that the node binds to. If set to a non-default value, other cluster nodes must know this port to be able to discover the node. | `47500`
+| `localPortRange`| If the `localPort` is busy, the node attempts to bind to the next port (incremented by 1) and continues this process until it finds a free port. The `localPortRange` property defines the number of ports the node will try (starting from `localPort`).
+   | `100`
+| `soLinger`| Specifies a linger-on-close timeout of TCP sockets used by Discovery SPI. See Java `Socket.setSoLinger` API
+for details on how to adjust this setting. In Ignite, the timeout defaults to a non-negative value to prevent
+link:https://bugs.openjdk.java.net/browse/JDK-8219658[potential deadlocks with SSL connections, window=_blank] but,
+as a side effect, this can prolong the detection of cluster node failures. Alternatively, update your JRE version to the
+one with the SSL issue fixed and adjust this setting accordingly. | `0`
+| `reconnectCount` | The number of times the node tries to (re)establish connection to another node. |`10`
+| `networkTimeout` |  The maximum network timeout in milliseconds for network operations. |`5000`
+| `socketTimeout` |  The socket operations timeout. This timeout is used to limit connection time and write-to-socket time. |`5000`
+| `ackTimeout`| The acknowledgement timeout for discovery messages.
+If an acknowledgement is not received within this timeout, the discovery SPI tries to resend the message.  |  `5000`
+| `joinTimeout` |  The join timeout defines how much time the node waits to join a cluster. If a non-shared IP finder is used and the node fails to connect to any address from the IP finder, the node keeps trying to join within this timeout. If all addresses are unresponsive, an exception is thrown and the node terminates.
+`0` means waiting indefinitely.  | `0`
+| `statisticsPrintFrequency` | Defines how often the node prints discovery statistics to the log.
+`0` indicates no printing. If the value is greater than 0, and quiet mode is disabled, then statistics is printed out at INFO level once every period. | `0`
+
+|===
+
+
+
+== Communication
+
+After the nodes discover each other and the cluster is formed, the nodes exchange messages via the communication SPI.
+The messages represent distributed cluster operations, such as task execution, data modification operations, queries, etc.
+The default implementation of the communication SPI uses the TCP/IP protocol to exchange messages (`TcpCommunicationSpi`).
+This section describes the properties of `TcpCommunicationSpi`.
+
+Each node opens a local communication port and address to which other nodes connect and send messages.
+At startup, the node tries to bind to the specified communication port (default is 47100).
+If the port is already used, the node increments the port number until it finds a free port.
+The number of attempts is defined by the `localPortRange` property (defaults to 100).
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;communication-spi, indent=0]
+----
+
+tab:Java[]
+[source, java]
+----
+include::{javaCodeDir}/ClusteringOverview.java[tag=commSpi,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ClusteringOverview.cs[tag=CommunicationSPI,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Below is a list of some important properties of `TcpCommunicationSpi`.
+You can find the list of all properties in the javadoc:org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi[] javadoc.
+
+[cols="1,2,1",opts="header"]
+|===
+|Property | Description| Default Value
+| `localAddress` | The local address for the communication SPI to bind to. If set, overrides the `IgniteConfiguration.localHost` setting. |
+
+| `localPort` | The local port that the node uses for communication.  | `47100`
+
+| `localPortRange` | The range of ports the nodes tries to bind to sequentially until it finds a free one. |  `100`
+
+|`tcpNoDelay` | Sets the value for the `TCP_NODELAY` socket option. Each socket accepted or created will use the provided value.
+
+The option should be set to `true` (default) to reduce request/response time during communication over TCP. In most cases we do not recommend changing this option.| `true`
+
+|`idleConnectionTimeout` | The maximum idle connection timeout (in milliseconds) after which the connection is closed. |  `600000`
+
+|`usePairedConnections` | Whether dual socket connection between the nodes should be enforced. If set to `true`, two separate connections will be established between the communicating nodes: one for outgoing messages, and one for incoming messages. When set to `false`, a single TCP connection will be used for both directions.
+This flag is useful on some operating systems when messages take too long to be delivered.   | `false`
+
+| `directBuffer` | A boolean flag that indicates whether to allocate NIO direct buffer instead of NIO heap allocation buffer. Although direct buffers perform better, in some cases (especially on Windows) they may cause JVM crashes. If that happens in your environment, set this property to `false`.   | `true`
+
+|`directSendBuffer` | Whether to use NIO direct buffer instead of NIO heap allocation buffer when sending messages.   | `false`
+
+|`socketReceiveBuffer`| Receive buffer size for sockets created or accepted by the communication SPI. If set to `0`,   the operating system's default value is used. | `0`
+
+|`socketSendBuffer` | Send buffer size for sockets created or accepted by the communication SPI. If set to `0` the  operating system's default value is used. | `0`
+
+|===
+
+
+== Connection Timeouts
+
+////
+//Connection timeout is a period of time a cluster node waits before a connection to another node is considered "failed".
+
+Every node in a cluster is connected to every other node.
+When node A sends a message to node B, and node B does not reply in `failureDetectionTimeout` (in milliseconds), then node B will be removed from the cluster.
+////
+
+There are several properties that define connection timeouts:
+
+[cols="",opts="header"]
+|===
+|Property | Description | Default Value
+| `IgniteConfiguration.failureDetectionTimeout` | A timeout for basic network operations for server nodes. | `10000`
+
+| `IgniteConfiguration.clientFailureDetectionTimeout` | A timeout for basic network operations for client nodes.  | `30000`
+
+|===
+
+//CAUTION: The timeout automatically controls configuration parameters of `TcpDiscoverySpi`, such as socket timeout, message acknowledgment timeout and others. If any of these parameters is set explicitly, then the failure timeout setting will be ignored.
+
+:ths: &#8239;
+
+You can set the failure detection timeout in the node configuration as shown in the example below.
+//The default value is 10{ths}000 ms for server nodes and 30{ths}000 ms for client nodes.
+The default values allow the discovery SPI to work reliably on most on-premise and containerized deployments.
+However, in stable low-latency networks, you can set the parameter to {tilde}200 milliseconds in order to detect and react to​ failures more quickly.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/network-configuration.xml[tags=!*;ignite-config;failure-detection-timeout, indent=0]
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=failure-detection-timeout, indent=0]
+----
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+
+--

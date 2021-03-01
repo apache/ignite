@@ -35,6 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -46,6 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE = "testCache";

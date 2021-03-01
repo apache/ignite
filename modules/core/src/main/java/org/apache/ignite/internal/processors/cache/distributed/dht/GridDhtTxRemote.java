@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSingleStateImpl;
@@ -53,9 +51,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  * Transaction created by system implicitly on remote nodes.
  */
 public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -67,13 +62,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** Store write through flag. */
     private boolean storeWriteThrough;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxRemote() {
-        // No-op.
-    }
 
     /**
      * This constructor is meant for optimistic transactions.
@@ -318,21 +306,16 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         GridCacheContext cacheCtx = entry.context();
 
-        try {
-            GridDhtCacheEntry cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
+        GridDhtCacheEntry cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
 
-            checkInternal(entry.txKey());
+        checkInternal(entry.txKey());
 
-            // Initialize cache entry.
-            entry.cached(cached);
+        // Initialize cache entry.
+        entry.cached(cached);
 
-            txState.addWriteEntry(entry.txKey(), entry);
+        txState.addWriteEntry(entry.txKey(), entry);
 
-            addExplicit(entry);
-        }
-        catch (GridDhtInvalidPartitionException e) {
-            addInvalidPartition(cacheCtx.cacheId(), e.partition());
-        }
+        addExplicit(entry);
     }
 
     /**

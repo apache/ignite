@@ -49,7 +49,7 @@ public class StoredCacheData implements Serializable {
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     private boolean sql;
 
-    /** */
+    /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheConfigurationEnrichment;
 
     /**
@@ -119,7 +119,7 @@ public class StoredCacheData implements Serializable {
     }
 
     /**
-     * @param ccfgEnrichment Ccfg enrichment.
+     * @param ccfgEnrichment Configuration enrichment.
      */
     public StoredCacheData cacheConfigurationEnrichment(CacheConfigurationEnrichment ccfgEnrichment) {
         this.cacheConfigurationEnrichment = ccfgEnrichment;
@@ -128,21 +128,23 @@ public class StoredCacheData implements Serializable {
     }
 
     /**
-     *
+     * @return Configuration enrichment.
      */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheConfigurationEnrichment;
     }
 
     /**
-     *
+     * @return {@code true} if configuration enrichment is available.
      */
     public boolean hasOldCacheConfigurationFormat() {
         return cacheConfigurationEnrichment == null;
     }
 
     /**
+     * Splits the corresponding cache configuration into parts with the given splitter.
      *
+     * @param splitter Cache configuration splitter.
      */
     public StoredCacheData withSplittedCacheConfig(CacheConfigurationSplitter splitter) {
         if (cacheConfigurationEnrichment != null)
@@ -157,7 +159,8 @@ public class StoredCacheData implements Serializable {
     }
 
     /**
-     *
+     * @param enricher Cache configuration enricher.
+     * @return Cache data with fully enriched cache configuration.
      */
     public StoredCacheData withOldCacheConfig(CacheConfigurationEnricher enricher) {
         if (cacheConfigurationEnrichment == null)

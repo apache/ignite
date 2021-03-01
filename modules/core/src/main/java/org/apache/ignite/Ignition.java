@@ -562,7 +562,7 @@ public class Ignition {
      */
     private static Ignite wrapToProxy(Ignite ignite) {
         return AccessController.doPrivileged((PrivilegedAction<Ignite>)
-            () -> SandboxIgniteComponentProxy.proxy(Ignite.class, ignite)
+            () -> SandboxIgniteComponentProxy.igniteProxy(ignite)
         );
     }
 

@@ -68,7 +68,6 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
                 1300));
         cc1.setBackups(2);
 
-        c.setIgfsThreadPoolSize(1);
         c.setSystemThreadPoolSize(2);
         c.setPublicThreadPoolSize(2);
         c.setManagementThreadPoolSize(1);

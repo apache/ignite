@@ -91,6 +91,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         OnCacheStopped = 72,
         OnAffinityTopologyVersionChanged = 73,
         ComputeOutFuncExecute = 74,
-        ComputeActionExecute = 75
+        ComputeActionExecute = 75,
+        BinaryTypeGet = 76
     }
 }

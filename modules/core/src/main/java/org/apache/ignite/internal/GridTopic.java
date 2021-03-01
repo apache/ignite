@@ -70,7 +70,10 @@ public enum GridTopic {
     /** */
     TOPIC_REPLICATION,
 
-    /** */
+    /**
+     * @deprecated Component was removed. Enum can't be removed because enum ordinal is important.
+     */
+    @Deprecated
     TOPIC_IGFS,
 
     /** */
@@ -91,7 +94,10 @@ public enum GridTopic {
     /** */
     TOPIC_TIME_SYNC,
 
-    /** */
+    /**
+     * @deprecated Component was removed. Enum can't be removed because enum ordinal is important.
+     */
+    @Deprecated
     TOPIC_HADOOP,
 
     /** */

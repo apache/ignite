@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -337,6 +338,52 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
         testWriteArrayInternalOverflow(arr, false, true, 3);
         testWriteArrayInternalOverflow(arr, true, false, 3);
         testWriteArrayInternalOverflow(arr, true, true, 3);
+    }
+
+    /**
+     * tests linear performance for writeString method
+     * */
+    @Test
+    public void testNonSuperLinearPerformanceForWriteString() {
+        int len = 400_000;
+
+        int trues = 0;
+        for (int i = 0; i < 10; i++) {
+            long t1 = getWriteStringExecutionTime(len);
+            long t2 = getWriteStringExecutionTime(len * 10);
+            long t3 = getWriteStringExecutionTime(len * 100);
+
+            if (t2 <= t1 * 10)
+                trues++;
+
+            if (t3 <= t1 * 100)
+                trues++;
+        }
+
+        assertTrue(trues > 0);
+    }
+
+    /**
+     * execution time
+     * @param len string length
+     * @return writing time
+     * */
+    private long getWriteStringExecutionTime(int len) {
+        String s = StringUtils.leftPad("1", len, "_");
+
+        buff.rewind();
+
+        DirectByteBufferStreamImplV2 stream = createStream(buff);
+
+        long d1 = System.currentTimeMillis();
+        while (!stream.lastFinished()) {
+            stream.writeString(s);
+
+            buff.rewind();
+        }
+        long d2 = System.currentTimeMillis();
+
+        return d2 - d1;
     }
 
     /**

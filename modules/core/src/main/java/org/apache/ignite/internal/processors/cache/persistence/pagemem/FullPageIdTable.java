@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.function.BiConsumer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -33,8 +34,12 @@ import static org.apache.ignite.IgniteSystemProperties.getFloat;
  *
  */
 public class FullPageIdTable implements LoadedPagesMap {
+    /** @see IgniteSystemProperties#IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR */
+    public static final float DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR = 2.5f;
+
     /** Load factor. */
-    private static final float LOAD_FACTOR = getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, 2.5f);
+    private static final float LOAD_FACTOR =
+        getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR);
 
     /** */
     private static final int BYTES_PER_ENTRY = /*cache ID*/4 + /*partition tag*/4 + /*page ID*/8 + /*pointer*/8;

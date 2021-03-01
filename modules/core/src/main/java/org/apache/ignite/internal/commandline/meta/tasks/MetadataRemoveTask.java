@@ -100,6 +100,9 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
                     BinaryMetadata meta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects())
                         .binaryMetadata(typeId);
 
+                    if (meta == null)
+                        return new MetadataMarshalled(null, null);
+
                     byte[] marshalled = U.marshal(ignite.context(), meta);
 
                     res = new MetadataMarshalled(marshalled, meta);

@@ -178,7 +178,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
         Thread prevCheckerThread = lastChecker.get();
 
-        if (prevCheckerThread == null ||
+        if (prevCheckerThread == null || registeredWorkers.size() < 2 ||
             U.currentTimeMillis() - lastCheckTs <= checkInterval ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
@@ -228,8 +228,6 @@ public class WorkersRegistry implements GridWorkerListener {
                                     "This can lead to cluster-wide undefined behaviour " +
                                     "[workerName=" + worker.name() + ", threadName=" + runner.getName() +
                                     ", blockedFor=" + heartbeatDelay / 1000 + "s]");
-
-                            U.dumpThread(worker.runner(), log);
 
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
                         }

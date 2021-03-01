@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  *
@@ -55,7 +54,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @param connIdx Desired {@link TcpCommunicationSpi} connection index if applicable.
      */
     public GridIoSecurityAwareMessage(
         UUID secSubjId,
@@ -65,10 +63,9 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout,
-        int connIdx
+        boolean skipOnTimeout
     ) {
-        super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout, connIdx);
+        super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
     }

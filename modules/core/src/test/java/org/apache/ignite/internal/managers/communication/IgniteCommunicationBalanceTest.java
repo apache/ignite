@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -121,7 +122,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             waitNioBalanceStop(Collections.singletonList(client), 10_000);
 
-            final GridNioServer srv = GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvr");
+            final GridNioServer srv = ((GridNioServerWrapper) GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvWrapper")).nio();
 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -251,7 +252,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         for (Ignite node : nodes) {
             TcpCommunicationSpi spi = (TcpCommunicationSpi) node.configuration().getCommunicationSpi();
 
-            GridNioServer srv = GridTestUtils.getFieldValue(spi, "nioSrvr");
+            GridNioServer srv = ((GridNioServerWrapper) GridTestUtils.getFieldValue(spi, "nioSrvWrapper")).nio();
 
             srvs.add(srv);
         }

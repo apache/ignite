@@ -51,8 +51,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Current stack frame. */
         private Frame _frame;
 
-        /** Whether we are currently detaching an object. */
-        private bool _detaching;
+        /** Whether we are currently detaching an object: detachment root when true, null otherwise. */
+        private object _detaching;
 
         /** Whether we are directly within peer loading object holder. */
         private bool _isInWrapper;
@@ -627,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryUtils.WriteDecimalArray(val, _stream);
             }
         }
-        
+
         /// <summary>
         /// Write decimal array.
         /// </summary>
@@ -657,10 +657,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Timestamp);
-                BinaryUtils.WriteTimestamp(val.Value, _stream);
+                BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.TimestampConverter);
             }
         }
-        
+
         /// <summary>
         /// Write date value.
         /// </summary>
@@ -672,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Timestamp);
-                BinaryUtils.WriteTimestamp(val.Value, _stream);
+                BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.TimestampConverter);
             }
         }
 
@@ -690,7 +690,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-                BinaryUtils.WriteTimestampArray(val, _stream);
+                BinaryUtils.WriteTimestampArray(val, _stream, _marsh.TimestampConverter);
             }
         }
 
@@ -705,7 +705,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-                BinaryUtils.WriteTimestampArray(val, _stream);
+                BinaryUtils.WriteTimestampArray(val, _stream, _marsh.TimestampConverter);
             }
         }
 
@@ -875,7 +875,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     throw new BinaryObjectException("Type is not an enum: " + type);
                 }
 
-                var handler = BinarySystemHandlers.GetWriteHandler(type);
+                var handler = BinarySystemHandlers.GetWriteHandler(type, _marsh.ForceTimestamp);
 
                 if (handler != null)
                 {
@@ -900,12 +900,29 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var desc = _marsh.GetDescriptor(type);
 
-            _stream.WriteByte(BinaryTypeId.Enum);
-            _stream.WriteInt(desc.TypeId);
-            _stream.WriteInt(val);
+            WriteEnum(val, desc.TypeId);
 
-            var metaHnd = _marsh.GetBinaryTypeHandler(desc);
-            SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
+            var binaryTypeHolder = Marshaller.GetCachedBinaryTypeHolder(desc.TypeId);
+            if (binaryTypeHolder == null || !binaryTypeHolder.IsSaved)
+            {
+                // Save enum fields only once - they can't change locally at runtime.
+                var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+                var binaryFields = metaHnd.OnObjectWriteFinished();
+
+                SaveMetadata(desc, binaryFields);
+            }
+        }
+
+        /// <summary>
+        /// Write enum value.
+        /// </summary>
+        /// <param name="val">Enum value.</param>
+        /// <param name="typeId">Enum type id.</param>
+        private void WriteEnum(int val, int typeId)
+        {
+            _stream.WriteByte(BinaryTypeId.Enum);
+            _stream.WriteInt(typeId);
+            _stream.WriteInt(val);
         }
 
         /// <summary>
@@ -1146,7 +1163,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // We use GetType() of a real object instead of typeof(T) to take advantage of 
+            // We use GetType() of a real object instead of typeof(T) to take advantage of
             // automatic Nullable'1 unwrapping.
             Type type = obj.GetType();
 
@@ -1163,7 +1180,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
 
             // Are we dealing with a well-known type?
-            var handler = BinarySystemHandlers.GetWriteHandler(type);
+            var handler = BinarySystemHandlers.GetWriteHandler(type, _marsh.ForceTimestamp);
 
             if (handler != null)
             {
@@ -1233,7 +1250,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var schemaOffset = dataEnd - pos;
 
                 int schemaId;
-                    
+
                 var flags = desc.UserType
                     ? BinaryObjectHeader.Flag.UserType
                     : BinaryObjectHeader.Flag.None;
@@ -1381,6 +1398,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
                 }
 
+                // Special case for binary enum during build.
+                BinaryEnum binEnum = obj as BinaryEnum;
+
+                if (binEnum != null)
+                {
+                    WriteEnum(binEnum.EnumValue, binEnum.TypeId);
+
+                    return true;
+                }
+
                 // Special case for builder during build.
                 BinaryObjectBuilder portBuilder = obj as BinaryObjectBuilder;
 
@@ -1433,17 +1460,25 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        internal void WriteObjectDetached<T>(T o)
+        /// <param name="o">Object to write.</param>
+        /// <param name="parentCollection">
+        /// Hack for collections. When the root object for the current writer is a known collection type
+        /// (<see cref="BinaryTypeId.Array"/>, <see cref="BinaryTypeId.Collection"/>,
+        /// <see cref="BinaryTypeId.Dictionary"/>), we want to detach every element of that collection, because
+        /// Java side handles every element as a separate BinaryObject - they can't share handles.
+        /// </param>
+        internal void WriteObjectDetached<T>(T o, object parentCollection = null)
         {
-            if (_detaching)
+            if (_detaching != parentCollection)
             {
                 Write(o);
             }
             else
             {
-                _detaching = true;
+                var oldDetaching = _detaching;
+                _detaching = _detaching ?? o;
 
-                BinaryHandleDictionary<object, long> oldHnds = _hnds;
+                var oldHnds = _hnds;
                 _hnds = null;
 
                 try
@@ -1452,7 +1487,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 finally
                 {
-                    _detaching = false;
+                    _detaching = oldDetaching;
 
                     if (oldHnds != null)
                     {

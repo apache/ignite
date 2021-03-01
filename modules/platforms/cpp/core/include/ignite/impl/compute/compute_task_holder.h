@@ -70,11 +70,25 @@ namespace ignite
                 /**
                  * Process remote job result.
                  *
-                 * @param job Job.
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader) = 0;
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader) = 0;
+
+                /**
+                 * Process error.
+                 *
+                 * @param err Error.
+                 */
+                virtual void JobResultError(const IgniteError& err) = 0;
+
+                /**
+                 * Process successfull result.
+                 *
+                 * @param reader Reader for stream with result.
+                 * @param err Error.
+                 */
+                virtual void JobResultSuccess(binary::BinaryReaderImpl& reader) = 0;
 
                 /**
                  * Reduce results of related jobs.

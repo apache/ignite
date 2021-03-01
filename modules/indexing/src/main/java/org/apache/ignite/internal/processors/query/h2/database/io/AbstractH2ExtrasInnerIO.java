@@ -161,4 +161,9 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<H2Row> implem
     @Override public final long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
     }
+
+    /** {@inheritDoc} */
+    @Override public int getPayloadSize() {
+        return payloadSize;
+    }
 }
