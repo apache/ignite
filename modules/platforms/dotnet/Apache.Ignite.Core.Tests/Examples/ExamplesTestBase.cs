@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System;
     using System.IO;
     using System.Text;
+    using System.Text.RegularExpressions;
     using NUnit.Framework;
 
     /// <summary>
@@ -85,9 +86,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Gets the example output.
         /// </summary>
-        private string GetOutput()
-        {
-            return _outSb.ToString();
-        }
+        private string GetOutput() => Regex.Replace(_outSb.ToString(), @"idHash=(\d+)", "idHash=_");
     }
 }

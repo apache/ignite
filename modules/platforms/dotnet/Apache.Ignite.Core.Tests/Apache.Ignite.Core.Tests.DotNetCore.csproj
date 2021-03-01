@@ -111,6 +111,9 @@
     <None Update="Examples\ExpectedOutput\AtomicSequence.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Examples\ExpectedOutput\BinaryMode.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
 
   </ItemGroup>
 
