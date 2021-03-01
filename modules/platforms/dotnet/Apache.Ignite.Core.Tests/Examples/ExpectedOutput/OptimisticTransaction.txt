@@ -2,6 +2,6 @@
 
 successfully incremented cached value.
 
-failed to increment cached value. Caught an expected optimistic exception: Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=1, valCls=java.lang.Integer, cache=dotnet_optimistic_tx_example, thread=
+failed to increment cached value. Caught an expected optimistic exception: Failed to prepare transaction
 
 >>> Resulting value in cache: 1
