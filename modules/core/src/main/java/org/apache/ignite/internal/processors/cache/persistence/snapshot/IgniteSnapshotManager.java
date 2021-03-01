@@ -37,6 +37,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -160,7 +161,6 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
@@ -864,7 +864,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)));
+        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), name -> true);
     }
 
     /**
@@ -1138,12 +1138,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
+     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @return Iterator over partition.
      */
     public GridCloseableIterator<CacheDataRow> partitionRows(String snpName,
-        String consId,
+        String folderName,
         String grpName,
         int partId
     ) throws IgniteCheckedException {
@@ -1152,20 +1153,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
 
-        File nodePath = new File(snpDir, databaseRelativePath(U.maskForFileName(consId)));
+        File nodePath = new File(snpDir, databaseRelativePath(folderName));
 
         if (!nodePath.exists())
             throw new IgniteCheckedException("Consistent id directory doesn't exists: " + nodePath.getAbsolutePath());
 
-        File[] grps = nodePath.listFiles(path -> path.isDirectory() &&
-            (path.getName().equalsIgnoreCase(cacheDirName(true, grpName)) ||
-                path.getName().equalsIgnoreCase(cacheDirName(false, grpName))));
+        List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
 
-        if (grps == null || grps.length == 0)
+        if (F.isEmpty(grps) || grps.size() > 1)
             throw new IgniteCheckedException("Snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
 
-        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(U.maskForFileName(consId))),
-            grps[0].getName(), partId);
+        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
+            grps.get(0).getName(), partId);
 
         FilePageStore pageStore = (FilePageStore)storeFactory
             .apply(CU.cacheId(grpName), false)
@@ -1175,7 +1174,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 });
 
         GridKernalContext kctx = new StandaloneGridKernalContext(log,
-            resolveBinaryWorkDir(snpDir.getAbsolutePath(), U.maskForFileName(consId)),
+            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
             resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
 
         CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
@@ -1375,7 +1374,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final int pages;
 
         /** Pages which must be skipped at the second iteration. */
-        private final AtomicBitSet skipPages;
+        private final BitSet skipPages;
 
         /** Batch of rows read through iteration. */
         private final Deque<CacheDataRow> rows = new LinkedList<>();
@@ -1390,6 +1389,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private int currIdx = -1;
 
         /**
+         * During scanning a cache partition presented as {@code PageStore} we must guarantee the following:
+         * all the pages of this storage remains unchanged during the Iterator remains opened, the stored data
+         * keeps its consistency. We can't read the {@code PageStore} during an ongoing checkpoint over it.
+         *
          * @param coctx Cache object context.
          * @param store Page store to read.
          * @param partId Partition id.
@@ -1401,17 +1404,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             PageStore store,
             int partId
         ) throws IgniteCheckedException {
-            // CacheGroupContext may be null. It means that this cache group is under eviction for now.
-            // Since the persisted cache groups and their partitions are guarded by external machinery we
-            // can avoid it here.
             this.store = store;
             this.partId = partId;
             this.coctx = coctx;
             this.sctx = sctx;
 
-            store.sync();
+            store.ensure();
             pages = store.pages();
-            skipPages = new AtomicBitSet(pages);
+            skipPages = new BitSet(pages);
 
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
                 .order(ByteOrder.nativeOrder());
@@ -1437,7 +1437,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     int pageIdx = currIdx % pages;
                     boolean firstScan = currIdx < pages;
 
-                    if (skipPages.check(pageIdx))
+                    if (skipPages.get(pageIdx))
                         continue;
 
                     locBuff.clear();
@@ -1449,7 +1449,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     // Skip not data pages.
                     if (firstScan && PageIO.getType(locBuff) != T_DATA) {
-                        skipPages.touch(pageIdx);
+                        skipPages.set(pageIdx);
 
                         continue;
                     }
@@ -1460,14 +1460,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     int freeSpace = io.getFreeSpace(pageAddr);
                     int rowsCnt = io.getDirectCount(pageAddr);
 
+                    // Skip empty pages.
                     if (firstScan && rowsCnt == 0) {
-                        skipPages.touch(pageIdx);
+                        skipPages.set(pageIdx);
 
                         continue;
                     }
 
-                    // For pages which contains only the incomplete fragment of a data row
-                    // the rowsCnt will always be equal to 1. Skip such pages and read them
+                    // There is no difference between a page containing an incomplete DataRow fragment and
+                    // the page where DataRow takes up all the free space. There is no a dedicated
+                    // flag for this case in page header.
+                    // During the storage scan we can skip such pages at the first iteration over the partition file,
+                    // since all the fragmented pages will be marked by BitSet array we will safely read the others
                     // on the second iteration.
                     if (firstScan && freeSpace == 0 && rowsCnt == 1) {
                         DataPagePayload payload = io.readPayload(pageAddr, 0, locBuff.capacity());
@@ -1475,12 +1479,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         long link = payload.nextLink();
 
                         if (link != 0)
-                            skipPages.touch(PageIdUtils.pageIndex(PageIdUtils.pageId(link)));
+                            skipPages.set(PageIdUtils.pageIndex(PageIdUtils.pageId(link)));
 
                         continue;
                     }
 
-                    skipPages.touch(pageIdx);
+                    skipPages.set(pageIdx);
 
                     for (int itemId = 0; itemId < rowsCnt; itemId++) {
                         DataRow row = new DataRow();
@@ -1499,7 +1503,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     assert read : nextPageId;
 
                                     // Fragment of page has been read, might be skipped further.
-                                    skipPages.touch(PageIdUtils.pageIndex(nextPageId));
+                                    skipPages.set(PageIdUtils.pageIndex(nextPageId));
 
                                     return fragmentBuff;
                                 }
@@ -1520,8 +1524,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     boolean set = true;
 
-                    for (int j = 0; j < skipPages.size(); j++)
-                        set &= skipPages.check(j);
+                    for (int j = 0; j < pages; j++)
+                        set &= skipPages.get(j);
 
                     assert set : skipPages;
                 }

@@ -278,7 +278,7 @@ public class IdleVerifyUtility {
 
             partHash += row.key().hashCode();
 
-            // Object context may be null since the value bytes have been read directly from page.
+            // Object context is not required since the valueBytes have been read directly from page.
             partHash += Arrays.hashCode(row.value().valueBytes(null));
         }
 

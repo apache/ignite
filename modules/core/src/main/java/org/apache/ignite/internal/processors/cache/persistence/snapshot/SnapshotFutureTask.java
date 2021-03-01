@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -962,6 +963,50 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PageStoreSerialWriter.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class AtomicBitSet {
+        /** Container of bits. */
+        private final AtomicIntegerArray arr;
+
+        /** Size of array of bits. */
+        private final int size;
+
+        /**
+         * @param size Size of array.
+         */
+        public AtomicBitSet(int size) {
+            this.size = size;
+
+            arr = new AtomicIntegerArray((size + 31) >>> 5);
+        }
+
+        /**
+         * @param off Bit position to change.
+         * @return {@code true} if bit has been set,
+         * {@code false} if bit changed by another thread or out of range.
+         */
+        public boolean touch(long off) {
+            if (off >= size)
+                return false;
+
+            int bit = 1 << off;
+            int bucket = (int)(off >>> 5);
+
+            while (true) {
+                int cur = arr.get(bucket);
+                int val = cur | bit;
+
+                if (cur == val)
+                    return false;
+
+                if (arr.compareAndSet(bucket, cur, val))
+                    return true;
+            }
         }
     }
 }
