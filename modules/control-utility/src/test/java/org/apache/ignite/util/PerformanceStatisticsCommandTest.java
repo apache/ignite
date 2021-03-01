@@ -21,6 +21,7 @@ import org.apache.ignite.internal.commandline.CommandList;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.PERFORMANCE_STATISTICS;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.ROTATE;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.START;
@@ -62,6 +63,11 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals(STATUS_DISABLED, lastOperationResult);
+
+        res = execute(PERFORMANCE_STATISTICS.text(), ROTATE.toString());
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
+        assertEquals(null, lastOperationResult);
 
         res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
 

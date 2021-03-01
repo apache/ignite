@@ -88,10 +88,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 try {
                     PerformanceStatisticsKey performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
 
-                    if (performanceStatsEnabled == null)
+                    if (performanceStatsEnabled == null || performanceStatsEnabled == PerformanceStatisticsKey.STOP)
                         return;
 
-                    onMetastorageUpdate(performanceStatsEnabled);
+                    onMetastorageUpdate(PerformanceStatisticsKey.START);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -225,6 +225,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
+        if (!enabled())
+            throw new IgniteCheckedException("Performance statistics collection not started.");
+
         metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.ROTATE);
     }
 
@@ -258,7 +261,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     break;
 
                 case ROTATE:
-                    updateWriter();
+                    rotateWriter();
                     break;
 
                 default:
@@ -304,24 +307,27 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         log.info("Performance statistics writer stopped.");
     }
 
-    /** Update performance statistics writer. */
-    private void updateWriter() {
+    /** Rotate performance statistics writer. */
+    private void rotateWriter() {
         assert writer != null;
 
         try {
             synchronized (mux) {
+                FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
+
+                newWriter.start();
+
                 FilePerformanceStatisticsWriter oldWriter = writer;
 
-                writer = new FilePerformanceStatisticsWriter(ctx);
+                writer = newWriter;
 
-                writer.start();
-
-                oldWriter.stop();
+                if (oldWriter != null)
+                    oldWriter.stop();
             }
-            log.info("Performance statistics writer updated.");
+            log.info("Performance statistics writer rotated.");
         }
         catch (Exception e) {
-            log.error("Failed to update performance statistics writer.", e);
+            log.error("Failed to rotate performance statistics writer.", e);
         }
     }
 

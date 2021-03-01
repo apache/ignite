@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,6 +39,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -93,6 +95,9 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         int executions = 5;
         long startTime = U.currentTimeMillis();
 
+        assertThrows(null, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
+            "Performance statistics collection not started.");
+
         startCollectStatistics();
 
         IgniteRunnable task = new IgniteRunnable() {
@@ -108,7 +113,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         AtomicInteger tasks = new AtomicInteger();
         AtomicInteger jobs = new AtomicInteger();
 
-        LogListener logLsnr = LogListener.matches("Performance statistics writer updated.").build();
+        LogListener logLsnr = LogListener.matches("Performance statistics writer rotated.").build();
 
         listeningTestLog.registerListener(logLsnr);
 
