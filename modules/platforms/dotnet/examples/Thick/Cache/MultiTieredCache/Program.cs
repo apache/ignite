@@ -76,7 +76,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
 
                     if (i%10 == 0)
                     {
-                        Console.WriteLine(">>> Cache entries created: {0}", i + 1);
+                        Console.WriteLine("\n>>> Cache entries created: {0}", i + 1);
 
                         PrintCacheMetrics(cache);
                     }
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
         {
             var metrics = cache.GetLocalMetrics();
 
-            Console.WriteLine("\n>>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}]",
+            Console.WriteLine(">>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}]",
                 cache.GetSize(CachePeekMode.All),
                 metrics.Size, metrics.OffHeapEntriesCount);
         }
