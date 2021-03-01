@@ -507,7 +507,7 @@ public class FilePageStore implements PageStore {
             assert pageBuf.order() == ByteOrder.nativeOrder();
             assert off <= allocated.get() : "calculatedOffset=" + off +
                 ", allocated=" + allocated.get() + ", headerSize=" + headerSize() + ", cfgFile=" +
-                pathProvider.apply().toAbsolutePath() + ", pageId=" + PageIdUtils.toDetailString(pageId);
+                pathProvider.apply().toAbsolutePath();
 
             int n = readWithFailover(pageBuf, off);
 
