@@ -57,12 +57,12 @@ namespace Apache.Ignite.Core.Tests.Examples
             StringAssert.Contains(">>> Example finished, press any key to exit ...", GetOutput());
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="example"></param>
-        /// <param name="requiredLines"></param>
         protected void CheckOutput(Example example, params string[] requiredLines)
+        {
+
+        }
+
+        protected void CheckOutput(string expectedOutputFileNameSuffix, Example example, params string[] requiredLines)
         {
             var output = GetOutput();
 
@@ -71,9 +71,17 @@ namespace Apache.Ignite.Core.Tests.Examples
                 StringAssert.Contains(line, output);
             }
 
-            var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name) + ".txt";
+            var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name)+ ".txt";
 
             Assert.IsTrue(File.Exists(expectedOutputFile), $"File.Exists({expectedOutputFile})");
+
+            var expectedOutputFile2 = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name)
+                                      + expectedOutputFileNameSuffix + ".txt";
+
+            if (File.Exists(expectedOutputFile2))
+            {
+                expectedOutputFile = expectedOutputFile2;
+            }
 
             var expectedLines = File.ReadAllLines(expectedOutputFile);
 

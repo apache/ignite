@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             example.Run();
 
-            CheckOutput(example, "Ignite node started OK");
+            CheckOutput("ExternalNode", example, "Ignite node started OK");
         }
     }
 }
