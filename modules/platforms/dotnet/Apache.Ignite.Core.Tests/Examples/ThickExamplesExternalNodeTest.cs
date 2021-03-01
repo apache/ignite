@@ -57,8 +57,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             example.Run();
 
-            var output = GetOutput();
-            StringAssert.Contains("Ignite node started OK", output);
+            CheckOutput(example, "Ignite node started OK");
         }
     }
 }

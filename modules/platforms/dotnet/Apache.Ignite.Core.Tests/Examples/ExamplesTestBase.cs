@@ -81,11 +81,16 @@ namespace Apache.Ignite.Core.Tests.Examples
             var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name) + ".txt";
 
             // TODO: Make this required
+            // Assert.IsTrue(File.Exists(expectedOutputFile), $"File.Exists({expectedOutputFile})");
+
             if (File.Exists(expectedOutputFile))
             {
-                var expectedOutput = File.ReadAllText(expectedOutputFile);
+                var expectedLines = File.ReadAllLines(expectedOutputFile);
 
-                StringAssert.Contains(expectedOutput, output);
+                foreach (var line in expectedLines)
+                {
+                    StringAssert.Contains(line, output);
+                }
             }
         }
     }
