@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests thin client example
+    /// Tests thin client examples.
     /// </summary>
     [Category(TestUtils.CategoryExamples)]
     public class ThinExamplesTest : ExamplesTestBase
