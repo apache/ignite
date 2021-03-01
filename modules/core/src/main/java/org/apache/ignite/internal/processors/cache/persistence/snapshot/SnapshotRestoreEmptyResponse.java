@@ -22,7 +22,7 @@ import java.io.Serializable;
 /**
  * Snapshot restore operation single node response.
  */
-public class SnapshotRestoreResponse implements Serializable {
+public class SnapshotRestoreEmptyResponse implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 }

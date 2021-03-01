@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Request to prepare cache group restore from the snapshot.
  */
-public class SnapshotRestoreRequest implements Serializable {
+public class SnapshotRestorePrepareRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -55,7 +55,7 @@ public class SnapshotRestoreRequest implements Serializable {
      * @param ccfgs Stored cache configurations.
      * @param updateMetaNodeId Node ID from which to update the binary metadata.
      */
-    public SnapshotRestoreRequest(
+    public SnapshotRestorePrepareRequest(
         UUID reqId,
         String snpName,
         Set<UUID> nodes,
@@ -106,6 +106,6 @@ public class SnapshotRestoreRequest implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRestoreRequest.class, this);
+        return S.toString(SnapshotRestorePrepareRequest.class, this);
     }
 }

@@ -20,28 +20,22 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Request to complete/rollback cache group restore process.
+ * Request to start restored cache group.
  */
-public class SnapshotRestoreRollbackRequest implements Serializable {
+public class SnapshotRestoreCacheStartRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Request ID. */
     private final UUID reqId;
 
-    /** Process execution error. */
-    private final Throwable err;
-
     /**
      * @param reqId Request ID.
-     * @param err Process execution error.
      */
-    public SnapshotRestoreRollbackRequest(UUID reqId, Throwable err) {
+    public SnapshotRestoreCacheStartRequest(UUID reqId) {
         this.reqId = reqId;
-        this.err = err;
     }
 
     /**
@@ -51,15 +45,8 @@ public class SnapshotRestoreRollbackRequest implements Serializable {
         return reqId;
     }
 
-    /**
-     * @return Process execution error.
-     */
-    public @Nullable Throwable error() {
-        return err;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRestoreRollbackRequest.class, this);
+        return S.toString(SnapshotRestoreCacheStartRequest.class, this);
     }
 }
