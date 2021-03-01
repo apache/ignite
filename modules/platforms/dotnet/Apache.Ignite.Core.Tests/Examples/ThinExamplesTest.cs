@@ -30,13 +30,35 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         private static readonly Example[] ThinExamples = Example.AllExamples.Where(e => e.IsThin).ToArray();
 
+        /** */
+        private readonly int _serverCount;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ThinExamplesTest"/>.
+        /// </summary>
+        public ThinExamplesTest() : this(1)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ThinExamplesTest"/>.
+        /// </summary>
+        public ThinExamplesTest(int serverCount)
+        {
+            _serverCount = serverCount;
+        }
+
         /// <summary>
         /// Sets up the fixture.
         /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            for (int i = 0; i < _serverCount; i++)
+            {
+                Ignition.Start(TestUtils.GetTestConfiguration(name: i.ToString()));
+            }
 
             // Init default services.
             var asmFile = ExamplePaths.GetAssemblyPath(ExamplePaths.SharedProjFile);
@@ -44,6 +66,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             var utils = asm.GetType("Apache.Ignite.Examples.Shared.Utils");
 
             Assert.IsNotNull(utils);
+
+            var ignite = Ignition.GetIgnite("0");
 
             utils.InvokeMember(
                 "DeployDefaultServices",
