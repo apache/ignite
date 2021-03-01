@@ -79,7 +79,10 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             foreach (var line in expectedLines)
             {
-                StringAssert.Contains(line, output);
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    StringAssert.Contains(line, output);
+                }
             }
         }
 
