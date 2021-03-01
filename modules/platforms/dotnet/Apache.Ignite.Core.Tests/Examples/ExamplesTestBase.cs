@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         protected void CheckOutput(Example example, params string[] requiredLines)
         {
-
+            CheckOutput(null, example, requiredLines);
         }
 
         protected void CheckOutput(string expectedOutputFileNameSuffix, Example example, params string[] requiredLines)

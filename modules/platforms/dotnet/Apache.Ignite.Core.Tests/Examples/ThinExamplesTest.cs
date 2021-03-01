@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// Tests thin client example
     /// </summary>
     [Category(TestUtils.CategoryExamples)]
-    public class ThinExamplesTest
+    public class ThinExamplesTest : ExamplesTestBase
     {
         /** */
         private static readonly Example[] ThinExamples = Example.AllExamples.Where(e => e.IsThin).ToArray();
@@ -71,6 +71,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             Assert.IsTrue(example.IsThin);
 
             example.Run();
+
+            CheckOutput(example);
         }
     }
 }
