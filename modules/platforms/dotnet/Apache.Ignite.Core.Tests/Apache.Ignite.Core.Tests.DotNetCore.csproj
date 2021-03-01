@@ -120,6 +120,9 @@
     <None Update="Examples\ExpectedOutput\DataStreamer.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Examples\ExpectedOutput\Ddl.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
 
   </ItemGroup>
 
