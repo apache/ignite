@@ -101,71 +101,69 @@ namespace ignite
                     return channel;
                 }
 
-                template<typename ReqT>
-                void CacheClientImpl::checkTransactional(ReqT& req)
+                template<typename ReqT, typename RspT>
+                bool CacheClientImpl::TryProcessTransactional(ReqT& req, RspT& rsp)
                 {
-                    SP_TransactionImpl activeTx = tx.Get()->GetCurrent();
+                    TransactionImpl* activeTx = tx.Get()->GetCurrent().Get();
 
-                    bool isUnderTx = activeTx.IsValid();
+                    if (!activeTx)
+                        return false;
 
-                    int32_t txId = isUnderTx ? activeTx.Get()->TxId() : 0;
+                    req.activeTx(true, activeTx->TxId());
 
-                    req.activeTx(isUnderTx, txId);
+                    SP_DataChannel channel = activeTx->GetChannel();
+
+                    channel.Get()->SyncMessage(req, rsp, router.Get()->GetIoTimeout());
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    return true;
                 }
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
                     Cache2ValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::Get(const WritableKey& key, Readable& value)
                 {
                     CacheValueRequest<RequestType::CACHE_GET> req(id, binary, key);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(value);
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::PutAll(const Writable & pairs)
                 {
                     CacheValueRequest<RequestType::CACHE_PUT_ALL> req(id, binary, pairs);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
                 }
 
                 void CacheClientImpl::GetAll(const Writable& keys, Readable& pairs)
                 {
                     CacheValueRequest<RequestType::CACHE_GET_ALL> req(id, binary, keys);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(pairs);
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
                 }
 
                 bool CacheClientImpl::Replace(const WritableKey& key, const Writable& value)
                 {
                     Cache2ValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -173,12 +171,10 @@ namespace ignite
                 bool CacheClientImpl::ContainsKey(const WritableKey& key)
                 {
                     CacheValueRequest<RequestType::CACHE_CONTAINS_KEY> req(id, binary, key);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -186,12 +182,10 @@ namespace ignite
                 bool CacheClientImpl::ContainsKeys(const Writable& keys)
                 {
                     CacheValueRequest<RequestType::CACHE_CONTAINS_KEYS> req(id, binary, keys);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -199,12 +193,10 @@ namespace ignite
                 int64_t CacheClientImpl::GetSize(int32_t peekModes)
                 {
                     CacheGetSizeRequest req(id, binary, peekModes);
-
-                    checkTransactional(req);
-
                     Int64Response rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -212,12 +204,10 @@ namespace ignite
                 bool CacheClientImpl::Remove(const WritableKey& key)
                 {
                     CacheValueRequest<RequestType::CACHE_REMOVE_KEY> req(id, binary, key);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -225,12 +215,10 @@ namespace ignite
                 bool CacheClientImpl::Remove(const WritableKey& key, const Writable& val)
                 {
                     Cache2ValueRequest<RequestType::CACHE_REMOVE_IF_EQUALS> req(id, binary, key, val);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -238,78 +226,64 @@ namespace ignite
                 void CacheClientImpl::RemoveAll(const Writable& keys)
                 {
                     CacheValueRequest<RequestType::CACHE_REMOVE_KEYS> req(id, binary, keys);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
                 }
 
                 void CacheClientImpl::RemoveAll()
                 {
                     CacheRequest<RequestType::CACHE_REMOVE_ALL> req(id, binary);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
                 }
 
                 void CacheClientImpl::Clear(const WritableKey& key)
                 {
                     CacheValueRequest<RequestType::CACHE_CLEAR_KEY> req(id, binary, key);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::Clear()
                 {
                     CacheRequest<RequestType::CACHE_CLEAR> req(id, binary);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
                 }
 
                 void CacheClientImpl::ClearAll(const Writable& keys)
                 {
                     CacheValueRequest<RequestType::CACHE_CLEAR_KEYS> req(id, binary, keys);
-
-                    checkTransactional(req);
-
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncMessage(req, rsp);
                 }
 
                 void CacheClientImpl::LocalPeek(const WritableKey& key, Readable& value)
                 {
                     CacheValueRequest<RequestType::CACHE_LOCAL_PEEK> req(id, binary, key);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(value);
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 bool CacheClientImpl::Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal)
                 {
                     Cache3ValueRequest<RequestType::CACHE_REPLACE_IF_EQUALS> req(id, binary, key, oldVal, newVal);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -317,45 +291,37 @@ namespace ignite
                 void CacheClientImpl::GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
                     Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT> req(id, binary, key, valIn);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(valOut);
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::GetAndRemove(const WritableKey& key, Readable& valOut)
                 {
                     CacheValueRequest<RequestType::CACHE_GET_AND_REMOVE> req(id, binary, key);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(valOut);
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
                     Cache2ValueRequest<RequestType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(valOut);
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 bool CacheClientImpl::PutIfAbsent(const WritableKey& key, const Writable& val)
                 {
                     Cache2ValueRequest<RequestType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
-
-                    checkTransactional(req);
-
                     BoolResponse rsp;
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -363,12 +329,10 @@ namespace ignite
                 void CacheClientImpl::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
                     Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT_IF_ABSENT> req(id, binary, key, valIn);
-
-                    checkTransactional(req);
-
                     CacheValueResponse rsp(valOut);
 
-                    SyncCacheKeyMessage(key, req, rsp);
+                    if (!TryProcessTransactional(req, rsp))
+                        SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 query::SP_QueryFieldsCursorImpl CacheClientImpl::Query(

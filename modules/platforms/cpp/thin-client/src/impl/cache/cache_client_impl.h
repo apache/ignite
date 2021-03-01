@@ -310,8 +310,16 @@ namespace ignite
                     template<typename ReqT, typename RspT>
                     void SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp);
 
-                    template<typename ReqT>
-                    void checkTransactional(ReqT& req);
+                    /***
+                     * Check whether request is transactional and process it if it is.
+                     * @tparam ReqT Request type.
+                     * @tparam RspT Response type.
+                     * @param req Request.
+                     * @param rsp Response.
+                     * @return @c true if processed and false otherwise.
+                     */
+                    template<typename ReqT, typename RspT>
+                    bool TryProcessTransactional(ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send message and receive response.
