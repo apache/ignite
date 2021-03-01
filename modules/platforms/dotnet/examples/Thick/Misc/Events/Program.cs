@@ -86,19 +86,11 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
         {
             private int _eventsReceived;
 
-            /// <summary>
-            /// Gets the count of received events.
-            /// </summary>
             public int EventsReceived
             {
                 get { return _eventsReceived; }
             }
 
-            /// <summary>
-            /// Determines whether specified event passes this filter.
-            /// </summary>
-            /// <param name="evt">Event.</param>
-            /// <returns>Value indicating whether specified event passes this filter.</returns>
             public bool Invoke(IEvent evt)
             {
                 Interlocked.Increment(ref _eventsReceived);
@@ -108,10 +100,6 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
                 return true;
             }
 
-            /// <summary>
-            /// Waits for a specified number of events.
-            /// </summary>
-            /// <param name="count">Event count to wait for.</param>
             public void WaitForEvents(int count)
             {
                 for (var i = 0; i < 50 && Interlocked.CompareExchange(ref _eventsReceived, 0, 0) < count; i++)
