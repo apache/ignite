@@ -4772,18 +4772,18 @@ public abstract class IgniteUtils {
      * @return value for instance name..
      */
     public static @Nullable String getInstanceNameFromContext(GridKernalContext ctx) {
-        Object igniteInstanceName = null;
+        String igniteInstanceName = null;
         if (ctx != null) {
              igniteInstanceName = ctx.igniteInstanceName();
 
             if (igniteInstanceName == null && ctx.config() != null) {
                 if (ctx.config().getConsistentId() != null)
-                    igniteInstanceName = ctx.config().getConsistentId();
+                    igniteInstanceName = ctx.config().getConsistentId().toString();
                 else if (ctx.config().getNodeId() != null)
-                    igniteInstanceName = ctx.config().getNodeId();
+                    igniteInstanceName = ctx.config().getNodeId().toString();
             }
         }
-        return igniteInstanceName.toString();
+        return igniteInstanceName;
     }
 
     /**
