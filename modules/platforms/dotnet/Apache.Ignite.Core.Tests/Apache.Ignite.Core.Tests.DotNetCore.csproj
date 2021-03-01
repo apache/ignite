@@ -102,6 +102,9 @@
     <None Update="Config\binary-custom-name-mapper2.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Examples\ExpectedOutput\AtomicLong.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
 
   </ItemGroup>
 

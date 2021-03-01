@@ -1,0 +1,4 @@
+>>> Atomic long example started.
+>>> Atomic long initial value: 0
+
+>>> Atomic long current value: 40
