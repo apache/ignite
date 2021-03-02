@@ -232,6 +232,7 @@ public class ClusterCachesInfo {
 
             if (!locCaches.contains(e.getKey())) {
                 cachesIter.remove();
+                registeredCachesById.remove(e.getValue());
 
                 ctx.discovery().removeCacheFilter(e.getKey());
             }
