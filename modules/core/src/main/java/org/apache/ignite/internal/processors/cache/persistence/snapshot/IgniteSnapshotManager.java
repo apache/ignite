@@ -1346,7 +1346,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** */
+    /**
+     * Ves pokrit assertami absolutely ves,
+     * PageScan iterator in the ignite core est.
+     */
     private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -1444,7 +1447,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (readPages.get(pageIdx) || (!first && markedPages.get(pageIdx)))
                         continue;
 
-                    if (!readPageIntoBuffer(PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx), locBuff)) {
+                    if (!readPage(PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx), locBuff)) {
                         // Skip not FLAG_DATA pages.
                         changeBit(readPages, pageIdx);
 
@@ -1494,7 +1497,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             coctx,
                             new IgniteThrowableFunction<Long, ByteBuffer>() {
                                 @Override public ByteBuffer apply(Long nextPageId) throws IgniteCheckedException {
-                                    boolean success = readPageIntoBuffer(nextPageId, fragmentBuff);
+                                    boolean success = readPage(nextPageId, fragmentBuff);
 
                                     assert success : "Only FLAG_DATA pages allowed " + nextPageId;
 
@@ -1551,14 +1554,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return {@code true} if page read with given type flag.
          * @throws IgniteCheckedException If fails.
          */
-        private boolean readPageIntoBuffer(long pageId, ByteBuffer buff) throws IgniteCheckedException {
+        private boolean readPage(long pageId, ByteBuffer buff) throws IgniteCheckedException {
             buff.clear();
 
             boolean read = store.read(pageId, buff, true);
 
             assert read : PageIdUtils.toDetailString(pageId);
 
-            return PageIO.getType(locBuff) == PageIdUtils.flag(pageId);
+            return PageIO.getType(buff) == PageIdUtils.flag(pageId);
         }
 
         /** {@inheritDoc} */
