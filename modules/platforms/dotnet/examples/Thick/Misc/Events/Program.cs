@@ -47,6 +47,8 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
                 ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
 
                 ExecuteTask(ignite);
+
+                // Some events arrive asynchronously - wait for them.
                 listener.WaitForEvents(3);
 
                 ignite.GetEvents().StopLocalListen(listener);
