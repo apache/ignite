@@ -1373,20 +1373,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Total pages in the page store. */
         private final int pages;
 
-        /** Pages which must be skipped at the second iteration. */
-        private final BitSet skipPages;
+        /** Pages which already marked and postponed to be read on the second iteration. */
+        private final BitSet markedPages;
+
+        /** Pages which already read and must be skipped. */
+        private final BitSet readPages;
 
         /** Batch of rows read through iteration. */
         private final Deque<CacheDataRow> rows = new LinkedList<>();
 
-        /** {@code true} if the iteration reached its end. */
-        private boolean finished;
+        /** {@code true} if the iteration though partition reached its end. */
+        private boolean secondScanComplete;
 
         /**
          * Current partition page index for read. Due to we read the partition twice it
          * can't be greater that 2 * store.size().
          */
-        private int currIdx = -1;
+        private int currIdx;
 
         /**
          * During scanning a cache partition presented as {@code PageStore} we must guarantee the following:
@@ -1411,7 +1414,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             store.ensure();
             pages = store.pages();
-            skipPages = new BitSet(pages);
+            markedPages = new BitSet(pages);
+            readPages = new BitSet(pages);
 
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
                 .order(ByteOrder.nativeOrder());
@@ -1421,70 +1425,64 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc */
         @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-            if (finished && rows.isEmpty())
-                throw new NoSuchElementException("[partId=" + partId + ", store=" + store + ", skipPages=" + skipPages + ']');
+            if (secondScanComplete && rows.isEmpty())
+                throw new NoSuchElementException("[partId=" + partId + ", store=" + store + ", skipPages=" + readPages + ']');
 
             return rows.poll();
         }
 
         /** {@inheritDoc */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            if (finished && rows.isEmpty())
+            if (secondScanComplete && rows.isEmpty())
                 return false;
 
             try {
-                while (rows.isEmpty() && ++currIdx < 2 * pages) {
+                for (; currIdx < 2 * pages && rows.isEmpty(); currIdx++) {
+                    boolean first = currIdx < pages;
                     int pageIdx = currIdx % pages;
-                    boolean firstScan = currIdx < pages;
 
-                    if (skipPages.get(pageIdx))
+                    if (readPages.get(pageIdx) || (!first && markedPages.get(pageIdx)))
                         continue;
 
-                    locBuff.clear();
-
-                    long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx);
-                    boolean success = store.read(pageId, locBuff, true);
-
-                    assert success : PageIdUtils.toDetailString(pageId);
-
-                    // Skip not data pages.
-                    if (firstScan && PageIO.getType(locBuff) != T_DATA) {
-                        skipPages.set(pageIdx);
+                    if (!readPageIntoBuffer(PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx), locBuff)) {
+                        // Skip not FLAG_DATA pages.
+                        changeBit(readPages, pageIdx);
 
                         continue;
                     }
 
                     long pageAddr = GridUnsafe.bufferAddress(locBuff);
-
                     DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
                     int freeSpace = io.getFreeSpace(pageAddr);
                     int rowsCnt = io.getDirectCount(pageAddr);
 
-                    // Skip empty pages.
-                    if (firstScan && rowsCnt == 0) {
-                        skipPages.set(pageIdx);
+                    if (first) {
+                        // Skip empty pages.
+                        if (rowsCnt == 0) {
+                            changeBit(readPages, pageIdx);
 
-                        continue;
+                            continue;
+                        }
+
+                        // There is no difference between a page containing an incomplete DataRow fragment and
+                        // the page where DataRow takes up all the free space. There is no a dedicated
+                        // flag for this case in page header.
+                        // During the storage scan we can skip such pages at the first iteration over the partition file,
+                        // since all the fragmented pages will be marked by BitSet array we will safely read the others
+                        // on the second iteration.
+                        if (freeSpace == 0 && rowsCnt == 1) {
+                            DataPagePayload payload = io.readPayload(pageAddr, 0, locBuff.capacity());
+
+                            long link = payload.nextLink();
+
+                            if (link != 0)
+                                changeBit(markedPages, PageIdUtils.pageIndex(PageIdUtils.pageId(link)));
+
+                            continue;
+                        }
                     }
 
-                    // There is no difference between a page containing an incomplete DataRow fragment and
-                    // the page where DataRow takes up all the free space. There is no a dedicated
-                    // flag for this case in page header.
-                    // During the storage scan we can skip such pages at the first iteration over the partition file,
-                    // since all the fragmented pages will be marked by BitSet array we will safely read the others
-                    // on the second iteration.
-                    if (firstScan && freeSpace == 0 && rowsCnt == 1) {
-                        DataPagePayload payload = io.readPayload(pageAddr, 0, locBuff.capacity());
-
-                        long link = payload.nextLink();
-
-                        if (link != 0)
-                            skipPages.set(PageIdUtils.pageIndex(PageIdUtils.pageId(link)));
-
-                        continue;
-                    }
-
-                    skipPages.set(pageIdx);
+                    changeBit(readPages, pageIdx);
 
                     for (int itemId = 0; itemId < rowsCnt; itemId++) {
                         DataRow row = new DataRow();
@@ -1496,14 +1494,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             coctx,
                             new IgniteThrowableFunction<Long, ByteBuffer>() {
                                 @Override public ByteBuffer apply(Long nextPageId) throws IgniteCheckedException {
-                                    fragmentBuff.clear();
+                                    boolean success = readPageIntoBuffer(nextPageId, fragmentBuff);
 
-                                    boolean read = store.read(nextPageId, fragmentBuff, true);
-
-                                    assert read : nextPageId;
+                                    assert success : "Only FLAG_DATA pages allowed " + nextPageId;
 
                                     // Fragment of page has been read, might be skipped further.
-                                    skipPages.set(PageIdUtils.pageIndex(nextPageId));
+                                    changeBit(readPages, PageIdUtils.pageIndex(nextPageId));
 
                                     return fragmentBuff;
                                 }
@@ -1520,14 +1516,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (currIdx == 2 * pages) {
-                    finished = true;
+                    secondScanComplete = true;
 
                     boolean set = true;
 
                     for (int j = 0; j < pages; j++)
-                        set &= skipPages.get(j);
+                        set &= readPages.get(j);
 
-                    assert set : skipPages;
+                    assert set : "readPages=" + readPages + ", pages=" + pages;
                 }
 
                 return !rows.isEmpty();
@@ -1535,6 +1531,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             catch (IgniteCheckedException e) {
                 throw new IgniteCheckedException("Error during iteration through page store: " + this, e);
             }
+        }
+
+        /**
+         * @param bitSet BitSet to change bit index.
+         * @param idx Index of bit to change.
+         */
+        private static void changeBit(BitSet bitSet, int idx) {
+            boolean bit = bitSet.get(idx);
+
+            assert !bit : "Bit with given index already set: " + idx;
+
+            bitSet.set(idx);
+        }
+
+        /**
+         * @param pageId Page id to read from store.
+         * @param buff Buffer to read page into.
+         * @return {@code true} if page read with given type flag.
+         * @throws IgniteCheckedException If fails.
+         */
+        private boolean readPageIntoBuffer(long pageId, ByteBuffer buff) throws IgniteCheckedException {
+            buff.clear();
+
+            boolean read = store.read(pageId, buff, true);
+
+            assert read : PageIdUtils.toDetailString(pageId);
+
+            return PageIO.getType(locBuff) == PageIdUtils.flag(pageId);
         }
 
         /** {@inheritDoc} */

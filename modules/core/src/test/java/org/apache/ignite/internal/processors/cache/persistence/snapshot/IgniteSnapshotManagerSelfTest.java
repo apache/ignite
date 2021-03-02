@@ -401,6 +401,18 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         snpFut.get(5_000, TimeUnit.MILLISECONDS);
     }
 
+    // TODO add test, which compare partition hashes between idle_verify and partition scan iterator
+    // TODO add assert that pages marked as read only once in readBitSet
+    // TODO add assert that pages marked as marked only once in markBitSet
+    // TODO 3 min test with random put,remove of randomized values and Iterator finished successful
+    // TODO add discrete number of filled pages: 0.5 page, 1 page, 1.5 page, 2 page, 4 page etc.
+
+//    /** @throws Exception If fails */
+//    @Test
+//    public void testSnapshotIteratorFullPagesReorder() throws Exception {
+//
+//    }
+
     /** @throws Exception If fails */
     @Test
     public void testSnapshotIterator() throws Exception {
