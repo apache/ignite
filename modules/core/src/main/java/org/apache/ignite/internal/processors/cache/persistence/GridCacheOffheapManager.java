@@ -243,8 +243,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override protected CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
-        if (ctx.database() instanceof GridCacheDatabaseSharedManager)
-            ((GridCacheDatabaseSharedManager) ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
+        if (ctx.database() instanceof GridCacheDatabaseSharedManager) {
+            boolean canceled =
+                ((GridCacheDatabaseSharedManager)ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
+
+            if (canceled && grp.config().isEncryptionEnabled())
+                ctx.kernalContext().encryption().onDestroyPartitionStore(grp, p, true);
+        }
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
@@ -1013,10 +1018,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If destroy has failed.
      */
     public void destroyPartitionStore(int grpId, int partId) throws IgniteCheckedException {
-        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
-
         if (grp.config().isEncryptionEnabled())
-            ctx.kernalContext().encryption().onDestroyPartitionStore(grp, partId);
+            ctx.kernalContext().encryption().onDestroyPartitionStore(grp, partId, false);
+
+        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
         int tag = pageMemory.invalidate(grp.groupId(), partId);
 
