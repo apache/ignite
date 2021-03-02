@@ -1447,7 +1447,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (readPages.get(pageIdx) || (!first && markedPages.get(pageIdx)))
                         continue;
 
-                    if (!readPage(PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx), locBuff)) {
+                    if (!readPageFromStore(PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx), locBuff)) {
                         // Skip not FLAG_DATA pages.
                         changeBit(readPages, pageIdx);
 
@@ -1497,7 +1497,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             coctx,
                             new IgniteThrowableFunction<Long, ByteBuffer>() {
                                 @Override public ByteBuffer apply(Long nextPageId) throws IgniteCheckedException {
-                                    boolean success = readPage(nextPageId, fragmentBuff);
+                                    boolean success = readPageFromStore(nextPageId, fragmentBuff);
 
                                     assert success : "Only FLAG_DATA pages allowed " + nextPageId;
 
@@ -1554,7 +1554,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return {@code true} if page read with given type flag.
          * @throws IgniteCheckedException If fails.
          */
-        private boolean readPage(long pageId, ByteBuffer buff) throws IgniteCheckedException {
+        private boolean readPageFromStore(long pageId, ByteBuffer buff) throws IgniteCheckedException {
             buff.clear();
 
             boolean read = store.read(pageId, buff, true);
