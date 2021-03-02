@@ -62,6 +62,9 @@ public class CDCKafkaToIgnite implements Runnable {
     private final int thCnt;
 
     /** */
+    private String topic;
+
+    /** */
     public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String... cacheNames) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
@@ -98,7 +101,8 @@ public class CDCKafkaToIgnite implements Runnable {
 
     /** Runs CDC application with possible exception. */
     public void runX() throws Exception {
-        String topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps);
+        if (topic == null)
+            topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps);
 
         for (int i = 0; i < thCnt; i++)
             appliers.add(new Applier(ign, kafkaProps, topic, caches));
@@ -117,5 +121,10 @@ public class CDCKafkaToIgnite implements Runnable {
         catch (InterruptedException e) {
             appliers.forEach(U::closeQuiet);
         }
+    }
+
+    /** */
+    public void setTopic(String topic) {
+        this.topic = topic;
     }
 }

@@ -105,12 +105,21 @@ public class WALRecordsConsumer<K, V> {
 
             GridCacheVersion ver = e.writeVersion();
 
+            EntryEventOrder ord = new EntryEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order());
+
+            GridCacheVersion replicaVer = ver.conflictVersion();
+
+            if (replicaVer != ver) {
+                ord.otherDcOrder(new EntryEventOrder(
+                    replicaVer.topologyVersion(), replicaVer.nodeOrderAndDrIdRaw(), replicaVer.order()));
+            }
+
             return new EntryEvent<>(
                 (K)ue.unwrappedKey(),
                 (V)ue.unwrappedValue(),
                 e.primary(),
                 e.partitionId(),
-                new EntryEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order()),
+                ord,
                 type,
                 e.cacheId(),
                 e.expireTime()

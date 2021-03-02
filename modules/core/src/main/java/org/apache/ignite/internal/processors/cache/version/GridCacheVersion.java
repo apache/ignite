@@ -39,10 +39,10 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     private static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
 
     /** DR center ID shift. */
-    private static final int DR_ID_SHIFT = 27;
+    public static final int DR_ID_SHIFT = 27;
 
     /** DR center ID mask. */
-    private static final int DR_ID_MASK = 0x1F;
+    public static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
     private int topVer;

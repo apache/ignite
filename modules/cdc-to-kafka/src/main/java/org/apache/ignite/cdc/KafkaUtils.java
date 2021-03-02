@@ -69,7 +69,7 @@ public class KafkaUtils {
     private static int describeTopic(String topic, AdminClient adminCli, int guard)
         throws InterruptedException, TimeoutException, ExecutionException {
         if (guard == 0)
-            throw new IllegalStateException("guard == 0");
+            throw new IllegalStateException("guard == 0, topic = " + topic);
 
         try {
             DescribeTopicsResult res = adminCli.describeTopics(Collections.singleton(topic));
@@ -124,7 +124,7 @@ public class KafkaUtils {
             // Waits some time for concurrent topic creation.
             Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
 
-            return describeTopic(topic, adminCli, 5);
+            return describeTopic(topic, adminCli, 10);
         }
     }
 }

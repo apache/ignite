@@ -80,7 +80,7 @@ class Applier implements Runnable, AutoCloseable {
     private final List<KafkaConsumer<Integer, byte[]>> consumers = new ArrayList<>();
 
     /** */
-    private static AtomicLong rcvdEvts = new AtomicLong();
+    private static final AtomicLong rcvdEvts = new AtomicLong();
 
     /** */
     public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches) {
@@ -189,12 +189,13 @@ class Applier implements Runnable, AutoCloseable {
 
         EntryEventOrder kafkaOrd = evt.order();
 
-        CacheObject cacheObj = new CacheObjectImpl(evt.value(), null);
-
         KeyCacheObject keyCacheObj = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
 
+        // TODO: try batch here.
         switch (evt.operation()) {
             case UPDATE:
+                CacheObject cacheObj = new CacheObjectImpl(evt.value(), null);
+
                 cache.putAllConflict(Collections.singletonMap(keyCacheObj,
                     new GridCacheDrInfo(cacheObj,
                         new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order()))));

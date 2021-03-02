@@ -81,6 +81,9 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     /** Number Kafka topic partitions. */
     private int kafkaPartitionsNum;
 
+    /** Data replication ID. */
+    private int drId;
+
     /** */
     private Set<Integer> cachesIds;
 
@@ -90,12 +93,44 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     /** Count of messages.  */
     private long cntMsgs;
 
+    /** */
+    private boolean startFromProps;
+
+    /** Empty constructor. */
+    public CDCIgniteToKafka() {
+        this.startFromProps = true;
+    }
+
+    /**
+     * @param topic Topic name.
+     * @param drId Data center ID.
+     * @param caches Cache names.
+     * @param onlyPrimary If {@code true} then stream only events from primaries.
+     * @param kafkaProps Kafpa properties.
+     */
+    public CDCIgniteToKafka(String topic, int drId,
+        Set<String> caches, boolean onlyPrimary, Properties kafkaProps) {
+        assert caches != null && !caches.isEmpty();
+
+        this.topic = topic;
+        this.drId = drId;
+        this.cachesIds = caches.stream()
+            .mapToInt(CU::cacheId)
+            .boxed()
+            .collect(Collectors.toSet());
+        this.onlyPrimary = onlyPrimary;
+        this.kafkaProps = kafkaProps;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onChange(Iterator<EntryEvent<BinaryObject, BinaryObject>> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
         evts.forEachRemaining(evt -> {
             if (onlyPrimary && !evt.primary())
+                return;
+
+            if (evt.order().otherDcOrder() != null)
                 return;
 
             if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
@@ -119,25 +154,20 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
             throw new RuntimeException(e);
         }
 
-        log.info("cntMsgs = " + cntMsgs);
+        log.info("cntMsgs=" + cntMsgs + ",topic=" + topic);
 
         return true;
     }
 
     /** Start event consumer with possible error. */
-    public void startx() throws Exception {
-        if (kafkaProps == null)
-            kafkaProps = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
+    public void startFromProperties() throws Exception {
+        kafkaProps = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
 
         topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps, DFLT_TOPIC_NAME);
 
-        onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, kafkaProps, "false"));
-
-        kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
-
-        producer = new KafkaProducer<>(kafkaProps);
-
         cachesIds = cachesIds(kafkaProps);
+
+        onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, kafkaProps, "false"));
     }
 
     /** {@inheritDoc} */
@@ -145,7 +175,12 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
         this.log = log;
 
         try {
-            startx();
+            if (startFromProps)
+                startFromProperties();
+
+            kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
+
+            producer = new KafkaProducer<>(kafkaProps);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

@@ -21,6 +21,10 @@ import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersion.DR_ID_MASK;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersion.DR_ID_SHIFT;
 
 /**
  * Entry event order.
@@ -38,6 +42,9 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
 
     /** Order. */
     private final long order;
+
+    /** Replica version. */
+    private @Nullable EntryEventOrder otherDcOrder;
 
     /**
      * @param topVer Topology version plus number of seconds from the start time of the first grid node.
@@ -60,9 +67,26 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
         return nodeOrderDrId;
     }
 
+    /**
+     * @return DR mask.
+     */
+    public byte dataCenterId() {
+        return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
+    }
+
     /** @return order Version order. */
     public long order() {
         return order;
+    }
+
+    /** @param replicaVer Replication version. */
+    public void otherDcOrder(EntryEventOrder replicaVer) {
+        this.otherDcOrder = replicaVer;
+    }
+
+    /** @return Replication version. */
+    public EntryEventOrder otherDcOrder() {
+        return otherDcOrder;
     }
 
     /** {@inheritDoc} */
