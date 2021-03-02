@@ -75,8 +75,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -112,7 +110,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -155,8 +152,13 @@ import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFil
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -166,7 +168,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
+import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -1447,15 +1453,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (readPages.get(pageIdx) || (!first && markedPages.get(pageIdx)))
                         continue;
 
-                    if (!readPageFromStore(PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx), locBuff)) {
+                    if (!readPageFromStore(pageId(partId, FLAG_DATA, pageIdx), locBuff)) {
                         // Skip not FLAG_DATA pages.
                         changeBit(readPages, pageIdx);
 
                         continue;
                     }
 
-                    long pageAddr = GridUnsafe.bufferAddress(locBuff);
-                    DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
+                    long pageAddr = bufferAddress(locBuff);
+                    DataPageIO io = getPageIO(T_DATA, getVersion(locBuff));
                     int freeSpace = io.getFreeSpace(pageAddr);
                     int rowsCnt = io.getDirectCount(pageAddr);
 
@@ -1479,7 +1485,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             long link = payload.nextLink();
 
                             if (link != 0)
-                                changeBit(markedPages, PageIdUtils.pageIndex(PageIdUtils.pageId(link)));
+                                changeBit(markedPages, pageIndex(pageId(link)));
 
                             continue;
                         }
@@ -1502,7 +1508,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     assert success : "Only FLAG_DATA pages allowed " + nextPageId;
 
                                     // Fragment of page has been read, might be skipped further.
-                                    changeBit(readPages, PageIdUtils.pageIndex(nextPageId));
+                                    changeBit(readPages, pageIndex(nextPageId));
 
                                     return fragmentBuff;
                                 }
@@ -1559,9 +1565,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             boolean read = store.read(pageId, buff, true);
 
-            assert read : PageIdUtils.toDetailString(pageId);
+            assert read : toDetailString(pageId);
 
-            return PageIO.getType(buff) == PageIdUtils.flag(pageId);
+            return getType(buff) == flag(pageId);
         }
 
         /** {@inheritDoc} */
