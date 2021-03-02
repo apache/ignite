@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Client
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Client.Transactions;
 
@@ -156,5 +157,16 @@ namespace Apache.Ignite.Core.Client
         /// Gets the services API.
         /// </summary>
         IServicesClient GetServices();
+
+        /// <summary>
+        /// Gets a new instance of data streamer associated with given cache name. Data streamer
+        /// is responsible for loading external data into Ignite. For more information
+        /// refer to <see cref="IDataStreamerClient{TK,TV}"/> documentation.
+        /// </summary>
+        /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
+
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, object options);
     }
 }

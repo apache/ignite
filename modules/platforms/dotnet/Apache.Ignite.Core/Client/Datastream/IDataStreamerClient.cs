@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet
+namespace Apache.Ignite.Core.Client.Datastream
 {
-    using global::BenchmarkDotNet.Running;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
-    /// Benchmark runner.
+    ///
     /// </summary>
-    public static class Program
+    public interface IDataStreamerClient<TK, TV> : IDisposable
     {
-        /// <summary>
-        /// Main.
-        /// </summary>
-        public static void Main()
-        {
-            BenchmarkRunner.Run<StreamerBatchSizeBenchmark>();
-        }
+        void AddData(TK key, TV val);
+
+        Task AddDataAsync(TK key, TV val);
     }
 }

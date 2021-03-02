@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Datastream;
@@ -38,6 +39,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Client.Compute;
+    using Apache.Ignite.Core.Impl.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client.Services;
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -282,6 +284,19 @@ namespace Apache.Ignite.Core.Impl.Client
         public IServicesClient GetServices()
         {
             return _services;
+        }
+
+        /** <inheritDoc /> */
+        public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
+        {
+            return new DataStreamerClient<TK, TV>(this, cacheName);
+        }
+
+        /** <inheritDoc /> */
+        public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, object options)
+        {
+            // TODO: Options class.
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
