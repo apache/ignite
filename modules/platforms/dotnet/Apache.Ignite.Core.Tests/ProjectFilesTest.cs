@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var projFiles = TestUtils.GetDotNetSourceDir()
                 .GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") && 
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") &&
                             !x.FullName.Contains("Benchmark") &&
                             !x.FullName.Contains("templates") &&
                             !x.FullName.Contains("examples"))
@@ -88,6 +88,36 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that all public types have <see cref="object.ToString"/> method overridden.
+        /// </summary>
+        [Test]
+        public void TestPublicTypesHaveToStringOverride()
+        {
+            var csFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+
+            var filesWithoutToString = csFiles.Where(f =>
+            {
+                if (f.FullName.Contains(".Tests") ||
+                    f.FullName.Contains(".Benchmark") ||
+                    f.FullName.Contains("examples") ||
+                    f.FullName.Contains("templates") ||
+                    f.Name.Contains("Exception"))
+                {
+                    return false;
+                }
+
+                var text = File.ReadAllText(f.FullName);
+
+                return (text.Contains("public class") || text.Contains("public struct")) &&
+                       !text.Contains("public override string ToString()");
+            });
+
+            var filesCsv = string.Join(", ", filesWithoutToString);
+
+            Assert.IsEmpty(filesCsv, "Missing ToString in public types");
+        }
+
+        /// <summary>
         /// Tests that there are no public types in Apache.Ignite.Core.Impl namespace.
         /// </summary>
         [Test]
@@ -95,7 +125,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var excluded = new[]
             {
-                "ProjectFilesTest.cs", 
+                "ProjectFilesTest.cs",
                 "CopyOnWriteConcurrentDictionary.cs",
                 "IgniteArgumentCheck.cs",
                 "DelegateConverter.cs",
@@ -109,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
                 "HandleRegistry.cs",
                 "BinaryObjectHeader.cs"
             };
-            
+
             var csFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
 
             foreach (var csFile in csFiles)
@@ -142,10 +172,10 @@ namespace Apache.Ignite.Core.Tests
         public void TestAllCsharpFilesAreIncludedInProject()
         {
             var projFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x => 
+                .Where(x =>
                     !x.Name.Contains("DotNetCore") &&
-                    !x.Name.Contains("Benchmark") && 
-                    !x.FullName.Contains("templates") && 
+                    !x.Name.Contains("Benchmark") &&
+                    !x.FullName.Contains("templates") &&
                     !x.FullName.Contains("examples"));
 
             var excludedFiles = new[]
