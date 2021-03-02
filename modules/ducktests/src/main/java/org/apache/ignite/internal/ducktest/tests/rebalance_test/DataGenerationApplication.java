@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.ducktest.tests.rebalance_test;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -82,6 +82,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     private static class DataModel {
         /** Random string. */
         final String randomStr;
+
         /** Payload. */
         final byte[] payload;
 
