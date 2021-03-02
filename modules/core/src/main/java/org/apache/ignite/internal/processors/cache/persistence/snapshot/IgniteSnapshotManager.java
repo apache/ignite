@@ -1461,7 +1461,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
 
                     long pageAddr = bufferAddress(locBuff);
-                    DataPageIO io = getPageIO(T_DATA, getVersion(locBuff));
+                    DataPageIO io = getPageIO(T_DATA, getVersion(pageAddr));
                     int freeSpace = io.getFreeSpace(pageAddr);
                     int rowsCnt = io.getDirectCount(pageAddr);
 
@@ -1505,7 +1505,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 @Override public ByteBuffer apply(Long nextPageId) throws IgniteCheckedException {
                                     boolean success = readPageFromStore(nextPageId, fragmentBuff);
 
-                                    assert success : "Only FLAG_DATA pages allowed " + nextPageId;
+                                    assert success : "Only FLAG_DATA pages allowed: " + toDetailString(nextPageId);
 
                                     // Fragment of page has been read, might be skipped further.
                                     changeBit(readPages, pageIndex(nextPageId));
