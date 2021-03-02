@@ -17,16 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.ConfigurableHistogramMetric;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Histogram to show count of pages last accessed in each time interval.
  */
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "NonAtomicOperationOnVolatileField"})
-public class PageTimestampHistogram {
+public class PageTimestampHistogram extends AbstractMetric implements ConfigurableHistogramMetric {
     /** Default buckets interval in milliseconds. */
     public static final long DFLT_BUCKETS_INTERVAL = 60L * 60 * 1000; // 60 mins.
 
@@ -58,17 +65,20 @@ public class PageTimestampHistogram {
     private volatile AtomicLongArray buckets;
 
     /**
-     * Default constructor.
+     * @param mreg Metric registry.
      */
-    public PageTimestampHistogram() {
-        this(DFLT_BUCKETS_INTERVAL, DFLT_BUCKETS_CNT);
+    public PageTimestampHistogram(MetricRegistry mreg) {
+        this(mreg, DFLT_BUCKETS_INTERVAL, DFLT_BUCKETS_CNT);
     }
 
     /**
+     * @param mreg Metric registry.
      * @param bucketsInterval Buckets interval.
      * @param bucketsCnt Buckets count.
      */
-    PageTimestampHistogram(long bucketsInterval, int bucketsCnt) {
+    PageTimestampHistogram(MetricRegistry mreg, long bucketsInterval, int bucketsCnt) {
+        super(metricName(mreg.name(), "PageTimestampHistogram"), "Histogram of pages last access time");
+
         reinit(bucketsInterval, bucketsCnt);
 
         // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
@@ -76,6 +86,34 @@ public class PageTimestampHistogram {
         startTs -= 1000L;
         lowerBoundTs = startTs;
         upperBoundTs = startTs + bucketsInterval;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long[] bounds() {
+        long[] boundsIncludingFirst = histogram().get1();
+
+        // Exclude lower bound as it required by methods contract.
+        return Arrays.copyOfRange(boundsIncludingFirst, 1, boundsIncludingFirst.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void bounds(long[] bounds) {
+        A.notNull(bounds, "bounds");
+        A.ensure(bounds.length > 1, "bounds.length > 1");
+        A.ensure(bounds[0] < bounds[1], "bounds[0] < bounds[1]");
+
+        // We need only interval between bounds and count of buckets, skip all values except first 2.
+        reinit(bounds[1] - bounds[0], bounds.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long[] value() {
+        return histogram().get2();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<long[]> type() {
+        return long[].class;
     }
 
     /**
@@ -126,7 +164,8 @@ public class PageTimestampHistogram {
     /**
      * Gets hot/cold pages histogram.
      *
-     * @return Tuple, where first item is array of bounds and second item is array of values.
+     * @return Tuple, where first item is array of bounds and second item is array of values. Bounds and values are
+     * guaranteed to be consistent.
      */
     public synchronized IgniteBiTuple<long[], long[]> histogram() {
         long curTs = U.currentTimeMillis();
@@ -155,21 +194,21 @@ public class PageTimestampHistogram {
     /**
      * Gets buckets interval.
      */
-    long bucketsInterval() {
+    public long bucketsInterval() {
         return bucketsInterval;
     }
 
     /**
      * Gets buckets count.
      */
-    int bucketsCount() {
+    public int bucketsCount() {
         return bucketsCnt;
     }
 
     /**
      * Gets start timestamp.
      */
-    long startTs() {
+    public long startTs() {
         return startTs;
     }
 
@@ -223,13 +262,14 @@ public class PageTimestampHistogram {
             }
             else {
                 // There is a race between lowerBoundTs check and bucket modification, so we can modify dropped bucket
-                // in some cases (no more than one bucket behind lowerBoundTs). Dummy bucket was reserved for this purpose
-                // (to avoid interference of writes to dropped bucket and writes to most recent bucket).
+                // in some cases (no more than one bucket behind lowerBoundTs). Dummy bucket was reserved for this
+                // purpose (to avoid interference of writes to dropped bucket and writes to most recent bucket).
                 // Values from dummy bucket will be flushed to outOfBoundsBucket during next shift.
                 buckets.addAndGet(idx, val);
 
                 if (buckets != this.buckets) {
-                    // If histogram was concurrently reinitialized after bucket modification we can loose our change.
+                    // If histogram was concurrently reinitialized after bucket modification we should save our change
+                    // to not loose it.
                     outOfBoundsBucket.addAndGet(buckets.getAndSet(idx, 0L));
                 }
             }

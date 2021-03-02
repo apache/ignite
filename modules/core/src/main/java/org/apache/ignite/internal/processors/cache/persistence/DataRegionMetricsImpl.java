@@ -267,8 +267,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(dataRegionCfg.getMaxSize());
 
-        if (persistenceEnabled)
-            pageTsHistogram = new PageTimestampHistogram();
+        if (persistenceEnabled) {
+            pageTsHistogram = new PageTimestampHistogram(mreg);
+
+            mreg.register(pageTsHistogram);
+        }
         else
             pageTsHistogram = null;
 
