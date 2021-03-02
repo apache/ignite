@@ -102,6 +102,45 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
     }
 
     /**
+     * Test verifies that exception on fragment deserialization phase doesn't lead to execution freezing.
+     * <ol>
+     *     <li>Start several nodes.</li>
+     *     <li>Replace CommunicationSpi to one that modifies messages (invalid fragment JSON).</li>
+     *     <li>Execute query.</li>
+     *     <li>Verify that query failed with proper exception.</li>
+     * </ol>
+     */
+    @Test
+    public void assertionOnDeserializationInvalidFragment() throws Exception {
+        Supplier<TcpCommunicationSpi> spiLsnrSupp = () -> new TcpCommunicationSpi() {
+            /** {@inheritDoc} */
+            @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof QueryStartRequest) {
+                    QueryStartRequest req = (QueryStartRequest)((GridIoMessage)msg).message();
+
+                    String root = GridTestUtils.getFieldValue(req, "root");
+
+                    GridTestUtils.setFieldValue(req, "root",
+                        root.replace("\"table\"", "\"invalidTag\""));
+                }
+
+                super.sendMessage(node, msg, ackC);
+            }
+        };
+
+        startGrid(createConfiguration(1, false).setCommunicationSpi(spiLsnrSupp.get()));
+        startGrid(createConfiguration(2, false).setCommunicationSpi(spiLsnrSupp.get()));
+
+        IgniteEx client = startGrid(createConfiguration(0, true).setCommunicationSpi(spiLsnrSupp.get()));
+
+        sql(client, "create table test (id int primary key, val varchar)");
+
+        String sql = "select id from test";
+
+        GridTestUtils.assertThrowsWithCause(() -> sql(client, sql), NullPointerException.class);
+    }
+
+    /**
      * Test verifies that a Exception during index look up doesn't lead to execution freezing.
      * <ol>
      *     <li>Start several nodes.</li>
