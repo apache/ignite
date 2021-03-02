@@ -19,11 +19,8 @@ package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
@@ -31,12 +28,12 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.stream.StreamReceiver;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**
  *
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientDataStreamerStartRequest extends ClientRequest {
     /**
      * Allow overwrite flag mask.
@@ -89,11 +86,6 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
     private final StreamReceiver receiver;
 
     /**
-     * First batch size
-     */
-    private final int entriesCnt;
-
-    /**
      * Data entries.
      */
     private final Collection<DataStreamerEntry> entries;
@@ -106,14 +98,7 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         perNodeBufferSize = reader.readInt();
         perThreadBufferSize = reader.readInt();
         receiver = (StreamReceiver) reader.readObject();
-        entriesCnt = reader.readInt();
-
-        entries = new ArrayList<>(entriesCnt);
-
-        for (int i = 0; i < entriesCnt; i++) {
-            entries.add(new DataStreamerEntry(readCacheObject(reader, true),
-                    readCacheObject(reader, false)));
-        }
+        entries = ClientDataStreamerReader.read(reader);
     }
 
     /**
@@ -146,27 +131,5 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
 
             return new ClientLongResponse(requestId(), rsrcId);
         }
-    }
-
-    /**
-     * Read cache object from the stream as raw bytes to avoid marshalling.
-     */
-    private static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
-        BinaryInputStream in = reader.in();
-
-        int pos0 = in.position();
-
-        Object obj = reader.readObjectDetached();
-
-        if (obj == null)
-            return null;
-
-        int pos1 = in.position();
-
-        in.position(pos0);
-
-        byte[] objBytes = in.readByteArray(pos1 - pos0);
-
-        return isKey ? (T) new KeyCacheObjectImpl(obj, objBytes, -1) : (T) new CacheObjectImpl(obj, objBytes);
     }
 }
