@@ -23,7 +23,6 @@ import sys
 import time
 from abc import abstractmethod, ABCMeta
 from datetime import datetime, timedelta
-from distutils.util import strtobool
 from enum import IntEnum
 from threading import Thread
 
@@ -477,7 +476,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             mbean = JmxClient(node).find_mbean('.*name=cluster')
 
             while datetime.now() < delta_time and not rebalanced:
-                rebalanced = strtobool(next(mbean.Rebalanced))
+                rebalanced = next(mbean.Rebalanced) == 'true'
 
         if rebalanced:
             return

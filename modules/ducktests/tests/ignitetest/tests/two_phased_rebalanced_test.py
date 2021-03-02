@@ -33,7 +33,7 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_ignite
 from ignitetest.services.utils.util import copy_file_to_dest
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATEST_2_8
 
 NUM_NODES_CELL = 4
 
@@ -51,7 +51,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     # pylint: disable=R0914
     @cluster(num_nodes=NUM_NODES_CELL * NUM_CELL + 2)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9), str(LATEST_2_8))
     def two_phased_rebalancing_test(self, ignite_version):
         """
         Test case of two-phase rebalancing.
@@ -134,7 +134,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         dump_2 = fix_data(control_utility, node, cells[0].log_dir)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
-        assert not diff, diff
+        assert not diff, f"Validation error, files are different. Difference:: \n {diff}"
 
     def start_cells(self, config: IgniteConfiguration, cells_cnt: int = NUM_CELL, cell_nodes_cnt: int = NUM_NODES_CELL)\
             -> List[IgniteService]:
@@ -206,7 +206,7 @@ def restart_with_clean_idx_node_on_cell(cells: [IgniteService], idxs: [int]):
     start_idx_node_on_cell(cells, idxs)
 
     for cell in cells:
-        cell.await_rebalance(timeout_sec=10 * 60)
+        cell.await_rebalance()
 
 
 def stop_idx_node_on_cell(cells: [IgniteService], idxs: [int]):

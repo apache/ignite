@@ -21,7 +21,7 @@ import os
 
 def copy_file_to_dest(node, file_path: str, dest_dir: str):
     """
-    Move file to logs directory.
+    Copy file to destination directory.
     :return new path to file.
     """
     node.account.ssh_output(f'cp {file_path} {dest_dir}')
