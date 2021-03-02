@@ -1,0 +1,34 @@
+>>> Cache entries layout: [Total=0, Java heap=0, Off-Heap=0]
+>>> Cache entries created: 1
+
+>>> Cache entries layout: [Total=1, Java heap=1, Off-Heap=1]
+>>> Cache entries created: 11
+
+>>> Cache entries layout: [Total=11, Java heap=11, Off-Heap=11]
+>>> Cache entries created: 21
+
+>>> Cache entries layout: [Total=21, Java heap=21, Off-Heap=21]
+>>> Cache entries created: 31
+
+>>> Cache entries layout: [Total=31, Java heap=31, Off-Heap=31]
+>>> Cache entries created: 41
+
+>>> Cache entries layout: [Total=41, Java heap=41, Off-Heap=41]
+>>> Cache entries created: 51
+
+>>> Cache entries layout: [Total=51, Java heap=51, Off-Heap=51]
+>>> Cache entries created: 61
+
+>>> Cache entries layout: [Total=61, Java heap=61, Off-Heap=61]
+>>> Cache entries created: 71
+
+>>> Cache entries layout: [Total=71, Java heap=71, Off-Heap=71]
+>>> Cache entries created: 81
+
+>>> Cache entries layout: [Total=81, Java heap=81, Off-Heap=81]
+>>> Cache entries created: 91
+
+>>> Cache entries layout: [Total=91, Java heap=91, Off-Heap=91]
+>>> Waiting for metrics final update...
+
+>>> Cache entries layout: [Total=100, Java heap=100, Off-Heap=100]
