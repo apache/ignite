@@ -169,7 +169,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     /** */
     private static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
         /** {@inheritDoc} */
-        @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args) {
+        @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
             return new InlineIndexRowHandler() {
                 /** {@inheritDoc} */
                 @Override public IndexKey getIndexKey(int idx, CacheDataRow row) {

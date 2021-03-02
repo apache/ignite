@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,40 +15,23 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Examples.Shared.Events
+namespace Apache.Ignite.Core.Tests.Examples
 {
-    using System;
-    using System.Threading;
-    using Apache.Ignite.Core.Events;
+    using NUnit.Framework;
 
     /// <summary>
-    /// Local event listener.
+    /// Tests thin client examples with two server nodes.
     /// </summary>
-    public class LocalEventListener : IEventListener<IEvent>
+    [Category(TestUtils.CategoryExamples)]
+    [TestFixture]
+    public class ThinExamplesTwoServersTest : ThinExamplesTest
     {
-        /** Count of received events. */
-        private int _eventsReceived;
-
         /// <summary>
-        /// Gets the count of received events.
+        /// Initializes a new instance of <see cref="ThinExamplesTwoServersTest"/>.
         /// </summary>
-        public int EventsReceived
+        public ThinExamplesTwoServersTest() : base(2)
         {
-            get { return _eventsReceived; }
-        }
-
-        /// <summary>
-        /// Determines whether specified event passes this filter.
-        /// </summary>
-        /// <param name="evt">Event.</param>
-        /// <returns>Value indicating whether specified event passes this filter.</returns>
-        public bool Invoke(IEvent evt)
-        {
-            Interlocked.Increment(ref _eventsReceived);
-
-            Console.WriteLine("Local listener received an event [evt={0}]", evt.Name);
-
-            return true;
+            // No-op.
         }
     }
 }

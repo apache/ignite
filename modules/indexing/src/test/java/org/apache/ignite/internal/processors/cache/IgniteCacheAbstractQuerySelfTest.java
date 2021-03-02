@@ -81,6 +81,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -1550,6 +1551,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testClientQueryExecutedEvents() throws Exception {
+        ((Map<?, ?>)GridTestUtils.getFieldValue(new GridToStringBuilder(), S.class, "classCache")).clear();
+
         doTestClientQueryExecutedEvents(false);
     }
 
@@ -1557,6 +1560,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
     public void testClientQueryExecutedEventsIncludeSensitive() throws Exception {
+        ((Map<?, ?>)GridTestUtils.getFieldValue(new GridToStringBuilder(), S.class, "classCache")).clear();
+
         doTestClientQueryExecutedEvents(true);
     }
 

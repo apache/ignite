@@ -529,9 +529,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String zeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertContains(log, zeroUpdateCntrs, "idle_verify check has finished, found " + emptyPartId + " partitions");
+        assertContains(log, zeroUpdateCntrs, "The check procedure has finished, found " + emptyPartId + " partitions");
         assertContains(log, zeroUpdateCntrs, "1 partitions was skipped");
-        assertContains(log, zeroUpdateCntrs, "idle_verify check has finished, no conflicts have been found.");
+        assertContains(log, zeroUpdateCntrs, "The check procedure has finished, no conflicts have been found.");
 
         assertSort(emptyPartId, zeroUpdateCntrs);
 
@@ -549,9 +549,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String nonZeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertContains(log, nonZeroUpdateCntrs, "idle_verify check has finished, found " + 31 + " partitions");
+        assertContains(log, nonZeroUpdateCntrs, "The check procedure has finished, found " + 31 + " partitions");
         assertContains(log, nonZeroUpdateCntrs, "1 partitions was skipped");
-        assertContains(log, nonZeroUpdateCntrs, "idle_verify check has finished, no conflicts have been found.");
+        assertContains(log, nonZeroUpdateCntrs, "The check procedure has finished, no conflicts have been found.");
 
         assertSort(31, zeroUpdateCntrs);
 
@@ -587,7 +587,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         if (fileNameMatcher.find()) {
             String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithZeros, "idle_verify check has finished, found " + parts + " partitions");
+            assertContains(log, dumpWithZeros, "The check procedure has finished, found " + parts + " partitions");
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
@@ -602,7 +602,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         if (fileNameMatcher.find()) {
             String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithoutZeros, "idle_verify check has finished, found " + keysCount + " partitions");
+            assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCount + " partitions");
             assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
             assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
 
@@ -650,37 +650,37 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found",
-            "idle_verify task was executed with the following args: caches=[], excluded=[wrong.*], cacheFilter=[SYSTEM]",
+            "The check procedure has finished, found",
+            "The check procedure task was executed with the following args: caches=[], excluded=[wrong.*], cacheFilter=[SYSTEM]",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 96 partitions",
+            "The check procedure has finished, found 96 partitions",
             null,
             "--cache", "idle_verify", "--dump", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 32 partitions",
+            "The check procedure has finished, found 32 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 160 partitions",
+            "The check procedure has finished, found 160 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 160 partitions",
+            "The check procedure has finished, found 160 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "USER"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 160 partitions",
+            "The check procedure has finished, found 160 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*"
         );
@@ -698,13 +698,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, no conflicts have been found.",
+            "The check procedure has finished, no conflicts have been found.",
             null,
             "--cache", "idle_verify", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, no conflicts have been found.",
+            "The check procedure has finished, no conflicts have been found.",
             null,
             "--cache", "idle_verify", "--dump", "--cache-filter", "PERSISTENT"
         );
@@ -1011,7 +1011,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "idle_verify check has finished, found 32 partitions");
+            assertContains(log, dumpWithConflicts, "The check procedure has finished, found 32 partitions");
             assertContains(log, dumpWithConflicts, "default_third");
             assertNotContains(log, dumpWithConflicts, "shared_grp");
         }

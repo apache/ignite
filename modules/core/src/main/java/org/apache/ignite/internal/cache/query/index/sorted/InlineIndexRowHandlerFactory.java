@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
  * Basic interface for factories that provide InlineIndexRowHandler based on index definition and optional arguments.
  */
@@ -24,8 +26,9 @@ public interface InlineIndexRowHandlerFactory {
     /**
      * Creates instance of row handler.
      * @param sdef Index definition.
-     * @param args Optional arguments to configure row handler.
+     * @param keyTypeSettings Index key type settings.
      * @return Index row handler.
      */
-    public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args);
+    public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings)
+        throws IgniteCheckedException;
 }

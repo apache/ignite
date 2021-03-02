@@ -994,6 +994,7 @@
                                         <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
                                         <exclude>modules/platforms/python/docs/source/**/*.rst</exclude><!--sphinx-apidoc generated files-->
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
+                                        <exclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
                                         <!-- Ignite Documentation-->

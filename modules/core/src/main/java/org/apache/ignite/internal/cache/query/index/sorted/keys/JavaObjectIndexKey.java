@@ -88,5 +88,5 @@ public abstract class JavaObjectIndexKey implements IndexKey {
     /**
      * @return Represents a Java Object as byte array.
      */
-    protected abstract byte[] getBytesNoCopy();
+    public abstract byte[] getBytesNoCopy();
 }

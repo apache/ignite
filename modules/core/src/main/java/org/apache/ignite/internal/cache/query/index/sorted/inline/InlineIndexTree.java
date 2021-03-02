@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
@@ -84,6 +85,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** Statistics holder used by underlying BPlusTree. */
     private final IoStatisticsHolder stats;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      */
@@ -117,6 +121,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             pageIoResolver
         );
 
+        this.cctx = cctx;
+
+        log = cctx.kernalContext().config().getGridLogger();
+
         this.stats = stats;
 
         created = initNew;
@@ -124,33 +132,44 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         this.def = def;
 
         if (!initNew) {
-            // Init from metastore
+            // Init from metastore.
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = getMetaInfo();
 
-            inlineSize = metaInfo.inlineSize();
+            def.initByMeta(metaInfo);
 
-            boolean inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
+            inlineSize = metaInfo.inlineSize();
+            setIos(inlineSize);
+
+            boolean inlineObjSupported = inlineObjectSupported(def, metaInfo, rowHndFactory);
 
             keyTypeSettings
-                .inlineObjHash(metaInfo.inlineObjHash)
-                .inlineObjSupported(metaInfo.inlineObjSupported);
+                .inlineObjHash(metaInfo.inlineObjectHash())
+                .inlineObjSupported(inlineObjSupported);
 
-            rowHnd = rowHndFactory
-                .create(def, metaInfo.useUnwrappedPk(), keyTypeSettings);
+            rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
-            rowHnd = rowHndFactory.create(def, true, keyTypeSettings);
+            rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
                 rowHnd.getInlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
+
+            setIos(inlineSize);
         }
 
         this.keyTypeSettings = keyTypeSettings;
 
+        initTree(initNew, inlineSize);
+
+        this.recommender = recommender;
+    }
+
+    /** */
+    private void setIos(int inlineSize) {
         if (inlineSize == 0)
             setIos(InnerIO.VERSIONS, LeafIO.VERSIONS);
         else
@@ -159,11 +178,51 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 (IOVersions<BPlusInnerIO<IndexRow>>) PageIO.getInnerVersions(inlineSize - 1, false),
                 (IOVersions<BPlusLeafIO<IndexRow>>) PageIO.getLeafVersions(inlineSize - 1, false));
 
-        initTree(initNew, inlineSize);
+    }
 
-        this.recommender = recommender;
+    /**
+     * Find whether tree supports inlining objects or not.
+     *
+     * @param def Index definition.
+     * @param metaInfo Metapage info.
+     * @return {@code true} if inline object is supported by exists tree.
+     */
+    private boolean inlineObjectSupported(SortedIndexDefinition def, MetaPageInfo metaInfo,
+        InlineIndexRowHandlerFactory rowHndFactory) {
 
-        this.cctx = cctx;
+        if (metaInfo.flagsSupported())
+            return metaInfo.inlineObjectSupported();
+        else {
+            try {
+                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.getIndexKeyDefinitions())) {
+                    try {
+                        InlineObjectBytesDetector inlineObjDetector = new InlineObjectBytesDetector(
+                            metaInfo.inlineSize(), def.getIndexKeyDefinitions(), def.getIdxName(), log);
+
+                        // Create a settings for case where java objects inilned as byte array.
+                        IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                            .inlineObjSupported(true)
+                            .inlineObjHash(false);
+
+                        InlineIndexRowHandler rowHnd = rowHndFactory.create(def, keyTypeSettings);
+
+                        ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+
+                        findFirst(inlineObjDetector);
+
+                        return inlineObjDetector.inlineObjectSupported();
+
+                    } finally {
+                        ThreadLocalRowHandlerHolder.clearRowHandler();
+                    }
+                }
+                else
+                    return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Unexpected exception on detect inline object", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

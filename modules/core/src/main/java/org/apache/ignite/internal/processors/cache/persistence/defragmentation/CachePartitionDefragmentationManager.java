@@ -57,8 +57,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -330,7 +330,7 @@ public class CachePartitionDefragmentationManager {
 
                     boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
 
-                    FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
+                    FileVersionCheckingFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
 
                     AtomicLong idxAllocationTracker = new GridAtomicLong();
 
@@ -496,7 +496,7 @@ public class CachePartitionDefragmentationManager {
         int grpId,
         File workDir,
         GridCacheOffheapManager offheap,
-        FilePageStoreFactory pageStoreFactory,
+        FileVersionCheckingFactory pageStoreFactory,
         GridCompoundFuture<Object, Object> cmpFut,
         PageMemoryEx oldPageMem,
         CacheGroupContext newGrpCtx,
@@ -610,7 +610,7 @@ public class CachePartitionDefragmentationManager {
     public void createIndexPageStore(
         int grpId,
         File workDir,
-        FilePageStoreFactory pageStoreFactory,
+        FileVersionCheckingFactory pageStoreFactory,
         DataRegion partRegion,
         LongConsumer allocatedTracker
     ) throws IgniteCheckedException {
@@ -931,7 +931,7 @@ public class CachePartitionDefragmentationManager {
         private GridCacheDataStore newCacheDataStore;
 
         /** */
-        public final FilePageStoreFactory pageStoreFactory;
+        public final FileVersionCheckingFactory pageStoreFactory;
 
         /** */
         public final AtomicLong partPagesAllocated = new AtomicLong();
@@ -952,7 +952,7 @@ public class CachePartitionDefragmentationManager {
             CacheGroupContext oldGrpCtx,
             CacheGroupContext newGrpCtx,
             CacheDataStore oldCacheDataStore,
-            FilePageStoreFactory pageStoreFactory
+            FileVersionCheckingFactory pageStoreFactory
         ) {
             this.workDir = workDir;
             this.grpId = grpId;

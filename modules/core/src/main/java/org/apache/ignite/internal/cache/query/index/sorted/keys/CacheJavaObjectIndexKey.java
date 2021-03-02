@@ -64,8 +64,8 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
         return key;
     }
 
-    /** */
-    @Override protected byte[] getBytesNoCopy() {
+    /** {@inheritDoc} */
+    @Override public byte[] getBytesNoCopy() {
         try {
             if (serialized == null) {
                 // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.MetaPageInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -40,10 +41,10 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     private List<IndexKeyDefinition> keyDefs;
 
     /** List of unwrapped index columns. */
-    List<IndexColumn> h2UnwrappedCols;
+    private List<IndexColumn> h2UnwrappedCols;
 
     /** List of wrapped index columns. */
-    List<IndexColumn> h2WrappedCols;
+    private List<IndexColumn> h2WrappedCols;
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -95,6 +96,8 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         keyTypeSettings = new IndexKeyTypeSettings()
             .stringOptimizedCompare(CompareMode.OFF.equals(table.getCompareMode().getName()))
             .binaryUnsigned(table.getCompareMode().isBinaryUnsigned());
+
+        rowComparator = new H2RowComparator(table, keyTypeSettings);
     }
 
     /** {@inheritDoc} */
@@ -152,6 +155,20 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
+    @Override public void initByMeta(MetaPageInfo metaPageInfo) {
+        if (keyDefs == null) {
+            if (metaPageInfo.useUnwrappedPk()) {
+                h2WrappedCols = null;
+                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).get();
+            }
+            else {
+                h2UnwrappedCols = null;
+                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).get();
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public InlineIndexRowHandlerFactory getRowHandlerFactory() {
         return rowHndFactory;
     }
@@ -171,18 +188,8 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         return table;
     }
 
-    /**
-     * This method should be invoked from row handler to finally configure definition.
-     * In case of multiple segments within signle index it affects only once.
-     */
-    public void setUpFlags(boolean useUnWrapPK, IndexKeyTypeSettings keyTypeSettings) {
-        if (keyDefs == null) {
-            if (useUnWrapPK)
-                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).get();
-            else
-                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).get();
-
-            rowComparator = new H2RowComparator(table, keyTypeSettings);
-        }
+    /** */
+    public List<IndexColumn> getColumns() {
+        return h2UnwrappedCols != null ? h2UnwrappedCols : h2WrappedCols;
     }
 }

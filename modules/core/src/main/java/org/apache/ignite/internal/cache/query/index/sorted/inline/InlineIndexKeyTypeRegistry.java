@@ -53,10 +53,10 @@ public class InlineIndexKeyTypeRegistry {
     private static final Map<Integer, InlineIndexKeyType> typeMapping = new ConcurrentHashMap<>();
 
     /** Object key type does not map to known java type. */
-    private static final ObjectHashInlineIndexKeyType objectType = new ObjectHashInlineIndexKeyType();
+    private static final ObjectHashInlineIndexKeyType hashObjectType = new ObjectHashInlineIndexKeyType();
 
     /** Object key type does not map to known java type. */
-    private static final ObjectByteArrayInlineIndexKeyType legacyObjectType = new ObjectByteArrayInlineIndexKeyType();
+    private static final ObjectByteArrayInlineIndexKeyType bytesObjectType = new ObjectByteArrayInlineIndexKeyType();
 
     /** Default String key type use optimized algorithm for comparison. */
     private static final StringInlineIndexKeyType optimizedCompareStringType = new StringInlineIndexKeyType();
@@ -82,6 +82,10 @@ public class InlineIndexKeyTypeRegistry {
         register(IndexKeyTypes.TIME, new TimeInlineIndexKeyType());
         register(IndexKeyTypes.TIMESTAMP, new TimestampInlineIndexKeyType());
         register(IndexKeyTypes.UUID, new UuidInlineIndexKeyType());
+        // Choice of those types actually depends on IndexKeyTypeSettings.
+        register(IndexKeyTypes.JAVA_OBJECT, hashObjectType);
+        register(IndexKeyTypes.STRING, optimizedCompareStringType);
+        register(IndexKeyTypes.BYTES, bytesType);
     }
 
     /** */
@@ -93,8 +97,19 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for a class. Used for user queries, where getting type from class.
      * Type is required for cases when class doesn't have strict type relation (nulls, POJO).
      *
+     * @param expType Expected type of a key.
+     */
+    public static InlineIndexKeyType get(int expType, IndexKeyTypeSettings keyTypeSettings) {
+        return getType(expType, keyTypeSettings);
+    }
+
+    /**
+     * Get key type for specified key. Used for user queries, where getting type from class.
+     * Type is required for cases when class doesn't have strict type relation (nulls, POJO).
+     *
      * @param key Index key.
      * @param expType Expected type of a key.
+     * @param keyTypeSettings Index key type settings.
      */
     public static InlineIndexKeyType get(IndexKey key, int expType, IndexKeyTypeSettings keyTypeSettings) {
         return key == NullIndexKey.INSTANCE ?
@@ -119,7 +134,10 @@ public class InlineIndexKeyTypeRegistry {
     /**
      * Checks whether specified type support inlining.
      */
-    public static boolean supportInline(int type) {
+    private static boolean supportInline(int type, IndexKeyTypeSettings keyTypeSettings) {
+        if (type == IndexKeyTypes.JAVA_OBJECT && !keyTypeSettings.inlineObjSupported())
+            return false;
+
         return typeMapping.containsKey(type);
     }
 
@@ -127,7 +145,7 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for the POJO type.
      */
     private static InlineIndexKeyType getJavaObjectType(IndexKeyTypeSettings keyTypeSettings) {
-        return !keyTypeSettings.inlineObjHash() ? legacyObjectType : objectType;
+        return !keyTypeSettings.inlineObjHash() ? bytesObjectType : hashObjectType;
     }
 
     /**
@@ -151,7 +169,7 @@ public class InlineIndexKeyTypeRegistry {
         List<InlineIndexKeyType> keyTypes = new ArrayList<>();
 
         for (IndexKeyDefinition keyDef: keyDefs) {
-            if (!supportInline(keyDef.getIdxType()))
+            if (!supportInline(keyDef.getIdxType(), settings))
                 break;
 
             keyTypes.add(getType(keyDef.getIdxType(), settings));

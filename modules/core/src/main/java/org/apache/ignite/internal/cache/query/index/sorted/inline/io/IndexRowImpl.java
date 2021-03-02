@@ -50,8 +50,6 @@ public class IndexRowImpl implements IndexRow {
      * Constructor with prefilling of keys cache.
      */
     public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row, IndexKey[] keys) {
-        assert keys.length == rowHnd.getIndexKeyDefinitions().size();
-
         this.rowHnd = rowHnd;
         cacheRow = row;
         keyCache = keys;

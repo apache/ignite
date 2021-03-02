@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 import java.util.List;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.MetaPageInfo;
 
 /**
  * Represents a definition of a sorted index.
@@ -51,4 +52,7 @@ public interface SortedIndexDefinition extends IndexDefinition {
 
     /** Whether this index is affinity key index or not. */
     public boolean isAffinity();
+
+    /** Initialize internal state with data from a tree meta. */
+    public void initByMeta(MetaPageInfo metaPageInfo);
 }

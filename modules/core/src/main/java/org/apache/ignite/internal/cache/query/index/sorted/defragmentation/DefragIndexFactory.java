@@ -68,7 +68,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
     /** */
     public DefragIndexFactory(IgniteCacheOffheapManager offheap, PageMemory newCachePageMemory, InlineIndex oldIdx) {
         // Row handler factory that produces no-op handler.
-        rowHndFactory = (def, args) -> oldIdx.getSegment(0).getRowHandler();
+        rowHndFactory = (def, settings) -> oldIdx.getSegment(0).getRowHandler();
 
         this.offheap = offheap;
         this.oldIdx = oldIdx;
@@ -120,7 +120,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
                 return io;
 
             //noinspection unchecked,rawtypes,rawtypes
-            return wrap((BPlusIO)io, rowHndFactory.create(null));
+            return wrap((BPlusIO)io, rowHndFactory.create(null, null));
         };
     }
 

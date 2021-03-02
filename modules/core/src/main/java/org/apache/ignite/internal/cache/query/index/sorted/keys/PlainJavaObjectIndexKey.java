@@ -36,8 +36,8 @@ public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
         this.serialized = serialized;
     }
 
-    /** */
-    @Override protected byte[] getBytesNoCopy() {
+    /** {@inheritDoc} */
+    @Override public byte[] getBytesNoCopy() {
         try {
             if (serialized == null)
                 serialized = GridIndexingManager.serializer.serialize(key);

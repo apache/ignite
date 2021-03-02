@@ -263,7 +263,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", CACHE_NAME));
 
         assertContains(log, testOut.toString(), "issues found (listed above)");
-        assertContains(log, testOut.toString(), "CRC validation failed");
+        assertContains(log, testOut.toString(), "CRC check of partition failed");
         assertNotContains(log, testOut.toString(), "Runtime failure on bounds");
     }
 

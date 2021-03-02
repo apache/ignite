@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -32,16 +33,13 @@ import org.h2.table.IndexColumn;
  */
 public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     /** {@inheritDoc} */
-    @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args) {
-        boolean useUnwrappedPk = (boolean) args[0];
-        IndexKeyTypeSettings keyTypeSettings = (IndexKeyTypeSettings) args[1];
+    @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings)
+        throws IgniteCheckedException {
 
         QueryIndexDefinition def = (QueryIndexDefinition) sdef;
-        def.setUpFlags(useUnwrappedPk, keyTypeSettings);
 
         List<IndexKeyDefinition> keyDefs = def.getIndexKeyDefinitions();
-
-        List<IndexColumn> h2IdxColumns = useUnwrappedPk ? def.h2UnwrappedCols : def.h2WrappedCols;
+        List<IndexColumn> h2IdxColumns = def.getColumns();
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, keyTypeSettings);
 
