@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -53,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /**
@@ -74,10 +74,10 @@ public class CacheGroupPageScanner implements CheckpointListener {
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Mapping of cache group ID to group scanning task. */
-    private final Map<Integer, GroupScanContext> grps = new ConcurrentHashMap<>();
+    private final Map<Integer, GroupScanTask> grps = new ConcurrentHashMap<>();
 
     /** Collection of groups waiting for a checkpoint. */
-    private final Collection<GroupScanContext> cpWaitGrps = new ConcurrentLinkedQueue<>();
+    private final Collection<GroupScanTask> cpWaitGrps = new ConcurrentLinkedQueue<>();
 
     /** Single-threaded executor to run cache group scan task. */
     private final ThreadPoolExecutor singleExecSvc;
@@ -134,7 +134,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context cpCtx) {
-        Set<GroupScanContext> completeCandidates = new HashSet<>();
+        Set<GroupScanTask> completeCandidates = new HashSet<>();
 
         cpWaitGrps.removeIf(completeCandidates::add);
 
@@ -150,13 +150,15 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 lock.lock();
 
                 try {
-                    for (GroupScanContext grpScanTask : completeCandidates) {
-                        grps.remove(grpScanTask.groupId());
+                    for (GroupScanTask grpScanTask : completeCandidates) {
+                        grps.remove(grpScanTask.group().groupId());
 
                         grpScanTask.onDone();
 
-                        if (log.isInfoEnabled())
-                            log.info("Cache group reencryption is finished [grpId=" + grpScanTask.groupId() + "]");
+                        if (log.isInfoEnabled()) {
+                            log.info("Cache group reencryption is finished [grp=" +
+                                grpScanTask.group().cacheOrGroupName() + "]");
+                        }
                     }
 
                     if (!grps.isEmpty())
@@ -192,6 +194,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
             return new GridFinishedFuture<>();
         }
 
+        GroupScanTask grpScanTask = new GroupScanTask(grp);
+
         lock.lock();
 
         try {
@@ -201,7 +205,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
             if (grps.isEmpty())
                 ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
 
-            GroupScanContext prevState = grps.get(grpId);
+            GroupScanTask prevState = grps.putIfAbsent(grpId, grpScanTask);
 
             if (prevState != null && !prevState.isDone()) {
                 if (log.isDebugEnabled())
@@ -210,34 +214,34 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 return prevState;
             }
 
-            GroupScanContext grpScanCtx = new GroupScanContext(grp);
+            singleExecSvc.submit(() -> schedule0(grpScanTask));
+        } finally {
+            lock.unlock();
+        }
 
-            forEachPageStore(grp, new IgniteInClosureX<Integer>() {
+        return grpScanTask;
+    }
+
+    /**
+     * @param grpScanTask Cache group scan task.
+     */
+    private void schedule0(GroupScanTask grpScanTask) {
+        try {
+            forEachPageStore(grpScanTask.group(), new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
-                    long encState = ctx.encryption().getEncryptionState(grpId, partId);
+                    long encState = ctx.encryption().getEncryptionState(grpScanTask.group().groupId(), partId);
 
-                    if (encState == 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
-
-                        return;
-                    }
-
-                    grpScanCtx.addPartition(partId, encState);
+                    if (encState != 0)
+                        grpScanTask.addPartition(partId, encState);
                 }
             });
 
             if (log.isInfoEnabled())
-                log.info("Scheduled reencryption [grpId=" + grpId + "]");
+                log.info("Scheduled reencryption [grp=" + grpScanTask.group().cacheOrGroupName() + "]");
 
-            grps.put(grpId, grpScanCtx);
-
-            grpScanCtx.checkComplete();
-
-            return grpScanCtx;
-        }
-        finally {
-            lock.unlock();
+            grpScanTask.checkComplete();
+        } catch (IgniteCheckedException e) {
+            grpScanTask.onDone(e);
         }
     }
 
@@ -246,7 +250,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
      * @return Future that will be completed when all partitions have been scanned and pages have been written to disk.
      */
     public IgniteInternalFuture<Void> statusFuture(int grpId) {
-        GroupScanContext grpScanTask = grps.get(grpId);
+        GroupScanTask grpScanTask = grps.get(grpId);
 
         return grpScanTask == null ? new GridFinishedFuture<>() : grpScanTask;
     }
@@ -260,7 +264,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
         try {
             stopped = true;
 
-            for (GroupScanContext grpScanTask : grps.values())
+            for (GroupScanTask grpScanTask : grps.values())
                 grpScanTask.cancel();
 
             if (singleExecSvc != null)
@@ -278,7 +282,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
      * @return {@code True} if reencryption was cancelled.
      */
     public boolean excludePartition(int grpId, int partId) {
-        GroupScanContext grpScanTask = grps.get(grpId);
+        GroupScanTask grpScanTask = grps.get(grpId);
 
         if (grpScanTask == null)
             return false;
@@ -286,18 +290,15 @@ public class CacheGroupPageScanner implements CheckpointListener {
         return grpScanTask.excludePartition(partId);
     }
 
-    public void markForDestroy(int grpId, int partId) {
-        GroupScanContext grpScanTask = grps.get(grpId);
+    /**
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     */
+    public void includePartition(int grpId, int partId) {
+        GroupScanTask grpScanTask = grps.get(grpId);
 
         if (grpScanTask != null)
-            grpScanTask.onPartitionEvicted(partId);
-    }
-
-    public void includeEvicted(int grpId, int partId) {
-        GroupScanContext grpScanTask = grps.get(grpId);
-
-        if (grpScanTask != null)
-            grpScanTask.includeEvicted(partId);
+            grpScanTask.schedulePending(partId);
 
     }
 
@@ -334,7 +335,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
      * @return Number of remaining memory pages to scan.
      */
     public long remainingPagesCount(int grpId) {
-        GroupScanContext grpScanTask = grps.get(grpId);
+        GroupScanTask grpScanTask = grps.get(grpId);
 
         if (grpScanTask != null)
             return grpScanTask.remainingPagesCount();
@@ -396,18 +397,12 @@ public class CacheGroupPageScanner implements CheckpointListener {
     /**
      * Cache group partition scanning task.
      */
-    private class GroupScanContext extends GridFutureAdapter<Void> {
+    private class GroupScanTask extends GridFutureAdapter<Void> {
         /** Cache group ID. */
         private final CacheGroupContext grp;
 
         /** Partitions to reencrypt. */
         private final Set<Integer> parts = new GridConcurrentHashSet<>();
-
-        /** Partitions that are scheduled for destroy. */
-        private final Set<Integer> evictSet = new HashSet<>();
-
-        /** Destroyed partitions to exclude from re-encryption. */
-        private final Set<Integer> destroySet = new HashSet<>();
 
         /** Page memory. */
         private final PageMemoryEx pageMem;
@@ -418,7 +413,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
         /**
          * @param grp Cache group.
          */
-        public GroupScanContext(CacheGroupContext grp) {
+        public GroupScanTask(CacheGroupContext grp) {
             this.grp = grp;
 
             pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
@@ -433,10 +428,9 @@ public class CacheGroupPageScanner implements CheckpointListener {
         public synchronized void addPartition(int partId, long state) {
             remainingPagesCntr.addAndGet(ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state));
 
-            if (partId != PageIdAllocator.INDEX_PARTITION && grp.topology().localPartition(partId).state() == EVICTED)
-                evictSet.add(partId);
-            else
-                schedulePartitionScanning(partId);
+            parts.add(partId);
+
+            schedulePartitionScan(partId);
         }
 
         /** {@inheritDoc} */
@@ -451,47 +445,36 @@ public class CacheGroupPageScanner implements CheckpointListener {
          * @return {@code True} if reencryption was cancelled.
          */
         public synchronized boolean excludePartition(int partId) {
-            long state = ctx.encryption().getEncryptionState(groupId(), partId);
+            if (!parts.remove(partId))
+                return false;
+
+            long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
 
             long pagesLeft = remainingPagesCntr.addAndGet(
                 ReencryptStateUtils.pageIndex(state) - ReencryptStateUtils.pageCount(state));
 
-            evictSet.remove(partId);
-
             if (pagesLeft == 0)
                 checkComplete();
 
-            return destroySet.add(partId);
-        }
-
-        /**
-         * @param partId partition ID.
-         */
-        public synchronized void onPartitionEvicted(int partId) {
-            parts.remove(partId);
-            evictSet.add(partId);
+            return true;
         }
 
         /**
          * @param partId Partition ID.
          */
-        public synchronized void includeEvicted(int partId) {
+        public synchronized void schedulePending(int partId) {
             if (isDone())
                 return;
 
-            // todo sync think
-            evictSet.remove(partId);
-
-            // if partition has not been started to process - nothing to do.
-            if (!parts.contains(partId))
-                schedulePartitionScanning(partId);
+            if (parts.contains(partId))
+                schedulePartitionScan(partId);
         }
 
         /**
-         * @return Cache group ID.
+         * @return Cache group context.
          */
-        public int groupId() {
-            return grp.groupId();
+        public CacheGroupContext group() {
+            return grp;
         }
 
         /**
@@ -504,9 +487,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
         /**
          * @param partId Partition ID.
          */
-        private void schedulePartitionScanning(int partId) {
-            parts.add(partId);
-
+        private void schedulePartitionScan(int partId) {
             singleExecSvc.submit(() -> scanPartition(partId));
         }
 
@@ -514,18 +495,26 @@ public class CacheGroupPageScanner implements CheckpointListener {
          * Check the completeness of the cache group scan.
          */
         private synchronized void checkComplete() {
-            if (!isDone() && parts.isEmpty() && evictSet.isEmpty() && !cpWaitGrps.contains(this))
+            if (!isDone() && parts.isEmpty() && !cpWaitGrps.contains(this))
                 cpWaitGrps.add(this);
+        }
+
+        /**
+         * @param partId Partition ID.
+         * @return {@code True} if partition has been evicted.
+         */
+        private boolean evicted(int partId) {
+            if (partId == PageIdAllocator.INDEX_PARTITION)
+                return false;
+
+            return !parts.contains(partId) ||
+                grp.topology().localPartition(partId).state() == GridDhtPartitionState.EVICTED;
         }
 
         /**
          * @param partId Partition ID.
          */
         private void scanPartition(int partId) {
-            // todo think sync
-            if (!parts.remove(partId))
-                return;
-
             long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
 
             int off = ReencryptStateUtils.pageIndex(state);
@@ -543,8 +532,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
                     limiter.acquire(pagesCnt);
 
                     synchronized (this) {
-                        if (isDone() || evictSet.contains(partId) || destroySet.contains(partId))
-                            break;
+                        if (isDone() || evicted(partId))
+                            return;
 
                         ctx.cache().context().database().checkpointReadLock();
 
@@ -560,6 +549,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
                     ctx.encryption().setEncryptionState(grp, partId, off, cnt);
                 }
+
+                parts.remove(partId);
             } catch (Throwable t) {
                 if (X.hasCause(t, NodeStoppingException.class))
                     onCancelled();

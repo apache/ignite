@@ -2822,9 +2822,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 grp.onPartitionEvicted(part.id());
 
-                if (grp.config().isEncryptionEnabled())
-                    ctx.kernalContext().encryption().onPartitionEvicted(grp.groupId(), part.id());
-
                 try {
                     grp.offheap().destroyCacheDataStore(part.dataStore());
                 }

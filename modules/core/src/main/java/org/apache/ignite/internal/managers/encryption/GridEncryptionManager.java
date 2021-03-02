@@ -903,21 +903,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @param grp Cache group.
      * @param partId Partition ID.
-     * @param canceled Flag indicating that the destroy request has been canceled.
      */
-    public void onDestroyPartitionStore(CacheGroupContext grp, int partId, boolean canceled) {
-        if (canceled)
-            pageScanner.includeEvicted(grp.groupId(), partId);
-        else if (pageScanner.excludePartition(grp.groupId(), partId))
+    public void onDestroyPartitionStore(CacheGroupContext grp, int partId) {
+        if (pageScanner.excludePartition(grp.groupId(), partId))
             setEncryptionState(grp, partId, 0, 0);
     }
 
     /**
-     * @param grpId Cache group ID.
+     * @param grp Cache group.
      * @param partId Partition ID.
      */
-    public void onPartitionEvicted(int grpId, int partId) {
-        pageScanner.markForDestroy(grpId, partId);
+    public void onCancelDestroyPartitionStore(CacheGroupContext grp, int partId) {
+        pageScanner.includePartition(grp.groupId(), partId);
     }
 
     /**
