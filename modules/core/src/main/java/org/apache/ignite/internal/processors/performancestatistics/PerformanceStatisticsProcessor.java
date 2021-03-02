@@ -31,10 +31,12 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.performancestatistics.task.PerformanceStatisticsRotateTask;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -78,7 +80,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     if (!ctx.discovery().localJoinFuture().isDone())
                         return;
 
-                    onMetastorageUpdate((PerformanceStatisticsKey)newVal);
+                    onMetastorageUpdate((boolean)newVal);
                 });
             }
 
@@ -86,12 +88,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 PerformanceStatisticsProcessor.this.metastorage = metastorage;
 
                 try {
-                    PerformanceStatisticsKey performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
+                    Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
 
-                    if (performanceStatsEnabled == null || performanceStatsEnabled == PerformanceStatisticsKey.STOP)
+                    if (performanceStatsEnabled == null)
                         return;
 
-                    onMetastorageUpdate(PerformanceStatisticsKey.START);
+                    onMetastorageUpdate(performanceStatsEnabled);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -197,7 +199,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.START);
+        metastorage.write(PERF_STAT_KEY, true);
     }
 
     /**
@@ -211,7 +213,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.STOP);
+        metastorage.write(PERF_STAT_KEY, false);
     }
 
     /**
@@ -228,7 +230,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        metastorage.write(PERF_STAT_KEY, PerformanceStatisticsKey.ROTATE);
+        ctx.task().execute(PerformanceStatisticsRotateTask.class.getName(),new VisorTaskArgument());
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -249,24 +251,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Starts or stops collecting statistics on metastorage update. */
-    private void onMetastorageUpdate(PerformanceStatisticsKey key) {
+    private void onMetastorageUpdate(boolean start) {
         ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
-            switch (key) {
-                case START:
-                    startWriter();
-                    break;
-
-                case STOP:
-                    stopWriter();
-                    break;
-
-                case ROTATE:
-                    rotateWriter();
-                    break;
-
-                default:
-                    throw new AssertionError("Unexpected key: " + key);
-            }
+            if (start)
+                startWriter();
+            else
+                stopWriter();
         });
     }
 
@@ -308,11 +298,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Rotate performance statistics writer. */
-    private void rotateWriter() {
-        assert writer != null;
-
+    public void rotateWriter() {
         try {
             synchronized (mux) {
+                if (writer == null)
+                    return;
+
                 FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
 
                 newWriter.start();
@@ -321,8 +312,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
                 writer = newWriter;
 
-                if (oldWriter != null)
-                    oldWriter.stop();
+                oldWriter.stop();
             }
             log.info("Performance statistics writer rotated.");
         }
@@ -343,15 +333,5 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
-    }
-
-    /** Performance statistics keys. */
-    public enum PerformanceStatisticsKey {
-        /** Start. */
-        START,
-        /** Stop. */
-        STOP,
-        /** Rotate. */
-        ROTATE
     }
 }

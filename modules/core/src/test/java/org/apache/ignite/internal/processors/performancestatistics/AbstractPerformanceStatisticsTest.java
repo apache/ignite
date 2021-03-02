@@ -110,7 +110,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         readFiles(singletonList(dir), handlers);
     }
 
-    /** Stops and reads collecting performance statistics. */
+    /** Reads collecting performance statistics files. */
     public static void readFiles(List<File> files, TestHandler... handlers) throws Exception {
         new FilePerformanceStatisticsReader(handlers).read(files);
     }

@@ -57,7 +57,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
 
 /**
- * Tests performance statistics.
+ * Performance statistics file rotation tests.
  */
 @RunWith(Parameterized.class)
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
