@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,7 +43,7 @@ public interface InlineIndexKeyType {
      *
      * Note: system fields (e.g. type, length) are taken into account as well.
      */
-    public int inlineSize(Object key);
+    public int inlineSize(IndexKey key);
 
     /**
      * Actual size of inline value. It returns keySize() + 1 for values with
@@ -61,16 +62,16 @@ public interface InlineIndexKeyType {
      *
      * @param pageAddr Page address.
      * @param off Offset.
-     * @param val Value.
+     * @param key Index key.
      * @param maxSize Max size.
      *
      * @return Amount of bytes actually stored.
      */
-    public int put(long pageAddr, int off, Object val, int maxSize);
+    public int put(long pageAddr, int off, IndexKey key, int maxSize);
 
     /**
      */
-    @Nullable public Object get(long pageAddr, int off, int maxSize);
+    @Nullable public IndexKey get(long pageAddr, int off, int maxSize);
 
     /**
      * Compares inlined and given value.
@@ -83,5 +84,5 @@ public interface InlineIndexKeyType {
      * @return -1, 0 or 1 if inlined value less, equal or greater
      * than given respectively, or -2 if inlined part is not enough to compare.
      */
-    public int compare(long pageAddr, int off, int maxSize, Object v);
+    public int compare(long pageAddr, int off, int maxSize, IndexKey v);
 }

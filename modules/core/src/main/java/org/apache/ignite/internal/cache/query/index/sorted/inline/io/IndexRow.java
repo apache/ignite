@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.cache.query.index.sorted.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
  * Represents an index row stored in a tree.
  */
-public interface IndexRow extends IndexKey {
+public interface IndexRow extends IndexSearchRow {
     /**
      * @return Link to a cache row.
      */

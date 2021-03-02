@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.query.h2.index;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
-import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -36,8 +37,8 @@ import org.h2.message.DbException;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType.CANT_BE_COMPARE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 
 /**
  * Provide H2 logic of keys comparation.
@@ -64,25 +65,25 @@ public class H2RowComparator implements IndexRowComparator {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(long pageAddr, int off, int maxSize, Object v, int curType) {
+    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
         if (curType == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        if (v == NullKey.INSTANCE)
+        if (key == NullIndexKey.INSTANCE)
             return 1;
 
-        int objType = InlineIndexKeyTypeRegistry.get(v.getClass(), curType, keyTypeSettings).type();
+        int objType = InlineIndexKeyTypeRegistry.get(key, curType, keyTypeSettings).type();
 
         int highOrder = Value.getHigherOrder(curType, objType);
 
         // H2 supports comparison between different types after casting them to single type.
         if (highOrder != objType && highOrder == curType) {
-            Value va = DataType.convertToValue(ses, v, highOrder);
+            Value va = DataType.convertToValue(ses, key.getKey(), highOrder);
             va = va.convertTo(highOrder);
 
-            Object objHighOrder = va.getObject();
+            IndexKey objHighOrder = IndexKeyRegistry.wrap(va.getObject(), highOrder, coctx);
 
-            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder.getClass(), highOrder, keyTypeSettings);
+            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
 
             // The only way to invoke inline comparation again.
             return ((NullableInlineIndexKeyType) highType).compare0(pageAddr, off, objHighOrder);
@@ -93,12 +94,15 @@ public class H2RowComparator implements IndexRowComparator {
 
     /** {@inheritDoc} */
     @Override public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
-        Object robject = right.getKey(idx);
-        Object lobject = left.getKey(idx);
+        IndexKey lkey = left.getKey(idx);
+        IndexKey rkey = right.getKey(idx);
 
-        if (lobject == NullKey.INSTANCE)
-            return ((NullKey) lobject).compareTo(robject);
-        else if (robject == NullKey.INSTANCE)
+        Object lobject = lkey != null ? lkey.getKey() : null;
+        Object robject = rkey != null ? rkey.getKey() : null;
+
+        if (lkey == NullIndexKey.INSTANCE)
+            return lkey.compare(rkey, keyTypeSettings);
+        else if (rkey == NullIndexKey.INSTANCE)
             return 1;
         else if (lobject == null)
             return CANT_BE_COMPARE;
@@ -123,12 +127,7 @@ public class H2RowComparator implements IndexRowComparator {
 
     /** */
     private Value wrap(Object val, int type) throws IgniteCheckedException {
-        Object o = val;
-
-        if (val instanceof JavaObjectKey)
-            o = ((JavaObjectKey) val).getKey();
-
-        return H2Utils.wrap(coctx, o, type);
+        return H2Utils.wrap(coctx, val, type);
     }
 
     /**

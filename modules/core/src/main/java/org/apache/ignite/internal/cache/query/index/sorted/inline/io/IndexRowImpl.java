@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.sorted.SortedIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -36,20 +36,20 @@ public class IndexRowImpl implements IndexRow {
     private final CacheDataRow cacheRow;
 
     /** Cache for index row keys. To avoid hit underlying cache for every comparation. */
-    private final Object[] keyCache;
+    private final IndexKey[] keyCache;
 
     /** Schema of an index. */
     private final InlineIndexRowHandler rowHnd;
 
     /** Constructor. */
     public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row) {
-        this(rowHnd, row, new Object[rowHnd.getIndexKeyDefinitions().size()]);
+        this(rowHnd, row, new IndexKey[rowHnd.getIndexKeyDefinitions().size()]);
     }
 
     /**
      * Constructor with prefilling of keys cache.
      */
-    public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row, Object[] keys) {
+    public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row, IndexKey[] keys) {
         assert keys.length == rowHnd.getIndexKeyDefinitions().size();
 
         this.rowHnd = rowHnd;
@@ -65,13 +65,11 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey(int idx) {
+    @Override public IndexKey getKey(int idx) {
         if (keyCache[idx] != null)
             return keyCache[idx];
 
-        Object key = rowHnd.getIndexKey(idx, cacheRow);
-
-        validate(idx, key);
+        IndexKey key = rowHnd.getIndexKey(idx, cacheRow);
 
         keyCache[idx] = key;
 
@@ -79,10 +77,10 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] getKeys() {
+    @Override public IndexKey[] getKeys() {
         int keysCnt = rowHnd.getIndexKeyDefinitions().size();
 
-        Object[] keys = new Object[keysCnt];
+        IndexKey[] keys = new IndexKey[keysCnt];
 
         for (int i = 0; i < keysCnt; ++i)
             keys[i] = getKey(i);
@@ -103,12 +101,6 @@ public class IndexRowImpl implements IndexRow {
     /** {@inheritDoc} */
     @Override public CacheDataRow getCacheDataRow() {
         return cacheRow;
-    }
-
-    private void validate(int idx, Object key) {
-        if (!rowHnd.getIndexKeyDefinitions().get(idx).validate(key))
-            throw new IgniteException("Index row key class mismatch. Expected " +
-                rowHnd.getIndexKeyDefinitions().get(idx).getIdxClass() + ", actual " + key.getClass());
     }
 
     /** {@inheritDoc} */

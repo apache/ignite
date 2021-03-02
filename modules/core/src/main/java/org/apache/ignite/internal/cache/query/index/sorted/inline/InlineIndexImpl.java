@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.AbstractIndex;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.SingleCursor;
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.cache.query.index.sorted.IndexSearchRow;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -84,12 +84,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment) throws IgniteCheckedException {
         return find(lower, upper, segment, null);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         InlineTreeFilterClosure closure = getFilterClosure(filter);
 
         IndexRow rlower = (IndexRow) lower;
@@ -148,7 +148,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** */
-    private boolean isSingleRowLookup(IndexKey lower, IndexKey upper) throws IgniteCheckedException {
+    private boolean isSingleRowLookup(IndexSearchRow lower, IndexSearchRow upper) throws IgniteCheckedException {
         return def.isPrimary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
@@ -156,7 +156,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * If {@code true} then length of keys for search must be equal to length of schema, so use full
      * schema to search. If {@code false} then it's possible to use only part of schema for search.
      */
-    private boolean isFullSchemaSearch(IndexKey key) {
+    private boolean isFullSchemaSearch(IndexSearchRow key) {
         int schemaLength = def.getIndexKeyDefinitions().size();
 
         for (int i = 0; i < schemaLength; i++) {
@@ -177,7 +177,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * @param r2 Another row.
      * @return {@code true} in case both rows are efficiently the same, {@code false} otherwise.
      */
-    private boolean checkRowsTheSame(IndexKey r1, IndexKey r2) throws IgniteCheckedException {
+    private boolean checkRowsTheSame(IndexSearchRow r1, IndexSearchRow r2) throws IgniteCheckedException {
         if (r1 == r2)
             return true;
 

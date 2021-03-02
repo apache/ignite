@@ -24,8 +24,6 @@ import org.apache.ignite.cache.query.index.sorted.NullsOrder;
 import org.apache.ignite.cache.query.index.sorted.Order;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
@@ -33,9 +31,6 @@ import org.h2.table.IndexColumn;
 public class QueryIndexKeyDefinitionProvider {
     /** Table. */
     private final GridH2Table table;
-
-    /** Cache descriptor. */
-    private final GridH2RowDescriptor cacheDesc;
 
     /** H2 index columns. */
     private final List<IndexColumn> h2IdxColumns;
@@ -46,7 +41,6 @@ public class QueryIndexKeyDefinitionProvider {
     /** */
     public QueryIndexKeyDefinitionProvider(GridH2Table table, List<IndexColumn> h2IdxColumns) {
         this.table = table;
-        cacheDesc = table.rowDescriptor();
         this.h2IdxColumns = h2IdxColumns;
     }
 
@@ -71,21 +65,8 @@ public class QueryIndexKeyDefinitionProvider {
 
     /** */
     private IndexKeyDefinition keyDefinition(IndexColumn c) {
-        GridQueryTypeDescriptor type = cacheDesc.type();
-
-        Class<?> idxKeyCls;
-
-        int colId = c.column.getColumnId();
-
-        if (cacheDesc.isKeyColumn(colId) || cacheDesc.isKeyAliasColumn(colId))
-            idxKeyCls = type.keyClass();
-        else if (cacheDesc.isValueColumn(colId) || cacheDesc.isValueAliasColumn(colId))
-            idxKeyCls = type.valueClass();
-        else
-            idxKeyCls = type.property(c.columnName).type();
-
         return new IndexKeyDefinition(
-            c.columnName, c.column.getType(), idxKeyCls, getSortOrder(c.sortType));
+            c.columnName, c.column.getType(), getSortOrder(c.sortType));
     }
 
     /** Maps H2 column order to Ignite index order. */

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImp
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -90,7 +91,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             oldIdx.inlineSize(),
-            def.useStrOptimizedCompare(),
+            def.keyTypeSettings(),
             null,
             rowHndFactory,
             null
@@ -153,14 +154,14 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         int off = io.offset(idx);
 
-        Object[] keys = new Object[rowHnd.getIndexKeyDefinitions().size()];
+        IndexKey[] keys = new IndexKey[rowHnd.getIndexKeyDefinitions().size()];
 
         int fieldOff = 0;
 
         for (int i = 0; i < rowHnd.getInlineIndexKeyTypes().size(); i++) {
             InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
 
-            Object key = keyType.get(pageAddr, off + fieldOff, io.getInlineSize() - fieldOff);
+            IndexKey key = keyType.get(pageAddr, off + fieldOff, io.getInlineSize() - fieldOff);
 
             fieldOff += keyType.inlineSize(key);
 

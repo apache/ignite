@@ -22,24 +22,27 @@ package org.apache.ignite.internal.cache.query.index.sorted;
  */
 public class IndexKeyTypeSettings {
     /** Whether inlining POJO keys as hash is supported. */
-    private final boolean inlineObjHash;
+    private boolean inlineObjHash = true;
 
     /** Whether inlining of POJO keys is supported. */
-    private final boolean inlineObjSupported;
+    private boolean inlineObjSupported = true;
 
-    /** Whether optimized algoruthm of String comparison is used. */
-    private final boolean useStrOptimizedCompare;
+    /** Whether optimized algorithm of String comparison is used. */
+    private boolean strOptimizedCompare = true;
 
-    /** */
-    public IndexKeyTypeSettings(boolean inlineObjHash, boolean inlineObjSupported, boolean useStrOptimizedCompare) {
-        this.inlineObjHash = inlineObjHash;
-        this.inlineObjSupported = inlineObjSupported;
-        this.useStrOptimizedCompare = useStrOptimizedCompare;
-    }
+    /** Whether use unsigned bytes for storing byte arrays. */
+    private boolean binaryUnsigned = true;
 
     /** */
     public boolean inlineObjHash() {
         return inlineObjHash;
+    }
+
+    /** */
+    public IndexKeyTypeSettings inlineObjHash(boolean inlineObjHash) {
+        this.inlineObjHash = inlineObjHash;
+
+        return this;
     }
 
     /** */
@@ -48,7 +51,31 @@ public class IndexKeyTypeSettings {
     }
 
     /** */
-    public boolean useStringOptimizedCompare() {
-        return useStrOptimizedCompare;
+    public IndexKeyTypeSettings inlineObjSupported(boolean inlineObjSupported) {
+        this.inlineObjSupported = inlineObjSupported;
+
+        return this;
+    }
+
+    /** */
+    public boolean stringOptimizedCompare() {
+        return strOptimizedCompare;
+    }
+
+    /** */
+    public IndexKeyTypeSettings stringOptimizedCompare(boolean strOptimizedCompare) {
+        this.strOptimizedCompare = strOptimizedCompare;
+
+        return this;
+    }
+
+    /** */
+    public boolean binaryUnsigned() { return binaryUnsigned; }
+
+    /** */
+    public IndexKeyTypeSettings binaryUnsigned(boolean binaryUnsigned) {
+        this.binaryUnsigned = binaryUnsigned;
+
+        return this;
     }
 }

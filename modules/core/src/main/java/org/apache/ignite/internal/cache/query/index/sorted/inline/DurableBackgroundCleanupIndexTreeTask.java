@@ -25,9 +25,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -114,7 +116,8 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     InlineIndexTree tree = new InlineIndexTree(
                         null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
                         cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, true, null, new NoopRowHandlerFactory(), null);
+                        rootPage, false, 0, new IndexKeyTypeSettings(), null,
+                        new NoopRowHandlerFactory(), null);
 
                     trees0.add(tree);
                 }
@@ -169,7 +172,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, Object... args) {
             return new InlineIndexRowHandler() {
                 /** {@inheritDoc} */
-                @Override public Object getIndexKey(int idx, CacheDataRow row) {
+                @Override public IndexKey getIndexKey(int idx, CacheDataRow row) {
                     return null;
                 }
 

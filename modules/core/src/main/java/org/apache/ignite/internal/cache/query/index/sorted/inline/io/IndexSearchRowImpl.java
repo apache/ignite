@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -26,25 +27,25 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class IndexSearchRowImpl implements IndexRow {
     /** */
-    private final Object[] keys;
+    private final IndexKey[] keys;
 
     /** */
     private final InlineIndexRowHandler rowHnd;
 
     /** Constructor. */
-    public IndexSearchRowImpl(Object[] idxKeys, InlineIndexRowHandler rowHnd) {
+    public IndexSearchRowImpl(IndexKey[] idxKeys, InlineIndexRowHandler rowHnd) {
         keys = idxKeys;
         this.rowHnd = rowHnd;
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey(int idx) {
+    @Override public IndexKey getKey(int idx) {
         return keys[idx];
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] getKeys() {
-        return keys.clone();
+    @Override public IndexKey[] getKeys() {
+        return keys;
     }
 
     /** {@inheritDoc} */

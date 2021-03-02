@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
@@ -32,7 +33,7 @@ public interface InlineIndexRowHandler {
      * @param row Original cache data row.
      * @return Index key.
      */
-    public Object getIndexKey(int idx, CacheDataRow row);
+    public IndexKey getIndexKey(int idx, CacheDataRow row);
 
     /**
      * @return List of key types for inlined index keys.

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.cache.query.index.sorted.Order;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 
 /**
  * Defines a signle index key.
@@ -29,21 +31,12 @@ public class IndexKeyDefinition {
     /** Index key type. {@link IndexKeyTypes}. */
     private final int idxType;
 
-    /**
-     * Index key class. Can be:
-     * 1. One of SQL type class {@code QueryUtils.isSqlType(Class)}.
-     * 2. Object.class for key and value columns for a non-SQL type class.
-     * 3. Any user defined class.
-     */
-    private final Class<?> idxCls;
-
     /** Order. */
     private final Order order;
 
     /** */
-    public IndexKeyDefinition(String name, int idxType, Class<?> idxCls, Order order) {
+    public IndexKeyDefinition(String name, int idxType, Order order) {
         this.idxType = idxType;
-        this.idxCls = idxCls;
         this.order = order;
         this.name = name;
     }
@@ -59,30 +52,17 @@ public class IndexKeyDefinition {
     }
 
     /** */
-    public Class<?> getIdxClass() {
-        return idxCls;
-    }
-
-    /** */
     public String getName() {
         return name;
     }
 
     /**
-     * Validates that specified key's class matches to index key definition.
-     * @return {@code true} if key class matches {@link #idxCls}, otherwise {@code false}.
+     * @return {@code true} if specified key's type matches to the current type, otherwise {@code false}.
      */
-    public boolean validate(Object key) {
-        assert key != null;
-
-        Class<?> keyCls = key.getClass();
-
-        if (keyCls == NullKey.class || keyCls == idxCls)
+    public boolean validate(IndexKey key) {
+        if (key == NullIndexKey.INSTANCE)
             return true;
 
-        if (idxType == IndexKeyTypes.JAVA_OBJECT && keyCls == JavaObjectKey.class)
-            return true;
-
-        return PrimitivesDict.areAlternatives(keyCls, idxCls);
+        return idxType == key.getType();
     }
 }

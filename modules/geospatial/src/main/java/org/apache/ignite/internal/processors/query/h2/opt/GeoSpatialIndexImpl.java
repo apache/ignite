@@ -131,7 +131,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
      * @return Envelope.
      */
     private SpatialKey getEnvelope(CacheDataRow row, long rowId) {
-        Geometry g = (Geometry) def.rowHandler().getIndexKey(0, row);
+        Geometry g = (Geometry) def.rowHandler().getIndexKey(0, row).getKey();
 
         return getEnvelope(g, rowId);
     }

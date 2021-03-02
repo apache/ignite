@@ -24,18 +24,25 @@ import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 import org.h2.table.IndexColumn;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * This class is entrypoint for creating geo spatial index.
  */
 public class GeoSpatialUtils {
     /** Dummy key types. */
-    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings(true, true, true);
+    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
+
+    static {
+        IndexKeyRegistry.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry) k));
+    }
 
     /** */
     public static GridH2SpatialIndex createIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {

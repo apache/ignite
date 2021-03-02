@@ -37,7 +37,7 @@ public class ClientIndexFactory implements IndexFactory {
     public static final ClientIndexFactory INSTANCE = new ClientIndexFactory();
 
     /** Dummy key types. */
-    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings(true, true, true);
+    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
 
     /** Forbidden constructor. */
     private ClientIndexFactory() {}

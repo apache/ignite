@@ -20,11 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.index;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
-import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
-import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -62,16 +61,10 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getIndexKey(int idx, CacheDataRow row) {
+    @Override public IndexKey getIndexKey(int idx, CacheDataRow row) {
         Object o = getKey(idx, row);
 
-        if (o == null)
-            return NullKey.INSTANCE;
-
-        if (keyDefs.get(idx).getIdxType() == IndexKeyTypes.JAVA_OBJECT)
-            return new JavaObjectKey(o);
-
-        return o;
+        return IndexKeyRegistry.wrap(o, keyDefs.get(idx).getIdxType(), cacheDesc.context().cacheObjectContext());
     }
 
     /** */

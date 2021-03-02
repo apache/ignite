@@ -53,8 +53,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType.CANT_BE_COMPARE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 
 /**
  * BPlusTree where nodes stores inlined index keys.
@@ -98,7 +98,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         long metaPageId,
         boolean initNew,
         int configuredInlineSize,
-        boolean strOptimizedCompare,
+        IndexKeyTypeSettings keyTypeSettings,
         IoStatisticsHolder stats,
         InlineIndexRowHandlerFactory rowHndFactory,
         InlineRecommender recommender) throws IgniteCheckedException {
@@ -132,8 +132,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             boolean inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
 
-            keyTypeSettings = new IndexKeyTypeSettings(
-                metaInfo.inlineObjHash, metaInfo.inlineObjSupported, strOptimizedCompare);
+            keyTypeSettings
+                .inlineObjHash(metaInfo.inlineObjHash)
+                .inlineObjSupported(metaInfo.inlineObjSupported);
 
             rowHnd = rowHndFactory
                 .create(def, metaInfo.useUnwrappedPk(), keyTypeSettings);
@@ -142,13 +143,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
-            keyTypeSettings = new IndexKeyTypeSettings(true, true, strOptimizedCompare);
-
             rowHnd = rowHndFactory.create(def, true, keyTypeSettings);
 
             inlineSize = computeInlineSize(
                 rowHnd.getInlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
         }
+
+        this.keyTypeSettings = keyTypeSettings;
 
         if (inlineSize == 0)
             setIos(InnerIO.VERSIONS, LeafIO.VERSIONS);
@@ -202,15 +203,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 InlineIndexKeyType keyType = keyTypes.get(keyIdx);
 
-                int cmp = COMPARE_UNSUPPORTED;
+                IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
 
-                // By default do not compare different classes.
-                if (!keyDefs.get(keyIdx).validate(row.getKey(keyIdx)))
-                    break;
+                int cmp = COMPARE_UNSUPPORTED;
 
                 // Value can be set up by user in query with different data type.
                 // By default do not compare different types.
-                if (InlineIndexKeyTypeRegistry.validate(keyType.type(), row.getKey(keyIdx).getClass())) {
+                if (keyDef.validate(row.getKey(keyIdx))) {
                     if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported()) {
                         cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.getKey(keyIdx));
 
@@ -238,7 +237,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                     break;
 
                 if (cmp != 0)
-                    return applySortOrder(cmp, keyDefs.get(keyIdx).getOrder().getSortOrder());
+                    return applySortOrder(cmp, keyDef.getOrder().getSortOrder());
 
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);

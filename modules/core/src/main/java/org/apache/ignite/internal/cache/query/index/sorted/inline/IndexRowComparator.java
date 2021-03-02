@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 
 /**
  * Comparator for index rows.
@@ -30,10 +31,10 @@ public interface IndexRowComparator {
      * @param pageAddr address of an index row.
      * @param off offset of an index key.
      * @param maxSize max size to read.
-     * @param v value to compare with.
+     * @param key key to compare with.
      * @param curType type of an index key.
      */
-    public int compareKey(long pageAddr, int off, int maxSize, Object v, int curType) throws IgniteCheckedException;
+    public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) throws IgniteCheckedException;
 
     /**
      * Compare index keys.

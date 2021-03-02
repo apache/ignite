@@ -26,18 +26,18 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.cache.query.index.sorted.IndexSearchRow;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
-import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
-import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -88,8 +87,6 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
-import org.h2.value.ValueJavaObject;
-import org.h2.value.ValueNull;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Collections.singletonList;
@@ -204,7 +201,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         assert upper == null || upper instanceof H2Row : upper;
 
         try {
-            T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
+            T2<IndexSearchRow, IndexSearchRow> key = prepareIndexKeys(lower, upper);
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
 
@@ -227,42 +224,50 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** */
-    private T2<IndexKey, IndexKey> prepareIndexKeys(SearchRow lower, SearchRow upper) {
+    private T2<IndexSearchRow, IndexSearchRow> prepareIndexKeys(SearchRow lower, SearchRow upper) {
         InlineIndexRowHandler rowHnd = queryIndex.getSegment(0).getRowHandler();
 
         return new T2<>(prepareIndexKey(lower, rowHnd), prepareIndexKey(upper, rowHnd));
     }
 
     /** */
-    private IndexKey prepareIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
+    private IndexSearchRow prepareIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
         if (row == null)
             return null;
 
         else if (row instanceof H2CacheRow)
-            return new IndexRowImpl(rowHnd, (CacheDataRow) row);
+            return new IndexRowImpl(rowHnd, (CacheDataRow) row, getCachedKeys((H2CacheRow) row));
         else
             return preparePlainIndexKey(row, rowHnd);
     }
 
+    /** Extract cached values of a row to skip the double work of getting index keys from Ignite cache. */
+    private IndexKey[] getCachedKeys(H2CacheRow row) {
+        IndexKey[] cached = new IndexKey[columnIds.length];
+
+        for (int i = 0; i < columnIds.length; ++i) {
+            Object key = row.getCached(columnIds[i]);
+            if (key == null)
+                break;
+
+            cached[i] = IndexKeyRegistry.wrap(key, columns[i].getType(), cctx.cacheObjectContext());
+        }
+
+        return cached;
+    }
+
     /** */
-    private IndexKey preparePlainIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
+    private IndexSearchRow preparePlainIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
         int idxColsLen = indexColumns.length;
 
-        Object[] keys = row == null ? null : new Object[idxColsLen];
+        IndexKey[] keys = row == null ? null : new IndexKey[idxColsLen];
 
         for (int i = 0; i < idxColsLen; ++i) {
             int colId = indexColumns[i].column.getColumnId();
 
             Value v = row.getValue(colId);
 
-            if (v == null)
-                keys[i] = null;
-            else if (v == ValueNull.INSTANCE)
-                keys[i] = NullKey.INSTANCE;
-            else if (v instanceof GridH2ValueCacheObject || v instanceof ValueJavaObject)
-                keys[i] = new JavaObjectKey(v.getObject());
-            else
-                keys[i] = v.getObject();
+            keys[i] = v == null ? null : IndexKeyRegistry.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext());
         }
 
         return new IndexSearchRowImpl(keys, rowHnd);
@@ -565,7 +570,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         SearchRow lower = toSearchRow(bounds.first());
         SearchRow upper = toSearchRow(bounds.last());
 
-        T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
+        T2<IndexSearchRow, IndexSearchRow> key = prepareIndexKeys(lower, upper);
 
         try {
             GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), segment, filter);

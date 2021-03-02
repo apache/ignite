@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.Index;
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.cache.query.index.sorted.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
@@ -66,12 +66,12 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexKey lower, IndexKey upper, int segment,
+    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment,
         IndexingQueryFilter filter) throws IgniteCheckedException {
         throw unsupported();
     }

@@ -88,7 +88,7 @@ public class InlineIndexFactory implements IndexFactory {
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             def.getInlineSize(),
-            def.useStrOptimizedCompare(),
+            def.keyTypeSettings(),
             stats,
             def.getRowHandlerFactory(),
             recommender);

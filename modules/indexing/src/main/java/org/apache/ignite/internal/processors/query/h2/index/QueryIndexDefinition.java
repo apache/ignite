@@ -69,6 +69,9 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     /** Index row comparator. */
     private H2RowComparator rowComparator;
 
+    /** Index key type settings. */
+    private IndexKeyTypeSettings keyTypeSettings;
+
     /** Row handler factory. */
     private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();
 
@@ -88,6 +91,10 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
 
         this.h2WrappedCols = h2WrappedCols;
         this.h2UnwrappedCols = h2UnwrappedCols;
+
+        keyTypeSettings = new IndexKeyTypeSettings()
+            .stringOptimizedCompare(CompareMode.OFF.equals(table.getCompareMode().getName()))
+            .binaryUnsigned(table.getCompareMode().isBinaryUnsigned());
     }
 
     /** {@inheritDoc} */
@@ -150,8 +157,8 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean useStrOptimizedCompare() {
-        return CompareMode.OFF.equals(table.getCompareMode().getName());
+    @Override public IndexKeyTypeSettings keyTypeSettings() {
+        return keyTypeSettings;
     }
 
     /** {@inheritDoc} */
