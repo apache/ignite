@@ -74,7 +74,17 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
     /** {@inheritDoc} */
     @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
-        stripedThreadPoolExecutor.execute(qryTask, hash(qryId, fragmentId));
+        stripedThreadPoolExecutor.execute(
+            () -> {
+                try {
+                    qryTask.run();
+                }
+                catch (Throwable e) {
+                    uncaughtException(Thread.currentThread(), e);
+                }
+            },
+            hash(qryId, fragmentId)
+        );
     }
 
     /** {@inheritDoc} */

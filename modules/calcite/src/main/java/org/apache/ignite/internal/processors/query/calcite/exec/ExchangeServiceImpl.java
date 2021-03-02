@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.UUID;
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -197,8 +198,10 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             try {
                 outbox.onAcknowledge(nodeId, msg.batchId());
             }
-            catch (Throwable t) {
-                outbox.onError(t);
+            catch (Throwable e) {
+                outbox.onError(e);
+
+                throw new IgniteException("Unexpected exception", e);
             }
         }
         else if (log.isDebugEnabled()) {

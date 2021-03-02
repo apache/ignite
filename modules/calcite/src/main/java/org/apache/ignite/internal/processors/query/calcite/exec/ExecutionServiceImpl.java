@@ -865,6 +865,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             catch (IgniteCheckedException e) {
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
             }
+
+            throw ex;
         }
     }
 

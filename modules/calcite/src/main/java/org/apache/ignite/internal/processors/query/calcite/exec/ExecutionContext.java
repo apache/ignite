@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
@@ -233,8 +234,10 @@ public class ExecutionContext<Row> implements DataContext {
             try {
                 task.run();
             }
-            catch (Throwable t) {
-                onError.accept(t);
+            catch (Throwable e) {
+                onError.accept(e);
+
+                throw new IgniteException("Unexpected exception", e);
             }
         });
     }
