@@ -20,5 +20,25 @@
 >>> AtomicLong value has been incremented: 18
 >>> AtomicLong value has been incremented: 19
 >>> AtomicLong value has been incremented: 20
+>>> AtomicLong value has been incremented: 21
+>>> AtomicLong value has been incremented: 22
+>>> AtomicLong value has been incremented: 23
+>>> AtomicLong value has been incremented: 24
+>>> AtomicLong value has been incremented: 25
+>>> AtomicLong value has been incremented: 26
+>>> AtomicLong value has been incremented: 27
+>>> AtomicLong value has been incremented: 28
+>>> AtomicLong value has been incremented: 29
+>>> AtomicLong value has been incremented: 30
+>>> AtomicLong value has been incremented: 31
+>>> AtomicLong value has been incremented: 32
+>>> AtomicLong value has been incremented: 33
+>>> AtomicLong value has been incremented: 34
+>>> AtomicLong value has been incremented: 35
+>>> AtomicLong value has been incremented: 36
+>>> AtomicLong value has been incremented: 37
+>>> AtomicLong value has been incremented: 38
+>>> AtomicLong value has been incremented: 39
+>>> AtomicLong value has been incremented: 40
 
->>> Atomic long current value: 20
+>>> Atomic long current value: 40
