@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests;
+package org.apache.ignite.internal.ducktest.tests.rebalance_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
  *
  */
-public class DataModelGenerationApplication extends IgniteAwareApplication {
+public class DataGenerationApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         int cacheCnt = jsonNode.get("cacheCount").asInt();
@@ -48,7 +49,9 @@ public class DataModelGenerationApplication extends IgniteAwareApplication {
      * @param entrySize Entry size.
      */
     private void generateCache(int cacheNo, int entryCnt, int entrySize) {
-        IgniteCache<Integer, DataModel> cache = ignite.createCache("test-cache-" + cacheNo);
+        IgniteCache<Integer, DataModel> cache = ignite.createCache(
+            new CacheConfiguration<Integer, DataModel>("test-cache-" + cacheNo)
+                .setBackups(1));
 
         try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cache.getName())) {
             for (int i = 0; i < entryCnt; i++) {
