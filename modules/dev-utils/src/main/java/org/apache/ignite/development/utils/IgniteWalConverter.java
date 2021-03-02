@@ -107,7 +107,7 @@ public class IgniteWalConverter {
 
         boolean printAlways = F.isEmpty(params.getRecordTypes());
 
-        try (FilteredWalIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
+        try (WALIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
             String currentWalPath = null;
 
             while (stIt.hasNextX()) {
@@ -173,24 +173,24 @@ public class IgniteWalConverter {
      * @param it WALIterator.
      * @return Current wal file path.
      */
-    private static String getCurrentWalFilePath(FilteredWalIterator it) {
-        String result = null;
+    private static String getCurrentWalFilePath(WALIterator it) {
+        String res = null;
 
         try {
-            WALIterator walIter = U.field(it, "delegateWalIter");
+            WALIterator walIter = it instanceof FilteredWalIterator ? U.field(it, "delegateWalIter") : it;
 
             Integer curIdx = U.field(walIter, "curIdx");
 
             List<FileDescriptor> walFileDescriptors = U.field(walIter, "walFileDescriptors");
 
             if (curIdx != null && walFileDescriptors != null && curIdx < walFileDescriptors.size())
-                result = walFileDescriptors.get(curIdx).getAbsolutePath();
+                res = walFileDescriptors.get(curIdx).getAbsolutePath();
         }
         catch (Exception e) {
             e.printStackTrace();
         }
 
-        return result;
+        return res;
     }
 
     /**
@@ -218,13 +218,13 @@ public class IgniteWalConverter {
     }
 
     /**
-     * Creating a filterable WAL iterator.
+     * Getting WAL iterator.
      *
      * @param walIter WAL iterator.
      * @param pageIds Pages for searching in format grpId:pageId.
-     * @return Filtered WAL iterator.
+     * @return WAL iterator.
      */
-    private static FilteredWalIterator walIterator(
+    private static WALIterator walIterator(
         WALIterator walIter,
         Collection<T2<Integer, Long>> pageIds
     ) throws IgniteCheckedException {
@@ -242,6 +242,6 @@ public class IgniteWalConverter {
             filter = checkpoint().or(pageOwner(grpAndPageIds0)).or(partitionMetaStateUpdate(grpAndParts));
         }
 
-        return new FilteredWalIterator(walIter, filter == null ? o -> true : filter);
+        return filter != null ? new FilteredWalIterator(walIter, filter) : walIter;
     }
 }
