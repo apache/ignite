@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.rebalance_test;
+package org.apache.ignite.internal.ducktest.tests.rebalance;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;

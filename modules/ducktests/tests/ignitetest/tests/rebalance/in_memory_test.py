@@ -14,23 +14,22 @@
 # limitations under the License.
 
 """
-Module contains rebalance tests.
+Module contains in-memory rebalance tests.
 """
 from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.tests.rebalance import RebalanceTest
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
 
 
 # pylint: disable=W0223
-class RebalanceTest(IgniteTest):
+class RebalanceInMemoryTest(RebalanceTest):
     """
-    Tests rebalance scenarios.
+    Tests rebalance scenarios in in-memory mode.
     """
     NUM_NODES = 4
     PRELOAD_TIMEOUT = 60
@@ -102,46 +101,10 @@ class RebalanceTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[len(ignites.nodes) - 1])
 
-        self.await_rebalance_start(ignites)
+        node = self.await_rebalance_start(ignites)
 
         start = self.monotonic()
 
-        self.await_rebalance_complete(ignites)
+        self.await_rebalance_complete(ignites, node)
 
         return {"Rebalanced in (sec)": self.monotonic() - start}
-
-    def preload_data(self, config, cache_count, entry_count, entry_size):
-        """
-        Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
-        """
-        IgniteApplicationService(
-            self.test_context,
-            config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance_test.DataGenerationApplication",
-            params={"cacheCount": cache_count, "entryCount": entry_count, "entrySize": entry_size},
-            startup_timeout_sec=self.PRELOAD_TIMEOUT
-        ).run()
-
-    @staticmethod
-    def await_rebalance_start(ignite):
-        """
-        Awaits rebalance starting on some test-cache
-        """
-        ignite.await_event_on_node(
-            "Starting rebalance routine \\[test-cache-",
-            ignite.nodes[0],
-            timeout_sec=RebalanceTest.REBALANCE_TIMEOUT,
-            from_the_beginning=True,
-            backoff_sec=1)
-
-    @staticmethod
-    def await_rebalance_complete(ignite):
-        """
-        Awaits rebalance complete on some test-cache
-        """
-        ignite.await_event_on_node(
-            "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\[grp=test-cache-",
-            ignite.nodes[0],
-            timeout_sec=RebalanceTest.REBALANCE_TIMEOUT,
-            from_the_beginning=True,
-            backoff_sec=1)
