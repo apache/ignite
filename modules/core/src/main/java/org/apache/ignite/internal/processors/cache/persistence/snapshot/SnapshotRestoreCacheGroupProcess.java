@@ -17,14 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -48,6 +54,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -264,7 +271,7 @@ public class SnapshotRestoreCacheGroupProcess {
         if (fut.isDone())
             fut = new GridFutureAdapter<>();
 
-        opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.nodes(), req.configs(), ctx);
+        opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.nodes(), req.configs());
 
         fut.listen(f -> opCtx = null);
 
@@ -475,5 +482,160 @@ public class SnapshotRestoreCacheGroupProcess {
         }
 
         return true;
+    }
+
+    /**
+     * Cache group restore from snapshot operation context.
+     */
+    private class SnapshotRestoreContext {
+        /** Request ID. */
+        private final UUID reqId;
+
+        /** Snapshot name. */
+        private final String snpName;
+
+        /** Baseline node IDs that must be alive to complete the operation. */
+        private final Set<UUID> reqNodes;
+
+        /** List of processed cache IDs. */
+        private final Set<Integer> cacheIds = new HashSet<>();
+
+        /** Cache configurations. */
+        private final List<StoredCacheData> ccfgs;
+
+        /** Restored cache groups. */
+        private final Map<String, List<File>> grps = new ConcurrentHashMap<>();
+
+        /** The exception that led to the interruption of the process. */
+        private final AtomicReference<Throwable> errRef = new AtomicReference<>();
+
+        /**
+         * @param reqId Request ID.
+         * @param snpName Snapshot name.
+         * @param reqNodes Baseline node IDs that must be alive to complete the operation.
+         * @param cfgs Stored cache configurations.
+         */
+        protected SnapshotRestoreContext(UUID reqId, String snpName, Set<UUID> reqNodes, List<StoredCacheData> cfgs) {
+            ccfgs = new ArrayList<>(cfgs);
+
+            for (StoredCacheData cacheData : cfgs) {
+                String cacheName = cacheData.config().getName();
+
+                cacheIds.add(CU.cacheId(cacheName));
+
+                boolean shared = cacheData.config().getGroupName() != null;
+
+                grps.computeIfAbsent(shared ? cacheData.config().getGroupName() : cacheName, v -> new ArrayList<>());
+
+                if (shared)
+                    cacheIds.add(CU.cacheId(cacheData.config().getGroupName()));
+            }
+
+            this.reqId = reqId;
+            this.reqNodes = new HashSet<>(reqNodes);
+            this.snpName = snpName;
+        }
+
+        /** @return Request ID. */
+        protected UUID requestId() {
+            return reqId;
+        }
+
+        /** @return Baseline node IDs that must be alive to complete the operation. */
+        protected Set<UUID> nodes() {
+            return Collections.unmodifiableSet(reqNodes);
+        }
+
+        /** @return Snapshot name. */
+        protected String snapshotName() {
+            return snpName;
+        }
+
+        /**
+         * @return List of cache group names to restore from the snapshot.
+         */
+        protected Set<String> groups() {
+            return grps.keySet();
+        }
+
+        /**
+         * @param name Cache name.
+         * @return {@code True} if the cache with the specified name is currently being restored.
+         */
+        protected boolean containsCache(String name) {
+            return cacheIds.contains(CU.cacheId(name));
+        }
+
+        /** @return Cache configurations. */
+        protected Collection<StoredCacheData> configs() {
+            return ccfgs;
+        }
+
+        /**
+         * @param err Error.
+         * @return {@code True} if operation has been interrupted by this call.
+         */
+        protected boolean interrupt(Exception err) {
+            return errRef.compareAndSet(null, err);
+        }
+
+        /**
+         * @return Interrupted flag.
+         */
+        protected boolean interrupted() {
+            return error() != null;
+        }
+
+        /**
+         * @return Error if operation was interrupted, otherwise {@code null}.
+         */
+        protected @Nullable Throwable error() {
+            return errRef.get();
+        }
+
+        /**
+         * Restore specified cache groups from the local snapshot directory.
+         *
+         * @param updateMetadata Update binary metadata flag.
+         * @throws IgniteCheckedException If failed.
+         */
+        protected void restore(boolean updateMetadata) throws IgniteCheckedException {
+            if (interrupted())
+                return;
+
+            IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+
+            if (updateMetadata) {
+                File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(),
+                    ctx.pdsFolderResolver().resolveFolders().folderName());
+
+                if (!binDir.exists()) {
+                    throw new IgniteCheckedException("Unable to update cluster metadata from snapshot, " +
+                        "directory doesn't exists [snapshot=" + snpName + ", dir=" + binDir + ']');
+                }
+
+                ctx.cacheObjects().updateMetadata(binDir, this::interrupted);
+            }
+
+            for (String grpName : groups())
+                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, this::interrupted, grps.get(grpName));
+        }
+
+        /**
+         * Rollback changes made by process in specified cache group.
+         */
+        protected void rollback() {
+            if (groups().isEmpty())
+                return;
+
+            List<String> grpNames = new ArrayList<>(groups());
+
+            for (String grpName : grpNames) {
+                List<File> files = grps.remove(grpName);
+
+                if (files != null)
+                    ctx.cache().context().snapshotMgr().rollbackRestoreOperation(files);
+            }
+        }
     }
 }
