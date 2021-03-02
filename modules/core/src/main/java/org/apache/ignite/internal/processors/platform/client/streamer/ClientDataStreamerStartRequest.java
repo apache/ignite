@@ -57,9 +57,9 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
     private static final byte FLUSH_FLAG_MASK = 0x08;
 
     /**
-     * Streamer end flag mask.
+     * Streamer close flag mask.
      */
-    private static final byte END_FLAG_MASK = 0x10;
+    private static final byte CLOSE_FLAG_MASK = 0x10;
 
     /**
      *
@@ -120,7 +120,7 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
 
         dataStreamer.addData(entries);
 
-        if ((flags & END_FLAG_MASK) != 0) {
+        if ((flags & CLOSE_FLAG_MASK) != 0) {
             dataStreamer.close();
 
             return new ClientLongResponse(requestId(), 0);
