@@ -30,7 +30,7 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// </summary>
         public static void Main()
         {
-            BenchmarkRunner.Run<BinarySystemTypeReadBenchmark>();
+            BenchmarkRunner.Run<StreamerBatchSizeBenchmark>();
         }
     }
 }

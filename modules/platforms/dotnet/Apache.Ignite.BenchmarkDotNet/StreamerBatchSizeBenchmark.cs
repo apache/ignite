@@ -6,6 +6,8 @@ namespace Apache.Ignite.BenchmarkDotNet
 
     public class StreamerBatchSizeBenchmark
     {
+        private const int BaseCount = 1024;
+        private const int Count = BaseCount*100;
         public IIgnite Ignite { get; set; }
 
         public ICache<int, int> Cache { get; set; }
@@ -34,7 +36,7 @@ namespace Apache.Ignite.BenchmarkDotNet
         {
             using (var streamer = Ignite.GetDataStreamer<int, int>(Cache.Name))
             {
-                for (int i = 0; i < 50000; i++)
+                for (int i = 0; i < Count; i++)
                 {
                     streamer.AddData(i, i);
                 }
@@ -44,13 +46,17 @@ namespace Apache.Ignite.BenchmarkDotNet
         [Benchmark]
         public void OneBatchManyStreamers()
         {
-            for (int i = 0; i < 50; i++)
+            const int batchSize = BaseCount * 10;
+
+            for (int i = 0; i < (Count / batchSize); i++)
             {
                 using (var streamer = Ignite.GetDataStreamer<int, int>(Cache.Name))
                 {
-                    for (int j = 0; j < 1000; j++)
+                    var offs = i * batchSize;
+
+                    for (int j = 0; j < batchSize; j++)
                     {
-                        streamer.AddData(-i * j, -i * j);
+                        streamer.AddData(offs + j, offs + j);
                     }
                 }
             }
