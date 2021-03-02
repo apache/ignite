@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRequest;
 import org.apache.ignite.stream.StreamReceiver;
 
 import java.util.Collection;
@@ -105,7 +106,7 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
      * {@inheritDoc}
      */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        String cacheName = String.valueOf(cacheId);  // TODO: Get cache name by id.
+        String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
         IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.kernalContext().grid().dataStreamer(cacheName);
 
         dataStreamer.perNodeBufferSize(perNodeBufferSize);
