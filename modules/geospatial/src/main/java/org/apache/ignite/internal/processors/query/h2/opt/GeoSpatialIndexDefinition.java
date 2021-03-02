@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.cache.query.index.IndexDefinition;
-import org.apache.ignite.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 
 /**

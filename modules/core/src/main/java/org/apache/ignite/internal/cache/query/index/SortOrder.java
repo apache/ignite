@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index;
-
-import java.util.concurrent.atomic.AtomicBoolean;
+package org.apache.ignite.internal.cache.query.index;
 
 /**
- * Abstract class for all Index implementations.
+ * Enum of possible sort orders.
  */
-public abstract class AbstractIndex implements Index {
-    /** Whether index is rebuilding now. */
-    private final AtomicBoolean rebuildInProgress = new AtomicBoolean(false);
+public enum SortOrder {
+    /** */
+    ASC,
 
-    /**
-     * @param val Mark or unmark index to rebuild.
-     */
-    public void markIndexRebuild(boolean val) {
-        rebuildInProgress.compareAndSet(!val, val);
-    }
-
-    /**
-     * @return Whether index is rebuilding now.
-     */
-    public boolean rebuildInProgress() {
-        return rebuildInProgress.get();
-    }
+    /** */
+    DESC
 }

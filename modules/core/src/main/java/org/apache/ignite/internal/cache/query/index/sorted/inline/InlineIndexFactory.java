@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.cache.query.index.Index;
-import org.apache.ignite.cache.query.index.IndexDefinition;
-import org.apache.ignite.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.cache.query.index.IndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;

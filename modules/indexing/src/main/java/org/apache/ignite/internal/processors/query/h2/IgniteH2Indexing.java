@@ -48,7 +48,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -56,6 +55,7 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -448,7 +448,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 inlineSize
             );
 
-            org.apache.ignite.cache.query.index.Index index;
+            org.apache.ignite.internal.cache.query.index.Index index;
 
             if (cacheVisitor != null)
                 index = ctx.indexing().createIndexDynamically(
@@ -468,7 +468,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 inlineSize,
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
-            org.apache.ignite.cache.query.index.Index index =
+            org.apache.ignite.internal.cache.query.index.Index index =
                 ctx.indexing().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);
 
             InlineIndex idx = index.unwrap(InlineIndex.class);

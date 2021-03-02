@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.index.Index;
-import org.apache.ignite.cache.query.index.IndexDefinition;
-import org.apache.ignite.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;

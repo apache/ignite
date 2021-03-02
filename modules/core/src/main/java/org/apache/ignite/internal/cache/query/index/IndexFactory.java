@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index.sorted;
+package org.apache.ignite.internal.cache.query.index;
 
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a complex index key.
+ * Base interface for Ignite index factories.
  */
-public interface IndexSearchRow {
+public interface IndexFactory {
     /**
-     * @param idx Index of a key.
-     * @return Underlying key by specified index.
+     * Creates index by specifed defition for specified cache.
+     *
+     * @param cctx Cache context.
+     * @param definition Index definition.
      */
-    public IndexKey getKey(int idx);
-
-    /**
-     * @return Underlying keys.
-     */
-    public IndexKey[] getKeys();
+    public Index createIndex(@Nullable GridCacheContext<?, ?> cctx, IndexDefinition definition);
 }

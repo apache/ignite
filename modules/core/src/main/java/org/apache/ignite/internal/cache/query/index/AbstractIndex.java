@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index;
+package org.apache.ignite.internal.cache.query.index;
 
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Base interface for Ignite index factories.
+ * Abstract class for all Index implementations.
  */
-public interface IndexFactory {
+public abstract class AbstractIndex implements Index {
+    /** Whether index is rebuilding now. */
+    private final AtomicBoolean rebuildInProgress = new AtomicBoolean(false);
+
     /**
-     * Creates index by specifed defition for specified cache.
-     *
-     * @param cctx Cache context.
-     * @param definition Index definition.
+     * @param val Mark or unmark index to rebuild.
      */
-    public Index createIndex(@Nullable GridCacheContext<?, ?> cctx, IndexDefinition definition);
+    public void markIndexRebuild(boolean val) {
+        rebuildInProgress.compareAndSet(!val, val);
+    }
+
+    /**
+     * @return Whether index is rebuilding now.
+     */
+    public boolean rebuildInProgress() {
+        return rebuildInProgress.get();
+    }
 }

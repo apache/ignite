@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index.sorted;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;

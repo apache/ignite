@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
@@ -24,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
  */
 public class InnerIO extends AbstractInnerIO {
     /** Supported versions. */
-    public static final IOVersions<InnerIO> VERSIONS = new IOVersions<>(
+    public static final IOVersions<? extends BPlusInnerIO<IndexRow>> VERSIONS = new IOVersions<>(
         new InnerIO(1)
     );
 

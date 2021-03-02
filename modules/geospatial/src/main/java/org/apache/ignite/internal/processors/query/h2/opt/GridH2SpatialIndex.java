@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashSet;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.lang.GridCursor;

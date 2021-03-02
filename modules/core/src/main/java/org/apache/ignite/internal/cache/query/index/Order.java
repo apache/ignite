@@ -15,15 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index.sorted;
+package org.apache.ignite.internal.cache.query.index;
 
 /**
- * Enum to store possible nulls ordering.
+ * Represents ordering of rows within sorted index.
  */
-public enum NullsOrder {
+public class Order {
     /** */
-    NULLS_LAST,
+    private final NullsOrder nullsOrder;
 
     /** */
-    NULLS_FIRST
+    private final SortOrder sortOrder;
+
+    /** */
+    public Order(SortOrder sortOrder, NullsOrder nullsOrder) {
+        this.sortOrder = sortOrder;
+        this.nullsOrder = nullsOrder;
+    }
+
+    /** */
+    public SortOrder getSortOrder() {
+        return sortOrder;
+    }
+
+    /** */
+    public NullsOrder getNullsOrder() {
+        return nullsOrder;
+    }
 }

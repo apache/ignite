@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import org.apache.ignite.cache.query.index.sorted.Order;
+import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 

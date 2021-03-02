@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;

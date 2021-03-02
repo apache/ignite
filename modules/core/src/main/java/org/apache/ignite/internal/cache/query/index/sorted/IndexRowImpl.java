@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
-import org.apache.ignite.cache.query.index.sorted.SortedIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;

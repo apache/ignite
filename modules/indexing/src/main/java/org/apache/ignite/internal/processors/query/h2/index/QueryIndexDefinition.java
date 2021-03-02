@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import java.util.List;
-import org.apache.ignite.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.MetaPageInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -155,9 +155,9 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public void initByMeta(MetaPageInfo metaPageInfo) {
+    @Override public void initByMeta(boolean created, MetaPageInfo metaPageInfo) {
         if (keyDefs == null) {
-            if (metaPageInfo.useUnwrappedPk()) {
+            if (created || metaPageInfo.useUnwrappedPk()) {
                 h2WrappedCols = null;
                 keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).get();
             }

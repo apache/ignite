@@ -15,14 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index;
+package org.apache.ignite.internal.cache.query.index.sorted;
+
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 
 /**
- * Basic interface for index description required to create or destroy index.
+ * Represents a complex index key.
  */
-public interface IndexDefinition {
+public interface IndexSearchRow {
     /**
-     * @return Index name.
+     * @param idx Index of a key.
+     * @return Underlying key by specified index.
      */
-    public IndexName getIdxName();
+    public IndexKey getKey(int idx);
+
+    /**
+     * @return Underlying keys.
+     */
+    public IndexKey[] getKeys();
 }

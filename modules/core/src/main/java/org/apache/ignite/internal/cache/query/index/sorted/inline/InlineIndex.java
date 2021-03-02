@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.cache.query.index.sorted.SortedIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndex;
 
 /**
  * Represents an index that inlines some of index keys.

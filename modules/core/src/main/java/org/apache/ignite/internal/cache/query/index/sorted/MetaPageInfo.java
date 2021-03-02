@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.lang.IgniteProductVersion;

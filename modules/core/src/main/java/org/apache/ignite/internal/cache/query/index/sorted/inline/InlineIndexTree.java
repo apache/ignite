@@ -22,18 +22,19 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -136,7 +137,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = getMetaInfo();
 
-            def.initByMeta(metaInfo);
+            def.initByMeta(initNew, metaInfo);
 
             inlineSize = metaInfo.inlineSize();
             setIos(inlineSize);
@@ -153,6 +154,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
+            def.initByMeta(initNew, null);
+
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
@@ -490,10 +493,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             try {
                 BPlusMetaIO.setValues(
                     pageAddr,
-                    info.inlineSize,
-                    info.useUnwrappedPk,
-                    info.inlineObjSupported,
-                    info.inlineObjHash
+                    info.inlineSize(),
+                    info.useUnwrappedPk(),
+                    info.inlineObjectSupported(),
+                    info.inlineObjectHash()
                 );
             }
             finally {

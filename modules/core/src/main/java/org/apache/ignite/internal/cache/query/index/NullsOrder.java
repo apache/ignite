@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
-
-import org.apache.ignite.cache.query.index.sorted.IndexSearchRow;
-import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+package org.apache.ignite.internal.cache.query.index;
 
 /**
- * Represents an index row stored in a tree.
+ * Enum to store possible nulls ordering.
  */
-public interface IndexRow extends IndexSearchRow {
-    /**
-     * @return Link to a cache row.
-     */
-    public long getLink();
+public enum NullsOrder {
+    /** */
+    NULLS_LAST,
 
-    /**
-     * @return Schema of an index.
-     */
-    public InlineIndexRowHandler getRowHandler();
-
-    /**
-     * @return Cache row.
-     */
-    public CacheDataRow getCacheDataRow();
+    /** */
+    NULLS_FIRST
 }

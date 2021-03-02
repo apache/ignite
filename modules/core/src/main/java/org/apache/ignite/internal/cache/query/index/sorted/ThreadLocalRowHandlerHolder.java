@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
-
-import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 /**
  * Holds an index row handler during work session with an index tree.

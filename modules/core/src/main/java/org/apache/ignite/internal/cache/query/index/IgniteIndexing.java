@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index;
+package org.apache.ignite.internal.cache.query.index;
 
 import java.util.Collection;
 import java.util.Collections;

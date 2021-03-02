@@ -15,15 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.index.sorted;
+package org.apache.ignite.internal.cache.query.index.sorted;
+
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
- * Enum of possible sort orders.
+ * Represents an index row stored in a tree.
  */
-public enum SortOrder {
-    /** */
-    ASC,
+public interface IndexRow extends IndexSearchRow {
+    /**
+     * @return Link to a cache row.
+     */
+    public long getLink();
 
-    /** */
-    DESC
+    /**
+     * @return Schema of an index.
+     */
+    public InlineIndexRowHandler getRowHandler();
+
+    /**
+     * @return Cache row.
+     */
+    public CacheDataRow getCacheDataRow();
 }

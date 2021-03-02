@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
 import java.util.List;
-import org.apache.ignite.cache.query.index.IndexDefinition;
-import org.apache.ignite.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
