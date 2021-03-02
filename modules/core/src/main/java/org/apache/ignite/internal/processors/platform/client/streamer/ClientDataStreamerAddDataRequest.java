@@ -69,6 +69,7 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.resources().get(streamerId);
 
+        // To remove data, pass null as a value for the key.
         dataStreamer.addData(entries);
 
         if ((flags & END_FLAG_MASK) != 0) {
