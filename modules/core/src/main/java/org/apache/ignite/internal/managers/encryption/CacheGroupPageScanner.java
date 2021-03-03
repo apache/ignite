@@ -205,7 +205,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
             if (grps.isEmpty())
                 ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
 
-            GroupScanTask prevState = grps.putIfAbsent(grpId, grpScanTask);
+            GroupScanTask prevState = grps.get(grpId);
 
             if (prevState != null && !prevState.isDone()) {
                 if (log.isDebugEnabled())
@@ -214,10 +214,12 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 return prevState;
             }
 
-            singleExecSvc.submit(() -> schedule0(grpScanTask));
+            grps.put(grpId, grpScanTask);
         } finally {
             lock.unlock();
         }
+
+        singleExecSvc.submit(() -> schedule0(grpScanTask));
 
         return grpScanTask;
     }
