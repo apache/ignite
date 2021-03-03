@@ -21,6 +21,7 @@ import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
+import org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.commandline.query.KillCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 
@@ -71,7 +72,10 @@ public enum CommandList {
     METADATA("--meta", new MetadataCommand()),
 
     /** */
-    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
+
+    /** Command to manage performance statistics. */
+    PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
