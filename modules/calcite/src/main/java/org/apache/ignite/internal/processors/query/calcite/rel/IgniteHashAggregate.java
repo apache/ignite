@@ -33,9 +33,6 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  *
@@ -77,7 +74,6 @@ public class IgniteHashAggregate extends IgniteAggregateBase {
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Since it's a hash aggregate it erases collation.
-
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
     }

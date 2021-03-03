@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -95,7 +96,9 @@ public class IgniteSortAggregate extends IgniteAggregateBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
+        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
+    ) {
         RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
 
         return Pair.of(nodeTraits.replace(collation),
@@ -103,14 +106,21 @@ public class IgniteSortAggregate extends IgniteAggregateBase {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        RelCollation requiredCollation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
+    ) {
         RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
 
-        if (!inputCollation.satisfies(requiredCollation))
+        List<RelCollation> satisfiedCollations = TraitUtils.permute(groupSet.asList()).stream()
+            .filter(col -> inputCollation.satisfies(col))
+            .collect(Collectors.toList());
+
+        if (satisfiedCollations.isEmpty())
             return ImmutableList.of();
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(requiredCollation), inputTraits));
+        return satisfiedCollations.stream()
+            .map(col -> Pair.of(nodeTraits.replace(col), inputTraits))
+            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */

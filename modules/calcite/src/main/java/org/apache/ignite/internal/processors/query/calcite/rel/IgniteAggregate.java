@@ -30,8 +30,10 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -58,7 +60,17 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        return mq.getDistinctRowCount(getInput(), groupSet, null);
+        if (groupSet.cardinality() == 0)
+            return 1;
+
+        Double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
+
+        // Estimation of the groups count is not available.
+        // Use heuristic estimation for result rows count.
+        if (groupsCnt == null)
+            return super.estimateRowCount(mq);
+        else
+            return groupsCnt;
     }
 
     /** */
