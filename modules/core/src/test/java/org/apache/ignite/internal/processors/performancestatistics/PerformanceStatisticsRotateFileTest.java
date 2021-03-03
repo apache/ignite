@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  * Performance statistics file rotation tests.
@@ -63,57 +63,44 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     /** @throws Exception If failed. */
     @Test
     public void testRotateFile() throws Exception {
-        int cnt = 3;
-
         assertThrows(log, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
             "Performance statistics collection not started.");
 
         startCollectStatistics();
 
-        AtomicInteger ops = new AtomicInteger();
-
-        TestHandler hnd = new TestHandler() {
-            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
-                long duration) {
-                ops.incrementAndGet();
-            }
-        };
+        int cnt = 3;
 
         for (int i = 0; i < cnt; i++) {
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
-            rotateCollectStatisticsAndAwait();
+            LogListener lsnr = matches("Performance statistics writer rotated.").times(NODES_CNT).build();
 
-            List<File> files = statisticsFiles(0 < i ? i : null);
+            listeningLog.registerListener(lsnr);
 
-            readFiles(files, hnd);
+            rotateCollectStatistics();
 
-            assertEquals(NODES_CNT, files.size());
+            assertTrue(lsnr.check());
 
-            assertEquals(NODES_CNT, ops.get());
-
-            ops.set(0);
+            checkFiles(statisticsFiles(0 < i ? i : null), NODES_CNT, NODES_CNT);
         }
 
         stopCollectStatistics();
 
-        List<File> files = statisticsFiles();
-
-        readFiles(files, hnd);
-
-        assertEquals(NODES_CNT * (cnt + 1), files.size());
-        assertEquals(NODES_CNT * cnt, ops.get());
+        checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
     }
 
-    /** Rotate collecting performance statistics in the cluster and await. */
-    private void rotateCollectStatisticsAndAwait() throws Exception {
-        LogListener lsnr = LogListener.matches("Performance statistics writer rotated.")
-            .build();
+    /** Checks files and operations count. */
+    private void checkFiles(List<File> files, int expFiles, int expOps) throws Exception {
+        AtomicInteger ops = new AtomicInteger();
 
-        listeningLog.registerListener(lsnr);
+        readFiles(files, new TestHandler() {
+            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
+                long duration) {
+                ops.incrementAndGet();
+            }
+        });
 
-        rotateCollectStatistics();
-
-        assertTrue(waitForCondition(lsnr::check, TIMEOUT));
+        assertEquals(expFiles, files.size());
+        assertEquals(expOps, ops.get());
     }
 }
