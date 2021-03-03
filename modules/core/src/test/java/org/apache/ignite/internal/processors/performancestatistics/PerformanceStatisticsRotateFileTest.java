@@ -84,7 +84,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
             rotateCollectStatisticsAndAwait();
 
-            List<File> files = statisticsFiles(0 < i ? String.valueOf(i) : null);
+            List<File> files = statisticsFiles(0 < i ? i : null);
 
             readFiles(files, hnd);
 

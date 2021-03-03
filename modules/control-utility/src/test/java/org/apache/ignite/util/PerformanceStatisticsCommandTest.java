@@ -89,7 +89,7 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
         assertEquals(EXIT_CODE_OK, res);
         assertEquals("File rotated.", lastOperationResult);
 
-        assertEquals(G.allGrids().size(), statisticsFiles("1").size());
+        assertEquals(G.allGrids().size(), statisticsFiles(1).size());
 
         res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
 

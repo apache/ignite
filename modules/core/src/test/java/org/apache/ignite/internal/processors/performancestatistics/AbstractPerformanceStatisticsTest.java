@@ -164,13 +164,13 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
      *  @param idx File index.
      *  @return Performance statistics files with index.
      */
-    public static List<File> statisticsFiles(@Nullable String idx) {
+    public static List<File> statisticsFiles(@Nullable Integer idx) {
         try {
             return statisticsFiles().stream()
                 .filter(file -> {
                     Matcher matcher = FILE_PATTERN.matcher(file.getName());
 
-                    return matcher.find() && F.eq(matcher.group(3), idx);
+                    return matcher.find() && F.eq(matcher.group(3), U.toStringSafe(idx));
                 })
                 .collect(Collectors.toList());
         }
