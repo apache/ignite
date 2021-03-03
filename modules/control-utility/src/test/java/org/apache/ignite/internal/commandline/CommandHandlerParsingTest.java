@@ -1034,6 +1034,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.PROPERTY ||
             cmd == CommandList.SYSTEM_VIEW ||
             cmd == CommandList.METRIC ||
-            cmd == CommandList.DEFRAGMENTATION;
+            cmd == CommandList.DEFRAGMENTATION ||
+            cmd == CommandList.PERFORMANCE_STATISTICS;
     }
 }
