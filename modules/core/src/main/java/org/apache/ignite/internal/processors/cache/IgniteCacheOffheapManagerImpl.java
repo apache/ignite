@@ -2687,7 +2687,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            if (qryMgr.enabled() || cctx.kernalContext().indexing().enabled())
+            if (qryMgr.enabled())
                 qryMgr.store(newRow, oldRow, true);
 
             updatePendingEntries(cctx, newRow, oldRow);
