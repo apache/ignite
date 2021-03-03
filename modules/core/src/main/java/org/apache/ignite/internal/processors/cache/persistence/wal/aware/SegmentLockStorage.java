@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 /**
  * Lock on segment protects from archiving segment.
  */
-public class SegmentLockStorage extends SegmentObservable {
+class SegmentLockStorage extends SegmentObservable {
     /**
      * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come from
      * {@link FileWriteAheadLogManager.RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.

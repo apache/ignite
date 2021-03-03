@@ -18,11 +18,31 @@
 
 == Overview
 
+The Apache Ignite 2.8 release introduced a new mechanism for collecting metrics, which is intended to replace all
+the legacy metrics below. Please, check the link:monitoring-metrics/new-metrics-system.adoc[New Metrics System].
+
 Ignite exposes a large number of metrics useful for monitoring your cluster or application.
 You can use JMX and a monitoring tool, such as JConsole to access these metrics via JMX.
 You can also access them programmatically.
 
 On this page, we've collected the most useful metrics and grouped them into various common categories based on the monitoring task.
+
+== Enabling JMX for Ignite
+
+By default, the JMX automatic configuration is disabled.
+To enable it, configure the following environment variables:
+
+* For `control.sh`, configure the `CONTROL_JVM_OPTS` variable
+* For `ignite.sh`, configure the `JVM_OPTS` variable
+
+For example:
+
+[source,shell]
+----
+JVM_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
+-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+----
+
 
 // link:monitoring-metrics/configuring-metrics[Configuring Metrics]
 

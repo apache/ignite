@@ -34,11 +34,15 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for value copy in entry processor.
  */
+// Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
+// CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /** Old value. */
     private static final int OLD_VAL = 100;

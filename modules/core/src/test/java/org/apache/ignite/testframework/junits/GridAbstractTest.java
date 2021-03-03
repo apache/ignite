@@ -827,7 +827,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final IgniteEx startGrids(int cnt) throws Exception {
+    protected IgniteEx startGrids(int cnt) throws Exception {
         assert cnt > 0;
 
         IgniteEx ignite = null;
@@ -1032,6 +1032,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setIgniteInstanceName(name);
 
         return startClientGrid(cfg);
+    }
+
+    /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @param cfgC Configuration mutator. Can be used to avoid oversimplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, Consumer<IgniteConfiguration> cfgC) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfg -> {
+            cfgC.accept(cfg);
+
+            return cfg;
+        });
     }
 
     /**

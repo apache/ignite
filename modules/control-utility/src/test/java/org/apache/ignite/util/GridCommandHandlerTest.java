@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -96,11 +97,13 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.G;
@@ -111,10 +114,12 @@ import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersist
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -151,6 +156,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -1164,6 +1170,148 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test connectivity command works via control.sh.
+     */
+    @Test
+    public void testConnectivityCommandWithoutFailedNodes() throws Exception {
+        IgniteEx ignite = startGrids(5);
+
+        assertFalse(ignite.cluster().state().active());
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "connectivity"));
+
+        assertContains(log, testOut.toString(), "There are no connectivity problems.");
+    }
+
+    /**
+     * Test that if node exits topology during connectivity check, the command will not fail.
+     *
+     * Description:
+     * 1. Start three nodes.
+     * 2. Execute connectivity check.
+     * 3. When 3-rd node receives connectivity check compute task, it must stop itself.
+     * 4. The command should exit with code OK.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConnectivityCommandWithNodeExit() throws Exception {
+        IgniteEx[] node3 = new IgniteEx[1];
+
+        class KillNode3CommunicationSpi extends TcpCommunicationSpi {
+            /** Fail check connection request and stop third node */
+            boolean fail;
+
+            public KillNode3CommunicationSpi(boolean fail) {
+                this.fail = fail;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+                if (fail) {
+                    runAsync(node3[0]::close);
+                    return null;
+                }
+
+                return super.checkConnection(nodes);
+            }
+        }
+
+        IgniteEx node1 = startGrid(1, (UnaryOperator<IgniteConfiguration>) configuration -> {
+            configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
+            return configuration;
+        });
+
+        IgniteEx node2 = startGrid(2, (UnaryOperator<IgniteConfiguration>) configuration -> {
+            configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
+            return configuration;
+        });
+
+        node3[0] = startGrid(3, (UnaryOperator<IgniteConfiguration>) configuration -> {
+            configuration.setCommunicationSpi(new KillNode3CommunicationSpi(true));
+            return configuration;
+        });
+
+        assertFalse(node1.cluster().state().active());
+
+        node1.cluster().state(ACTIVE);
+
+        assertEquals(3, node1.cluster().nodes().size());
+
+        injectTestSystemOut();
+
+        final IgniteInternalFuture<?> connectivity = runAsync(() -> {
+            final int result = execute("--diagnostic", "connectivity");
+            assertEquals(EXIT_CODE_OK, result);
+        });
+
+        connectivity.get();
+    }
+
+    /**
+     * Test connectivity command works via control.sh with one node failing.
+     */
+    @Test
+    public void testConnectivityCommandWithFailedNodes() throws Exception {
+        UUID okId = UUID.randomUUID();
+        UUID failingId = UUID.randomUUID();
+
+        UnaryOperator<IgniteConfiguration> operator = configuration -> {
+            configuration.setCommunicationSpi(new TcpCommunicationSpi() {
+                /** {inheritDoc} */
+                @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+                    BitSet bitSet = new BitSet();
+
+                    int idx = 0;
+
+                    for (ClusterNode remoteNode : nodes) {
+                        if (!remoteNode.id().equals(failingId))
+                            bitSet.set(idx);
+
+                        idx++;
+                    }
+
+                    return new IgniteFinishedFutureImpl<>(bitSet);
+                }
+            });
+            return configuration;
+        };
+
+        IgniteEx ignite = startGrid("normal", configuration -> {
+            operator.apply(configuration);
+            configuration.setConsistentId(okId);
+            configuration.setNodeId(okId);
+            return configuration;
+        });
+
+        IgniteEx failure = startGrid("failure", configuration -> {
+            operator.apply(configuration);
+            configuration.setConsistentId(failingId);
+            configuration.setNodeId(failingId);
+            return configuration;
+        });
+
+        ignite.cluster().state(ACTIVE);
+
+        failure.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        int connectivity = execute("--diagnostic", "connectivity");
+        assertEquals(EXIT_CODE_OK, connectivity);
+
+        String out = testOut.toString();
+        String what = "There is no connectivity between the following nodes";
+
+        assertContains(log, out.replaceAll("[\\W_]+", "").trim(),
+                            what.replaceAll("[\\W_]+", "").trim());
+    }
+
+    /**
      * Test baseline remove works via control.sh
      *
      * @throws Exception If failed.
@@ -1886,7 +2034,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "idle_verify failed");
+        assertContains(log, out, "The check procedure failed");
         assertContains(log, out, "See log for additional information.");
 
         String logFileName = (out.split("See log for additional information. ")[1]).split(".txt")[0];
@@ -1990,7 +2138,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "idle_verify failed on 1 node.");
+        assertContains(log, out, "The check procedure failed on 1 node.");
         assertContains(log, out, "See log for additional information.");
     }
 
@@ -2010,8 +2158,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String outputStr = testOut.toString();
 
-        assertContains(log,outputStr, "idle_verify failed on 1 node.");
-        assertContains(log, outputStr, "idle_verify check has finished, no conflicts have been found.");
+        assertContains(log,outputStr, "The check procedure failed on 1 node.");
+        assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
     }
 
     /** */
@@ -2073,7 +2221,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "Idle verify failed on nodes:");
+            assertContains(log, dumpWithConflicts, "The check procedure failed on nodes:");
 
             assertContains(log, dumpWithConflicts, "Node ID: " + unstableNodeId);
         }
@@ -2938,6 +3086,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", snpName)));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testCheckSnapshot() throws Exception {
+        String snpName = "snapshot_02052020";
+
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, 1000);
+
+        snp(ig).createSnapshot(snpName)
+            .get();
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
+
+        StringBuilder sb = new StringBuilder();
+
+        ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
+
+        assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
     /**

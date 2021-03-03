@@ -473,9 +473,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (keyCheck)
-            validateCacheKey(key);
-
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         subjId = ctx.subjectIdPerCall(null, opCtx);
@@ -575,9 +572,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
-
-        if (keyCheck)
-            validateCacheKeys(keys);
 
         warnIfUnordered(keys, BulkOperation.GET);
 
@@ -713,9 +707,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        if (map != null && keyCheck)
-            validateCacheKeys(conflictMap.keySet());
-
         warnIfUnordered(conflictMap, BulkOperation.PUT);
 
         return updateAll0(null,
@@ -828,8 +819,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        if (map != null && keyCheck)
-            validateCacheKeys(keys);
 
         warnIfUnordered(keys, BulkOperation.INVOKE);
 
@@ -856,9 +845,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         A.notNull(key, "key", entryProcessor, "entryProcessor");
-
-        if (keyCheck)
-            validateCacheKey(key);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -911,8 +897,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         final EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
-        if (map != null && keyCheck)
-            validateCacheKeys(keys);
 
         warnIfUnordered(keys, BulkOperation.INVOKE);
 
@@ -978,9 +962,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Object... args) throws IgniteCheckedException {
         A.notNull(map, "map");
 
-        if (keyCheck)
-            validateCacheKeys(map.keySet());
-
         warnIfUnordered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
@@ -1009,9 +990,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
         A.notNull(map, "map");
-
-        if (keyCheck)
-            validateCacheKeys(map.keySet());
 
         warnIfUnordered(map, BulkOperation.INVOKE);
 
@@ -1172,8 +1150,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         assert val == null || proc == null;
 
         assert ctx.updatesAllowed();
-
-        validateCacheKey(key);
 
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
@@ -1360,9 +1336,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         assert ctx.updatesAllowed();
 
         assert keys != null || conflictMap != null;
-
-        if (keyCheck)
-            validateCacheKeys(keys);
 
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 

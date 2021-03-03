@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -261,7 +261,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Execute query callable.
      */
-    private static class ExecuteQueryCallable implements Callable<GridRestResponse> {
+    private static class ExecuteQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Kernal context. */
         private GridKernalContext ctx;
 
@@ -401,7 +401,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Close query callable.
      */
-    private static class CloseQueryCallable implements Callable<GridRestResponse> {
+    private static class CloseQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Current queries cursors. */
         private final ConcurrentHashMap<Long, QueryCursorIterator> qryCurs;
 
@@ -452,7 +452,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Fetch query callable.
      */
-    private static class FetchQueryCallable implements Callable<GridRestResponse> {
+    private static class FetchQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Current queries cursors. */
         private final ConcurrentHashMap<Long, QueryCursorIterator> qryCurs;
 

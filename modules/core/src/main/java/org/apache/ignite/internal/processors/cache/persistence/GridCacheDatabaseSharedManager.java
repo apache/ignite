@@ -138,6 +138,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -274,6 +275,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Prefix for meta store records which means that checkpoint entry for some group is not applicable for WAL rebalance. */
     private static final String CHECKPOINT_INAPPLICABLE_FOR_REBALANCE = "cp-wal-rebalance-inapplicable-";
 
+    /** Default checkpoint deviation from the configured frequency in percentage. */
+    private static final int DEFAULT_CHECKPOINT_DEVIATION = 40;
+
     /** */
     private FilePageStoreManager storeMgr;
 
@@ -345,6 +349,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Data regions which should be checkpointed. */
     protected final Set<DataRegion> checkpointedDataRegions = new GridConcurrentHashSet<>();
+
+    /** Checkpoint frequency deviation. */
+    private SimpleDistributedProperty<Integer> cpFreqDeviation;
 
     /**
      * @param ctx Kernal context.
@@ -517,6 +524,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!kernalCtx.clientNode()) {
             kernalCtx.internalSubscriptionProcessor().registerDatabaseListener(new MetastorageRecoveryLifecycle());
 
+            cpFreqDeviation = new SimpleDistributedProperty<>("checkpoint.deviation", Integer::parseInt);
+
+            kernalCtx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
+                cpFreqDeviation.addListener((name, oldVal, newVal) ->
+                    U.log(log, "Checkpoint frequency deviation changed [oldVal=" + oldVal + ", newVal=" + newVal + "]"));
+
+                dispatcher.registerProperty(cpFreqDeviation);
+            });
+
             checkpointManager = new CheckpointManager(
                 kernalCtx::log,
                 cctx.igniteInstanceName(),
@@ -534,7 +550,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 persistentStoreMetricsImpl(),
                 kernalCtx.longJvmPauseDetector(),
                 kernalCtx.failure(),
-                kernalCtx.cache());
+                kernalCtx.cache(),
+                () -> cpFreqDeviation.getOrDefault(DEFAULT_CHECKPOINT_DEVIATION)
+            );
 
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
@@ -784,7 +802,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             (FilePageStoreManager)cctx.pageStore(),
             checkpointManager,
             lightCheckpointMgr,
-            persistenceCfg.getPageSize()
+            persistenceCfg.getPageSize(),
+            persistenceCfg.getDefragmentationThreadPoolSize()
         );
     }
 
@@ -1470,10 +1489,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
 
-        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrps.stream()
+        List<Integer> stoppedGrpIds = stoppedGrps.stream()
             .filter(IgniteBiTuple::get2)
             .map(t -> t.get1().groupId())
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+
+        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrpIds);
+
+        initiallyLocalWalDisabledGrps.removeAll(stoppedGrpIds);
+        initiallyGlobalWalDisabledGrps.removeAll(stoppedGrpIds);
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
@@ -1590,10 +1614,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cctx.wal().reserved(cpEntry.checkpointMark())
                     : "WAL segment for checkpoint " + cpEntry + " has not reserved";
 
-                Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
+                try {
+                    Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
 
-                if (updCntr != null)
-                    grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
+                    if (updCntr != null)
+                        grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
+                }
+                catch (IgniteCheckedException ex) {
+                    log.warning("Reservation failed because counters are not available [grpId=" + grpId
+                        + ", part=" + partId
+                        + ", cp=(" + cpEntry.checkpointId() + ", " + U.format(cpEntry.timestamp()) + ")]", ex);
+                }
             }
         }
 
@@ -2743,11 +2774,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Wal truncate callBack.
+     * Wal truncate callback.
      *
-     * @param highBound WALPointer.
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
+    public void onWalTruncated(@Nullable WALPointer highBound) throws IgniteCheckedException {
         checkpointManager.removeCheckpointsUntil(highBound);
     }
 

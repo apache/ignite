@@ -18,14 +18,22 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 /**
  * Transactions MXBean implementation.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=\"tx\"" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
@@ -104,5 +112,4 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
         return transactionMetrics.getOwnerTransactionsNumber();
     }
 }
-
 
