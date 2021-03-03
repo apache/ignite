@@ -81,9 +81,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
                     qryTask.run();
                 }
                 catch (Throwable e) {
-                    if (X.cause(e, InterruptedException.class) != null)
-                        Thread.currentThread().interrupt();
-
                     uncaughtException(Thread.currentThread(), e);
                 }
             },
