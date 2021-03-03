@@ -80,11 +80,11 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         };
 
         for (int i = 0; i < cnt; i++) {
-            List<File> files = statisticsFiles(0 < i ? String.valueOf(i) : null);
-
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
             rotateCollectStatisticsAndAwait();
+
+            List<File> files = statisticsFiles(0 < i ? String.valueOf(i) : null);
 
             readFiles(files, hnd);
 

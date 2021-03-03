@@ -161,7 +161,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /**
-     *  @param idx String index.
+     *  @param idx File index.
      *  @return Performance statistics files with index.
      */
     public static List<File> statisticsFiles(@Nullable String idx) {
