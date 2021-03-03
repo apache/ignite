@@ -314,11 +314,11 @@ public abstract class QueryChecker {
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
-        if(expectedColumnNames != null) {
-            assertEquals("number of columns are different", expectedColumnNames.size(), cur.getColumnsCount());
+        if (expectedColumnNames != null) {
+            List<String> colNames = IntStream.range(0, cur.getColumnsCount())
+                .mapToObj(cur::getFieldName).collect(Collectors.toList());
 
-            for (int i = 0; i < cur.getColumnsCount(); i++)
-                assertEquals(expectedColumnNames.get(i), cur.getFieldName(i));
+            assertThat("Column names don't match", colNames, equalTo(expectedColumnNames));
         }
 
         List<List<?>> res = cur.getAll();
