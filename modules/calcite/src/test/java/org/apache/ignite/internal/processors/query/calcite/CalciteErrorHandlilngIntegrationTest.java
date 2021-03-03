@@ -201,6 +201,7 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
 
             sql(client, "create table test (id integer primary key, val varchar)");
             sql(client, "create index test_id_idx on test (id)");
+            sql(client, "insert into test values (0, 'val_0');");
 
             awaitPartitionMapExchange(true, true, null);
 

@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
@@ -81,6 +80,13 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
                     qryTask.run();
                 }
                 catch (Throwable e) {
+                    U.warn(log, "Uncaught exception", e);
+
+                    /*
+                     * No exceptions are rethrown here to preserve the current thread from being destroyed,
+                     * because other queries may be pinned to the current thread id.
+                     * However, unrecoverable errors must be processed by FailureHandler.
+                     */
                     uncaughtException(Thread.currentThread(), e);
                 }
             },
