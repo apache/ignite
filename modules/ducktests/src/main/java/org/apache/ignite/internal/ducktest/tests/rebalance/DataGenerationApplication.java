@@ -37,33 +37,36 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
         log.info("Creating " + cacheCnt + " caches each with " + entryCnt + " entries of " + entrySize + " bytes.");
 
-        for (int i = 1; i <= cacheCnt; i++)
-            generateCache(i, entryCnt, entrySize);
+        for (int i = 1; i <= cacheCnt; i++) {
+            IgniteCache<Integer, DataModel> cache = createCache("test-cache-" + i, 1);
+
+            generateCacheData(cache.getName(), entryCnt, entrySize);
+        }
 
         markSyncExecutionComplete();
     }
 
     /**
-     * @param cacheNo Cache number.
+     * @param cacheName Cache name.
      * @param entryCnt Entry count.
      * @param entrySize Entry size.
      */
-    private void generateCache(int cacheNo, int entryCnt, int entrySize) {
-        IgniteCache<Integer, DataModel> cache = createCache("test-cache-" + cacheNo, 1);
-
-        try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cache.getName())) {
+    private void generateCacheData(String cacheName, int entryCnt, int entrySize) {
+        try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
             for (int i = 0; i < entryCnt; i++) {
                 stmr.addData(i, new DataModel(entrySize));
 
                 int streamed = i + 1;
 
                 if (streamed % 5_000 == 0)
-                    log.info("Streamed " + streamed + " entries into " + cache.getName());
+                    log.info("Streamed " + streamed + " entries into " + cacheName);
             }
 
             if (entryCnt % 5_000 != 0)
-                log.info("Streamed " + entryCnt + " entries into " + cache.getName());
+                log.info("Streamed " + entryCnt + " entries into " + cacheName);
        }
+
+        log.info(cacheName + " data generated.");
     }
 
     /**
