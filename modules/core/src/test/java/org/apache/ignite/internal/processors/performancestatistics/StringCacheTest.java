@@ -26,6 +26,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 
@@ -67,6 +68,10 @@ public class StringCacheTest extends AbstractPerformanceStatisticsTest {
             taskRecordSize(0, true) * (executions - 1) +
             jobRecordSize() * executions +
             /*opType*/ 2 * executions;
+
+        // Started caches.
+        expLen += ignite.context().cache().cacheDescriptors().values().stream().mapToInt(
+            desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
 
         List<File> files = statisticsFiles();
 
