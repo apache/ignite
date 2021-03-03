@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -160,6 +161,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private final HistogramMetricImpl cpHistogram;
+
+    /** Total number of logged bytes into the WAL. */
+    private final LongAdderMetric walWrittenBytes;
+
+    /** Total size of the compressed segments in bytes. */
+    private final LongAdderMetric walCompressedBytes;
 
     /**
      * @param mmgr Metrics manager.
@@ -310,16 +317,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         cpHistogram = mreg.histogram("CheckpointHistogram", cpBounds,
                 "Histogram of checkpoint duration in milliseconds.");
 
-        mreg.register(
-            "LastArchivedSegmentIndex",
-            this::getLastArchivedSegmentIndex,
-            "Absolute index of the last archived WAL segment."
+        walWrittenBytes = mreg.longAdderMetric(
+            "WalWrittenBytes",
+            "Total number of logged bytes into the WAL."
         );
 
-        mreg.register(
-            "MaxSizeCompressedArchivedSegment",
-            this::getMaxSizeCompressedArchivedSegment,
-            "Maximum size in bytes of a compressed WAL segment in archive."
+        walCompressedBytes = mreg.longAdderMetric(
+            "WalCompressedBytes",
+            "Total size of the compressed segments in bytes."
         );
     }
 
@@ -800,10 +805,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /**
+     * Callback on logging a record to a WAL.
      *
+     * @param size Record size in bytes.
      */
-    public void onWalRecordLogged() {
+    public void onWalRecordLogged(long size) {
         walLoggingRate.increment();
+
+        walWrittenBytes.add(size);
     }
 
     /**
@@ -843,22 +852,27 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getLastArchivedSegmentIndex() {
+    @Override public long getWalWrittenBytes() {
         if (!metricsEnabled)
             return 0;
 
-        IgniteWriteAheadLogManager walMgr = this.wal;
-
-        return walMgr == null ? 0 : walMgr.lastArchivedSegment();
-    }   
+        return walWrittenBytes.value();
+    }
 
     /** {@inheritDoc} */
-    @Override public long getMaxSizeCompressedArchivedSegment() {
+    @Override public long getWalCompressedBytes() {
         if (!metricsEnabled)
             return 0;
 
-        IgniteWriteAheadLogManager walMgr = this.wal;
+        return walCompressedBytes.value();
+    }
 
-        return walMgr == null ? 0 : walMgr.maxSizeCompressedArchivedSegment();
+    /**
+     * Callback on compression of a WAL segment.
+     *
+     * @param size Size of the compressed segment in bytes.
+     */
+    public void onWalSegmentCompressed(long size) {
+        walCompressedBytes.add(size);
     }
 }

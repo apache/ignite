@@ -197,10 +197,10 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @Override long getSparseStorageSize();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Getting absolut index of the last archived WAL segment.")
-    @Override long getLastArchivedSegmentIndex();
+    @MXBeanDescription("Getting the total number of logged bytes into the WAL.")
+    @Override long getWalWrittenBytes();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Getting size in bytes of maximum compressed WAL segment in archive.")
-    @Override long getMaxSizeCompressedArchivedSegment();
+    @MXBeanDescription("Getting the total size of the compressed segments in bytes.")
+    @Override long getWalCompressedBytes();
 }

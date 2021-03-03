@@ -223,11 +223,4 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Last written pointer.
      */
     WALPointer lastWritePointer();
-
-    /**
-     * Getting size of maximum compressed WAL segment in archive.
-     *
-     * @return Size in bytes.
-     */
-    long maxSizeCompressedArchivedSegment();
 }

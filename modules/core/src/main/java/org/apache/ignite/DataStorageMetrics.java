@@ -251,16 +251,16 @@ public interface DataStorageMetrics {
     public long getSparseStorageSize();
 
     /**
-     * Get index of the last archived WAL segment.
+     * Getting the total number of logged bytes into the WAL.
      *
-     * @return Absolute index of segment.
+     * @return Number of bytes.
      */
-    long getLastArchivedSegmentIndex();
+    long getWalWrittenBytes();
 
     /**
-     * Getting size of maximum compressed WAL segment in archive.
+     * Getting the total size of the compressed segments in bytes.
      *
-     * @return Size in bytes.
+     * @return Number of bytes.
      */
-    long getMaxSizeCompressedArchivedSegment();
+    long getWalCompressedBytes();
 }

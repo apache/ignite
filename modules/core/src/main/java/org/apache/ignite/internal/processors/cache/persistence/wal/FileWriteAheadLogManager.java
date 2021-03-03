@@ -898,7 +898,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (ptr != null) {
-                metrics.onWalRecordLogged();
+                metrics.onWalRecordLogged(rec.size());
 
                 if (walAutoArchiveAfterInactivity > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
@@ -2114,8 +2114,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (alreadyCompressed.length > 0)
                 segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
 
-            segmentAware.maxSizeCompressedSegment(
-                Arrays.stream(alreadyCompressed).mapToLong(fd -> fd.file.length()).max().orElse(0));
+            for (FileDescriptor fd : alreadyCompressed)
+                metrics.onWalSegmentCompressed(fd.file().length());
         }
 
         /**
@@ -2241,7 +2241,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         segmentSize.put(segIdx, zip.length());
                         segmentAware.addCurrentWalArchiveSize(zip.length());
-                        segmentAware.maxSizeCompressedSegment(zip.length());
+
+                        metrics.onWalSegmentCompressed(zip.length());
 
                         segmentAware.onSegmentCompressed(segIdx);
 
@@ -3417,10 +3418,5 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long maxSizeCompressedArchivedSegment() {
-        return segmentAware.maxSizeCompressedSegment();
     }
 }
