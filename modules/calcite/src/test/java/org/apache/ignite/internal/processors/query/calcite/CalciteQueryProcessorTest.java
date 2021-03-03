@@ -479,7 +479,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13721")
     public void testNotInConditionWithSubquery() throws Exception {
         populateTables();
 
