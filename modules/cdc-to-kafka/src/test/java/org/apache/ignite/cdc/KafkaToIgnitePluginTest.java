@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cdc.cfgplugin.CDCReplicationConfigurationPluginProvider;
 import org.apache.ignite.cdc.serde.JavaObjectSerializer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.lang.GridTuple4;
@@ -80,6 +82,15 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     public static final byte DEST_DRID = 27;
 
     /** */
+    public static final int BOTH_EXISTS = 1;
+
+    /** */
+    public static final int BOTH_REMOVED = 2;
+
+    /** */
+    public static final int ANY_SAME_STATE = 3;
+
+    /** */
     private static Properties props;
 
     /** */
@@ -99,6 +110,24 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
     private int discoPort = TcpDiscoverySpi.DFLT_PORT;
 
     /** */
+    private byte drId = SOURCE_DRID;
+
+    /** */
+    private static final ThreadLocal<FastCrc> crc = new ThreadLocal<>().withInitial(FastCrc::new);
+
+    private final Function<Integer, Data> genSingleData = iter -> {
+        crc.get().reset();
+
+        byte[] payload = new byte[1024];
+
+        ThreadLocalRandom.current().nextBytes(payload);
+
+        crc.get().update(ByteBuffer.wrap(payload), 1024);
+
+        return new Data(payload, crc.get().getValue(), iter);
+    };
+
+    /** */
     private final Function<GridTuple4<String, IgniteEx, IntStream, Integer>, Runnable> genData = p -> () -> {
         String cacheName = p.get1();
         IgniteEx ign = p.get2();
@@ -107,23 +136,15 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Data> cache = ign.getOrCreateCache(cacheName);
 
-        FastCrc crc = new FastCrc();
-
-        keys.forEach(i -> {
-            byte[] payload = new byte[1024];
-
-            ThreadLocalRandom.current().nextBytes(payload);
-
-            crc.update(ByteBuffer.wrap(payload), 1024);
-
-            cache.put(i, new Data(payload, crc.getValue(), iter));
-
-            crc.reset();
-        });
+        keys.forEach(i -> cache.put(i, genSingleData.apply(iter)));
     };
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CDCReplicationConfigurationPluginProvider cfgPlugin = new CDCReplicationConfigurationPluginProvider();
+
+        cfgPlugin.setDrId(drId);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDiscoverySpi(new TcpDiscoverySpi()
                 .setLocalPort(discoPort)
@@ -133,7 +154,8 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
                 }}))
             .setCommunicationSpi(new TcpCommunicationSpi()
                 .setLocalPort(commPort)
-                .setLocalPortRange(DFLT_PORT_RANGE));
+                .setLocalPortRange(DFLT_PORT_RANGE))
+            .setPluginProviders(cfgPlugin);
 
         if (!cfg.isClientMode()) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -182,11 +204,9 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         source[0].cluster().state(ACTIVE);
         source[0].cluster().tag("source");
 
-        for (IgniteEx ex : source)
-            ex.context().cache().context().versions().dataCenterId(SOURCE_DRID);
-
         discoPort += DFLT_PORT_RANGE + 1;
         commPort += DFLT_PORT_RANGE + 1;
+        drId = DEST_DRID;
 
         dest = new IgniteEx[] {
             startGrid(4),
@@ -198,9 +218,6 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
 
         dest[0].cluster().state(ACTIVE);
         dest[0].cluster().tag("destination");
-
-        for (IgniteEx ex : dest)
-            ex.context().cache().context().versions().dataCenterId(DEST_DRID);
     }
 
     /** {@inheritDoc} */
@@ -219,11 +236,11 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = igniteToKafka(source[1], SOURCE_DRID, AP_TOPIC_NAME, AP_CACHE);
 
         try {
-            IgniteCache<Integer, Data> destCache1 = dest[0].createCache(AP_CACHE);
+            IgniteCache<Integer, Data> destCache = dest[0].createCache(AP_CACHE);
 
             //TODO: check conflicts on this kind of operation.
-            destCache1.put(1, new Data(null, 0, 1));
-            destCache1.remove(1);
+            destCache.put(1, new Data(null, 0, 1));
+            destCache.remove(1);
 
             runAsync(genData.apply(F.t("cache-1", source[source.length - 1], IntStream.range(0, 50), 1)));
             runAsync(genData.apply(F.t(AP_CACHE, source[source.length - 1], IntStream.range(0, 50), 1)));
@@ -231,34 +248,11 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_CACHE));
 
             try {
-                assertTrue(waitForCondition(() -> {
-                    FastCrc crc = new FastCrc();
-
-                    for (int i = 0; i < 50; i++) {
-                        if (!destCache1.containsKey(i))
-                            return false;
-
-                        Data data = destCache1.get(i);
-
-                        crc.reset();
-                        crc.update(ByteBuffer.wrap(data.payload), data.payload.length);
-
-                        assertEquals(crc.getValue(), data.crc);
-                    }
-
-                    return true;
-                }, getTestTimeout()));
+                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_EXISTS);
 
                 IntStream.range(0, 50).forEach(i -> source[source.length - 1].getOrCreateCache(AP_CACHE).remove(i));
 
-                assertTrue(waitForCondition(() -> {
-                    for (int i = 0; i < 50; i++) {
-                        if (destCache1.containsKey(i))
-                            return false;
-                    }
-
-                    return true;
-                }, getTestTimeout()));
+                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_REMOVED);
             }
             finally {
                 k2iFut.cancel();
@@ -309,25 +303,20 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             });
 
             try {
-                assertTrue(waitForCondition(() -> {
-                    FastCrc crc = new FastCrc();
+                waitForSameData(sourceCache, destCache, 100, BOTH_EXISTS);
 
-                    for (int i = 0; i < 100; i++) {
-                        if (!sourceCache.containsKey(i) || !destCache.containsKey(i))
-                            return false;
+                for (int i = 0; i < 200; i++) {
+                    IgniteCache<Integer, Data> c = ThreadLocalRandom.current().nextBoolean() ? sourceCache : destCache;
 
-                        Data data = sourceCache.get(i);
+                    int k = ThreadLocalRandom.current().nextInt(100);
 
-                        assertEquals(data, destCache.get(i));
+                    if (ThreadLocalRandom.current().nextBoolean())
+                        c.put(k, genSingleData.apply(2));
+                    else
+                        c.remove(k);
+                }
 
-                        crc.reset();
-                        crc.update(ByteBuffer.wrap(data.payload), data.payload.length);
-
-                        assertEquals(crc.getValue(), data.crc);
-                    }
-
-                    return true;
-                }, getTestTimeout()));
+                waitForSameData(sourceCache, destCache, 100, ANY_SAME_STATE);
             }
             finally {
                 k2iFut1.cancel();
@@ -340,6 +329,51 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             cdcDestFut1.cancel();
             cdcDestFut2.cancel();
         }
+    }
+
+    /**
+     * @param src
+     * @param dest
+     * @param keysCnt
+     * @param keysState
+     */
+    public void waitForSameData(IgniteCache<Integer, Data> src, IgniteCache<Integer, Data> dest, int keysCnt, int keysState)
+        throws IgniteInterruptedCheckedException {
+        assertTrue(waitForCondition(() -> {
+            for (int i = 0; i < keysCnt; i++) {
+                if (keysState == BOTH_EXISTS) {
+                    if (!src.containsKey(i) || !dest.containsKey(i))
+                        return false;
+                }
+                else if (keysState == BOTH_REMOVED) {
+                    if (src.containsKey(i) || dest.containsKey(i))
+                        return false;
+
+                    continue;
+                }
+                else if (keysState == ANY_SAME_STATE) {
+                    if (src.containsKey(i) != dest.containsKey(i))
+                        return false;
+
+                    if (!src.containsKey(i))
+                        continue;
+                }
+                else
+                    throw new IllegalArgumentException(keysState + " not supported.");
+
+                Data data = dest.get(i);
+
+                if (!data.equals(src.get(i)))
+                    return false;
+
+                crc.get().reset();
+                crc.get().update(ByteBuffer.wrap(data.payload), data.payload.length);
+
+                assertEquals(crc.get().getValue(), data.crc);
+            }
+
+            return true;
+        }, getTestTimeout()));
     }
 
     /**
@@ -384,12 +418,12 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
             Data data = (Data)o;
-            return crc == data.crc && Arrays.equals(payload, data.payload);
+            return crc == data.crc && iter == data.iter && Arrays.equals(payload, data.payload);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(crc);
+            int result = Objects.hash(crc, iter);
             result = 31 * result + Arrays.hashCode(payload);
             return result;
         }

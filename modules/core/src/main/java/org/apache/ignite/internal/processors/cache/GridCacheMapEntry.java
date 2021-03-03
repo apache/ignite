@@ -6155,6 +6155,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
+            if (conflictVer != null)
+                System.out.println("AtomicCacheUpdateClosure.call");
+
             if (conflictResolve) {
                 conflictCtx = resolveConflict(newVal, invokeRes);
 
