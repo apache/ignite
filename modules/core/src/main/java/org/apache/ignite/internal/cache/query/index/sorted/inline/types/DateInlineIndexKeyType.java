@@ -17,41 +17,41 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import java.sql.Date;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractDateIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeUtils.MAX_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeUtils.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MIN_DATE_VALUE;
 
 /**
- * Inline index key implementation for inlining {@link Date} values.
+ * Inline index key implementation for inlining {@link AbstractDateIndexKey} values.
  */
-public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<DateIndexKey> {
+public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractDateIndexKey> {
     /** */
     public DateInlineIndexKeyType() {
         super(IndexKeyTypes.DATE, (short) 8);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, DateIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, AbstractDateIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = (long) key.getKey();
+        long val2 = key.getDateValue();
 
         return Integer.signum(Long.compare(val1, val2));
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, DateIndexKey key, int maxSize) {
+    @Override protected int put0(long pageAddr, int off, AbstractDateIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putLong(pageAddr, off + 1, (long) key.getKey());
+        PageUtils.putLong(pageAddr, off + 1, key.getDateValue());
 
         return keySize + 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected DateIndexKey get0(long pageAddr, int off) {
+    @Override protected AbstractDateIndexKey get0(long pageAddr, int off) {
         long dateVal = PageUtils.getLong(pageAddr, off + 1);
 
         if (dateVal > MAX_DATE_VALUE)
@@ -59,11 +59,11 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<DateIndex
         else if (dateVal < MIN_DATE_VALUE)
             dateVal = MIN_DATE_VALUE;
 
-        return new DateIndexKey(dateVal);
+        return (AbstractDateIndexKey) IndexKeyFactory.wrapDateValue(type(), dateVal, 0L);
     }
 
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(DateIndexKey key) {
+    @Override protected int inlineSize0(AbstractDateIndexKey key) {
         return keySize + 1;
     }
 }

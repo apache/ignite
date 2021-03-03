@@ -17,71 +17,66 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import java.util.Date;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeUtils;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestampIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeUtils.MAX_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeUtils.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.NANOS_PER_DAY;
 
 /**
- * Inline index key implementation for inlining {@link Date} values.
+ * Inline index key implementation for inlining {@link AbstractTimestampIndexKey} values.
  */
-public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<TimestampIndexKey> {
+public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractTimestampIndexKey> {
     /** */
     public TimestampInlineIndexKeyType() {
         super(IndexKeyTypes.TIMESTAMP, (short) 16);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, TimestampIndexKey key) {
-        T2<Long, Long> val = (T2<Long, Long>) key.getKey();
-
+    @Override public int compare0(long pageAddr, int off, AbstractTimestampIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        int c = Long.compare(val1, val.get1());
+        int c = Long.compare(val1, key.getDateValue());
 
         if (c != 0)
             return Integer.signum(c);
 
         long nanos1 = PageUtils.getLong(pageAddr, off + 9);
 
-        return Integer.signum(Long.compare(nanos1, val.get2()));
+        return Integer.signum(Long.compare(nanos1, key.getNanos()));
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, TimestampIndexKey key, int maxSize) {
-        T2<Long, Long> v = (T2<Long, Long>) key.getKey();
-
+    @Override protected int put0(long pageAddr, int off, AbstractTimestampIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
 
-        PageUtils.putLong(pageAddr, off + 1, v.get1());
-        PageUtils.putLong(pageAddr, off + 9, v.get2());
+        PageUtils.putLong(pageAddr, off + 1, key.getDateValue());
+        PageUtils.putLong(pageAddr, off + 9, key.getNanos());
 
         return keySize + 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected TimestampIndexKey get0(long pageAddr, int off) {
+    @Override protected AbstractTimestampIndexKey get0(long pageAddr, int off) {
         long dv = PageUtils.getLong(pageAddr, off + 1);
         long nanos = PageUtils.getLong(pageAddr, off + 9);
 
         if (dv > MAX_DATE_VALUE) {
             dv = MAX_DATE_VALUE;
-            nanos = DateTimeUtils.NANOS_PER_DAY - 1;
+            nanos = NANOS_PER_DAY - 1;
         } else if (dv < MIN_DATE_VALUE) {
             dv = MIN_DATE_VALUE;
             nanos = 0;
         }
 
-        return new TimestampIndexKey(dv, nanos);
+        return (AbstractTimestampIndexKey) IndexKeyFactory.wrapDateValue(type(), dv, nanos);
     }
 
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(TimestampIndexKey key) {
+    @Override protected int inlineSize0(AbstractTimestampIndexKey key) {
         return keySize + 1;
     }
 }

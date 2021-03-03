@@ -17,18 +17,13 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
 import org.junit.Test;
 
 /** */
@@ -79,25 +74,6 @@ public class InlineIndexKeyTypeRegistryTest {
     public void testMismatchType() {
         InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(new IntegerIndexKey(3), 11, pojoArrayKeyTypeSettings);
         assert t.type() == IndexKeyTypes.INT;
-    }
-
-    /** */
-    @Test
-    public void testDateTypes() {
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(new TimestampIndexKey(new java.util.Date(0L)), IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.TIMESTAMP;
-
-        t = InlineIndexKeyTypeRegistry.get(new TimestampIndexKey(LocalDateTime.now()), IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.TIMESTAMP;
-
-        t = InlineIndexKeyTypeRegistry.get(new TimestampIndexKey(new Timestamp(0L)), IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.TIMESTAMP;
-
-        t = InlineIndexKeyTypeRegistry.get(new DateIndexKey(new java.sql.Date(0L)), IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.DATE;
-
-        t = InlineIndexKeyTypeRegistry.get(new DateIndexKey(LocalDate.now()), IndexKeyTypes.TIMESTAMP, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.DATE;
     }
 
     /** */

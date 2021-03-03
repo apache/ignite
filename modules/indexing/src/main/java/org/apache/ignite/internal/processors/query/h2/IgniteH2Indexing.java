@@ -56,8 +56,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -123,6 +125,9 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
+import org.apache.ignite.internal.processors.query.h2.index.keys.DateIndexKey;
+import org.apache.ignite.internal.processors.query.h2.index.keys.TimeIndexKey;
+import org.apache.ignite.internal.processors.query.h2.index.keys.TimestampIndexKey;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -225,6 +230,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
     private final boolean updateInTxAllowed =
         Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
+
+    static {
+        // Register date/time types there as it contains H2 specific logic for storing and comparison those types.
+        IndexKeyFactory.register(IndexKeyTypes.DATE, DateIndexKey::new);
+        IndexKeyFactory.register(IndexKeyTypes.TIME, TimeIndexKey::new);
+        IndexKeyFactory.register(IndexKeyTypes.TIMESTAMP, TimestampIndexKey::new);
+
+        IndexKeyFactory.registerDateValueFactory(IndexKeyTypes.DATE, (dv, nanos) -> DateIndexKey.fromDateValue(dv));
+        IndexKeyFactory.registerDateValueFactory(IndexKeyTypes.TIME, (dv, nanos) -> TimeIndexKey.fromNanos(nanos));
+        IndexKeyFactory.registerDateValueFactory(IndexKeyTypes.TIMESTAMP, TimestampIndexKey::fromDateValueAndNanos);
+    }
 
     /** Logger. */
     @LoggerResource

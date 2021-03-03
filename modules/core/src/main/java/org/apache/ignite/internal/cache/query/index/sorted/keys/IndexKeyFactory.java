@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -31,14 +29,29 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
-/** */
-public class IndexKeyRegistry {
-    /** Registry for non-default key types (e.g., Geometry). */
-    private static final Map<Integer, Function<Object, IndexKey>> registry = new HashMap<>();
+/**
+ * Factory for creating IndexKey objects.
+ */
+public class IndexKeyFactory {
+    /** Registry for non-default key types factory methods (e.g., Geometry, date/time types). */
+    private static final Map<Integer, Function<Object, IndexKey>> registry = new ConcurrentHashMap<>();
 
-    /** */
+    /** Registry for date time key types factory methods. */
+    private static final Map<Integer, BiFunction<Long, Long, IndexKey>> dateTimeRegistry = new ConcurrentHashMap<>();
+
+    /** Register wrapper for custom IndexKey type. */
     public static void register(int keyType, Function<Object, IndexKey> wrapper) {
         registry.put(keyType, wrapper);
+    }
+
+    /** Register factory for date/time index key types. */
+    public static void registerDateValueFactory(int keyType, BiFunction<Long, Long, IndexKey> factory) {
+        dateTimeRegistry.put(keyType, factory);
+    }
+
+    /** Wraps a date value and nanos to related date/time IndexKey. */
+    public static IndexKey wrapDateValue(int keyType, long dateVal, long nanos) {
+        return dateTimeRegistry.get(keyType).apply(dateVal, nanos);
     }
 
     /** Wraps user object to {@code IndexKey} object.  */
@@ -63,28 +76,6 @@ public class IndexKeyRegistry {
                 return new DoubleIndexKey((double) o);
             case IndexKeyTypes.FLOAT:
                 return new FloatIndexKey((float) o);
-
-            case IndexKeyTypes.TIME:
-                if (java.time.LocalTime.class == o.getClass())
-                    return new TimeIndexKey((LocalTime) o);
-
-                return new TimeIndexKey((Time) o);
-
-            case IndexKeyTypes.DATE:
-                if (java.time.LocalDate.class == o.getClass())
-                    return new DateIndexKey((java.time.LocalDate) o);
-
-                return new DateIndexKey((java.sql.Date) o);
-
-            case IndexKeyTypes.TIMESTAMP:
-                if (o instanceof java.util.Date && !(o instanceof Timestamp))
-                    o = new Timestamp(((java.util.Date) o).getTime());
-
-                if (java.time.LocalDateTime.class == o.getClass())
-                    return new TimestampIndexKey((java.time.LocalDateTime) o);
-
-                return new TimestampIndexKey((Timestamp) o);
-
             case IndexKeyTypes.BYTES:
                 return new BytesIndexKey((byte[]) o);
             case IndexKeyTypes.STRING:

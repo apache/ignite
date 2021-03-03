@@ -17,47 +17,21 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.sql.Time;
-import java.time.LocalTime;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 
-/** */
-public class TimeIndexKey implements IndexKey {
-    /** */
-    private final long nanos;
-
-    /** */
-    public TimeIndexKey(Time time) {
-        nanos = DateTimeUtils.nanosFromDate(time.getTime());
-    }
-
-    /** */
-    public TimeIndexKey(LocalTime time) {
-        nanos = DateTimeUtils.nanosFromDate(time.toNanoOfDay());
-    }
-
-    /** */
-    public TimeIndexKey(long nanos) {
-        this.nanos = nanos;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getKey() {
-        return nanos;
-    }
+/**
+ * Abstract class for representing Date index key.
+ *
+ * {@link DateInlineIndexKeyType} relies on this API to store an object in inline.
+ */
+public abstract class AbstractDateIndexKey implements IndexKey {
+    /** @return a date value {@link DateValueUtils}. */
+    public abstract long getDateValue();
 
     /** {@inheritDoc} */
     @Override public int getType() {
-        return IndexKeyTypes.TIME;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        // TODO assert type?
-        long okey = (long) o.getKey();
-
-        return Long.compare(nanos, okey);
+        return IndexKeyTypes.DATE;
     }
 }

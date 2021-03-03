@@ -37,7 +37,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -250,7 +250,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             if (key == null)
                 break;
 
-            cached[i] = IndexKeyRegistry.wrap(key, columns[i].getType(), cctx.cacheObjectContext());
+            cached[i] = IndexKeyFactory.wrap(key, columns[i].getType(), cctx.cacheObjectContext());
         }
 
         return cached;
@@ -267,7 +267,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             Value v = row.getValue(colId);
 
-            keys[i] = v == null ? null : IndexKeyRegistry.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext());
+            keys[i] = v == null ? null : IndexKeyFactory.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext());
         }
 
         return new IndexSearchRowImpl(keys, rowHnd);

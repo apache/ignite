@@ -27,7 +27,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -81,7 +81,7 @@ public class H2RowComparator implements IndexRowComparator {
             Value va = DataType.convertToValue(ses, key.getKey(), highOrder);
             va = va.convertTo(highOrder);
 
-            IndexKey objHighOrder = IndexKeyRegistry.wrap(va.getObject(), highOrder, coctx);
+            IndexKey objHighOrder = IndexKeyFactory.wrap(va.getObject(), highOrder, coctx);
 
             InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
 

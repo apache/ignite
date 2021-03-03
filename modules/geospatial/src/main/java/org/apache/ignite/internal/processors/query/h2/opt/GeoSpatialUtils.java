@@ -27,7 +27,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 import org.h2.table.IndexColumn;
@@ -41,7 +41,7 @@ public class GeoSpatialUtils {
     private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
 
     static {
-        IndexKeyRegistry.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry) k));
+        IndexKeyFactory.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry) k));
     }
 
     /** */

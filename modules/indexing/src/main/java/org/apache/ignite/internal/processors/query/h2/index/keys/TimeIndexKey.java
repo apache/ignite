@@ -15,46 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.keys;
+package org.apache.ignite.internal.processors.query.h2.index.keys;
 
-import java.time.LocalDate;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimeIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.h2.value.ValueTime;
 
 /** */
-public class DateIndexKey implements IndexKey {
+public class TimeIndexKey extends AbstractTimeIndexKey {
     /** */
-    private final long dateVal;
+    private final ValueTime time;
 
     /** */
-    public DateIndexKey(long dateVal) {
-        this.dateVal = dateVal;
+    public TimeIndexKey(Object obj) {
+        try {
+            time = (ValueTime) H2Utils.wrap(null, obj, getType());
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to convert object to TimeIndexKey.", e);
+        }
     }
 
     /** */
-    public DateIndexKey(java.sql.Date date) {
-        dateVal = DateTimeUtils.dateValueFromDate(date.getTime());
+    public static TimeIndexKey fromNanos(long nanos) {
+        return new TimeIndexKey(ValueTime.fromNanos(nanos));
     }
 
     /** */
-    public DateIndexKey(LocalDate date) {
-        dateVal = DateTimeUtils.dateValue(date.getYear(), date.getMonthValue(), date.getDayOfMonth());
+    private TimeIndexKey(ValueTime time) {
+        this.time = time;
     }
 
     /** {@inheritDoc} */
     @Override public Object getKey() {
-        return dateVal;
+        return time.getTime();
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
-        return IndexKeyTypes.DATE;
+    @Override public long getNanos() {
+        return time.getNanos();
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        long okey = (long) o.getKey();
-
-        return Long.compare(dateVal, okey);
+        return time.compareTo(((TimeIndexKey)o).time, null);
     }
 }

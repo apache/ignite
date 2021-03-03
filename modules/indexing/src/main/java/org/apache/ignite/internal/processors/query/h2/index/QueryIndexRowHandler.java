@@ -23,7 +23,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -64,7 +64,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     @Override public IndexKey getIndexKey(int idx, CacheDataRow row) {
         Object o = getKey(idx, row);
 
-        return IndexKeyRegistry.wrap(o, keyDefs.get(idx).getIdxType(), cacheDesc.context().cacheObjectContext());
+        return IndexKeyFactory.wrap(o, keyDefs.get(idx).getIdxType(), cacheDesc.context().cacheObjectContext());
     }
 
     /** */
