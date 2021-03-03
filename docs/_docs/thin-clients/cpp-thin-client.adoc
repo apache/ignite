@@ -172,18 +172,3 @@ transactions::ClientTransaction tx = transactions.withLabel(label).TxStart();
 
 transactions::ClientTransaction tx = transactions.withLabel(label).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
 ----
-
-=== Init Container
-To use an init container, add the appropriate definitions.
-
-For example:
-----
-...
-init_container_image: busybox
-init_container_command: "'sh', '-c', echo \"hello there\""
-...
-----
-The operator will adjust the k8 yaml config to include an init container if an init container image is present
-present in the custom resource.
-
-NOTE: An init container command is optional.
