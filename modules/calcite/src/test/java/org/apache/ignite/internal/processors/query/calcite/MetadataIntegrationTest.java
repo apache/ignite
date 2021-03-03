@@ -20,10 +20,24 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import org.junit.Test;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Stream.generate;
+
 /**
  *
  */
 public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    @Test
+    public void trimColumnNames() {
+        createAndPopulateTable();
+
+        String X300 = generate(() -> "X").limit(300).collect(joining());
+        String X256 = "'" + X300.substring(0, 255);
+
+        assertQuery("select '" + X300 + "' from person").columnNames(X256).check();
+    }
+
     /** */
     @Test
     public void columnNames() {
@@ -51,5 +65,7 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("select sum(salary) from person").columnNames("SUM(SALARY)").check();
 
         assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(NAME)").check();
+
+        assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
     }
 }

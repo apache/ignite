@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
 
     /** **/
-    private static final EnumSet<SqlKind> HUMAN_READABLE_ALIASES_FOR;
+    private static final int MAX_LENGTH_OF_ALIASES = 256;
+
+    /** **/
+    private static final Set<SqlKind> HUMAN_READABLE_ALIASES_FOR;
 
     static {
         EnumSet<SqlKind> kinds = EnumSet.noneOf(SqlKind.class);
@@ -75,8 +79,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         kinds.add(SqlKind.CEIL);
         kinds.add(SqlKind.FLOOR);
+        kinds.add(SqlKind.LITERAL);
 
-        HUMAN_READABLE_ALIASES_FOR = kinds;
+        HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
     }
 
     /** Dynamic parameters. */
@@ -206,11 +211,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override public String deriveAlias(SqlNode node, int ordinal) {
         if (node.isA(HUMAN_READABLE_ALIASES_FOR)) {
-            return node.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)
+            String alias = node.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)
                 .withQuoteAllIdentifiers(false)
                 .withAlwaysUseParentheses(false)
                 .withClauseStartsLine(false)
             ).getSql();
+
+            return alias.substring(0, Math.min(alias.length(), MAX_LENGTH_OF_ALIASES));
         }
 
         return super.deriveAlias(node, ordinal);
