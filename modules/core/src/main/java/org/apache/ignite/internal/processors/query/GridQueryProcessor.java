@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -165,6 +166,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
 
+    /** Patter to test incoming query to decide whether this query should be executed with Calcite or H2. */
+    private static final Pattern IS_SELECT_OR_EXPLAIN_PATTERN =
+        Pattern.compile("^\\s*(select|explain plan for)", CASE_INSENSITIVE);
+
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
 
@@ -244,10 +249,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Experimental calcite query engine. */
     private QueryEngine experimentalQueryEngine;
-
-    /** h2 redirection stub. */
-    public static final Pattern H2_REDIRECTION_RULES =
-        Pattern.compile("^\\s*(select|explain plan for)", CASE_INSENSITIVE);
 
     /** @see IgniteSystemProperties#IGNITE_EXPERIMENTAL_SQL_ENGINE */
     public static final boolean DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE = false;
@@ -2837,7 +2838,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            if (H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
+            if (shouldRedirectToCalcite(qry.getSql()))
                 return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
         }
 
@@ -3627,6 +3628,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
         requestTopVer.set(ver);
+    }
+
+    /**
+     * @param sql Query to execute.
+     * @return {@code true} if the given query should be executed with Calcite-based engine.
+     */
+    public static boolean shouldRedirectToCalcite(String sql) {
+        return IS_SELECT_OR_EXPLAIN_PATTERN.matcher(sql).find();
     }
 
     /**
