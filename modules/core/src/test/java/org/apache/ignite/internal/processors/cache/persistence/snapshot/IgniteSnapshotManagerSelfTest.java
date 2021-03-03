@@ -421,7 +421,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         long startTime = U.currentTimeMillis();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-            while(!Thread.currentThread().isInterrupted() && startTime + loadingTimeMs > U.currentTimeMillis()) {
+            while (!Thread.currentThread().isInterrupted() && startTime + loadingTimeMs > U.currentTimeMillis()) {
                 if (rnd.nextBoolean())
                     cache.put(rnd.nextInt(15_000), new Value(new byte[rnd.nextInt(maxValSize)]));
                 else
