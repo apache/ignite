@@ -138,6 +138,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -683,7 +684,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings({"unchecked", "Anonymous2MethodRef"})
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
-        Long qryId = runningQryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId = runningQryMgr.register(
+            QueryUtils.INCLUDE_SENSITIVE ? qry : sqlWithoutConst(dml.statement()),
+            GridCacheQueryType.SQL_FIELDS,
+            schemaName,
+            true,
+            null
+        );
 
         Exception failReason = null;
 
@@ -1002,7 +1009,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        Long qryId = registerRunningQuery(qryDesc, null);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, null, null);
 
         CommandResult res = null;
 
@@ -1093,12 +1100,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 checkClusterState(parseRes);
 
                 if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
+                    String sql = newQryDesc.sql();
+
+                    if (!QueryUtils.INCLUDE_SENSITIVE && !parseRes.isCommand()) {
+                        sql = sqlWithoutConst(parseRes.isDml()
+                            ? parseRes.dml().statement()
+                            : parseRes.select().statement());
+                    }
+
                     ctx.event().record(new QueryExecutionEvent<>(
                         ctx.discovery().localNode(),
                         RestQueryRequest.QueryType.SQL_FIELDS.name() + " query executed.",
                         EVT_QUERY_EXECUTION,
                         RestQueryRequest.QueryType.SQL_FIELDS.name(),
-                        newQryDesc.sql(),
+                        sql,
                         newQryParams.arguments(),
                         ctx.localNodeId()));
                 }
@@ -1184,7 +1199,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
 
-        Long qryId = registerRunningQuery(qryDesc, cancel);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, dml.statement());
 
         Exception failReason = null;
 
@@ -1269,7 +1284,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert cancel != null;
 
         // Register query.
-        Long qryId = registerRunningQuery(qryDesc, cancel);
+        Long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select.statement());
 
         try {
             GridNearTxLocal tx = null;
@@ -1528,17 +1543,45 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Register running query.
      *
      * @param qryDesc Query descriptor.
+     * @param qryParams Query parameters.
      * @param cancel Query cancel state holder.
+     * @param stmnt Parsed statement.
      * @return Id of registered query or {@code null} if query wasn't registered.
      */
-    private Long registerRunningQuery(QueryDescriptor qryDesc, GridQueryCancel cancel) {
-        return runningQryMgr.register(
-            qryDesc.sql(),
+    private Long registerRunningQuery(
+        QueryDescriptor qryDesc,
+        QueryParameters qryParams,
+        GridQueryCancel cancel,
+        @Nullable GridSqlStatement stmnt
+    ) {
+        String qry = QueryUtils.INCLUDE_SENSITIVE || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
+
+        Long res = runningQryMgr.register(
+            qry,
             GridCacheQueryType.SQL_FIELDS,
             qryDesc.schemaName(),
             qryDesc.local(),
             cancel
         );
+
+        return res;
+    }
+
+    /**
+     * @param stmnt Statement to print.
+     * @return SQL query where constant replaced with '?' char.
+     * @see GridSqlConst#getSQL()
+     * @see QueryUtils#includeSensitive()
+     */
+    private String sqlWithoutConst(GridSqlStatement stmnt) {
+        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
+
+        try {
+            return stmnt.getSQL();
+        }
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
+        }
     }
 
     /**
