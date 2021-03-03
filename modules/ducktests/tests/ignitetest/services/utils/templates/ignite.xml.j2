@@ -41,7 +41,7 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
-        <property name="authenticationEnabled" value="{{ config.auth | lower }}"/>
+        <property name="authenticationEnabled" value="{{ config.auth_enabled | lower }}"/>
 
         {% if config.metric_exporter %}
             <property name="metricExporterSpi">

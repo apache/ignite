@@ -45,7 +45,7 @@ class IgniteConfiguration(NamedTuple):
     local_host: str = None
     ssl_params: SslParams = None
     connector_configuration: ConnectorConfiguration = None
-    auth: bool = False
+    auth_enabled: bool = False
     plugins: list = []
     metric_exporter: str = None
 

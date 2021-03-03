@@ -62,7 +62,7 @@ class AuthenticationTests(IgniteTest):
 
         config = IgniteConfiguration(
             cluster_state="INACTIVE",
-            auth=True,
+            auth_enabled=True,
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(name='persistent', persistent=True),

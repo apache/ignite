@@ -72,7 +72,9 @@ def get_ssl_params_from_globals(_globals: dict, user: str):
     if _globals.get('use_ssl'):
         if user in _globals and 'ssl' in _globals[user]:
             ssl_param = _globals[user]['ssl']
-        else:
+        elif user in default_keystore:
             ssl_param = {'key_store_jks': default_keystore[user]}
+        else:
+            ssl_param = {}
 
     return SslParams(root_dir, **ssl_param) if ssl_param else None
