@@ -42,15 +42,8 @@ public class ThinClientCachePut extends ThinClientApplication {
 
         markInitialized();
 
-        log.info(">>> Cache test started.");
-
         ClientCacheConfiguration cfg = new ClientCacheConfiguration();
         cfg.setName(cacheName);
-
-        log.info(">>> Cache requested  [cacheName=" + cacheName + ']');
-        log.info(">>>                  [cacheMode=" + cacheMode + ']');
-        log.info(">>>                  [cacheAtomcityMode=" + cacheAtomcityMode + ']');
-        log.info(">>>                  [backups=" + backups + ']');
 
         if (cacheMode.equals(CacheMode.REPLICATED.toString())) { cfg.setCacheMode(CacheMode.REPLICATED);}
         else if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
@@ -67,17 +60,7 @@ public class ThinClientCachePut extends ThinClientApplication {
             log.info(">>> CacheAtomicityMode is not correct:" + cacheAtomcityMode);
         }
 
-        log.info(">>> Cache configured [cacheName=" + cfg.getName() + ']');
-        log.info(">>>                  [cacheMode=" + cfg.getCacheMode() + ']');
-        log.info(">>>                  [cacheAtomcityMode=" + cfg.getAtomicityMode() + ']');
-        log.info(">>>                  [backups=" + cfg.getBackups() + ']');
-
         ClientCache<Long, Long> cache = client.getOrCreateCache(cfg);
-
-        log.info(">>> Cache created    [cacheName=" + cache.getName() + ']');
-        log.info(">>>                  [cacheMode=" + cache.getConfiguration().getCacheMode() + ']');
-        log.info(">>>                  [cacheAtomcityMode=" + cache.getConfiguration().getAtomicityMode() + ']');
-        log.info(">>>                  [backups=" + cache.getConfiguration().getBackups() + ']');
 
         assert (cacheMode.equals(cache.getConfiguration().getCacheMode().toString()));
         assert (cacheAtomcityMode.equals(cache.getConfiguration().getAtomicityMode().toString()));
@@ -100,12 +83,8 @@ public class ThinClientCachePut extends ThinClientApplication {
      * Fills cache.
      */
     public static void fillCache(ClientCache<Long, Long> cache, int entry_num) {
-        log.info(">>> Fill cache with values [cacheName=" + cache.getName() + ']');
-
-        for (long i = 0; i < entry_num; i++) {
+         for (long i = 0; i < entry_num; i++) {
             cache.put(i, i);
-
-            log.info("Put [key=" + i + ", val=" + i + ']');
         }
     }
 
@@ -113,17 +92,10 @@ public class ThinClientCachePut extends ThinClientApplication {
      * Checks cache data.
      */
     public static void checkCacheData(ClientCache<Long, Long> cache, int entry_num) {
-        log.info(">>> Check cache data [cacheName=" + cache.getName() + ']');
-        log.info(">>> Check cache data [entry_num=" + entry_num + ']');
-        log.info(">>> Check cache data [cache.size=" + cache.size() + ']');
-
         assert (entry_num == cache.size());
 
         for (long i = 0; i < entry_num; i++) {
             Long val = cache.get(i);
-
-            log.info("Got [key=" + i + ", val=" + val + ']');
-
             assert (i == val);
         }
     }
