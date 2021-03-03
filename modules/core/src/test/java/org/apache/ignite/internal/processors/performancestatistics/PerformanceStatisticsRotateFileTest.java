@@ -39,20 +39,22 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     private static final int NODES_CNT = 2;
 
     /** Listener test logger. */
-    private static final ListeningTestLogger listeningTestLog = new ListeningTestLogger();
+    private static ListeningTestLogger listeningLog;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
-        cfg.setGridLogger(listeningTestLog);
+        cfg.setGridLogger(listeningLog);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        listeningLog = new ListeningTestLogger(log);
+
         startGrid(NODES_CNT - 1);
 
         startClientGrid(NODES_CNT);
@@ -63,7 +65,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     public void testRotateFile() throws Exception {
         int cnt = 3;
 
-        assertThrows(listeningTestLog, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
+        assertThrows(log, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
             "Performance statistics collection not started.");
 
         startCollectStatistics();
@@ -77,10 +79,8 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
             }
         };
 
-        for (int i = 0; i <= cnt; i++) {
-            String sfx = 0 < i ? "-" + i + ".prf" : "";
-
-            List<File> files = statisticsFiles(sfx);
+        for (int i = 0; i < cnt; i++) {
+            List<File> files = statisticsFiles(0 < i ? String.valueOf(i) : null);
 
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
@@ -96,16 +96,21 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         }
 
         stopCollectStatistics();
+
+        List<File> files = statisticsFiles();
+
+        readFiles(files, hnd);
+
+        assertEquals(NODES_CNT * (cnt + 1), files.size());
+        assertEquals(NODES_CNT * cnt, ops.get());
     }
 
-    /**
-     * Rotate collecting performance statistics in the cluster and await.
-     */
+    /** Rotate collecting performance statistics in the cluster and await. */
     private void rotateCollectStatisticsAndAwait() throws Exception {
         LogListener lsnr = LogListener.matches("Performance statistics writer rotated.")
             .build();
 
-        listeningTestLog.registerListener(lsnr);
+        listeningLog.registerListener(lsnr);
 
         rotateCollectStatistics();
 

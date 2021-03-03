@@ -21,19 +21,21 @@ import java.io.File;
 import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader.FILE_PATTERN;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -152,26 +154,28 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** @return Performance statistics files. */
-    protected static List<File> statisticsFiles() throws Exception {
+    public static List<File> statisticsFiles() throws Exception {
         File perfStatDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
         return FilePerformanceStatisticsReader.resolveFiles(singletonList(perfStatDir));
     }
 
     /**
-     *  @param sfx String suffix.
-     *  @return Performance statistics files with suffix.
+     *  @param idx String index.
+     *  @return Performance statistics files with index.
      */
-    public static List<File> statisticsFiles(@NotNull String sfx) {
+    public static List<File> statisticsFiles(@Nullable String idx) {
         try {
             return statisticsFiles().stream()
-                .filter(f -> f.getName().endsWith(sfx))
+                .filter(file -> {
+                    Matcher matcher = FILE_PATTERN.matcher(file.getName());
+
+                    return matcher.find() && F.eq(matcher.group(3), idx);
+                })
                 .collect(Collectors.toList());
         }
         catch (Exception e) {
-            e.printStackTrace();
-
-            return emptyList();
+            throw new RuntimeException(e);
         }
     }
 
