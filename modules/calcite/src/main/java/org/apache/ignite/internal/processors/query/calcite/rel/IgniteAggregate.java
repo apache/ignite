@@ -30,10 +30,8 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -60,17 +58,14 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        if (groupSet.cardinality() == 0)
-            return 1;
-
         Double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
+
+        if (groupsCnt != null)
+            return groupsCnt;
 
         // Estimation of the groups count is not available.
         // Use heuristic estimation for result rows count.
-        if (groupsCnt == null)
-            return super.estimateRowCount(mq);
-        else
-            return groupsCnt;
+        return super.estimateRowCount(mq);
     }
 
     /** */
@@ -97,13 +92,13 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
         double inRows = mq.getRowCount(getInput());
-        double rows = estimateRowCount(mq);
+        double groups = estimateRowCount(mq);
 
         return costFactory.makeCost(
-            rows,
+            inRows,
             inRows * IgniteCost.ROW_PASS_THROUGH_COST,
             0,
-            rows * estimateMemoryForGroup(mq),
+            groups * estimateMemoryForGroup(mq),
             0
         );
     }
@@ -113,10 +108,9 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
         double inRows = mq.getRowCount(getInput());
-        double rows = estimateRowCount(mq);
 
         return costFactory.makeCost(
-            rows,
+            inRows,
             inRows * IgniteCost.ROW_PASS_THROUGH_COST,
             0,
             estimateMemoryForGroup(mq),

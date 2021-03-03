@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -235,9 +237,11 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     *
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Single aggregates must be disabled by hint: https://issues.apache.org/jira/browse/IGNITE-14274")
     public void mapReduceDistinctWithIndex() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -283,7 +287,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteAggregate mapAgg = findFirstNode(phys, byClass(algo.map));
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
         Assert.assertTrue(
