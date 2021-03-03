@@ -49,13 +49,11 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param entrySize Entry size.
      */
     private void generateCache(int cacheNo, int entryCnt, int entrySize) {
-        IgniteCache<Integer, DataModel> cache = ignite.createCache(
-            new CacheConfiguration<Integer, DataModel>("test-cache-" + cacheNo)
-                .setBackups(1));
+        IgniteCache<Integer, DataModel> cache = createCache("test-cache-" + cacheNo, 1);
 
         try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cache.getName())) {
             for (int i = 0; i < entryCnt; i++) {
-                stmr.addData(i, newDataModel(entrySize));
+                stmr.addData(i, new DataModel(entrySize));
 
                 if (i % 10_000 == 0)
                     log.info("Streamed " + i + " entries");
@@ -64,22 +62,29 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /**
-     * @param payloadSize Payload size.
+     * @param name Cache name.
+     * @param backups Backups.
      */
-    private DataModel newDataModel(int payloadSize) {
-        String randomStr = UUID.randomUUID().toString();
-
-        byte[] payload = new byte[payloadSize - randomStr.length()];
-
-        ThreadLocalRandom.current().nextBytes(payload);
-
-        return new DataModel(randomStr, payload);
+    private <K, V> IgniteCache<K, V> createCache(String name, int backups) {
+        return ignite.createCache(new CacheConfiguration<K, V>(name)
+            .setBackups(backups));
     }
 
     /**
      *
      */
     private static class DataModel {
+        /** Random string samples. */
+        private static final String[] randomStringSamples = new String[1000];
+
+        static {
+            for (int i = 0; i < randomStringSamples.length; i++)
+                randomStringSamples[i] = UUID.randomUUID().toString();
+        }
+
+        /** Cached payload. */
+        private static byte[] cachedPayload;
+
         /** Random string. */
         final String randomStr;
 
@@ -87,12 +92,24 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         final byte[] payload;
 
         /**
-         * @param randomStr Random string.
-         * @param payload Payload.
+         * @param entrySize Entry size.
          */
-        DataModel(String randomStr, byte[] payload) {
-            this.randomStr = randomStr;
-            this.payload = payload;
+        DataModel(int entrySize) {
+            randomStr = randomStringSamples[ThreadLocalRandom.current().nextInt(randomStringSamples.length)];
+            payload = getPayload(entrySize - randomStr.length());
+        }
+
+        /**
+         * @param payloadSize Payload size.
+         */
+        private static byte[] getPayload(int payloadSize) {
+            if (cachedPayload == null || cachedPayload.length != payloadSize) {
+                cachedPayload = new byte[payloadSize];
+
+                ThreadLocalRandom.current().nextBytes(cachedPayload);
+            }
+
+            return cachedPayload;
         }
     }
 }
