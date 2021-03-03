@@ -45,29 +45,28 @@ public class ThinClientCachePut extends ThinClientApplication {
         ClientCacheConfiguration cfg = new ClientCacheConfiguration();
         cfg.setName(cacheName);
 
-        if (cacheMode.equals(CacheMode.REPLICATED.toString())) { cfg.setCacheMode(CacheMode.REPLICATED);}
+        if (cacheMode.equals(CacheMode.REPLICATED.toString()))
+            cfg.setCacheMode(CacheMode.REPLICATED);
         else if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setBackups(backups);
         }
-        else {
-            log.info(">>> CacheMode is not correct:" + cacheMode);
-        }
+        else log.info(">>> CacheMode is not correct:" + cacheMode);
 
-        if (cacheAtomcityMode.equals(CacheAtomicityMode.ATOMIC.toString())) { cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);}
-        else if (cacheAtomcityMode.equals(CacheAtomicityMode.TRANSACTIONAL.toString())) { cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);}
-        else {
+        if (cacheAtomcityMode.equals(CacheAtomicityMode.ATOMIC.toString()))
+            cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        else if (cacheAtomcityMode.equals(CacheAtomicityMode.TRANSACTIONAL.toString()))
+            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        else
             log.info(">>> CacheAtomicityMode is not correct:" + cacheAtomcityMode);
-        }
 
         ClientCache<Long, Long> cache = client.getOrCreateCache(cfg);
 
         assert (cacheMode.equals(cache.getConfiguration().getCacheMode().toString()));
         assert (cacheAtomcityMode.equals(cache.getConfiguration().getAtomicityMode().toString()));
 
-        if (cacheMode.equals(CacheMode.PARTITIONED.toString())) {
+        if (cacheMode.equals(CacheMode.PARTITIONED.toString()))
             assert (backups == cache.getConfiguration().getBackups());
-        }
 
         fillCache(cache, entry_num);
 
@@ -83,9 +82,8 @@ public class ThinClientCachePut extends ThinClientApplication {
      * Fills cache.
      */
     public static void fillCache(ClientCache<Long, Long> cache, int entry_num) {
-         for (long i = 0; i < entry_num; i++) {
-            cache.put(i, i);
-        }
+         for (long i = 0; i < entry_num; i++)
+             cache.put(i, i);
     }
 
     /**

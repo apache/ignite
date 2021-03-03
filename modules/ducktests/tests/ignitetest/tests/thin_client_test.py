@@ -55,29 +55,29 @@ class ThinClientTest(IgniteTest):
         self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
                                    "REPLICATED", "ATOMIC", backups)
 
-    # @cluster(num_nodes=3)
-    # @ignite_versions(str(DEV_BRANCH))
-    # @parametrize(num_nodes=3, static_clients_num=1)
-    # def test_replicated_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
-    #     backups = 2
-    #     self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-    #                                "REPLICATED", "TRANSACTIONAL", backups)
-    #
-    # @cluster(num_nodes=3)
-    # @ignite_versions(str(DEV_BRANCH))
-    # @parametrize(num_nodes=3, static_clients_num=1)
-    # def test_partitioned_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
-    #     backups = 2
-    #     self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-    #                                "PARTITIONED", "ATOMIC", backups)
-    #
-    # @cluster(num_nodes=3)
-    # @ignite_versions(str(DEV_BRANCH))
-    # @parametrize(num_nodes=3, static_clients_num=1)
-    # def test_partitioned_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
-    #     backups = 2
-    #     self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-    #                                "PARTITIONED", "TRANSACTIONAL", backups)
+    @cluster(num_nodes=3)
+    @ignite_versions(str(DEV_BRANCH))
+    @parametrize(num_nodes=3, static_clients_num=1)
+    def test_replicated_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "REPLICATED", "TRANSACTIONAL", backups)
+
+    @cluster(num_nodes=3)
+    @ignite_versions(str(DEV_BRANCH))
+    @parametrize(num_nodes=3, static_clients_num=1)
+    def test_partitioned_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "PARTITIONED", "ATOMIC", backups)
+
+    @cluster(num_nodes=3)
+    @ignite_versions(str(DEV_BRANCH))
+    @parametrize(num_nodes=3, static_clients_num=1)
+    def test_partitioned_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
+        backups = 2
+        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+                                   "PARTITIONED", "TRANSACTIONAL", backups)
 
     def start_fill_cache_stop(self, ignite_version, num_nodes, static_clients_num, cache_mode, cache_atomicity_mode,
                               backups):
