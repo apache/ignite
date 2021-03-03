@@ -1,0 +1,23 @@
+>>> Atomic sequence example started.
+>>> Atomic sequence initial value: 0
+>>> AtomicSequence value has been incremented: 1
+>>> AtomicSequence value has been incremented: 2
+>>> AtomicSequence value has been incremented: 3
+>>> AtomicSequence value has been incremented: 4
+>>> AtomicSequence value has been incremented: 5
+>>> AtomicSequence value has been incremented: 6
+>>> AtomicSequence value has been incremented: 7
+>>> AtomicSequence value has been incremented: 8
+>>> AtomicSequence value has been incremented: 9
+>>> AtomicSequence value has been incremented: 10
+>>> AtomicSequence value has been incremented: 11
+>>> AtomicSequence value has been incremented: 12
+>>> AtomicSequence value has been incremented: 13
+>>> AtomicSequence value has been incremented: 14
+>>> AtomicSequence value has been incremented: 15
+>>> AtomicSequence value has been incremented: 16
+>>> AtomicSequence value has been incremented: 17
+>>> AtomicSequence value has been incremented: 18
+>>> AtomicSequence value has been incremented: 19
+>>> AtomicSequence value has been incremented: 20
+>>> Atomic sequence current value: 20
