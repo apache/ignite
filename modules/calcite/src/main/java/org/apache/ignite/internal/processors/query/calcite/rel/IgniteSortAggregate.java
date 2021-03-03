@@ -37,8 +37,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
@@ -60,6 +58,7 @@ public class IgniteSortAggregate extends IgniteAggregateBase {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
 
         assert !TraitUtils.collation(traitSet).isDefault();
+        assert !groupSet.isEmpty() && groupSets.size() == 1;
 
         collation = TraitUtils.collation(traitSet);
     }

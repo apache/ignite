@@ -30,10 +30,10 @@ import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateBase;
@@ -214,7 +214,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteMapAggregateBase mapAgg = findFirstNode(phys, byClass(algo.map));
+        IgniteAggregate mapAgg = findFirstNode(phys, byClass(algo.map));
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
@@ -280,7 +280,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteMapAggregateBase mapAgg = findFirstNode(phys, byClass(algo.map));
+        IgniteAggregate mapAgg = findFirstNode(phys, byClass(algo.map));
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
@@ -370,7 +370,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         public final Class<? extends IgniteAggregateBase> single;
 
         /** */
-        public final Class<? extends IgniteMapAggregateBase> map;
+        public final Class<? extends IgniteAggregate> map;
 
         /** */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
@@ -381,7 +381,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         /** */
         AggregateAlgorithm(
             Class<? extends IgniteAggregateBase> single,
-            Class<? extends IgniteMapAggregateBase> map,
+            Class<? extends IgniteAggregate> map,
             Class<? extends IgniteReduceAggregateBase> reduce,
             String ruleToDisable) {
             this.single = single;

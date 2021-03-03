@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public abstract class IgniteAggregate extends Aggregate {
+public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
     /** {@inheritDoc} */
     protected IgniteAggregate(
         RelOptCluster cluster,
@@ -73,11 +73,9 @@ public abstract class IgniteAggregate extends Aggregate {
 
     /** */
     public double estimateMemoryForGroup(RelMetadataQuery mq) {
-        if (aggCalls.isEmpty())
-            return groupSet.cardinality() * IgniteCost.AVERAGE_FIELD_SIZE;
-        else {
-            double mem = 0d;
+        double mem = groupSet.cardinality() * IgniteCost.AVERAGE_FIELD_SIZE;
 
+        if (!aggCalls.isEmpty()) {
             double grps = estimateRowCount(mq);
             double rows = input.estimateRowCount(mq);
 
@@ -87,9 +85,9 @@ public abstract class IgniteAggregate extends Aggregate {
                 else
                     mem += IgniteCost.AGG_CALL_MEM_COST;
             }
-
-            return mem;
         }
+
+        return mem;
     }
 
     /** */
