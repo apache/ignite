@@ -84,15 +84,14 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
     public RelOptCost computeSelfCostHash(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        double rows = mq.getRowCount(getInput());
-
-        double groupsCnt = estimateRowCount(mq);
+        double inRows = mq.getRowCount(getInput());
+        double rows = estimateRowCount(mq);
 
         return costFactory.makeCost(
-            groupsCnt,
-            rows * IgniteCost.ROW_PASS_THROUGH_COST,
+            rows,
+            inRows * IgniteCost.ROW_PASS_THROUGH_COST,
             0,
-            groupsCnt * estimateMemoryForGroup(mq),
+            rows * estimateMemoryForGroup(mq),
             0
         );
     }
@@ -101,13 +100,12 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
     public RelOptCost computeSelfCostSort(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        double rows = mq.getRowCount(getInput());
-
-        double groupsCnt = estimateRowCount(mq);
+        double inRows = mq.getRowCount(getInput());
+        double rows = estimateRowCount(mq);
 
         return costFactory.makeCost(
-            groupsCnt,
-            rows * IgniteCost.ROW_PASS_THROUGH_COST,
+            rows,
+            inRows * IgniteCost.ROW_PASS_THROUGH_COST,
             0,
             estimateMemoryForGroup(mq),
             0
