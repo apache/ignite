@@ -23,7 +23,6 @@ import org.junit.Test;
  *
  */
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
-
     /** */
     @Test
     public void countOfNonNumericField() {

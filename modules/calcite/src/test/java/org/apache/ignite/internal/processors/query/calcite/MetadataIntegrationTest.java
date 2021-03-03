@@ -24,7 +24,6 @@ import org.junit.Test;
  *
  */
 public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
-
     /** */
     @Test
     public void columnNames() {
