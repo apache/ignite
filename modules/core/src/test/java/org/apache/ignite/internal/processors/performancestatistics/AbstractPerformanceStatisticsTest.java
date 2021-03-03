@@ -155,6 +155,19 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         return FilePerformanceStatisticsReader.resolveFiles(singletonList(perfStatDir));
     }
 
+    /** @return Count performance statistics files with suffix. */
+    public static long countStatisticsFilesWithSuffix(String sfx) {
+        try {
+            return statisticsFiles().stream()
+                .filter(f -> f.getName().endsWith(sfx)).count();
+        }
+        catch (Exception e) {
+            fail();
+        }
+
+        return 0;
+    }
+
     /** Test performance statistics handler. */
     public static class TestHandler implements PerformanceStatisticsHandler {
         /** {@inheritDoc} */

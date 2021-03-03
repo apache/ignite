@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -31,14 +32,14 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.performancestatistics.task.PerformanceStatisticsRotateTask;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -230,7 +231,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        ctx.task().execute(PerformanceStatisticsRotateTask.class.getName(),new VisorTaskArgument());
+        ctx.closure().broadcast(new PerformanceStatisticsRotateClosure(), null,
+            ctx.discovery().allNodes(), null);
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -314,6 +316,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
                 oldWriter.stop();
             }
+
             log.info("Performance statistics writer rotated.");
         }
         catch (Exception e) {
@@ -333,5 +336,22 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
+    }
+
+    /** Closure to rotating the performance statistics file. */
+    private static class PerformanceStatisticsRotateClosure implements IgniteClosure<Void, Void> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(Void unused) {
+            ignite.context().performanceStatistics().rotateWriter();
+
+            return null;
+        }
     }
 }

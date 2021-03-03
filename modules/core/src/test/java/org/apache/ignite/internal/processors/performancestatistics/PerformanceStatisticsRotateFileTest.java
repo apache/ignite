@@ -40,7 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Tests performance statistics.
+ * Performance statistics file rotation tests.
  */
 @RunWith(Parameterized.class)
 public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStatisticsTest {
