@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 
 /**
  * Represents an index that inlines some of index keys.
  */
-public interface InlineIndex extends SortedIndex {
+public interface InlineIndex extends SortedSegmentedIndex {
     /**
      * @return amount of bytes to store inlined index keys.
      */

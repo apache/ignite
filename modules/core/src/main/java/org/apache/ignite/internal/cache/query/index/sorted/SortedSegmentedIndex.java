@@ -24,9 +24,9 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface for sorted Ignite indexes.
+ * Interface for sorted and segmented Ignite indexes.
  */
-public interface SortedIndex extends Index {
+public interface SortedSegmentedIndex extends Index {
     /**
      * Finds index rows by specified range in specifed tree segment. Range can be bound or unbound.
      *

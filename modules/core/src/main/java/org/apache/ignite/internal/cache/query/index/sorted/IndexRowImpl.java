@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
- * This class represents a row in {@link SortedIndex}.
+ * This class represents a row in {@link SortedSegmentedIndex}.
  */
 public class IndexRowImpl implements IndexRow {
     /** Object that contains info about original IgniteCache row. */
