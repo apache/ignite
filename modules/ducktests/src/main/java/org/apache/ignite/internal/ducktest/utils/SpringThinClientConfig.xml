@@ -7,16 +7,7 @@
             <bean class="org.apache.ignite.configuration.ClientConfiguration">
                 <property name="addresses">
                     <list>
-                        <value>ducker01:10800</value>
-                        <value>ducker02:10800</value>
-                        <value>ducker03:10800</value>
-                        <value>ducker04:10800</value>
-                        <value>ducker05:10800</value>
-                        <value>ducker06:10800</value>
-                        <value>ducker07:10800</value>
-                        <value>ducker08:10800</value>
-                        <value>ducker09:10800</value>
-                        <value>ducker10:10800</value>
+                        <value>127.0.0.1:10800</value>
                     </list>
                 </property>
             </bean>
