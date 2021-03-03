@@ -18,47 +18,25 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Performance statistics file rotation tests.
  */
-@RunWith(Parameterized.class)
 public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
     private static final int NODES_CNT = 2;
-
-    /** Client type to run operations from. */
-    @Parameterized.Parameter
-    public ClientType clientType;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "clientType={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{SERVER}, {CLIENT}});
-    }
-
-    /** Ignite. */
-    private static IgniteEx srv;
 
     /** Listener test logger. */
     private static final ListeningTestLogger listeningTestLog = new ListeningTestLogger();
@@ -75,7 +53,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        srv = startGrid(NODES_CNT - 1);
+        startGrid(NODES_CNT - 1);
 
         startClientGrid(NODES_CNT);
     }
@@ -83,14 +61,12 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     /** @throws Exception If failed. */
     @Test
     public void testRotateFile() throws Exception {
-        int cnt = 5;
+        int cnt = 3;
 
         assertThrows(null, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
             "Performance statistics collection not started.");
 
         startCollectStatistics();
-
-        assertTrue(rotateCollectStatisticsAndAwait());
 
         AtomicInteger ops = new AtomicInteger();
 
@@ -101,22 +77,22 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
             }
         };
 
-        for (int i = 1; i <= cnt; i++) {
-            srv.cache(DEFAULT_CACHE_NAME).get(0);
+        for (int i = 0; i <= cnt; i++) {
+            String sfx = 0 < i ? "-" + i + ".prf" : "";
 
-            assertTrue(rotateCollectStatisticsAndAwait());
+            List<File> files = statisticsFiles(sfx);
 
-            String sfx = "-" + i + ".prf";
+            G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
-            List<File> files = statisticsFiles().stream()
-                .filter(f -> f.getName().endsWith(sfx))
-                .collect(Collectors.toList());
+            rotateCollectStatisticsAndAwait();
 
             readFiles(files, hnd);
 
             assertEquals(NODES_CNT, files.size());
 
-            assertEquals(i, ops.get());
+            assertEquals(NODES_CNT, ops.get());
+
+            ops.set(0);
         }
 
         stopCollectStatistics();
@@ -125,13 +101,14 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     /**
      * Rotate collecting performance statistics in the cluster and await.
      */
-    private boolean rotateCollectStatisticsAndAwait() throws Exception {
-        LogListener logLsnr = LogListener.matches("Performance statistics writer rotated.").build();
+    private void rotateCollectStatisticsAndAwait() throws Exception {
+        LogListener logLsnr = LogListener.matches("Performance statistics writer rotated.")
+            .build();
 
         listeningTestLog.registerListener(logLsnr);
 
         rotateCollectStatistics();
 
-        return waitForCondition(logLsnr::check, TIMEOUT);
+        assertTrue(waitForCondition(logLsnr::check, TIMEOUT));
     }
 }

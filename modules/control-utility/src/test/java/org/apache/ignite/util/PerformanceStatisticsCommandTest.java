@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.commandline.performancestatistics.Perfo
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STOP;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.TIMEOUT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.countStatisticsFilesWithSuffix;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.statisticsFiles;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_DISABLED;
 import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_ENABLED;
@@ -73,7 +73,7 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
         assertEquals(null, lastOperationResult);
 
-        assertEquals(0, countStatisticsFilesWithSuffix(""));
+        assertEquals(0, statisticsFiles("").size());
 
         res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
 
@@ -91,7 +91,7 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
         assertEquals(EXIT_CODE_OK, res);
         assertEquals("File rotated.", lastOperationResult);
 
-        assertTrue(waitForCondition(() -> countStatisticsFilesWithSuffix("-1.prf") == G.allGrids().size(), TIMEOUT));
+        assertTrue(waitForCondition(() -> statisticsFiles("-1.prf").size() == G.allGrids().size(), TIMEOUT));
 
         res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
 

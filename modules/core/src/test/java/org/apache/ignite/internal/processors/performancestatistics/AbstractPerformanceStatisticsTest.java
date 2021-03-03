@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
@@ -29,7 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
@@ -155,17 +158,21 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         return FilePerformanceStatisticsReader.resolveFiles(singletonList(perfStatDir));
     }
 
-    /** @return Count performance statistics files with suffix. */
-    public static long countStatisticsFilesWithSuffix(String sfx) {
+    /**
+     *  @param sfx String suffix.
+     *  @return Performance statistics files with suffix.
+     */
+    public static List<File> statisticsFiles(@NotNull String sfx) {
         try {
             return statisticsFiles().stream()
-                .filter(f -> f.getName().endsWith(sfx)).count();
+                .filter(f -> f.getName().endsWith(sfx))
+                .collect(Collectors.toList());
         }
         catch (Exception e) {
-            fail();
-        }
+            e.printStackTrace();
 
-        return 0;
+            return emptyList();
+        }
     }
 
     /** Test performance statistics handler. */
