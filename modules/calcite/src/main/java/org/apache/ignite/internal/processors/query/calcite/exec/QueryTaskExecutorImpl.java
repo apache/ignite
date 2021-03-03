@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
@@ -80,6 +81,9 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
                     qryTask.run();
                 }
                 catch (Throwable e) {
+                    if (X.cause(e, InterruptedException.class) != null)
+                        Thread.currentThread().interrupt();
+
                     uncaughtException(Thread.currentThread(), e);
                 }
             },
