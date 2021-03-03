@@ -55,7 +55,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public Data readAll() throws StorageException {
+    @Override public synchronized Data readAll() throws StorageException {
         if (fail)
             throw new StorageException("Failed to read data");
 
@@ -70,7 +70,12 @@ public class TestConfigurationStorage implements ConfigurationStorage {
         if (sentVersion != version.get())
             return CompletableFuture.completedFuture(false);
 
-        map.putAll(newValues);
+        for (Map.Entry<String, Serializable> entry : newValues.entrySet()) {
+            if (entry.getValue() != null)
+                map.put(entry.getKey(), entry.getValue());
+            else
+                map.remove(entry.getKey());
+        }
 
         version.incrementAndGet();
 
@@ -80,7 +85,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> keys() throws StorageException {
+    @Override public synchronized Set<String> keys() throws StorageException {
         if (fail)
             throw new StorageException("Failed to get keys");
 

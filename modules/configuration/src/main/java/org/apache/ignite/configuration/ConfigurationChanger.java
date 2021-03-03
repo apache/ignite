@@ -173,7 +173,7 @@ public class ConfigurationChanger {
 
         if (storagesTypes.size() != 1) {
             return CompletableFuture.failedFuture(
-                new ConfigurationChangeException("Cannot change configurations belonging to different roots")
+                new ConfigurationChangeException("Cannot change configurations belonging to different storages.")
             );
         }
 
@@ -199,10 +199,10 @@ public class ConfigurationChanger {
         ConfigurationStorage storage,
         CompletableFuture<?> fut
     ) {
-        Map<String, Serializable> allChanges = changes.entrySet().stream()
-            .map((Map.Entry<RootKey<?>, TraversableTreeNode> change) -> nodeToFlatMap(change.getKey(), change.getValue()))
-            .flatMap(map -> map.entrySet().stream())
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, Serializable> allChanges = new HashMap<>();
+
+        for (Map.Entry<RootKey<?>, TraversableTreeNode> change : changes.entrySet())
+            allChanges.putAll(nodeToFlatMap(change.getKey(), getRootNode(change.getKey()), change.getValue()));
 
         StorageRoots roots = storagesRootsMap.get(storage.getClass());
 
@@ -243,8 +243,9 @@ public class ConfigurationChanger {
 
         Map<String, ?> dataValuesPrefixMap = ConfigurationUtil.toPrefixMap(changedEntries.values());
 
+        compressDeletedEntries(dataValuesPrefixMap);
+
         for (RootKey<?> rootKey : oldStorageRoots.roots.keySet()) {
-            //TODO IGNITE-14182 Remove is not yet supported here.
             Map<String, ?> rootPrefixMap = (Map<String, ?>)dataValuesPrefixMap.get(rootKey.key());
 
             if (rootPrefixMap != null) {
@@ -261,6 +262,32 @@ public class ConfigurationChanger {
         storagesRootsMap.put(storageType, storageRoots);
 
         //TODO IGNITE-14180 Notify listeners.
+    }
+
+    /**
+     * "Compress" prefix map - this means that deleted named list elements will be represented as a single {@code null}
+     * objects instead of a number of nullified configuration leaves.
+     *
+     * @param prefixMap Prefix map, constructed from the storage notification data or its subtree.
+     */
+    private void compressDeletedEntries(Map<String, ?> prefixMap) {
+        // Here we basically assume that if prefix subtree contains single null child then all its childrens are nulls.
+        Set<String> keysForRemoval = prefixMap.entrySet().stream()
+            .filter(entry ->
+                entry.getValue() instanceof Map && ((Map<?, ?>)entry.getValue()).containsValue(null)
+            )
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+
+        // Replace all such elements will nulls, signifying that these are deleted named list elements.
+        for (String key : keysForRemoval)
+            prefixMap.put(key, null);
+
+        // Continue recursively.
+        for (Object value : prefixMap.values()) {
+            if (value instanceof Map)
+                compressDeletedEntries((Map<String, ?>)value);
+        }
     }
 
     /**

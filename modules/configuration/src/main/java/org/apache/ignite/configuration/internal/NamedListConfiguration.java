@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.ConfigurationProperty;
+import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.tree.NamedListChange;
 import org.apache.ignite.configuration.tree.NamedListInit;
@@ -31,8 +32,10 @@ import org.apache.ignite.configuration.tree.NamedListView;
 /**
  * Named configuration wrapper.
  */
-public class NamedListConfiguration<VIEW, T extends ConfigurationProperty<VIEW, CHANGE>, INIT, CHANGE>
-    extends DynamicConfiguration<NamedListView<VIEW>, NamedListInit<INIT>, NamedListChange<CHANGE, INIT>> {
+public class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE, INIT>
+    extends DynamicConfiguration<NamedListView<VIEW>, NamedListInit<INIT>, NamedListChange<CHANGE, INIT>>
+    implements NamedConfigurationTree<T, VIEW, CHANGE, INIT>
+{
     /** Creator of named configuration. */
     private final BiFunction<List<String>, String, T> creator;
 
@@ -57,20 +60,15 @@ public class NamedListConfiguration<VIEW, T extends ConfigurationProperty<VIEW, 
         this.creator = creator;
     }
 
-    /**
-     * Get named configuration by name.
-     * @param name Name.
-     * @return Configuration.
-     */
-    public T get(String name) {
+    /** {@inheritDoc} */
+    @Override public T get(String name) {
         refreshValue();
 
-        //TODO IGNITE-14182 Exceptions.
         return values.get(name);
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized void refreshValue0(NamedListView<VIEW> newValue) {
+    @Override protected synchronized void beforeRefreshValue(NamedListView<VIEW> newValue) {
         Map<String, T> oldValues = this.values;
         Map<String, T> newValues = new HashMap<>();
 

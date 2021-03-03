@@ -28,7 +28,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 /**
  * This annotation marks configuration schema field as a configuration tree leaf.
  * Every field annotated with this annotation will produce a {@link DynamicProperty} field in generated configuration class.
- * <br/> Type must be one of the following:
+ * <br/> Type must be one of the following (or array of one of the following):
  * <ul>
  *     <li>boolean</li>
  *     <li>int</li>

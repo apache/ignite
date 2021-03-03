@@ -79,17 +79,18 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
         assert keys instanceof RandomAccess;
         assert !keys.isEmpty();
 
+        // Transform leaf value into update tree.
         rootNodeChange.construct(keys.get(1), new ConfigurationSource() {
-            private int i = 1;
+            private int level = 1;
 
             @Override public void descend(ConstructableTreeNode node) {
-                assert i < keys.size() - 1;
+                assert level < keys.size() - 1;
 
-                node.construct(keys.get(++i), this);
+                node.construct(keys.get(++level), this);
             }
 
             @Override public <T> T unwrap(Class<T> clazz) {
-                assert i == keys.size() - 1;
+                assert level == keys.size() - 1;
 
                 assert clazz.isInstance(newValue);
 
@@ -97,6 +98,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
             }
         });
 
+        // Use resulting tree as update request for the storage.
         return changer.change(Map.of(rootKey, rootNodeChange));
     }
 
@@ -106,7 +108,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     }
 
     /** {@inheritDoc} */
-    @Override protected void refreshValue0(T newValue) {
+    @Override protected void beforeRefreshValue(T newValue) {
         // No-op.
     }
 }

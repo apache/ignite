@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration.internal;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationTree;
@@ -99,18 +99,20 @@ public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends Configura
         else {
             assert keys instanceof RandomAccess;
 
+            // Transform inner node closure into update tree.
             rootNodeChange.construct(keys.get(1), new ConfigurationSource() {
-                private int i = 1;
+                private int level = 1;
 
                 @Override public void descend(ConstructableTreeNode node) {
-                    if (++i == keys.size())
+                    if (++level == keys.size())
                         change.accept((CHANGE)node);
                     else
-                        node.construct(keys.get(i), this);
+                        node.construct(keys.get(level), this);
                 }
             });
         }
 
+        // Use resulting tree as update request for the storage.
         return changer.change(Map.of(rootKey, rootNodeChange));
     }
 
@@ -126,11 +128,11 @@ public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends Configura
 
     /** {@inheritDoc} */
     @Override public Map<String, ConfigurationProperty<?, ?>> members() {
-        return members.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return Collections.unmodifiableMap(members);
     }
 
     /** {@inheritDoc} */
-    @Override protected void refreshValue0(VIEW newValue) {
+    @Override protected void beforeRefreshValue(VIEW newValue) {
         // No-op.
     }
 }

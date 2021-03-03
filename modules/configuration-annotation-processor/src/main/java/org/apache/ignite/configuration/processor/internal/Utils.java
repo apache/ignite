@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.configuration.processor.internal;
 
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -222,4 +223,12 @@ public class Utils {
         throw new ProcessorException(type + " is not a NamedListConfiguration class");
     }
 
+    /**
+     * @return {@code @SuppressWarnings("unchecked")} annotation spec object.
+     */
+    public static AnnotationSpec suppressWarningsUnchecked() {
+        return AnnotationSpec.builder(SuppressWarnings.class)
+            .addMember("value", "$S", "unchecked")
+            .build();
+    }
 }

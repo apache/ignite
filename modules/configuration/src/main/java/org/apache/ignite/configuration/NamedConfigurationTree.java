@@ -17,26 +17,23 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
+import org.apache.ignite.configuration.tree.NamedListChange;
+import org.apache.ignite.configuration.tree.NamedListView;
 
 /**
- * Public configurator.
- * @param <T> Public type.
+ * Configuration tree representing arbitrary set of named underlying configuration tree of the same type.
+ *
+ * @param <T> Type of the underlying configuration tree.
+ * @param <VALUE> Value type of the underlying node.
+ * @param <CHANGE> Type of the object that changes underlying nodes values.
  */
-public class PublicConfigurator<T extends ConfigurationTree<?, ?>> {
-    /** Configuration root. */
-    private T root;
-
-    public <VIEW, INIT, CHANGE> PublicConfigurator(Configurator<? extends DynamicConfiguration<VIEW, INIT, CHANGE>> configurator) {
-        final ConfigurationTree<VIEW, CHANGE> root = configurator.getRoot();
-        this.root = (T) root;
-    }
-
+public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE, INIT>
+    extends ConfigurationTree<NamedListView<VIEW>, NamedListChange<CHANGE, INIT>>
+{
     /**
-     * Get root of the configuration.
-     * @return Configuration root.
+     * Get named configuration by name.
+     * @param name Name.
+     * @return Configuration.
      */
-    public T getRoot() {
-        return root;
-    }
+    T get(String name);
 }

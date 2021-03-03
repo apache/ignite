@@ -93,7 +93,7 @@ public abstract class ConfigurationNode<VIEW> {
                 if (cachedRootNode == oldRootNode) {
                     cachedRootNode = newRootNode;
 
-                    refreshValue0(newVal);
+                    beforeRefreshValue(newVal);
 
                     return val = newVal;
                 }
@@ -128,5 +128,5 @@ public abstract class ConfigurationNode<VIEW> {
      *
      * @param newValue New configuration value.
      */
-    protected abstract void refreshValue0(VIEW newValue);
+    protected abstract void beforeRefreshValue(VIEW newValue);
 }

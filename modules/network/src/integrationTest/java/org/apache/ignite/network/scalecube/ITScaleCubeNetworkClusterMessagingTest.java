@@ -47,6 +47,8 @@ class ITScaleCubeNetworkClusterMessagingTest {
 
             iterator.remove();
         }
+
+        TestNetworkHandlersProvider.MESSAGE_STORAGE.clear();
     }
 
     /** */

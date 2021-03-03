@@ -17,7 +17,6 @@
 
 package org.apache.ignite.configuration.processor.internal;
 
-import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
@@ -57,6 +56,7 @@ import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.ConfigurationValue;
+import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
@@ -80,6 +80,7 @@ import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
+import static org.apache.ignite.configuration.processor.internal.Utils.suppressWarningsUnchecked;
 
 /**
  * Annotation processor that produces configuration classes.
@@ -181,7 +182,7 @@ public class Processor extends AbstractProcessor {
                 // Get configuration types (VIEW, INIT, CHANGE and so on)
                 final ConfigurationFieldTypes types = getTypes(field);
 
-                TypeName getMethodType = types.getGetMethodType();
+                TypeName fieldType = types.getFieldType();
                 TypeName viewClassType = types.getViewClassType();
                 TypeName initClassType = types.getInitClassType();
                 TypeName changeClassType = types.getChangeClassType();
@@ -198,13 +199,13 @@ public class Processor extends AbstractProcessor {
                     // Create DynamicConfiguration (descendant) field
                     final FieldSpec nestedConfigField =
                         FieldSpec
-                            .builder(getMethodType, fieldName, Modifier.PRIVATE, FINAL)
+                            .builder(fieldType, fieldName, Modifier.PRIVATE, FINAL)
                             .build();
 
                     configurationClassBuilder.addField(nestedConfigField);
 
                     // Constructor statement
-                    constructorBodyBuilder.addStatement("add($L = new $T(keys, $S, rootKey, changer))", fieldName, getMethodType, fieldName);
+                    constructorBodyBuilder.addStatement("add($L = new $T(keys, $S, rootKey, changer))", fieldName, fieldType, fieldName);
                 }
 
                 final NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
@@ -216,11 +217,9 @@ public class Processor extends AbstractProcessor {
                         );
                     }
 
-                    ClassName fieldType = Utils.getConfigurationName((ClassName) baseType);
-
                     // Create NamedListConfiguration<> field
                     final FieldSpec nestedConfigField = FieldSpec.builder(
-                        getMethodType,
+                        fieldType,
                         fieldName,
                         Modifier.PRIVATE,
                         FINAL
@@ -232,9 +231,9 @@ public class Processor extends AbstractProcessor {
                     constructorBodyBuilder.addStatement(
                         "add($L = new $T(keys, $S, rootKey, changer, (p, k) -> new $T(p, k, rootKey, changer)))",
                         fieldName,
-                        getMethodType,
+                        fieldType,
                         fieldName,
-                        fieldType
+                        Utils.getConfigurationName((ClassName) baseType)
                     );
                 }
 
@@ -250,7 +249,7 @@ public class Processor extends AbstractProcessor {
                     }
 
                     // Create value (DynamicProperty<>) field
-                    final FieldSpec generatedField = FieldSpec.builder(getMethodType, fieldName, Modifier.PRIVATE, FINAL).build();
+                    final FieldSpec generatedField = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE, FINAL).build();
 
                     configurationClassBuilder.addField(generatedField);
 
@@ -259,11 +258,11 @@ public class Processor extends AbstractProcessor {
                     // Constructor statement
                     constructorBodyBuilder.addStatement(
                         "add($L = new $T(keys, $S, rootKey, changer), $L)",
-                        fieldName, getMethodType, fieldName, validatorsBlock
+                        fieldName, fieldType, fieldName, validatorsBlock
                     );
                 }
 
-                configDesc.getFields().add(new ConfigurationElement(getMethodType, fieldName, viewClassType, initClassType, changeClassType));
+                configDesc.getFields().add(new ConfigurationElement(fieldType, fieldName, viewClassType, initClassType, changeClassType));
 
                 createGetters(configurationClassBuilder, configurationInterfaceBuilder, fieldName, types);
             }
@@ -341,14 +340,20 @@ public class Processor extends AbstractProcessor {
             .build();
         configurationInterfaceBuilder.addMethod(interfaceGetMethod);
 
-        MethodSpec getMethod = MethodSpec.methodBuilder(fieldName)
+        MethodSpec.Builder getMethodBuilder = MethodSpec.methodBuilder(fieldName)
             .addAnnotation(Override.class)
             .addJavadoc("{@inheritDoc}")
             .addModifiers(PUBLIC, FINAL)
-            .returns(types.getGetMethodType())
-            .addStatement("return $L", fieldName)
-            .build();
-        configurationClassBuilder.addMethod(getMethod);
+            .returns(types.getInterfaceGetMethodType());
+
+        if (Utils.isNamedConfiguration(types.getFieldType())) {
+            getMethodBuilder.addAnnotation(suppressWarningsUnchecked())
+                .addStatement("return ($T)$L", NamedConfigurationTree.class, fieldName);
+        }
+        else
+            getMethodBuilder.addStatement("return $L", fieldName);
+
+        configurationClassBuilder.addMethod(getMethodBuilder.build());
     }
 
     /**
@@ -357,7 +362,7 @@ public class Processor extends AbstractProcessor {
      * @return Bundle with all types for configuration
      */
     private ConfigurationFieldTypes getTypes(final VariableElement field) {
-        TypeName getMethodType = null;
+        TypeName fieldType = null;
         TypeName interfaceGetMethodType = null;
 
         final TypeName baseType = TypeName.get(field.asType());
@@ -369,10 +374,10 @@ public class Processor extends AbstractProcessor {
 
         final ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
         if (confAnnotation != null) {
-            getMethodType = Utils.getConfigurationName((ClassName) baseType);
+            fieldType = Utils.getConfigurationName((ClassName) baseType);
             interfaceGetMethodType = Utils.getConfigurationInterfaceName((ClassName) baseType);
 
-            unwrappedType = getMethodType;
+            unwrappedType = fieldType;
             viewClassType = Utils.getViewName((ClassName) baseType);
             initClassType = Utils.getInitName((ClassName) baseType);
             changeClassType = Utils.getChangeName((ClassName) baseType);
@@ -380,16 +385,14 @@ public class Processor extends AbstractProcessor {
 
         final NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
         if (namedConfigAnnotation != null) {
-            ClassName fieldType = Utils.getConfigurationName((ClassName) baseType);
-            //TODO IGNITE-14182 This is BS, interface name must be used instead.
-            ClassName interfaceFieldType = Utils.getConfigurationName((ClassName) baseType);
+            ClassName interfaceGetType = Utils.getConfigurationInterfaceName((ClassName) baseType);
 
             viewClassType = Utils.getViewName((ClassName) baseType);
             initClassType = Utils.getInitName((ClassName) baseType);
             changeClassType = Utils.getChangeName((ClassName) baseType);
 
-            getMethodType = ParameterizedTypeName.get(ClassName.get(NamedListConfiguration.class), viewClassType, fieldType, initClassType, changeClassType);
-            interfaceGetMethodType = ParameterizedTypeName.get(ClassName.get(NamedListConfiguration.class), viewClassType, interfaceFieldType, initClassType, changeClassType);
+            fieldType = ParameterizedTypeName.get(ClassName.get(NamedListConfiguration.class), interfaceGetType, viewClassType, changeClassType, initClassType);
+            interfaceGetMethodType = ParameterizedTypeName.get(ClassName.get(NamedConfigurationTree.class), interfaceGetType, viewClassType, changeClassType, initClassType);
         }
 
         final Value valueAnnotation = field.getAnnotation(Value.class);
@@ -403,11 +406,11 @@ public class Processor extends AbstractProcessor {
                 genericType = genericType.box();
             }
 
-            getMethodType = ParameterizedTypeName.get(dynPropClass, genericType);
+            fieldType = ParameterizedTypeName.get(dynPropClass, genericType);
             interfaceGetMethodType = ParameterizedTypeName.get(confValueClass, genericType);
         }
 
-        return new ConfigurationFieldTypes(getMethodType, unwrappedType, viewClassType, initClassType, changeClassType, interfaceGetMethodType);
+        return new ConfigurationFieldTypes(fieldType, unwrappedType, viewClassType, initClassType, changeClassType, interfaceGetMethodType);
     }
 
     /**
@@ -415,7 +418,7 @@ public class Processor extends AbstractProcessor {
      */
     private static class ConfigurationFieldTypes {
         /** Field get method type. */
-        private final TypeName getMethodType;
+        private final TypeName fieldType;
 
         /** Configuration type (if marked with @ConfigValue or @NamedConfig), or original type (if marked with @Value) */
         private final TypeName unwrappedType;
@@ -432,8 +435,8 @@ public class Processor extends AbstractProcessor {
         /** Get method type for public interface. */
         private final TypeName interfaceGetMethodType;
 
-        private ConfigurationFieldTypes(TypeName getMethodType, TypeName unwrappedType, TypeName viewClassType, TypeName initClassType, TypeName changeClassType, TypeName interfaceGetMethodType) {
-            this.getMethodType = getMethodType;
+        private ConfigurationFieldTypes(TypeName fieldType, TypeName unwrappedType, TypeName viewClassType, TypeName initClassType, TypeName changeClassType, TypeName interfaceGetMethodType) {
+            this.fieldType = fieldType;
             this.unwrappedType = unwrappedType;
             this.viewClassType = viewClassType;
             this.initClassType = initClassType;
@@ -447,8 +450,8 @@ public class Processor extends AbstractProcessor {
         }
 
         /** */
-        public TypeName getGetMethodType() {
-            return getMethodType;
+        public TypeName getFieldType() {
+            return fieldType;
         }
 
         /** */
@@ -711,11 +714,7 @@ public class Processor extends AbstractProcessor {
                             nodeChangeMtdBuilder.addStatement("$L.accept($L)", paramName, fieldName);
                         }
                         else {
-                            nodeChangeMtdBuilder.addAnnotation(
-                                AnnotationSpec.builder(SuppressWarnings.class)
-                                    .addMember("value", "$S", "unchecked")
-                                    .build()
-                            );
+                            nodeChangeMtdBuilder.addAnnotation(suppressWarningsUnchecked());
 
                             nodeChangeMtdBuilder.addStatement("$L.accept((NamedListChange)$L)", paramName, fieldName);
                         }
@@ -776,11 +775,7 @@ public class Processor extends AbstractProcessor {
                             nodeInitMtdBuilder.addStatement("$L.accept($L)", paramName, fieldName);
                         }
                         else {
-                            nodeInitMtdBuilder.addAnnotation(
-                                AnnotationSpec.builder(SuppressWarnings.class)
-                                    .addMember("value", "$S", "unchecked")
-                                    .build()
-                            );
+                            nodeInitMtdBuilder.addAnnotation(suppressWarningsUnchecked());
 
                             nodeInitMtdBuilder.addStatement("$L.accept((NamedListChange)$L)", paramName, fieldName);
                         }
