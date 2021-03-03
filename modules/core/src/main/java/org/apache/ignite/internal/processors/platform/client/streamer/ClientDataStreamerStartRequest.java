@@ -109,11 +109,15 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
         IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.kernalContext().grid().dataStreamer(cacheName);
 
-        dataStreamer.perNodeBufferSize(perNodeBufferSize);
-        dataStreamer.perThreadBufferSize(perThreadBufferSize);
+        if (perNodeBufferSize >= 0)
+            dataStreamer.perNodeBufferSize(perNodeBufferSize);
+
+        if (perThreadBufferSize >= 0)
+            dataStreamer.perThreadBufferSize(perThreadBufferSize);
+
         dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE_FLAG_MASK) != 0);
         dataStreamer.skipStore((flags & SKIP_STORE_FLAG_MASK) != 0);
-        dataStreamer.skipStore((flags & KEEP_BINARY_FLAG_MASK) != 0);
+        dataStreamer.keepBinary((flags & KEEP_BINARY_FLAG_MASK) != 0);
 
         if (receiver != null)
             dataStreamer.receiver(receiver);
