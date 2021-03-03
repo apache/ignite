@@ -63,6 +63,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     @Parameterized.Parameter(TEST_AGG_PARAM_NUM)
     public TestAggregateType testAgg;
 
+    /** */
     @Parameterized.Parameters(name = PARAMS_STRING + ", type={" + TEST_AGG_PARAM_NUM + "}")
     public static List<Object[]> data() {
         List<Object[]> extraParams = new ArrayList<>();

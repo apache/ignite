@@ -45,14 +45,14 @@ public class SortAggregateConverterRule extends AbstractIgniteConverterRule<Logi
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
         LogicalAggregate rel) {
+        // Applicable only for GROUP BY
+        if (F.isEmpty(rel.getGroupSet()) || rel.getGroupSets().size() > 1)
+            return null;
+
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode input = rel.getInput();
-
-        // Applicable only for GROUP BY
-        if (F.isEmpty(rel.getGroupSet()) || rel.getGroupSets().size() > 1)
-            return null;
 
         RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(rel.getGroupSet().asList()));
 

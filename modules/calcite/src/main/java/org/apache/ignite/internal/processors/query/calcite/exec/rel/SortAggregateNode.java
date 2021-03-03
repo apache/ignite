@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -50,6 +52,9 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
     /** */
     private final Comparator<Row> comp;
+
+    /** */
+    private final Deque<Row> outBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     private Row prevRow;
@@ -88,93 +93,85 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
+    @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
-        assert waiting <= 0;
 
-        try {
-            checkState();
+        checkState();
 
-            requested = rowsCnt;
+        requested = rowsCnt;
 
-            if (waiting == 0) {
-                waiting = requested;
+        if (!outBuf.isEmpty())
+            doPush();
 
-                source().request(requested);
-            }
-            else
-                downstream().end();
+        if (waiting == 0) {
+            waiting = IN_BUFFER_SIZE;
+
+            source().request(IN_BUFFER_SIZE);
         }
-        catch (Exception e) {
-            onError(e);
-        }
+        else if (waiting < 0)
+            downstream().end();
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) {
+    @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting--;
+        waiting--;
 
-            if (grp != null) {
-                int cmp = comp.compare(row, prevRow);
+        if (grp != null) {
+            int cmp = comp.compare(row, prevRow);
 
-                if (cmp == 0)
-                    grp.add(row);
-                else {
-                    if (cmpRes == 0)
-                        cmpRes = cmp;
-                    else
-                        assert Integer.signum(cmp) == Integer.signum(cmpRes) : "Input not sorted";
+            if (cmp == 0)
+                grp.add(row);
+            else {
+                if (cmpRes == 0)
+                    cmpRes = cmp;
+                else
+                    assert Integer.signum(cmp) == Integer.signum(cmpRes) : "Input not sorted";
 
-                    doPush();
+                outBuf.add(grp.row());
 
-                    grp = newGroup(row);
-                }
-            }
-            else
                 grp = newGroup(row);
 
-            prevRow = row;
-
-            if (waiting == 0 && requested > 0) {
-                waiting = requested;
-
-                context().execute(() -> source().request(requested), this::onError);
+                doPush();
             }
         }
-        catch (Exception e) {
-            onError(e);
+        else
+            grp = newGroup(row);
+
+        prevRow = row;
+
+        if (waiting == 0 && requested > 0) {
+            waiting = IN_BUFFER_SIZE;
+
+            context().execute(() -> source().request(IN_BUFFER_SIZE), this::onError);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
+    @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
-        try {
-            checkState();
+        checkState();
 
-            waiting = -1;
+        waiting = -1;
 
-            if (grp != null)
-                doPush();
+        if (grp != null) {
+            outBuf.add(grp.row());
 
-            if (requested > 0)
-                downstream().end();
-
-            grp = null;
-            prevRow = null;
+            doPush();
         }
-        catch (Exception e) {
-            onError(e);
-        }
+
+        if (requested > 0)
+            downstream().end();
+
+        grp = null;
+        prevRow = null;
     }
 
     /** {@inheritDoc} */
@@ -212,9 +209,11 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
     /** */
     private void doPush() throws Exception {
-        requested--;
+        while (requested > 0 && !outBuf.isEmpty()) {
+            requested--;
 
-        downstream().push(grp.row());
+            downstream().push(outBuf.poll());
+        }
     }
 
     /** */
