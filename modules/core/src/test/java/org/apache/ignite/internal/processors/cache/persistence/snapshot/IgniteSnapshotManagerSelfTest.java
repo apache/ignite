@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,7 @@ import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -401,17 +403,69 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         snpFut.get(5_000, TimeUnit.MILLISECONDS);
     }
 
-    // TODO add test, which compare partition hashes between idle_verify and partition scan iterator
-    // TODO add assert that pages marked as read only once in readBitSet
-    // TODO add assert that pages marked as marked only once in markBitSet
-    // TODO 3 min test with random put,remove of randomized values and Iterator finished successful
-    // TODO add discrete number of filled pages: 0.5 page, 1 page, 1.5 page, 2 page, 4 page etc.
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotIteratorRandomizedLoader() throws Exception {
+        Random rnd = new Random();
+        int maxKey = 15_000;
+        int maxValSize = 32_768;
+        int loadingTimeMs = 60_000;
 
-//    /** @throws Exception If fails */
-//    @Test
-//    public void testSnapshotIteratorFullPagesReorder() throws Exception {
-//
-//    }
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>("tx1"))
+            .setAffinity(new RendezvousAffinityFunction(false, 1));
+
+        IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, k -> new Value(new byte[1024]), ccfg);
+
+        IgniteCache<Integer, Value> cache = ignite.cache(ccfg.getName());
+
+        long startTime = U.currentTimeMillis();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while(!Thread.currentThread().isInterrupted() && startTime + loadingTimeMs > U.currentTimeMillis()) {
+                if (rnd.nextBoolean())
+                    cache.put(rnd.nextInt(15_000), new Value(new byte[rnd.nextInt(maxValSize)]));
+                else
+                    cache.remove(rnd.nextInt(maxKey));
+            }
+
+        }, 5, "change-loader-");
+
+        fut.get();
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        Map<Integer, Value> iterated = new HashMap<>();
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            ccfg.getName(),
+            0)
+        ) {
+            CacheObjectContext coctx = ignite.cachex(ccfg.getName()).context().cacheObjectContext();
+
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                iterated.put(row.key().value(coctx, true), row.value().value(coctx, true));
+            }
+        }
+
+        stopAllGrids();
+
+        IgniteEx snpIgnite = startGridsFromSnapshot(1, SNAPSHOT_NAME);
+
+        IgniteCache<Integer, Value> snpCache = snpIgnite.cache(ccfg.getName());
+
+        assertEquals(snpCache.size(CachePeekMode.PRIMARY), iterated.size());
+        snpCache.forEach(e -> {
+            Value val = iterated.remove(e.getKey());
+
+            assertNotNull(val);
+            assertEquals(val.arr().length, e.getValue().arr().length);
+        });
+
+        assertTrue(iterated.isEmpty());
+    }
 
     /** @throws Exception If fails */
     @Test

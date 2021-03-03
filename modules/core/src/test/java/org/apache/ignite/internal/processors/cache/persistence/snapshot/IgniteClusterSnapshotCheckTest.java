@@ -22,14 +22,21 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
@@ -52,6 +59,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
+import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -59,6 +69,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -432,5 +445,85 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCompareHashes() throws Exception {
+        Random rnd = new Random();
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]), ccfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleHashes = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpHashes = new HashMap<>();
+
+        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(idleHashes),
+            new VisorIdleVerifyTaskArg(new HashSet<>(Collections.singletonList(ccfg.getName())),
+            new HashSet<>(),
+            false,
+            CacheFilterEnum.USER,
+            true));
+
+        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(snpHashes),
+            Collections.singletonMap(ignite.cluster().localNode(),
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME, (String)ignite.configuration().getConsistentId()))));
+
+        assertEquals(idleHashes, snpHashes);
+        assertEquals(idleVerifyRes, snpVerifyRes);
+    }
+
+    /** */
+    private static class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTaskV2 {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes;
+
+        /**
+         * @param hashes Map of calculated partition hashes.
+         */
+        public TestVisorBackupPartitionsTask(Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes) {
+            this.hashes = hashes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+            IdleVerifyResultV2 res = super.reduce(results);
+
+            for (ComputeJobResult job : results) {
+                if (job.getException() != null)
+                    continue;
+
+                job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
+                    hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
+            }
+
+            return res;
+        }
+    }
+
+    /** */
+    private static class TestSnapshotPartitionsVerifyTask extends SnapshotPartitionsVerifyTask {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes;
+
+        /** @param hashes Map of calculated partition hashes. */
+        public TestSnapshotPartitionsVerifyTask(Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes) {
+            this.hashes = hashes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+            IdleVerifyResultV2 res = super.reduce(results);
+
+            for (ComputeJobResult job : results) {
+                if (job.getException() != null)
+                    continue;
+
+                job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
+                    hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
+            }
+
+            return res;
+        }
     }
 }
