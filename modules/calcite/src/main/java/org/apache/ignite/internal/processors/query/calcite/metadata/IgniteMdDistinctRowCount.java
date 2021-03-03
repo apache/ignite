@@ -40,6 +40,9 @@ public class IgniteMdDistinctRowCount extends RelMdDistinctRowCount {
         ImmutableBitSet groupKey,
         RexNode predicate
     ) {
+        if (groupKey.cardinality() == 0)
+            return 1d;
+
         double rowCount = mq.getRowCount(rel);
 
         rowCount *= 1.0 - Math.pow(.5, groupKey.cardinality());

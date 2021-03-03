@@ -58,17 +58,7 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        if (groupSet.cardinality() == 0)
-            return 1;
-
-        Double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
-
-        // Estimation of the groups count is not available.
-        // Use heuristic estimation for result rows count.
-        if (groupsCnt == null)
-            return super.estimateRowCount(mq);
-        else
-            return groupsCnt;
+        return mq.getDistinctRowCount(getInput(), groupSet, null);
     }
 
     /** */
