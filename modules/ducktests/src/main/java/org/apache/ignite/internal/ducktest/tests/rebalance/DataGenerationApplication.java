@@ -55,10 +55,15 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             for (int i = 0; i < entryCnt; i++) {
                 stmr.addData(i, new DataModel(entrySize));
 
-                if (i % 10_000 == 0)
-                    log.info("Streamed " + i + " entries");
+                int streamed = i + 1;
+
+                if (streamed % 5_000 == 0)
+                    log.info("Streamed " + streamed + " entries into " + cache.getName());
             }
-        }
+
+            if (entryCnt % 5_000 != 0)
+                log.info("Streamed " + entryCnt + " entries into " + cache.getName());
+       }
     }
 
     /**
