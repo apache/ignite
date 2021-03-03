@@ -64,17 +64,8 @@ class SslParams:
 
 def get_ssl_params_from_globals(_globals: dict, user: str):
     """
-    Parse globals with structure like that.
-    {
-        "use_ssl": True,
-        "admin": {
-            "credentials": ["username", "qwerty_123"],
-            "ssl": {
-                "key_store_jks": ....
-            }
-        }
-
-    }
+    Gets SSL params from Globals
+    Structure may be found in modules/ducktests/tests/checks/utils/check_get_ssl_params_from_globals.py
     """
     root_dir = _globals.get("install_root", DEFAULT_ROOT)
     ssl_param = None

@@ -23,13 +23,8 @@ DEFAULT_AUTH_USERNAME = "ignite"
 
 def get_credentials_from_globals(_globals: dict, user: str):
     """
-    Parse globals with structure like that.
-    {
-        "use_auth": True,
-        "admin": {
-            "credentials": ["username", "qwerty_123"]
-        }
-    }
+    Gets Credentials from Globals
+    Structure may be found in modules/ducktests/tests/checks/utils/check_get_credentials_from_globals.py
     """
     username, password = None, None
     if _globals.get('use_auth'):
