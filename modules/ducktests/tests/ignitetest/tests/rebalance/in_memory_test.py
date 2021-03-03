@@ -32,8 +32,6 @@ class RebalanceInMemoryTest(RebalanceTest):
     Tests rebalance scenarios in in-memory mode.
     """
     NUM_NODES = 4
-    PRELOAD_TIMEOUT = 60
-    REBALANCE_TIMEOUT = 60
 
     # pylint: disable=too-many-arguments
     @cluster(num_nodes=NUM_NODES)
