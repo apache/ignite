@@ -41,9 +41,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     private IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor;
 
     /** */
-    private FailureProcessor failureProcessor;
-
-    /** */
     private Thread.UncaughtExceptionHandler eHnd;
 
     /** */
@@ -63,13 +60,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
      */
     public void exceptionHandler(Thread.UncaughtExceptionHandler eHnd) {
         this.eHnd = eHnd;
-    }
-
-    /**
-     * @param failureProcessor Failure processor.
-     */
-    public void failureProcessor(FailureProcessor failureProcessor) {
-        this.failureProcessor = failureProcessor;
     }
 
     /** {@inheritDoc} */
@@ -100,8 +90,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
-        failureProcessor(proc.failureProcessor());
-
         stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
@@ -119,9 +107,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
     /** {@inheritDoc} */
     @Override public void uncaughtException(Thread t, Throwable e) {
-        if (failureProcessor != null)
-            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
         if (eHnd != null)
             eHnd.uncaughtException(t, e);
     }
