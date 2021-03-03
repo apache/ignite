@@ -32,7 +32,7 @@ public enum PerformanceStatisticsSubCommand {
     /** Sub-command to stop collecting performance statistics in the cluster. */
     STOP("stop", VisorPerformanceStatisticsOperation.STOP),
 
-    /** Sub-command to rotate file collecting performance statistics in the cluster. */
+    /** Sub-command to rotate collecting performance statistics in the cluster. */
     ROTATE("rotate", VisorPerformanceStatisticsOperation.ROTATE),
 
     /** Sub-command to get status of collecting performance statistics in the cluster. */

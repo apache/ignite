@@ -90,9 +90,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         startCollectStatistics();
 
-        rotateCollectStatistics();
-
-        assertTrue(awaitRotateFile());
+        assertTrue(rotateCollectStatisticsAndAwait());
 
         AtomicInteger ops = new AtomicInteger();
 
@@ -106,9 +104,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         for (int i = 1; i <= cnt; i++) {
             srv.cache(DEFAULT_CACHE_NAME).get(0);
 
-            rotateCollectStatistics();
-
-            assertTrue(awaitRotateFile());
+            assertTrue(rotateCollectStatisticsAndAwait());
 
             String sfx = "-" + i + ".prf";
 
@@ -127,12 +123,14 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     }
 
     /**
-     * Awaiting for the performance statistics file to rotated.
+     * Rotate collecting performance statistics in the cluster and await.
      */
-    private boolean awaitRotateFile() throws IgniteInterruptedCheckedException {
+    private boolean rotateCollectStatisticsAndAwait() throws Exception {
         LogListener logLsnr = LogListener.matches("Performance statistics writer rotated.").build();
 
         listeningTestLog.registerListener(logLsnr);
+
+        rotateCollectStatistics();
 
         return waitForCondition(logLsnr::check, TIMEOUT);
     }

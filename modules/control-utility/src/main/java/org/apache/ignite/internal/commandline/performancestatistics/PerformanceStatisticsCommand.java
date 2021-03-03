@@ -93,7 +93,7 @@ public class PerformanceStatisticsCommand extends AbstractCommand<Object> {
         Command.usage(log, "Stop collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, STOP.toString());
 
-        Command.usage(log, "Rotate file collecting performance statistics in the cluster:",
+        Command.usage(log, "Rotate collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, ROTATE.toString());
 
         Command.usage(log, "Get status of collecting performance statistics in the cluster:",

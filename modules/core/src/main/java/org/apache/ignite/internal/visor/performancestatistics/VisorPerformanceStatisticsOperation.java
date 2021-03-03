@@ -27,7 +27,7 @@ public enum VisorPerformanceStatisticsOperation {
     /** Stop collecting performance statistics in the cluster. */
     STOP,
 
-    /** Rotate file collecting performance statistics in the cluster. */
+    /** Rotate collecting performance statistics in the cluster. */
     ROTATE,
 
     /** Get status of collecting performance statistics in the cluster. */

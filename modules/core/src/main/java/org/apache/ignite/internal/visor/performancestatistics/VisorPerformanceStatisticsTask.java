@@ -73,7 +73,7 @@ public class VisorPerformanceStatisticsTask extends VisorOneNodeTask<VisorPerfor
                         return "Stopped.";
 
                     case ROTATE:
-                        ignite.context().performanceStatistics().rotateCollectStatistics();
+                        ignite.context().performanceStatistics().rotateCollectStatistics().get();
 
                         return "File rotated.";
 

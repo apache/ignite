@@ -26,22 +26,25 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 
@@ -218,12 +221,15 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Rotate file collecting performance statistics.
+     * Rotate collecting performance statistics.
      *
      * @throws IgniteCheckedException If stopping failed.
      */
-    public void rotateCollectStatistics() throws IgniteCheckedException {
+    public IgniteInternalFuture<Void> rotateCollectStatistics() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
+
+        if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS_ROTATE))
+            throw new IllegalStateException("Not all nodes in the cluster support rotating performance statistics.");
 
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
@@ -231,8 +237,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        ctx.closure().broadcast(new PerformanceStatisticsRotateClosure(), null,
-            ctx.discovery().allNodes(), null);
+        return ctx.closure().callAsyncNoFailover(BROADCAST,
+            new PerformanceStatisticsRotateClosure(),
+            ctx.discovery().allNodes(),
+            false, 0, true);
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -338,8 +346,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         public void onStarted();
     }
 
-    /** Closure to rotating the performance statistics file. */
-    private static class PerformanceStatisticsRotateClosure implements IgniteClosure<Void, Void> {
+    /** Callable to rotating the performance statistics. */
+    @GridInternal
+    private static class PerformanceStatisticsRotateClosure implements IgniteCallable<Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -348,7 +357,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         private transient IgniteEx ignite;
 
         /** {@inheritDoc} */
-        @Override public Void apply(Void unused) {
+        @Override public Void call() throws Exception {
             ignite.context().performanceStatistics().rotateWriter();
 
             return null;
