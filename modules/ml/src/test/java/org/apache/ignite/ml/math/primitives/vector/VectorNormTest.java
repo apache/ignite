@@ -203,7 +203,7 @@ public class VectorNormTest {
             double norm = 0;
 
             for (double val : arr)
-                norm += pow == 1 ? Math.abs(val) : Math.pow(val, pow);
+                norm += pow == 1 ? Math.abs(val) : Math.pow(Math.abs(val), pow);
 
             return norm;
         }

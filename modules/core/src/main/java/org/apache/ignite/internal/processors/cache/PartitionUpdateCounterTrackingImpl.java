@@ -68,16 +68,16 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     private static final byte VERSION = 1;
 
     /** Queue of applied out of order counter updates. */
-    private NavigableMap<Long, Item> queue = new TreeMap<>();
+    protected NavigableMap<Long, Item> queue = new TreeMap<>();
 
     /** LWM. */
-    private final AtomicLong cntr = new AtomicLong();
+    protected final AtomicLong cntr = new AtomicLong();
 
     /** HWM. */
     protected final AtomicLong reserveCntr = new AtomicLong();
 
     /** */
-    private boolean first = true;
+    protected boolean first = true;
 
     /** */
     protected final CacheGroupContext grp;
@@ -86,7 +86,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
-    @Deprecated private volatile long initCntr;
+    @Deprecated protected volatile long initCntr;
 
     /**
      * @param grp Group.
@@ -457,7 +457,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public PartitionUpdateCounter copy() {
-        PartitionUpdateCounterTrackingImpl copy = new PartitionUpdateCounterTrackingImpl(grp);
+        PartitionUpdateCounterTrackingImpl copy = createInstance();
 
         copy.cntr.set(cntr.get());
         copy.first = first;
@@ -466,5 +466,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         copy.reserveCntr.set(reserveCntr.get());
 
         return copy;
+    }
+
+    /** */
+    protected PartitionUpdateCounterTrackingImpl createInstance() {
+        return new PartitionUpdateCounterTrackingImpl(grp);
     }
 }

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -230,7 +231,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     public void testCacheTaskPermOperations() {
         List<IgniteBiTuple<Consumer<IgniteClient>, String>> ops = Arrays.asList(
             t(c -> c.cache(CACHE).removeAll(), "removeAll"),
-            t(c -> c.cache(CACHE).clear(), "clear")
+            t(c -> c.cache(CACHE).clear(), "clear"),
+            t(c -> c.cache(CACHE).clear("key"), "clearKey"),
+            t(c -> c.cache(CACHE).clearAll(ImmutableSet.of("key")), "clearKeys")
         );
 
         for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops) {
@@ -262,6 +265,15 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             assertThrowsWithCause(() -> runOperation(CLIENT, op), ClientAuthorizationException.class);
     }
 
+    /** */
+    @Test
+    public void testAllowedOperationAfterSecurityViolation() throws Exception {
+        try (IgniteClient client = startClient(CLIENT_READ)) {
+            assertThrowsWithCause(() -> client.cache(CACHE).put("key", "value"), ClientAuthorizationException.class);
+            assertNull(client.cache(CACHE).get("key"));
+        }
+    }
+
     /**
      * Gets all operations.
      *
@@ -286,7 +298,8 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         return Arrays.asList(
             t(c -> c.cache(cacheName).get("key"), "get)"),
             t(c -> c.cache(cacheName).getAll(Collections.singleton("key")), "getAll"),
-            t(c -> c.cache(cacheName).containsKey("key"), "containsKey")
+            t(c -> c.cache(cacheName).containsKey("key"), "containsKey"),
+            t(c -> c.cache(cacheName).containsKeys(ImmutableSet.of("key")), "containsKeys")
         );
     }
 
@@ -301,6 +314,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             t(c -> c.cache(cacheName).putAll(singletonMap("key", "value")), "putAll"),
             t(c -> c.cache(cacheName).replace("key", "value"), "replace"),
             t(c -> c.cache(cacheName).putIfAbsent("key", "value"), "putIfAbsent"),
+            t(c -> c.cache(cacheName).getAndPutIfAbsent("key", "value"), "getAndPutIfAbsent"),
             t(c -> c.cache(cacheName).getAndPut("key", "value"), "getAndPut"),
             t(c -> c.cache(cacheName).getAndReplace("key", "value"), "getAndReplace")
         );

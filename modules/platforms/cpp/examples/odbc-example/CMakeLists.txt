@@ -25,9 +25,14 @@ find_package(Java 1.8 REQUIRED)
 find_package(JNI REQUIRED)
 find_package(ODBC REQUIRED)
 
-include_directories(../include ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
+include_directories(../include)
 
 add_executable(${TARGET} src/odbc_example.cpp)
 
-target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB} ${ODBC_LIBRARY}
-        ${CMAKE_THREAD_LIBS_INIT})
+if (WIN32)
+    remove_definitions(-DUNICODE=1)
+endif()
+
+target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_JNI_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB}
+        ${ODBC_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})

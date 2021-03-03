@@ -19,10 +19,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -173,6 +175,12 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
         return historical;
     }
+
+    /** */
+    public Collection<Integer> all() {
+        return F.concat(false, fullSet(), historicalSet());
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

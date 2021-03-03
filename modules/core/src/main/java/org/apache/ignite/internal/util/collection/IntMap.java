@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.function.IntFunction;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * The map for integer keys.
  */
@@ -82,4 +86,36 @@ public interface IntMap<V> {
      * Returns <tt>true</tt> if this map contains no key-value mappings.
      */
     boolean isEmpty();
+
+    /** Returns array of keys. */
+    int[] keys();
+
+    /** Return array of values. */
+    V[] values();
+
+    /**
+     * If the specified key is not already associated with a value (or is mapped
+     * to {@code null}), attempts to compute its value using the given mapping
+     * function and enters it into this map unless {@code null}.
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param mappingFunction Function to compute a value.
+     * @return Current (existing or computed) value.
+     * @throws NullPointerException If  the mappingFunction is null.
+     */
+    @Nullable default V computeIfAbsent(int key, IntFunction<? extends V> mappingFunction) {
+        A.notNull(mappingFunction, "mappingFunction");
+
+        V v;
+
+        if ((v = get(key)) == null) {
+            V newVal;
+            if ((newVal = mappingFunction.apply(key)) != null) {
+                put(key, newVal);
+                return newVal;
+            }
+        }
+
+        return v;
+    }
 }

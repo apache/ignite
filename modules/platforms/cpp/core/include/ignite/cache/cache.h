@@ -56,9 +56,9 @@ namespace ignite
          * copy-constructable and assignable. Also BinaryType class
          * template should be specialized for both types.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
-         * underlying object. Underlying object released automatically once all
+         * underlying object. Underlying object will be released automatically once all
          * the instances are destructed.
          *
          * @tparam K Cache key type.
@@ -264,7 +264,7 @@ namespace ignite
                 impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
                 impl::Out1Operation<V> outOp(val);
 
-                impl.Get()->LocalPeek(inOp, outOp, peekModes, err);
+                impl.Get()->LocalPeek(inOp, outOp, err);
 
                 return val;
             }

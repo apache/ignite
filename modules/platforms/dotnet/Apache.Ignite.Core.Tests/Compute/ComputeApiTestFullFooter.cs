@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// Compute API test with compact footers disabled.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class ComputeApiTestFullFooter : ComputeApiTest
     {
         /// <summary>

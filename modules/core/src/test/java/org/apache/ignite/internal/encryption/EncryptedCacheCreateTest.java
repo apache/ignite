@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,8 +90,11 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         assertNotNull(enc);
 
-        KeystoreEncryptionKey key =
-            (KeystoreEncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
+        GroupKey grpKey = grid.context().encryption().getActiveKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
+
+        assertNotNull(grpKey);
+
+        KeystoreEncryptionKey key = (KeystoreEncryptionKey)grpKey.key();
 
         assertNotNull(key);
         assertNotNull(key.key());

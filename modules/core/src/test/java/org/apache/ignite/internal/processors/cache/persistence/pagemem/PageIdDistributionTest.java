@@ -56,7 +56,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
     private static final int PARTS = 1024;
 
     /** */
-    private static final int PAGES = 10240;
+    private static final int PAGES = 4096;
 
     /**
      *
@@ -64,13 +64,13 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
     @Test
     public void testDistributions() {
         printPageIdDistribution(
-            CU.cacheId("partitioned"), 1024, 10_000, 32, 2.5f);
+            CU.cacheId("partitioned"), PARTS, PAGES, 32, 2.5f);
 
         printPageIdDistribution(
-            CU.cacheId("partitioned"), 1024, 10_000, 64, 2.5f);
+            CU.cacheId("partitioned"), PARTS, PAGES, 64, 2.5f);
 
         printPageIdDistribution(
-            CU.cacheId(null), 1024, 10_000, 32, 2.5f);
+            CU.cacheId(null), PARTS, PAGES, 32, 2.5f);
     }
 
     /**

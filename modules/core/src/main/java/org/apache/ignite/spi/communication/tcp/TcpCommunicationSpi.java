@@ -46,7 +46,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -95,6 +95,7 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigIn
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationSpiMBeanImpl;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage;
+import org.apache.ignite.spi.communication.tcp.internal.TcpHandshakeExecutor;
 import org.apache.ignite.spi.communication.tcp.internal.shmem.ShmemAcceptWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -677,7 +678,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         else
             connPlc = new FirstConnectionPolicy();
 
-        this.srvLsnr = new InboundConnectionHandler(
+        this.srvLsnr = resolve(ignite, new InboundConnectionHandler(
             log,
             cfg,
             nodeGetter,
@@ -703,15 +704,17 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                         lsnr.onDisconnected(nodeId);
                 }
             }
-        );
+        ));
 
-        GridTimeoutProcessor timeoutProcessor = ignite instanceof IgniteKernal ?
-            ((IgniteKernal)ignite).context().timeout() : null;
+        TcpHandshakeExecutor tcpHandshakeExecutor = resolve(ignite, new TcpHandshakeExecutor(
+            log,
+            stateProvider,
+            cfg.directBuffer()
+        ));
 
-        this.nioSrvWrapper = new GridNioServerWrapper(
+        this.nioSrvWrapper = resolve(ignite, new GridNioServerWrapper(
             log,
             cfg,
-            timeoutProcessor,
             attributeNames,
             tracing,
             nodeGetter,
@@ -740,12 +743,13 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                     if (lsnr instanceof CommunicationListenerEx)
                         ((CommunicationListenerEx<Message>)lsnr).onChannelOpened(rmtNodeId, initMsg, channel);
                 }
-            }
-        );
+            },
+            tcpHandshakeExecutor
+        ));
 
         this.srvLsnr.setNioSrvWrapper(nioSrvWrapper);
 
-        this.clientPool = new ConnectionClientPool(
+        this.clientPool = resolve(ignite, new ConnectionClientPool(
             cfg,
             attributeNames,
             log,
@@ -755,12 +759,13 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             null,
             getWorkersRegistry(ignite),
             this,
-            timeoutProcessor,
             stateProvider,
-            nioSrvWrapper
-        );
+            nioSrvWrapper,
+            getName()
+        ));
 
-        srvLsnr.setClientPool(clientPool);
+        this.srvLsnr.setClientPool(clientPool);
+
         nioSrvWrapper.clientPool(clientPool);
 
         discoLsnr = new CommunicationDiscoveryEventListener(clientPool, metricsLsnr);
@@ -939,8 +944,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         spiCtx.addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ctxInitLatch.countDown();
-
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
 
         registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
@@ -951,6 +954,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         if (shmemAcceptWorker != null)
             shmemAcceptWorker.metricsListener(metricsLsnr);
+
+        ctxInitLatch.countDown();
     }
 
     /** {@inheritDoc} */
@@ -1068,6 +1073,13 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         Message initMsg
     ) throws IgniteSpiException {
         return nioSrvWrapper.openChannel(remote, initMsg);
+    }
+
+    /**
+     * Checks {@link Ignite} implementation type and calls {@link GridResourceProcessor#resolve(Object)} or returns original.
+     */
+    private <T> T resolve(Ignite ignite, T instance) {
+        return ignite instanceof IgniteKernal ? ((IgniteKernal)ignite).context().resource().resolve(instance) : instance;
     }
 
     /**

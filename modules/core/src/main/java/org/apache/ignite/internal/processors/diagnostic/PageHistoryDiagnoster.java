@@ -32,9 +32,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
@@ -140,11 +140,11 @@ public class PageHistoryDiagnoster {
         List<FileDescriptor> descs = iteratorFactory.resolveWalFiles(params);
 
         int descIdx = -1;
-        FileWALPointer reserved = null;
+        WALPointer reserved = null;
 
         for (int i = 0; i < descs.size(); i++) {
             // Try resever minimal available segment.
-            if (wal.reserve(reserved = new FileWALPointer(descs.get(i).idx(), 0, 0))) {
+            if (wal.reserve(reserved = new WALPointer(descs.get(i).idx(), 0, 0))) {
                 descIdx = i;
 
                 break;
@@ -190,7 +190,7 @@ public class PageHistoryDiagnoster {
         PageHistoryDiagnoster.DiagnosticPageBuilder builder,
         IteratorParametersBuilder params,
         ScannerHandler action,
-        FileWALPointer from
+        WALPointer from
     ) throws IgniteCheckedException {
         // Try scan via WAL manager. More safety way on working node.
         try {

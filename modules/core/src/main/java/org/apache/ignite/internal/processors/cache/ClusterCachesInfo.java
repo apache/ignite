@@ -127,6 +127,9 @@ public class ClusterCachesInfo {
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
+    /** Mapping of caches by cache ID */
+    private final ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById = new ConcurrentHashMap<>();
+
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
 
@@ -813,7 +816,8 @@ public class ClusterCachesInfo {
 
         markedForDeletionCaches.put(cacheName, old);
 
-        registeredCaches.remove(cacheName);
+        DynamicCacheDescriptor removedCacheDescriptor = registeredCaches.remove(cacheName);
+        registeredCachesById.remove(removedCacheDescriptor.cacheId());
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
@@ -1039,6 +1043,8 @@ public class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
+
+        registeredCachesById.put(startDesc.cacheId(), startDesc);
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1473,6 +1479,7 @@ public class ClusterCachesInfo {
             desc.receivedOnDiscovery(true);
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
+            registeredCachesById.put(desc.cacheId(), desc);
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1585,6 +1592,7 @@ public class ClusterCachesInfo {
      */
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
+        registeredCachesById.clear();
         registeredCacheGrps.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
@@ -1864,9 +1872,10 @@ public class ClusterCachesInfo {
 
     /**
      * @param data Joining node data.
+     * @param joiningNodeClient Joining node is client flag.
      * @return Message with error or null if everything was OK.
      */
-    public String validateJoiningNodeData(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
+    public String validateJoiningNodeData(DiscoveryDataBag.JoiningNodeDiscoveryData data, boolean joiningNodeClient) {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
 
@@ -1874,6 +1883,7 @@ public class ClusterCachesInfo {
                 CacheJoinNodeDiscoveryData joinData = (CacheJoinNodeDiscoveryData)joiningNodeData;
 
                 Set<String> problemCaches = null;
+                Set<String> encClientCaches = null;
 
                 for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
                     CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
@@ -1895,6 +1905,12 @@ public class ClusterCachesInfo {
 
                             problemCaches.add(cfg.getName());
                         }
+                        else if (joiningNodeClient && cfg.isEncryptionEnabled()) {
+                            if (encClientCaches == null)
+                                encClientCaches = new HashSet<>();
+
+                            encClientCaches.add(cfg.getName());
+                        }
                     }
                 }
 
@@ -1903,6 +1919,14 @@ public class ClusterCachesInfo {
                         "Joining node has caches with data which are not presented on cluster, " +
                             "it could mean that they were already destroyed, to add the node to cluster - " +
                             "remove directories with the caches[", "]"));
+
+                if (!F.isEmpty(encClientCaches)) {
+                    return encClientCaches.stream().collect(Collectors.joining(", ",
+                        "Joining node has encrypted caches which are not presented on the cluster, " +
+                            "encrypted caches configured on client node cannot be started when such node joins " +
+                            "the cluster, these caches can be started manually (dynamically) after node joined" +
+                            "[caches=", "]"));
+                }
             }
         }
 
@@ -2097,6 +2121,7 @@ public class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
+        registeredCachesById.put(desc.cacheId(), desc);
 
         assert old == null : old;
     }
@@ -2222,6 +2247,13 @@ public class ClusterCachesInfo {
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
         boolean persistent = resolvePersistentFlag(exchActions, startedCacheCfg);
+        boolean walGloballyEnabled = false;
+
+        // client nodes cannot read wal enabled/disabled status so they should use default one
+        if (ctx.clientNode())
+            walGloballyEnabled = persistent;
+        else if (persistent)
+            walGloballyEnabled = ctx.cache().context().database().walEnabled(grpId, false);
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,
@@ -2232,16 +2264,13 @@ public class ClusterCachesInfo {
             deploymentId,
             caches,
             persistent,
-            persistent,
+            walGloballyEnabled,
             null,
             cacheCfgEnrichment
         );
 
         if (startedCacheCfg.isEncryptionEnabled())
-            ctx.encryption().beforeCacheGroupStart(grpId, encKey);
-
-        if (ctx.cache().context().pageStore() != null)
-            ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
+            ctx.encryption().setInitialGroupKey(grpId, encKey);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 
@@ -2394,6 +2423,13 @@ public class ClusterCachesInfo {
     }
 
     /**
+     * @return Registered caches by Id
+     */
+    ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById() {
+        return registeredCachesById;
+    }
+
+    /**
      * @return Registered cache templates.
      */
     ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates() {
@@ -2432,6 +2468,7 @@ public class ClusterCachesInfo {
 
         registeredCacheGrps.clear();
         registeredCaches.clear();
+        registeredCachesById.clear();
         registeredTemplates.clear();
 
         clientReconnectReqs = null;

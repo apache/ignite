@@ -138,7 +138,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         boolean read,
         GridDhtTopologyFuture topFut
     ) {
-
         Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
 
         for (IgniteTxKey key : txMap.keySet()) {

@@ -36,9 +36,13 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NIO_RECOVERY_DESCR
  * Recovery information for single node.
  */
 public class GridNioRecoveryDescriptor {
+    /** @see IgniteSystemProperties#IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT */
+    public static final int DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT = 5_000;
+
     /** Timeout for outgoing recovery descriptor reservation. */
-    private static final long DESC_RESERVATION_TIMEOUT =
-        Math.max(1_000, IgniteSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT, 5_000));
+    private static final long DESC_RESERVATION_TIMEOUT = Math.max(1_000,
+        IgniteSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT,
+            DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT));
 
     /** Number of acknowledged messages. */
     private long acked;

@@ -84,6 +84,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     public static final int OP_LOCAL_ACTIVE_TX = 13;
 
     /** */
+    public static final int OP_LOCAL_ACTIVE_REMOVE = 14;
+
+    /** */
     private final IgniteTransactions txs;
 
     /** Map with currently active transactions. */
@@ -202,6 +205,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
             case OP_RESET_METRICS:
                 txs.resetMetrics();
+
+                return TRUE;
+
+            case OP_LOCAL_ACTIVE_REMOVE:
+                unregisterTx(val);
 
                 return TRUE;
         }

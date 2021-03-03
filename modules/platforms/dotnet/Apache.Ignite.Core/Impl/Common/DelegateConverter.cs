@@ -26,10 +26,12 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Reflection;
     using System.Reflection.Emit;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Converts generic and non-generic delegates.
     /// </summary>
+    [CLSCompliant(false)]
     public static class DelegateConverter
     {
         /** */
@@ -39,8 +41,29 @@ namespace Apache.Ignite.Core.Impl.Common
         private static readonly MethodInfo ReadObjectMethod = typeof (IBinaryRawReader).GetMethod("ReadObject");
 
         /** */
-        private static readonly MethodInfo ConvertArrayMethod = typeof(DelegateConverter).GetMethod("ConvertArray",
+        public static readonly MethodInfo ConvertArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertArray",
             BindingFlags.Static | BindingFlags.NonPublic);
+
+        /** */
+        public static readonly MethodInfo ConvertToSbyteArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToSbyteArray",
+            BindingFlags.Static | BindingFlags.Public);
+
+        /** */
+        public static readonly MethodInfo ConvertToUshortArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToUshortArray",
+            BindingFlags.Static | BindingFlags.Public);
+
+        /** */
+        public static readonly MethodInfo ConvertToUintArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToUintArray",
+            BindingFlags.Static | BindingFlags.Public);
+
+        /** */
+        public static readonly MethodInfo ConvertToUlongArrayMethod = typeof(DelegateConverter).GetMethod(
+            "ConvertToUlongArray",
+            BindingFlags.Static | BindingFlags.Public);
 
         /// <summary>
         /// Compiles a function without arguments.
@@ -532,13 +555,61 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static Expression Convert(Expression value, Type targetType)
         {
-            if (targetType.IsArray && targetType.GetElementType() != typeof(object))
+            if (targetType.IsArray)
             {
-                var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+                var elType = targetType.GetElementType();
+                Debug.Assert(elType != null);
 
-                var objArray = Expression.Convert(value, typeof(object[]));
+                if (elType == typeof(sbyte))
+                {
+                    return Expression.Call(null, ConvertToSbyteArrayMethod, value);
+                }
 
-                return Expression.Call(null, convertMethod, objArray);
+                if (elType == typeof(ushort))
+                {
+                    return Expression.Call(null, ConvertToUshortArrayMethod, value);
+                }
+
+                if (elType == typeof(uint))
+                {
+                    return Expression.Call(null, ConvertToUintArrayMethod, value);
+                }
+
+                if (elType == typeof(ulong))
+                {
+                    return Expression.Call(null, ConvertToUlongArrayMethod, value);
+                }
+
+                if (elType != typeof(object))
+                {
+                    var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+
+                    return Expression.Call(null, convertMethod, value);
+                }
+
+                return Expression.Convert(value, targetType);
+            }
+
+            // For byte/sbyte and the like, simple Convert fails
+            // E.g. the following does not work:   (sbyte)(object)((byte)1)
+            // But this does:                      (sbyte)(byte)(object)((byte)1)
+            // So for every "unsupported" type like sbyte, ushort, uint, ulong
+            // we have to do an additional conversion
+            if (targetType == typeof(sbyte))
+            {
+                value = Expression.Convert(value, typeof(byte));
+            }
+            else if (targetType == typeof(ushort))
+            {
+                value = Expression.Convert(value, typeof(short));
+            }
+            else if (targetType == typeof(uint))
+            {
+                value = Expression.Convert(value, typeof(int));
+            }
+            else if (targetType == typeof(ulong))
+            {
+                value = Expression.Convert(value, typeof(long));
             }
 
             return Expression.Convert(value, targetType);
@@ -548,8 +619,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Converts object array to typed array.
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection).
-        private static T[] ConvertArray<T>(object[] arr)
+        private static T[] ConvertArray<T>(object arrObj)
         {
+            var arr = arrObj as Array;
             if (arr == null)
             {
                 return null;
@@ -558,6 +630,65 @@ namespace Apache.Ignite.Core.Impl.Common
             var res = new T[arr.Length];
 
             Array.Copy(arr, res, arr.Length);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Converts to sbyte array.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Global
+        public static sbyte[] ConvertToSbyteArray(object arrObj)
+        {
+            return ConvertValueTypeArray<byte, sbyte>(arrObj, 1);
+        }
+
+        /// <summary>
+        /// Converts to ushort array.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Global
+        public static ushort[] ConvertToUshortArray(object arrObj)
+        {
+            return ConvertValueTypeArray<short, ushort>(arrObj, 2);
+        }
+
+        /// <summary>
+        /// Converts to uint array.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Global
+        public static uint[] ConvertToUintArray(object arrObj)
+        {
+            return ConvertValueTypeArray<int, uint>(arrObj, 4);
+        }
+
+        /// <summary>
+        /// Converts to ulong array.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Global
+        public static ulong[] ConvertToUlongArray(object arrObj)
+        {
+            return ConvertValueTypeArray<long, ulong>(arrObj, 8);
+        }
+
+        /// <summary>
+        /// Converts value type array to another type using direct copy.
+        /// </summary>
+        private static T[] ConvertValueTypeArray<TFrom, T>(object arrObj, int elementSize)
+        {
+            if (arrObj == null)
+            {
+                return null;
+            }
+
+            var arr = arrObj as TFrom[];
+            if (arr == null)
+            {
+                throw new IgniteException(string.Format("Can't convert '{0}' to '{1}'", arrObj.GetType(), typeof(T[])));
+            }
+
+            var res = new T[arr.Length];
+
+            Buffer.BlockCopy(arr, 0, res, 0, arr.Length * elementSize);
 
             return res;
         }

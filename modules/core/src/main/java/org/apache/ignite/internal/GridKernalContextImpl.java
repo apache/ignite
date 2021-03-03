@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -56,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManage
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentationImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -76,6 +79,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -104,6 +108,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -170,6 +175,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridEncryptionManager encryptionMgr;
+
+    /** */
+    @GridToStringExclude
+    private IgniteDefragmentation defragMgr;
 
     /** */
     @GridToStringExclude
@@ -322,6 +331,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private MaintenanceProcessor maintenanceProc;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -407,6 +420,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private DurableBackgroundTasksProcessor durableBackgroundTasksProcessor;
+
+    /** Performance statistics processor. */
+    @GridToStringExclude
+    private PerformanceStatisticsProcessor perfStatProc;
 
     /** */
     private Thread.UncaughtExceptionHandler hnd;
@@ -549,6 +566,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.pauseDetector = pauseDetector;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
+
+        defragMgr = new IgniteDefragmentationImpl(this);
 
         try {
             spring = SPRING.create(false);
@@ -695,6 +714,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             diagnosticProcessor = (DiagnosticProcessor)comp;
         else if (comp instanceof DurableBackgroundTasksProcessor)
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
+        else if (comp instanceof MaintenanceProcessor)
+            maintenanceProc = (MaintenanceProcessor) comp;
+        else if (comp instanceof PerformanceStatisticsProcessor)
+            perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -785,6 +808,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridSystemViewManager systemView() {
         return sysViewMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MaintenanceRegistry maintenanceRegistry() {
+        return maintenanceProc;
     }
 
     /** {@inheritDoc} */
@@ -890,6 +918,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridEncryptionManager encryption() {
         return encryptionMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDefragmentation defragmentation() {
+        return defragMgr;
     }
 
     /** {@inheritDoc} */
@@ -1282,5 +1315,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService buildIndexExecutorService() {
         return buildIdxExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PerformanceStatisticsProcessor performanceStatistics() {
+        return perfStatProc;
     }
 }

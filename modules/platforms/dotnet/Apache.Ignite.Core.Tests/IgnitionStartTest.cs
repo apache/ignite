@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Configuration;
@@ -115,7 +116,9 @@ namespace Apache.Ignite.Core.Tests
                         Name = "default"
                     }
                 };
-                AssertExtensions.ReflectionEqual(dsCfg, resCfg.DataStorageConfiguration);
+
+                AssertExtensions.ReflectionEqual(dsCfg, resCfg.DataStorageConfiguration,
+                    ignoredProperties: new HashSet<string> {"MaxSize"});
             }
         }
     }

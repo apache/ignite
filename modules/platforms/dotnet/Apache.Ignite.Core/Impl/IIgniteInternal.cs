@@ -93,6 +93,13 @@ namespace Apache.Ignite.Core.Impl
         CacheAffinityImpl GetAffinity(string cacheName);
 
         /// <summary>
+        /// Gets internal affinity manager for a given cache.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <returns>Cache affinity manager.</returns>
+        CacheAffinityManager GetAffinityManager(string cacheName);
+
+        /// <summary>
         /// Gets cache name by id.
         /// </summary>
         /// <param name="cacheId">Cache id.</param>

@@ -1,0 +1,56 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Bagging
+
+Bagging stands for bootstrap aggregation. One way to reduce the variance of an estimate is to average together multiple estimates. For example, we can train M different trees on different subsets of the data (chosen randomly with replacement) and compute the ensemble:
+
+image::images/bagging.png[]
+
+Bagging uses bootstrap sampling to obtain the data subsets for training the base learners. For aggregating the outputs of base learners, bagging uses voting for classification and averaging for regression.
+
+
+[source, java]
+----
+// Define the weak classifier.
+DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
+
+// Set up the bagging process.
+BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
+  trainer, // Trainer for making bagged
+  10,      // Size of ensemble
+  0.6,     // Subsample ratio to whole dataset
+  4,       // Feature vector dimensionality
+  3,       // Feature subspace dimensionality
+  new OnMajorityPredictionsAggregator())
+  .withEnvironmentBuilder(LearningEnvironmentBuilder
+                          .defaultBuilder()
+                          .withRNGSeed(1)
+                         );
+
+// Train the Bagged Model.
+BaggedModel mdl = baggedTrainer.fit(
+  ignite,
+  dataCache,
+  vectorizer
+);
+----
+
+
+TIP: A commonly used class of ensemble algorithms are forests of randomized trees.
+
+== Example
+
+The full example could be found as a part of the Titanic tutorial https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/tutorial/Step_10_Bagging.java[here].
+

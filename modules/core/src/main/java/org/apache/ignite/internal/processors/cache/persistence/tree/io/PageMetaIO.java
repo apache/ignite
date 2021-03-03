@@ -56,7 +56,8 @@ public class PageMetaIO extends PageIO {
 
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
-        new PageMetaIO(1)
+        new PageMetaIO(1),
+        new PageMetaIOV2(2)
     );
 
     /**

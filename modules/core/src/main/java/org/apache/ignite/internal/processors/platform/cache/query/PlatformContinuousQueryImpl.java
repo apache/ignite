@@ -128,11 +128,12 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @param bufSize Buffer size.
      * @param timeInterval Time interval.
      * @param autoUnsubscribe Auto-unsubscribe flag.
+     * @param includeExpired Whether to include expired events.
      * @param initialQry Initial query.
      */
     @SuppressWarnings("unchecked")
     @Override public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval,
-        boolean autoUnsubscribe, Query initialQry) throws IgniteCheckedException {
+        boolean autoUnsubscribe, Query initialQry, boolean includeExpired) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {
@@ -148,6 +149,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 qry.setTimeInterval(timeInterval);
                 qry.setAutoUnsubscribe(autoUnsubscribe);
                 qry.setInitialQuery(initialQry);
+                qry.setIncludeExpired(includeExpired);
 
                 cursor = cache.query(qry.setLocal(loc));
 

@@ -122,6 +122,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -237,7 +238,7 @@ public class JdbcThinConnection implements Connection {
     private final @Nullable Integer qryTimeout;
 
     /** Background periodical maintenance: query timeouts and reconnection handler. */
-    private final ScheduledExecutorService maintenanceExecutor = Executors.newScheduledThreadPool(2);
+    private final ScheduledExecutorService maintenanceExecutor;
 
     /** Cancelable future for query timeout task. */
     private ScheduledFuture<?> qryTimeoutScheduledFut;
@@ -274,6 +275,8 @@ public class JdbcThinConnection implements Connection {
         txIsolation = Connection.TRANSACTION_NONE;
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
+        maintenanceExecutor = Executors.newScheduledThreadPool(2,
+            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 

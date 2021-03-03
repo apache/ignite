@@ -827,12 +827,14 @@ public class BinaryClassDescriptor {
 
                                     BinarySchema newSchema = collector.schema();
 
-                                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                        affKeyFieldName, Collections.singleton(newSchema), false, null);
-
-                                    ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
-
                                     schemaReg.addSchema(newSchema.schemaId(), newSchema);
+
+                                    if (userType) {
+                                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
+                                            affKeyFieldName, Collections.singleton(newSchema), false, null);
+
+                                        ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
+                                    }
                                 }
                             }
 

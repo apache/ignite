@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Tests for {@link DatasetAffinityFunctionWrapper}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DatasetAffinityFunctionWrapperTest {
     /** Mocked affinity function. */
     @Mock

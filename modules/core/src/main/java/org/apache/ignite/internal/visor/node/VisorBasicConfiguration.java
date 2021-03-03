@@ -39,6 +39,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.DFLT_UPDATE_NOTIFIER;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.boolValue;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
@@ -190,7 +191,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         progName = getProperty(IGNITE_PROG_NAME);
         quiet = boolValue(IGNITE_QUIET, true);
         successFile = getProperty(IGNITE_SUCCESS_FILE);
-        updateNtf = boolValue(IGNITE_UPDATE_NOTIFIER, true);
+        updateNtf = boolValue(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER);
         activeOnStart = c.isActiveOnStart();
         addrRslvr = compactClass(c.getAddressResolver());
         cacheSanityCheckEnabled = c.isCacheSanityCheckEnabled();

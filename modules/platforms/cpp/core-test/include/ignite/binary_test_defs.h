@@ -141,7 +141,7 @@ namespace ignite_test
 
                     TEST_NEGATIVE_42 = -42,
 
-                    TEST_SOME_BIG = 1241267,
+                    TEST_SOME_BIG = 1241267
                 };
             };
 
@@ -169,7 +169,7 @@ namespace ignite
                 dst = "BinaryDummy";
             }
 
-            static void Write(BinaryWriter& writer, const gt::BinaryDummy& obj)
+            static void Write(BinaryWriter&, const gt::BinaryDummy&)
             {
                 // No-op.
             }
@@ -252,7 +252,7 @@ namespace ignite
                 dst = "BinaryFields";
             }
 
-            static bool IsNull(const gt::BinaryFields& obj)
+            static bool IsNull(const gt::BinaryFields&)
             {
                 return false;
             }
@@ -295,7 +295,7 @@ namespace ignite
                 dst = "PureRaw";
             }
 
-            static bool IsNull(const gt::PureRaw& obj)
+            static bool IsNull(const gt::PureRaw&)
             {
                 return false;
             }

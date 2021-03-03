@@ -20,10 +20,20 @@ package org.apache.ignite.internal.visor.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,12 +85,86 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         Map<String, VisorBaselineNode> map = new TreeMap<>();
 
         for (BaselineNode node : nodes) {
-            VisorBaselineNode dto = new VisorBaselineNode(node);
+            VisorBaselineNode dto = new VisorBaselineNode(node, Collections.emptyList());
 
             map.put(dto.getConsistentId(), dto);
         }
 
         return map;
+    }
+
+    /**
+     * @param nodes Nodes to process.
+     * @return Map of DTO objects, with resolved ip->hostname pairs.
+     */
+    private static Map<String, VisorBaselineNode> toMapWithResolvedAddresses(Collection<? extends BaselineNode> nodes) {
+        if (F.isEmpty(nodes))
+            return null;
+
+        Map<String, VisorBaselineNode> map = new TreeMap<>();
+
+        for (BaselineNode node : nodes) {
+            Collection<VisorBaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
+
+            if (node instanceof IgniteClusterNode) {
+                for (InetAddress inetAddress: resolveInetAddresses((ClusterNode)node))
+                    addrs.add(new VisorBaselineNode.ResolvedAddresses(inetAddress));
+            }
+
+            VisorBaselineNode dto = new VisorBaselineNode(node, addrs);
+
+            map.put(dto.getConsistentId(), dto);
+        }
+
+        return map;
+    }
+
+    /**
+     * @return Resolved inet addresses of node
+     */
+    private static Collection<InetAddress> resolveInetAddresses(ClusterNode node) {
+        Set<InetAddress> res = new HashSet<>(node.addresses().size());
+
+        Iterator<String> hostNamesIt = node.hostNames().iterator();
+
+        for (String addr : node.addresses()) {
+            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
+
+            InetAddress inetAddr = null;
+
+            if (!F.isEmpty(hostName)) {
+                try {
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_ENV)) {
+                        // 127.0.0.1.hostname will be resolved to 127.0.0.1
+                        if (hostName.endsWith(".hostname")) {
+                            String ipStr = hostName.substring(0, hostName.length() - ".hostname".length());
+                            inetAddr = InetAddress.getByAddress(hostName, InetAddress.getByName(ipStr).getAddress());
+                        }
+                    }
+                    else
+                        inetAddr = InetAddress.getByName(hostName);
+                }
+                catch (UnknownHostException ignored) {
+                }
+            }
+
+            if (inetAddr == null || inetAddr.isLoopbackAddress()) {
+                try {
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_ENV))
+                        // 127.0.0.1 will be reverse-resolved to 127.0.0.1.hostname
+                        inetAddr = InetAddress.getByAddress(addr + ".hostname", InetAddress.getByName(addr).getAddress());
+                    else
+                        inetAddr = InetAddress.getByName(addr);
+                }
+                catch (UnknownHostException ignored) {
+                }
+            }
+
+            if (inetAddr != null)
+                res.add(inetAddr);
+        }
+
+        return res;
     }
 
     /**
@@ -104,7 +188,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         this.active = active;
         this.topVer = topVer;
         this.baseline = toMap(baseline);
-        this.servers = toMap(servers);
+        this.servers = toMapWithResolvedAddresses(servers);
         this.autoAdjustSettings = autoAdjustSettings;
         this.remainingTimeToBaselineAdjust = remainingTimeToBaselineAdjust;
         this.baselineAdjustInProgress = baselineAdjustInProgress;

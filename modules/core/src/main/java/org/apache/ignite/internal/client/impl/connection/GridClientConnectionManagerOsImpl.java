@@ -34,12 +34,13 @@ public class GridClientConnectionManagerOsImpl extends GridClientConnectionManag
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
+     * @param beforeNodeStart Connecting to a node before starting it without getting/updating topology.
      * @throws GridClientException In case of error.
      */
     public GridClientConnectionManagerOsImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top, Byte marshId, boolean routerClient)
-        throws GridClientException {
-        super(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
+        Collection<InetSocketAddress> routers, GridClientTopology top, Byte marshId, boolean routerClient,
+        boolean beforeNodeStart) throws GridClientException {
+        super(clientId, sslCtx, cfg, routers, top, marshId, routerClient, beforeNodeStart);
     }
 
     /** {@inheritDoc} */

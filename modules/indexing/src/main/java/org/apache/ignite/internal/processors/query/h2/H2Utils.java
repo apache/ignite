@@ -105,6 +105,7 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.sql.ResultSetMetaData.columnNullableUnknown;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
@@ -114,7 +115,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  */
 public class H2Utils {
     /** Query context H2 variable name. */
-    static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
+    public static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
 
     /**
      * The default precision for a char/varchar value.
@@ -136,7 +137,8 @@ public class H2Utils {
 
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
-        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1,
+                columnNullableUnknown));
 
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
@@ -375,11 +377,12 @@ public class H2Utils {
             String type = rsMeta.getColumnClassName(i);
             int precision = rsMeta.getPrecision(i);
             int scale = rsMeta.getScale(i);
+            int nullability = rsMeta.isNullable(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale, nullability));
         }
 
         return meta;
@@ -706,8 +709,13 @@ public class H2Utils {
     private static String dbTypeFromClass(Class<?> cls, int precision, int scale) {
         String dbType = H2DatabaseType.fromClass(cls).dBTypeAsString();
 
-        if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
-            return dbType + "(" + precision + ")";
+        if (precision != -1 && scale != -1 && dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString()))
+            return dbType + "(" + precision + ", " + scale + ')';
+
+        if (precision != -1 && (
+                dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString())
+                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())))
+            return dbType + '(' + precision + ')';
 
         return dbType;
     }
@@ -992,7 +1000,6 @@ public class H2Utils {
      *
      * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
         ArrayList<IndexColumn> keyCols = new ArrayList<>();
 

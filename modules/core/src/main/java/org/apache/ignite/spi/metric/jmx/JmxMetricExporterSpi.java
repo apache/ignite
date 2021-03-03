@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.metric.jmx;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import javax.management.JMException;
@@ -36,7 +37,60 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
- * This SPI implementation exports metrics as JMX beans.
+ * <h2>Overview</h2>
+ *
+ * Ignite provides this built-in implementation of {@link MetricExporterSpi} it exports metrics as JMX beans. This
+ * implementation works by `pull` architecture which means that after the Ignite node start it should respond to
+ * incoming user request.
+ *
+ * <h2>Java Example</h2>
+ * See the example below of how the internal metrics can be obtained through your application by
+ * constructing MBean names.
+ *
+ * <p>
+ * <pre>
+ * Ignite ignite = Ignition.start(new IgniteConfiguration()
+ *      .setDataStorageConfiguration(new DataStorageConfiguration()
+ *          .setDefaultDataRegionConfiguration(
+ *              new DataRegionConfiguration()
+ *                  .setMaxSize(12_000_000)))
+ *      .setIgniteInstanceName("jmxExampleInstanceName")
+ *      .setMetricExporterSpi(new JmxMetricExporterSpi()));
+ *
+ *  String igniteInstanceName = ignite.name();
+ *  String metricGroup = "io";
+ *
+ *  // NOTE: The special characters of metric name must be escaped.
+ *  String metricName = "\"dataregion.default\"";
+ *
+ *  SB sb = new SB("org.apache:");
+ *
+ *  if (IgniteSystemProperties.getBoolean("IGNITE_MBEAN_APPEND_CLASS_LOADER_ID", true))
+ *      sb.a("clsLdr=").a(Integer.toHexString(Ignite.class.getClassLoader().hashCode())).a(',');
+ *
+ *  if (IgniteSystemProperties.getBoolean("IGNITE_MBEAN_APPEND_JVM_ID"))
+ *      sb.a("jvmId=").a(ManagementFactory.getRuntimeMXBean().getName()).a(',');
+ *
+ *  sb.a("igniteInstanceName=").a(igniteInstanceName).a(',')
+ *      .a("group=").a(metricGroup).a(',')
+ *      .a("name=").a(metricName);
+ *
+ *  DynamicMBean dataRegionMBean = MBeanServerInvocationHandler.newProxyInstance(
+ *      ignite.configuration().getMBeanServer(),
+ *      new ObjectName(sb.toString()),
+ *      DynamicMBean.class,
+ *      false);
+ *
+ *  Set<String> listOfMetrics = Arrays.stream(dataRegionMBean.getMBeanInfo().getAttributes())
+ *      .map(MBeanFeatureInfo::getName)
+ *      .collect(toSet());
+ *
+ *  System.out.println("The list of available data region metrics: " + listOfMetrics);
+ *  System.out.println("The 'default' data region MaxSize: " + dataRegionMBean.getAttribute("MaxSize"));
+ * </pre>
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
  */
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */
@@ -46,7 +100,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     private @Nullable Predicate<ReadOnlyMetricRegistry> filter;
 
     /** Registered beans. */
-    private final List<ObjectName> mBeans = new ArrayList<>();
+    private final List<ObjectName> mBeans = Collections.synchronizedList(new ArrayList<>());
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
@@ -127,6 +181,10 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
             unregBean(ignite, bean);
     }
 
+    /**
+     * @param ignite Ignite instance.
+     * @param bean Bean name to unregister.
+     */
     private void unregBean(Ignite ignite, ObjectName bean) {
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
@@ -143,7 +201,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
 
     /** {@inheritDoc} */
     @Override public void setMetricRegistry(ReadOnlyMetricManager reg) {
-        this.mreg = reg;
+        mreg = reg;
     }
 
     /** {@inheritDoc} */

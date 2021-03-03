@@ -39,6 +39,24 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Return thin client port for given node.
+     *
+     * @param node Node.
+     */
+    protected int clientPort(ClusterNode node) {
+        return node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+    }
+
+    /**
+     * Return host for given node.
+     *
+     * @param node Node.
+     */
+    protected String clientHost(ClusterNode node) {
+        return F.first(node.addresses());
+    }
+
+    /**
      * Start thin client with configured endpoints to specified nodes.
      *
      * @param nodes Nodes to connect.
@@ -50,7 +68,7 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodes.length; i++) {
             ClusterNode node = nodes[i];
 
-            addrs[i] = F.first(node.addresses()) + ":" + node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+            addrs[i] = clientHost(node) + ":" + clientPort(node);
         }
 
         return Ignition.startClient(getClientConfiguration().setAddresses(addrs));

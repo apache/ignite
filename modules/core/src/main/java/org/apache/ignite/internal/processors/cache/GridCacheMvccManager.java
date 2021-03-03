@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -86,8 +87,12 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Maxim number of atomic IDs for thread. Must be power of two! */
     protected static final int THREAD_RESERVE_SIZE = 0x4000;
 
+    /** @see IgniteSystemProperties#IGNITE_MAX_NESTED_LISTENER_CALLS */
+    public static final int DFLT_MAX_NESTED_LISTENER_CALLS = 5;
+
     /** */
-    private static final int MAX_NESTED_LSNR_CALLS = getInteger(IGNITE_MAX_NESTED_LISTENER_CALLS, 5);
+    private static final int MAX_NESTED_LSNR_CALLS =
+        getInteger(IGNITE_MAX_NESTED_LISTENER_CALLS, DFLT_MAX_NESTED_LISTENER_CALLS);
 
     /** Pending locks per thread. */
     private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
@@ -356,7 +361,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public void removeExplicitNodeLocks(UUID leftNodeId) {
         cctx.kernalContext().closure().runLocalSafe(
-            new Runnable() {
+            new GridPlainRunnable() {
                 @Override public void run() {
                     for (GridDistributedCacheEntry entry : locked()) {
                         try {
@@ -1330,9 +1335,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     recheck(entry);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("After rechecking finished future: " + this);
-
             if (pendingLocks.isEmpty()) {
                 if (exchLog.isDebugEnabled())
                     exchLog.debug("Finish lock future is done: " + this);
@@ -1356,13 +1358,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             if (cands != null) {
                 synchronized (cands) {
-                    for (Iterator<GridCacheMvccCandidate> it = cands.iterator(); it.hasNext(); ) {
-                        GridCacheMvccCandidate cand = it.next();
-
-                        // Check exclude ID again, as key could have been reassigned.
-                        if (cand.removed())
-                            it.remove();
-                    }
+                    // Check exclude ID again, as key could have been reassigned.
+                    cands.removeIf(GridCacheMvccCandidate::removed);
 
                     if (cands.isEmpty())
                         pendingLocks.remove(entry.txKey());
