@@ -223,11 +223,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /**
      * Rotate collecting performance statistics.
      *
-     * @throws IgniteCheckedException If stopping failed.
+     * @throws IgniteCheckedException If rotating failed.
      */
     public IgniteInternalFuture<Void> rotateCollectStatistics() throws IgniteCheckedException {
-        A.notNull(metastorage, "Metastorage not ready. Node not started?");
-
         if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS_ROTATE))
             throw new IllegalStateException("Not all nodes in the cluster support rotating performance statistics.");
 
@@ -308,7 +306,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Rotate performance statistics writer. */
-    public void rotateWriter() {
+    private void rotateWriter() {
         try {
             synchronized (mux) {
                 if (writer == null)

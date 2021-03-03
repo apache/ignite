@@ -63,7 +63,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     public void testRotateFile() throws Exception {
         int cnt = 3;
 
-        assertThrows(null, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
+        assertThrows(listeningTestLog, AbstractPerformanceStatisticsTest::rotateCollectStatistics, IgniteException.class,
             "Performance statistics collection not started.");
 
         startCollectStatistics();
@@ -102,13 +102,13 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
      * Rotate collecting performance statistics in the cluster and await.
      */
     private void rotateCollectStatisticsAndAwait() throws Exception {
-        LogListener logLsnr = LogListener.matches("Performance statistics writer rotated.")
+        LogListener lsnr = LogListener.matches("Performance statistics writer rotated.")
             .build();
 
-        listeningTestLog.registerListener(logLsnr);
+        listeningTestLog.registerListener(lsnr);
 
         rotateCollectStatistics();
 
-        assertTrue(waitForCondition(logLsnr::check, TIMEOUT));
+        assertTrue(waitForCondition(lsnr::check, TIMEOUT));
     }
 }
