@@ -247,7 +247,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** h2 redirection stub. */
     public static final Pattern H2_REDIRECTION_RULES =
-        Pattern.compile("\\s*((create|drop)\\s*(table|index)|alter\\s*table)", CASE_INSENSITIVE);
+        Pattern.compile("^\\s*(select|explain plan for)", CASE_INSENSITIVE);
 
     /** @see IgniteSystemProperties#IGNITE_EXPERIMENTAL_SQL_ENGINE */
     public static final boolean DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE = false;
@@ -2837,7 +2837,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
+            if (H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
                 return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
         }
 

@@ -786,7 +786,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         if (experimentalQueryEngine != null) {
-            if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
+            if (H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
                 return experimentalQueryEngine.query(QueryContext.of(qry, cancel), qry.getSchema(), qry.getSql(), qry.getArgs());
         }
 

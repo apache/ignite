@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -42,7 +44,7 @@ public class RelJsonWriter implements RelWriter {
     private static final boolean PRETTY_PRINT = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_REL_JSON_PRETTY_PRINT", false);
 
     /** */
-    private final RelJson relJson = new RelJson();
+    private final RelJson relJson;
 
     /** */
     private final List<Object> relList = new ArrayList<>();
@@ -61,15 +63,17 @@ public class RelJsonWriter implements RelWriter {
 
     /** */
     public static String toJson(RelNode rel) {
-        RelJsonWriter writer = new RelJsonWriter(PRETTY_PRINT);
+        RelJsonWriter writer = new RelJsonWriter(rel.getCluster(), PRETTY_PRINT);
         rel.explain(writer);
 
         return writer.asString();
     }
 
     /** */
-    public RelJsonWriter(boolean pretty) {
+    public RelJsonWriter(RelOptCluster cluster, boolean pretty) {
         this.pretty = pretty;
+
+        relJson = new RelJson(cluster);
     }
 
     /** {@inheritDoc} */

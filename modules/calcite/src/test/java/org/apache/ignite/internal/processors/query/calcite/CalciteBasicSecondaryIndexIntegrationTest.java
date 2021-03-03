@@ -899,6 +899,24 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
+    /**
+     * Test verifies that ranges would be serialized and desirialized without any errors.
+     */
+    @Test
+    public void testSelectWithRanges() {
+        String sql = "select depId from Developer " +
+            "where depId in (1,2,3,5,6,7,9,10,13,14,15,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33) " +
+            "   or depId between 7 and 8 order by depId limit 5";
+
+        assertQuery(sql)
+            .returns(1)
+            .returns(2)
+            .returns(2)
+            .returns(3)
+            .returns(5)
+            .check();
+    }
+
     /** */
     private QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry) {
