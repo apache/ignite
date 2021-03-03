@@ -301,7 +301,6 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
         if (grpScanTask != null)
             grpScanTask.schedulePending(partId);
-
     }
 
     /**
