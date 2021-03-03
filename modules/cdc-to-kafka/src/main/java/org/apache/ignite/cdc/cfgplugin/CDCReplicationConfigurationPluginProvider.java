@@ -45,6 +45,8 @@ public class CDCReplicationConfigurationPluginProvider implements PluginProvider
     /** */
     private Set<String> caches;
 
+    private final CachePluginProvider<?> provider = new ConflictResolutionProvider();
+
     /** {@inheritDoc} */
     @Override public String name() {
         return "cdc-replication-configuration";
@@ -68,7 +70,7 @@ public class CDCReplicationConfigurationPluginProvider implements PluginProvider
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         if (caches.contains(ctx.igniteCacheConfiguration().getName()))
-            return new ConflictResolutionProvider();
+            return provider;
 
         return null;
     }

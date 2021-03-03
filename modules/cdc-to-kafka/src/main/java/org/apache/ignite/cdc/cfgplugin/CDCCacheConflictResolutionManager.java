@@ -17,38 +17,47 @@
 
 package org.apache.ignite.cdc.cfgplugin;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.lang.IgniteFuture;
 
-public class CDCCacheConflictResolutionManager implements CacheConflictResolutionManager  {
+/**
+ *
+ */
+public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictResolutionManager<K, V> {
+    /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        return null;
+        return new DrIdCacheVersionConflictResolver();
     }
 
-    @Override public void start(GridCacheContext cctx) throws IgniteCheckedException {
-
+    /** {@inheritDoc} */
+    @Override public void start(GridCacheContext<K, V> cctx) {
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel, boolean destroy) {
-
+        // No-op.
     }
 
-    @Override public void onKernalStart() throws IgniteCheckedException {
-
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
-
+        // No-op.
     }
 }
