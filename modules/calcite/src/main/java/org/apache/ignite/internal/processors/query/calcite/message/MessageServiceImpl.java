@@ -256,7 +256,11 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
             taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
         }
         else if (async)
-            taskExecutor().execute(IgniteUuid.VM_ID, ThreadLocalRandom.current().nextLong(1024), () -> onMessageInternal(nodeId, msg));
+            taskExecutor().execute(
+                IgniteUuid.VM_ID,
+                ThreadLocalRandom.current().nextLong(1024),
+                () -> onMessageInternal(nodeId, msg)
+            );
         else
             onMessageInternal(nodeId, msg);
     }
