@@ -50,6 +50,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.events.EventType;
@@ -113,6 +114,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryC
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -761,43 +763,21 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         long frId = fragmentDesc.fragmentId();
         UUID origNodeId = pctx.originatingNodeId();
 
-        Outbox<Row> node;
-        try {
-            node = new LogicalRelImplementor<>(
+        Outbox<Row> node = new LogicalRelImplementor<>(
                 ectx,
                 partitionService(),
                 mailboxRegistry(),
                 exchangeService(),
                 failureProcessor())
                 .go(plan.root());
-        }
-        catch (Throwable ex) {
-            U.error(log, "Failed to build execution tree. ", ex);
-
-            mailboxRegistry.outboxes(qryId, frId, -1)
-                .forEach(Outbox::close);
-            mailboxRegistry.inboxes(qryId, frId, -1)
-                .forEach(Inbox::close);
-
-            try {
-                messageService().send(origNodeId, new QueryStartResponse(qryId, frId, ex));
-            }
-            catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send reply. [nodeId=" + origNodeId + ']', e);
-            }
-
-            return;
-        }
 
         try {
             messageService().send(origNodeId, new QueryStartResponse(qryId, frId));
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to send reply. [nodeId=" + origNodeId + ']', e);
+            IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
 
-            node.onNodeLeft(origNodeId);
-
-            return;
+            throw wrpEx;
         }
 
         node.init();
@@ -842,15 +822,44 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
-        PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(), msg.root(), msg.parameters());
+        try {
+            PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(), msg.root(), msg.parameters());
 
-        List<QueryPlan> qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareFragment);
+            List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
+                pctx,
+                new CacheKey(pctx.schemaName(), pctx.query()),
+                this::prepareFragment
+            );
 
-        assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
+            assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
 
-        FragmentPlan plan = (FragmentPlan)qryPlans.get(0);
+            FragmentPlan plan = (FragmentPlan)qryPlans.get(0);
 
-        executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
+            executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
+        }
+        catch (Throwable ex) {
+            U.error(log, "Failed to start query fragment ", ex);
+
+            mailboxRegistry.outboxes(msg.queryId(), msg.fragmentId(), -1)
+                .forEach(Outbox::close);
+            mailboxRegistry.inboxes(msg.queryId(), msg.fragmentId(), -1)
+                .forEach(Inbox::close);
+
+            try {
+                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
+
+                IgniteException wrpEx = new IgniteException("Error occurred during send error message", e);
+
+                e.addSuppressed(ex);
+
+                throw wrpEx;
+            }
+
+            throw ex;
+        }
     }
 
     /** */
@@ -1007,14 +1016,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 running.remove(ctx.queryId());
 
                 // 4) close remote fragments
+                IgniteException wrpEx = null;
+
                 for (UUID nodeId : remotes) {
                     try {
                         exchangeService().closeOutbox(nodeId, ctx.queryId(), -1, -1);
                     }
                     catch (IgniteCheckedException e) {
-                        U.warn(log, "Failed to send cancel message. [nodeId=" + nodeId + ']', e);
+                        if (wrpEx == null)
+                            wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + nodeId + ']', e);
+                        else
+                            wrpEx.addSuppressed(e);
                     }
                 }
+
+                if (wrpEx != null)
+                    throw wrpEx;
             }
         }
 
