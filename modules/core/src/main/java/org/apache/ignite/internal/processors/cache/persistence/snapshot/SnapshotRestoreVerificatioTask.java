@@ -42,7 +42,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 
 /**
  * Verification task for restoring a cache group from a snapshot.
@@ -153,13 +152,13 @@ public class SnapshotRestoreVerificatioTask extends
 
                 ((FilePageStoreManager)cctx.pageStore()).readCacheConfigurations(cacheDir, cacheCfgs);
 
-                File[] parts = cacheDir.listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && !f.isDirectory());
+                List<File> parts = FilePageStoreManager.cachePartitionFiles(cacheDir);
 
                 if (F.isEmpty(parts))
                     continue;
 
-                int pageSize =
-                    ((GridCacheDatabaseSharedManager)cctx.database()).resolvePageSizeFromPartitionFile(parts[0].toPath());
+                int pageSize = ((GridCacheDatabaseSharedManager)cctx.database())
+                    .resolvePageSizeFromPartitionFile(parts.get(0).toPath());
 
                 if (pageSize != cctx.database().pageSize()) {
                     throw new IgniteCheckedException("Incompatible memory page size " +

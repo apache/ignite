@@ -1125,9 +1125,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             File.separator + pdsSettings.folderName() + File.separator + snapshotCacheDir.getName(), false);
 
         if (!cacheDir.exists()) {
-            cacheDir.mkdir();
-
             newFiles.add(cacheDir);
+
+            cacheDir.mkdir();
         }
         else
             if (cacheDir.list().length > 0) {
@@ -1191,8 +1191,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Local path to the cache directory.
      */
     public File resolveSnapshotCacheDir(String snpName, String cacheName) {
-        File dbDir = Paths.get(snapshotLocalDir(snpName).getAbsolutePath(),
-            DFLT_STORE_DIR, pdsSettings.folderName()).toFile();
+        File dbDir = new File(snapshotLocalDir(snpName), databaseRelativePath(pdsSettings.folderName()));
 
         File cacheDir = new File(dbDir, CACHE_DIR_PREFIX + cacheName);
 
