@@ -18,6 +18,7 @@ This module contains classes and utilities for Ignite SslContextFactory.
 """
 import os
 
+from ignitetest.services.utils.auth import IGNITE_SERVICE_ALIAS, IGNITE_APPLICATION_SERVICE_ALIAS, CONTROL_UTILITY_ALIAS
 
 DEFAULT_KEYSTORE = 'server.jks'
 DEFAULT_CLIENT_KEYSTORE = 'client.jks'
@@ -30,9 +31,9 @@ SSL_ENABLED_KEY = 'use_ssl'
 SSL_PARAMS_KEY = 'ssl'
 
 default_keystore = {
-    'server': DEFAULT_KEYSTORE,
-    'client': DEFAULT_CLIENT_KEYSTORE,
-    'admin': DEFAULT_ADMIN_KEYSTORE
+    IGNITE_SERVICE_ALIAS: DEFAULT_KEYSTORE,
+    IGNITE_APPLICATION_SERVICE_ALIAS: DEFAULT_CLIENT_KEYSTORE,
+    CONTROL_UTILITY_ALIAS: DEFAULT_ADMIN_KEYSTORE
 }
 
 

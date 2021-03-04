@@ -25,6 +25,8 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
+from ignitetest.services.utils.auth import IGNITE_SERVICE_ALIAS
+
 
 class IgniteService(IgniteAwareService):
     """
@@ -62,7 +64,7 @@ class IgniteService(IgniteAwareService):
             return []
 
     def update_config_with_globals(self):
-        self._update_ssl_config_with_globals("server")
+        self._update_ssl_config_with_globals(IGNITE_SERVICE_ALIAS)
 
 
 def node_failed_event_pattern(failed_node_id=None):
