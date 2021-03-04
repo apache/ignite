@@ -371,7 +371,6 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             this.fieldCreators = fieldCreators;
         }
 
-
         /** */
         private static Object field(Integer rowNum) {
             return "val_" + rowNum;

@@ -444,7 +444,6 @@ public class TraitUtils {
         return res;
     }
 
-
     /**
      * @param elem Elem.
      */

@@ -604,10 +604,8 @@ public class ExecutionTest extends AbstractExecutionTest {
         watchDog.interrupt();
     }
 
-    /**
-     *
-     */
-    protected Object[] row(Object... fields) {
+    /** {@inheritDoc} */
+    @Override protected Object[] row(Object... fields) {
         return fields;
     }
 
