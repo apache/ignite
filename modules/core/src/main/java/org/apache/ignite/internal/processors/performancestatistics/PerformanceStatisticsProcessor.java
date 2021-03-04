@@ -225,10 +225,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If rotating failed.
      */
-    public IgniteInternalFuture<Void> rotateCollectStatistics() throws IgniteCheckedException {
-        if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS_ROTATE))
-            throw new IllegalStateException("Not all nodes in the cluster support rotating performance statistics.");
-
+    public IgniteInternalFuture<?> rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
