@@ -28,6 +28,8 @@ namespace Apache.Ignite.Core.Client.Datastream
     {
         string CacheName { get; }
         
+        DataStreamerClientOptions<TK, TV> Options { get; }
+        
         void AddData(TK key, TV val);
 
         Task AddDataAsync(TK key, TV val);

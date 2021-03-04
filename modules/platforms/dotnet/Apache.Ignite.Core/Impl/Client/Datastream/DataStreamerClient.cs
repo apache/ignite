@@ -52,6 +52,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _client = client;
             _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);
+
+            // Copy to prevent modification.
             _options = new DataStreamerClientOptions<TK, TV>(options);
         }
 
@@ -81,6 +83,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public string CacheName
         {
             get { return _cacheName; }
+        }
+
+        public DataStreamerClientOptions<TK, TV> Options
+        {
+            get
+            {
+                // Copy to prevent modification.
+                return new DataStreamerClientOptions<TK, TV>(_options);
+            }
         }
 
         public void AddData(TK key, TV val)
