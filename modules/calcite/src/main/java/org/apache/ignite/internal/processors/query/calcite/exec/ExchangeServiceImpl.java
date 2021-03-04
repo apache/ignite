@@ -231,8 +231,10 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             try {
                 inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
             }
-            catch (Throwable t) {
-                inbox.onError(t);
+            catch (Throwable e) {
+                inbox.onError(e);
+
+                throw new IgniteException("Unexpected exception", e);
             }
         }
         else if (log.isDebugEnabled()) {
