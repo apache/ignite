@@ -74,5 +74,45 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             throw new System.NotImplementedException();
         }
+
+        public void AddData(IEnumerable<KeyValuePair<TK, TV>> entries)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task AddDataAsync(IEnumerable<KeyValuePair<TK, TV>> entries)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void RemoveData(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task RemoveDataAsync(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void RemoveData(IEnumerable<TK> keys)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task RemoveDataAsync(IEnumerable<TK> keys)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Flush()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task FlushAsync()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

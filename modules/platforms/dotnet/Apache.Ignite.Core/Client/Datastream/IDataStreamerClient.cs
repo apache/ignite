@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Client.Datastream
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -25,8 +27,26 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// </summary>
     public interface IDataStreamerClient<TK, TV> : IDisposable
     {
+        string CacheName { get; }
+        
         void AddData(TK key, TV val);
 
         Task AddDataAsync(TK key, TV val);
+
+        void AddData(IEnumerable<KeyValuePair<TK, TV>> entries);
+
+        Task AddDataAsync(IEnumerable<KeyValuePair<TK, TV>> entries);
+
+        void RemoveData(TK key);
+
+        Task RemoveDataAsync(TK key);
+
+        void RemoveData(IEnumerable<TK> keys);
+
+        Task RemoveDataAsync(IEnumerable<TK> keys);
+
+        void Flush();
+
+        Task FlushAsync();
     }
 }
