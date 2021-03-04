@@ -50,8 +50,10 @@ namespace Apache.Ignite.Core.Client.Datastream
             Receiver = options.Receiver;
             AllowOverwrite = options.AllowOverwrite;
             SkipStore = options.SkipStore;
-            PerNodeBufferSize = options.PerNodeBufferSize;
-            PerThreadBufferSize = options.PerThreadBufferSize;
+            ClientPerNodeBufferSize = options.ClientPerNodeBufferSize;
+            ClientPerThreadBufferSize = options.ClientPerThreadBufferSize;
+            ServerPerNodeBufferSize = options.ServerPerNodeBufferSize;
+            ServerPerThreadBufferSize = options.ServerPerThreadBufferSize;
         }
 
         /// <summary>
@@ -74,7 +76,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>
-        bool AllowOverwrite { get; set; }
+        public bool AllowOverwrite { get; set; }
 
         /// <summary>
         /// Flag indicating that write-through behavior should be disabled for data loading.
@@ -83,7 +85,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>
-        bool SkipStore { get; set; }
+        public bool SkipStore { get; set; }
 
         /// <summary>
         /// Size of per node key-value pairs buffer.
@@ -91,7 +93,15 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
         /// </summary>
         [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
-        int PerNodeBufferSize { get; set; }
+        public int ClientPerNodeBufferSize { get; set; }
+
+        /// <summary>
+        /// Size of per node key-value pairs buffer.
+        /// <para />
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
+        /// </summary>
+        [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
+        public int ServerPerNodeBufferSize { get; set; }
 
         /// <summary>
         /// Size of per thread key-value pairs buffer.
@@ -99,6 +109,14 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
         /// </summary>
         [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
-        int PerThreadBufferSize { get; set; }
+        public int ClientPerThreadBufferSize { get; set; }
+        
+        /// <summary>
+        /// Size of per thread key-value pairs buffer.
+        /// <para />
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
+        /// </summary>
+        [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
+        public int ServerPerThreadBufferSize { get; set; }
     }
 }
