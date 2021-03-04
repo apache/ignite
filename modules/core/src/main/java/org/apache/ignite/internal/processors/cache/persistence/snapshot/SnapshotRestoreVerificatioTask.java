@@ -140,15 +140,16 @@ public class SnapshotRestoreVerificatioTask extends
          * @throws IOException In case of I/O errors while reading the memory page size
          */
         private SnapshotRestoreVerificationResult resolveRestoredConfigs() throws IgniteCheckedException, IOException {
-            GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
             Map<String, StoredCacheData> cacheCfgs = new HashMap<>();
+            GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
+            String folderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
 
             // Collect cache configuration(s) and verify cache groups page size.
-            for (String grpName : arg.groups()) {
-                File cacheDir = cctx.snapshotMgr().resolveSnapshotCacheDir(arg.snapshotName(), grpName);
+            for (File cacheDir : cctx.snapshotMgr().snapshotCacheDirectories(arg.snapshotName(), folderName)) {
+                String grpName = FilePageStoreManager.cacheGroupName(cacheDir);
 
-                if (!cacheDir.exists())
-                    return null;
+                if (!arg.groups().contains(grpName))
+                    continue;
 
                 ((FilePageStoreManager)cctx.pageStore()).readCacheConfigurations(cacheDir, cacheCfgs);
 
@@ -172,8 +173,9 @@ public class SnapshotRestoreVerificatioTask extends
             if (cacheCfgs.isEmpty())
                 return null;
 
-            File binDir = binaryWorkDir(cctx.snapshotMgr().snapshotLocalDir(arg.snapshotName()).getAbsolutePath(),
-                ignite.context().pdsFolderResolver().resolveFolders().folderName());
+            File binDir = binaryWorkDir(
+                cctx.snapshotMgr().snapshotLocalDir(arg.snapshotName()).getAbsolutePath(),
+                folderName);
 
             ignite.context().cacheObjects().checkMetadata(binDir);
 

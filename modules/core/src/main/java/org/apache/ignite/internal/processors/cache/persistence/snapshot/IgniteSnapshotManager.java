@@ -162,9 +162,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
@@ -1106,6 +1103,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param grpName Cache group name.
+     * @param snpCacheDir Cache group directory in snapshot.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param newFiles A list to keep track of the files created, the list updates during the restore process.
      * @throws IgniteCheckedException If failed.
@@ -1113,16 +1111,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     protected void restoreCacheGroupFiles(
         String snpName,
         String grpName,
+        File snpCacheDir,
         BooleanSupplier stopChecker,
         List<File> newFiles
     ) throws IgniteCheckedException {
-        File snapshotCacheDir = resolveSnapshotCacheDir(snpName, grpName);
-
-        if (!snapshotCacheDir.exists())
-            return;
-
-        File cacheDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(), DFLT_STORE_DIR +
-            File.separator + pdsSettings.folderName() + File.separator + snapshotCacheDir.getName(), false);
+        File cacheDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(),
+            Paths.get(databaseRelativePath(pdsSettings.folderName()), snpCacheDir.getName()).toString(), false);
 
         if (!cacheDir.exists()) {
             newFiles.add(cacheDir);
@@ -1136,20 +1130,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
         try {
-            if (log.isInfoEnabled()) {
-                log.info("Copying partition files of the cache group " +
-                    "[from=" + snapshotCacheDir + ", to=" + cacheDir + ']');
-            }
+            if (log.isInfoEnabled())
+                log.info("Copying files of the cache group [from=" + snpCacheDir + ", to=" + cacheDir + ']');
 
-            for (File snpFile : snapshotCacheDir.listFiles()) {
+            for (File snpFile : snpCacheDir.listFiles()) {
                 if (stopChecker.getAsBoolean())
                     return;
 
                 File target = new File(cacheDir, snpFile.getName());
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Restoring partition file from the snapshot [snapshot=" + snpName +
-                        ", grp=" + grpName + ", src=" + snpFile + ", target=" + target + "]");
+                    log.debug("Copying file from the snapshot " +
+                        "[snapshot=" + snpName +
+                        ", grp=" + grpName +
+                        ", src=" + snpFile +
+                        ", target=" + target + "]");
                 }
 
                 newFiles.add(target);
@@ -1183,22 +1178,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!dir.delete())
                 log.warning("Unable to delete a folder created during a cache restore operation [file=" + dir + ']');
         }
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param cacheName Cache (group) name.
-     * @return Local path to the cache directory.
-     */
-    public File resolveSnapshotCacheDir(String snpName, String cacheName) {
-        File dbDir = new File(snapshotLocalDir(snpName), databaseRelativePath(pdsSettings.folderName()));
-
-        File cacheDir = new File(dbDir, CACHE_DIR_PREFIX + cacheName);
-
-        if (cacheDir.exists())
-            return cacheDir;
-
-        return new File(dbDir, CACHE_GRP_DIR_PREFIX + cacheName);
     }
 
     /** {@inheritDoc} */

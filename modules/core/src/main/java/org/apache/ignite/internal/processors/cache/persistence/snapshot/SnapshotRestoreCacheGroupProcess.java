@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -603,10 +604,10 @@ public class SnapshotRestoreCacheGroupProcess {
                 return;
 
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+            String folderName = ctx.pdsFolderResolver().resolveFolders().folderName();
 
             if (updateMetadata) {
-                File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(),
-                    ctx.pdsFolderResolver().resolveFolders().folderName());
+                File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(), folderName);
 
                 if (!binDir.exists()) {
                     throw new IgniteCheckedException("Unable to update cluster metadata from snapshot, " +
@@ -616,8 +617,14 @@ public class SnapshotRestoreCacheGroupProcess {
                 ctx.cacheObjects().updateMetadata(binDir, this::interrupted);
             }
 
-            for (String grpName : groups())
-                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, this::interrupted, grps.get(grpName));
+            for (File grpDir : snapshotMgr.snapshotCacheDirectories(snpName, folderName)) {
+                String grpName = FilePageStoreManager.cacheGroupName(grpDir);
+
+                if (!groups().contains(grpName))
+                    continue;
+
+                snapshotMgr.restoreCacheGroupFiles(snpName, grpName, grpDir, this::interrupted, grps.get(grpName));
+            }
         }
 
         /**
