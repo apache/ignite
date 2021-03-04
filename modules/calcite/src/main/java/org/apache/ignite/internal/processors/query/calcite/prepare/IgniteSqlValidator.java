@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -41,6 +42,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -61,6 +63,26 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Decimal of Integer.MAX_VALUE for fetch/offset bounding. */
     private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
+
+    /** **/
+    private static final int MAX_LENGTH_OF_ALIASES = 256;
+
+    /** **/
+    private static final Set<SqlKind> HUMAN_READABLE_ALIASES_FOR;
+
+    static {
+        EnumSet<SqlKind> kinds = EnumSet.noneOf(SqlKind.class);
+
+        kinds.addAll(SqlKind.AGGREGATE);
+        kinds.addAll(SqlKind.BINARY_ARITHMETIC);
+        kinds.addAll(SqlKind.FUNCTION);
+
+        kinds.add(SqlKind.CEIL);
+        kinds.add(SqlKind.FLOOR);
+        kinds.add(SqlKind.LITERAL);
+
+        HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
+    }
 
     /** Dynamic parameters. */
     Object[] parameters;
@@ -184,6 +206,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         super.validateCall(call, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String deriveAlias(SqlNode node, int ordinal) {
+        if (node.isA(HUMAN_READABLE_ALIASES_FOR)) {
+            String alias = node.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)
+                .withQuoteAllIdentifiers(false)
+                .withAlwaysUseParentheses(false)
+                .withClauseStartsLine(false)
+            ).getSql();
+
+            return alias.substring(0, Math.min(alias.length(), MAX_LENGTH_OF_ALIASES));
+        }
+
+        return super.deriveAlias(node, ordinal);
     }
 
     /** {@inheritDoc} */

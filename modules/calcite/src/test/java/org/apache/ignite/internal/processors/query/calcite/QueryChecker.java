@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.typedef.F;
@@ -34,6 +35,7 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.hamcrest.core.SubstringMatcher;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -222,6 +224,9 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
+    private List<String> expectedColumnNames;
+
+    /** */
     private boolean ordered;
 
     /** */
@@ -265,8 +270,16 @@ public abstract class QueryChecker {
     }
 
     /** */
+    public QueryChecker columnNames(String... columns) {
+        expectedColumnNames = Arrays.asList(columns);
+
+        return this;
+    }
+
+    /** */
     public QueryChecker matches(Matcher<String>... planMatcher) {
         Collections.addAll(planMatchers, planMatcher);
+
         return this;
     }
 
@@ -302,6 +315,13 @@ public abstract class QueryChecker {
             engine.query(null, "PUBLIC", qry, params);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
+
+        if (expectedColumnNames != null) {
+            List<String> colNames = IntStream.range(0, cur.getColumnsCount())
+                .mapToObj(cur::getFieldName).collect(Collectors.toList());
+
+            assertThat("Column names don't match", colNames, equalTo(expectedColumnNames));
+        }
 
         List<List<?>> res = cur.getAll();
 
