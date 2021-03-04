@@ -18,8 +18,8 @@ Check that SslParams correctly parse SSL params from globals
 """
 
 import pytest
-from ignitetest.services.utils.ssl.ssl_params import get_ssl_params_from_globals, SslParams, DEFAULT_TRUSTSTORE, \
-    DEFAULT_CLIENT_KEYSTORE, DEFAULT_PASSWORD
+from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, SslParams, DEFAULT_TRUSTSTORE, \
+    DEFAULT_CLIENT_KEYSTORE, DEFAULT_PASSWORD, SSL_ENABLED_KEY, SSL_PARAMS_KEY
 
 INSTALL_ROOT = '/opt/'
 CERTIFICATE_DIR = '/opt/ignite-dev/modules/ducktests/tests/certs/'
@@ -49,25 +49,25 @@ class TestParams:
 
     test_globals_jks = {
         "install_root": INSTALL_ROOT,
-        "use_ssl": "True",
+        SSL_ENABLED_KEY: "True",
         TEST_USER: {
-            "ssl": {
+            SSL_PARAMS_KEY: {
                 "key_store_jks": TEST_KEYSTORE_JKS,
                 "key_store_password": TEST_PASSWORD,
                 "trust_store_jks": TEST_TRUSTSTORE_JKS,
                 "trust_store_password": TEST_PASSWORD}}}
     test_globals_path = {
         "install_root": INSTALL_ROOT,
-        "use_ssl": "True",
+        SSL_ENABLED_KEY: "True",
         TEST_USER: {
-            "ssl": {
+            SSL_PARAMS_KEY: {
                 "key_store_path": TEST_CERTIFICATE_DIR + TEST_KEYSTORE_JKS,
                 "key_store_password": TEST_PASSWORD,
                 "trust_store_path": TEST_CERTIFICATE_DIR + TEST_TRUSTSTORE_JKS,
                 "trust_store_password": TEST_PASSWORD}}}
     test_globals_default = {
         "install_root": INSTALL_ROOT,
-        "use_ssl": "True"}
+        SSL_ENABLED_KEY: "True"}
     test_globals_no_ssl = {
         "install_root": INSTALL_ROOT}
 
@@ -101,4 +101,4 @@ class CheckCaseJks:
         Check that SslParams correctly parse SSL params from globals
         """
 
-        assert _compare(expected, get_ssl_params_from_globals(test_globals, TEST_USER))
+        assert _compare(expected, get_ssl_params(test_globals, TEST_USER))

@@ -17,19 +17,39 @@
 This module contains authentication classes and utilities.
 """
 
-DEFAULT_AUTH_PASSWORD = "ignite"
-DEFAULT_AUTH_USERNAME = "ignite"
+DEFAULT_AUTH_PASSWORD = 'ignite'
+DEFAULT_AUTH_USERNAME = 'ignite'
+AUTHENTICATION_ENABLED_KEY = 'use_auth'
+CREDENTIALS_KEY = 'credentials'
+
+default_credentials = {
+    'server': (DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD),
+    'client': (DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD),
+    'admin': (DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)
+}
 
 
-def get_credentials_from_globals(_globals: dict, user: str):
+def get_credentials(_globals: dict, service_name: str):
     """
     Gets Credentials from Globals
-    Structure may be found in modules/ducktests/tests/checks/utils/check_get_credentials_from_globals.py
+    Structure may be found in modules/ducktests/tests/checks/utils/check_get_credentials.py
+
+    There are three services in ducktests, each of them has its own alias, which corresponds to credentials
+    IgniteService - server
+    IgniteApplicationService - client
+    ControlUtility - admin
+    If we set "use_auth=True" in globals, this credentials will be injected in corresponding service configuration
+    You can also override credentials corresponding to alias throw globals
+
+
+    We use same credentials for all services by default
     """
     username, password = None, None
-    if _globals.get('use_auth'):
-        if user in _globals and 'credentials' in _globals[user]:
-            username, password = _globals[user]['credentials']
+    if _globals.get(AUTHENTICATION_ENABLED_KEY):
+        if service_name in _globals and CREDENTIALS_KEY in _globals[service_name]:
+            username, password = _globals[service_name][CREDENTIALS_KEY]
+        elif service_name in default_credentials:
+            username, password = default_credentials[service_name]
         else:
-            username, password = DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD
+            raise Exception("Unknown service name to get Credentials: " + service_name)
     return username, password

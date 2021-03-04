@@ -15,15 +15,6 @@
 
 """
 This module contains classes and utilities for Ignite SslContextFactory.
-
-This file contains three user presets:
-1. server for Ignite(clientMode=False)
-2. client for Ignte(clientMode=True) node and ThinClient
-3. admin for GridClient and console utils (control.sh)
-
-Keystores for this presets are generated automaticaly on creating envoriment
-If you like to specify different certificate for preset you can pass them throw globals
-If you specyfy ssl_params in test, you override globals
 """
 import os
 
@@ -34,6 +25,9 @@ DEFAULT_ADMIN_KEYSTORE = 'admin.jks'
 DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
 DEFAULT_ROOT = "/opt/"
+
+SSL_ENABLED_KEY = 'use_ssl'
+SSL_PARAMS_KEY = 'ssl'
 
 default_keystore = {
     'server': DEFAULT_KEYSTORE,
@@ -62,19 +56,30 @@ class SslParams:
         self.trust_store_password = trust_store_password
 
 
-def get_ssl_params_from_globals(_globals: dict, user: str):
+def get_ssl_params(_globals: dict, service_name: str):
     """
     Gets SSL params from Globals
-    Structure may be found in modules/ducktests/tests/checks/utils/check_get_ssl_params_from_globals.py
+    Structure may be found in modules/ducktests/tests/checks/utils/check_get_ssl_params.py
+
+    There are three services in ducktests, each of them has its own alias, which corresponds to its own keystore
+    IgniteService - server
+    IgniteApplicationService - client
+    ControlUtility - admin
+    If we set "use_ssl=True" in globals, this SSL params will be injected in corresponding service configuration
+    You can also override keystore corresponding to alias throw globals
+
+    Default keystores for this services are generated automaticaly on creating envoriment
+    If you specyfy ssl_params in test, you override globals
     """
+
     root_dir = _globals.get("install_root", DEFAULT_ROOT)
     ssl_param = None
-    if _globals.get('use_ssl'):
-        if user in _globals and 'ssl' in _globals[user]:
-            ssl_param = _globals[user]['ssl']
-        elif user in default_keystore:
-            ssl_param = {'key_store_jks': default_keystore[user]}
+    if _globals.get(SSL_ENABLED_KEY):
+        if service_name in _globals and SSL_PARAMS_KEY in _globals[service_name]:
+            ssl_param = _globals[service_name][SSL_PARAMS_KEY]
+        elif service_name in default_keystore:
+            ssl_param = {'key_store_jks': default_keystore[service_name]}
         else:
-            ssl_param = {}
+            raise Exception("Unknown service name to get SSL params: " + service_name)
 
     return SslParams(root_dir, **ssl_param) if ssl_param else None

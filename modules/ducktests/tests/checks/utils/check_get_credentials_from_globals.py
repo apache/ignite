@@ -14,11 +14,12 @@
 # limitations under the License.
 
 """
-Check that get_credentials_from_globals correctly parse Credentials from globals
+Check that get_credentials correctly parse Credentials from globals
 """
 
 import pytest
-from ignitetest.services.utils.auth import get_credentials_from_globals, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD
+from ignitetest.services.utils.auth import get_credentials, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD, \
+    AUTHENTICATION_ENABLED_KEY, CREDENTIALS_KEY
 
 TEST_USER = "client"
 TEST_PASSWORD = "qwe123"
@@ -26,19 +27,19 @@ TEST_PASSWORD = "qwe123"
 
 class CheckCaseJks:
     """
-    Check that get_credentials_from_globals correctly parse Credentials from globals
+    Check that get_credentials correctly parse Credentials from globals
     """
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, expected_username, expected_password',
-                             [({"use_auth": "True",
+                             [({AUTHENTICATION_ENABLED_KEY: "True",
                                 TEST_USER: {
-                                    "credentials": [TEST_USER, TEST_PASSWORD]}}, TEST_USER, TEST_PASSWORD),
-                              ({"use_auth": "True"}, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD),
+                                    CREDENTIALS_KEY: [TEST_USER, TEST_PASSWORD]}}, TEST_USER, TEST_PASSWORD),
+                              ({AUTHENTICATION_ENABLED_KEY: "True"}, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD),
                               ({}, None, None)])
     def check_parse(test_globals, expected_username, expected_password):
         """
         Check function for pytest
         """
 
-        assert (expected_username, expected_password) == get_credentials_from_globals(test_globals, TEST_USER)
+        assert (expected_username, expected_password) == get_credentials(test_globals, TEST_USER)
