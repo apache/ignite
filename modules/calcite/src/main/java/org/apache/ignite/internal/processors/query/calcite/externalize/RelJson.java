@@ -223,6 +223,7 @@ class RelJson {
             "org.apache.calcite.adapter.jdbc.",
             "org.apache.calcite.adapter.jdbc.JdbcRules$");
 
+    /** */
     RelJson(RelOptCluster cluster) {
         this.cluster = cluster;
     }
