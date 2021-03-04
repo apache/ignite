@@ -17,47 +17,38 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalUnion;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
  */
-public class UnionConverterRule extends AbstractIgniteConverterRule<LogicalUnion> {
+public class HashAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
     /** */
-    public static final RelOptRule INSTANCE = new UnionConverterRule();
+    public static final RelOptRule INSTANCE = new HashAggregateConverterRule();
 
     /** */
-    public UnionConverterRule() {
-        super(LogicalUnion.class, "UnionConverterRule");
+    public HashAggregateConverterRule() {
+        super(LogicalAggregate.class, "HashAggregateConverterRule");
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalUnion rel) {
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+        LogicalAggregate rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        List<RelNode> inputs = Commons.transform(rel.getInputs(), input -> convert(input, traits));
+        RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelNode input = convert(rel.getInput(), inTrait);
 
-        PhysicalNode res = new IgniteUnionAll(cluster, traits, inputs);
-
-        if (!rel.all)
-            res = new IgniteHashAggregate(cluster, traits, res,
-                ImmutableBitSet.range(rel.getRowType().getFieldCount()), null, ImmutableList.of());
-
-        return res;
+        return new IgniteHashAggregate(cluster, outTrait, input,
+            rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
     }
 }

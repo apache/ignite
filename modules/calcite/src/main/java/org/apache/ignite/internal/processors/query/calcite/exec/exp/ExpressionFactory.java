@@ -31,14 +31,18 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 
 /**
  * Expression factory.
  */
 public interface ExpressionFactory<Row> {
     /** */
-    Supplier<List<AccumulatorWrapper<Row>>> accumulatorsFactory(AggregateNode.AggregateType type, List<AggregateCall> calls, RelDataType rowType);
+    Supplier<List<AccumulatorWrapper<Row>>> accumulatorsFactory(
+        AggregateType type,
+        List<AggregateCall> calls,
+        RelDataType rowType
+    );
 
     /**
      * Creates a comparator for given data type and collations. Mainly used for sorted exchange.
