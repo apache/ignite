@@ -17,6 +17,7 @@
 package org.apache.ignite.network;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 /**
@@ -59,7 +60,19 @@ public interface NetworkCluster {
      * @param member Network member which should receive the message.
      * @param msg Message which should be delivered.
      */
-    Future<?> guaranteedSend(NetworkMember member, Object msg);
+    Future<?> send(NetworkMember member, Object msg);
+
+    /**
+     * Sends asynchronously a message with same guarantees as for {@link #send(NetworkMember, Object)} and
+     * returns a response (RPC style).
+     *
+     * @param member Network member which should receive the message.
+     * @param msg A message.
+     * @param timeout Waiting for response timeout in milliseconds.
+     * @param <R> Expected response type.
+     * @return A future holding the response or error if the expected response was not received.
+     */
+    <R> CompletableFuture<R> sendWithResponse(NetworkMember member, Object msg, long timeout);
 
     /**
      * Add provider which allows to get configured handlers for different cluster events(ex. received message).
