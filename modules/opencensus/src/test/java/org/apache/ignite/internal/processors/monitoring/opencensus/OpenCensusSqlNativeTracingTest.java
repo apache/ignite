@@ -69,6 +69,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_U
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_IDX_RANGE_ROWS;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_SCHEMA;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.tag;
@@ -284,6 +285,10 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
         SpanId rootSpan = executeAndCheckRootSpan(
             "SELECT * FROM " + prsnTable + " AS p JOIN " + orgTable + " AS o ON o.orgId = p.prsnId",
             TEST_SCHEMA, false, true, true);
+
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+        UUID.fromString(qryId.substring(0, qryId.indexOf('_')));
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
@@ -547,6 +552,9 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     protected void checkBasicSelectQuerySpanTree(SpanId rootSpan, int expRows) {
         int fetchedRows = 0;
 
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
 
         SpanId fetchSpan = checkChildSpan(SQL_PAGE_FETCH, iterSpan);
@@ -705,7 +713,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 .put(tag(NODE, NAME), reducer().name())
                 .put(SQL_QRY_TEXT, sql)
                 .put(SQL_SCHEMA, schema)
-                .build()
+                .build(),
+            CheckAttributes.CONTAINS
         ).get(0);
     }
 
