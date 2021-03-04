@@ -52,6 +52,7 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
@@ -166,6 +167,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         checkIntegerLimit(select.getOffset(), "offset");
 
         super.validateSelect(select, targetRowType);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateNamespace(SqlValidatorNamespace namespace, RelDataType targetRowType) {
+        SqlValidatorTable table = namespace.getTable();
+
+        if (table != null) {
+            IgniteTableImpl igniteTable = table.unwrap(IgniteTableImpl.class);
+
+            if (igniteTable != null)
+                igniteTable.ensureCacheStarted();
+        }
+
+        super.validateNamespace(namespace, targetRowType);
     }
 
     /**

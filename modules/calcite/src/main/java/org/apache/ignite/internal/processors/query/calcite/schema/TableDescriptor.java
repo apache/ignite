@@ -26,6 +26,7 @@ import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -42,6 +43,11 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("rawtypes")
 public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
+    /**
+     * @return Underlying cache context info.
+     */
+    GridCacheContextInfo cacheInfo();
+
     /**
      * @return Underlying cache context.
      */

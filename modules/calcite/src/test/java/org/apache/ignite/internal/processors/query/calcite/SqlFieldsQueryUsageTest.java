@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -39,7 +38,6 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
     /** */
     private static IgniteEx client;
 
-    /** */
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(1);
@@ -65,15 +63,13 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-14019")
     @Test
-    public void createCacheOnSrvCallOnCli() {
+    public void createCacheOnSrvCallOnCli() throws InterruptedException {
         QueryEntity projEntity = new QueryEntity();
         projEntity.setKeyType(Integer.class.getName());
         projEntity.setKeyFieldName("id");
         projEntity.setValueType(Integer.class.getName());
         projEntity.addQueryField("id", Integer.class.getName(), null);
-        projEntity.addQueryField("depId", Integer.class.getName(), null);
 
         projEntity.setTableName("Developer");
 
@@ -83,6 +79,8 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
                 .setSqlSchema("PUBLIC");
 
         IgniteCache<Integer, Integer> devCache = grid(0).createCache(projCfg);
+
+        awaitPartitionMapExchange();
 
         assertFalse(grid(0).configuration().isClientMode());
 

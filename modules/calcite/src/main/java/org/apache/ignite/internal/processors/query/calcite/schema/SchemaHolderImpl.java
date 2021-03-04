@@ -52,6 +52,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
 
     /** */
+    private final GridKernalContext ctx;
+
+    /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
@@ -125,6 +128,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     public SchemaHolderImpl(GridKernalContext ctx) {
         super(ctx);
 
+        this.ctx = ctx;
+
         subscriptionProcessor(ctx.internalSubscriptionProcessor());
 
         init();
@@ -175,9 +180,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         String tblName = typeDesc.tableName();
 
         TableDescriptorImpl desc =
-            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo.config()));
+            new TableDescriptorImpl(cacheInfo, typeDesc, affinityIdentity(cacheInfo.config()));
 
-        schema.addTable(tblName, new IgniteTableImpl(desc));
+        schema.addTable(tblName, new IgniteTableImpl(ctx, desc));
 
         rebuild();
     }
