@@ -49,7 +49,7 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
             .columnNames("SUBQUERY").check();
 
         assertQuery("select salary*2, salary/2, salary+2, salary-2, mod(salary, 2)  from person")
-            .columnNames("SALARY * 2", "SALARY / 2", "SALARY + 2", "SALARY - 2",  "MOD(SALARY, 2)").check();
+            .columnNames("SALARY * 2", "SALARY / 2", "SALARY + 2", "SALARY - 2", "MOD(SALARY, 2)").check();
         assertQuery("select salary*2 as first, salary/2 as secOND from person").columnNames("FIRST", "SECOND").check();
 
         assertQuery("select trim(name) tr_name from person").columnNames("TR_NAME").check();
