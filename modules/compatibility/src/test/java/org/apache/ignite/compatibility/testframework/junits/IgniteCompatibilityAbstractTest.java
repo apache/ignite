@@ -251,7 +251,6 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         dependencies.add(new Dependency("core", "ignite-core", false));
         dependencies.add(new Dependency("core", "ignite-core", true));
-        dependencies.add(new Dependency("indexing", "ignite-indexing", false));
 
         return dependencies;
     }
