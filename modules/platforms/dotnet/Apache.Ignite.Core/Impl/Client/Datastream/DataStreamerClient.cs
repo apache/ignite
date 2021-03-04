@@ -65,9 +65,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 w.WriteInt(_cacheId);
                 w.WriteByte(0x10); // Close
-                w.WriteInt(512); // PerNodeBufferSize
-                w.WriteInt(4096); // PerThreadBufferSize
-                w.WriteObject<object>(null); // Receiver
+                w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
+                w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
+                w.WriteObject(_options.Receiver); // Receiver
 
                 w.WriteInt(_entries.Count);
 
