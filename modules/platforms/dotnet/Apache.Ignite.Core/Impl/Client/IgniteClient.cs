@@ -289,14 +289,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
-            return new DataStreamerClient<TK, TV>(this, cacheName);
+            return GetDataStreamer<TK, TV>(cacheName, null);
         }
 
         /** <inheritDoc /> */
-        public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, object options)
+        public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName,
+            DataStreamerClientOptions<TK, TV> options)
         {
-            // TODO: Options class.
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(cacheName, "cacheName");
+            
+            return new DataStreamerClient<TK, TV>(this, cacheName, options);
         }
 
         /** <inheritDoc /> */

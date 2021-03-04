@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
@@ -34,13 +35,24 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly int _cacheId;
 
+        /** */
+        private readonly string _cacheName;
+
+        /** */
+        private readonly DataStreamerClientOptions<TK, TV> _options;
+
         /** TODO: Handle removals for value types */
         private readonly ConcurrentQueue<KeyValuePair<TK, TV>> _entries = new ConcurrentQueue<KeyValuePair<TK, TV>>();
 
-        public DataStreamerClient(IgniteClient client, string cacheName)
+        public DataStreamerClient(IgniteClient client, string cacheName, DataStreamerClientOptions<TK, TV> options)
         {
+            Debug.Assert(client != null);
+            Debug.Assert(!string.IsNullOrEmpty(cacheName));
+            
             _client = client;
+            _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);
+            _options = new DataStreamerClientOptions<TK, TV>(options);
         }
 
         public void Dispose()
@@ -63,6 +75,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     w.WriteObjectDetached(entry.Value);
                 }
             }, ctx => ctx.Stream.ReadLong());
+        }
+
+        /** <inheritdoc /> */
+        public string CacheName
+        {
+            get { return _cacheName; }
         }
 
         public void AddData(TK key, TV val)

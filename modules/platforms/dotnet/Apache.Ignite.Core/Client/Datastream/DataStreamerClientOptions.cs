@@ -28,6 +28,33 @@ namespace Apache.Ignite.Core.Client.Datastream
     public class DataStreamerClientOptions<TK, TV> // TODO: Think twice: should this be generic?
     {
         /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// </summary>
+        public DataStreamerClientOptions()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// </summary>
+        /// <param name="options">Options to copy from.</param>
+        public DataStreamerClientOptions(DataStreamerClientOptions<TK, TV> options)
+        {
+            if (options == null)
+            {
+                return;
+            }
+
+            ReceiverKeepBinary = options.ReceiverKeepBinary;
+            Receiver = options.Receiver;
+            AllowOverwrite = options.AllowOverwrite;
+            SkipStore = options.SkipStore;
+            PerNodeBufferSize = options.PerNodeBufferSize;
+            PerThreadBufferSize = options.PerThreadBufferSize;
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether <see cref="Receiver"/> should operate in binary mode.
         /// </summary>
         public bool ReceiverKeepBinary { get; set; }
