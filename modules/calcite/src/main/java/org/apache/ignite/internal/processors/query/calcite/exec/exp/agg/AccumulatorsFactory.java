@@ -50,7 +50,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -146,8 +145,12 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     private final List<WrapperPrototype> prototypes;
 
     /** */
-    public AccumulatorsFactory(ExecutionContext<Row> ctx, AggregateType type,
-        List<AggregateCall> aggCalls, RelDataType inputRowType) {
+    public AccumulatorsFactory(
+        ExecutionContext<Row> ctx,
+        AggregateType type,
+        List<AggregateCall> aggCalls,
+        RelDataType inputRowType
+    ) {
         this.ctx = ctx;
         this.type = type;
         this.inputRowType = inputRowType;
@@ -265,9 +268,12 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         private final RowHandler<Row> handler;
 
         /** */
-        AccumulatorWrapperImpl(Accumulator accumulator, AggregateCall call,
+        AccumulatorWrapperImpl(
+            Accumulator accumulator,
+            AggregateCall call,
             Function<Object[], Object[]> inAdapter,
-            Function<Object, Object> outAdapter) {
+            Function<Object, Object> outAdapter
+        ) {
             this.accumulator = accumulator;
             this.inAdapter = inAdapter;
             this.outAdapter = outAdapter;

@@ -176,6 +176,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     public static <T extends RelNode> List<T> findNodes(RelNode plan, Predicate<RelNode> pred) {
         List<T> ret = new ArrayList<>();
 
+        if (pred.test(plan))
+            ret.add((T)plan);
+
         plan.childrenAccept(
             new RelVisitor() {
                 @Override public void visit(RelNode node, int ordinal, RelNode parent) {
@@ -325,6 +328,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkSplitAndSerialization(IgniteRel rel, IgniteSchema publicSchema) {
+        assertNotNull(rel);
+
         rel = Cloner.clone(rel);
 
         SchemaPlus schema = createRootSchema(false)

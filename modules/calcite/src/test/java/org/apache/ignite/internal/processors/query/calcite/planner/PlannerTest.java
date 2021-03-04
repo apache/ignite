@@ -41,6 +41,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexFieldAccess;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -71,6 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
@@ -567,99 +571,6 @@ public class PlannerTest extends AbstractPlannerTest {
             "SELECT * FROM table2 " +
             "UNION ALL " +
             "SELECT * FROM table3 ";
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
-
-        RelNode root;
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            String qry = ctx.query();
-
-            assertNotNull(qry);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            root = planner.convert(sqlNode);
-
-            // Transformation chain
-            root = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, root.getTraitSet(), root);
-
-            // Transformation chain
-            RelTraitSet desired = root.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .simplify();
-
-            root = planner.transform(PlannerPhase.OPTIMIZATION, desired, root);
-        }
-
-        assertNotNull(root);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testAggregate() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable employer = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .add("SALARY", f.createJavaType(Double.class))
-                .build()) {
-
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forAssignments(Arrays.asList(
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2),
-                    select(nodes, 2, 0),
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ));
-            }
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "Employers", "hash");
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("EMPS", employer);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "SELECT * FROM emps WHERE emps.salary = (SELECT AVG(emps.salary) FROM emps)";
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
@@ -2780,6 +2691,41 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
             assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+
+            checkSplitAndSerialization(phys, publicSchema);
+        }
+    }
+
+    /** */
+    @Test
+    public void testNotStandardFunctions() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "TEST",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "TEST", "hash");
+                }
+            }
+        );
+
+        String queries[] = {
+            "select REVERSE(val) from TEST", // MYSQL
+            "select TO_DATE(val, 'yyyymmdd') from TEST" // ORACLE
+        };
+
+        for (String sql : queries) {
+            IgniteRel phys = physicalPlan(
+                sql,
+                publicSchema
+            );
 
             checkSplitAndSerialization(phys, publicSchema);
         }

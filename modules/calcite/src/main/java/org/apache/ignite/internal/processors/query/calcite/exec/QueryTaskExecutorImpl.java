@@ -41,9 +41,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     private IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor;
 
     /** */
-    private FailureProcessor failureProcessor;
-
-    /** */
     private Thread.UncaughtExceptionHandler eHnd;
 
     /** */
@@ -65,16 +62,26 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
         this.eHnd = eHnd;
     }
 
-    /**
-     * @param failureProcessor Failure processor.
-     */
-    public void failureProcessor(FailureProcessor failureProcessor) {
-        this.failureProcessor = failureProcessor;
-    }
-
     /** {@inheritDoc} */
     @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
-        stripedThreadPoolExecutor.execute(qryTask, hash(qryId, fragmentId));
+        stripedThreadPoolExecutor.execute(
+            () -> {
+                try {
+                    qryTask.run();
+                }
+                catch (Throwable e) {
+                    U.warn(log, "Uncaught exception", e);
+
+                    /*
+                     * No exceptions are rethrown here to preserve the current thread from being destroyed,
+                     * because other queries may be pinned to the current thread id.
+                     * However, unrecoverable errors must be processed by FailureHandler.
+                     */
+                    uncaughtException(Thread.currentThread(), e);
+                }
+            },
+            hash(qryId, fragmentId)
+        );
     }
 
     /** {@inheritDoc} */
@@ -82,8 +89,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
         exceptionHandler(ctx.uncaughtExceptionHandler());
 
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
-        failureProcessor(proc.failureProcessor());
 
         stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),
@@ -102,9 +107,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
     /** {@inheritDoc} */
     @Override public void uncaughtException(Thread t, Throwable e) {
-        if (failureProcessor != null)
-            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
         if (eHnd != null)
             eHnd.uncaughtException(t, e);
     }
