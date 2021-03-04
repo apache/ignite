@@ -50,7 +50,14 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
+        }
 
+        cleanQueryPlanCache();
+    }
+
+    /** */
+    protected void cleanQueryPlanCache(){
+        for (Ignite ign : G.allGrids()) {
             CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
                 ((IgniteEx)ign).context(), QueryEngine.class);
 
@@ -68,7 +75,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createAndPopulateTable() {
+    protected IgniteCache<Integer, Employer> createAndPopulateTable() {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("person")
             .setSqlSchema("PUBLIC")
@@ -82,6 +89,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         person.put(idx++, new Employer("Ilya", 15d));
         person.put(idx++, new Employer("Roma", 10d));
         person.put(idx++, new Employer("Roma", 10d));
+
+        return person;
     }
 
     /** */
