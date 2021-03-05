@@ -2239,10 +2239,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             f0.force();
                         }
 
-                        segmentSize.put(segIdx, zip.length());
-                        segmentAware.addCurrentWalArchiveSize(zip.length());
+                        long zipLen = zip.length();
 
-                        metrics.onWalSegmentCompressed(zip.length());
+                        segmentSize.put(segIdx, zipLen);
+                        segmentAware.addCurrentWalArchiveSize(zipLen);
+
+                        metrics.onWalSegmentCompressed(zipLen);
 
                         segmentAware.onSegmentCompressed(segIdx);
 
