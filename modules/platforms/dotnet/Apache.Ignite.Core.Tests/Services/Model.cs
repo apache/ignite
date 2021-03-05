@@ -261,4 +261,22 @@ namespace Apache.Ignite.Platform.Model
     /// A class is a clone of Java class V16 with the same namespace.
     /// </summary>
     public class V16 { public String Name { get; set; } }
+
+    /// <summary>
+    /// V17.
+    /// </summary>
+    public class V17
+    {
+        public int Id { get; set; }
+        public String Name { get; set; }
+    }
+
+    /// <summary>
+    /// V18.
+    /// </summary>
+    public class V18
+    {
+        public int Id { get; set; }
+        public String Name { get; set; }
+    }
 }
