@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 }
             };
         }
-        
+
         /// <summary>
         /// Replaces the footer setting.
         /// </summary>
