@@ -261,7 +261,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final Marshaller marsh;
 
     /** Distributed process to restore cache group from the snapshot. */
-    private final SnapshotRestoreCacheGroupProcess restoreCacheGrpProc;
+    private final SnapshotRestoreProcess restoreCacheGrpProc;
 
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
@@ -321,7 +321,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
-        restoreCacheGrpProc = new SnapshotRestoreCacheGroupProcess(ctx);
+        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
     }
 
     /**
@@ -1096,8 +1096,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> restoreCacheGroups(String snpName, Collection<String> grpNames) {
-        return restoreCacheGrpProc.start(snpName, grpNames);
+    @Override public IgniteFuture<Void> restoreSnapshot(String name, Collection<String> grpNames) {
+        return restoreCacheGrpProc.start(name, grpNames);
     }
 
     /**
@@ -1154,29 +1154,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to copy file [snapshot=" + snpName + ", grp=" + grpName + ']', e);
-        }
-    }
-
-    /**
-     * @param files Collection of files to delete.
-     */
-    protected void rollbackRestoreOperation(Collection<File> files) {
-        List<File> dirs = new ArrayList<>();
-
-        for (File file : files) {
-            if (!file.exists())
-                continue;
-
-            if (file.isDirectory())
-                dirs.add(file);
-
-            if (!file.delete())
-                log.warning("Unable to delete a file created during a cache restore operation [file=" + file + ']');
-        }
-
-        for (File dir : dirs) {
-            if (!dir.delete())
-                log.warning("Unable to delete a folder created during a cache restore operation [file=" + dir + ']');
         }
     }
 

@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 /**
  * Distributed process to restore cache group from the snapshot.
  */
-public class SnapshotRestoreCacheGroupProcess {
+public class SnapshotRestoreProcess {
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
 
@@ -71,10 +71,10 @@ public class SnapshotRestoreCacheGroupProcess {
     private final GridKernalContext ctx;
 
     /** Cache group restore prepare phase. */
-    private final DistributedProcess<SnapshotRestorePrepareRequest, SnapshotRestoreEmptyResponse> prepareRestoreProc;
+    private final DistributedProcess<SnapshotRestorePrepareRequest, Boolean> prepareRestoreProc;
 
     /** Cache group restore cache start phase. */
-    private final DistributedProcess<SnapshotRestoreCacheStartRequest, SnapshotRestoreEmptyResponse> cacheStartProc;
+    private final DistributedProcess<UUID, Boolean> cacheStartProc;
 
     /** Cache group restore rollback phase. */
     private final DistributedProcess<SnapshotRestoreRollbackRequest, SnapshotRestoreRollbackResponse> rollbackRestoreProc;
@@ -91,7 +91,7 @@ public class SnapshotRestoreCacheGroupProcess {
     /**
      * @param ctx Kernal context.
      */
-    public SnapshotRestoreCacheGroupProcess(GridKernalContext ctx) {
+    public SnapshotRestoreProcess(GridKernalContext ctx) {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
@@ -121,11 +121,15 @@ public class SnapshotRestoreCacheGroupProcess {
                 "perform this operation."));
         }
 
-        IgniteInternalFuture<Void> fut0 = fut;
+        synchronized (this) {
+            IgniteInternalFuture<Void> fut0 = fut;
 
-        if (!fut0.isDone()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG +
-                "The previous snapshot restore operation was not completed."));
+            if (!fut0.isDone()) {
+                return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG +
+                    "The previous snapshot restore operation was not completed."));
+            }
+
+            fut = new GridFutureAdapter<>();
         }
 
         DiscoveryDataClusterState clusterState = ctx.state().clusterState();
@@ -151,15 +155,13 @@ public class SnapshotRestoreCacheGroupProcess {
 
         Set<UUID> bltNodeIds = new HashSet<>(F.viewReadOnly(bltNodes, F.node2id()));
 
-        fut = new GridFutureAdapter<>();
-
         ((ClusterGroupAdapter)ctx.cluster().get().forNodeIds(bltNodeIds)).compute().executeAsync(
-            new SnapshotRestoreVerificatioTask(), new SnapshotRestoreVerificationArg(snpName, cacheGrpNames)).listen(
+            new SnapshotRestoreVerificationTask(snpName, cacheGrpNames), null).listen(
             f -> {
                 try {
-                    SnapshotRestoreVerificationResult res = f.get();
+                    Map.Entry<UUID, List<StoredCacheData>> firstNodeRes = F.first(f.get().entrySet());
 
-                    Set<String> foundGrps = res == null ? Collections.emptySet() : res.configs().stream()
+                    Set<String> foundGrps = firstNodeRes == null ? Collections.emptySet() : firstNodeRes.getValue().stream()
                         .map(v -> v.config().getGroupName() != null ? v.config().getGroupName() : v.config().getName())
                         .collect(Collectors.toSet());
 
@@ -174,8 +176,12 @@ public class SnapshotRestoreCacheGroupProcess {
                         return;
                     }
 
-                    SnapshotRestorePrepareRequest req = new SnapshotRestorePrepareRequest(
-                        UUID.randomUUID(), snpName, bltNodeIds, res.configs(), res.localNodeId());
+                    HashSet<UUID> reqNodes = new HashSet<>(f.get().keySet());
+
+                    reqNodes.add(ctx.localNodeId());
+
+                    SnapshotRestorePrepareRequest req = new SnapshotRestorePrepareRequest(UUID.randomUUID(), snpName,
+                        reqNodes, firstNodeRes.getValue(), firstNodeRes.getKey());
 
                     prepareRestoreProc.start(req.requestId(), req);
                 } catch (Throwable t) {
@@ -237,9 +243,8 @@ public class SnapshotRestoreCacheGroupProcess {
      * Ensures that a cache with the specified name does not exist locally.
      *
      * @param name Cache name.
-     * @throws IllegalStateException If cache with the specified name already exists.
      */
-    private void ensureCacheAbsent(String name) throws IllegalStateException {
+    private void ensureCacheAbsent(String name) {
         int id = CU.cacheId(name);
 
         if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null) {
@@ -252,7 +257,7 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param req Request to prepare cache group restore from the snapshot.
      * @return Result future.
      */
-    private IgniteInternalFuture<SnapshotRestoreEmptyResponse> prepare(SnapshotRestorePrepareRequest req) {
+    private IgniteInternalFuture<Boolean> prepare(SnapshotRestorePrepareRequest req) {
         if (!req.nodes().contains(ctx.localNodeId()))
             return new GridFinishedFuture<>();
 
@@ -279,7 +284,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        GridFutureAdapter<SnapshotRestoreEmptyResponse> retFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
         try {
             for (String grpName : opCtx0.groups())
@@ -300,7 +305,7 @@ public class SnapshotRestoreCacheGroupProcess {
                     opCtx0.restore(updateMeta);
 
                     if (!opCtx0.interrupted()) {
-                        retFut.onDone();
+                        retFut.onDone(true);
 
                         return;
                     }
@@ -329,13 +334,22 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestoreEmptyResponse> res, Map<UUID, Exception> errs) {
+    private void finishPrepare(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
         GridFutureAdapter<Void> fut0 = fut;
+        SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (fut0.isDone() || !reqId.equals(opCtx.requestId()))
+        if (staleProcess(fut0, opCtx))
             return;
 
         Exception failure = F.first(errs.values());
+
+        if (failure == null && !res.keySet().containsAll(opCtx0.nodes())) {
+            Set<UUID> leftNodes = new HashSet<>(opCtx0.nodes());
+
+            leftNodes.removeAll(res.keySet());
+
+            failure = new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
+        }
 
         if (failure != null) {
             opCtx.rollback();
@@ -346,20 +360,20 @@ public class SnapshotRestoreCacheGroupProcess {
         }
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStartProc.start(reqId, new SnapshotRestoreCacheStartRequest(reqId));
+            cacheStartProc.start(reqId, reqId);
     }
 
     /**
-     * @param req Request to start restored cache groups.
+     * @param reqId Request ID.
      * @return Result future.
      */
-    private IgniteInternalFuture<SnapshotRestoreEmptyResponse> cacheStart(SnapshotRestoreCacheStartRequest req) {
+    private IgniteInternalFuture<Boolean> cacheStart(UUID reqId) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (staleProcess(fut, opCtx0))
             return new GridFinishedFuture<>();
 
-        if (!req.requestId().equals(opCtx0.requestId()))
+        if (!reqId.equals(opCtx0.requestId()))
             return new GridFinishedFuture<>(new IgniteException("Unknown snapshot restore operation was rejected."));
 
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
@@ -376,7 +390,7 @@ public class SnapshotRestoreCacheGroupProcess {
         if (!allNodesInBaselineAndAlive(opCtx0.nodes()))
             return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster."));
 
-        GridFutureAdapter<SnapshotRestoreEmptyResponse> retFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
         if (log.isInfoEnabled()) {
             log.info("Starting restored caches " +
@@ -392,7 +406,7 @@ public class SnapshotRestoreCacheGroupProcess {
                     retFut.onDone(f.error());
                 }
                 else
-                    retFut.onDone();
+                    retFut.onDone(true);
             }
         );
 
@@ -404,7 +418,7 @@ public class SnapshotRestoreCacheGroupProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishCacheStart(UUID reqId, Map<UUID, SnapshotRestoreEmptyResponse> res, Map<UUID, Exception> errs) {
+    private void finishCacheStart(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
         GridFutureAdapter<Void> fut0 = fut;
         SnapshotRestoreContext opCtx0 = opCtx;
 
@@ -639,8 +653,26 @@ public class SnapshotRestoreCacheGroupProcess {
             for (String grpName : grpNames) {
                 List<File> files = grps.remove(grpName);
 
-                if (files != null)
-                    ctx.cache().context().snapshotMgr().rollbackRestoreOperation(files);
+                if (files == null)
+                    continue;
+
+                List<File> dirs = new ArrayList<>();
+
+                for (File file : files) {
+                    if (!file.exists())
+                        continue;
+
+                    if (file.isDirectory())
+                        dirs.add(file);
+
+                    if (!file.delete())
+                        log.warning("Unable to delete a file created during a cache restore operation [file=" + file + ']');
+                }
+
+                for (File dir : dirs) {
+                    if (!dir.delete())
+                        log.warning("Unable to delete a folder created during a cache restore operation [file=" + dir + ']');
+                }
             }
         }
     }
