@@ -65,7 +65,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Tests for kafka replication.
  */
-public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
+public class CDCReplicationTest extends GridCommonAbstractTest {
     /** */
     public static final String AP_TOPIC_NAME = "active-passive-topic";
 
@@ -144,6 +144,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
         CDCReplicationConfigurationPluginProvider cfgPlugin = new CDCReplicationConfigurationPluginProvider();
 
         cfgPlugin.setDrId(drId);
+        cfgPlugin.setCaches(new HashSet<>(Arrays.asList(ACTIVE_ACTIVE_CACHE)));
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDiscoverySpi(new TcpDiscoverySpi()
@@ -248,11 +249,11 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_CACHE));
 
             try {
-                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_EXISTS);
+                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_EXISTS, 1);
 
                 IntStream.range(0, 50).forEach(i -> source[source.length - 1].getOrCreateCache(AP_CACHE).remove(i));
 
-                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_REMOVED);
+                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_REMOVED, 1);
             }
             finally {
                 k2iFut.cancel();
@@ -303,20 +304,27 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
             });
 
             try {
-                waitForSameData(sourceCache, destCache, 100, BOTH_EXISTS);
+                waitForSameData(sourceCache, destCache, 100, BOTH_EXISTS, 1);
 
                 for (int i = 0; i < 200; i++) {
-                    IgniteCache<Integer, Data> c = ThreadLocalRandom.current().nextBoolean() ? sourceCache : destCache;
+                    IgniteCache<Integer, Data> c1, c2;
 
-                    int k = ThreadLocalRandom.current().nextInt(100);
+                    if (ThreadLocalRandom.current().nextBoolean()) {
+                        c1 = sourceCache;
+                        c2 = destCache;
+                    }
+                    else {
+                        c1 = destCache;
+                        c2 = sourceCache;
+                    }
 
-                    if (ThreadLocalRandom.current().nextBoolean())
-                        c.put(k, genSingleData.apply(2));
-                    else
-                        c.remove(k);
+                    // WHY EXACTLY 150 EVENTS IN CDC AND KAFKA?
+                    c1.put(i % 100, genSingleData.apply(2));
+
+                    c2.remove(i % 100);
                 }
 
-                waitForSameData(sourceCache, destCache, 100, ANY_SAME_STATE);
+                waitForSameData(sourceCache, destCache, 100, ANY_SAME_STATE, 2);
             }
             finally {
                 k2iFut1.cancel();
@@ -337,7 +345,7 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
      * @param keysCnt
      * @param keysState
      */
-    public void waitForSameData(IgniteCache<Integer, Data> src, IgniteCache<Integer, Data> dest, int keysCnt, int keysState)
+    public void waitForSameData(IgniteCache<Integer, Data> src, IgniteCache<Integer, Data> dest, int keysCnt, int keysState, int iter)
         throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             for (int i = 0; i < keysCnt; i++) {
@@ -362,6 +370,9 @@ public class KafkaToIgnitePluginTest extends GridCommonAbstractTest {
                     throw new IllegalArgumentException(keysState + " not supported.");
 
                 Data data = dest.get(i);
+
+                if (data.iter != iter)
+                    return false;
 
                 if (!data.equals(src.get(i)))
                     return false;

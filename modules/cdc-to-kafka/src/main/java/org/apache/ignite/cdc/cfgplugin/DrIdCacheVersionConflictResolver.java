@@ -35,10 +35,10 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        if (oldEntry.isStartVersion() || (oldEntry.dataCenterId() > newEntry.dataCenterId()))
-            res.useOld();
-        else
+        if (oldEntry.isStartVersion() || (oldEntry.dataCenterId() < newEntry.dataCenterId()))
             res.useNew();
+        else
+            res.useOld();
 
         return res;
     }

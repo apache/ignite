@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -91,7 +92,7 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     private Properties kafkaProps;
 
     /** Count of messages.  */
-    private long cntMsgs;
+    private static final AtomicLong cntMsgs = new AtomicLong();
 
     /** */
     private boolean startFromProps;
@@ -130,13 +131,17 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
             if (onlyPrimary && !evt.primary())
                 return;
 
-            if (evt.order().otherDcOrder() != null)
+            if (evt.order().otherDcOrder() != null) {
+                System.out.println("Other DC stop!");
+
                 return;
+            }
 
             if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
                 return;
 
-            cntMsgs++;
+            //cntMsgs++;
+            cntMsgs.incrementAndGet();
 
             futs.add(producer.send(new ProducerRecord<>(
                 topic,
@@ -154,7 +159,7 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
             throw new RuntimeException(e);
         }
 
-        log.info("cntMsgs=" + cntMsgs + ",topic=" + topic);
+        log.info("cntMsgs=" + cntMsgs.get() + ",topic=" + topic);
 
         return true;
     }

@@ -45,6 +45,7 @@ public class CDCReplicationConfigurationPluginProvider implements PluginProvider
     /** */
     private Set<String> caches;
 
+    /** */
     private final CachePluginProvider<?> provider = new ConflictResolutionProvider();
 
     /** {@inheritDoc} */
