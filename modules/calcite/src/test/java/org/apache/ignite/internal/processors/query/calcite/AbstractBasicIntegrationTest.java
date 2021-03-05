@@ -56,7 +56,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void cleanQueryPlanCache(){
+    protected void cleanQueryPlanCache() {
         for (Ignite ign : G.allGrids()) {
             CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
                 ((IgniteEx)ign).context(), QueryEngine.class);
