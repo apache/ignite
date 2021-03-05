@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -112,6 +113,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridPlainOutClosure;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -2419,11 +2421,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Getting the cache object context.
+     *
      * @param cacheName Cache name.
-     * @return Cache object context.
+     * @return Cache object context, {@code null} if the cache was not found.
      */
-    private CacheObjectContext cacheObjectContext(String cacheName) {
-        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
+    @Nullable private CacheObjectContext cacheObjectContext(String cacheName) {
+        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+        return cache == null ? null : cache.context().cacheObjectContext();
     }
 
     /**
@@ -2600,7 +2606,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private QueryTypeDescriptorImpl type(@Nullable String cacheName, CacheObject val) throws IgniteCheckedException {
+    private QueryTypeDescriptorImpl type(String cacheName, CacheObject val) throws IgniteCheckedException {
         CacheObjectContext coctx = cacheObjectContext(cacheName);
 
         QueryTypeIdKey id;
@@ -2863,7 +2869,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param supplier Code to be executed.
      * @return Result.
      */
-    private <T> T executeQuerySafe(@Nullable final GridCacheContext<?, ?> cctx, SupplierX<T> supplier) {
+    private <T> T executeQuerySafe(@Nullable final GridCacheContext<?, ?> cctx, GridPlainOutClosure<T> supplier) {
         GridCacheContext oldCctx = curCache.get();
 
         curCache.set(cctx);
@@ -2872,7 +2878,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return supplier.get();
+            return supplier.apply();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -3786,19 +3792,5 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             this.mgr = mgr;
         }
-    }
-
-    /**
-     * Function which can throw exception.
-     */
-    @FunctionalInterface
-    private interface SupplierX<T> {
-        /**
-         * Get value.
-         *
-         * @return Value.
-         * @throws IgniteCheckedException If failed.
-         */
-        T get() throws IgniteCheckedException;
     }
 }

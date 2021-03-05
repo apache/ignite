@@ -52,7 +52,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private final boolean collectStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** Cache context. */
-    private final GridCacheContext cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Cancellation token. */
     @Nullable private final SchemaIndexOperationCancellationToken cancel;
@@ -61,7 +61,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     protected final GridFutureAdapter<Void> buildIdxFut;
 
     /** Logger. */
-    protected IgniteLogger log;
+    protected final IgniteLogger log;
 
     /**
      * Constructor.
@@ -71,7 +71,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param buildIdxFut Future for create/rebuild index.
      */
     public SchemaIndexCacheVisitorImpl(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         @Nullable SchemaIndexOperationCancellationToken cancel,
         GridFutureAdapter<Void> buildIdxFut
     ) {
@@ -79,7 +79,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         assert nonNull(buildIdxFut);
 
         if (cctx.isNear())
-            cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
+            cctx = ((GridNearCacheAdapter<?, ?>)cctx.cache()).dht().context();
 
         this.cctx = cctx;
         this.buildIdxFut = buildIdxFut;
@@ -110,8 +110,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> buildIdxCompoundFut =
-            new GridCompoundFuture<>();
+        // To avoid a race between clearing pageMemory (on a cache stop ex. deactivation)
+        // and rebuilding indexes, which can lead to a fail of the node.
+        SchemaIndexCacheCompoundFuture buildIdxCompoundFut = new SchemaIndexCacheCompoundFuture();
 
         for (GridDhtLocalPartition locPart : locParts) {
             GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();

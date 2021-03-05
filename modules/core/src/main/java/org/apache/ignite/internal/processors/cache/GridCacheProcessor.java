@@ -1024,6 +1024,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy, boolean clearDbObjects) {
         GridCacheContext ctx = cache.context();
 
+        ctx.stopping(true);
+
         try {
             if (!cache.isNear() && ctx.shared().wal() != null) {
                 try {
@@ -1042,9 +1044,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (destroy)
                 cache.removeMetrics();
 
-            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
+            IgniteInternalFuture<?> rebuildIdxFut = ctx.kernalContext().query().indexRebuildFuture(ctx.cacheId());
 
-            // TODO: 26.02.2021 Кажется тут
+            if (rebuildIdxFut != null) {
+                try {
+                    rebuildIdxFut.get();
+                }
+                catch (IgniteCheckedException ignore) {
+                }
+            }
+
+            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
             if (!clearDbObjects)
                 ctx.kernalContext().query().getIndexing().closeCacheOnClient(ctx.name());
