@@ -251,6 +251,30 @@
         </dependencies>
     </dependencyManagement>
 
+    <!--
+        Profile to exclude running surefire (unit) tests but do not prevent running integration ones
+    -->
+    <profiles>
+        <profile>
+            <activation>
+                <property>
+                    <name>skip.surefire.tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -394,7 +418,6 @@
                     <excludes>
                         <exclude>**/IT*.java</exclude>
                     </excludes>
-                    <skipTests>${skip.surefire.tests}</skipTests>
                 </configuration>
             </plugin>
 
