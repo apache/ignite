@@ -45,7 +45,6 @@ class AuthenticationTests(IgniteTest):
         """
         Test activate cluster.
         Authentication enabled
-        Positive case
         """
 
         config = IgniteConfiguration(
@@ -63,15 +62,12 @@ class AuthenticationTests(IgniteTest):
 
         control_utility = ControlUtility(cluster=servers,
                                          username=DEFAULT_AUTH_USERNAME,
-                                         password=WRONG_PASSWORD if not password_is_correct
-                                         else DEFAULT_AUTH_PASSWORD
-                                         )
-
-        if not password_is_correct:
+                                         password=DEFAULT_AUTH_PASSWORD if password_is_correct else WRONG_PASSWORD)
+        if password_is_correct:
+            control_utility.activate()
+        else:
             try:
                 control_utility.activate()
                 raise Exception("User successfully execute command with wrong password")
             except ControlUtilityError:
                 pass
-        else:
-            control_utility.activate()
