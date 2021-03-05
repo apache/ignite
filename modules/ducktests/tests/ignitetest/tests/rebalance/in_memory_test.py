@@ -16,7 +16,7 @@
 """
 Module contains in-memory rebalance tests.
 """
-from ducktape.mark import defaults
+from ducktape.mark import defaults, matrix
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
@@ -37,8 +37,10 @@ class RebalanceInMemoryTest(RebalanceTest):
     # pylint: disable=too-many-arguments
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(cache_count=[1], entry_count=[2000], entry_size=[300000],
+    @defaults(cache_count=[1], entry_count=[60000], entry_size=[50000],
               rebalance_thread_pool_size=[2], rebalance_batch_size=[512 * 1024], rebalance_throttle=[0])
+    @matrix(entry_count=[2400000], entry_size=[50000],
+            rebalance_thread_pool_size=[4, 8, 16])
     def test_rebalance_on_node_join(self, ignite_version,
                                     cache_count, entry_count, entry_size,
                                     rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle):
@@ -57,26 +59,23 @@ class RebalanceInMemoryTest(RebalanceTest):
         ignites = IgniteService(self.test_context, config=node_config, num_nodes=node_count - 1)
         ignites.start()
 
-        self.preload_data(node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-                          cache_count, entry_count, entry_size)
+        preload_time = self.preload_data(node_config._replace(
+            client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            cache_count, entry_count, entry_size)
 
         ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                num_nodes=1)
         ignite.start()
 
-        self.await_rebalance_start(ignite)
-
-        start = self.monotonic()
-
-        self.await_rebalance_complete(ignite)
-
-        return {"Rebalanced in (sec)": self.monotonic() - start}
+        return self.get_rebalance_stats(ignite, preload_time, cache_count, entry_count, entry_size)
 
     # pylint: disable=too-many-arguments
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(cache_count=[1], entry_count=[2000], entry_size=[300000],
+    @defaults(cache_count=[1], entry_count=[60000], entry_size=[50000],
               rebalance_thread_pool_size=[2], rebalance_batch_size=[512 * 1024], rebalance_throttle=[0])
+    @matrix(entry_count=[2400000], entry_size=[50000],
+            rebalance_thread_pool_size=[4, 8, 16])
     def test_rebalance_on_node_left(self, ignite_version,
                                     cache_count, entry_count, entry_size,
                                     rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle):
@@ -95,18 +94,13 @@ class RebalanceInMemoryTest(RebalanceTest):
         ignites = IgniteService(self.test_context, config=node_config, num_nodes=node_count)
         ignites.start()
 
-        self.preload_data(node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-                          cache_count, entry_count, entry_size)
+        preload_time = self.preload_data(node_config._replace(
+            client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            cache_count, entry_count, entry_size)
 
         ignites.stop_node(ignites.nodes[len(ignites.nodes) - 1])
 
-        node = self.await_rebalance_start(ignites)
-
-        start = self.monotonic()
-
-        self.await_rebalance_complete(ignites, node)
-
-        return {"Rebalanced in (sec)": self.monotonic() - start}
+        return self.get_rebalance_stats(ignites, preload_time, cache_count, entry_count, entry_size)
 
     # pylint: disable=too-many-arguments
     @staticmethod
@@ -124,3 +118,25 @@ class RebalanceInMemoryTest(RebalanceTest):
             rebalance_thread_pool_size=rebalance_thread_pool_size,
             rebalance_batch_size=rebalance_batch_size,
             rebalance_throttle=rebalance_throttle)
+
+    # pylint: disable=too-many-arguments
+    def get_rebalance_stats(self, ignite, preload_time, cache_count, entry_count, entry_size):
+        """
+        Awaits rebalance start, then awaits rebalance end and measure it's time.
+        Finally, returns rebalance statistics.
+        """
+        node = self.await_rebalance_start(ignite)
+
+        start = self.monotonic()
+
+        self.await_rebalance_complete(ignite, node, cache_count)
+
+        rebalance_time = self.monotonic() - start
+
+        total_data_size_mb = cache_count * entry_count * entry_size / 1000000
+
+        return {"Rebalanced in (sec)": rebalance_time,
+                "Preloaded in (sec):": preload_time,
+                "Total data size (MB)": total_data_size_mb,
+                "Rebalance speed (MB/sec)": total_data_size_mb / rebalance_time,
+                "Preload speed (MB/sec)": total_data_size_mb / preload_time}

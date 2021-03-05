@@ -55,7 +55,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param entrySize Entry size.
      */
     private void generateCacheData(String cacheName, int entryCnt, int entrySize) {
-        int logStreamedEntriesQuant = (int)Math.pow(10, Math.max(4, (int)Math.log10(entryCnt) - 1));
+        int logStreamedEntriesQuant = (int)Math.pow(10, (int)Math.log10(entryCnt) - 1);
 
         for (int i = 0; i < entryCnt; ) {
             try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
@@ -68,10 +68,10 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                         log.info("Streamed " + streamed + " entries into " + cacheName);
                 }
             }
-
-            if (entryCnt % logStreamedEntriesQuant != 0)
-                log.info("Streamed " + entryCnt + " entries into " + cacheName);
         }
+
+        if (entryCnt % logStreamedEntriesQuant != 0)
+            log.info("Streamed " + entryCnt + " entries into " + cacheName);
 
         log.info(cacheName + " data generated.");
     }

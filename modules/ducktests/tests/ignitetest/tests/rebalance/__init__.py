@@ -29,14 +29,16 @@ class RebalanceTest(IgniteTest):
     """
     Contains common rebalance test definitions and methods.
     """
-    PRELOAD_TIMEOUT = 60
+    PRELOAD_TIMEOUT = 5000
     REBALANCE_START_TIMEOUT = 1
-    REBALANCE_COMPLETE_TIMEOUT = 60
+    REBALANCE_COMPLETE_TIMEOUT = 300
 
     def preload_data(self, config, cache_count, entry_count, entry_size):
         """
         Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
         """
+        start = self.monotonic()
+
         IgniteApplicationService(
             self.test_context,
             config=config,
@@ -44,6 +46,8 @@ class RebalanceTest(IgniteTest):
             params={"cacheCount": cache_count, "entryCount": entry_count, "entrySize": entry_size},
             startup_timeout_sec=self.PRELOAD_TIMEOUT
         ).run()
+
+        return self.monotonic() - start
 
     def await_rebalance_start(self, ignite):
         """
@@ -65,13 +69,15 @@ class RebalanceTest(IgniteTest):
 
         raise RuntimeError("Rebalance start was not detected on any node")
 
-    def await_rebalance_complete(self, ignite, node=None):
+    def await_rebalance_complete(self, ignite, node=None, cache_count=1):
         """
         Awaits rebalance complete on some test-cache
         """
-        ignite.await_event_on_node(
-            "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\[grp=test-cache-",
-            node if node else ignite.nodes[0],
-            timeout_sec=self.REBALANCE_COMPLETE_TIMEOUT,
-            from_the_beginning=True,
-            backoff_sec=1)
+        for cache_idx in range(cache_count):
+            ignite.await_event_on_node(
+                "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
+                ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
+                node if node else ignite.nodes[0],
+                timeout_sec=self.REBALANCE_COMPLETE_TIMEOUT,
+                from_the_beginning=True,
+                backoff_sec=1)
