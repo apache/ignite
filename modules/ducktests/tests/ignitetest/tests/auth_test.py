@@ -17,8 +17,6 @@
 This module contains password based authentication tests
 """
 
-from enum import IntEnum
-
 from ducktape.mark import matrix
 
 from ignitetest.services.ignite import IgniteService
@@ -29,18 +27,8 @@ from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_USERNAME
-from ignitetest.utils.enum import constructible
 
 WRONG_PASSWORD = "wrong_password"
-
-
-@constructible
-class PasswordType(IntEnum):
-    """
-    Password type.
-    """
-    CORRECT = 0
-    WRONG = 1
 
 
 # pylint: disable=W0223
@@ -52,8 +40,8 @@ class AuthenticationTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(password_type=[PasswordType.CORRECT, PasswordType.WRONG])
-    def test_activate_with_authentication(self, ignite_version, password_type):
+    @matrix(password_is_correct=[True, False])
+    def test_activate_with_authentication(self, ignite_version, password_is_correct):
         """
         Test activate cluster.
         Authentication enabled
@@ -75,11 +63,11 @@ class AuthenticationTests(IgniteTest):
 
         control_utility = ControlUtility(cluster=servers,
                                          username=DEFAULT_AUTH_USERNAME,
-                                         password=WRONG_PASSWORD if password_type is PasswordType.WRONG
+                                         password=WRONG_PASSWORD if not password_is_correct
                                          else DEFAULT_AUTH_PASSWORD
                                          )
 
-        if password_type is PasswordType.WRONG:
+        if not password_is_correct:
             try:
                 control_utility.activate()
                 raise Exception("User successfully execute command with wrong password")
