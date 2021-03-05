@@ -48,7 +48,13 @@ public class HashAggregateConverterRule extends AbstractIgniteConverterRule<Logi
         RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode input = convert(rel.getInput(), inTrait);
 
-        return new IgniteHashAggregate(cluster, outTrait, input,
-            rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
+        return new IgniteHashAggregate(
+            cluster,
+            outTrait,
+            input,
+            rel.getGroupSet(),
+            rel.getGroupSets(),
+            rel.getAggCallList()
+        );
     }
 }

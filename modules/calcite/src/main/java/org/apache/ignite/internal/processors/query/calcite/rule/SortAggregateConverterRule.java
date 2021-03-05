@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/**
+ *
+ */
 public class SortAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
     /** */
     public static final RelOptRule INSTANCE = new SortAggregateConverterRule();
