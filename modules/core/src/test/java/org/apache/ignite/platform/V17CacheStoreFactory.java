@@ -15,20 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.model;
+package org.apache.ignite.platform;
 
-/** Test V16 object. */
-public class V16 {
-    /** */
-    private final String name;
+import javax.cache.configuration.Factory;
 
+/**
+ * Cache store factory for .Net tests.
+ *
+ * @param <K>
+ * @param <V>
+ */
+public class V17CacheStoreFactory<K, V> implements Factory<VCacheStore<K, V>> {
     /** */
-    public V16(String name) {
-        this.name = name;
-    }
+    private static final long serialVersionUID = 0L;
 
-    /** */
-    public String getName() {
-        return name;
+    /** {@inheritDoc} */
+    @Override public VCacheStore<K, V> create() {
+        return new VCacheStore<>("apache.ignite.platform.model.V17");
     }
 }
+
