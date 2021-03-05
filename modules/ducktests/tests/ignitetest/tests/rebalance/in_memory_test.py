@@ -51,7 +51,8 @@ class RebalanceInMemoryTest(RebalanceTest):
         node_count = len(self.test_context.cluster) - 1
 
         node_config = self.build_node_config(
-            ignite_version, node_count, rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle)
+            ignite_version, cache_count, entry_count, entry_size,
+            rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle)
 
         ignites = IgniteService(self.test_context, config=node_config, num_nodes=node_count - 1)
         ignites.start()
@@ -88,7 +89,8 @@ class RebalanceInMemoryTest(RebalanceTest):
         node_count = len(self.test_context.cluster) - 1
 
         node_config = self.build_node_config(
-            ignite_version, node_count, rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle)
+            ignite_version, cache_count, entry_count, entry_size,
+            rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle)
 
         ignites = IgniteService(self.test_context, config=node_config, num_nodes=node_count)
         ignites.start()
@@ -106,8 +108,9 @@ class RebalanceInMemoryTest(RebalanceTest):
 
         return {"Rebalanced in (sec)": self.monotonic() - start}
 
+    # pylint: disable=too-many-arguments
     @staticmethod
-    def build_node_config(ignite_version, node_count,
+    def build_node_config(ignite_version, cache_count, entry_count, entry_size,
                           rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle):
         """
         Builds ignite configuration for cluster of node_count nodes
@@ -115,7 +118,9 @@ class RebalanceInMemoryTest(RebalanceTest):
         return IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(max_size=512 * 1024 * 1024 * node_count)),
+                default=DataRegionConfiguration(max_size=max(
+                    2 * cache_count * entry_count * entry_size,
+                    512 * 1024 * 1024))),
             rebalance_thread_pool_size=rebalance_thread_pool_size,
             rebalance_batch_size=rebalance_batch_size,
             rebalance_throttle=rebalance_throttle)

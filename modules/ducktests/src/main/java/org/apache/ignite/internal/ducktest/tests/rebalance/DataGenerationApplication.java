@@ -29,6 +29,9 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
+    /** Max streamer data size. */
+    private static final long MAX_STREAMER_DATA_SIZE = 100_000_000;
+
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         int cacheCnt = jsonNode.get("cacheCount").asInt();
@@ -52,19 +55,23 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param entrySize Entry size.
      */
     private void generateCacheData(String cacheName, int entryCnt, int entrySize) {
-        try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
-            for (int i = 0; i < entryCnt; i++) {
-                stmr.addData(i, new DataModel(entrySize));
+        int logStreamedEntriesQuant = (int)Math.pow(10, Math.max(4, (int)Math.log10(entryCnt) - 1));
 
-                int streamed = i + 1;
+        for (int i = 0; i < entryCnt; ) {
+            try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
+                for (int n = 0; i < entryCnt && (n == 0 || n + entrySize < MAX_STREAMER_DATA_SIZE); i++, n += entrySize) {
+                    stmr.addData(i, new DataModel(entrySize));
 
-                if (streamed % 5_000 == 0)
-                    log.info("Streamed " + streamed + " entries into " + cacheName);
+                    int streamed = i + 1;
+
+                    if (streamed % logStreamedEntriesQuant == 0)
+                        log.info("Streamed " + streamed + " entries into " + cacheName);
+                }
             }
 
-            if (entryCnt % 5_000 != 0)
+            if (entryCnt % logStreamedEntriesQuant != 0)
                 log.info("Streamed " + entryCnt + " entries into " + cacheName);
-       }
+        }
 
         log.info(cacheName + " data generated.");
     }
