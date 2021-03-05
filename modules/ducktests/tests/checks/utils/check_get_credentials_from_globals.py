@@ -20,9 +20,9 @@ Check that get_credentials correctly parse Credentials from globals
 import pytest
 from ignitetest.services.utils.auth import get_credentials, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD, \
     AUTHENTICATION_ENABLED_KEY, CREDENTIALS_KEY
-from ignitetest.services.utils.auth import IGNITE_APPLICATION_SERVICE_ALIAS
+from ignitetest.services.utils.auth import IGNITE_CLIENT_ALIAS
 
-TEST_USER = IGNITE_APPLICATION_SERVICE_ALIAS
+TEST_USER = IGNITE_CLIENT_ALIAS
 TEST_PASSWORD = "qwe123"
 
 

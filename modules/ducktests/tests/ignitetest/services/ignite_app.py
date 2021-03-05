@@ -23,7 +23,6 @@ from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
-from ignitetest.services.utils.auth import IGNITE_APPLICATION_SERVICE_ALIAS
 
 
 class IgniteApplicationService(IgniteAwareService):
@@ -107,6 +106,3 @@ class IgniteApplicationService(IgniteAwareService):
                 res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 
         return res
-
-    def update_config_with_globals(self):
-        self._update_ssl_config_with_globals(IGNITE_APPLICATION_SERVICE_ALIAS)

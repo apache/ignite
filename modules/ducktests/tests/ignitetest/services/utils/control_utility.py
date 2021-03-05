@@ -25,7 +25,7 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.auth import get_credentials, DEFAULT_AUTH_PASSWORD, CONTROL_UTILITY_ALIAS
+from ignitetest.services.utils.auth import get_credentials, DEFAULT_AUTH_PASSWORD, IGNITE_ADMIN_ALIAS
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params
 from ignitetest.services.utils.jmx_utils import JmxClient
 
@@ -42,12 +42,12 @@ class ControlUtility:
         self.logger = cluster.context.logger
 
         if not ssl_params:
-            self.ssl_params = get_ssl_params(cluster.context.globals, CONTROL_UTILITY_ALIAS)
+            self.ssl_params = get_ssl_params(cluster.context.globals, IGNITE_ADMIN_ALIAS)
         else:
             self.ssl_params = ssl_params
 
         if not username:
-            self.username, self.password = get_credentials(cluster.context.globals, CONTROL_UTILITY_ALIAS)
+            self.username, self.password = get_credentials(cluster.context.globals, IGNITE_ADMIN_ALIAS)
         else:
             self.username, self.password = username, password
 

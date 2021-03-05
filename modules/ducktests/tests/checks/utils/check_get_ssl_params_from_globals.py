@@ -20,7 +20,7 @@ Check that SslParams correctly parse SSL params from globals
 import pytest
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, SslParams, DEFAULT_TRUSTSTORE, \
     DEFAULT_CLIENT_KEYSTORE, DEFAULT_PASSWORD, SSL_ENABLED_KEY, SSL_PARAMS_KEY
-from ignitetest.services.utils.auth import IGNITE_APPLICATION_SERVICE_ALIAS
+from ignitetest.services.utils.auth import IGNITE_CLIENT_ALIAS
 
 
 INSTALL_ROOT = '/opt/'
@@ -29,7 +29,7 @@ TEST_KEYSTORE_JKS = "client1.jks"
 TEST_TRUSTSTORE_JKS = "truststore.jks"
 TEST_PASSWORD = "qwe123"
 TEST_CERTIFICATE_DIR = "/opt/certs/"
-TEST_USER = IGNITE_APPLICATION_SERVICE_ALIAS
+TEST_USER = IGNITE_CLIENT_ALIAS
 
 
 def _compare(expected, actual):
