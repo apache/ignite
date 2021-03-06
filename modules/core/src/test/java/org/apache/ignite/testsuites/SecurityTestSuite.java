@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTe
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.systemview.SystemViewAuthorizationTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
@@ -84,6 +85,7 @@ import org.junit.runners.Suite;
     ContinuousQueryPermissionCheckTest.class,
     IgniteClientContainSubjectAddressTest.class,
     SnapshotPermissionCheckTest.class,
+    SystemViewAuthorizationTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
