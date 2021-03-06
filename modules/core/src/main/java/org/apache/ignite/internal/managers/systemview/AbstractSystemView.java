@@ -52,7 +52,6 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
      */
     AbstractSystemView(String name, String desc, SystemViewRowAttributeWalker<R> walker, IgniteSecurity security) {
         A.notNull(walker, "walker");
-        A.notNull(security, "security");
 
         this.name = name;
         this.desc = desc;
@@ -103,6 +102,7 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
      * Authorizes {@link SecurityPermission#SYSTEM_VIEW_READ} permission.
      */
     protected final void authorize() {
-        security.authorize(SYSTEM_VIEW_READ);
+        if (security != null)
+            security.authorize(SYSTEM_VIEW_READ);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -178,6 +179,9 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
      * Authorizes {@link SecurityPermission#SYSTEM_VIEW_READ} permission.
      */
     private void authorize() {
-        ctx.security().authorize(SYSTEM_VIEW_READ);
+        IgniteSecurity security = ctx.security();
+
+        if (security != null)
+            security.authorize(SYSTEM_VIEW_READ);
     }
 }
