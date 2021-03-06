@@ -51,7 +51,7 @@ class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last) {
         return new Iterator<Row>() {
             /** */
             private Iterator<ReadOnlyMetricRegistry> grps = mreg.iterator();

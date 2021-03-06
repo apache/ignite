@@ -29,6 +29,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
@@ -58,15 +59,16 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
     /**
      * @param cctxs Cache data.
+     * @param security Security processor.
      */
-    public ScanQuerySystemView(Collection<GridCacheContext<K, V>> cctxs) {
-        super(SCAN_QRY_SYS_VIEW, SCAN_QRY_SYS_VIEW_DESC, new ScanQueryViewWalker());
+    public ScanQuerySystemView(Collection<GridCacheContext<K, V>> cctxs, IgniteSecurity security) {
+        super(SCAN_QRY_SYS_VIEW, SCAN_QRY_SYS_VIEW_DESC, new ScanQueryViewWalker(), security);
 
         this.cctxs = cctxs;
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int sizeNoAuth() {
         int sz = 0;
 
         QueryDataIterator iter = new QueryDataIterator();
@@ -79,7 +81,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<ScanQueryView> iterator() {
+    @NotNull @Override public Iterator<ScanQueryView> iteratorNoAuth() {
         return new QueryDataIterator();
     }
 

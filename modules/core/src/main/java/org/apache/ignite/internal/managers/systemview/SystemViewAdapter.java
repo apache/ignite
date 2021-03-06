@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
@@ -44,10 +45,11 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
      * @param walker Walker.
      * @param data Data.
      * @param rowFunc Row function.
+     * @param security Security processor.
      */
     public SystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker, Collection<D> data,
-        Function<D, R> rowFunc) {
-        super(name, desc, walker);
+        Function<D, R> rowFunc, IgniteSecurity security) {
+        super(name, desc, walker, security);
 
         A.notNull(data, "data");
 
@@ -61,10 +63,11 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
      * @param walker Walker.
      * @param dataSupplier Data supplier.
      * @param rowFunc Row function.
+     * @param security Security processor.
      */
     public SystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker,
-        Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
-        super(name, desc, walker);
+        Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc, IgniteSecurity security) {
+        super(name, desc, walker, security);
 
         A.notNull(dataSupplier, "dataSupplier");
 
@@ -73,7 +76,7 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<R> iterator() {
+    @NotNull @Override public Iterator<R> iteratorNoAuth() {
         Iterator<D> dataIter;
 
         if (data != null)
@@ -93,7 +96,7 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int sizeNoAuth() {
         return data == null ? dataSupplier.get().size() : data.size();
     }
 }

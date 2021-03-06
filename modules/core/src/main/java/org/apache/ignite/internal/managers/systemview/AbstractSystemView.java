@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
+import java.util.Iterator;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
+import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.plugin.security.SecurityPermission.SYSTEM_VIEW_READ;
 
 /** Abstract system view. */
 abstract class AbstractSystemView<R> implements SystemView<R> {
@@ -28,6 +34,9 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
 
     /** Description of the view. */
     private final String desc;
+
+    /** {@link IgniteSecurity} for data access authorization. */
+    private final IgniteSecurity security;
 
     /**
      * Row attribute walker.
@@ -41,12 +50,14 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
      * @param desc Description.
      * @param walker Walker.
      */
-    AbstractSystemView(String name, String desc, SystemViewRowAttributeWalker<R> walker) {
+    AbstractSystemView(String name, String desc, SystemViewRowAttributeWalker<R> walker, IgniteSecurity security) {
         A.notNull(walker, "walker");
+        A.notNull(security, "security");
 
         this.name = name;
         this.desc = desc;
         this.walker = walker;
+        this.security = security;
     }
 
     /** {@inheritDoc} */
@@ -62,5 +73,36 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
     /** {@inheritDoc} */
     @Override public SystemViewRowAttributeWalker<R> walker() {
         return walker;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public final Iterator<R> iterator() {
+        authorize();
+
+        return iteratorNoAuth();
+    }
+
+    /**
+     * {@link Iterable#iterator()} implementation without authorization.
+     */
+    @NotNull protected abstract Iterator<R> iteratorNoAuth();
+
+    /** {@inheritDoc} */
+    @Override public final int size() {
+        authorize();
+
+        return sizeNoAuth();
+    }
+
+    /**
+     * {@link SystemView#size()} implementation without authorization.
+     */
+    protected abstract int sizeNoAuth();
+
+    /**
+     * Authorizes {@link SecurityPermission#SYSTEM_VIEW_READ} permission.
+     */
+    protected final void authorize() {
+        security.authorize(SYSTEM_VIEW_READ);
     }
 }

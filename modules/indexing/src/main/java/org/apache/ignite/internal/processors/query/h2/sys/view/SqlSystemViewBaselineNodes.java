@@ -47,7 +47,7 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
 
         BaselineTopology blt = ctx.state().clusterState().baselineTopology();
@@ -80,7 +80,7 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCount() {
+    @Override public long getRowCountNoAuth() {
         BaselineTopology blt = ctx.state().clusterState().baselineTopology();
 
         return blt == null ? 0 : blt.consistentIds().size();

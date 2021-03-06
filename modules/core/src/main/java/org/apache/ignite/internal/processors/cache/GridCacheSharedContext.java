@@ -268,7 +268,7 @@ public class GridCacheSharedContext<K, V> {
 
         ctxMap = new ConcurrentHashMap<>();
 
-        kernalCtx.systemView().registerView(new ScanQuerySystemView<>(ctxMap.values()));
+        kernalCtx.systemView().registerView(new ScanQuerySystemView<>(ctxMap.values(), kernalCtx.security()));
 
         locStoreCnt = new AtomicInteger();
 

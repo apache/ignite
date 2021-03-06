@@ -102,7 +102,7 @@ public class SqlSystemViewNodeMetrics extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
 
         Collection<ClusterNode> nodes;
@@ -205,7 +205,7 @@ public class SqlSystemViewNodeMetrics extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCount() {
+    @Override public long getRowCountNoAuth() {
         return F.concat(false, ctx.discovery().allNodes(), ctx.discovery().daemonNodes()).size();
     }
 }

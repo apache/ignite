@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.h2.engine.Session;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
 import org.h2.table.Column;
 import org.h2.value.Value;
+
+import static org.apache.ignite.plugin.security.SecurityPermission.SYSTEM_VIEW_READ;
 
 /**
  * Meta view base class.
@@ -100,13 +107,43 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCount() {
+    @Override public final Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+        authorize();
+
+        return getRowsNoAuth(ses, first, last);
+    }
+
+    /**
+     * {@link SqlSystemView#getRows(Session, SearchRow, SearchRow)} implementation without authorization.
+     */
+    protected abstract Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last);
+
+    /** {@inheritDoc} */
+    @Override public final long getRowCount() {
+        authorize();
+
+        return getRowCountNoAuth();
+    }
+
+    /**
+     * {@link SqlSystemView#getRowCount()} implementation without authorization.
+     */
+    protected long getRowCountNoAuth() {
         return DEFAULT_ROW_COUNT_APPROXIMATION;
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return getRowCount();
+    @Override public final long getRowCountApproximation() {
+        authorize();
+
+        return getRowCountNoAuth();
+    }
+
+    /**
+     * {@link SqlSystemView#getRowCountApproximation()} implementation without authorization.
+     */
+    protected long getRowCountApproximationNoAuth() {
+        return DEFAULT_ROW_COUNT_APPROXIMATION;
     }
 
     /** {@inheritDoc} */
@@ -135,5 +172,12 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
         sql.append(')');
 
         return sql.toString();
+    }
+
+    /**
+     * Authorizes {@link SecurityPermission#SYSTEM_VIEW_READ} permission.
+     */
+    private void authorize() {
+        ctx.security().authorize(SYSTEM_VIEW_READ);
     }
 }

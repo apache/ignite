@@ -47,8 +47,7 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last) {
         Collection<ClusterNode> nodes;
 
         SqlSystemViewColumnCondition idCond = conditionForColumn("NODE_ID", first, last);

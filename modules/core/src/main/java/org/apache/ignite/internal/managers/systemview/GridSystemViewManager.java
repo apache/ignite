@@ -145,7 +145,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             desc,
             walker,
             data,
-            rowFunc));
+            rowFunc,
+            ctx.security()));
     }
 
     /**
@@ -168,7 +169,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             walker,
             container,
             dataExtractor,
-            rowFunc));
+            rowFunc,
+            ctx.security()));
     }
 
     /**
@@ -191,7 +193,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             walker,
             container,
             c -> Arrays.asList(dataExtractor.apply(c)),
-            rowFunc));
+            rowFunc,
+            ctx.security()));
     }
 
     /**
@@ -211,7 +214,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             desc,
             walker,
             dataSupplier,
-            rowFunc));
+            rowFunc,
+            ctx.security()));
     }
 
     /**
@@ -231,7 +235,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             desc,
             walker,
             dataSupplier,
-            rowFunc));
+            rowFunc,
+            ctx.security()));
     }
 
     /**
