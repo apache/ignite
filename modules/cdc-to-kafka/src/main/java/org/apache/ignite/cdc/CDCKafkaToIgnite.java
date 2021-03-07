@@ -65,9 +65,10 @@ public class CDCKafkaToIgnite implements Runnable {
     private String topic;
 
     /** */
-    public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String... cacheNames) {
+    public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
+        this.topic = topic;
         this.caches = Arrays.stream(cacheNames)
             .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
             .map(CU::cacheId).collect(Collectors.toSet());
@@ -121,10 +122,5 @@ public class CDCKafkaToIgnite implements Runnable {
         catch (InterruptedException e) {
             appliers.forEach(U::closeQuiet);
         }
-    }
-
-    /** */
-    public void setTopic(String topic) {
-        this.topic = topic;
     }
 }

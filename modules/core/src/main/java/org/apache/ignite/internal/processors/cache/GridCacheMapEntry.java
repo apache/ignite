@@ -6728,11 +6728,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 return conflictCtx;
             }
-/*
             else
                 // Nullify conflict version on this update, so that we will use regular version during next updates.
                 conflictVer = null;
-*/
+
             return null;
         }
 

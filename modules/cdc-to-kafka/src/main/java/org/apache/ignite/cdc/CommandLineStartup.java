@@ -82,7 +82,7 @@ public class CommandLineStartup {
                 kafkaProps.load(reader);
             }
 
-            new CDCKafkaToIgnite(ign, kafkaProps, cacheNames).run();
+            new CDCKafkaToIgnite(ign, kafkaProps, null, cacheNames).run();
         }
         catch (Throwable e) {
             e.printStackTrace();

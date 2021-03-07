@@ -17,15 +17,30 @@
 
 package org.apache.ignite.cdc.cfgplugin;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 
 /**
- *
+ * Basic replication conflict resolver.
  */
 public class DrIdCacheVersionConflictResolver implements CacheVersionConflictResolver {
+    /** */
+    private final byte drId;
+
+    /** */
+    private final IgniteLogger log;
+
+    /**
+     * @param drId Data center id.
+     */
+    public DrIdCacheVersionConflictResolver(byte drId, IgniteLogger log) {
+        this.drId = drId;
+        this.log = log;
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(
         CacheObjectValueContext ctx,
@@ -35,11 +50,36 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        if (oldEntry.isStartVersion() || (oldEntry.dataCenterId() < newEntry.dataCenterId()))
+        if (isUseNew(oldEntry, newEntry))
             res.useNew();
-        else
+        else {
+            log.warning("Skip update due to the conflict[key=" + newEntry.key() + ",fromDC=" + newEntry.dataCenterId() + ",toDC=" + oldEntry.dataCenterId() + ']');
+
             res.useOld();
+        }
 
         return res;
+    }
+
+    /**
+     * @param oldEntry Old entry.
+     * @param newEntry New entry.
+     * @param <K> Key type.
+     * @param <V> Key type.
+     * @return {@code True} is should use new entry.
+     */
+    private <K, V> boolean isUseNew(
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry) {
+        if (oldEntry.isStartVersion()) // New entry.
+            return true;
+
+        if (newEntry.dataCenterId() == drId) // Update made on the same DC.
+            return true;
+
+        if (oldEntry.dataCenterId() == newEntry.dataCenterId())
+            return newEntry.order() > oldEntry.order(); // New version from the same DC.
+
+        return newEntry.dataCenterId() < oldEntry.dataCenterId(); // DC with the lower ID have biggest priority.
     }
 }

@@ -239,14 +239,13 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Integer, Data> destCache = dest[0].createCache(AP_CACHE);
 
-            //TODO: check conflicts on this kind of operation.
             destCache.put(1, new Data(null, 0, 1));
             destCache.remove(1);
 
             runAsync(genData.apply(F.t("cache-1", source[source.length - 1], IntStream.range(0, 50), 1)));
             runAsync(genData.apply(F.t(AP_CACHE, source[source.length - 1], IntStream.range(0, 50), 1)));
 
-            IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_CACHE));
+            IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_TOPIC_NAME, AP_CACHE));
 
             try {
                 waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_EXISTS, 1);
@@ -282,31 +281,19 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(source[0], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
         IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(source[1], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
-
         IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(dest[0], DEST_DRID, destSourceTopic, ACTIVE_ACTIVE_CACHE);
         IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(dest[1], DEST_DRID, destSourceTopic, ACTIVE_ACTIVE_CACHE);
 
         try {
-            IgniteInternalFuture<?> k2iFut1 = runAsync(() -> {
-                CDCKafkaToIgnite kafkaToIgn = new CDCKafkaToIgnite(dest[0], props, ACTIVE_ACTIVE_CACHE);
-
-                kafkaToIgn.setTopic(sourceDestTopic);
-
-                kafkaToIgn.run();
-            });
-
-            IgniteInternalFuture<?> k2iFut2 = runAsync(() -> {
-                CDCKafkaToIgnite kafkaToIgn = new CDCKafkaToIgnite(source[0], props, ACTIVE_ACTIVE_CACHE);
-
-                kafkaToIgn.setTopic(destSourceTopic);
-
-                kafkaToIgn.run();
-            });
+            IgniteInternalFuture<?> k2iFut1 = runAsync(new CDCKafkaToIgnite(dest[0], props, sourceDestTopic,
+                ACTIVE_ACTIVE_CACHE));
+            IgniteInternalFuture<?> k2iFut2 = runAsync(new CDCKafkaToIgnite(source[0], props, destSourceTopic,
+                ACTIVE_ACTIVE_CACHE));
 
             try {
                 waitForSameData(sourceCache, destCache, 100, BOTH_EXISTS, 1);
 
-                for (int i = 0; i < 200; i++) {
+                for (int i = 0; i < 100; i++) {
                     IgniteCache<Integer, Data> c1, c2;
 
                     if (ThreadLocalRandom.current().nextBoolean()) {
@@ -318,8 +305,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
                         c2 = sourceCache;
                     }
 
-                    // WHY EXACTLY 150 EVENTS IN CDC AND KAFKA?
-                    c1.put(i % 100, genSingleData.apply(2));
+                    c1.put(i, genSingleData.apply(2));
 
                     c2.remove(i % 100);
                 }
@@ -345,8 +331,13 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
      * @param keysCnt
      * @param keysState
      */
-    public void waitForSameData(IgniteCache<Integer, Data> src, IgniteCache<Integer, Data> dest, int keysCnt, int keysState, int iter)
-        throws IgniteInterruptedCheckedException {
+    public void waitForSameData(
+        IgniteCache<Integer, Data> src,
+        IgniteCache<Integer, Data> dest,
+        int keysCnt,
+        int keysState,
+        int iter
+    ) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             for (int i = 0; i < keysCnt; i++) {
                 if (keysState == BOTH_EXISTS) {
@@ -360,8 +351,11 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
                     continue;
                 }
                 else if (keysState == ANY_SAME_STATE) {
-                    if (src.containsKey(i) != dest.containsKey(i))
+                    if (src.containsKey(i) != dest.containsKey(i)) {
+                        System.out.println(i + " different exists - " + src.containsKey(i) + ", " + dest.containsKey(i));
+
                         return false;
+                    }
 
                     if (!src.containsKey(i))
                         continue;
@@ -371,11 +365,11 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
                 Data data = dest.get(i);
 
-                if (data.iter != iter)
-                    return false;
+                if (!data.equals(src.get(i))) {
+                    System.out.println(i + " different data - " + src.containsKey(i) + ", " + dest.containsKey(i));
 
-                if (!data.equals(src.get(i)))
                     return false;
+                }
 
                 crc.get().reset();
                 crc.get().update(ByteBuffer.wrap(data.payload), data.payload.length);
