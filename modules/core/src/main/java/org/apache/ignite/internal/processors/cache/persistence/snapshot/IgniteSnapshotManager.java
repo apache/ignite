@@ -815,10 +815,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             .listen(f0 -> {
                 if (f0.error() == null) {
                     Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
+
                     kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
                     kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
 
-                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, f0.result())
+                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas)
                         .listen(f1 -> {
                             if (f1.error() == null)
                                 res.onDone(f1.result());
