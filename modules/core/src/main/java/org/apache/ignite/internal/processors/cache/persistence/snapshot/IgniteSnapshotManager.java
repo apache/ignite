@@ -144,6 +144,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -804,12 +805,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         kctx0.security().authorize(ADMIN_SNAPSHOT);
 
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
+
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+        kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
+
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, name)
             .listen(f0 -> {
                 if (f0.error() == null) {
+                    Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
+
                     kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, f0.result())
+                    kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+
+                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas)
                         .listen(f1 -> {
                             if (f1.error() == null)
                                 res.onDone(f1.result());
