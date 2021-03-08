@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -27,8 +28,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cdc.cfgplugin.CDCReplicationConfigurationPluginProvider;
 import org.apache.ignite.cdc.serde.JavaObjectSerializer;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -52,11 +55,14 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_CACHES;
-import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -65,7 +71,26 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Tests for kafka replication.
  */
+@RunWith(Parameterized.class)
 public class CDCReplicationTest extends GridCommonAbstractTest {
+    /** Cache mode. */
+    @Parameterized.Parameter
+    public CacheAtomicityMode cacheMode;
+
+    @Parameterized.Parameter(1)
+    public int backupCount;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "cacheMode={0},backupCount={1}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {
+            {ATOMIC, 0},
+            {ATOMIC, 1},
+            {TRANSACTIONAL, 0},
+            {TRANSACTIONAL, 1}
+        });
+    }
+
     /** */
     public static final String AP_TOPIC_NAME = "active-passive-topic";
 
@@ -74,6 +99,9 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public static final String ACTIVE_ACTIVE_CACHE = "active-active-cache";
+
+    /** */
+    public static final int KEYS_CNT = 100;
 
     /** */
     public static final byte SOURCE_DRID = 26;
@@ -175,7 +203,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
         kafka.start();
@@ -221,17 +249,28 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         dest[0].cluster().tag("destination");
     }
 
+    /** */
+    private <K, V> CacheConfiguration<K, V> cacheConfiguration(String name) {
+        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
+
+        ccfg.setAtomicityMode(cacheMode);
+
+        return ccfg;
+    }
+
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         props = null;
 
-        super.afterTestsStopped();
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        kafka.stop();
     }
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_TO_KAFKA_TOPIC, value = AP_TOPIC_NAME)
-    @WithSystemProperty(key = IGNITE_TO_KAFKA_CACHES, value = AP_CACHE)
     public void testActivePassiveReplication() throws Exception {
         IgniteInternalFuture<?> fut1 = igniteToKafka(source[0], SOURCE_DRID, AP_TOPIC_NAME, AP_CACHE);
         IgniteInternalFuture<?> fut2 = igniteToKafka(source[1], SOURCE_DRID, AP_TOPIC_NAME, AP_CACHE);
@@ -242,17 +281,19 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
             destCache.put(1, new Data(null, 0, 1));
             destCache.remove(1);
 
-            runAsync(genData.apply(F.t("cache-1", source[source.length - 1], IntStream.range(0, 50), 1)));
-            runAsync(genData.apply(F.t(AP_CACHE, source[source.length - 1], IntStream.range(0, 50), 1)));
+            runAsync(genData.apply(F.t("cache-1", source[source.length - 1], IntStream.range(0, KEYS_CNT), 1)));
+            runAsync(genData.apply(F.t(AP_CACHE, source[source.length - 1], IntStream.range(0, KEYS_CNT), 1)));
 
             IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_TOPIC_NAME, AP_CACHE));
 
             try {
-                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_EXISTS, 1);
+                IgniteCache<Integer, Data> srcCache = source[source.length - 1].getOrCreateCache(AP_CACHE);
 
-                IntStream.range(0, 50).forEach(i -> source[source.length - 1].getOrCreateCache(AP_CACHE).remove(i));
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1);
 
-                waitForSameData(source[source.length - 1].getOrCreateCache(AP_CACHE), destCache, 50, BOTH_REMOVED, 1);
+                IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
+
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, 1);
             }
             finally {
                 k2iFut.cancel();
@@ -275,9 +316,9 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Data> destCache = dest[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
         runAsync(genData.apply(F.t(ACTIVE_ACTIVE_CACHE, source[source.length - 1],
-            IntStream.range(0, 100).filter(i -> i % 2 == 0), 1)));
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0), 1)));
         runAsync(genData.apply(F.t(ACTIVE_ACTIVE_CACHE, dest[dest.length - 1],
-            IntStream.range(0, 100).filter(i -> i % 2 != 0), 1)));
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1)));
 
         IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(source[0], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
         IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(source[1], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
@@ -291,9 +332,9 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
                 ACTIVE_ACTIVE_CACHE));
 
             try {
-                waitForSameData(sourceCache, destCache, 100, BOTH_EXISTS, 1);
+                waitForSameData(sourceCache, destCache, KEYS_CNT, BOTH_EXISTS, 1);
 
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < KEYS_CNT; i++) {
                     IgniteCache<Integer, Data> c1, c2;
 
                     if (ThreadLocalRandom.current().nextBoolean()) {
@@ -307,10 +348,10 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
                     c1.put(i, genSingleData.apply(2));
 
-                    c2.remove(i % 100);
+                    c2.remove(i % KEYS_CNT);
                 }
 
-                waitForSameData(sourceCache, destCache, 100, ANY_SAME_STATE, 2);
+                waitForSameData(sourceCache, destCache, KEYS_CNT, ANY_SAME_STATE, 2);
             }
             finally {
                 k2iFut1.cancel();

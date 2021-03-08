@@ -19,7 +19,6 @@ package org.apache.ignite.cdc.cfgplugin;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.lang.IgniteFuture;
@@ -34,8 +33,6 @@ public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictRes
     /** */
     private IgniteLogger log;
 
-    private CacheObjectContext coCtx;
-
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
         return new DrIdCacheVersionConflictResolver(drId, log);
@@ -45,7 +42,6 @@ public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictRes
     @Override public void start(GridCacheContext<K, V> cctx) {
         drId = cctx.versions().dataCenterId();
         log = cctx.logger(DrIdCacheVersionConflictResolver.class);
-        coCtx = cctx.cacheObjectContext();
     }
 
     /** {@inheritDoc} */

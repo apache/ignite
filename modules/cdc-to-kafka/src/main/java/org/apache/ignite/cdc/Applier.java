@@ -116,7 +116,8 @@ class Applier implements Runnable, AutoCloseable {
             Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
 
             while (!closed) {
-                log.warning("Fetching data from " + Thread.currentThread().getName() + '!');
+                if (log.isDebugEnabled())
+                    log.debug("Fetching data from " + Thread.currentThread().getName());
 
                 if (!consumerIter.hasNext())
                     consumerIter = consumers.iterator();
