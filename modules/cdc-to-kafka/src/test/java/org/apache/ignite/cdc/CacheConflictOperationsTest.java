@@ -68,7 +68,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
             {ATOMIC, LOWER_DC},
             {TRANSACTIONAL, LOWER_DC},
             {ATOMIC, GREATER_DC},
-            {TRANSACTIONAL, GREATER_DC}
+            {TRANSACTIONAL, GREATER_DC},
         });
     }
 
@@ -99,6 +99,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         cfgPlugin.setDrId(THIS_DC);
         cfgPlugin.setCaches(new HashSet<>(Collections.singleton("cache")));
+        cfgPlugin.setConflictResolveField(conflictResolveField());
 
         return super.getConfiguration(igniteInstanceName)
             .setPluginProviders(cfgPlugin);
@@ -191,8 +192,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         put(key(key, drId));
 
-        // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-        putx(key(key, drId), drId, drId == GREATER_DC);
+        // Conflict replicated update succeed only if DC has a greater priority than this DC.
+        putx(key(key, drId), drId, drId == GREATER_DC || conflictResolveField() != null);
     }
 
     /** */
@@ -273,5 +274,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     private String key(String key, byte drId) {
         return key + drId + cacheMode;
+    }
+
+    /** */
+    protected String conflictResolveField() {
+        return null;
     }
 }

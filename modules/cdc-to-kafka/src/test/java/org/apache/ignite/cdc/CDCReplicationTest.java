@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -114,6 +115,9 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public static final int ANY_SAME_STATE = 3;
+
+    /** */
+    public static final AtomicLong REQUEST_ID = new AtomicLong();
 
     /** */
     private static Properties props;
@@ -251,7 +255,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Integer, Data> destCache = dest[0].createCache(AP_CACHE);
 
-            destCache.put(1, new Data(null, 0, 1));
+            destCache.put(1, new Data(null, 0, 1, REQUEST_ID.incrementAndGet()));
             destCache.remove(1);
 
             runAsync(generateData("cache-1", source[source.length - 1], IntStream.range(0, KEYS_CNT), 1));
@@ -441,7 +445,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
         crc.get().update(ByteBuffer.wrap(payload), 1024);
 
-        return new Data(payload, crc.get().getValue(), iter);
+        return new Data(payload, crc.get().getValue(), iter, REQUEST_ID.incrementAndGet());
     }
 
     /** */
@@ -456,10 +460,14 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         private final int iter;
 
         /** */
-        public Data(byte[] payload, int crc, int iter) {
+        private final long requestId;
+
+        /** */
+        public Data(byte[] payload, int crc, int iter, long requestId) {
             this.payload = payload;
             this.crc = crc;
             this.iter = iter;
+            this.requestId = requestId;
         }
 
         /** */

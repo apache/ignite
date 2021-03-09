@@ -18,10 +18,12 @@
 package org.apache.ignite.cdc.cfgplugin;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Basic replication conflict resolver.
@@ -31,14 +33,23 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
     private final byte drId;
 
     /** */
+    private final String conflictResolveField;
+
+    /** */
+    private boolean conflictResolveFieldEnabled;
+
+    /** */
     private final IgniteLogger log;
 
     /**
      * @param drId Data center id.
+     * @param conflictResolveField Field to resolve conflicts.
      */
-    public DrIdCacheVersionConflictResolver(byte drId, IgniteLogger log) {
+    public DrIdCacheVersionConflictResolver(byte drId, String conflictResolveField, IgniteLogger log) {
         this.drId = drId;
+        this.conflictResolveField = conflictResolveField;
         this.log = log;
+        this.conflictResolveFieldEnabled = conflictResolveField != null;
     }
 
     /** {@inheritDoc} */
@@ -50,7 +61,7 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        if (isUseNew(oldEntry, newEntry))
+        if (isUseNew(ctx, oldEntry, newEntry))
             res.useNew();
         else {
             log.warning("Skip update due to the conflict[key=" + newEntry.key() + ",fromDC=" + newEntry.dataCenterId()
@@ -63,6 +74,7 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
     }
 
     /**
+     * @param ctx Context.
      * @param oldEntry Old entry.
      * @param newEntry New entry.
      * @param <K> Key type.
@@ -70,8 +82,10 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
      * @return {@code True} is should use new entry.
      */
     private <K, V> boolean isUseNew(
+        CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry
+
     ) {
         if (oldEntry.isStartVersion()) // New entry.
             return true;
@@ -81,6 +95,31 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
 
         if (oldEntry.dataCenterId() == newEntry.dataCenterId())
             return newEntry.order() > oldEntry.order(); // New version from the same DC.
+
+        if (conflictResolveFieldEnabled) {
+            Object oldVal = oldEntry.value(ctx);
+            Object newVal = newEntry.value(ctx);
+
+            if (oldVal != null && newVal != null) {
+                Comparable o;
+                Comparable n;
+
+                if (oldVal instanceof BinaryObject) {
+                    o = ((BinaryObject)oldVal).field(conflictResolveField);
+                    n = ((BinaryObject)newVal).field(conflictResolveField);
+                }
+                else {
+                    o = U.field(oldVal, conflictResolveField);
+                    n = U.field(newVal, conflictResolveField);
+                }
+
+                if (o != null)
+                    return o.compareTo(n) < 0;
+
+                if (n != null)
+                    return n.compareTo(o) > 0;
+            }
+        }
 
         return newEntry.dataCenterId() < oldEntry.dataCenterId(); // DC with the lower ID have biggest priority.
     }

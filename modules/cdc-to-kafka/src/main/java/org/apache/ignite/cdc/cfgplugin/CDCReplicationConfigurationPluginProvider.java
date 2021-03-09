@@ -46,7 +46,16 @@ public class CDCReplicationConfigurationPluginProvider implements PluginProvider
     private Set<String> caches;
 
     /** */
-    private final CachePluginProvider<?> provider = new ConflictResolutionProvider();
+    private String conflictResolveField;
+
+    /** */
+    private CachePluginProvider<?> provider;
+
+    /**
+     * @param conflictResolveField Field to resolve conflicts.
+     */
+    public CDCReplicationConfigurationPluginProvider() {
+    }
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -64,8 +73,10 @@ public class CDCReplicationConfigurationPluginProvider implements PluginProvider
     }
 
     /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.ctx = ctx;
+
+        this.provider = new ConflictResolutionProvider(conflictResolveField);
     }
 
     /** {@inheritDoc} */
@@ -96,6 +107,11 @@ public class CDCReplicationConfigurationPluginProvider implements PluginProvider
     /** @param caches Caches to replicate */
     public void setCaches(Set<String> caches) {
         this.caches = caches;
+    }
+
+    /** @param conflictResolveField Field to resolve conflicts. */
+    public void setConflictResolveField(String conflictResolveField) {
+        this.conflictResolveField = conflictResolveField;
     }
 
     /** {@inheritDoc} */

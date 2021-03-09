@@ -28,10 +28,20 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class ConflictResolutionProvider implements CachePluginProvider {
+    /** */
+    private final String conflictResolveField;
+
+    /**
+     * @param conflictResolveField Field to resolve conflicts.
+     */
+    public ConflictResolutionProvider(String conflictResolveField) {
+        this.conflictResolveField = conflictResolveField;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(Class cls) {
         if (cls.equals(CacheConflictResolutionManager.class))
-            return new CDCCacheConflictResolutionManager();
+            return new CDCCacheConflictResolutionManager(conflictResolveField);
 
         return null;
     }

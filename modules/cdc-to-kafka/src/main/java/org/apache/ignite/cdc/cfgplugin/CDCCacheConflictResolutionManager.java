@@ -31,11 +31,21 @@ public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictRes
     private byte drId;
 
     /** */
+    private final String conflictResolveField;
+
+    /**
+     * @param conflictResolveField Field to resolve conflicts.
+     */
+    public CDCCacheConflictResolutionManager(String conflictResolveField) {
+        this.conflictResolveField = conflictResolveField;
+    }
+
+    /** */
     private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        return new DrIdCacheVersionConflictResolver(drId, log);
+        return new DrIdCacheVersionConflictResolver(drId, conflictResolveField, log);
     }
 
     /** {@inheritDoc} */
