@@ -671,8 +671,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             var old = _typeToDesc.Set(type, desc);
-            Debug.Assert(old.UserType, "old.UserType");
-            Debug.Assert(old.TypeId == desc.TypeId, "old.TypeId == desc.TypeId");
+            Debug.Assert(old == null || old.UserType, "old.UserType");
+            Debug.Assert(old == null || old.TypeId == desc.TypeId, "old.TypeId == desc.TypeId");
 
             return desc;
         }
