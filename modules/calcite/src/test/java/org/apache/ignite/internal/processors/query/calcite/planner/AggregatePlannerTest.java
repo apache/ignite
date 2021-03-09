@@ -104,7 +104,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.ruleToDisable
+            algo.rulesToDisable
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -153,7 +153,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.ruleToDisable
+            algo.rulesToDisable
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -211,7 +211,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.ruleToDisable
+            algo.rulesToDisable
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -279,7 +279,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.ruleToDisable
+            algo.rulesToDisable
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -345,7 +345,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
             () -> physicalPlan(
                 sql,
                 publicSchema,
-                "HashAggregateConverterRule"
+                "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
             ),
             RelOptPlanner.CannotPlanException.class,
             "There are not enough rules to produce a node with desired properties"
@@ -359,7 +359,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
             IgniteSortAggregate.class,
             IgniteMapSortAggregate.class,
             IgniteReduceSortAggregate.class,
-            "HashAggregateConverterRule"
+            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         ),
 
         /** */
@@ -367,7 +367,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
             IgniteHashAggregate.class,
             IgniteMapHashAggregate.class,
             IgniteReduceHashAggregate.class,
-            "SortAggregateConverterRule"
+            "SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"
         );
 
         /** */
@@ -380,18 +380,18 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
         /** */
-        public final String ruleToDisable;
+        public final String[] rulesToDisable;
 
         /** */
         AggregateAlgorithm(
             Class<? extends IgniteAggregateBase> single,
             Class<? extends IgniteAggregate> map,
             Class<? extends IgniteReduceAggregateBase> reduce,
-            String ruleToDisable) {
+            String... rulesToDisable) {
             this.single = single;
             this.map = map;
             this.reduce = reduce;
-            this.ruleToDisable = ruleToDisable;
+            this.rulesToDisable = rulesToDisable;
         }
     }
 }

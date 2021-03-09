@@ -24,47 +24,110 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class SortAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+public class SortAggregateConverterRule {
     /** */
-    public static final RelOptRule INSTANCE = new SortAggregateConverterRule();
+    public static final RelOptRule SINGLE = new SortSingleAggregateConverterRule();
 
     /** */
-    public SortAggregateConverterRule() {
-        super(LogicalAggregate.class, "SortAggregateConverterRule");
+    public static final RelOptRule MAP_REDUCE = new SortMapReduceAggregateConverterRule();
+
+    /** */
+    private SortAggregateConverterRule() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
-        LogicalAggregate rel) {
-        // Applicable only for GROUP BY
-        if (F.isEmpty(rel.getGroupSet()) || rel.getGroupSets().size() > 1)
-            return null;
+    /** */
+    private static class SortSingleAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+        /** */
+        SortSingleAggregateConverterRule() {
+            super(LogicalAggregate.class, "SortSingleAggregateConverterRule");
+        }
 
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = rel.getInput();
+        /** {@inheritDoc} */
+        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+            LogicalAggregate agg) {
+            // Applicable only for GROUP BY
+            if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
+                return null;
 
-        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(rel.getGroupSet().asList()));
+            RelOptCluster cluster = agg.getCluster();
+            RelNode input = agg.getInput();
 
-        return new IgniteSortAggregate(
-            cluster,
-            outTrait.replace(collation),
-            convert(input, inTrait.replace(collation)),
-            rel.getGroupSet(),
-            rel.getGroupSets(),
-            rel.getAggCallList()
-        );
+            RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(agg.getGroupSet().asList()));
+
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replace(collation)
+                .replace(RelDistributions.SINGLETON);
+
+            return new IgniteSortAggregate(
+                cluster,
+                outTrait,
+                convert(input, inTrait),
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList()
+            );
+        }
+    }
+
+    /** */
+    private static class SortMapReduceAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+        /** */
+        SortMapReduceAggregateConverterRule() {
+            super(LogicalAggregate.class, "SortMapReduceAggregateConverterRule");
+        }
+
+        /** {@inheritDoc} */
+        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+            LogicalAggregate agg) {
+            // Applicable only for GROUP BY
+            if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
+                return null;
+
+            RelOptCluster cluster = agg.getCluster();
+            RelNode input = agg.getInput();
+
+            RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(agg.getGroupSet().asList()));
+
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replace(collation);
+
+            RelNode map = new IgniteMapSortAggregate(
+                cluster,
+                outTrait,
+                convert(input, inTrait),
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList(),
+                collation
+            );
+
+            return new IgniteReduceSortAggregate(
+                cluster,
+                outTrait.replace(RelDistributions.SINGLETON),
+                convert(map, inTrait),
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList(),
+                agg.getRowType(),
+                collation
+            );
+        }
     }
 }

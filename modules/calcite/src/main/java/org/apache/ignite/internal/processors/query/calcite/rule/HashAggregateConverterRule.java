@@ -22,39 +22,89 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
+import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
 
 /**
  *
  */
-public class HashAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+public class HashAggregateConverterRule {
     /** */
-    public static final RelOptRule INSTANCE = new HashAggregateConverterRule();
+    public static final RelOptRule SINGLE = new HashSingleAggregateConverterRule();
 
     /** */
-    public HashAggregateConverterRule() {
-        super(LogicalAggregate.class, "HashAggregateConverterRule");
+    public static final RelOptRule MAP_REDUCE = new HashMapReduceAggregateConverterRule();
+
+    /** */
+    private HashAggregateConverterRule() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
-        LogicalAggregate rel) {
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), inTrait);
+    /** */
+    private static class HashSingleAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+        /** */
+        HashSingleAggregateConverterRule() {
+            super(LogicalAggregate.class, "HashSingleAggregateConverterRule");
+        }
 
-        return new IgniteHashAggregate(
-            cluster,
-            outTrait,
-            input,
-            rel.getGroupSet(),
-            rel.getGroupSets(),
-            rel.getAggCallList()
-        );
+        /** {@inheritDoc} */
+        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+            LogicalAggregate agg) {
+            RelOptCluster cluster = agg.getCluster();
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(RelDistributions.SINGLETON);
+            RelNode input = convert(agg.getInput(), inTrait);
+
+            return new IgniteHashAggregate(
+                cluster,
+                outTrait,
+                input,
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList()
+            );
+        }
+    }
+
+    /** */
+    private static class HashMapReduceAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+        /** */
+        HashMapReduceAggregateConverterRule() {
+            super(LogicalAggregate.class, "HashMapReduceAggregateConverterRule");
+        }
+
+        /** {@inheritDoc} */
+        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+            LogicalAggregate agg) {
+            RelOptCluster cluster = agg.getCluster();
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+            RelNode input = convert(agg.getInput(), inTrait);
+
+            RelNode map = new IgniteMapHashAggregate(
+                cluster,
+                outTrait,
+                convert(input, inTrait),
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList()
+            );
+
+            return new IgniteReduceHashAggregate(
+                cluster,
+                outTrait.replace(RelDistributions.SINGLETON),
+                convert(map, inTrait),
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList(),
+                agg.getRowType()
+            );
+        }
     }
 }
