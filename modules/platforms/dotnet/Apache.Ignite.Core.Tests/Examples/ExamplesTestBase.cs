@@ -107,13 +107,9 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 foreach (var line in expLines)
                 {
-                    // TODO: Count occurrences.
-                    var idx = output.IndexOf(line.Key, StringComparison.Ordinal);
+                    var count = GetSubstringCount(output, line.Key);
 
-                    if (idx < 0)
-                    {
-                        Assert.Fail("TODO");
-                    }
+                    Assert.AreEqual(line.Count, count, "Unexpected line occurence count");
                 }
 
             }
@@ -139,5 +135,28 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Gets the example output.
         /// </summary>
         private string GetOutput() => Regex.Replace(_outSb.ToString(), @"idHash=(\d+)", "idHash=_");
+
+        /// <summary>
+        /// Gets substring count.
+        /// </summary>
+        private static int GetSubstringCount(string str, string substr)
+        {
+            int startIdx = 0;
+            int count = 0;
+
+            while (true)
+            {
+                startIdx = str.IndexOf(substr, startIdx, StringComparison.Ordinal);
+
+                if (startIdx < 0)
+                {
+                    break;
+                }
+
+                count++;
+            }
+
+            return count;
+        }
     }
 }
