@@ -71,7 +71,8 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
      */
     private <K, V> boolean isUseNew(
         GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry) {
+        GridCacheVersionedEntryEx<K, V> newEntry
+    ) {
         if (oldEntry.isStartVersion()) // New entry.
             return true;
 

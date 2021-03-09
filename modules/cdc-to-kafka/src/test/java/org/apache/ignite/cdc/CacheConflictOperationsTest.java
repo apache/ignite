@@ -57,12 +57,18 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public CacheAtomicityMode cacheMode;
 
+    /** DC id. */
+    @Parameterized.Parameter(1)
+    public byte drId;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0}")
+    @Parameterized.Parameters(name = "cacheMode={0},drId={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
-            {ATOMIC},
-            {TRANSACTIONAL}
+            {ATOMIC, LOWER_DC},
+            {TRANSACTIONAL, LOWER_DC},
+            {ATOMIC, GREATER_DC},
+            {TRANSACTIONAL, GREATER_DC}
         });
     }
 
@@ -107,11 +113,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         cachex = cli.cachex("cache");
     }
 
-    /**
-     * Tests that regular cache operations works with the conflict resolver when there is no update conflicts.
-     */
+    /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
     @Test
-    public void testUpdateThisDCWithoutConflict() {
+    public void testThisDCUpdateWithoutConflict() {
         String key = "testUpdateThisDCWithoutConflict";
 
         put(key);
@@ -126,64 +130,69 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
      * when there is no update conflicts.
      */
     @Test
-    public void testUpdateThatDCWithoutConflict() throws Exception {
+    public void testThatDCUpdateWithoutConflict() throws Exception {
         String key = "testUpdateThatDCWithoutConflict";
 
-        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
-            putx(key(key, drId), drId, true);
+        putx(key(key, drId), drId, true);
 
-            putx(key(key, drId), drId, true);
+        putx(key(key, drId), drId, true);
 
-            removex(key(key, drId), drId, true);
-        }
+        removex(key(key, drId), drId, true);
     }
 
+
     /**
-     * Tests cache operations for entry replicated from another DC.
+     * Tests that {@code IgniteInternalCache#*AllConflict} cache operations works with the conflict resolver
+     * when there is no update conflicts.
      */
+    @Test
+    public void testThatDCUpdateReorder() throws Exception {
+        String key = "testThatDCUpdateReorder";
+
+        order += 1;
+
+        putx(key(key, drId), drId, order, true);
+
+        putx(key(key, drId), drId, order, false);
+
+        putx(key(key, drId), drId, order - 1, false);
+
+        removex(key(key, drId), drId, order, false);
+
+        removex(key(key, drId), drId, order - 1, false);
+    }
+
+    /** Tests cache operations for entry replicated from another DC. */
     @Test
     public void testUpdateThisDCConflict() throws Exception {
         String key = "testUpdateThisDCConflict0";
 
-        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
-            putx(key(key, drId), drId, true);
+        putx(key(key, drId), drId, true);
 
-            remove(key(key, drId));
+        remove(key(key, drId));
 
-            // Conflict replicated update succeed only if DC has a greater priority than this DC.
-            putx(key(key, drId), drId, drId == GREATER_DC);
-        }
+        // Conflict replicated update succeed only if DC has a greater priority than this DC.
+        putx(key(key, drId), drId, drId == GREATER_DC);
 
         key = "testUpdateThisDCConflict1";
 
-        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
-            putx(key(key, drId), drId, true);
+        putx(key(key, drId), drId, true);
 
-            put(key(key, drId));
-        }
+        put(key(key, drId));
 
         key = "testUpdateThisDCConflict2";
 
-        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
-            put(key(key, drId));
+        put(key(key, drId));
 
-            // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-            removex(key(key, drId), drId, drId == GREATER_DC);
-        }
+        // Conflict replicated remove succeed only if DC has a greater priority than this DC.
+        removex(key(key, drId), drId, drId == GREATER_DC);
 
         key = "testUpdateThisDCConflict3";
 
-        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
-            put(key(key, drId));
+        put(key(key, drId));
 
-            // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-            putx(key(key, drId), drId, drId == GREATER_DC);
-        }
-    }
-
-    /** */
-    private String key(String key, byte drId) {
-        return key + drId + cacheMode;
+        // Conflict replicated remove succeed only if DC has a greater priority than this DC.
+        putx(key(key, drId), drId, drId == GREATER_DC);
     }
 
     /** */
@@ -198,7 +207,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void putx(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
+    private void putx(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
+        putx(k, drId, order++, expectSuccess);
+    }
+
+    /** */
+    private void putx(String k, byte drId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
         Data newVal = generateSingleData(1);
 
@@ -208,7 +222,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         cachex.putAllConflict(singletonMap(key,
             new GridCacheDrInfo(val,
-                new GridCacheVersion(1, order++, 1, drId))));
+                new GridCacheVersion(1, order, 1, drId))));
 
         if (expectSuccess) {
             assertTrue(cache.containsKey(k));
@@ -233,13 +247,18 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void removex(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
+    private void removex(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
+        removex(k, drId, order++, expectSuccess);
+    }
+
+    /** */
+    private void removex(String k, byte drId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
         cachex.removeAllConflict(singletonMap(key,
-                new GridCacheVersion(1, order++, 1, drId)));
+                new GridCacheVersion(1, order, 1, drId)));
 
         if (expectSuccess)
             assertFalse(cache.containsKey(k));
@@ -249,5 +268,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
             if (oldVal != null)
                 assertEquals(oldVal, cache.get(k));
         }
+    }
+
+    /** */
+    private String key(String key, byte drId) {
+        return key + drId + cacheMode;
     }
 }
