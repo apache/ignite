@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 {
                     var count = GetSubstringCount(output, line.Key);
 
-                    Assert.AreEqual(line.Count, count, "Unexpected line occurence count");
+                    Assert.AreEqual(line.Count, count, "Unexpected line occurence count: " + line.Key);
                 }
 
             }
