@@ -109,7 +109,10 @@ namespace Apache.Ignite.Core.Tests.Examples
                         Assert.Fail("Expected line not found after index {0}: {1}", lastIdx, line);
                     }
 
-                    lastIdx = idx;
+                    if (!example.UndefinedOutputOrder)
+                    {
+                        lastIdx = idx;
+                    }
                 }
             }
         }

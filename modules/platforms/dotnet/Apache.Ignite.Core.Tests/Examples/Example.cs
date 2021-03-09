@@ -37,6 +37,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** All examples. */
         public static readonly Example[] AllExamples = AllProjects.Where(p => p.Name != "ServerNode").ToArray();
 
+        /** */
+        private static readonly string[] UnorderedOutputExamples = {"Dml", "EntryProcessor", "Func", "Messaging"};
+
         /** Method invoke flags. */
         private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
 
@@ -64,6 +67,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Whether this example disallows external nodes. */
         public bool DisallowsExternalNode { get; }
 
+        /** Whether the output of this example can be unordered (e.g. compute task execution order is not guaranteed. */
+        public bool UndefinedOutputOrder { get; }
+
         /// <summary>
         /// Initializes a new instance of <see cref="Example"/> class.
         /// </summary>
@@ -76,6 +82,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             RequiresExternalNode = sourceCode.Contains("ServerNode project");
             DisallowsExternalNode = sourceCode.Contains("without external node");
             IsClient = sourceCode.Contains("GetClientNodeConfiguration") && !DisallowsExternalNode;
+            UndefinedOutputOrder = UnorderedOutputExamples.Contains(name);
         }
 
         /// <summary>
