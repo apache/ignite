@@ -565,6 +565,11 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type != null)
                 {
+                    if (_typeToDesc.TryGetValue(type, out desc))
+                    {
+                        return desc;
+                    }
+
                     return AddUserType(type, typeId, GetTypeName(type), true, desc);
                 }
             }
@@ -665,7 +670,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
-            _typeToDesc.Set(type, desc);
+            var old = _typeToDesc.Set(type, desc);
+            Debug.Assert(old.UserType, "old.UserType");
+            Debug.Assert(old.TypeId == desc.TypeId, "old.TypeId == desc.TypeId");
 
             return desc;
         }

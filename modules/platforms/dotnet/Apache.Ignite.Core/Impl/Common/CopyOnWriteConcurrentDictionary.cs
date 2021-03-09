@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Concurrent dictionary with CopyOnWrite mechanism inside. 
+    /// Concurrent dictionary with CopyOnWrite mechanism inside.
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
@@ -78,16 +78,22 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
+        /// <returns>Old value, if any.</returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public void Set(TKey key, TValue value)
+        public TValue Set(TKey key, TValue value)
         {
             lock (this)
             {
                 var dict0 = new Dictionary<TKey, TValue>(_dict);
 
+                TValue oldVal;
+                dict0.TryGetValue(key, out oldVal);
+
                 dict0[key] = value;
 
                 _dict = dict0;
+
+                return oldVal;
             }
         }
 
@@ -110,11 +116,11 @@ namespace Apache.Ignite.Core.Impl.Common
                 dict0.Remove(key);
 
                 _dict = dict0;
-                
+
                 return true;
             }
         }
-        
+
         /** <inheritDoc /> */
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
