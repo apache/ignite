@@ -102,6 +102,8 @@ namespace Apache.Ignite.Core.Tests.Examples
                 if (!string.IsNullOrWhiteSpace(line))
                 {
                     // Check that expected lines come in certain order.
+                    // TODO: This is unreliable - count lines instead?
+                    // Or use some special delimiters in the expected output?
                     var idx = output.IndexOf(line, lastIdx, StringComparison.Ordinal);
 
                     if (idx < 0)
