@@ -47,7 +47,8 @@ def resolve_spec(service, context, config, **kwargs):
         return len(impl_filter) > 0
 
     if is_impl("IgniteService"):
-        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(path_aware=service, config=config, **kwargs)
+        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(path_aware=service, context=context,
+                                                               config=config, **kwargs)
 
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context,
@@ -168,8 +169,9 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
     """
     Implementation IgniteNodeSpec for Apache Ignite project
     """
-    def __init__(self, modules, **kwargs):
+    def __init__(self, context, modules, **kwargs):
         super().__init__(project="ignite", **kwargs)
+        self.context = context
 
         libs = (modules or [])
         libs.append("log4j")
@@ -186,6 +188,9 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
                             "-Dlog4j.configDebug=true"])
+
+        if "node_jvm_opts" in context.globals:
+            self._add_jvm_opts(context.globals["node_jvm_opts"])
 
 
 class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
@@ -218,6 +223,9 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
                             "-Xmx1G",
                             "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
+
+        if "app_jvm_opts" in context.globals:
+            self._add_jvm_opts(context.globals["app_jvm_opts"])
 
         self.args = [
             str(start_ignite),
