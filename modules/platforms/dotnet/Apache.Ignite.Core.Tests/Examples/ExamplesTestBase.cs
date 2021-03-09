@@ -95,12 +95,21 @@ namespace Apache.Ignite.Core.Tests.Examples
             }
 
             var expectedLines = File.ReadAllLines(expectedOutputFile);
+            var lastIdx = 0;
 
             foreach (var line in expectedLines)
             {
                 if (!string.IsNullOrWhiteSpace(line))
                 {
-                    StringAssert.Contains(line, output);
+                    // Check that expected lines come in certain order.
+                    var idx = output.IndexOf(line, lastIdx, StringComparison.Ordinal);
+
+                    if (idx < 0)
+                    {
+                        Assert.Fail("Expected line not found after index {0}: {1}", lastIdx, line);
+                    }
+
+                    lastIdx = idx;
                 }
             }
         }
