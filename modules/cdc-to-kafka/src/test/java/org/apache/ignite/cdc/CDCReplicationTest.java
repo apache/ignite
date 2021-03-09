@@ -150,6 +150,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
         cfgPlugin.setDrId(drId);
         cfgPlugin.setCaches(new HashSet<>(Arrays.asList(ACTIVE_ACTIVE_CACHE)));
+        cfgPlugin.setConflictResolveField("requestId");
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDiscoverySpi(new TcpDiscoverySpi()
@@ -266,11 +267,13 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
             try {
                 IgniteCache<Integer, Data> srcCache = source[source.length - 1].getOrCreateCache(AP_CACHE);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1);
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
+                    fut1, fut2, k2iFut);
 
                 IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, 1);
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, 1,
+                    fut1, fut2, k2iFut);
             }
             finally {
                 k2iFut.cancel();
@@ -309,26 +312,16 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
                 ACTIVE_ACTIVE_CACHE));
 
             try {
-                waitForSameData(sourceCache, destCache, KEYS_CNT, BOTH_EXISTS, 1);
+                waitForSameData(sourceCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
+                    cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
 
                 for (int i = 0; i < KEYS_CNT; i++) {
-                    IgniteCache<Integer, Data> c1, c2;
-
-                    if (ThreadLocalRandom.current().nextBoolean()) {
-                        c1 = sourceCache;
-                        c2 = destCache;
-                    }
-                    else {
-                        c1 = destCache;
-                        c2 = sourceCache;
-                    }
-
-                    c1.put(i, generateSingleData(2));
-
-                    c2.remove(i % KEYS_CNT);
+                    sourceCache.put(i, generateSingleData(2));
+                    destCache.put(i, generateSingleData(2));
                 }
 
-                waitForSameData(sourceCache, destCache, KEYS_CNT, ANY_SAME_STATE, 2);
+                waitForSameData(sourceCache, destCache, KEYS_CNT, ANY_SAME_STATE, 2,
+                    cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
             }
             finally {
                 k2iFut1.cancel();
@@ -343,37 +336,30 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * @param src
-     * @param dest
-     * @param keysCnt
-     * @param keysState
-     */
+    /** */
     public void waitForSameData(
         IgniteCache<Integer, Data> src,
         IgniteCache<Integer, Data> dest,
         int keysCnt,
         int keysState,
-        int iter
+        int iter,
+        IgniteInternalFuture<?>...futs
     ) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             for (int i = 0; i < keysCnt; i++) {
                 if (keysState == BOTH_EXISTS) {
                     if (!src.containsKey(i) || !dest.containsKey(i))
-                        return false;
+                        return checkFuts(false, futs);
                 }
                 else if (keysState == BOTH_REMOVED) {
                     if (src.containsKey(i) || dest.containsKey(i))
-                        return false;
+                        return checkFuts(false, futs);
 
                     continue;
                 }
                 else if (keysState == ANY_SAME_STATE) {
-                    if (src.containsKey(i) != dest.containsKey(i)) {
-                        System.out.println(i + " different exists - " + src.containsKey(i) + ", " + dest.containsKey(i));
-
-                        return false;
-                    }
+                    if (src.containsKey(i) != dest.containsKey(i))
+                        return checkFuts(false, futs);
 
                     if (!src.containsKey(i))
                         continue;
@@ -383,17 +369,22 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
                 Data data = dest.get(i);
 
-                if (!data.equals(src.get(i))) {
-                    System.out.println(i + " different data - " + src.containsKey(i) + ", " + dest.containsKey(i));
-
-                    return false;
-                }
+                if (!data.equals(src.get(i)))
+                    return checkFuts(false, futs);
 
                 checkCRC(data, iter);
             }
 
-            return true;
+            return checkFuts(true, futs);
         }, getTestTimeout()));
+    }
+
+    /** */
+    private boolean checkFuts(boolean res, IgniteInternalFuture<?>...futs) {
+        for (IgniteInternalFuture<?> fut : futs)
+            assertFalse(fut.isDone());
+
+        return res;
     }
 
     /** */

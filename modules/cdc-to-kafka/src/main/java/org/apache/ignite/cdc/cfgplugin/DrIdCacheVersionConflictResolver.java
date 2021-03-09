@@ -104,20 +104,28 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
                 Comparable o;
                 Comparable n;
 
-                if (oldVal instanceof BinaryObject) {
-                    o = ((BinaryObject)oldVal).field(conflictResolveField);
-                    n = ((BinaryObject)newVal).field(conflictResolveField);
-                }
-                else {
-                    o = U.field(oldVal, conflictResolveField);
-                    n = U.field(newVal, conflictResolveField);
-                }
+                try {
+                    if (oldVal instanceof BinaryObject) {
+                        o = ((BinaryObject)oldVal).field(conflictResolveField);
+                        n = ((BinaryObject)newVal).field(conflictResolveField);
+                    }
+                    else {
+                        o = U.field(oldVal, conflictResolveField);
+                        n = U.field(newVal, conflictResolveField);
+                    }
 
-                if (o != null)
-                    return o.compareTo(n) < 0;
+                    if (o != null)
+                        return o.compareTo(n) < 0;
 
-                if (n != null)
-                    return n.compareTo(o) > 0;
+                    if (n != null)
+                        return n.compareTo(o) > 0;
+                }
+                catch (Exception e) {
+                    log.error("Error while resolving replication conflict with field '" +
+                        conflictResolveField + "'.\nConflict resolve with the field disabled.", e);
+
+                    conflictResolveFieldEnabled = false;
+                }
             }
         }
 

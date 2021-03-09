@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.IgniteEx;
@@ -105,8 +106,10 @@ public class CDCKafkaToIgnite implements Runnable {
         if (topic == null)
             topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps);
 
+        AtomicBoolean closed = new AtomicBoolean();
+
         for (int i = 0; i < thCnt; i++)
-            appliers.add(new Applier(ign, kafkaProps, topic, caches));
+            appliers.add(new Applier(ign, kafkaProps, topic, caches, closed));
 
         int kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 

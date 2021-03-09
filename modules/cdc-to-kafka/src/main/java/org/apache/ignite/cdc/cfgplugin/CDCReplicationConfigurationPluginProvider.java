@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
@@ -35,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CDCReplicationConfigurationPluginProvider implements PluginProvider {
+public class CDCReplicationConfigurationPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
     /** */
     private PluginContext ctx;
 

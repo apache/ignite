@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -59,7 +60,7 @@ class Applier implements Runnable, AutoCloseable {
     private final IgniteLogger log;
 
     /** */
-    private volatile boolean closed;
+    private final AtomicBoolean closed;
 
     /** */
     private final Set<Integer> kafkaParts = new HashSet<>();
@@ -83,12 +84,13 @@ class Applier implements Runnable, AutoCloseable {
     private static final AtomicLong rcvdEvts = new AtomicLong();
 
     /** */
-    public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches) {
+    public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches, AtomicBoolean closed) {
         this.ign = ign;
         this.log = ign.log().getLogger(Applier.class);
         this.commonProps = commonProps;
         this.topic = topic;
         this.caches = caches;
+        this.closed = closed;
     }
 
     /** */
@@ -115,10 +117,7 @@ class Applier implements Runnable, AutoCloseable {
 
             Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
 
-            while (!closed) {
-                if (log.isDebugEnabled())
-                    log.debug("Fetching data from " + Thread.currentThread().getName());
-
+            while (!closed.get()) {
                 if (!consumerIter.hasNext())
                     consumerIter = consumers.iterator();
 
@@ -126,11 +125,13 @@ class Applier implements Runnable, AutoCloseable {
             }
         }
         catch (WakeupException e) {
-            if (!closed)
+            if (!closed.get())
                 log.error("Applier wakeup error!", e);
         }
         catch (Throwable e) {
             log.error("Applier error!", e);
+
+            closed.set(true);
         }
         finally {
             for (KafkaConsumer<Integer, byte[]> consumer : consumers) {
@@ -152,8 +153,6 @@ class Applier implements Runnable, AutoCloseable {
      * @param consumer Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
-        log.warning("Polling from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.get() + ']');
-
         //TODO: try to reconnect on fail. Exit if no success.
         ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(3));
 
@@ -170,7 +169,11 @@ class Applier implements Runnable, AutoCloseable {
         }
 
         consumer.commitSync(Duration.ofSeconds(3));
+
+        //TODO: move me to the top.
+        log.warning("Polling from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.get() + ']');
     }
+
 
     /**
      * @param evt Applies event to Ignite.
@@ -230,7 +233,7 @@ class Applier implements Runnable, AutoCloseable {
     @Override public void close() {
         log.warning("Close applier!");
 
-        closed = true;
+        closed.set(true);
 
         consumers.forEach(KafkaConsumer::wakeup);
     }
