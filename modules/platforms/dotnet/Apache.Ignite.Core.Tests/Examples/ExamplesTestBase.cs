@@ -146,13 +146,14 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             while (true)
             {
-                startIdx = str.IndexOf(substr, startIdx, StringComparison.Ordinal);
+                var idx = str.IndexOf(substr, startIdx, StringComparison.Ordinal);
 
-                if (startIdx < 0)
+                if (idx < startIdx)
                 {
                     break;
                 }
 
+                startIdx = idx + substr.Length;
                 count++;
             }
 
