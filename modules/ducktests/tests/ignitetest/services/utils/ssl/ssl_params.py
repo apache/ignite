@@ -46,17 +46,14 @@ class SslParams:
     def __init__(self, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
                  key_store_path: str = None, trust_store_path: str = None, root_dir: str = DEFAULT_ROOT):
-
-        if key_store_jks is None and key_store_path is None:
+        if not key_store_jks and not key_store_path:
             raise Exception("Keystore must be specified to init SslParams")
 
         certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")
 
-        self.key_store_path = key_store_path if key_store_path is not None \
-            else os.path.join(certificate_dir, key_store_jks)
+        self.key_store_path = key_store_path if key_store_path else os.path.join(certificate_dir, key_store_jks)
         self.key_store_password = key_store_password
-        self.trust_store_path = trust_store_path if trust_store_path is not None \
-            else os.path.join(certificate_dir, trust_store_jks)
+        self.trust_store_path = trust_store_path if trust_store_path else os.path.join(certificate_dir, trust_store_jks)
         self.trust_store_password = trust_store_password
 
 
@@ -65,14 +62,16 @@ def get_ssl_params(_globals: dict, service_alias: str):
     Gets SSL params from Globals
     Structure may be found in modules/ducktests/tests/checks/utils/check_get_ssl_params.py
 
-    There are three services in ducktests, each of them has its own alias, which corresponds to its own keystore
-    IgniteService - server
-    IgniteApplicationService - client
+    There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
+    which corresponds to its keystore:
+    Ignite(clientMode = False) - server
+    Ignite(clientMode = True) - client
     ControlUtility - admin
-    If we set "use_ssl=True" in globals, this SSL params will be injected in corresponding service configuration
-    You can also override keystore corresponding to alias throw globals
+    
+    If we set "use_ssl=True" in globals, this SSL params will be injected in corresponding
+    configuration You can also override keystore corresponding to alias throw globals
 
-    Default keystores for this services are generated automaticaly on creating envoriment
+    Default keystores for these services are generated automaticaly on creating envoriment
     If you specyfy ssl_params in test, you override globals
     """
 
