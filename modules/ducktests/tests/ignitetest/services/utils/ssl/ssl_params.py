@@ -67,7 +67,7 @@ def get_ssl_params(_globals: dict, service_alias: str):
     Ignite(clientMode = False) - server
     Ignite(clientMode = True) - client
     ControlUtility - admin
-    
+
     If we set "use_ssl=True" in globals, this SSL params will be injected in corresponding
     configuration You can also override keystore corresponding to alias throw globals
 
