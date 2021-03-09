@@ -30,9 +30,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class Example
     {
         /** Examples with undefined output order. */
-        private static readonly string[] UnorderedOutputExamples =
+        private static readonly IReadOnlyCollection<string> UnorderedOutputExamples = new HashSet<string>
         {
-            "Dml", "Ddl", "EntryProcessor", "Func", "Messaging", "QueryContinuousThin", "DmlThin", "DdlThin"
+            "Dml", "Ddl", "EntryProcessor", "Func", "Messaging", "QueryContinuous"
         };
 
         /** All projects. */
@@ -85,7 +85,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             RequiresExternalNode = sourceCode.Contains("ServerNode project");
             DisallowsExternalNode = sourceCode.Contains("without external node");
             IsClient = sourceCode.Contains("GetClientNodeConfiguration") && !DisallowsExternalNode;
-            UndefinedOutputOrder = UnorderedOutputExamples.Contains(name);
+            UndefinedOutputOrder = UnorderedOutputExamples.Contains(name) ||
+                                   UnorderedOutputExamples.Contains(name.Replace("Thin", ""));
         }
 
         /// <summary>
