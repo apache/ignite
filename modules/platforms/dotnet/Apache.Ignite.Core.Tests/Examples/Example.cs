@@ -30,7 +30,10 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class Example
     {
         /** Examples with undefined output order. */
-        private static readonly string[] UnorderedOutputExamples = {"Dml", "EntryProcessor", "Func", "Messaging"};
+        private static readonly string[] UnorderedOutputExamples =
+        {
+            "Dml", "Ddl", "EntryProcessor", "Func", "Messaging", "QueryContinuousThin", "DmlThin", "DdlThin"
+        };
 
         /** All projects. */
         public static readonly Example[] AllProjects = GetExamples()
