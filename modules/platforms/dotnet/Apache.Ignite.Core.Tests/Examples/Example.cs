@@ -32,7 +32,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Examples with undefined output order. */
         private static readonly IReadOnlyCollection<string> UnorderedOutputExamples = new HashSet<string>
         {
-            "Dml", "Ddl", "EntryProcessor", "Func", "Messaging", "QueryContinuous", "Task", "Sql", "Linq", "AtomicLong"
+            "Dml", "Ddl", "EntryProcessor", "Func", "Messaging", "QueryContinuous", "Task", "Sql", "Linq", "AtomicLong",
+            "ClientReconnect"
         };
 
         /** All projects. */
