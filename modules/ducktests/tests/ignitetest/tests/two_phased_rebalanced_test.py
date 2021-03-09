@@ -73,7 +73,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                      data_storage=DataStorageConfiguration(
                                          default=DataRegionConfiguration(persistent=True), checkpoint_frequency=30000),
                                      caches=[CacheConfiguration(
-                                         name=CACHE_NAME, backups=NUM_NODES_CELL-1, affinity=Affinity())],
+                                         name=CACHE_NAME, backups=NUM_NODES_CELL-1, affinity=Affinity(),
+                                         indexed_types=['java.lang.Long', 'byte[]'])],
                                      metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi')
 
         # Start 4 cells.
@@ -126,6 +127,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
             assert pds_after[host] < pds_before[host], f'Host {host}: size after = {pds_after[host]}, ' \
                                                        f'size before = {pds_before[host]}.'
 
+        control_utility.validate_indexes()
         dump_2 = create_idle_dump_and_copy_to_log_dir(control_utility, node, cells[0].log_dir)
 
         # Check data consistency.
