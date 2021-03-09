@@ -183,7 +183,7 @@ public abstract class IgniteAggregateBase extends IgniteAggregate implements Tra
 
                     //Check that group by contains all key columns
                     if (groupSet.cardinality() == keys.size()) {
-                        Mappings.TargetMapping mapping = Commons.inverseMapping(
+                        Mappings.TargetMapping mapping = Commons.mapping(
                             groupSet, getInput().getRowType().getFieldCount());
 
                         IgniteDistribution outDistr = distribution.apply(mapping);

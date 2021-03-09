@@ -87,6 +87,16 @@ public class IgniteDistributions {
     }
 
     /**
+     * @param keys Affinity keys.
+     * @param cacheId Affinity cache ID.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(ImmutableIntList keys, int cacheId, Object identity) {
+        return hash(keys, DistributionFunction.affinity(cacheId, identity));
+    }
+
+    /**
      * @param keys Distribution keys.
      * @return Hash distribution.
      */

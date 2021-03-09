@@ -42,7 +42,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     PlannerTestSuite.class,
-    ExecutionTestSuite.class,
+//    ExecutionTestSuite.class,
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     ClosableIteratorsHolderTest.class,

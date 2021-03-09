@@ -168,7 +168,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Patter to test incoming query to decide whether this query should be executed with Calcite or H2. */
     private static final Pattern IS_SELECT_OR_EXPLAIN_PATTERN =
-        Pattern.compile("^\\s*(select|explain plan for)", CASE_INSENSITIVE);
+        Pattern.compile("^\\s*(select|explain plan)", CASE_INSENSITIVE);
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;

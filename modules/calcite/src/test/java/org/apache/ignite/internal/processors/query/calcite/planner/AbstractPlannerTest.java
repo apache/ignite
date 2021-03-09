@@ -437,6 +437,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
     abstract static class TestTable implements IgniteTable {
         /** */
+        private final String name;
+
+        /** */
         private final RelProtoDataType protoType;
 
         /** */
@@ -460,9 +463,15 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** */
         TestTable(RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
+            this(UUID.randomUUID().toString(), type, rewindable, rowCnt);
+        }
+
+        /** */
+        TestTable(String name, RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
             protoType = RelDataTypeImpl.proto(type);
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
+            this.name = name;
         }
 
         /** {@inheritDoc} */
@@ -603,6 +612,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void removeIndex(String idxName) {
             throw new AssertionError();
+        }
+
+        /** */
+        public String name() {
+            return name;
         }
     }
 

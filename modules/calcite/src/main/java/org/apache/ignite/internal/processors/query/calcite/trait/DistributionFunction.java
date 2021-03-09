@@ -141,11 +141,8 @@ public abstract class DistributionFunction {
         if (f0 == f1 || f0.name() == f1.name())
             return true;
 
-        if (f0 instanceof AffinityDistribution && f1 instanceof AffinityDistribution &&
-            Objects.equals(((AffinityDistribution)f0).identity(), ((AffinityDistribution)f1).identity()))
-            return true;
-
-        return false;
+        return f0 instanceof AffinityDistribution && f1 instanceof AffinityDistribution &&
+            Objects.equals(((AffinityDistribution)f0).identity(), ((AffinityDistribution)f1).identity());
     }
 
     /** */

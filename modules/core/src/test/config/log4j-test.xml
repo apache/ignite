@@ -141,6 +141,10 @@
         <level value="INFO"/>
     </category>
 
+    <category name="org.apache.calcite">
+        <level value="INFO"/>
+    </category>
+
     <category name="org.eclipse.jetty">
         <level value="INFO"/>
     </category>

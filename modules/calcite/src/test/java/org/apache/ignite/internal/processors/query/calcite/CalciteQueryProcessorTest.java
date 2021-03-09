@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -38,9 +40,14 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -787,6 +794,59 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         row = F.first(query.get(0).getAll());
 
         assertNull(row);
+    }
+
+    /**
+     * Test verifies that table has a distribution function over valid keys.
+     */
+    @Test
+    public void testTableDistributionKeysForComplexKeyObject() {
+        {
+            class MyKey {
+                int id1;
+
+                int id2;
+            }
+
+            LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+            fields.put("ID1", Integer.class.getName());
+            fields.put("ID2", Integer.class.getName());
+            fields.put("VAL", String.class.getName());
+
+            client.getOrCreateCache(new CacheConfiguration<MyKey, String>("test_cache_1")
+                .setSqlSchema("PUBLIC")
+                .setQueryEntities(F.asList(
+                    new QueryEntity(MyKey.class.getName(), String.class.getName())
+                        .setTableName("MY_TBL_1")
+                        .setFields(fields)
+                        .setKeyFields(ImmutableSet.of("ID1", "ID2"))
+                        .setValueFieldName("VAL")
+                ))
+                .setBackups(2)
+            );
+        }
+
+        {
+            client.getOrCreateCache(new CacheConfiguration<Key, String>("test_cache_2")
+                .setSqlSchema("PUBLIC")
+                .setQueryEntities(F.asList(
+                    new QueryEntity(Key.class, String.class)
+                        .setTableName("MY_TBL_2")
+                ))
+                .setBackups(2)
+            );
+        }
+
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(qryProc, "schemaHolder", "igniteSchemas");
+
+        IgniteSchema pub = schemas.get("PUBLIC");
+
+        Map<String, IgniteTable> tblMap = GridTestUtils.getFieldValue(pub, "tblMap");
+
+        assertEquals(ImmutableIntList.of(2, 3), tblMap.get("MY_TBL_1").descriptor().distribution().getKeys());
+        assertEquals(ImmutableIntList.of(3), tblMap.get("MY_TBL_2").descriptor().distribution().getKeys());
     }
 
     /** for test purpose only. */
