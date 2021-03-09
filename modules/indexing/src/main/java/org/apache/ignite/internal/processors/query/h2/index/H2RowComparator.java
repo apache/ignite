@@ -19,16 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.index;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -37,13 +35,12 @@ import org.h2.message.DbException;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 
 /**
  * Provide H2 logic of keys comparation.
  */
-public class H2RowComparator implements IndexRowComparator {
+public class H2RowComparator extends IndexRowCompartorImpl {
     /** Cache context. */
     private final CacheObjectContext coctx;
 
@@ -53,24 +50,21 @@ public class H2RowComparator implements IndexRowComparator {
     /** Ignite H2 session. */
     private final SessionInterface ses;
 
-    /** Key type settings for this index. */
-    private final IndexKeyTypeSettings keyTypeSettings;
-
     /** */
     public H2RowComparator(GridH2Table table, IndexKeyTypeSettings keyTypeSettings) {
+        super(keyTypeSettings);
+
         this.table = table;
-        this.keyTypeSettings = keyTypeSettings;
         coctx = table.rowDescriptor().context().cacheObjectContext();
         ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
     }
 
     /** {@inheritDoc} */
     @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
-        if (curType == IndexKeyTypes.UNKNOWN)
-            return CANT_BE_COMPARE;
+        int cmp = super.compareKey(pageAddr, off, maxSize, key, curType);
 
-        if (key == NullIndexKey.INSTANCE)
-            return 1;
+        if (cmp != COMPARE_UNSUPPORTED)
+            return cmp;
 
         int objType = InlineIndexKeyTypeRegistry.get(key, curType, keyTypeSettings).type();
 
@@ -94,20 +88,15 @@ public class H2RowComparator implements IndexRowComparator {
 
     /** {@inheritDoc} */
     @Override public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
-        IndexKey lkey = left.getKey(idx);
-        IndexKey rkey = right.getKey(idx);
+        int cmp = super.compareKey(left, right, idx);
 
-        Object lobject = lkey != null ? lkey.getKey() : null;
-        Object robject = rkey != null ? rkey.getKey() : null;
-
-        if (lkey == NullIndexKey.INSTANCE)
-            return lkey.compare(rkey, keyTypeSettings);
-        else if (rkey == NullIndexKey.INSTANCE)
-            return 1;
-        else if (lobject == null)
-            return CANT_BE_COMPARE;
+        if (cmp != COMPARE_UNSUPPORTED)
+            return cmp;
 
         int ltype, rtype;
+
+        Object lobject = left.getKey(idx).getKey();
+        Object robject = right.getKey(idx).getKey();
 
         // Side of comparison can be set by user in query with type that different for specified schema.
         if (left instanceof IndexSearchRowImpl)

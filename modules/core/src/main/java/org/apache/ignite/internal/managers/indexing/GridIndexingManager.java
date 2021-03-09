@@ -124,9 +124,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
         stopSpi();
 
-        // Avoid leak of GridCacheContext.
-        serializer = null;
-
         if (log.isDebugEnabled())
             log.debug(stopInfo());
     }

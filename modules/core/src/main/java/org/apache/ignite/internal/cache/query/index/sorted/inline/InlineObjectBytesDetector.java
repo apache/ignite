@@ -184,6 +184,9 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.getIdxType(), settings);
 
+            if (keyType == null)
+                return false;
+
             // Set size to 1 for variable length columns as that value can be set by user.
             remainSize -= keyType.inlineSize() > 0 ? 1 + keyType.inlineSize() : 1;
         }

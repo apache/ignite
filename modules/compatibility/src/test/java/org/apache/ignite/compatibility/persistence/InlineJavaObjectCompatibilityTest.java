@@ -17,27 +17,23 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.compatibility.testframework.junits.Dependency;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -47,12 +43,12 @@ import org.junit.runners.Parameterized;
  * Tests that upgrade version on persisted inline index is successfull.
  */
 @RunWith(Parameterized.class)
-public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
+public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilityTest {
     /** */
-    private static final String TEST_CACHE_NAME = InlineIndexCompatibilityTest.class.getSimpleName();
+    private static final String TEST_CACHE_NAME = InlineJavaObjectCompatibilityTest.class.getSimpleName();
 
     /** */
-    private static final int ROWS_CNT = 100;
+    private static final int ROWS_CNT = 1000;
 
     /** Index to test. */
     private static final String INDEX_NAME = "intval1_val_intval2";
@@ -103,52 +99,6 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         String idxName = cfgInlineSize ? INDEX_SIZED_NAME : INDEX_NAME;
 
         doTestStartupWithOldVersion(igniteVer, closure, idxName);
-    }
-
-    /** {@inheritDoc} */
-    @Override @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
-        Collection<Dependency> dependencies = super.getDependencies(igniteVer);
-
-        if ("2.6.0".equals(igniteVer))
-            dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
-
-        dependencies.add(new Dependency("indexing", "ignite-indexing", false));
-
-        return dependencies;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
-        Set<String> excluded = super.getExcluded(ver, dependencies);
-
-        if ("2.6.0".equals(ver))
-            excluded.add("h2");
-
-        return excluded;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setPeerClassLoadingEnabled(false);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                )
-                // Disable WAL to skip filling index with reading WAL. Instead just start on previous persisted files.
-                .setWalMode(WALMode.NONE));
-
-        cfg.setBinaryConfiguration(
-            new BinaryConfiguration()
-                .setCompactFooter(true)
-        );
-
-        return cfg;
     }
 
     /**
@@ -230,7 +180,7 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         // For strict comparison. There was an issues with >= comparison for some versions.
         pivot += 1;
 
-        assertTrue(result.size() == ROWS_CNT - pivot);
+        assertTrue("Exp=" + (ROWS_CNT - pivot) + "; act=" + result.size(), result.size() == ROWS_CNT - pivot);
 
         for (int i = 0; i < ROWS_CNT - pivot; i++) {
             List<?> row = result.get(i);
@@ -239,11 +189,6 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
             assertTrue(row.get(1).equals(pivot + i));
             assertTrue(row.get(2).equals(pivot + i + 1));
         }
-    }
-
-    /** */
-    private void checkIndexUsed(IgniteCache<?, ?> cache, SqlFieldsQuery qry, String idxName) {
-        assertTrue("Query does not use index.", queryPlan(cache, qry).toLowerCase().contains(idxName.toLowerCase()));
     }
 
     /** */
@@ -305,9 +250,12 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
     }
 
     /** POJO object aimed to be inlined. */
-    public static class EntityValue {
+    public static class EntityValue implements Serializable {
         /** */
-        private final int val;
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private int val;
 
         /** */
         public EntityValue(int val) {
@@ -327,6 +275,16 @@ public class InlineIndexCompatibilityTest extends IgnitePersistenceCompatibility
         /** {@inheritDoc} */
         @Override public boolean equals(Object other) {
             return val == ((EntityValue) other).val;
+        }
+
+        /** Enable comparison of EntityValue objects by the {@link #val} field. */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeInt(val);
+        }
+
+        /** */
+        private void readObject(ObjectInputStream in) throws IOException {
+            val = in.readInt();
         }
     }
 
