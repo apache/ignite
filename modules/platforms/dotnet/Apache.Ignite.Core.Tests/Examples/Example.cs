@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
+        /** Examples with undefined output order. */
+        private static readonly string[] UnorderedOutputExamples = {"Dml", "EntryProcessor", "Func", "Messaging"};
+
         /** All projects. */
         public static readonly Example[] AllProjects = GetExamples()
             .OrderBy(x => x.Name)
@@ -36,9 +39,6 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         /** All examples. */
         public static readonly Example[] AllExamples = AllProjects.Where(p => p.Name != "ServerNode").ToArray();
-
-        /** */
-        private static readonly string[] UnorderedOutputExamples = {"Dml", "EntryProcessor", "Func", "Messaging"};
 
         /** Method invoke flags. */
         private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
