@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -41,8 +40,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.util.lang.GridTuple4;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -142,30 +139,6 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
 
     /** */
     private static final ThreadLocal<FastCrc> crc = new ThreadLocal<>().withInitial(FastCrc::new);
-
-    private final Function<Integer, Data> genSingleData = iter -> {
-        crc.get().reset();
-
-        byte[] payload = new byte[1024];
-
-        ThreadLocalRandom.current().nextBytes(payload);
-
-        crc.get().update(ByteBuffer.wrap(payload), 1024);
-
-        return new Data(payload, crc.get().getValue(), iter);
-    };
-
-    /** */
-    private final Function<GridTuple4<String, IgniteEx, IntStream, Integer>, Runnable> genData = p -> () -> {
-        String cacheName = p.get1();
-        IgniteEx ign = p.get2();
-        IntStream keys = p.get3();
-        int iter = p.get4();
-
-        IgniteCache<Integer, Data> cache = ign.getOrCreateCache(cacheName);
-
-        keys.forEach(i -> cache.put(i, genSingleData.apply(iter)));
-    };
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -281,8 +254,8 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
             destCache.put(1, new Data(null, 0, 1));
             destCache.remove(1);
 
-            runAsync(genData.apply(F.t("cache-1", source[source.length - 1], IntStream.range(0, KEYS_CNT), 1)));
-            runAsync(genData.apply(F.t(AP_CACHE, source[source.length - 1], IntStream.range(0, KEYS_CNT), 1)));
+            runAsync(generateData("cache-1", source[source.length - 1], IntStream.range(0, KEYS_CNT), 1));
+            runAsync(generateData(AP_CACHE, source[source.length - 1], IntStream.range(0, KEYS_CNT), 1));
 
             IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_TOPIC_NAME, AP_CACHE));
 
@@ -315,10 +288,10 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Data> sourceCache = source[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
         IgniteCache<Integer, Data> destCache = dest[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
-        runAsync(genData.apply(F.t(ACTIVE_ACTIVE_CACHE, source[source.length - 1],
-            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0), 1)));
-        runAsync(genData.apply(F.t(ACTIVE_ACTIVE_CACHE, dest[dest.length - 1],
-            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1)));
+        runAsync(generateData(ACTIVE_ACTIVE_CACHE, source[source.length - 1],
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0), 1));
+        runAsync(generateData(ACTIVE_ACTIVE_CACHE, dest[dest.length - 1],
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1));
 
         IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(source[0], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
         IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(source[1], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
@@ -346,7 +319,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
                         c2 = sourceCache;
                     }
 
-                    c1.put(i, genSingleData.apply(2));
+                    c1.put(i, generateSingleData(2));
 
                     c2.remove(i % KEYS_CNT);
                 }
@@ -412,14 +385,21 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
                     return false;
                 }
 
-                crc.get().reset();
-                crc.get().update(ByteBuffer.wrap(data.payload), data.payload.length);
-
-                assertEquals(crc.get().getValue(), data.crc);
+                checkCRC(data, iter);
             }
 
             return true;
         }, getTestTimeout()));
+    }
+
+    /** */
+    public static void checkCRC(Data data, int iter) {
+        assertEquals(iter, data.iter);
+
+        crc.get().reset();
+        crc.get().update(ByteBuffer.wrap(data.payload), data.payload.length);
+
+        assertEquals(crc.get().getValue(), data.crc);
     }
 
     /**
@@ -440,7 +420,32 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Data {
+    public static Runnable generateData(String cacheName, IgniteEx ign, IntStream keys, int iter) {
+        return () -> {
+            IgniteCache<Integer, Data> cache = ign.getOrCreateCache(cacheName);
+
+            keys.forEach(i -> cache.put(i, generateSingleData(iter)));
+        };
+    }
+
+    /**
+     * @param iter Iteration number.
+     * @return Generated data object.
+     */
+    public static Data generateSingleData(int iter) {
+        crc.get().reset();
+
+        byte[] payload = new byte[1024];
+
+        ThreadLocalRandom.current().nextBytes(payload);
+
+        crc.get().update(ByteBuffer.wrap(payload), 1024);
+
+        return new Data(payload, crc.get().getValue(), iter);
+    }
+
+    /** */
+    public static class Data {
         /** */
         private final byte[] payload;
 
@@ -455,6 +460,11 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
             this.payload = payload;
             this.crc = crc;
             this.iter = iter;
+        }
+
+        /** */
+        public int getIter() {
+            return iter;
         }
 
         /** {@inheritDoc} */

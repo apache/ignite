@@ -17,7 +17,237 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cdc.CDCReplicationTest.Data;
+import org.apache.ignite.cdc.cfgplugin.CDCReplicationConfigurationPluginProvider;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cdc.CDCReplicationTest.checkCRC;
+import static org.apache.ignite.cdc.CDCReplicationTest.generateSingleData;
+
+/**
+ * Cache conflict operations test.
+ */
+@RunWith(Parameterized.class)
 public class CacheConflictOperationsTest extends GridCommonAbstractTest {
+    /** Cache mode. */
+    @Parameterized.Parameter
+    public CacheAtomicityMode cacheMode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "cacheMode={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {
+            {ATOMIC},
+            {TRANSACTIONAL}
+        });
+    }
+
+    /** */
+    private static IgniteCache<String, Data> cache;
+
+    /** */
+    private static IgniteInternalCache<BinaryObject, BinaryObject> cachex;
+
+    /** */
+    private static IgniteEx cli;
+
+    /** This DC have a greater priority that {@link #THIS_DC}. */
+    private static final byte GREATER_DC = 1;
+
+    /** */
+    private static final byte THIS_DC = 2;
+
+    /** This DC have a lower priority that {@link #THIS_DC}. */
+    private static final byte LOWER_DC = 3;
+
+    /** */
+    private long order;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CDCReplicationConfigurationPluginProvider cfgPlugin = new CDCReplicationConfigurationPluginProvider();
+
+        cfgPlugin.setDrId(THIS_DC);
+        cfgPlugin.setCaches(new HashSet<>(Collections.singleton("cache")));
+
+        return super.getConfiguration(igniteInstanceName)
+            .setPluginProviders(cfgPlugin);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(1);
+        cli = startClientGrid(2);
+
+        cache = cli.createCache(new CacheConfiguration<String, Data>("cache").setAtomicityMode(cacheMode));
+        cachex = cli.cachex("cache");
+    }
+
+    /**
+     * Tests that regular cache operations works with the conflict resolver when there is no update conflicts.
+     */
+    @Test
+    public void testUpdateThisDCWithoutConflict() {
+        String key = "testUpdateThisDCWithoutConflict";
+
+        put(key);
+
+        put(key);
+
+        remove(key);
+    }
+
+    /**
+     * Tests that {@code IgniteInternalCache#*AllConflict} cache operations works with the conflict resolver
+     * when there is no update conflicts.
+     */
+    @Test
+    public void testUpdateThatDCWithoutConflict() throws Exception {
+        String key = "testUpdateThatDCWithoutConflict";
+
+        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
+            putx(key(key, drId), drId, true);
+
+            putx(key(key, drId), drId, true);
+
+            removex(key(key, drId), drId, true);
+        }
+    }
+
+    /**
+     * Tests cache operations for entry replicated from another DC.
+     */
+    @Test
+    public void testUpdateThisDCConflict() throws Exception {
+        String key = "testUpdateThisDCConflict0";
+
+        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
+            putx(key(key, drId), drId, true);
+
+            remove(key(key, drId));
+
+            // Conflict replicated update succeed only if DC has a greater priority than this DC.
+            putx(key(key, drId), drId, drId == GREATER_DC);
+        }
+
+        key = "testUpdateThisDCConflict1";
+
+        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
+            putx(key(key, drId), drId, true);
+
+            put(key(key, drId));
+        }
+
+        key = "testUpdateThisDCConflict2";
+
+        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
+            put(key(key, drId));
+
+            // Conflict replicated remove succeed only if DC has a greater priority than this DC.
+            removex(key(key, drId), drId, drId == GREATER_DC);
+        }
+
+        key = "testUpdateThisDCConflict3";
+
+        for (byte drId : new byte[] {LOWER_DC, GREATER_DC}) {
+            put(key(key, drId));
+
+            // Conflict replicated remove succeed only if DC has a greater priority than this DC.
+            putx(key(key, drId), drId, drId == GREATER_DC);
+        }
+    }
+
+    /** */
+    private String key(String key, byte drId) {
+        return key + drId + cacheMode;
+    }
+
+    /** */
+    private void put(String key) {
+        Data newVal = generateSingleData(1);
+
+        cache.put(key, newVal);
+
+        assertEquals(newVal, cache.get(key));
+
+        checkCRC(cache.get(key), 1);
+    }
+
+    /** */
+    public void putx(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
+        Data oldVal = cache.get(k);
+        Data newVal = generateSingleData(1);
+
+        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
+
+        CacheObject val = new CacheObjectImpl(cli.binary().toBinary(newVal), null);
+
+        cachex.putAllConflict(singletonMap(key,
+            new GridCacheDrInfo(val,
+                new GridCacheVersion(1, order++, 1, drId))));
+
+        if (expectSuccess) {
+            assertTrue(cache.containsKey(k));
+
+            assertEquals(newVal, cache.get(k));
+
+            checkCRC(cache.get(k), newVal.getIter());
+        }
+        else {
+            assertTrue(cache.containsKey(k) || oldVal == null);
+
+            if (oldVal != null)
+                assertEquals(oldVal, cache.get(k));
+        }
+    }
+
+    /** */
+    private void remove(String key) {
+        cache.remove(key);
+
+        assertFalse(cache.containsKey(key));
+    }
+
+    /** */
+    public void removex(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
+        Data oldVal = cache.get(k);
+
+        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
+
+        cachex.removeAllConflict(singletonMap(key,
+                new GridCacheVersion(1, order++, 1, drId)));
+
+        if (expectSuccess)
+            assertFalse(cache.containsKey(k));
+        else {
+            assertTrue(cache.containsKey(k) || oldVal == null);
+
+            if (oldVal != null)
+                assertEquals(oldVal, cache.get(k));
+        }
+    }
 }
