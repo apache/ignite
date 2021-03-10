@@ -57,14 +57,14 @@ public class HashAggregateConverterRule {
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
             RelOptCluster cluster = agg.getCluster();
-            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelNode input = convert(agg.getInput(), inTrait);
 
             return new IgniteSingleHashAggregate(
                 cluster,
                 outTrait,
-                input,
+                convert(input, inTrait),
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList()
@@ -99,7 +99,7 @@ public class HashAggregateConverterRule {
             return new IgniteReduceHashAggregate(
                 cluster,
                 outTrait.replace(IgniteDistributions.single()),
-                convert(map, inTrait),
+                convert(map, inTrait.replace(IgniteDistributions.single())),
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList(),

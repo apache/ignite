@@ -69,7 +69,10 @@ public class SortAggregateConverterRule {
 
             RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(agg.getGroupSet().asList()));
 
-            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replace(collation)
+                .replace(IgniteDistributions.single());
+
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replace(collation)
                 .replace(IgniteDistributions.single());
@@ -121,7 +124,7 @@ public class SortAggregateConverterRule {
             return new IgniteReduceSortAggregate(
                 cluster,
                 outTrait.replace(IgniteDistributions.single()),
-                convert(map, inTrait),
+                convert(map, inTrait.replace(IgniteDistributions.single())),
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList(),

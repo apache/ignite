@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.calcite.rel.type.RelDataType;
@@ -84,6 +85,7 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         Comparator<Row> comp
     ) {
         super(ctx, rowType);
+        assert Objects.nonNull(comp);
 
         this.type = type;
         this.accFactory = accFactory;

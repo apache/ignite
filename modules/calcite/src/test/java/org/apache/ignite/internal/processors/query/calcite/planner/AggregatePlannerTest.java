@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -106,7 +104,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.rulesToDisable
+            algo.rulesToDisableOtherAlgorithm
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -155,7 +153,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.rulesToDisable
+            algo.rulesToDisableOtherAlgorithm
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -213,7 +211,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.rulesToDisable
+            algo.rulesToDisableOtherAlgorithm
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -221,7 +219,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteMapAggregateBase mapAgg = findFirstNode(phys, byClass(algo.map));
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
         Assert.assertThat(
@@ -243,7 +241,6 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("Single aggregates must be disabled by hint: https://issues.apache.org/jira/browse/IGNITE-14274")
     public void mapReduceDistinctWithIndex() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -281,7 +278,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.rulesToDisable
+            algo.rulesToDisableOtherAlgorithmAndSingle
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -361,7 +358,9 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
             IgniteSingleSortAggregate.class,
             IgniteMapSortAggregate.class,
             IgniteReduceSortAggregate.class,
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            new String[] {"HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"},
+            new String[] {"HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule",
+                "SortSingleAggregateConverterRule"}
         ),
 
         /** */
@@ -369,31 +368,38 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
             IgniteSingleHashAggregate.class,
             IgniteMapHashAggregate.class,
             IgniteReduceHashAggregate.class,
-            "SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"
+            new String[] {"SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"},
+            new String[] {"SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule",
+                "HashSingleAggregateConverterRule"}
         );
 
         /** */
-        public final Class<? extends Aggregate> single;
+        public final Class<? extends IgniteSingleAggregateBase> single;
 
         /** */
-        public final Class<? extends Aggregate> map;
+        public final Class<? extends IgniteMapAggregateBase> map;
 
         /** */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
         /** */
-        public final String[] rulesToDisable;
+        public final String[] rulesToDisableOtherAlgorithm;
+
+        /** */
+        public final String[] rulesToDisableOtherAlgorithmAndSingle;
 
         /** */
         AggregateAlgorithm(
-            Class<? extends Aggregate> single,
-            Class<? extends Aggregate> map,
+            Class<? extends IgniteSingleAggregateBase> single,
+            Class<? extends IgniteMapAggregateBase> map,
             Class<? extends IgniteReduceAggregateBase> reduce,
-            String... rulesToDisable) {
+            String[] rulesToDisableOtherAlgorithm,
+            String[] rulesToDisableOtherAlgorithmAndSingle) {
             this.single = single;
             this.map = map;
             this.reduce = reduce;
-            this.rulesToDisable = rulesToDisable;
+            this.rulesToDisableOtherAlgorithm = rulesToDisableOtherAlgorithm;
+            this.rulesToDisableOtherAlgorithmAndSingle = rulesToDisableOtherAlgorithmAndSingle;
         }
     }
 }
