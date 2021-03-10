@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Concurrent dictionary with CopyOnWrite mechanism inside.
+    /// Concurrent dictionary with CopyOnWrite mechanism inside. 
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
@@ -110,11 +110,11 @@ namespace Apache.Ignite.Core.Impl.Common
                 dict0.Remove(key);
 
                 _dict = dict0;
-
+                
                 return true;
             }
         }
-
+        
         /** <inheritDoc /> */
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
