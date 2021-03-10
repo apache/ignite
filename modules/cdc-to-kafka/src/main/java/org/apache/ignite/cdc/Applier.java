@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -127,16 +126,13 @@ class Applier implements Runnable, AutoCloseable {
     public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, AtomicBoolean closed) {
         assert !F.isEmpty(caches);
 
-        if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
-            throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
-
         this.ign = ign;
-        this.log = ign.log().getLogger(Applier.class);
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.caches = caches;
         this.closed = closed;
 
+        log = ign.log().getLogger(Applier.class);
     }
 
     /** {@inheritDoc} */
@@ -189,6 +185,7 @@ class Applier implements Runnable, AutoCloseable {
     }
 
     /**
+     * Polls data from the specific consumer and applies it to the Ignite.
      * @param consumer Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {

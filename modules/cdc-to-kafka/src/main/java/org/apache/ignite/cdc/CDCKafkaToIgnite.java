@@ -30,10 +30,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.ignite.cdc.cfgplugin.CDCCacheConflictResolutionManager;
+import org.apache.ignite.cdc.cfgplugin.DrIdCacheVersionConflictResolver;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
@@ -49,6 +54,23 @@ import static org.apache.ignite.cdc.Utils.property;
  * In case of any error during read applier just fail. Fail of any applier will lead to the fail of whole application.
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
  * <p>
+ * To resolve possible update conflicts(in case of concurrent update in source and destination Ignite clusters) real-world deployments should use
+ * some conflict resolver, for example {@link DrIdCacheVersionConflictResolver}.
+ * Example of Ignite configuration with the conflict resolver:
+ * <pre>
+ * {@code
+ * CDCReplicationConfigurationPluginProvider cfgPlugin = new CDCReplicationConfigurationPluginProvider();
+ *
+ * cfgPlugin.setDrId(drId); // Data center replication ID.
+ * cfgPlugin.setCaches(new HashSet<>(Arrays.asList("my-cache", "some-other-cache"))); // Caches to replicate.
+ *
+ * IgniteConfiguration cfg = ...;
+ *
+ * cfg.setPluginProviders(cfgPlugin);
+ * }
+ * </pre>
+ * Please, see {@link CDCCacheConflictResolutionManager} for additional information.
+ *
  * Properties list:
  * <ul>
  *  <li>{@link #KAFKA_TO_IGNITE_THREAD_COUNT} - count of {@link Applier} threads.</li>
@@ -112,6 +134,12 @@ public class CDCKafkaToIgnite implements Runnable {
                 return th;
             }
         });
+
+        if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
+            throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
+
+        kafkaProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
+        kafkaProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     }
 
     /** Runs CDC. */
