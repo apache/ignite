@@ -78,22 +78,16 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        /// <returns>Old value, if any.</returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public TValue Set(TKey key, TValue value)
+        public void Set(TKey key, TValue value)
         {
             lock (this)
             {
                 var dict0 = new Dictionary<TKey, TValue>(_dict);
 
-                TValue oldVal;
-                dict0.TryGetValue(key, out oldVal);
-
                 dict0[key] = value;
 
                 _dict = dict0;
-
-                return oldVal;
             }
         }
 

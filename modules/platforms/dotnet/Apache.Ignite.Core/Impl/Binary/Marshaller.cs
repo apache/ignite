@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
@@ -671,30 +670,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
-            // TODO: Should we avoid overwrite and return old desc instead?
-            VerifyDescriptorOverwrite(desc, _typeToDesc.Set(type, desc));
+            _typeToDesc.Set(type, desc);
 
             return desc;
-        }
-
-        /// <summary>
-        /// Verifies that descriptor overwrite is valid.
-        /// <para />
-        /// We don't block threads during type registration for perf reasons, so it is possible for two threads
-        /// to register the same type at the same time. In this case one thread wins and overwrites the descriptor.
-        /// This method checks that overwritten descriptor is the same, and there is no conflict.
-        /// </summary>
-        [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
-        private static void VerifyDescriptorOverwrite(BinaryFullTypeDescriptor desc, BinaryFullTypeDescriptor old)
-        {
-            if (old == null)
-            {
-                return;
-            }
-
-            Debug.Assert(old.UserType == desc.UserType, "old.UserType == desc.UserType");
-            Debug.Assert(old.TypeId == desc.TypeId, "old.TypeId == desc.TypeId");
-            Debug.Assert(old.TypeName == desc.TypeName, "old.TypeName == desc.TypeName");
         }
 
         /// <summary>
@@ -832,15 +810,15 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
-                VerifyDescriptorOverwrite(descriptor, _typeToDesc.Set(type, descriptor));
+                _typeToDesc.Set(type, descriptor);
             }
 
             if (userType)
             {
-                VerifyDescriptorOverwrite(descriptor, _typeNameToDesc.Set(typeName, descriptor));
+                _typeNameToDesc.Set(typeName, descriptor);
             }
 
-            VerifyDescriptorOverwrite(descriptor, _idToDesc.Set(typeKey, descriptor));
+            _idToDesc.Set(typeKey, descriptor);
 
             return descriptor;
         }
