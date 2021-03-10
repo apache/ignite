@@ -38,7 +38,7 @@ def get_credentials(_globals: dict, service_name: str):
     Structure may be found in modules/ducktests/tests/checks/utils/check_get_credentials.py
 
     There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
-    which corresponds to its keystore:
+    which corresponds to its credentials:
     Ignite(clientMode = False) - server
     Ignite(clientMode = True) - client
     ControlUtility - admin
