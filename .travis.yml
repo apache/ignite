@@ -51,4 +51,13 @@ matrix:
       dotnet: 3.1.101
       script:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
-        - 
+
+    - language: java
+      name: "Check test suites"
+      os: linux
+      dist: trusty
+      install: skip
+      jdk: openjdk8
+      script: mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+      before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
+      cache: { directories: [ $HOME/.m2/repository ] }
