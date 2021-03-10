@@ -37,13 +37,14 @@ def get_credentials(_globals: dict, service_name: str):
     Gets Credentials from Globals
     Structure may be found in modules/ducktests/tests/checks/utils/check_get_credentials.py
 
-    There are three services in ducktests, each of them has its own alias, which corresponds to credentials
-    IgniteService - server
-    IgniteApplicationService - client
+    There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
+    which corresponds to its keystore:
+    Ignite(clientMode = False) - server
+    Ignite(clientMode = True) - client
     ControlUtility - admin
-    If we set "use_auth=True" in globals, this credentials will be injected in corresponding service configuration
-    You can also override credentials corresponding to alias throw globals
 
+    If we set "use_auth=True" in globals, these credentials will be injected in corresponding  configuration
+    You can also override credentials corresponding to alias throw globals
 
     We use same credentials for all services by default
     """
