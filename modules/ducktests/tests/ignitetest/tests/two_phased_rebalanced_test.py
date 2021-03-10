@@ -120,6 +120,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
         restart_with_clean_idx_node_on_cell_and_await_rebalance(cells, [0, 1])
         restart_with_clean_idx_node_on_cell_and_await_rebalance(cells, [2, 3])
 
+        self.await_cluster_idle(node)
+
         pds_after = self.get_pds_size(cells, "After rebalancing complete, PDS.")
 
         # Check that PDS size reduced.
