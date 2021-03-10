@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
@@ -73,13 +74,15 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         for (int i = 0; i < cnt; i++) {
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
-            LogListener lsnr = matches("Performance statistics writer rotated.").times(NODES_CNT).build();
+            LogListener lsnr = matches("Performance statistics writer rotated.")
+                .times(NODES_CNT)
+                .build();
 
             listeningLog.registerListener(lsnr);
 
             rotateCollectStatistics();
 
-            assertTrue(lsnr.check());
+            assertTrue(waitForCondition(lsnr::check, TIMEOUT));
 
             checkFiles(statisticsFiles(0 < i ? i : null), NODES_CNT, NODES_CNT);
         }
