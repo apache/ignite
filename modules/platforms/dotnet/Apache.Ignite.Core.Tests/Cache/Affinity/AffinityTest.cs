@@ -153,11 +153,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             // Check put/get.
             var key = new AffinityKey("x", 123);
-            cache[key] = new QueryEntityValue {Name = "y", AffKey = 321};
+            var expected = new QueryEntityValue {Name = "y", AffKey = 321};
+            cache[key] = expected;
 
             var val = cache2[key];
-            Assert.AreEqual("y", val.Name);
-            Assert.AreEqual(321, val.AffKey);
+            Assert.AreEqual(expected.Name, val.Name);
+            Assert.AreEqual(expected.AffKey, val.AffKey);
         }
 
         /// <summary>
