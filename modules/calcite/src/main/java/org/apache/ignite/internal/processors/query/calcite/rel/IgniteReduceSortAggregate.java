@@ -129,6 +129,16 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
     }
 
     /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
+        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
+    ) {
+        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
+
+        return Pair.of(nodeTraits.replace(collation),
+            ImmutableList.of(inputTraits.get(0).replace(collation)));
+    }
+
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
         RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
     ) {
