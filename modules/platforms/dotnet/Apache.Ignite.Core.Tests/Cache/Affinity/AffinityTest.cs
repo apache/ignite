@@ -146,8 +146,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             // Check mapping.
             for (var i = 0; i < 100; i++)
             {
-                Assert.AreEqual(aff.GetPartition(i), aff.GetPartition(new AffinityKey("foo", i)));
-                Assert.AreEqual(aff2.GetPartition(i), aff2.GetPartition(new AffinityKey("bar", i)));
+                Assert.AreEqual(aff.GetPartition(i), aff.GetPartition(new AffinityKey("foo" + i, i)));
+                Assert.AreEqual(aff2.GetPartition(i), aff2.GetPartition(new AffinityKey("bar" + i, i)));
                 Assert.AreEqual(aff.GetPartition(i), aff2.GetPartition(i));
             }
 
