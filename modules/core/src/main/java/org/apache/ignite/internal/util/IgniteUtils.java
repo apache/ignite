@@ -4218,6 +4218,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Closes given socket logging possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
+        if (sock != null) {
+            try {
+                //avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+                sock.shutdownOutput();
+                sock.shutdownInput();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to close socket: " + e.getMessage(), e);
+            }
+
+            try {
+                sock.close();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to close socket: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
      * Closes given resource suppressing possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
