@@ -670,11 +670,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
-            var old = _typeToDesc.Set(type, desc);
-            Debug.Assert(old == null || old.UserType, "old.UserType");
-            Debug.Assert(old == null || old.TypeId == desc.TypeId, "old.TypeId == desc.TypeId");
+            VerifyDescriptorOverwrite(desc, _typeToDesc.Set(type, desc));
 
             return desc;
+        }
+
+        /// <summary>
+        /// Verifies that descriptor overwrite is valid.
+        /// <para />
+        /// We don't block threads during type registration for perf reasons, so it is possible for two threads
+        /// to register the same type at the same time. In this case one thread wins and overwrites the descriptor.
+        /// This method checks that overwritten descriptor is the same, and there is no conflict.
+        /// </summary>
+        private static void VerifyDescriptorOverwrite(BinaryFullTypeDescriptor desc, BinaryFullTypeDescriptor old)
+        {
+            if (old != null)
+            {
+                Debug.Assert(old.UserType == desc.UserType, "old.UserType == desc.UserType");
+                Debug.Assert(old.TypeId == desc.TypeId, "old.TypeId == desc.TypeId");
+                Debug.Assert(old.TypeName == desc.TypeName, "old.TypeName == desc.TypeName");
+            }
         }
 
         /// <summary>
@@ -812,7 +827,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
-                _typeToDesc.Set(type, descriptor);
+                var old = _typeToDesc.Set(type, descriptor);
             }
 
             if (userType)
