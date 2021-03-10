@@ -1149,7 +1149,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param partId Partition id.
      * @return Iterator over partition.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRows(String snpName,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
         String folderName,
         String grpName,
         int partId
@@ -1191,7 +1191,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             null, null, null, null, null,
             null, null, null, null, null, null);
 
-        return new PageScanIterator(sctx, coctx, pageStore, partId);
+        return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
 
     /**
@@ -1356,7 +1356,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Ves pokrit assertami absolutely ves,
      * PageScan iterator in the ignite core est.
      */
-    private static class PageScanIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+    private static class DataPageIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -1382,8 +1382,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Total pages in the page store. */
         private final int pages;
 
-        /** Pages which already marked and postponed to be read on the second iteration. */
-        private final BitSet markedPages;
+        /**
+         * Data row greater than page size contains with header and tail parts. Such pages with tails contain only part
+         * of a cache key-value pair. These pages will be marked and skipped at the first partition iteration and
+         * will be processed on the second partition iteration when all the pages with key-value headers defined.
+         */
+        private final BitSet tailPages;
 
         /** Pages which already read and must be skipped. */
         private final BitSet readPages;
@@ -1410,7 +1414,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param partId Partition id.
          * @throws IgniteCheckedException If fails.
          */
-        public PageScanIterator(
+        public DataPageIterator(
             GridCacheSharedContext<?, ?> sctx,
             CacheObjectContext coctx,
             PageStore store,
@@ -1423,7 +1427,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             store.ensure();
             pages = store.pages();
-            markedPages = new BitSet(pages);
+            tailPages = new BitSet(pages);
             readPages = new BitSet(pages);
 
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
@@ -1450,12 +1454,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     boolean first = currIdx < pages;
                     int pageIdx = currIdx % pages;
 
-                    if (readPages.get(pageIdx) || (!first && markedPages.get(pageIdx)))
+                    if (readPages.get(pageIdx) || (!first && tailPages.get(pageIdx)))
                         continue;
 
                     if (!readPageFromStore(pageId(partId, FLAG_DATA, pageIdx), locBuff)) {
                         // Skip not FLAG_DATA pages.
-                        changeBit(readPages, pageIdx);
+                        setBit(readPages, pageIdx);
 
                         continue;
                     }
@@ -1468,7 +1472,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (first) {
                         // Skip empty pages.
                         if (rowsCnt == 0) {
-                            changeBit(readPages, pageIdx);
+                            setBit(readPages, pageIdx);
 
                             continue;
                         }
@@ -1485,13 +1489,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             long link = payload.nextLink();
 
                             if (link != 0)
-                                changeBit(markedPages, pageIndex(pageId(link)));
+                                setBit(tailPages, pageIndex(pageId(link)));
 
                             continue;
                         }
                     }
 
-                    changeBit(readPages, pageIdx);
+                    setBit(readPages, pageIdx);
 
                     for (int itemId = 0; itemId < rowsCnt; itemId++) {
                         DataRow row = new DataRow();
@@ -1508,7 +1512,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     assert success : "Only FLAG_DATA pages allowed: " + toDetailString(nextPageId);
 
                                     // Fragment of page has been read, might be skipped further.
-                                    changeBit(readPages, pageIndex(nextPageId));
+                                    setBit(readPages, pageIndex(nextPageId));
 
                                     return fragmentBuff;
                                 }
@@ -1546,7 +1550,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param bitSet BitSet to change bit index.
          * @param idx Index of bit to change.
          */
-        private static void changeBit(BitSet bitSet, int idx) {
+        private static void setBit(BitSet bitSet, int idx) {
             boolean bit = bitSet.get(idx);
 
             assert !bit : "Bit with given index already set: " + idx;
@@ -1572,7 +1576,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PageScanIterator.class, this, super.toString());
+            return S.toString(DataPageIterator.class, this, super.toString());
         }
     }
 

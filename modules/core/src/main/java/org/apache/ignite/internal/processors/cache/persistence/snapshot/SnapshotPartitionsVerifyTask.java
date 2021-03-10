@@ -267,7 +267,7 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRows(snpName, meta.folderName(), grpName, partId)));
+                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId)));
                             }
                         }
                         catch (IOException e) {

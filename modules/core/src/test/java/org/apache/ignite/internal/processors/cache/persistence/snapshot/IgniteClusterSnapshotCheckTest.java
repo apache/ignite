@@ -90,6 +90,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
+    /** Partition id used for tests. */
+    private static final int PART_ID = 0;
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheck() throws Exception {
@@ -213,14 +216,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(0));
+            getPartitionFileName(PART_ID));
 
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
             .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
-            .createPageStore(getTypeByPartId(0),
+            .createPageStore(getTypeByPartId(PART_ID),
                 () -> part0,
                 val -> {
                 })
@@ -250,7 +253,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         assertTrue(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
+        assertContains(log, b.toString(),
+            "The check procedure has finished, found 1 conflict partitions: [counterConflicts=1, hashConflicts=0]");
     }
 
     /** @throws Exception If fails. */
@@ -314,11 +318,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(0));
+            getPartitionFileName(PART_ID));
 
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
             .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
-            .createPageStore(getTypeByPartId(0),
+            .createPageStore(getTypeByPartId(PART_ID),
                 () -> part0,
                 val -> {
                 })
@@ -350,15 +354,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotCheckMissedHashes() throws Exception {
-        int keys = 1;
+    public void testClusterSnapshotCheckFailsOnPartitionDataDiffers() throws Exception {
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
 
         IgniteEx ignite = startGridsWithoutCache(2);
 
-        for (int i = 0; i < keys; i++)
-            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[2000]));
+        ignite.getOrCreateCache(ccfg).put(1, new Value(new byte[2000]));
 
         forceCheckpoint(ignite);
 
@@ -368,15 +370,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryContext();
 
         GridCacheAdapter<?, ?> cache = ignite.context().cache().internalCache(dfltCacheCfg.getName());
-        long partCtr = cache.context().offheap().lastUpdatedPartitionCounter(0);
+        long partCtr = cache.context().offheap().lastUpdatedPartitionCounter(PART_ID);
         AtomicBoolean done = new AtomicBoolean();
 
         db.addCheckpointListener(new CheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Change the cache value only at on of the cluster node to get hash conflict when the check command ends.
                 if (!done.compareAndSet(false, true))
                     return;
 
-                GridIterator<CacheDataRow> it = cache.context().offheap().partitionIterator(0);
+                GridIterator<CacheDataRow> it = cache.context().offheap().partitionIterator(PART_ID);
 
                 assertTrue(it.hasNext());
 
@@ -391,7 +394,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 try {
                     BinaryObjectImpl newVal = toBinary(new Value(bytes), binCtx.marshaller());
 
-                    boolean success0 = cached.initialValue(
+                    boolean success = cached.initialValue(
                         newVal,
                         new GridCacheVersion(row0.version().topologyVersion(),
                             row0.version().nodeOrder(),
@@ -408,9 +411,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         false,
                         null);
 
-                    assertTrue(success0);
+                    assertTrue(success);
 
-                    long newPartCtr = cache.context().offheap().lastUpdatedPartitionCounter(0);
+                    long newPartCtr = cache.context().offheap().lastUpdatedPartitionCounter(PART_ID);
 
                     assertEquals(newPartCtr, partCtr);
                 }
@@ -433,7 +436,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(0));
+            getPartitionFileName(PART_ID));
 
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
@@ -444,12 +447,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         assertTrue(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "The check procedure has finished, found 1 conflict partitions");
+        assertContains(log, b.toString(),
+            "The check procedure has finished, found 1 conflict partitions: [counterConflicts=0, hashConflicts=1]");
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotCompareHashes() throws Exception {
+    public void testClusterSnapshotCheckHashesSameAsIdleVerifyHashes() throws Exception {
         Random rnd = new Random();
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
@@ -502,7 +506,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** */
+    /** Test compute task to collect partition data hashes when the snapshot check procedure ends. */
     private static class TestSnapshotPartitionsVerifyTask extends SnapshotPartitionsVerifyTask {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes;
 

@@ -436,7 +436,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageAddr Page address.
      * @return Indirect count.
      */
-    public int getIndirectCount(long pageAddr) {
+    private int getIndirectCount(long pageAddr) {
         return PageUtils.getByte(pageAddr, INDIRECT_CNT_OFF) & 0xFF;
     }
 

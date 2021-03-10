@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -198,27 +197,22 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             long pageId = pageId(nextLink);
 
-            try {
-                ByteBuffer fragmentBuff = reader.apply(pageId);
+            ByteBuffer fragmentBuff = reader.apply(pageId);
 
-                long fragmentAddr = GridUnsafe.bufferAddress(fragmentBuff);
-                DataPageIO io2 = PageIO.getPageIO(T_DATA, PageIO.getVersion(fragmentBuff));
+            long fragmentAddr = GridUnsafe.bufferAddress(fragmentBuff);
+            DataPageIO io2 = PageIO.getPageIO(T_DATA, PageIO.getVersion(fragmentBuff));
 
-                incomplete = readIncomplete(incomplete, sctx, coctx, fragmentBuff.capacity(), fragmentBuff.capacity(),
-                    fragmentAddr, itemId(nextLink), io2, rowData, readCacheId, skipVer);
+            incomplete = readIncomplete(incomplete, sctx, coctx, fragmentBuff.capacity(), fragmentBuff.capacity(),
+                fragmentAddr, itemId(nextLink), io2, rowData, readCacheId, skipVer);
 
-                if (incomplete == null)
-                    return;
+            if (incomplete == null)
+                return;
 
-                nextLink = incomplete.getNextLink();
-            }
-            catch (Exception e) {
-                throw new IgniteException("Error during reading DataRow [pageId=" + pageId + ']', e);
-            }
+            nextLink = incomplete.getNextLink();
         }
         while (nextLink != 0);
 
-        assert isReady() : "ready";
+        assert isReady() : "Entry must has the 'ready' state, when the init ends";
     }
 
     /**

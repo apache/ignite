@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,9 +30,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -45,7 +42,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -56,28 +52,23 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -85,6 +76,9 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
  * Default snapshot manager test.
  */
 public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
+    /** The size of value array to fit 3 pages. */
+    private static final int SIZE_FOR_FIT_3_PAGES = 12008;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -423,7 +417,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted() && startTime + loadingTimeMs > U.currentTimeMillis()) {
                 if (rnd.nextBoolean())
-                    cache.put(rnd.nextInt(15_000), new Value(new byte[rnd.nextInt(maxValSize)]));
+                    cache.put(rnd.nextInt(maxKey), new Value(new byte[rnd.nextInt(maxValSize)]));
                 else
                     cache.remove(rnd.nextInt(maxKey));
             }
@@ -436,7 +430,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         Map<Integer, Value> iterated = new HashMap<>();
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             ccfg.getName(),
             0)
@@ -479,7 +473,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)
@@ -510,8 +504,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithoutCache(2);
 
+        assertEquals(DFLT_PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
+
         for (int i = 0; i < keys; i++)
-            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[12008]));
+            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
 
         forceCheckpoint();
 
@@ -519,7 +515,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
             0)
@@ -529,7 +525,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
-                assertEquals(12008, ((Value)row.value().value(coctx, false)).arr().length);
+                assertEquals(SIZE_FOR_FIT_3_PAGES, ((Value)row.value().value(coctx, false)).arr().length);
                 assertTrue((Integer)row.key().value(coctx, false, null) < 2);
 
                 rows++;
@@ -537,124 +533,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         }
 
         assertEquals("Invalid number of rows: " + rows, keys, rows);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testSnapshotIteratorDirectIndirectCountersWithCacheGroup() throws Exception {
-        int keysPerCache = 3700;
-        int cacheValSize = 33;
-        int rowsOnPage = 37;
-
-        CacheConfiguration<Integer, Value> ccfg1 = txCacheConfig(new CacheConfiguration<Integer, Value>("tx1"))
-            .setAffinity(new RendezvousAffinityFunction(false, 1));
-        CacheConfiguration<Integer, Value> ccfg2 = txCacheConfig(new CacheConfiguration<Integer, Value>("tx2"))
-            .setAffinity(new RendezvousAffinityFunction(false, 1));
-
-        ccfg1.setGroupName(DEFAULT_CACHE_NAME);
-        ccfg2.setGroupName(DEFAULT_CACHE_NAME);
-
-        IgniteEx ignite = startGridsWithCache(1, keysPerCache, k -> new Value(new byte[cacheValSize]), ccfg1, ccfg2);
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        AtomicReference<ByteBuffer> buffRef = new AtomicReference<>();
-        AtomicReference<Long> pageIdRef = new AtomicReference<>();
-
-        snapshotStoreFactory(ignite, new BiFunction<Integer, Boolean, FileVersionCheckingFactory>() {
-            @Override public FileVersionCheckingFactory apply(Integer grpId, Boolean encrypted) {
-                FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
-                return new FileVersionCheckingFactory(storeMgr.getPageStoreFileIoFactory(), storeMgr.getPageStoreFileIoFactory(), storeMgr::pageSize) {
-                    @Override public PageStore createPageStore(
-                        byte type,
-                        IgniteOutClosure<Path> pathProvider,
-                        LongConsumer allocatedTracker
-                    ) {
-                        return new FilePageStoreV2(
-                            type,
-                            pathProvider,
-                            storeMgr.getPageStoreFileIoFactory(),
-                            storeMgr.pageSize(),
-                            allocatedTracker
-                        ) {
-                            @Override public boolean read(
-                                long pageId,
-                                ByteBuffer pageBuf,
-                                boolean keepCrc
-                            ) throws IgniteCheckedException {
-                                buffRef.set(pageBuf);
-                                pageIdRef.set(pageId);
-
-                                return super.read(pageId, pageBuf, keepCrc);
-                            }
-                        };
-                    }
-                };
-            }
-        });
-
-        int currRows = 0;
-        int rowsCnt;
-
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME,
-            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
-            dfltCacheCfg.getName(),
-            0)
-        ) {
-            CacheObjectContext coctx = ignite.cachex("tx1").context().cacheObjectContext();
-
-            while (iter.hasNext()) {
-                CacheDataRow row = iter.next();
-
-                DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
-
-                long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
-                rowsCnt = io.getDirectCount(pageAddr);
-
-                assertEquals(cacheValSize, ((Value)row.value().value(coctx, false)).arr().length);
-                assertEquals(rowsOnPage, rowsCnt);
-
-                currRows++;
-            }
-        }
-
-        assertEquals(keysPerCache, currRows / 2);
-
-        // Remove all rows in the middle of the page.
-        for (int k = 0; k < keysPerCache; k++) {
-            if (k % rowsOnPage == 1 || k % rowsOnPage == (rowsOnPage - 1))
-                continue;
-
-            ignite.getOrCreateCache(ccfg1).remove(k);
-            ignite.getOrCreateCache(ccfg2).remove(k);
-        }
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME + 2).get();
-
-        int indRowsCnt;
-
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRows(SNAPSHOT_NAME + 2,
-            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
-            dfltCacheCfg.getName(),
-            0)
-        ) {
-            CacheObjectContext coctx = ignite.cachex("tx1").context().cacheObjectContext();
-
-            while (iter.hasNext()) {
-                CacheDataRow row = iter.next();
-
-                DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(buffRef.get()));
-                long pageAddr = GridUnsafe.bufferAddress(buffRef.get());
-
-                rowsCnt = io.getDirectCount(pageAddr);
-                indRowsCnt = io.getIndirectCount(pageAddr);
-
-                assertEquals(cacheValSize, ((Value)row.value().value(coctx, false)).arr().length);
-                assertEquals(2, rowsCnt);
-                assertEquals(2, indRowsCnt);
-            }
-        }
     }
 
     /**
