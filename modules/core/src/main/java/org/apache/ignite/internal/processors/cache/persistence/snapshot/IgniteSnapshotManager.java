@@ -1177,8 +1177,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
 
-        if (F.isEmpty(grps) || grps.size() > 1)
-            throw new IgniteCheckedException("Snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (F.isEmpty(grps))
+            throw new IgniteCheckedException("The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+
+        if (grps.size() > 1)
+            throw new IgniteCheckedException("The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
 
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
