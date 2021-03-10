@@ -77,6 +77,8 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             try
             {
+                _grid1.GetServices();
+
                 TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1);
             }
             catch (Exception)
