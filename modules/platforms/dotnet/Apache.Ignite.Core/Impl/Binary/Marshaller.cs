@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
@@ -679,6 +680,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Validates type registration.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         private void ValidateRegistration(Type type)
         {
             BinaryFullTypeDescriptor desc;
