@@ -40,6 +40,8 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -666,16 +668,19 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<IgniteFuture<T>> callable,
+    @Override public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<T> callable,
                                                            int numPermits) throws Exception {
         acquire(numPermits);
 
-        IgniteFuture<T> future = null;
-        try {
-            future = callable.call();
-        } finally {
-            release(numPermits);
-        }
+        T value = callable.call();
+
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+            @Override public T get() {
+                return value;
+            }
+        };
+
+        IgniteFuture<T> future = new IgniteFutureImpl<>(fut);
 
         future.listen(new IgniteInClosure<IgniteFuture<T>>() {
             /** {@inheritDoc} */

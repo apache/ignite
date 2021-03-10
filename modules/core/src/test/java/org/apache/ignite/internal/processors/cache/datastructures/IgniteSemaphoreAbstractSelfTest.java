@@ -318,33 +318,29 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-        IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
-            @Override public IgniteFuture<Integer> call() {
-                IgniteFutureImpl<Integer> igniteFuture = new IgniteFutureImpl<>(new GridFutureAdapter<>());
-
+        IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
+            @Override public Integer call() {
                 assert (semaphore.availablePermits() == 0);
 
-                Runnable runnable = new Runnable() {
-                    /** {@inheritDoc} */
-                    @Override public void run() {
-                        try {
-                            Thread.sleep(1000);
-                            GridFutureAdapter fut = (GridFutureAdapter) igniteFuture.internalFuture();
-                            fut.onDone(true);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e.getMessage());
-                        }
-                    }
-                };
-
-                executorService.submit(runnable);
-
-                return igniteFuture;
+                return 5;
             }
         };
 
-        IgniteFuture<Integer> igniteFuture = semaphore.acquireAndExecute(callable, 1);
+        IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
 
+        Runnable runnable = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>) igniteFuture;
+
+                GridFutureAdapter fut = (GridFutureAdapter) (impl.internalFuture());
+                fut.onDone(true);
+            }
+        };
+
+        executorService.submit(runnable);
+
+        Thread.sleep(1000);
         igniteFuture.get(7000, MILLISECONDS);
 
         assertTrue(igniteFuture.isDone());
@@ -364,29 +360,40 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecuteIfFailure", 1, true, true);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-        IgniteCallable<IgniteFuture<Integer>> callable = new IgniteCallable<IgniteFuture<Integer>>() {
-            @Override public IgniteFuture<Integer> call() {
+        IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
+            @Override public Integer call() {
                 throw new RuntimeException("Foobar");
             }
         };
 
-        //TODO: Move this to a better state after IGNITE-14225
-        boolean exceptionRaised = false;
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
 
-        try {
-            IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+                Runnable runnable = new Runnable() {
+                    /** {@inheritDoc} */
+                    @Override public void run() {
+                        try {
+                            Thread.sleep(1000);
+                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>) igniteFuture;
 
-            igniteFuture.get(7000, MILLISECONDS);
+                            GridFutureAdapter fut = (GridFutureAdapter) (impl.internalFuture());
+                            fut.onDone(true);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e.getMessage());
+                        }
+                    }
+                };
 
-            assertTrue(igniteFuture.isDone());
-        } catch (Exception e) {
-            assertTrue(e.getMessage().contains("Foobar"));
-            exceptionRaised = true;
-        }
+                executorService.submit(runnable);
 
-        assertTrue(exceptionRaised);
+                igniteFuture.get(7000, MILLISECONDS);
 
-        assertTrue(semaphore.availablePermits() == 1);
+                assertTrue(igniteFuture.isDone());
+
+                return null;
+            }
+        }, RuntimeException.class, "Foobar");
 
         executorService.shutdown();
     }

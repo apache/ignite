@@ -254,7 +254,7 @@ public interface IgniteSemaphore extends Closeable {
      * @param numPermits the number of permits to acquire
      * @throws Exception if the callable throws an exception
      */
-    public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<IgniteFuture<T>> callable,
+    public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<T> callable,
                                                  int numPermits) throws Exception;
 
     /**
