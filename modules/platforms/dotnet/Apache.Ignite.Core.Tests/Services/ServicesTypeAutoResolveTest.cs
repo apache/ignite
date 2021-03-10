@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Services;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -50,6 +51,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         private IIgnite _grid1;
 
+        /** */
+        private IIgnite _cli;
+
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -73,8 +77,6 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             try
             {
-                _grid1.GetServices();
-
                 TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1);
             }
             catch (Exception)
@@ -202,7 +204,15 @@ namespace Apache.Ignite.Core.Tests.Services
                 return;
 
             var path = Path.Combine("Config", "Compute", "compute-grid");
-            _grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
+
+            var cfg = GetConfiguration(path + "1.xml");
+            
+            _grid1 = Ignition.Start(cfg);
+
+            cfg.ClientMode = true;
+            cfg.IgniteInstanceName = "client";
+
+            _cli = Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -230,6 +240,62 @@ namespace Apache.Ignite.Core.Tests.Services
                     NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
                 }
             };
+        }
+
+        [Test]
+        public void ServiceReturnsArray()
+        {
+            _cli.GetServices().DeployClusterSingleton(nameof(ArrayFactoryService), new ArrayFactoryService());
+
+            var svc = _cli.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService), false);
+            var arr = svc.CreateArray(2, 1);
+
+            Assert.IsTrue(arr.GetType() == typeof(R[]));
+            Assert.AreEqual(1, arr[1].Value);
+
+            _cli.GetServices().Cancel(nameof(ArrayFactoryService));
+        }
+
+        [Test]
+        public void ServiceReturnsArrayWithReflection()
+        {
+            _cli.GetServices().DeployClusterSingleton(nameof(ArrayFactoryService), new ArrayFactoryService());
+
+            var svc = _cli.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService));
+
+            var mthd = typeof(IArrayFactory).GetMethod(nameof(IArrayFactory.CreateArray));
+
+            var arr = mthd.Invoke(svc, new object[] {2, 1});
+
+            Assert.IsTrue(arr.GetType() == typeof(R[]));
+            Assert.AreEqual(1, ((R[]) arr)[1].Value);
+
+            _cli.GetServices().Cancel(nameof(ArrayFactoryService));
+        }
+
+        public interface IArrayFactory
+        {
+            R[] CreateArray(int size, int dlftVal);
+        }
+
+        public sealed class ArrayFactoryService : IArrayFactory, IService
+        {
+            public R[] CreateArray(int size, int dfltVal)
+            {
+                return Enumerable.Repeat(new R { Value = dfltVal }, size).ToArray();
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+            }
+
+            public void Execute(IServiceContext context)
+            {
+            }
+
+            public void Init(IServiceContext context)
+            {
+            }
         }
     }
 }
