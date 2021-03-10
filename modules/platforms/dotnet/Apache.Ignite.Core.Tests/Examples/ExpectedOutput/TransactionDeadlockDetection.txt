@@ -1,6 +1,6 @@
 >>> Transaction deadlock detection example started.
 
->>> Transaction deadlock in thread
+>>> Transaction deadlock in thread *
 Deadlock detected:
 
 K1: TX1 holds lock, TX2 waits lock.
