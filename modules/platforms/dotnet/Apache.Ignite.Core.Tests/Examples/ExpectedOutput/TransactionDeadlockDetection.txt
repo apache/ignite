@@ -8,10 +8,10 @@ K2: TX2 holds lock, TX1 waits lock.
 
 Transactions:
 
-TX1 [txId=GridCacheVersion [topVer=
-TX2 [txId=GridCacheVersion [topVer=
+TX1 [txId=GridCacheVersion [topVer=*
+TX2 [txId=GridCacheVersion [topVer=*
 
 Keys:
 
-K1 [key=
-K2 [key=
+K1 [key=*
+K2 [key=*
