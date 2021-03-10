@@ -10,7 +10,7 @@
 
 >>> Ignite lifecycle event occurred: AfterNodeStop
 >>> Ignite name: lifecycle-example
-Ignite node stopped OK [name=lifecycle-example, uptime=
+Ignite node stopped OK [name=lifecycle-example, uptime=*
 
 >>> Started (should be false): False
 
