@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -32,8 +34,13 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
  *
@@ -80,7 +87,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
             groupSets,
             aggCalls,
             rowType,
-            collation
+            TraitUtils.collation(traitSet)
         );
     }
 
@@ -119,5 +126,22 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
             rows * IgniteCost.ROW_PASS_THROUGH_COST,
             0
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
+    ) {
+        RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
+
+        List<Integer> newCollation = maxPrefix(inputCollation.getKeys(), groupSet.asSet());
+
+        if (newCollation.size() < groupSet.cardinality())
+            return ImmutableList.of();
+
+        return ImmutableList.of(Pair.of(
+            nodeTraits.replace(RelCollations.of(ImmutableIntList.copyOf(newCollation))),
+            inputTraits
+        ));
     }
 }
