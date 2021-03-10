@@ -19,9 +19,9 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
 #if !NETCOREAPP
-    extern alias TestDll2;
-    using Apache.Ignite.Core.Tests.TestDll2;
-    using ExamplesAccount = TestDll2.Apache.Ignite.Core.Tests.TestDll2.Account;
+    extern alias ExamplesDll;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using ExamplesAccount = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Account;
 #endif
 
     using System;
@@ -596,10 +596,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 }
 
 #if !NETCOREAPP
-namespace Apache.Ignite.Core.Tests.TestDll2
+namespace Apache.Ignite.ExamplesDll.Binary
 {
     /// <summary>
-    /// Copy of Account class in TestDll2. Same name and namespace, different assembly.
+    /// Copy of Account class in ExamplesDll. Same name and namespace, different assembly.
     /// </summary>
     public class Account
     {

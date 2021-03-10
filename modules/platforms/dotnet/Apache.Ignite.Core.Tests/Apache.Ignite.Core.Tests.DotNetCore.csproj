@@ -41,6 +41,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Deployment\**" />
+    <None Remove="Examples\**" />
 
     <None Update="Config\ignite-halthandler-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\native-client-test-cache-affinity.xml" CopyToOutputDirectory="PreserveNewest" />
@@ -101,11 +102,13 @@
 
   <ItemGroup>
     <Compile Remove="Deployment\**" />
+    <Compile Remove="Examples\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="Deployment\**" />
+    <EmbeddedResource Remove="Examples\**" />
     <EmbeddedResource Remove="Compute\Forked\**" />
   </ItemGroup>
 

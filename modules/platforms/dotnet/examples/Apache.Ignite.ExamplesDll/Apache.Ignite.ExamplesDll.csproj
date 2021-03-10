@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DFB08363-202E-412D-8812-349EF10A8702}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Apache.Ignite.ExamplesDll</RootNamespace>
+    <AssemblyName>Apache.Ignite.ExamplesDll</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <NoWarn>649</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.ExamplesDll.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+    <Optimize>true</Optimize>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Apache.Ignite.Core">
+      <HintPath Condition="Exists('..\..\Apache.Ignite')">..\..\Apache.Ignite\bin\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
+      <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Core.dll')">..\..\bin\Apache.Ignite.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Compute\AverageSalaryJob.cs" />
+    <Compile Include="Compute\AverageSalaryTask.cs" />
+    <Compile Include="Compute\CharacterCountClosure.cs" />
+    <Compile Include="Compute\CharacterCountReducer.cs" />
+    <Compile Include="Datagrid\CacheIncrementEntryProcessor.cs" />
+    <Compile Include="Datagrid\CachePutEntryProcessor.cs" />
+    <Compile Include="Datagrid\EmployeeStoreFactory.cs" />
+    <Compile Include="Datagrid\EmployeeStorePredicate.cs" />
+    <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
+    <Compile Include="Datagrid\EmployeeStore.cs" />
+    <Compile Include="Datagrid\ScanQueryFilter.cs" />
+    <Compile Include="DataStructures\AtomicReferenceModifyAction.cs" />
+    <Compile Include="DataStructures\AtomicSequenceIncrementAction.cs" />
+    <Compile Include="DataStructures\AtomicLongIncrementAction.cs" />
+    <Compile Include="Events\LocalListener.cs" />
+    <Compile Include="Messaging\LocalListener.cs" />
+    <Compile Include="Messaging\RemoteOrderedListener.cs" />
+    <Compile Include="Messaging\RemoteUnorderedListener.cs" />
+    <Compile Include="Messaging\Topic.cs" />
+    <Compile Include="Binary\Account.cs" />
+    <Compile Include="Binary\Address.cs" />
+    <Compile Include="Binary\Employee.cs" />
+    <Compile Include="Binary\Organization.cs" />
+    <Compile Include="Binary\OrganizationType.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\MapService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.ExamplesDll.snk" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

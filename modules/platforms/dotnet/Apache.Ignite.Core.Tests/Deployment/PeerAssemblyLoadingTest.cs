@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Deployment
 {
-    extern alias TestDll2;
+    extern alias ExamplesDll;
     using System;
     using System.IO;
     using System.Threading;
@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
-    using Address = TestDll2::Apache.Ignite.Core.Tests.TestDll2.Address;
+    using Address = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Address;
 
     /// <summary>
     /// Tests peer assembly loading feature:

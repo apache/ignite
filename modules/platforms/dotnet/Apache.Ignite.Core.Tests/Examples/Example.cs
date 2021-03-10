@@ -21,7 +21,8 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
+    using System.Text.RegularExpressions;
+    using Apache.Ignite.Examples.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -29,54 +30,17 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
-        /** All projects. */
-        public static readonly Example[] AllProjects = GetExamples()
-            .OrderBy(x => x.Name)
-            .ToArray();
+        /** Execute action */
+        private Action _runAction;
 
-        /** All examples. */
-        public static readonly Example[] AllExamples = AllProjects.Where(p => p.Name != "ServerNode").ToArray();
+        /** Config url */
+        public string ConfigPath { get; private set; }
 
-        /** Method invoke flags. */
-        private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
+        /** Dll load flag */
+        public bool NeedsTestDll { get; private set; }
 
-        /** Example name. */
-        public string Name { get; }
-
-        /** Project file. */
-        public string ProjectFile { get; }
-
-        /** Assembly path. */
-        public string AssemblyFile { get; }
-
-        /** Whether this is a thin client example (needs a server node). */
-        public bool IsThin => ProjectFile.Contains("Thin");
-
-        /** Example source code. */
-        public string SourceCode { get; }
-
-        /** Whether this example runs in thick client mode. */
-        public bool IsClient { get; }
-
-        /** Whether this example requires an external node. */
-        public bool RequiresExternalNode { get; }
-
-        /** Whether this example disallows external nodes. */
-        public bool DisallowsExternalNode { get; }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="Example"/> class.
-        /// </summary>
-        private Example(string name, string projectFile, string assemblyFile, string sourceCode)
-        {
-            Name = name;
-            ProjectFile = projectFile;
-            AssemblyFile = assemblyFile;
-            SourceCode = sourceCode;
-            RequiresExternalNode = sourceCode.Contains("ServerNode project");
-            DisallowsExternalNode = sourceCode.Contains("without external node");
-            IsClient = sourceCode.Contains("GetClientNodeConfiguration") && !DisallowsExternalNode;
-        }
+        /** Name */
+        public Type ExampleType { get; private set; }
 
         /// <summary>
         /// Runs this example.
@@ -85,66 +49,81 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             try
             {
-                Assert.IsTrue(File.Exists(AssemblyFile),
-                    $"Assembly not found: {AssemblyFile}. " +
-                    "Make sure to build IgniteExamples.sln. This usually happens as part of build.ps1 execution.");
-
-                var assembly = Assembly.LoadFrom(AssemblyFile);
-
-                var programType = assembly.GetTypes().SingleOrDefault(t => t.Name == "Program");
-                Assert.IsNotNull(programType, $"Assembly {AssemblyFile} does not have Program class.");
-
-                programType.InvokeMember("Main", InvokeFlags, null, null, null);
+                _runAction();
             }
-            catch (TargetInvocationException ex)
+            catch (InvalidOperationException ex)
             {
                 // Each example has a ReadKey at the end, which throws an exception in test environment.
-                if (ex.InnerException is InvalidOperationException inner &&
-                    inner.Message.StartsWith("Cannot read keys"))
+                if (ex.Message != "Cannot read keys when either application does not have a console or " +
+                    "when console input has been redirected from a file. Try Console.Read.")
                 {
-                    return;
+                    throw;
                 }
 
-                throw;
+                return;
             }
 
-            throw new Exception("ReadKey is missing at the end of the example.");
-        }
-
-        /** <inheritdoc /> */
-        public override string ToString()
-        {
-            // This will be displayed by the test runner in CI and IDE.
-            return Name;
-        }
-
-        /// <summary>
-        /// Gets the example descriptor.
-        /// </summary>
-        private static Example GetExample(string projFile)
-        {
-            var name = Path.GetFileNameWithoutExtension(projFile);
-            var path = Path.GetDirectoryName(projFile);
-            var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
-
-            var sourceFile = Path.Combine(path, "Program.cs");
-            var sourceCode = File.ReadAllText(sourceFile);
-
-            return new Example(name, projFile, asmFile, sourceCode);
+            throw new Exception("ReadKey missing at the end of the example.");
         }
 
         /// <summary>
         /// Gets all examples.
         /// </summary>
-        private static IEnumerable<Example> GetExamples()
+        public static IEnumerable<Example> GetExamples()
         {
-            var projFiles = Directory
-                .GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.EndsWith("Shared.csproj")).ToArray();
+            var examplesAsm = typeof (ClosureExample).Assembly;
 
-            Assert.IsTrue(projFiles.Any());
+            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
+                .Where(x => !x.Contains("dotnetcore")).ToArray();
 
-            return projFiles.Select(projFile => GetExample(projFile));
+            Assert.IsTrue(sourceFiles.Any());
+
+            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).OrderBy(x => x.Name).ToArray();
+
+            Assert.IsTrue(types.Any());
+
+            foreach (var type in types)
+            {
+                var sourceFile = sourceFiles.Single(
+                    x => x.EndsWith(string.Format("{0}{1}.cs", Path.DirectorySeparatorChar, type.Name)));
+
+                var sourceCode = File.ReadAllText(sourceFile);
+
+                yield return new Example
+                {
+                    ConfigPath = GetConfigPath(sourceCode),
+                    NeedsTestDll = sourceCode.Contains("-assembly="),
+                    _runAction = GetRunAction(type),
+                    ExampleType = type
+                };
+            }
+        }
+
+        /// <summary>
+        /// Gets the run action.
+        /// </summary>
+        private static Action GetRunAction(Type type)
+        {
+            var mainMethod = type.GetMethod("Main");
+            Assert.IsNotNull(mainMethod);
+            return (Action) Delegate.CreateDelegate(typeof (Action), mainMethod);
+        }
+
+        /// <summary>
+        /// Gets the spring configuration URL.
+        /// </summary>
+        private static string GetConfigPath(string code)
+        {
+            var match = Regex.Match(code, "-configFileName=(.*?.config)");
+
+            return match.Success ? match.Groups[1].Value : null;
+        }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            // This will be displayed in TeamCity and R# test runner
+            return ExampleType.Name;
         }
     }
 }

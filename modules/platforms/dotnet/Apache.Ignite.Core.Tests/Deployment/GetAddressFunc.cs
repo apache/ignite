@@ -17,9 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Deployment
 {
-    extern alias TestDll2;
+    extern alias ExamplesDll;
     using Apache.Ignite.Core.Compute;
-    using Address = TestDll2.Apache.Ignite.Core.Tests.TestDll2.Address;
+    using Address = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Address;
 
     /// <summary>
     /// Function that returns an instance of a class from another assembly.
