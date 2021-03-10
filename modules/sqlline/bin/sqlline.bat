@@ -145,6 +145,6 @@ set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 :: the Ignite provides --historyfile argument to SQLLine usage
 set SQLLINE_HISTORY=%HOMEPATH%\.sqlline\ignite_history
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine --historyFile=%SQLLINE_HISTORY% -d org.apache.ignite.IgniteJdbcThinDriver %*
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine --historyFile=%SQLLINE_HISTORY% %*
 
 :error_finish
