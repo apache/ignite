@@ -55,7 +55,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -858,34 +857,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        GridKernalContext kctx0 = cctx.kernalContext();
         GridFutureAdapter<IdleVerifyResultV2> res = new GridFutureAdapter<>();
 
-        kctx0.security().authorize(ADMIN_SNAPSHOT);
-
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
-
-        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-        kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
-
-        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name)
-            .listen(f0 -> {
+        collectSnapshotMetadata(name).listen(f0 -> {
                 if (f0.error() == null) {
                     Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
-                    kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-                    kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
-
-                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas)
-                        .listen(f1 -> {
-                            if (f1.error() == null)
-                                res.onDone(f1.result());
-                            else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                                res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
-                            else
-                                res.onDone(f1.error());
-                        });
+                    runSnapshotVerfification(metas).listen(f1 -> {
+                        if (f1.error() == null)
+                            res.onDone(f1.result());
+                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                            res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
+                        else
+                            res.onDone(f1.error());
+                    });
                 }
                 else {
                     if (f0.error() instanceof IgniteSnapshotVerifyException)
@@ -896,6 +881,37 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             });
 
         return res;
+    }
+
+    /**
+     * @param name Snapshot name.
+     * @return Future with snapshot metadata obtained from nodes.
+     */
+    IgniteInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> collectSnapshotMetadata(String name) {
+        GridKernalContext kctx0 = cctx.kernalContext();
+
+        kctx0.security().authorize(ADMIN_SNAPSHOT);
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
+
+        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+        kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
+
+        return kctx0.task().execute(SnapshotMetadataCollectorTask.class, name);
+    }
+
+    /**
+     * @param metas Nodes snapshot metadata.
+     * @return Future with the verification results.
+     */
+    IgniteInternalFuture<IdleVerifyResultV2> runSnapshotVerfification(Map<ClusterNode, List<SnapshotMetadata>> metas) {
+        GridKernalContext kctx0 = cctx.kernalContext();
+
+        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+        kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+
+        return kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas);
     }
 
     /**
@@ -1098,63 +1114,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> restoreSnapshot(String name, Collection<String> grpNames) {
         return restoreCacheGrpProc.start(name, grpNames);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param grpName Cache group name.
-     * @param snpCacheDir Cache group directory in snapshot.
-     * @param stopChecker Node stop or prcoess interrupt checker.
-     * @param newFiles A list to keep track of the files created, the list updates during the restore process.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void restoreCacheGroupFiles(
-        String snpName,
-        String grpName,
-        File snpCacheDir,
-        BooleanSupplier stopChecker,
-        List<File> newFiles
-    ) throws IgniteCheckedException {
-        File cacheDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(),
-            Paths.get(databaseRelativePath(pdsSettings.folderName()), snpCacheDir.getName()).toString(), false);
-
-        if (!cacheDir.exists()) {
-            newFiles.add(cacheDir);
-
-            cacheDir.mkdir();
-        }
-        else
-            if (cacheDir.list().length > 0) {
-                throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
-                    "[group=" + grpName + ", dir=" + cacheDir + ']');
-            }
-
-        try {
-            if (log.isInfoEnabled())
-                log.info("Copying files of the cache group [from=" + snpCacheDir + ", to=" + cacheDir + ']');
-
-            for (File snpFile : snpCacheDir.listFiles()) {
-                if (stopChecker.getAsBoolean())
-                    return;
-
-                File target = new File(cacheDir, snpFile.getName());
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Copying file from the snapshot " +
-                        "[snapshot=" + snpName +
-                        ", grp=" + grpName +
-                        ", src=" + snpFile +
-                        ", target=" + target + "]");
-                }
-
-                newFiles.add(target);
-
-                Files.copy(snpFile.toPath(), target.toPath());
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to copy file [snapshot=" + snpName + ", grp=" + grpName + ']', e);
-        }
     }
 
     /** {@inheritDoc} */

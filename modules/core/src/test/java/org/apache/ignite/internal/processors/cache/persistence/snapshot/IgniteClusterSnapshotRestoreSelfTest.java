@@ -308,6 +308,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         cacheCfg1.setNodeFilter(node -> node.id().equals(nodeId0));
         cacheCfg2.setNodeFilter(node -> node.id().equals(nodeId1));
 
+        putKeys(ignite0.cache(dfltCacheCfg.getName()), 0, CACHE_KEYS_RANGE);
+
         IgniteCache<Integer, Object> cache1 = ignite0.createCache(cacheCfg1);
         putKeys(cache1, 0, CACHE_KEYS_RANGE);
 
@@ -324,8 +326,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         forceCheckpoint();
 
         awaitPartitionMapExchange();
-
-        U.sleep(2_000);
 
         // After destroying the cache with a node filter, the configuration file remains on the filtered node.
         // todo https://issues.apache.org/jira/browse/IGNITE-14044
@@ -457,6 +457,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         String grpName = "shared";
         String cacheName = "cache1";
 
+        boolean prepare = procType == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+
         dfltCacheCfg = txCacheConfig(new CacheConfiguration<Integer, Object>(cacheName)).setGroupName(grpName);
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
@@ -466,13 +468,25 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         IgniteFuture<Void> fut = waitForBlockOnRestore(spi, procType, grpName);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(grpName), IgniteCheckedException.class, null);
-        GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(cacheName), expCls, expMsg);
+
+        if (!prepare)
+            GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(cacheName), expCls, expMsg);
+        else
+            ignite.createCache(cacheName);
 
         spi.stopBlock();
 
-        fut.get(TIMEOUT);
+        if (prepare) {
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IllegalStateException.class,
+                "Cache \"cache1\" should be destroyed manually before perform restore operation.");
 
-        checkCacheKeys(grid(0).cache(cacheName), CACHE_KEYS_RANGE);
+            ensureCacheDirEmpty(2, grpName);
+        }
+        else {
+            fut.get(TIMEOUT);
+
+            checkCacheKeys(grid(0).cache(cacheName), CACHE_KEYS_RANGE);
+        }
     }
 
     /** @throws Exception If failed. */

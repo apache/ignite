@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -43,30 +42,30 @@ public class SnapshotRestorePrepareRequest implements Serializable {
 
     /** Stored cache configurations. */
     @GridToStringExclude
-    private final List<StoredCacheData> ccfgs;
+    private final Collection<String> grps;
 
     /** Node ID from which to update the binary metadata. */
-    private final UUID updateMetaNodeId;
+    private final UUID performNodeId;
 
     /**
      * @param reqId Request ID.
      * @param snpName Snapshot name.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
      * @param ccfgs Stored cache configurations.
-     * @param updateMetaNodeId Node ID from which to update the binary metadata.
+     * @param performNodeId Node ID from which to update the binary metadata.
      */
     public SnapshotRestorePrepareRequest(
         UUID reqId,
         String snpName,
         Set<UUID> nodes,
-        List<StoredCacheData> ccfgs,
-        UUID updateMetaNodeId
+        Collection<String> grps,
+        UUID performNodeId
     ) {
         this.reqId = reqId;
         this.snpName = snpName;
         this.nodes = nodes;
-        this.ccfgs = ccfgs;
-        this.updateMetaNodeId = updateMetaNodeId;
+        this.grps = grps;
+        this.performNodeId = performNodeId;
     }
 
     /**
@@ -86,8 +85,8 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /**
      * @return Stored cache configurations.
      */
-    public List<StoredCacheData> configs() {
-        return ccfgs;
+    public Collection<String> groups() {
+        return grps;
     }
 
     /**
@@ -100,8 +99,8 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /**
      * @return Node ID from which to update the binary metadata.
      */
-    public UUID updateMetaNodeId() {
-        return updateMetaNodeId;
+    public UUID performNodeId() {
+        return performNodeId;
     }
 
     /** {@inheritDoc} */
