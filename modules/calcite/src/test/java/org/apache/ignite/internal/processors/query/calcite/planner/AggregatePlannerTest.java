@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
@@ -32,17 +33,18 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleAggregateBase;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -109,7 +111,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteAggregateBase agg = findFirstNode(phys, byClass(algo.single));
+        IgniteSingleAggregateBase agg = findFirstNode(phys, byClass(algo.single));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
@@ -158,7 +160,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteAggregateBase agg = findFirstNode(phys, byClass(algo.single));
+        IgniteSingleAggregateBase agg = findFirstNode(phys, byClass(algo.single));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
@@ -216,7 +218,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteAggregate mapAgg = findFirstNode(phys, byClass(algo.map));
+        IgniteMapAggregateBase mapAgg = findFirstNode(phys, byClass(algo.map));
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
@@ -356,7 +358,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
     enum AggregateAlgorithm {
         /** */
         SORT(
-            IgniteSortAggregate.class,
+            IgniteSingleSortAggregate.class,
             IgniteMapSortAggregate.class,
             IgniteReduceSortAggregate.class,
             "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
@@ -364,17 +366,17 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         /** */
         HASH(
-            IgniteHashAggregate.class,
+            IgniteSingleHashAggregate.class,
             IgniteMapHashAggregate.class,
             IgniteReduceHashAggregate.class,
             "SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"
         );
 
         /** */
-        public final Class<? extends IgniteAggregateBase> single;
+        public final Class<? extends Aggregate> single;
 
         /** */
-        public final Class<? extends IgniteAggregate> map;
+        public final Class<? extends Aggregate> map;
 
         /** */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
@@ -384,8 +386,8 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         /** */
         AggregateAlgorithm(
-            Class<? extends IgniteAggregateBase> single,
-            Class<? extends IgniteAggregate> map,
+            Class<? extends Aggregate> single,
+            Class<? extends Aggregate> map,
             Class<? extends IgniteReduceAggregateBase> reduce,
             String... rulesToDisable) {
             this.single = single;

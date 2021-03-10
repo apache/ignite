@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -35,7 +38,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -43,7 +49,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public class IgniteMapSortAggregate extends IgniteAggregate {
+public class IgniteMapSortAggregate extends IgniteMapAggregateBase {
     /** Collation. */
     private final RelCollation collation;
 
@@ -133,5 +139,33 @@ public class IgniteMapSortAggregate extends IgniteAggregate {
     /** {@inheritDoc} */
     @Override public RelCollation collation() {
         return collation;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
+        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
+    ) {
+        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
+
+        return Pair.of(nodeTraits.replace(collation),
+            ImmutableList.of(inputTraits.get(0).replace(collation)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
+    ) {
+        RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
+
+        List<RelCollation> satisfiedCollations = TraitUtils.permute(groupSet.asList()).stream()
+            .filter(col -> inputCollation.satisfies(col))
+            .collect(Collectors.toList());
+
+        if (satisfiedCollations.isEmpty())
+            return ImmutableList.of();
+
+        return satisfiedCollations.stream()
+            .map(col -> Pair.of(nodeTraits.replace(col), inputTraits))
+            .collect(Collectors.toList());
     }
 }

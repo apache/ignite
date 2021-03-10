@@ -30,32 +30,31 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 
 /**
  *
  */
-public class IgniteHashAggregate extends IgniteAggregateBase {
+public class IgniteSingleHashAggregate extends IgniteSingleAggregateBase {
     /** {@inheritDoc} */
-    public IgniteHashAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    public IgniteSingleHashAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
-    public IgniteHashAggregate(RelInput input) {
+    public IgniteSingleHashAggregate(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+        return new IgniteSingleHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteHashAggregate(cluster, getTraitSet(), sole(inputs),
+        return new IgniteSingleHashAggregate(cluster, getTraitSet(), sole(inputs),
             getGroupSet(), getGroupSets(), getAggCallList());
     }
 
@@ -76,19 +75,6 @@ public class IgniteHashAggregate extends IgniteAggregateBase {
         // Since it's a hash aggregate it erases collation.
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected RelNode createMapAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
-        ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteMapHashAggregate(getCluster(), traits, input, groupSet, groupSets, aggCalls);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected RelNode createReduceAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
-        ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls,
-        RelDataType rowType) {
-        return new IgniteReduceHashAggregate(getCluster(), traits, input, groupSet, groupSets, aggCalls, getRowType());
     }
 
     /** {@inheritDoc} */

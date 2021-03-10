@@ -22,14 +22,14 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
-import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
  *
@@ -58,10 +58,10 @@ public class HashAggregateConverterRule {
             LogicalAggregate agg) {
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
-            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(RelDistributions.SINGLETON);
+            RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelNode input = convert(agg.getInput(), inTrait);
 
-            return new IgniteHashAggregate(
+            return new IgniteSingleHashAggregate(
                 cluster,
                 outTrait,
                 input,
@@ -98,7 +98,7 @@ public class HashAggregateConverterRule {
 
             return new IgniteReduceHashAggregate(
                 cluster,
-                outTrait.replace(RelDistributions.SINGLETON),
+                outTrait.replace(IgniteDistributions.single()),
                 convert(map, inTrait),
                 agg.getGroupSet(),
                 agg.getGroupSets(),
