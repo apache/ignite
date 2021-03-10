@@ -61,12 +61,12 @@ public class TraversableTreeNodeTest {
     @Config
     public static class ChildConfigurationSchema {
         /** */
-        @Value(immutable = true)
-        private int intCfg;
+        @Value(immutable = true, hasDefault = true)
+        public int intCfg = 99;
 
         /** */
         @Value
-        private String strCfg;
+        public String strCfg;
     }
 
     /** */
@@ -74,7 +74,7 @@ public class TraversableTreeNodeTest {
     public static class NamedElementConfigurationSchema {
         /** */
         @Value
-        private String strCfg;
+        public String strCfg;
     }
 
     /** */

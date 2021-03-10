@@ -28,10 +28,12 @@ import org.apache.ignite.configuration.tree.NamedListNode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class ConstructableTreeNodeTest {
@@ -143,5 +145,35 @@ public class ConstructableTreeNodeTest {
         });
 
         assertEquals("value", elementsNode.get("name").strCfg());
+    }
+
+    /** */
+    @Test
+    public void constructDefault() {
+        // Inner node with no leaves.
+        var parentNode = new ParentNode();
+
+        assertThrows(NoSuchElementException.class, () -> parentNode.constructDefault("child"));
+        assertThrows(NoSuchElementException.class, () -> parentNode.constructDefault("elements"));
+
+        // Inner node with a leaf.
+        parentNode.changeElements(elements -> elements.create("name", element -> {}));
+
+        NamedElementNode elementNode = parentNode.elements().get("name");
+
+        assertFalse(elementNode.constructDefault("strCfg"));
+
+        // Another inner node with leaves.
+        parentNode.changeChild(child -> {});
+
+        ChildNode child = parentNode.child();
+
+        assertFalse(child.constructDefault("strCfg"));
+
+        assertThrows(NullPointerException.class, () -> child.intCfg());
+
+        assertTrue(child.constructDefault("intCfg"));
+
+        assertEquals(99, child.intCfg());
     }
 }

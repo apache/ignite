@@ -27,13 +27,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
+import org.apache.ignite.configuration.tree.ConfigurationSource;
+import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
+import org.apache.ignite.configuration.tree.NamedListNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
@@ -110,23 +114,26 @@ public class ConfigurationChanger {
         }
 
         Map<RootKey<?>, InnerNode> storageRootsMap = new HashMap<>();
+        // Map to collect defaults for not initialized configurations.
+        Map<RootKey<?>, InnerNode> storageDefaultsMap = new HashMap<>();
 
         Map<String, ?> dataValuesPrefixMap = ConfigurationUtil.toPrefixMap(data.values());
 
         for (RootKey<?> rootKey : storageRootKeys) {
             Map<String, ?> rootPrefixMap = (Map<String, ?>)dataValuesPrefixMap.get(rootKey.key());
 
-            if (rootPrefixMap == null) {
-                //TODO IGNITE-14193 Init with defaults.
-                storageRootsMap.put(rootKey, rootKey.createRootNode());
-            }
-            else {
-                InnerNode rootNode = rootKey.createRootNode();
+            InnerNode rootNode = rootKey.createRootNode();
 
+            if (rootPrefixMap != null)
                 ConfigurationUtil.fillFromPrefixMap(rootNode, rootPrefixMap);
 
-                storageRootsMap.put(rootKey, rootNode);
-            }
+            // Collecting defaults requires fresh new root.
+            InnerNode defaultsNode = rootKey.createRootNode();
+
+            addDefaults(rootNode, defaultsNode);
+
+            storageRootsMap.put(rootKey, rootNode);
+            storageDefaultsMap.put(rootKey, defaultsNode);
         }
 
         storagesRootsMap.put(configurationStorage.getClass(), new StorageRoots(storageRootsMap, data.version()));
@@ -135,6 +142,74 @@ public class ConfigurationChanger {
             configurationStorage.getClass(),
             changedEntries
         ));
+
+        // Do this strictly after adding listeners, otherwise we can lose these changes.
+        try {
+            //TODO IGNITE-14183 Do not write defaults that have not been validated. This can ruin everything.
+            change(storageDefaultsMap).get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new ConfigurationChangeException("too bad", e);
+        }
+    }
+
+    /**
+     * Fill {@code dst} node with default values, required to complete {@code src} node.
+     * These two objects can be the same, this would mean that all {@code null} values of {@code scr} will be
+     * replaced with defaults if it's possible.
+     *
+     * @param src Source node.
+     * @param dst Destination node.
+     */
+    private void addDefaults(InnerNode src, InnerNode dst) {
+        src.traverseChildren(new ConfigurationVisitor<>() {
+            @Override public Object visitLeafNode(String key, Serializable val) {
+                // If source value is null then inititalise the same value on the destination node.
+                if (val == null)
+                    dst.constructDefault(key);
+
+                return null;
+            }
+
+            @Override public Object visitInnerNode(String key, InnerNode srcNode) {
+                // Instantiate field in destination node before doing something else.
+                // Not a big deal if it wasn't null.
+                dst.construct(key, new ConfigurationSource() {});
+
+                // Get that inner node from destination to continue the processing.
+                InnerNode dstNode = dst.traverseChild(key, new ConfigurationVisitor<>() {
+                    @Override public InnerNode visitInnerNode(String key, InnerNode dstNode) {
+                        return dstNode;
+                    }
+                });
+
+                // "dstNode" is guaranteed to not be null even if "src" and "dst" match.
+                // Null in "srcNode" means that we should initialize everything that we can in "dstNode"
+                // unconditionally. It's only possible if we pass it as a source as well.
+                addDefaults(srcNode == null ? dstNode : srcNode, dstNode);
+
+                return null;
+            }
+
+            @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> srcNamedList) {
+                // Here we don't need to preemptively initialise corresponsing field, because it can never be null.
+                NamedListNode<?> dstNamedList = dst.traverseChild(key, new ConfigurationVisitor<>() {
+                    @Override public <N extends InnerNode> NamedListNode<?> visitNamedListNode(String key, NamedListNode<N> dstNode) {
+                        return dstNode;
+                    }
+                });
+
+                for (String namedListKey : srcNamedList.namedListKeys()) {
+                    // But, in order to get non-null value from "dstNamedList.get(namedListKey)" we must explicitly
+                    // ensure its existance.
+                    dstNamedList.construct(namedListKey, new ConfigurationSource() {});
+
+                    addDefaults(srcNamedList.get(namedListKey), dstNamedList.get(namedListKey));
+                }
+
+                return null;
+            }
+        });
     }
 
     /**
@@ -161,7 +236,7 @@ public class ConfigurationChanger {
      * Change configuration.
      * @param changes Map of changes by root key.
      */
-    public CompletableFuture<Void> change(Map<RootKey<?>, TraversableTreeNode> changes) {
+    public CompletableFuture<Void> change(Map<RootKey<?>, ? extends TraversableTreeNode> changes) {
         if (changes.isEmpty())
             return CompletableFuture.completedFuture(null);
 
@@ -195,18 +270,45 @@ public class ConfigurationChanger {
      * @param fut Future, that must be completed after changes are written to the storage.
      */
     private void change0(
-        Map<RootKey<?>, TraversableTreeNode> changes,
+        Map<RootKey<?>, ? extends TraversableTreeNode> changes,
         ConfigurationStorage storage,
         CompletableFuture<?> fut
     ) {
+        StorageRoots storageRoots = storagesRootsMap.get(storage.getClass());
+
         Map<String, Serializable> allChanges = new HashMap<>();
 
-        for (Map.Entry<RootKey<?>, TraversableTreeNode> change : changes.entrySet())
-            allChanges.putAll(nodeToFlatMap(change.getKey(), getRootNode(change.getKey()), change.getValue()));
+        for (Map.Entry<RootKey<?>, ? extends TraversableTreeNode> entry : changes.entrySet()) {
+            RootKey<?> rootKey = entry.getKey();
+            TraversableTreeNode change = entry.getValue();
 
-        StorageRoots roots = storagesRootsMap.get(storage.getClass());
+            // It's important to get the root from "roots" object rather then "storageRootMap" or "getRootNode(...)".
+            InnerNode currentRootNode = storageRoots.roots.get(rootKey);
 
-        ValidationResult validationResult = validate(roots, changes);
+            // These are changes explicitly provided by the client.
+            allChanges.putAll(nodeToFlatMap(rootKey, currentRootNode, change));
+
+            // It is necessary to reinitialize default values every time.
+            // Possible use case that explicitly requires it: creation of the same named list entry with slightly
+            // different set of values and different dynamic defaults at the same time.
+            InnerNode patchedRootNode = ConfigurationUtil.patch(currentRootNode, change);
+            InnerNode defaultsNode = rootKey.createRootNode();
+
+            addDefaults(patchedRootNode, defaultsNode);
+
+            // These are default values for non-initialized values, required to complete the configuration.
+            //TODO IGNITE-14183 Take these defaults into account during validation.
+            allChanges.putAll(nodeToFlatMap(rootKey, patchedRootNode, defaultsNode));
+        }
+
+        // Unlikely but still possible.
+        if (allChanges.isEmpty()) {
+            fut.complete(null);
+
+            return;
+        }
+
+        ValidationResult validationResult = validate(storageRoots, changes);
 
         List<ValidationIssue> validationIssues = validationResult.issues();
 
@@ -216,7 +318,7 @@ public class ConfigurationChanger {
             return;
         }
 
-        CompletableFuture<Boolean> writeFut = storage.write(allChanges, roots.version);
+        CompletableFuture<Boolean> writeFut = storage.write(allChanges, storageRoots.version);
 
         writeFut.whenCompleteAsync((casResult, throwable) -> {
             if (throwable != null)
@@ -301,11 +403,11 @@ public class ConfigurationChanger {
     @SuppressWarnings("unused")
     private ValidationResult validate(
         StorageRoots storageRoots,
-        Map<RootKey<?>, TraversableTreeNode> changes
+        Map<RootKey<?>, ? extends TraversableTreeNode> changes
     ) {
         List<ValidationIssue> issues = new ArrayList<>();
 
-        for (Map.Entry<RootKey<?>, TraversableTreeNode> entry : changes.entrySet()) {
+        for (Map.Entry<RootKey<?>, ? extends TraversableTreeNode> entry : changes.entrySet()) {
             RootKey<?> rootKey = entry.getKey();
             TraversableTreeNode changesForRoot = entry.getValue();
 

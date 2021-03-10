@@ -22,15 +22,14 @@ import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 
 /** */
-@SuppressWarnings("PMD.UnusedPrivateField")
 @Config
 public class AutoAdjustConfigurationSchema {
     /** */
     @Value
-    private boolean enabled;
+    public boolean enabled;
 
     /** */
     @Value
     @Min(value = 0, message = "Minimum value is 0")
-    private int timeout;
+    public int timeout;
 }

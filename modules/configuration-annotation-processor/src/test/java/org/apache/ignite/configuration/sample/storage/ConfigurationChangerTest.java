@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.sample.storage.impl.ANode;
+import org.apache.ignite.configuration.sample.storage.impl.DefaultsNode;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.junit.jupiter.api.Test;
@@ -61,11 +62,11 @@ public class ConfigurationChangerTest {
     public static class BConfigurationSchema {
         /** */
         @Value(immutable = true)
-        private int intCfg;
+        public int intCfg;
 
         /** */
         @Value
-        private String strCfg;
+        public String strCfg;
     }
 
     /** */
@@ -73,7 +74,7 @@ public class ConfigurationChangerTest {
     public static class CConfigurationSchema {
         /** */
         @Value
-        private String strCfg;
+        public String strCfg;
     }
 
     /**
@@ -232,6 +233,53 @@ public class ConfigurationChangerTest {
 
         ANode newRoot = (ANode)changer.getRootNode(KEY);
         assertNull(newRoot.child());
+    }
+
+    /** */
+    @ConfigurationRoot(rootName = "def", storage = TestConfigurationStorage.class)
+    public static class DefaultsConfigurationSchema {
+        /** */
+        @ConfigValue
+        private DefaultsChildConfigurationSchema child;
+
+        /** */
+        @NamedConfigValue
+        private DefaultsChildConfigurationSchema childsList;
+
+        /** */
+        @Value(hasDefault = true)
+        public String defStr = "foo";
+    }
+
+    /** */
+    @Config
+    public static class DefaultsChildConfigurationSchema {
+        /** */
+        @Value(hasDefault = true)
+        public String defStr = "bar";
+    }
+
+    @Test
+    public void defaultsOnInit() throws Exception {
+        var changer = new ConfigurationChanger();
+
+        changer.addRootKey(DefaultsConfiguration.KEY);
+
+        changer.init(new TestConfigurationStorage());
+
+        DefaultsNode root = (DefaultsNode)changer.getRootNode(DefaultsConfiguration.KEY);
+
+        assertEquals("foo", root.defStr());
+        assertEquals("bar", root.child().defStr());
+
+        // This is not init, move it to another test =(
+        changer.change(Map.of(DefaultsConfiguration.KEY, new DefaultsNode().changeChildsList(childs ->
+            childs.create("name", child -> {})
+        ))).get(1, SECONDS);
+
+        root = (DefaultsNode)changer.getRootNode(DefaultsConfiguration.KEY);
+
+        assertEquals("bar", root.childsList().get("name").defStr());
     }
 
     /**

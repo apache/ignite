@@ -93,7 +93,7 @@ public class ConfigurationUtilTest {
     public static class ChildConfigurationSchema {
         /** */
         @Value
-        private String str;
+        public String str;
     }
 
     /** */

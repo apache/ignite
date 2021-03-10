@@ -40,4 +40,7 @@ public interface NamedListChange<Change, Init> extends NamedListInit<Init> {
      * @throws IllegalStateException If {@link #update(String, Consumer)} has been invoked with the same key previously.
      */
     NamedListChange<Change, Init> delete(String key) throws IllegalStateException;
+
+    /** {@inheritDoc} */
+    @Override NamedListChange<Change, Init> create(String key, Consumer<Init> valConsumer);
 }

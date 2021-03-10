@@ -23,14 +23,14 @@ import org.apache.ignite.configuration.annotation.Value;
 @ConfigurationRoot(rootName = "test")
 public class TestConfigurationSchema {
     @Value
-    private String value1;
+    public String value1;
 
     @Value
-    private long primitiveLong;
+    public long primitiveLong;
 
     @Value
-    private int primitiveInt;
+    public int primitiveInt;
 
     @Value
-    private String[] stringArray;
+    public String[] stringArray;
 }

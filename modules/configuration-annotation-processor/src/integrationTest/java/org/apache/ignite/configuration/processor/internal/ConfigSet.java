@@ -18,9 +18,15 @@ package org.apache.ignite.configuration.processor.internal;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import javax.tools.JavaFileObject;
 import org.apache.commons.io.IOUtils;
 import spoon.Launcher;
+import spoon.SpoonException;
+import spoon.compiler.SpoonResource;
+import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtType;
+import spoon.support.compiler.VirtualFile;
 
 /**
  * Wrapper for generated classes of the configuration schema.
@@ -79,7 +85,7 @@ public class ConfigSet {
             throw new RuntimeException("Failed to parse class: " + e.getMessage(), e);
         }
 
-        return new ParsedClass(Launcher.parseClass(classFileContent));
+        return new ParsedClass(parseClass(classFileContent));
     }
 
     /**
@@ -96,5 +102,23 @@ public class ConfigSet {
 
     public ParsedClass getNodeClass() {
         return node;
+    }
+
+    /**
+     * Butchered version of {@link Launcher#parseClass(String)}, because {@code spoon} is such a garbage it can't even
+     * parse valid classes without issues.
+     *
+     * @param code Code.
+     * @return AST.
+     */
+    private static CtClass<?> parseClass(String code) {
+        Launcher launcher = new Launcher();
+        launcher.addInputResource((SpoonResource)(new VirtualFile(code)));
+        launcher.getEnvironment().setNoClasspath(true);
+        launcher.getEnvironment().setAutoImports(true);
+        Collection<CtType<?>> allTypes = launcher.buildModel().getAllTypes();
+
+        // This is how we do "getLast" for streams. Pretty bad, I know.
+        return (CtClass)allTypes.stream().reduce((fst, snd) -> snd).orElseThrow(SpoonException::new);
     }
 }

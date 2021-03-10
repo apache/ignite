@@ -23,14 +23,13 @@ import org.apache.ignite.configuration.annotation.Value;
 /**
  * Configuration schema for REST endpoint subtree.
  */
-@SuppressWarnings("PMD.UnusedPrivateField")
 @ConfigurationRoot(rootName = "rest")
 public class RestConfigurationSchema {
     /** */
     @Value
-    private int port;
+    public int port;
 
     /** */
     @Value
-    private int portRange;
+    public int portRange;
 }

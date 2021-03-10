@@ -31,15 +31,14 @@ public class NodeConfigurationSchema {
     /** Consistent id. */
     @Value(immutable = true)
     @NotNull(message = "Consistent id must not be null")
-    private String consistentId;
+    public String consistentId;
 
     /** Port. */
     @Value
-    private int port;
+    public int port;
 
     /** Auto adjust enabled. */
     @Value
     @Validate(NodeValidator.class)
-    private boolean autoAdjustEnabled;
-
+    public boolean autoAdjustEnabled;
 }

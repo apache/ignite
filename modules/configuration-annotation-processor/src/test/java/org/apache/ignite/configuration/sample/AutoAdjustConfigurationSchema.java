@@ -34,9 +34,9 @@ public class AutoAdjustConfigurationSchema {
     @Min(value = 0, message = "Minimal is 0")
     @Validate(value = AutoAdjustValidator.class, message = "a")
     @Validate(value = AutoAdjustValidator2.class, message = "b")
-    private long timeout;
+    public long timeout;
 
     /** Enabled. */
     @Value
-    private boolean enabled;
+    public boolean enabled;
 }

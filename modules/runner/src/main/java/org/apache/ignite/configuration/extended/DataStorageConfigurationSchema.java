@@ -21,18 +21,17 @@ import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 
 /** */
-@SuppressWarnings("PMD.UnusedPrivateField")
 @Config
 public class DataStorageConfigurationSchema {
     /** */
     @Value
-    private int pageSize;
+    public int pageSize;
 
     /** */
     @Value
-    private String storagePath;
+    public String storagePath;
 
     /** */
     @Value
-    private String walPath;
+    public String walPath;
 }

@@ -38,7 +38,7 @@ public class ConfigurationArrayTest {
     public static class TestArrayConfigurationSchema {
         /** */
         @Value
-        private String[] array;
+        public String[] array;
     }
 
     /**

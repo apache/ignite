@@ -29,6 +29,5 @@ public class CacheConfigurationSchema {
     /** Size. */
     @Value
     @Min(value = 1, message = "Minimal cache size is 1")
-    private int size;
-
+    public int size;
 }
