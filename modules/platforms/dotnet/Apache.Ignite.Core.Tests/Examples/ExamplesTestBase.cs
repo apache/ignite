@@ -107,11 +107,10 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 foreach (var line in expLines)
                 {
-                    var count = GetSubstringCount(output, line.Key);
+                    var count = GetSubstringCount(output, GetExpectedLine(line.Key));
 
                     Assert.AreEqual(line.Count, count, "Unexpected line occurence count: " + line.Key);
                 }
-
             }
             else
             {
@@ -119,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 foreach (var line in expectedLines)
                 {
-                    var idx = output.IndexOf(line, lastIdx, StringComparison.Ordinal);
+                    var idx = output.IndexOf(GetExpectedLine(line), lastIdx, StringComparison.Ordinal);
 
                     if (idx < 0)
                     {
@@ -158,6 +157,16 @@ namespace Apache.Ignite.Core.Tests.Examples
             }
 
             return count;
+        }
+
+        /// <summary>
+        /// Gets the expected line.
+        /// </summary>
+        private static string GetExpectedLine(string line)
+        {
+            return line.EndsWith("*")
+                ? line.Substring(0, line.Length - 1)
+                : line + "\n";
         }
     }
 }
