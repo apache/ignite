@@ -259,15 +259,19 @@ public class SnapshotPartitionsVerifyTask
 
                                 // Snapshot partitions must always be in OWNING state.
                                 // There is no `primary` partitions for snapshot.
-                                res.putAll(calculatePartitionHash(updateCntr,
-                                    grpId,
-                                    partId,
-                                    grpName,
+                                PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+
+                                PartitionHashRecordV2 hash = calculatePartitionHash(key,
+                                    updateCntr,
                                     consId,
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId)));
+                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+
+                                assert hash != null : "OWNING must have hash: " + key;
+
+                                res.put(key, hash);
                             }
                         }
                         catch (IOException e) {

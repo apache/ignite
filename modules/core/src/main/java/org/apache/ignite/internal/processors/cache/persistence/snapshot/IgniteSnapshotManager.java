@@ -1158,6 +1158,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @return Iterator over partition.
+     * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
         String folderName,

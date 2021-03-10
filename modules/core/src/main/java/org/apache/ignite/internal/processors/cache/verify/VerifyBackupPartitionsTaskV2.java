@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -508,10 +509,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             final GridDhtLocalPartition part
         ) {
             return ForkJoinPool.commonPool().submit(() -> {
-                Map<PartitionKeyV2, PartitionHashRecordV2> res;
+                Map<PartitionKeyV2, PartitionHashRecordV2> res = emptyMap();
 
                 if (!part.reserve())
-                    return emptyMap();
+                    return res;
 
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
@@ -524,15 +525,18 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                             part.id(), FLAG_DATA);
                     }
 
-                    res = calculatePartitionHash(updCntr == null ? 0 : updCntr.get(),
-                        gctx.groupId(),
-                        part.id(),
-                        gctx.cacheOrGroupName(),
+                    PartitionKeyV2 key = new PartitionKeyV2(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
+
+                    PartitionHashRecordV2 hash = calculatePartitionHash(key,
+                        updCntr == null ? 0 : updCntr.get(),
                         ignite.context().discovery().localNode().consistentId(),
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
                         gctx.offheap().partitionIterator(part.id()));
+
+                    if (hash != null)
+                        res = Collections.singletonMap(key, hash);
 
                     PartitionUpdateCounter lastUpdCntr = part.dataStore().partUpdateCounter();
 
@@ -555,7 +559,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 completionCntr.incrementAndGet();
 
-                return res == null ? emptyMap() : res;
+                return res;
             });
         }
     }
