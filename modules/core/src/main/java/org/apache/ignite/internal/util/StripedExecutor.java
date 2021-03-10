@@ -143,6 +143,13 @@ public class StripedExecutor implements ExecutorService {
         }
     }
 
+    /** */
+    protected StripedExecutor() {
+        stripes = new Stripe[0];
+        threshold = 0L;
+        log = null;
+    }
+
     /**
      * Checks starvation in striped pool. Maybe too verbose
      * but this is needed to faster debug possible issues.

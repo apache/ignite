@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.pool;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +28,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.security.SecurityAwareExecutorService;
+import org.apache.ignite.internal.processors.security.SecurityAwareHolder;
+import org.apache.ignite.internal.processors.security.SecurityAwareIoPool;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +42,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     private final IoPool[] extPools = new IoPool[128];
 
     /** Custom named pools. */
-    private final Map<String, ? extends ExecutorService> customExecs;
+    private final Map<String, SecurityAwareHolder<? extends ExecutorService>> customExecs;
 
     /**
      * Constructor.
@@ -74,12 +78,30 @@ public class PoolProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Failed to register IO executor pool because its ID as " +
                             "already used: " + id);
 
+                    // 4. Wrap by a security aware version of IoPool:
+                    ex = new SecurityAwareIoPool(ctx, ex);
+
                     extPools[id] = ex;
                 }
             }
         }
 
-        customExecs = ctx.customExecutors();
+        customExecs = convertToSecurityAwareHolder(ctx.customExecutors());
+    }
+
+    /**
+     *
+     */
+    private Map<String, SecurityAwareHolder<? extends ExecutorService>> convertToSecurityAwareHolder(
+        Map<String, ? extends ExecutorService> original) {
+        Map<String, SecurityAwareHolder<? extends ExecutorService>> res = new HashMap<>();
+
+        if (original != null) {
+            for (Map.Entry<String, ? extends ExecutorService> e : original.entrySet())
+                res.put(e.getKey(), SecurityAwareExecutorService.holder(ctx, e.getValue()));
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -178,11 +200,8 @@ public class PoolProcessor extends GridProcessorAdapter {
     @Nullable public Executor customExecutor(String name) {
         assert name != null;
 
-        Executor exec = null;
+        SecurityAwareHolder<? extends ExecutorService> holder = customExecs.get(name);
 
-        if (customExecs != null)
-            exec = customExecs.get(name);
-
-        return exec;
+        return holder != null ? holder.get() : null;
     }
 }

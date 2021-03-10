@@ -34,6 +34,7 @@ import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.processors.security.SecurityAwareExecutorService;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -139,7 +140,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @param sysExecSvc Executor service
      */
     public void setSystemExecutorService(ExecutorService sysExecSvc) {
-        this.sysExecSvc = sysExecSvc;
+        this.sysExecSvc = SecurityAwareExecutorService.holder(this, sysExecSvc);
     }
 
     /**
@@ -148,7 +149,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @param execSvc Executor service
      */
     public void setExecutorService(ExecutorService execSvc) {
-        this.execSvc = execSvc;
+        this.execSvc = SecurityAwareExecutorService.holder(this, execSvc);
     }
 
     /** {@inheritDoc} */

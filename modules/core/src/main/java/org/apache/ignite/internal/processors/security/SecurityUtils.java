@@ -45,7 +45,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
@@ -56,6 +55,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 
 /**
  * Security utilities.
@@ -154,7 +155,7 @@ public class SecurityUtils {
     public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
         A.notNull(node, "Cluster node");
 
-        byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+        byte[] subjBytes = node.attribute(ATTR_SECURITY_SUBJECT_V2);
 
         if (subjBytes == null)
             throw new SecurityException("Security context isn't certain.");
@@ -269,6 +270,19 @@ public class SecurityUtils {
         return AccessController.doPrivileged((PrivilegedAction<Boolean>)
             () -> ctx.getDomainCombiner() instanceof IgniteDomainCombiner
         );
+    }
+
+    /**
+     * @return True if security is enabled and the local node is authenticated.
+     */
+    public static boolean isAuthentificated(GridKernalContext ctx) {
+        if (ctx.security().enabled()) {
+            ClusterNode locNode = ctx.discovery() != null ? ctx.discovery().localNode() : null;
+
+            return locNode != null && locNode.attribute(ATTR_SECURITY_SUBJECT_V2) != null;
+        }
+
+        return false;
     }
 
     /**

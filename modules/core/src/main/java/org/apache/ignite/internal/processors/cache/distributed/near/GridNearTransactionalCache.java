@@ -449,6 +449,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        assert tx == null || !ctx.kernalContext().security().enabled() ||
+            F.eq(tx.subjectId(), securitySubjectId(ctx));
+
         GridNearLockFuture fut = new GridNearLockFuture(ctx,
             keys,
             (GridNearTxLocal)tx,

@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.security.events.CacheCreateDestroyE
 import org.apache.ignite.internal.processors.security.events.CacheEventsTest;
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.events.TaskAndJobEventsTest;
+import org.apache.ignite.internal.processors.security.events.CacheEventsInsideTransactionTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
@@ -131,6 +132,7 @@ import org.junit.runners.Suite;
 
     CacheCreateDestroyEventsTest.class,
     CacheEventsTest.class,
+    CacheEventsInsideTransactionTest.class,
     TaskAndJobEventsTest.class
 })
 public class SecurityTestSuite {

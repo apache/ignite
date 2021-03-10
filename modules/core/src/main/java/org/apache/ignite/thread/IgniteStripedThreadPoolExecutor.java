@@ -75,6 +75,11 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
         }
     }
 
+    /** */
+    protected IgniteStripedThreadPoolExecutor() {
+        execs = new ExecutorService[0];
+    }
+
     /**
      * Executes the given command at some time in the future. The command with the same {@code index}
      * will be executed in the same thread.
