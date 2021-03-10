@@ -670,9 +670,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
+            ValidateRegistration(type);
             _typeToDesc.Set(type, desc);
 
             return desc;
+        }
+
+        /// <summary>
+        /// Validates type registration.
+        /// </summary>
+        private void ValidateRegistration(Type type)
+        {
+            BinaryFullTypeDescriptor desc;
+            if (_typeToDesc.TryGetValue(type, out desc) && !desc.UserType)
+            {
+                throw new BinaryObjectException("Invalid attempt to overwrite system type registration: " + type);
+            }
         }
 
         /// <summary>
@@ -810,6 +823,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
+                ValidateRegistration(type);
                 _typeToDesc.Set(type, descriptor);
             }
 
