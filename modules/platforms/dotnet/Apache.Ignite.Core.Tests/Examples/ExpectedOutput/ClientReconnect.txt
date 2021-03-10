@@ -16,3 +16,4 @@ Ignite node stopped OK [name=serverNode, uptime=
 >>> Put value with key: 7
 >>> Put value with key: 8
 >>> Put value with key: 9
+Ignite node stopped OK [name=serverNode, uptime=
