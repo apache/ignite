@@ -137,7 +137,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private SegmentationPolicy segPlc;
 
     /** */
-    private int failireDetectionTimeout = 7500;
+    private int failureDetectionTimeout = 7500;
 
     /**
      * @throws Exception If fails.
@@ -173,7 +173,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setFailureDetectionTimeout(failireDetectionTimeout);
+        cfg.setFailureDetectionTimeout(failureDetectionTimeout);
 
         if (ccfgs != null)
             cfg.setCacheConfiguration(ccfgs);
@@ -424,7 +424,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testOutgoingConnectionsFailure() throws Exception {
         final int gridCnt = 4;
 
-        failireDetectionTimeout = 2000;
+        failureDetectionTimeout = 2000;
 
         startGrids(gridCnt);
 
