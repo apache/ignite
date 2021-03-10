@@ -1357,7 +1357,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param partFile Partition file.
      */
-    public int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
+    private int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
         try (FileIO fileIO = ioFactory.create(partFile.toFile())) {

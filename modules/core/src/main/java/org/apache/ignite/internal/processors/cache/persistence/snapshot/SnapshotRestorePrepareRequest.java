@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -40,32 +39,31 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /** Baseline node IDs that must be alive to complete the operation. */
     private final Set<UUID> nodes;
 
-    /** Stored cache configurations. */
-    @GridToStringExclude
+    /** List of cache group names to restore from the snapshot. */
     private final Collection<String> grps;
 
     /** Node ID from which to update the binary metadata. */
-    private final UUID performNodeId;
+    private final UUID updateMetaNodeId;
 
     /**
      * @param reqId Request ID.
      * @param snpName Snapshot name.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param ccfgs Stored cache configurations.
-     * @param performNodeId Node ID from which to update the binary metadata.
+     * @param grps List of cache group names to restore from the snapshot.
+     * @param updateMetaNodeId Node ID from which to update the binary metadata.
      */
     public SnapshotRestorePrepareRequest(
         UUID reqId,
         String snpName,
         Set<UUID> nodes,
         Collection<String> grps,
-        UUID performNodeId
+        UUID updateMetaNodeId
     ) {
         this.reqId = reqId;
         this.snpName = snpName;
         this.nodes = nodes;
         this.grps = grps;
-        this.performNodeId = performNodeId;
+        this.updateMetaNodeId = updateMetaNodeId;
     }
 
     /**
@@ -83,7 +81,7 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     }
 
     /**
-     * @return Stored cache configurations.
+     * @return List of cache group names to restore from the snapshot.
      */
     public Collection<String> groups() {
         return grps;
@@ -99,8 +97,8 @@ public class SnapshotRestorePrepareRequest implements Serializable {
     /**
      * @return Node ID from which to update the binary metadata.
      */
-    public UUID performNodeId() {
-        return performNodeId;
+    public UUID updateMetaNodeId() {
+        return updateMetaNodeId;
     }
 
     /** {@inheritDoc} */

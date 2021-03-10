@@ -321,8 +321,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         cache1.destroy();
         cache2.destroy();
 
-        awaitPartitionMapExchange();
-
         forceCheckpoint();
 
         awaitPartitionMapExchange();
@@ -334,10 +332,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
                 U.delete(resolveCacheDir(grid(nodeIdx), cacheName));
         }
 
-        ignite0.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName1)).get(TIMEOUT);
+        ignite1.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName2)).get(TIMEOUT);
         awaitPartitionMapExchange();
 
-        ignite1.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName2)).get(TIMEOUT);
+        ignite0.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName1)).get(TIMEOUT);
         awaitPartitionMapExchange();
 
         checkCacheKeys(ignite0.cache(cacheName1), CACHE_KEYS_RANGE);
