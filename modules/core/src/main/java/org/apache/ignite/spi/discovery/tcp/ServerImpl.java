@@ -8247,10 +8247,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          *
          */
-        CrossRingMessageSendState(long failTimeNamos) {
-            initNanos = failTimeNamos;
+        CrossRingMessageSendState(long failTimeNanos) {
+            initNanos = failTimeNanos;
 
-            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
+            this.failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
         }
 
         /**
