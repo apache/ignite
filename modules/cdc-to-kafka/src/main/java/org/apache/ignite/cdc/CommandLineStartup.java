@@ -31,17 +31,16 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
 
 /**
- * This class defines command-line CDCKafkaToIgnite startup. This startup can be used to start Ignite
- * CDCKafkaToIgnite application outside of any hosting environment from command line.
+ * This class defines command-line {@link CDCKafkaToIgnite} startup. This startup can be used to start Ignite
+ * {@link CDCKafkaToIgnite} application outside of any hosting environment from command line.
  * This startup is a Java application with {@link #main(String[])} method that accepts command line arguments.
  * It accepts three parameters which is:
- * * Ignite Spring XML configuration file path.
- * * Kafka properties file.
- * * Replicated cache names(comma separated).
+ * <ul>
+ *    <li>Ignite Spring XML configuration file path.</li>
+ *    <li>Kafka properties file.</li>
+ *    <li>Replicated cache names(comma separated).</li>
+ * </ul>
  * You can run this class from command line without parameters to get help message.
- * <p>
- * Note that scripts {@code ${IGNITE_HOME}/bin/cdc.{sh|bat}} shipped with Ignite use
- * this startup and you can use them as an example.
  */
 public class CommandLineStartup {
     /** Quite log flag. */
@@ -49,7 +48,6 @@ public class CommandLineStartup {
 
     /**
      * Main entry point.
-     *
      * @param args Command line arguments.
      */
     public static void main(String[] args) {

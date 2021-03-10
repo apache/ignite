@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -39,33 +40,57 @@ import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
 import static org.apache.ignite.cdc.Utils.property;
 
 /**
- * CDC(Capture Data Change) Kafka to Ignite application.
+ * Main class of CDC(Capture Data Change) Kafka to Ignite application.
+ * This application is counterpart of {@link CDCIgniteToKafka} CDC consumer.
+ * Application runs several {@link Applier} thread to read Kafka topic and apply {@link EntryEvent} to Ignite.
+ * <p>
+ * Each applier receive even number of kafka topic partition to read.
+ * <p>
+ * In case of any error during read applier just fail. Fail of any applier will lead to the fail of whole application.
+ * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
+ * <p>
+ * Properties list:
+ * <ul>
+ *  <li>{@link #KAFKA_TO_IGNITE_THREAD_COUNT} - count of {@link Applier} threads.</li>
+ *  <li>{@link CDCIgniteToKafka#IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
+ * </ul>
+ *
+ * @see IgniteCDC
+ * @see CDCIgniteToKafka
+ * @see EntryEvent
+ * @see Applier
  */
 public class CDCKafkaToIgnite implements Runnable {
+    /** Property to define number of {@link Applier} threads. */
     private static final String KAFKA_TO_IGNITE_THREAD_COUNT = "kafka.to.ignite.thread.count";
 
-    /** Ignite. */
+    /** Ignite instance shared between all {@link Applier}. */
     private final IgniteEx ign;
 
-    /** Properties. */
+    /** Kafka consumer properties. */
     private final Properties kafkaProps;
 
     /** Replicated caches. */
     private final Set<Integer> caches;
 
-    /** Executor service. */
+    /** Executor service to run {@link Applier} instances. */
     private final ExecutorService execSvc;
 
-    /** */
+    /** Appliers. */
     private final List<Applier> appliers = new ArrayList<>();
 
-    /** */
+    /** Threads count. */
     private final int thCnt;
 
-    /** */
+    /** Kafka topic to read. */
     private String topic;
 
-    /** */
+    /**
+     * @param ign Ignite instance
+     * @param kafkaProps Kafka properties.
+     * @param topic Topic name.
+     * @param cacheNames Cache names.
+     */
     public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
@@ -120,9 +145,13 @@ public class CDCKafkaToIgnite implements Runnable {
             for (int i = 0; i < thCnt; i++)
                 execSvc.submit(appliers.get(i));
 
+            execSvc.shutdown();
+
             execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException e) {
+            closed.set(true);
+
             appliers.forEach(U::closeQuiet);
         }
     }

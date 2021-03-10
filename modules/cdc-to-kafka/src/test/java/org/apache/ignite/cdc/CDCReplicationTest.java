@@ -99,7 +99,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     public static final String ACTIVE_ACTIVE_CACHE = "active-active-cache";
 
     /** */
-    public static final int KEYS_CNT = 100;
+    public static final int KEYS_CNT = 50;
 
     /** */
     public static final byte SOURCE_DRID = 26;

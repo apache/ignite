@@ -42,78 +42,117 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
-/** */
+import static org.apache.ignite.cdc.EntryEventType.DELETE;
+import static org.apache.ignite.cdc.EntryEventType.UPDATE;
+
+/**
+ * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite cahes.
+ * It expected that messages was written to the Kafka by the {@link CDCIgniteToKafka} CDC consumer.
+ * <p>
+ * Each applier receive set of Kafka topic partitions to read and caches to process.
+ * Applier creates consumer per partition because Kafka consumer reads not fair, consumer reads messages from specific partition while there is new messages in specific partition.
+ * See <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-387%3A+Fair+Message+Consumption+Across+Partitions+in+KafkaConsumer">KIP-387</a> and <a href="https://issues.apache.org/jira/browse/KAFKA-3932">KAFKA-3932</a> for further information.
+ * All consumers should belongs to the same consumer-group to ensure consistent reading.
+ * Applier polls messages from each consumer in round-robin fashion.
+ * <p>
+ * Messages applied to Ignite using {@link IgniteInternalCache#putAllConflict(Map)}, {@link IgniteInternalCache#removeAllConflict(Map)}
+ * these methods allows to provide {@link GridCacheVersion} of the entry to the Ignite so in case update conflicts they can be resolved by the {@link CacheVersionConflictResolver}.
+ * <p>
+ * In case of any error during read applier just fail. Fail of any applier will lead to the fail of {@link CDCKafkaToIgnite} application.
+ * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
+ *
+ * @see CDCKafkaToIgnite
+ * @see CDCIgniteToKafka
+ * @see IgniteInternalCache#putAllConflict(Map)
+ * @see IgniteInternalCache#removeAllConflict(Map)
+ * @see CacheVersionConflictResolver
+ * @see GridCacheVersion
+ * @see EntryEvent
+ * @see EntryEventOrder
+ */
 class Applier implements Runnable, AutoCloseable {
     /** */
+    public static final int MAX_BATCH_SZ = 256;
+
+    /** Ignite instance. */
     private final IgniteEx ign;
 
-    /** */
+    /** Log. */
     private final IgniteLogger log;
 
-    /** */
+    /** Closed flag. Shared between all appliers. */
     private final AtomicBoolean closed;
 
-    /** */
+    /** Kafka partitions to poll. */
     private final Set<Integer> kafkaParts = new HashSet<>();
 
-    /** */
+    /** Caches. */
     private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
 
-    /** */
-    private final Properties commonProps;
+    /** Kafka properties. */
+    private final Properties kafkaProps;
 
-    /** */
+    /** Topic to read. */
     private final String topic;
 
-    /** */
+    /** Caches ids to read. */
     private final Set<Integer> caches;
 
-    /** */
+    /** Consumers. */
     private final List<KafkaConsumer<Integer, byte[]>> consumers = new ArrayList<>();
 
     /** */
     private static final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** */
-    public Applier(IgniteEx ign, Properties commonProps, String topic, Set<Integer> caches, AtomicBoolean closed) {
+    /**
+     * @param ign Ignite instance
+     * @param kafkaProps Kafka properties.
+     * @param topic Topic name.
+     * @param caches Cache ids.
+     * @param closed Closed flag.
+     */
+    public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, AtomicBoolean closed) {
+        assert !F.isEmpty(caches);
+
+        if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
+            throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
+
         this.ign = ign;
         this.log = ign.log().getLogger(Applier.class);
-        this.commonProps = commonProps;
+        this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.caches = caches;
         this.closed = closed;
-    }
 
-    /** */
-    private void initConsumers() {
-        for (int kafkaPart : kafkaParts) {
-            Properties props = (Properties)commonProps.clone();
-
-            KafkaConsumer<Integer, byte[]> consumer = new KafkaConsumer<>(props);
-
-            consumer.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
-
-            consumers.add(consumer);
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
+        assert !F.isEmpty(kafkaParts);
+
         U.setCurrentIgniteName(ign.name());
 
         try {
-            initConsumers();
+            for (int kafkaPart : kafkaParts) {
+                KafkaConsumer<Integer, byte[]> consumer = new KafkaConsumer<>(kafkaProps);
 
-            assert !consumers.isEmpty();
+                consumer.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
+
+                consumers.add(consumer);
+            }
 
             Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
 
@@ -153,80 +192,130 @@ class Applier implements Runnable, AutoCloseable {
      * @param consumer Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
-        //TODO: try to reconnect on fail. Exit if no success.
         ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(3));
+
+        log.warning("Polled from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(records.count()) + ']');
+
+        Map<KeyCacheObject, GridCacheDrInfo> updBatch = new HashMap<>();
+        Map<KeyCacheObject, GridCacheVersion> rmvBatch = new HashMap<>();
+        IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
 
         for (ConsumerRecord<Integer, byte[]> rec : records) {
             if (!caches.contains(rec.key()))
                 continue;
 
             try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
-                apply((EntryEvent<BinaryObject, BinaryObject>)is.readObject());
+                EntryEvent<BinaryObject, BinaryObject> evt = (EntryEvent<BinaryObject, BinaryObject>)is.readObject();
+
+                IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
+                    for (String cacheName : ign.cacheNames()) {
+                        if (CU.cacheId(cacheName) == cacheId)
+                            return ign.cachex(cacheName);
+                    }
+
+                    throw new IllegalStateException("Cache with id not found[cacheId=" + cacheId + ']');
+                });
+
+                if (cache != currCache) {
+                    if (!F.isEmpty(rmvBatch))
+                        currCache.removeAllConflict(rmvBatch);
+
+                    if (!F.isEmpty(updBatch))
+                        currCache.putAllConflict(updBatch);
+
+                    updBatch.clear();
+                    rmvBatch.clear();
+
+                    currCache = cache;
+                }
+
+                EntryEventOrder order = evt.order();
+
+                KeyCacheObject key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
+
+                switch (evt.operation()) {
+                    case UPDATE:
+                        applyIfRequired(updBatch, rmvBatch, currCache, key, UPDATE);
+
+                        CacheObject val = new CacheObjectImpl(evt.value(), null);
+
+                        updBatch.put(key, new GridCacheDrInfo(val,
+                                new GridCacheVersion(order.topVer(), order.nodeOrderDrId(), order.order())));
+
+                        break;
+
+                    case DELETE:
+                        applyIfRequired(updBatch, rmvBatch, currCache, key, DELETE);
+
+                        rmvBatch.put(key, new GridCacheVersion(order.topVer(), order.nodeOrderDrId(), order.order()));
+
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
+                }
             }
             catch (ClassNotFoundException | IOException e) {
                 throw new IgniteCheckedException(e);
             }
         }
 
-        consumer.commitSync(Duration.ofSeconds(3));
+        if (currCache != null) {
+            if (!F.isEmpty(rmvBatch))
+                currCache.removeAllConflict(rmvBatch);
 
-        //TODO: move me to the top.
-        log.warning("Polling from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.get() + ']');
+            if (!F.isEmpty(updBatch))
+                currCache.putAllConflict(updBatch);
+        }
+
+        consumer.commitSync(Duration.ofSeconds(3));
     }
 
-
     /**
-     * @param evt Applies event to Ignite.
-     * @param drId Data center replication id.
+     * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
+     *
+     * @param updBatch Update map.
+     * @param rmvBatch Remove map.
+     * @param cache Current cache.
+     * @param key Key.
+     * @param op Operation.
+     * @throws IgniteCheckedException
      */
-    private void apply(EntryEvent<BinaryObject, BinaryObject> evt) throws IgniteCheckedException {
-        rcvdEvts.incrementAndGet();
+    private void applyIfRequired(
+        Map<KeyCacheObject, GridCacheDrInfo> updBatch,
+        Map<KeyCacheObject, GridCacheVersion> rmvBatch,
+        IgniteInternalCache<BinaryObject, BinaryObject> cache,
+        KeyCacheObject key,
+        EntryEventType op
+    ) throws IgniteCheckedException {
+        if (isApplyBatch(DELETE, rmvBatch, op, key)) {
+            cache.removeAllConflict(rmvBatch);
 
-        IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
-            for (String cacheName : ign.cacheNames()) {
-                if (CU.cacheId(cacheName) == cacheId)
-                    return ign.cachex(cacheName);
-            }
+            rmvBatch.clear();
+        }
 
-            throw new IllegalStateException("Cache with id not found[cacheId=" + cacheId + ']');
-        });
+        if (isApplyBatch(UPDATE, updBatch, op, key)) {
+            cache.putAllConflict(updBatch);
 
-        EntryEventOrder kafkaOrd = evt.order();
-
-        KeyCacheObject keyCacheObj = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
-
-        // TODO: try batch here.
-        switch (evt.operation()) {
-            case UPDATE:
-                CacheObject cacheObj = new CacheObjectImpl(evt.value(), null);
-
-                cache.putAllConflict(Collections.singletonMap(keyCacheObj,
-                    new GridCacheDrInfo(cacheObj,
-                        new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order()))));
-
-                break;
-
-            case DELETE:
-                cache.removeAllConflict(Collections.singletonMap(keyCacheObj,
-                        new GridCacheVersion(kafkaOrd.topVer(), kafkaOrd.nodeOrderDrId(), kafkaOrd.order())));
-
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
+            updBatch.clear();
         }
     }
 
-    /**
-     * @param kafkaPart Kafka partition.
-     */
-    public void addPartition(int kafkaPart) {
-        kafkaParts.add(kafkaPart);
+    /** @return {@code True} if update batch should be applied. */
+    private boolean isApplyBatch(
+        EntryEventType batchOp,
+        Map<KeyCacheObject, ?> map,
+        EntryEventType op,
+        KeyCacheObject key
+    ) {
+        return (!F.isEmpty(map) && op != batchOp) ||
+            map.size() >= MAX_BATCH_SZ ||
+            map.containsKey(key);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "Applier{kafakParts=" + kafkaParts + '}';
+    /** @param kafkaPart Kafka partition to consumer by this applier. */
+    public void addPartition(int kafkaPart) {
+        kafkaParts.add(kafkaPart);
     }
 
     /** {@inheritDoc} */
@@ -236,5 +325,10 @@ class Applier implements Runnable, AutoCloseable {
         closed.set(true);
 
         consumers.forEach(KafkaConsumer::wakeup);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Applier.class, this);
     }
 }
