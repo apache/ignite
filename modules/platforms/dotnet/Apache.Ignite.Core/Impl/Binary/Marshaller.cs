@@ -671,6 +671,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
+            // TODO: Should we avoid overwrite and return old desc instead?
             VerifyDescriptorOverwrite(desc, _typeToDesc.Set(type, desc));
 
             return desc;
