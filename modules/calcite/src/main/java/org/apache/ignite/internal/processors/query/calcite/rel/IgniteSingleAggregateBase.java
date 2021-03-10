@@ -85,7 +85,7 @@ public abstract class IgniteSingleAggregateBase extends IgniteAggregate implemen
         if (!TraitUtils.distribution(in).satisfies(IgniteDistributions.single()))
             return ImmutableList.of();
 
-        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in)));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), ImmutableList.of(in)));
     }
 
     /** {@inheritDoc} */

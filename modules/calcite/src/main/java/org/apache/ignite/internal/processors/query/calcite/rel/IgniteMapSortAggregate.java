@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -45,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
  *
@@ -157,15 +157,14 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase {
     ) {
         RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
 
-        List<RelCollation> satisfiedCollations = TraitUtils.permute(groupSet.asList()).stream()
-            .filter(col -> inputCollation.satisfies(col))
-            .collect(Collectors.toList());
+        List<Integer> newCollation = maxPrefix(inputCollation.getKeys(), groupSet.asSet());
 
-        if (satisfiedCollations.isEmpty())
+        if (newCollation.size() < groupSet.cardinality())
             return ImmutableList.of();
 
-        return satisfiedCollations.stream()
-            .map(col -> Pair.of(nodeTraits.replace(col), inputTraits))
-            .collect(Collectors.toList());
+        return ImmutableList.of(Pair.of(
+            nodeTraits.replace(RelCollations.of(ImmutableIntList.copyOf(newCollation))),
+            inputTraits
+        ));
     }
 }

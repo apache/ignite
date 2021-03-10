@@ -409,43 +409,6 @@ public class TraitUtils {
     }
 
     /**
-     * Creates collations list with all permutation of specified keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    public static List<RelCollation> permute(List<Integer> keys) {
-        keys = new ArrayList<>(keys);
-
-        List<RelCollation> res = new ArrayList<>();
-
-        int[] indexes = new int[keys.size()];
-        Arrays.fill(indexes, 0);
-
-        res.add(RelCollations.of(ImmutableIntList.copyOf(keys)));
-
-        int i = 0;
-
-        while (i < keys.size()) {
-            if (indexes[i] < i) {
-                Collections.swap(keys, i % 2 == 0 ? 0 : indexes[i], i);
-
-                res.add(RelCollations.of(ImmutableIntList.copyOf(keys)));
-
-                indexes[i]++;
-                i = 0;
-            }
-            else {
-                indexes[i] = 0;
-                i++;
-            }
-        }
-
-        return res;
-    }
-
-
-    /**
      * @param elem Elem.
      */
     private static <T> List<T> singletonListFromNullable(@Nullable T elem) {
