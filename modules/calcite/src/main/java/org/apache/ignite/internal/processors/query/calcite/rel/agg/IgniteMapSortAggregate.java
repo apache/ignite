@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel.aggregate;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -37,8 +35,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -46,12 +42,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
-
 /**
  *
  */
-public class IgniteMapSortAggregate extends IgniteMapAggregateBase {
+public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements IgniteSortAggregateBase {
     /** Collation. */
     private final RelCollation collation;
 
@@ -142,32 +136,5 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase {
     /** {@inheritDoc} */
     @Override public RelCollation collation() {
         return collation;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
-        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
-    ) {
-        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
-
-        return Pair.of(nodeTraits.replace(collation),
-            ImmutableList.of(inputTraits.get(0).replace(collation)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
-        RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
-    ) {
-        RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
-
-        List<Integer> newCollation = maxPrefix(inputCollation.getKeys(), groupSet.asSet());
-
-        if (newCollation.size() < groupSet.cardinality())
-            return ImmutableList.of();
-
-        return ImmutableList.of(Pair.of(
-            nodeTraits.replace(RelCollations.of(ImmutableIntList.copyOf(newCollation))),
-            inputTraits
-        ));
     }
 }

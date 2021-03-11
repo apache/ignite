@@ -28,16 +28,16 @@ import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapAggregateBase;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceAggregateBase;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleAggregateBase;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -164,7 +164,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         Assert.assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
-            F.first(rdcAgg.aggregateCalls()).getAggregation(),
+            F.first(rdcAgg.getAggregateCalls()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
         Assert.assertThat(
@@ -208,7 +208,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         Assert.assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),
-            F.isEmpty(rdcAgg.aggregateCalls()));
+            F.isEmpty(rdcAgg.getAggregateCalls()));
 
         Assert.assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),

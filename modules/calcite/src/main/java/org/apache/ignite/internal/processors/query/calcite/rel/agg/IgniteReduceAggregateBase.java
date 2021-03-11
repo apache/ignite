@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel.aggregate;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 
@@ -108,17 +108,17 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
     }
 
     /** */
-    public ImmutableBitSet groupSet() {
+    public ImmutableBitSet getGroupSet() {
         return groupSet;
     }
 
     /** */
-    public List<ImmutableBitSet> groupSets() {
+    public List<ImmutableBitSet> getGroupSets() {
         return groupSets;
     }
 
     /** */
-    public List<AggregateCall> aggregateCalls() {
+    public List<AggregateCall> getAggregateCalls() {
         return aggCalls;
     }
 

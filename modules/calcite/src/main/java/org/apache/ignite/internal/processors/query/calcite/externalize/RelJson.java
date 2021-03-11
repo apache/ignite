@@ -217,7 +217,7 @@ class RelJson {
     private static final List<String> PACKAGES =
         ImmutableList.of(
             "org.apache.ignite.internal.processors.query.calcite.rel.",
-            "org.apache.ignite.internal.processors.query.calcite.rel.aggregate.",
+            "org.apache.ignite.internal.processors.query.calcite.rel.agg.",
             "org.apache.calcite.rel.",
             "org.apache.calcite.rel.core.",
             "org.apache.calcite.rel.logical.",

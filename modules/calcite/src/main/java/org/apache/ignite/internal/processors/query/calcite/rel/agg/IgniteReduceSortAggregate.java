@@ -15,64 +15,90 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel.aggregate;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
+import java.util.Objects;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  *
  */
-public class IgniteReduceHashAggregate extends IgniteReduceAggregateBase {
+public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase implements IgniteSortAggregateBase {
+    /** Collation. */
+    private final RelCollation collation;
+
     /** */
-    public IgniteReduceHashAggregate(
+    public IgniteReduceSortAggregate(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls,
-        RelDataType rowType
+        RelDataType rowType,
+        RelCollation collation
     ) {
         super(cluster, traits, input, groupSet, groupSets, aggCalls, rowType);
 
-        assert RelOptUtil.areRowTypesEqual(input.getRowType(),
-            IgniteMapHashAggregate.rowType(Commons.typeFactory(cluster)), true);
+        assert Objects.nonNull(collation);
+        assert !collation.isDefault();
+
+        this.collation = collation;
     }
 
     /** */
-    public IgniteReduceHashAggregate(RelInput input) {
+    public IgniteReduceSortAggregate(RelInput input) {
         super(input);
+        collation = input.getCollation();
+
+        assert Objects.nonNull(collation);
+        assert !collation.isDefault();
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteReduceHashAggregate(getCluster(), traitSet, sole(inputs), groupSet, groupSets, aggCalls, rowType);
+        return new IgniteReduceSortAggregate(
+            getCluster(),
+            traitSet,
+            sole(inputs),
+            groupSet,
+            groupSets,
+            aggCalls,
+            rowType,
+            TraitUtils.collation(traitSet)
+        );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteReduceHashAggregate(cluster, getTraitSet(), sole(inputs),
-            groupSet, groupSets, aggCalls, rowType);
+        return new IgniteReduceSortAggregate(
+            cluster,
+            getTraitSet(),
+            sole(inputs),
+            groupSet,
+            groupSets,
+            aggCalls,
+            rowType,
+            collation
+        );
     }
 
     /** {@inheritDoc} */
@@ -81,36 +107,20 @@ public class IgniteReduceHashAggregate extends IgniteReduceAggregateBase {
     }
 
     /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw).item("collation", collation);
+    }
+
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
         double rows = mq.getRowCount(getInput());
 
-        double mem = 0d;
-        if (aggCalls.isEmpty())
-            mem = groupSet.cardinality() * IgniteCost.AVERAGE_FIELD_SIZE;
-        else {
-            for (AggregateCall aggCall : aggCalls) {
-                if (aggCall.isDistinct())
-                    mem += IgniteCost.AGG_CALL_MEM_COST * rows;
-                else
-                    mem += IgniteCost.AGG_CALL_MEM_COST;
-            }
-        }
-
         return costFactory.makeCost(
             rows,
             rows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0,
-            mem,
             0
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(inTraits.get(0).replace(RelCollations.EMPTY))));
     }
 }
