@@ -3646,7 +3646,6 @@ public class IgniteConfiguration {
         return this;
     }
 
-
     /**
      * Gets the async continuation executor.
      * <p />
