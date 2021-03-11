@@ -41,9 +41,15 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
-        <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
-        <property name="rebalanceBatchSize" value="{{ config.rebalance_batch_size }}"/>
-        <property name="rebalanceThrottle" value="{{ config.rebalance_throttle }}"/>
+        {% if config.rebalance_thread_pool_size %}
+            <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
+        {% endif %}
+        {% if config.rebalance_batch_size %}
+            <property name="rebalanceBatchSize" value="{{ config.rebalance_batch_size }}"/>
+        {% endif %}
+        {% if config.rebalance_throttle %}
+            <property name="rebalanceThrottle" value="{{ config.rebalance_throttle }}"/>
+        {% endif %}
 
         {% if config.metric_exporter %}
             <property name="metricExporterSpi">

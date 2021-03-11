@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.rebalance;
 
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,17 +33,21 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
+        int backups = jsonNode.get("backups").asInt();
         int cacheCnt = jsonNode.get("cacheCount").asInt();
         int entryCnt = jsonNode.get("entryCount").asInt();
         int entrySize = jsonNode.get("entrySize").asInt();
 
-        log.info("Creating " + cacheCnt + " caches each with " + entryCnt + " entries of " + entrySize + " bytes.");
+        log.info("Data generation started [backups=" + backups + ", cacheCount=" + cacheCnt
+            + ", entryCount=" + entryCnt + ", entrySize=" + entrySize + "]");
 
         for (int i = 1; i <= cacheCnt; i++) {
-            IgniteCache<Integer, DataModel> cache = createCache("test-cache-" + i, 1);
+            IgniteCache<Integer, DataModel> cache = createCache("test-cache-" + i, backups);
 
             generateCacheData(cache.getName(), entryCnt, entrySize);
         }
+
+        log.info("Data generation finished.");
 
         markSyncExecutionComplete();
     }
@@ -57,15 +60,21 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     private void generateCacheData(String cacheName, int entryCnt, int entrySize) {
         int logStreamedEntriesQuant = (int)Math.pow(10, (int)Math.log10(entryCnt) - 1);
 
-        for (int i = 0; i < entryCnt; ) {
-            try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
-                for (int n = 0; i < entryCnt && (n == 0 || n + entrySize < MAX_STREAMER_DATA_SIZE); i++, n += entrySize) {
-                    stmr.addData(i, new DataModel(entrySize));
+        try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
+            for (int i = 0, n = 0; i < entryCnt; i++) {
+                stmr.addData(i, new DataModel(entrySize));
 
-                    int streamed = i + 1;
+                int streamed = i + 1;
 
-                    if (streamed % logStreamedEntriesQuant == 0)
-                        log.info("Streamed " + streamed + " entries into " + cacheName);
+                if (streamed % logStreamedEntriesQuant == 0)
+                    log.info("Streamed " + streamed + " entries into " + cacheName);
+
+                n += entrySize;
+
+                if (n >= MAX_STREAMER_DATA_SIZE) {
+                    n = 0;
+
+                    stmr.flush();
                 }
             }
         }
@@ -89,19 +98,11 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      *
      */
     private static class DataModel {
-        /** Random string samples. */
-        private static final String[] randomStringSamples = new String[1000];
-
-        static {
-            for (int i = 0; i < randomStringSamples.length; i++)
-                randomStringSamples[i] = UUID.randomUUID().toString();
-        }
+        /** Random. */
+        private static final Random RANDOM = new Random(42);
 
         /** Cached payload. */
         private static byte[] cachedPayload;
-
-        /** Random string. */
-        final String randomStr;
 
         /** Payload. */
         final byte[] payload;
@@ -110,8 +111,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
          * @param entrySize Entry size.
          */
         DataModel(int entrySize) {
-            randomStr = randomStringSamples[ThreadLocalRandom.current().nextInt(randomStringSamples.length)];
-            payload = getPayload(entrySize - randomStr.length());
+            payload = getPayload(entrySize);
         }
 
         /**
@@ -121,7 +121,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             if (cachedPayload == null || cachedPayload.length != payloadSize) {
                 cachedPayload = new byte[payloadSize];
 
-                ThreadLocalRandom.current().nextBytes(cachedPayload);
+                RANDOM.nextBytes(cachedPayload);
             }
 
             return cachedPayload;

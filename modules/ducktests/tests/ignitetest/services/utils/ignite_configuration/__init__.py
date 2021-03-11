@@ -46,9 +46,9 @@ class IgniteConfiguration(NamedTuple):
     ssl_context_factory: SslContextFactory = None
     connector_configuration: ConnectorConfiguration = None
     metric_exporter: str = None
-    rebalance_thread_pool_size: int = 2
-    rebalance_batch_size: int = 512 * 1024
-    rebalance_throttle: int = 0
+    rebalance_thread_pool_size: int = None
+    rebalance_batch_size: int = None
+    rebalance_throttle: int = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

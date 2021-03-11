@@ -20,64 +20,81 @@ This package contains rebalance tests.
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
+from ignitetest.services.ignite import get_event_time
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.utils.ignite_test import IgniteTest
 
 
-# pylint: disable=W0223
-class RebalanceTest(IgniteTest):
+DFLT_PRELOAD_TIMEOUT = 3600
+REBALANCE_START_TIMEOUT = 1
+REBALANCE_COMPLETE_TIMEOUT = 300
+
+
+# pylint: disable=too-many-arguments
+def preload_data(context, config, backups, cache_count, entry_count, entry_size, timeout=DFLT_PRELOAD_TIMEOUT):
     """
-    Contains common rebalance test definitions and methods.
+    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
+    :param context: Test context.
+    :param config: Ignite configuration.
+    :param backups: Cache backups count.
+    :param cache_count: Cache count.
+    :param entry_count: Cache entry count.
+    :param entry_size: Entry size in bytes.
+    :param timeout: Timeout in seconds for application finished.
+    :return: Time taken for data preloading.
     """
-    PRELOAD_TIMEOUT = 5000
-    REBALANCE_START_TIMEOUT = 1
-    REBALANCE_COMPLETE_TIMEOUT = 300
+    app = IgniteApplicationService(
+        context,
+        config=config,
+        java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+        params={"backups": backups, "cacheCount": cache_count, "entryCount": entry_count, "entrySize": entry_size},
+        startup_timeout_sec=timeout)
+    app.run()
 
-    def preload_data(self, config, cache_count, entry_count, entry_size):
-        """
-        Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
-        """
-        start = self.monotonic()
+    return (get_event_time(
+        app, app.nodes[0], "Data generation finished") - get_event_time(
+        app, app.nodes[0], "Data generation started")).total_seconds()
 
-        IgniteApplicationService(
-            self.test_context,
-            config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
-            params={"cacheCount": cache_count, "entryCount": entry_count, "entrySize": entry_size},
-            startup_timeout_sec=self.PRELOAD_TIMEOUT
-        ).run()
 
-        return self.monotonic() - start
+def await_rebalance_start(ignite, timeout=REBALANCE_START_TIMEOUT):
+    """
+    Awaits rebalance starting on any test-cache on any node.
+    :param ignite: IgniteService instance.
+    :param timeout: Rebalance start await timeout.
+    :return: dictionary of two keypairs with keys "node" and "time",
+    where "node" contains the first node on which rebalance start was detected
+    and "time" contains the time when rebalance was started.
+    """
+    for node in ignite.nodes:
+        try:
+            rebalance_start_time = get_event_time(
+                ignite, node,
+                "Starting rebalance routine \\[test-cache-",
+                timeout=timeout)
+        except TimeoutError:
+            continue
+        else:
+            return {"node": node, "time": rebalance_start_time}
 
-    def await_rebalance_start(self, ignite):
-        """
-        Awaits rebalance starting on some test-cache on any node.
-        Returns first node on which rebalance start was detected.
-        """
-        for node in ignite.nodes:
-            try:
-                ignite.await_event_on_node(
-                    "Starting rebalance routine \\[test-cache-",
-                    node,
-                    timeout_sec=self.REBALANCE_START_TIMEOUT,
-                    from_the_beginning=True,
-                    backoff_sec=1)
-            except TimeoutError:
-                continue
-            else:
-                return node
+    raise RuntimeError("Rebalance start was not detected on any node")
 
-        raise RuntimeError("Rebalance start was not detected on any node")
 
-    def await_rebalance_complete(self, ignite, node=None, cache_count=1):
-        """
-        Awaits rebalance complete on some test-cache
-        """
-        for cache_idx in range(cache_count):
-            ignite.await_event_on_node(
-                "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
-                ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
-                node if node else ignite.nodes[0],
-                timeout_sec=self.REBALANCE_COMPLETE_TIMEOUT,
-                from_the_beginning=True,
-                backoff_sec=1)
+def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=REBALANCE_COMPLETE_TIMEOUT):
+    """
+    Awaits rebalance complete on each test-cache.
+    :param ignite: IgniteService instance.
+    :param node: Ignite node in which rebalance will be awaited. If None, the first node in ignite will be used.
+    :param cache_count: The count of test caches to wait for rebalance completion.
+    :param timeout: Rebalance completion timeout.
+    :return: The time of rebalance completion.
+    """
+    rebalance_complete_times = []
+
+    for cache_idx in range(cache_count):
+        rebalance_complete_times.append(get_event_time(
+            ignite,
+            node if node else ignite.nodes[0],
+            "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
+            ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
+            timeout=timeout))
+
+    return max(rebalance_complete_times)
