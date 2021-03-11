@@ -387,7 +387,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
                 executorService.submit(runnable);
 
-                igniteFuture.get(7000, MILLISECONDS);
+                ((IgniteFutureImpl)igniteFuture).internalFuture().get();
 
                 assertTrue(igniteFuture.isDone());
 

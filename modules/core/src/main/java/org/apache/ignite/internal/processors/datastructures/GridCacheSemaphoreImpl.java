@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
@@ -672,11 +673,15 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
                                                            int numPermits) throws Exception {
         acquire(numPermits);
 
-        T value = callable.call();
+        Future<T> passedInCallableFuture = ctx.kernalContext().getExecutorService().submit(callable);
 
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public T get() {
-                return value;
+                try {
+                    return passedInCallableFuture.get();
+                } catch (Exception e) {
+                    throw new RuntimeException(e.getMessage());
+                }
             }
         };
 
