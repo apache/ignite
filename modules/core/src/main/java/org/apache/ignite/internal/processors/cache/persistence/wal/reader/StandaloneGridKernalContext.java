@@ -743,7 +743,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Executor getAsyncContinuationExecutor() {
+    @Override public Executor getCacheAsyncContinuationExecutor() {
         return null;
     }
 }

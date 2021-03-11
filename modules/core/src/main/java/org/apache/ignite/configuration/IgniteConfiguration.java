@@ -610,7 +610,7 @@ public class IgniteConfiguration {
     private SqlConfiguration sqlCfg = new SqlConfiguration();
 
     /** Executor for async operations continuations. */
-    private Executor asyncContinuationExecutor;
+    private Executor cacheAsyncContinuationExecutor;
 
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
@@ -3657,8 +3657,8 @@ public class IgniteConfiguration {
      *
      * @return Executor for async continuations.
      */
-    public Executor getAsyncContinuationExecutor() {
-        return asyncContinuationExecutor;
+    public Executor getCacheAsyncContinuationExecutor() {
+        return cacheAsyncContinuationExecutor;
     }
 
     /**
@@ -3669,11 +3669,11 @@ public class IgniteConfiguration {
      * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor.
      *
-     * @param asyncContinuationExecutor Executor for async continuations.
+     * @param cacheAsyncContinuationExecutor Executor for async continuations.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
-        this.asyncContinuationExecutor = asyncContinuationExecutor;
+    public IgniteConfiguration setCacheAsyncContinuationExecutor(Executor cacheAsyncContinuationExecutor) {
+        this.cacheAsyncContinuationExecutor = cacheAsyncContinuationExecutor;
 
         return this;
     }

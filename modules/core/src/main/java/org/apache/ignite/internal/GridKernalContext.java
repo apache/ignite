@@ -783,5 +783,5 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Executor that is in charge of processing user async continuations.
      */
-    public Executor getAsyncContinuationExecutor();
+    public Executor getCacheAsyncContinuationExecutor();
 }
