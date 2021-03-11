@@ -39,6 +39,7 @@ class TriggerEvent(IntEnum):
     NODE_JOIN = 0
     NODE_LEFT = 1
 
+
 # pylint: disable=W0223
 class RebalanceInMemoryTest(IgniteTest):
     """
@@ -46,7 +47,7 @@ class RebalanceInMemoryTest(IgniteTest):
     """
     NUM_NODES = 4
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(trigger_event=[TriggerEvent.NODE_JOIN, TriggerEvent.NODE_LEFT],
