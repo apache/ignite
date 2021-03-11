@@ -49,6 +49,5 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(2, cache.Get(key));
         }
-
     }
 }
