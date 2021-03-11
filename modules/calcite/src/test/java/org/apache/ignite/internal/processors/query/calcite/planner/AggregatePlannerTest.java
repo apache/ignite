@@ -233,7 +233,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
      *
      */
     @Test
-    public void notApplicableForSortAggregate() throws Exception {
+    public void notApplicableForSortAggregate() {
         if (algo == AggregateAlgorithm.SORT)
             return;
 
