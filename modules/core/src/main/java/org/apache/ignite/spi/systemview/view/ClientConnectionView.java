@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.net.InetSocketAddress;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,9 +84,9 @@ public class ClientConnectionView {
         if (ctx == null)
             return null;
 
-        AuthorizationContext authCtx = ctx.authorizationContext();
+        SecurityContext secCtx = ctx.securityContext();
 
-        return authCtx == null ? null : authCtx.userName();
+        return secCtx == null ? null : (String)secCtx.subject().login();
     }
 
     /** @return Protocol version. */

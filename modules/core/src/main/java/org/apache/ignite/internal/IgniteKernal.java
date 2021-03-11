@@ -183,7 +183,7 @@ import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
-import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -1250,7 +1250,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startTimer.finishGlobalStage("Configure binary metadata");
 
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
-                startProcessor(new IgniteAuthenticationProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
@@ -1569,7 +1568,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
-            : new NoOpIgniteSecurityProcessor(ctx);
+            : new IgniteAuthenticationProcessor(ctx);
     }
 
     /**

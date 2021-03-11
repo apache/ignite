@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.rest.handlers.user;
 import java.util.Collection;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -65,9 +65,7 @@ public class UserActionCommandHandler extends GridRestCommandHandlerAdapter {
         try {
             GridRestCommand cmd = req.command();
 
-            IgniteAuthenticationProcessor authentication = ctx.authentication();
-
-            AuthorizationContext.context(req.authorizationContext());
+            IgniteAuthenticationProcessor authentication = SecurityUtils.internalSecurity(ctx);
 
             switch (cmd) {
                 case ADD_USER:

@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
@@ -320,10 +321,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Cache mvcc coordinators. */
     @GridToStringExclude
     private MvccProcessor coordProc;
-
-    /** */
-    @GridToStringExclude
-    private IgniteAuthenticationProcessor authProc;
 
     /** Diagnostic processor. */
     @GridToStringInclude
@@ -704,8 +701,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
-        else if (comp instanceof IgniteAuthenticationProcessor)
-            authProc = (IgniteAuthenticationProcessor)comp;
         else if (comp instanceof IgniteSecurity)
             security = (IgniteSecurity)comp;
         else if (comp instanceof CompressionProcessor)
@@ -1002,7 +997,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public IgniteAuthenticationProcessor authentication() {
-        return authProc;
+        return SecurityUtils.internalSecurity(this);
     }
 
     /** {@inheritDoc} */

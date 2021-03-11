@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -45,6 +46,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.F;
@@ -284,5 +286,23 @@ public class SecurityUtils {
                 }
             });
         }
+    }
+
+    /** */
+    public static void ifInternalSecurity(GridKernalContext ctx, Consumer<IgniteAuthenticationProcessor> consumer) {
+        IgniteSecurity security = ctx.security();
+
+        if (security instanceof IgniteAuthenticationProcessor)
+            consumer.accept((IgniteAuthenticationProcessor)security);
+    }
+
+    /** */
+    public static IgniteAuthenticationProcessor internalSecurity(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        if (!(security instanceof IgniteAuthenticationProcessor))
+            throw new IgniteException();
+
+        return (IgniteAuthenticationProcessor)security;
     }
 }

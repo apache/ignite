@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -38,7 +37,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -113,9 +111,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Nested transaction behaviour. */
     private final NestedTxMode nestedTxMode;
 
-    /** Authentication context */
-    private final AuthorizationContext actx;
-
     /** Client version. */
     private ClientListenerProtocolVersion ver;
 
@@ -141,7 +136,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param nestedTxMode Nested transaction mode.
-     * @param actx Authentication context.
      * @param ver Client protocol version.
      */
     public OdbcRequestHandler(
@@ -155,7 +149,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean collocated,
         boolean lazy,
         boolean skipReducerOnUpdate,
-        AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
+        NestedTxMode nestedTxMode,
+        ClientListenerProtocolVersion ver
+    ) {
         this.ctx = ctx;
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
@@ -180,7 +176,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.busyLock = busyLock;
         this.sender = sender;
         this.maxCursors = maxCursors;
-        this.actx = actx;
         this.nestedTxMode = nestedTxMode;
         this.ver = ver;
 
@@ -230,9 +225,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle ODBC request because node is stopping: " + req);
 
-        if (actx != null)
-            AuthorizationContext.context(actx);
-
         try {
             switch (req.command()) {
                 case QRY_EXEC:
@@ -269,8 +261,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
         }
         finally {
-            AuthorizationContext.clear();
-
             busyLock.leaveBusy();
         }
     }

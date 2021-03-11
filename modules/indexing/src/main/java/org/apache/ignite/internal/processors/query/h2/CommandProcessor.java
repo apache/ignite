@@ -136,6 +136,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEna
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.internalSecurity;
 
 /**
  * Processor responsible for execution of all non-SELECT and non-DML commands.
@@ -657,17 +658,17 @@ public class CommandProcessor {
             else if (cmd instanceof SqlCreateUserCommand) {
                 SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
 
-                ctx.authentication().addUser(addCmd.userName(), addCmd.password());
+                internalSecurity(ctx).addUser(addCmd.userName(), addCmd.password());
             }
             else if (cmd instanceof SqlAlterUserCommand) {
                 SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
 
-                ctx.authentication().updateUser(altCmd.userName(), altCmd.password());
+                internalSecurity(ctx).updateUser(altCmd.userName(), altCmd.password());
             }
             else if (cmd instanceof SqlDropUserCommand) {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
 
-                ctx.authentication().removeUser(dropCmd.userName());
+                internalSecurity(ctx).removeUser(dropCmd.userName());
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,

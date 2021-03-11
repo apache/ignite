@@ -17,12 +17,24 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import java.io.Serializable;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecuritySubject;
+
 /**
  * Ignite authentication context.
  */
-public class AuthorizationContext {
+public class AuthorizationContext implements SecurityContext, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** User. */
     private final User user;
+
+    /** */
+    private SecuritySubject subj;
 
     /** Current authorization context. */
     private static ThreadLocal<AuthorizationContext> actx = new ThreadLocal<>();
@@ -33,16 +45,21 @@ public class AuthorizationContext {
      * @param user Authorized user.
      */
     public AuthorizationContext(User user) {
-        assert user != null;
-
         this.user = user;
+    }
+
+    /** */
+    public AuthorizationContext(UUID id, User user) {
+        this.user = user;
+
+        subj = new IgniteSecuritySubject(id, null, user == null ? null : user.name(), null, null);
     }
 
     /**
      * @return Authorized user.
      */
     public String userName() {
-        return user.name();
+        return user == null ? null : user.name();
     }
 
     /**
@@ -85,5 +102,30 @@ public class AuthorizationContext {
      */
     public static AuthorizationContext context() {
         return actx.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecuritySubject subject() {
+        return subj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+        return true;
     }
 }
