@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _grid1;
 
         /** */
-        private IIgnite _cli;
+        private IIgnite _client;
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
-            doTestService(new JavaServiceDynamicProxy(svc));
+            DoTestService(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            doTestService(svc);
+            DoTestService(svc);
 
             Assert.IsNull(svc.testDepartments(null));
 
@@ -137,9 +137,33 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformService()
+        {
+            // Deploy .Net service.
+            var platformSvcName = nameof(PlatformTestService);
+
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            try
+            {
+                var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+
+                DoTestService(svc);
+            }
+            finally
+            {
+                _grid1.GetServices().Cancel(platformSvcName);
+            }
+        }
+
+        /// <summary>
         /// Tests java service instance.
         /// </summary>
-        private void doTestService(IJavaService svc)
+        private void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testAddress(null));
 
@@ -214,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Services
             cfg.ClientMode = true;
             cfg.IgniteInstanceName = "client";
 
-            _cli = Ignition.Start(cfg);
+            _client = Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -247,23 +271,23 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void ServiceReturnsArray()
         {
-            _cli.GetServices().DeployClusterSingleton(nameof(ArrayFactoryService), new ArrayFactoryService());
+            _client.GetServices().DeployClusterSingleton(nameof(ArrayFactoryService), new ArrayFactoryService());
 
-            var svc = _cli.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService), false);
+            var svc = _client.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService), false);
             var arr = svc.CreateArray(2, 1);
 
-            Assert.IsTrue(arr.GetType() == typeof(R[]));
+            Assert.AreEqual(arr.GetType(), typeof(R[]));
             Assert.AreEqual(1, arr[1].Value);
 
-            _cli.GetServices().Cancel(nameof(ArrayFactoryService));
+            _client.GetServices().Cancel(nameof(ArrayFactoryService));
         }
 
         [Test]
         public void ServiceReturnsArrayWithReflection()
         {
-            _cli.GetServices().DeployClusterSingleton(nameof(ArrayFactoryService), new ArrayFactoryService());
+            _client.GetServices().DeployClusterSingleton(nameof(ArrayFactoryService), new ArrayFactoryService());
 
-            var svc = _cli.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService));
+            var svc = _client.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService));
 
             var mthd = typeof(IArrayFactory).GetMethod(nameof(IArrayFactory.CreateArray));
 
@@ -272,7 +296,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsTrue(arr.GetType() == typeof(R[]));
             Assert.AreEqual(1, ((R[]) arr)[1].Value);
 
-            _cli.GetServices().Cancel(nameof(ArrayFactoryService));
+            _client.GetServices().Cancel(nameof(ArrayFactoryService));
         }
 
         public interface IArrayFactory
