@@ -604,6 +604,13 @@ public class Processor extends AbstractProcessor {
             .addParameter(ClassName.get(String.class), "key")
             .beginControlFlow("switch (key)");
 
+        MethodSpec.Builder schemaTypeBuilder = MethodSpec.methodBuilder("schemaType")
+            .addAnnotation(Override.class)
+            .addJavadoc(INHERIT_DOC)
+            .addModifiers(PUBLIC)
+            .returns(ParameterizedTypeName.get(ClassName.get(Class.class), WILDCARD))
+            .addStatement("return _spec.getClass()");
+
         ClassName consumerClsName = ClassName.get(Consumer.class);
 
         for (VariableElement field : fields) {
@@ -900,7 +907,8 @@ public class Processor extends AbstractProcessor {
             .addMethod(traverseChildrenBuilder.build())
             .addMethod(traverseChildBuilder.build())
             .addMethod(constructBuilder.build())
-            .addMethod(constructDefaultBuilder.build());
+            .addMethod(constructDefaultBuilder.build())
+            .addMethod(schemaTypeBuilder.build());
 
         TypeSpec viewCls = viewClsBuilder.build();
         TypeSpec changeCls = changeClsBuilder.build();

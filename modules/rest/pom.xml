@@ -26,12 +26,13 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>apache-ignite</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-rest</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>

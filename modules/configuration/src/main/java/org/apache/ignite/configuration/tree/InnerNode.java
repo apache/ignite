@@ -110,6 +110,9 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      */
     @Override public abstract void construct(String key, ConfigurationSource src) throws NoSuchElementException;
 
+    /** */
+    public abstract Class<?> schemaType();
+
     /** {@inheritDoc} */
     @Override public InnerNode copy() {
         try {
