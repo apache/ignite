@@ -61,7 +61,7 @@ public class InlineRecommender {
 
     /** Constructor. */
     public InlineRecommender(GridCacheContext<?, ?> cctx, SortedIndexDefinition def) {
-        log = cctx.kernalContext().indexing().getLogger();
+        log = cctx.kernalContext().indexing().logger();
         this.def = def;
     }
 
@@ -87,10 +87,10 @@ public class InlineRecommender {
 
         int newSize = 0;
 
-        for (int i = 0; i < row.getRowHandler().getInlineIndexKeyTypes().size(); i++) {
-            InlineIndexKeyType keyType = row.getRowHandler().getInlineIndexKeyTypes().get(i);
+        for (int i = 0; i < row.rowHandler().inlineIndexKeyTypes().size(); i++) {
+            InlineIndexKeyType keyType = row.rowHandler().inlineIndexKeyTypes().get(i);
 
-            newSize += keyType.inlineSize(row.getKey(i));
+            newSize += keyType.inlineSize(row.key(i));
         }
 
         if (newSize > currInlineSize) {
@@ -106,15 +106,15 @@ public class InlineRecommender {
                     break;
             }
 
-            String cols = def.getIndexKeyDefinitions().stream()
-                .map(IndexKeyDefinition::getName)
+            String cols = def.indexKeyDefinitions().stream()
+                .map(IndexKeyDefinition::name)
                 .collect(Collectors.joining(", ", "(", ")"));
 
-            String type = def.isPrimary() ? "PRIMARY KEY" : def.isAffinity() ? "AFFINITY KEY (implicit)" : "SECONDARY";
+            String type = def.primary() ? "PRIMARY KEY" : def.affinity() ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
             String recommendation;
 
-            if (def.isPrimary() || def.isAffinity()) {
+            if (def.primary() || def.affinity()) {
                 recommendation = "set system property "
                     + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
                     "(be aware it will be used by default for all indexes without explicit inline size)";
@@ -128,9 +128,9 @@ public class InlineRecommender {
             String warn = "Indexed columns of a row cannot be fully inlined into index " +
                 "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
                 "(" + recommendation + ") " +
-                "[cacheName=" + def.getIdxName().cacheName() +
-                ", tableName=" + def.getIdxName().tableName() +
-                ", idxName=" + def.getIdxName().idxName() +
+                "[cacheName=" + def.idxName().cacheName() +
+                ", tableName=" + def.idxName().tableName() +
+                ", idxName=" + def.idxName().idxName() +
                 ", idxCols=" + cols +
                 ", idxType=" + type +
                 ", curSize=" + currInlineSize +

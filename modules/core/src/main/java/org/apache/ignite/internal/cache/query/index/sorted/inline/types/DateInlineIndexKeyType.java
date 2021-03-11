@@ -37,7 +37,7 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractD
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, AbstractDateIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = key.getDateValue();
+        long val2 = key.dateValue();
 
         return Integer.signum(Long.compare(val1, val2));
     }
@@ -45,7 +45,7 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractD
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, AbstractDateIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putLong(pageAddr, off + 1, key.getDateValue());
+        PageUtils.putLong(pageAddr, off + 1, key.dateValue());
 
         return keySize + 1;
     }

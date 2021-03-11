@@ -100,7 +100,7 @@ public class InlineIndexKeyTypeRegistry {
      * @param expType Expected type of a key.
      */
     public static InlineIndexKeyType get(int expType, IndexKeyTypeSettings keyTypeSettings) {
-        return getType(expType, keyTypeSettings);
+        return type(expType, keyTypeSettings);
     }
 
     /**
@@ -113,20 +113,20 @@ public class InlineIndexKeyTypeRegistry {
      */
     public static InlineIndexKeyType get(IndexKey key, int expType, IndexKeyTypeSettings keyTypeSettings) {
         return key == NullIndexKey.INSTANCE ?
-            getType(expType, keyTypeSettings) :
-            getType(key.getType(), keyTypeSettings);
+            type(expType, keyTypeSettings) :
+            type(key.type(), keyTypeSettings);
     }
 
     /** */
-    private static InlineIndexKeyType getType(int type, IndexKeyTypeSettings keyTypeSettings) {
+    private static InlineIndexKeyType type(int type, IndexKeyTypeSettings keyTypeSettings) {
         if (type == IndexKeyTypes.JAVA_OBJECT)
-            return getJavaObjectType(keyTypeSettings);
+            return javaObjectType(keyTypeSettings);
 
         else if (type == IndexKeyTypes.STRING)
-            return getStringType(keyTypeSettings);
+            return stringType(keyTypeSettings);
 
         else if (type == IndexKeyTypes.BYTES)
-            return getBytesType(keyTypeSettings);
+            return bytesType(keyTypeSettings);
 
         return typeMapping.get(type);
     }
@@ -144,35 +144,35 @@ public class InlineIndexKeyTypeRegistry {
     /**
      * Get key type for the POJO type.
      */
-    private static InlineIndexKeyType getJavaObjectType(IndexKeyTypeSettings keyTypeSettings) {
+    private static InlineIndexKeyType javaObjectType(IndexKeyTypeSettings keyTypeSettings) {
         return !keyTypeSettings.inlineObjHash() ? bytesObjectType : hashObjectType;
     }
 
     /**
      * Get key type for the String type.
      */
-    private static InlineIndexKeyType getStringType(IndexKeyTypeSettings keyTypeSettings) {
+    private static InlineIndexKeyType stringType(IndexKeyTypeSettings keyTypeSettings) {
         return keyTypeSettings.stringOptimizedCompare() ? optimizedCompareStringType : noCompareStringType;
     }
 
     /**
      * Get key type for the Bytes type.
      */
-    private static InlineIndexKeyType getBytesType(IndexKeyTypeSettings keyTypeSettings) {
+    private static InlineIndexKeyType bytesType(IndexKeyTypeSettings keyTypeSettings) {
         return keyTypeSettings.binaryUnsigned() ? bytesType : signedBytesType;
     }
 
     /**
      * Return list of key types for specified key definitions and key type settings.
      * */
-    public static List<InlineIndexKeyType> getTypes(List<IndexKeyDefinition> keyDefs, IndexKeyTypeSettings settings) {
+    public static List<InlineIndexKeyType> types(List<IndexKeyDefinition> keyDefs, IndexKeyTypeSettings settings) {
         List<InlineIndexKeyType> keyTypes = new ArrayList<>();
 
         for (IndexKeyDefinition keyDef: keyDefs) {
-            if (!supportInline(keyDef.getIdxType(), settings))
+            if (!supportInline(keyDef.idxType(), settings))
                 break;
 
-            keyTypes.add(getType(keyDef.getIdxType(), settings));
+            keyTypes.add(type(keyDef.idxType(), settings));
         }
 
         return Collections.unmodifiableList(keyTypes);

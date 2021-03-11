@@ -149,7 +149,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         awaitPartitionMapExchange();
 
-        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexing().getIdxRebuild();
+        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexing().idxRebuild();
 
         assertFalse(idxRebuild.didRebuildIndexes());
 

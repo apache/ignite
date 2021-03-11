@@ -46,11 +46,11 @@ public final class BytesCompareUtils {
             int commonLen = Math.min(arr0.length, arr1.length);
 
             for (int i = 0; i < commonLen; ++i) {
-                int var4 = arr0[i] & 255;
-                int var5 = arr1[i] & 255;
+                int unSignArr0 = arr0[i] & 255;
+                int unSignArr1 = arr1[i] & 255;
 
-                if (var4 != var5)
-                    return var4 > var5 ? 1 : -1;
+                if (unSignArr0 != unSignArr1)
+                    return unSignArr0 > unSignArr1 ? 1 : -1;
             }
 
             return Integer.signum(arr0.length - arr1.length);

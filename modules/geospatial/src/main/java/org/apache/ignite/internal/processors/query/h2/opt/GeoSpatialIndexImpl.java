@@ -131,7 +131,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
      * @return Envelope.
      */
     private SpatialKey getEnvelope(CacheDataRow row, long rowId) {
-        Geometry g = (Geometry) def.rowHandler().getIndexKey(0, row).getKey();
+        Geometry g = (Geometry) def.rowHandler().indexKey(0, row).key();
 
         return getEnvelope(g, rowId);
     }
@@ -155,13 +155,13 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return def.getIdxName().idxName();
+        return def.idxName().idxName();
     }
 
     /** {@inheritDoc} */
     @Override public boolean canHandle(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
-            cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
+            cctx, def.idxName().cacheName(), def.idxName().tableName(), row.key(), row.value());
     }
 
     /** {@inheritDoc} */
@@ -184,34 +184,6 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
-        Lock l = lock.writeLock();
-
-        l.lock();
-
-        try {
-            return put(row);
-        }
-        finally {
-            l.unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(CacheDataRow row) throws IgniteCheckedException {
-        Lock l = lock.writeLock();
-
-        l.lock();
-
-        try {
-            return remove(row);
-        }
-        finally {
-            l.unlock();
-        }
-    }
-
     /** */
     private boolean put(CacheDataRow row) {
         checkClosed();
@@ -225,7 +197,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
         Long rowId = keyToId.get(key);
 
         if (rowId != null) {
-            Long oldRowId = segments[seg].remove(getEnvelope(idToRow.get(rowId).getCacheDataRow(), rowId));
+            Long oldRowId = segments[seg].remove(getEnvelope(idToRow.get(rowId).cacheDataRow(), rowId));
 
             assert rowId.equals(oldRowId);
         }
@@ -348,7 +320,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
         do {
             IndexRow row = idToRow.get(i.next().getId());
 
-            CacheDataRow cacheRow = row.getCacheDataRow();
+            CacheDataRow cacheRow = row.cacheDataRow();
 
             assert row != null;
 

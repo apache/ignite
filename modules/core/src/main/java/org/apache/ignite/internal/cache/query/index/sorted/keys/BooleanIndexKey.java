@@ -31,18 +31,18 @@ public class BooleanIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.BOOLEAN;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        boolean okey = (boolean) o.getKey();
+        boolean okey = (boolean) o.key();
 
         return Boolean.compare(key, okey);
     }

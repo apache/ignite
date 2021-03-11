@@ -48,7 +48,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** */
     public GridH2SpatialIndex(GeoSpatialIndexImpl idx) {
-        super(idx.def.rowHandler().getTable(), idx.def.getIdxName().idxName(),
+        super(idx.def.rowHandler().getTable(), idx.def.idxName().idxName(),
             idx.def.rowHandler().getH2IdxColumns().toArray(new IndexColumn[0]), IndexType.createNonUnique(false, false, true));
 
         delegate = idx;
@@ -160,6 +160,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         if (row == null)
             return null;
 
-        return new H2CacheRow(rowDescriptor(), row.getCacheDataRow());
+        return new H2CacheRow(rowDescriptor(), row.cacheDataRow());
     }
 }

@@ -724,7 +724,7 @@ public class GridH2Table extends TableBase {
             // Destroy underlying Ignite index.
             IndexDefinition deleteDef = new IndexDefinition() {
                 /** {@inheritDoc} */
-                @Override public IndexName getIdxName() {
+                @Override public IndexName idxName() {
                     return new IndexName(cacheName(), getSchema().getName(), tableName, idx.getName());
                 }
             };

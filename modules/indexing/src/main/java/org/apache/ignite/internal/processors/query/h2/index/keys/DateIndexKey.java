@@ -33,7 +33,7 @@ public class DateIndexKey extends AbstractDateIndexKey {
     /** */
     public DateIndexKey(Object obj) {
         try {
-            date = (ValueDate) H2Utils.wrap(null, obj, getType());
+            date = (ValueDate) H2Utils.wrap(null, obj, type());
 
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to convert object to DateIndexKey.", e);
@@ -51,7 +51,7 @@ public class DateIndexKey extends AbstractDateIndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return date.getDate();
     }
 
@@ -61,7 +61,7 @@ public class DateIndexKey extends AbstractDateIndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public long getDateValue() {
+    @Override public long dateValue() {
         return date.getDateValue();
     }
 }

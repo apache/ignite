@@ -50,7 +50,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
         addr += 2; // Skip size.
 
-        byte[] arr = (byte[]) bytes.getKey();
+        byte[] arr = (byte[]) bytes.key();
 
         int len2 = arr.length;
 
@@ -95,7 +95,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
         PageUtils.putByte(pageAddr, off, (byte) type());
 
-        byte[] val = (byte[]) key.getKey();
+        byte[] val = (byte[]) key.key();
 
         if (val.length + 3 <= maxSize) {
             size = (short)val.length;
@@ -122,7 +122,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(BytesIndexKey val) {
-        byte[] arr = (byte[]) val.getKey();
+        byte[] arr = (byte[]) val.key();
 
         return arr.length + 3;
     }

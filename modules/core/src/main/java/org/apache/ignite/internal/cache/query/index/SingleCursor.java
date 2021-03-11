@@ -42,7 +42,13 @@ public class SingleCursor<T> implements GridCursor<T> {
         return currIdx.incrementAndGet() == 0;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Note that this implimentation violates the contract of GridCusror. It must be "before first" but this implementation
+     * handles both cases: "before first" and "on first". Current implementation of SQL with H2 relies on this {@code null}
+     * for queries like "select max(col) from table". This should be fixed for other SQL engines.
+     *
+     * https://issues.apache.org/jira/browse/IGNITE-14303.
+     */
     @Override public T get() throws IgniteCheckedException {
         if (currIdx.get() <= 0)
             return val;

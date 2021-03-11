@@ -33,7 +33,7 @@ public class TimestampIndexKey extends AbstractTimestampIndexKey {
     /** */
     public TimestampIndexKey(Object obj) {
         try {
-            timestamp = (ValueTimestamp) H2Utils.wrap(null, obj, getType());
+            timestamp = (ValueTimestamp) H2Utils.wrap(null, obj, type());
 
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to convert object to TimestampIndexKey.", e);
@@ -51,17 +51,17 @@ public class TimestampIndexKey extends AbstractTimestampIndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return timestamp.getTimestamp();
     }
 
     /** {@inheritDoc} */
-    @Override public long getDateValue() {
+    @Override public long dateValue() {
         return timestamp.getDateValue();
     }
 
     /** {@inheritDoc} */
-    @Override public long getNanos() {
+    @Override public long nanos() {
         return timestamp.getTimeNanos();
     }
 

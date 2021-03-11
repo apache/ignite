@@ -55,20 +55,6 @@ public interface Index {
         throws IgniteCheckedException;
 
     /**
-     * Put cache row to index.
-     *
-     * @return {@code True} if replaced existing row.
-     */
-    public boolean putx(CacheDataRow row) throws IgniteCheckedException;
-
-    /**
-     * Remove cache row from index.
-     *
-     * @return {@code True} if removed row.
-     */
-    public boolean removex(CacheDataRow row) throws IgniteCheckedException;
-
-    /**
      * Provides a standard way to access the underlying concrete index
      * implementation to provide access to further, proprietary features.
      */

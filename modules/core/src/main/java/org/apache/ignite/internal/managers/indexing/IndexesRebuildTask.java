@@ -57,7 +57,7 @@ public class IndexesRebuildTask {
             clo = row -> cctx.queries().store(row, null, mvccEnabled);
         }
         else {
-            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexing().getTreeIndexes(cctx, true);
+            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexing().treeIndexes(cctx, true);
 
             if (F.isEmpty(toRebuild))
                 return null;

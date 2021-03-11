@@ -68,7 +68,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
     /** */
     public DefragIndexFactory(IgniteCacheOffheapManager offheap, PageMemory newCachePageMemory, InlineIndex oldIdx) {
         // Row handler factory that produces no-op handler.
-        rowHndFactory = (def, settings) -> oldIdx.getSegment(0).getRowHandler();
+        rowHndFactory = (def, settings) -> oldIdx.segment(0).rowHandler();
 
         this.offheap = offheap;
         this.oldIdx = oldIdx;
@@ -82,12 +82,12 @@ public class DefragIndexFactory extends InlineIndexFactory {
         InlineIndexTree tree = new InlineIndexTree(
             def,
             cctx,
-            def.getTreeName(),
+            def.treeName(),
             offheap,
-            offheap.reuseListForIndex(def.getTreeName()),
+            offheap.reuseListForIndex(def.treeName()),
             newCachePageMemory,
             // Use old row handler to have access to inline index key types.
-            getPageIoResolver(),
+            pageIoResolver(),
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             oldIdx.inlineSize(),
@@ -97,7 +97,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             null
         );
 
-        final MetaPageInfo oldInfo = oldIdx.getSegment(segmentNum).getMetaInfo();
+        final MetaPageInfo oldInfo = oldIdx.segment(segmentNum).metaInfo();
 
         tree.copyMetaInfo(oldInfo);
 
@@ -107,12 +107,12 @@ public class DefragIndexFactory extends InlineIndexFactory {
     }
 
     /** {@inheritDoc} */
-    @Override protected RootPage getRootPage(GridCacheContext<?, ?> ctx, String treeName, int segment) throws Exception {
+    @Override protected RootPage rootPage(GridCacheContext<?, ?> ctx, String treeName, int segment) throws Exception {
         return offheap.rootPageForIndex(ctx.cacheId(), treeName, segment);
     }
 
     /** */
-    private PageIoResolver getPageIoResolver() {
+    private PageIoResolver pageIoResolver() {
         return pageAddr -> {
             PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
 
@@ -150,18 +150,18 @@ public class DefragIndexFactory extends InlineIndexFactory {
         int idx,
         T io
     ) {
-        long link = io.getLink(pageAddr, idx);
+        long link = io.link(pageAddr, idx);
 
         int off = io.offset(idx);
 
-        IndexKey[] keys = new IndexKey[rowHnd.getIndexKeyDefinitions().size()];
+        IndexKey[] keys = new IndexKey[rowHnd.indexKeyDefinitions().size()];
 
         int fieldOff = 0;
 
-        for (int i = 0; i < rowHnd.getInlineIndexKeyTypes().size(); i++) {
-            InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
+        for (int i = 0; i < rowHnd.inlineIndexKeyTypes().size(); i++) {
+            InlineIndexKeyType keyType = rowHnd.inlineIndexKeyTypes().get(i);
 
-            IndexKey key = keyType.get(pageAddr, off + fieldOff, io.getInlineSize() - fieldOff);
+            IndexKey key = keyType.get(pageAddr, off + fieldOff, io.inlineSize() - fieldOff);
 
             fieldOff += keyType.inlineSize(key);
 
@@ -205,13 +205,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            return io.getLink(pageAddr, idx);
+        @Override public long link(long pageAddr, int idx) {
+            return io.link(pageAddr, idx);
         }
 
         /** {@inheritDoc} */
-        @Override public int getInlineSize() {
-            return io.getInlineSize();
+        @Override public int inlineSize() {
+            return io.inlineSize();
         }
     }
 
@@ -249,13 +249,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            return io.getLink(pageAddr, idx);
+        @Override public long link(long pageAddr, int idx) {
+            return io.link(pageAddr, idx);
         }
 
         /** {@inheritDoc} */
-        @Override public int getInlineSize() {
-            return io.getInlineSize();
+        @Override public int inlineSize() {
+            return io.inlineSize();
         }
     }
 }

@@ -34,13 +34,13 @@ public class FloatInlineIndexKeyType extends NullableInlineIndexKeyType<FloatInd
     @Override public int compare0(long pageAddr, int off, FloatIndexKey key) {
         float val1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
 
-        return Integer.signum(Float.compare(val1, (float) key.getKey()));
+        return Integer.signum(Float.compare(val1, (float) key.key()));
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, FloatIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits((float) key.getKey()));
+        PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits((float) key.key()));
 
         return keySize + 1;
     }

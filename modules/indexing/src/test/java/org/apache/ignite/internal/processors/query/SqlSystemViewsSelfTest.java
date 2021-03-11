@@ -378,14 +378,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexesRebuildTask)srv.context().indexing().getIdxRebuild()).stopBlock(cacheSqlName1);
+        ((BlockingIndexesRebuildTask)srv.context().indexing().idxRebuild()).stopBlock(cacheSqlName1);
 
         srv.cache(cacheSqlName1).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexesRebuildTask)srv.context().indexing().getIdxRebuild()).stopBlock(cacheSqlName2);
+        ((BlockingIndexesRebuildTask)srv.context().indexing().idxRebuild()).stopBlock(cacheSqlName2);
 
         srv.cache(cacheSqlName2).indexReadyFuture().get(30_000);
 

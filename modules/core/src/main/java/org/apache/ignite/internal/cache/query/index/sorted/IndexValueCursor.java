@@ -36,7 +36,13 @@ public class IndexValueCursor<V> implements GridCursor<V> {
             return false;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * Note that this implimentation violates the contract of GridCusror. It should throw {@code NoSuchElementException}
+         * instead of returning {@code null}. But current implementation of SQL with H2 relies on this {@code null}
+         * for queries like "select max(col) from table". This should be fixed for other SQL engines.
+         *
+         * https://issues.apache.org/jira/browse/IGNITE-14303.
+         */
         @Override public Object get() {
             return null;
         }

@@ -135,7 +135,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (!initNew) {
             // Init from metastore.
             // Page is ready - read meta information.
-            MetaPageInfo metaInfo = getMetaInfo();
+            MetaPageInfo metaInfo = metaInfo();
 
             def.initByMeta(initNew, metaInfo);
 
@@ -159,7 +159,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
-                rowHnd.getInlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
+                rowHnd.inlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
 
             setIos(inlineSize);
         }
@@ -197,10 +197,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             return metaInfo.inlineObjectSupported();
         else {
             try {
-                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.getIndexKeyDefinitions())) {
+                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions())) {
                     try {
                         InlineObjectBytesDetector inlineObjDetector = new InlineObjectBytesDetector(
-                            metaInfo.inlineSize(), def.getIndexKeyDefinitions(), def.getIdxName(), log);
+                            metaInfo.inlineSize(), def.indexKeyDefinitions(), def.idxName(), log);
 
                         // Create a settings for case where java objects inilned as byte array.
                         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
@@ -209,7 +209,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                         InlineIndexRowHandler rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
-                        ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+                        ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
                         findFirst(inlineObjDetector);
 
@@ -232,7 +232,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     @Override protected int compare(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow row)
         throws IgniteCheckedException {
 
-        int searchKeysLength = row.getKeys().length;
+        int searchKeysLength = row.keys().length;
 
         if (inlineSize == 0)
             return compareFullRows(getRow(io, pageAddr, idx), row, 0, searchKeysLength);
@@ -246,15 +246,15 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int off = io.offset(idx);
 
-        List<IndexKeyDefinition> keyDefs = def.getIndexKeyDefinitions();
+        List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
 
-        List<InlineIndexKeyType> keyTypes = rowHnd.getInlineIndexKeyTypes();
+        List<InlineIndexKeyType> keyTypes = rowHnd.inlineIndexKeyTypes();
 
         for (keyIdx = 0; keyIdx < searchKeysLength; keyIdx++) {
             try {
                 // If a search key is null then skip other keys (consider that null shows that we should get all
                 // possible keys for that comparison).
-                if (row.getKey(keyIdx) == null)
+                if (row.key(keyIdx) == null)
                     return 0;
 
                 // Other keys are not inlined. Should compare as rows.
@@ -271,9 +271,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 // Value can be set up by user in query with different data type.
                 // By default do not compare different types.
-                if (keyDef.validate(row.getKey(keyIdx))) {
+                if (keyDef.validate(row.key(keyIdx))) {
                     if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported()) {
-                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.getKey(keyIdx));
+                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.key(keyIdx));
 
                         fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
                     }
@@ -292,14 +292,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 // Try compare stored values for inlined keys with different approach?
                 if (cmp == COMPARE_UNSUPPORTED)
-                    cmp = def.getRowComparator().compareKey(
-                        pageAddr, off + fieldOff, maxSize, row.getKey(keyIdx), keyType.type());
+                    cmp = def.rowComparator().compareKey(
+                        pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType.type());
 
                 if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED)
                     break;
 
                 if (cmp != 0)
-                    return applySortOrder(cmp, keyDef.getOrder().getSortOrder());
+                    return applySortOrder(cmp, keyDef.order().sortOrder());
 
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
@@ -323,13 +323,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         for (int i = from; i < searchKeysLength; i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
-            if (row.getKey(i) == null)
+            if (row.key(i) == null)
                 return 0;
 
-            int c = def.getRowComparator().compareKey(currRow, row, i);
+            int c = def.rowComparator().compareKey(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), def.getIndexKeyDefinitions().get(i).getOrder().getSortOrder());
+                return applySortOrder(Integer.signum(c), def.indexKeyDefinitions().get(i).order().sortOrder());
         }
 
         return 0;
@@ -352,8 +352,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         boolean cleanSchema = false;
 
-        if (ThreadLocalRowHandlerHolder.getRowHandler() == null) {
-            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+        if (ThreadLocalRowHandlerHolder.rowHandler() == null) {
+            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
             cleanSchema = true;
         }
 
@@ -367,7 +367,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** */
-    public int getInlineSize() {
+    public int inlineSize() {
         return inlineSize;
     }
 
@@ -410,7 +410,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** */
-    public GridCacheContext<?, ?> getContext() {
+    public GridCacheContext<?, ?> cacheContext() {
         return cctx;
     }
 
@@ -421,7 +421,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    public MetaPageInfo getMetaInfo() throws IgniteCheckedException {
+    public MetaPageInfo metaInfo() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
 
         try {
@@ -509,7 +509,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** */
-    public boolean isCreated() {
+    public boolean created() {
         return created;
     }
 
@@ -523,8 +523,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return New CorruptedTreeException instance.
      */
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
-        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, def.getIdxName().cacheName(),
-            def.getIdxName().idxName(), pageIds);
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, def.idxName().cacheName(),
+            def.idxName().idxName(), pageIds);
 
         processFailure(FailureType.CRITICAL_ERROR, e);
 
@@ -539,7 +539,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /**
      * @return Index row handler for this tree.
      */
-    public InlineIndexRowHandler getRowHandler() {
+    public InlineIndexRowHandler rowHandler() {
         return rowHnd;
     }
 }

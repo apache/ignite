@@ -27,12 +27,12 @@ public interface IndexKey {
     /**
      * @return Value of this key.
      */
-    public Object getKey();
+    public Object key();
 
     /**
      * @return Index key type {@link IndexKeyTypes}.
      */
-    public int getType();
+    public int type();
 
     /**
      * @return Comparison result with other IndexKey the same type.

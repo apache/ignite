@@ -42,17 +42,17 @@ public class IndexKeyDefinition {
     }
 
     /** */
-    public Order getOrder() {
+    public Order order() {
         return order;
     }
 
     /** */
-    public int getIdxType() {
+    public int idxType() {
         return idxType;
     }
 
     /** */
-    public String getName() {
+    public String name() {
         return name;
     }
 
@@ -63,6 +63,6 @@ public class IndexKeyDefinition {
         if (key == NullIndexKey.INSTANCE)
             return true;
 
-        return idxType == key.getType();
+        return idxType == key.type();
     }
 }

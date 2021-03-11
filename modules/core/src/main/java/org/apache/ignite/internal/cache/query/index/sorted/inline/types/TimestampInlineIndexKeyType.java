@@ -39,22 +39,22 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
     @Override public int compare0(long pageAddr, int off, AbstractTimestampIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        int c = Long.compare(val1, key.getDateValue());
+        int c = Long.compare(val1, key.dateValue());
 
         if (c != 0)
             return Integer.signum(c);
 
         long nanos1 = PageUtils.getLong(pageAddr, off + 9);
 
-        return Integer.signum(Long.compare(nanos1, key.getNanos()));
+        return Integer.signum(Long.compare(nanos1, key.nanos()));
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, AbstractTimestampIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
 
-        PageUtils.putLong(pageAddr, off + 1, key.getDateValue());
-        PageUtils.putLong(pageAddr, off + 9, key.getNanos());
+        PageUtils.putLong(pageAddr, off + 1, key.dateValue());
+        PageUtils.putLong(pageAddr, off + 9, key.nanos());
 
         return keySize + 1;
     }

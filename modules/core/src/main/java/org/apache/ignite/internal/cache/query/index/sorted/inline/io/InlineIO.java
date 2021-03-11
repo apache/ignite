@@ -26,10 +26,10 @@ public interface InlineIO {
      * @param idx Index.
      * @return Row link.
      */
-    public long getLink(long pageAddr, int idx);
+    public long link(long pageAddr, int idx);
 
     /**
      * @return Number of bytes stored in the inline payload.
      */
-    public int getInlineSize();
+    public int inlineSize();
 }

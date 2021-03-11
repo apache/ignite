@@ -45,41 +45,41 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexRow> implements In
 
     /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, IndexRow row) {
-        assert row.getLink() != 0;
+        assert row.link() != 0;
 
-        PageUtils.putLong(pageAddr, off, row.getLink());
+        PageUtils.putLong(pageAddr, off, row.link());
     }
 
     /** {@inheritDoc} */
     @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
-        long link = getLink(pageAddr, idx);
+        long link = link(pageAddr, idx);
 
         assert link != 0;
 
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        CacheGroupContext ctx = ((InlineIndexTree) tree).getContext().group();
+        CacheGroupContext ctx = ((InlineIndexTree) tree).cacheContext().group();
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
-        return new IndexRowImpl(ThreadLocalRowHandlerHolder.getRowHandler(), row);
+        return new IndexRowImpl(ThreadLocalRowHandlerHolder.rowHandler(), row);
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
-        long link = ((InlineIO) srcIo).getLink(srcPageAddr, srcIdx);
+        long link = ((InlineIO) srcIo).link(srcPageAddr, srcIdx);
 
         PageUtils.putLong(dstPageAddr, offset(dstIdx), link);
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink(long pageAddr, int idx) {
+    @Override public long link(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx));
     }
 
     /** {@inheritDoc} */
-    @Override public int getInlineSize() {
+    @Override public int inlineSize() {
         return 0;
     }
 }

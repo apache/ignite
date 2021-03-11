@@ -31,18 +31,18 @@ public class LongIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.LONG;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        long okey = (long) o.getKey();
+        long okey = (long) o.key();
 
         return Long.compare(key, okey);
     }

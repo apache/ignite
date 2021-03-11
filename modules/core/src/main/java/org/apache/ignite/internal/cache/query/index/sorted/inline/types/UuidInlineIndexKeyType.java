@@ -34,7 +34,7 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, UuidIndexKey key) {
-        UUID v = (UUID) key.getKey();
+        UUID v = (UUID) key.key();
 
         long part1 = PageUtils.getLong(pageAddr, off + 1);
 
@@ -50,7 +50,7 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, UuidIndexKey key, int maxSize) {
-        UUID val = (UUID) key.getKey();
+        UUID val = (UUID) key.key();
 
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putLong(pageAddr, off + 1, val.getMostSignificantBits());

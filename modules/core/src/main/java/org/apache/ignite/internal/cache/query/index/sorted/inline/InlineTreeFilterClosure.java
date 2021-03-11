@@ -45,6 +45,6 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
 
         InlineIO inlineIO = (InlineIO) io;
 
-        return filter.applyPartition(PageIdUtils.partId(pageId(inlineIO.getLink(pageAddr, idx))));
+        return filter.applyPartition(PageIdUtils.partId(pageId(inlineIO.link(pageAddr, idx))));
     }
 }

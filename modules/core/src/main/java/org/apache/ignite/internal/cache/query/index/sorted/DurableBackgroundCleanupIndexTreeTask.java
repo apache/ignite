@@ -113,7 +113,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     InlineIndexTree tree = new InlineIndexTree(
                         null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
                         cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, new IndexKeyTypeSettings(), null,
+                        rootPage, false, 0, new IndexKeyTypeSettings(), stats,
                         new NoopRowHandlerFactory(), null);
 
                     trees0.add(tree);
@@ -169,17 +169,17 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
             return new InlineIndexRowHandler() {
                 /** {@inheritDoc} */
-                @Override public IndexKey getIndexKey(int idx, CacheDataRow row) {
+                @Override public IndexKey indexKey(int idx, CacheDataRow row) {
                     return null;
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<InlineIndexKeyType> getInlineIndexKeyTypes() {
+                @Override public List<InlineIndexKeyType> inlineIndexKeyTypes() {
                     return Collections.emptyList();
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<IndexKeyDefinition> getIndexKeyDefinitions() {
+                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
                     return Collections.emptyList();
                 }
 
@@ -189,12 +189,12 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                 }
 
                 /** {@inheritDoc} */
-                @Override public Object getCacheKey(CacheDataRow row) {
+                @Override public Object cacheKey(CacheDataRow row) {
                     return null;
                 }
 
                 /** {@inheritDoc} */
-                @Override public Object getCacheValue(CacheDataRow row) {
+                @Override public Object cacheValue(CacheDataRow row) {
                     return null;
                 }
             };

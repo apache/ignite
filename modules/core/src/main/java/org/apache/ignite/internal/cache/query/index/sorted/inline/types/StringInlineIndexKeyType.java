@@ -44,7 +44,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
     @Override protected int put0(long pageAddr, int off, StringIndexKey str, int maxSize) {
         short size;
 
-        byte[] s = ((String) str.getKey()).getBytes(CHARSET);
+        byte[] s = ((String) str.key()).getBytes(CHARSET);
         if (s.length + 3 <= maxSize)
             size = (short)s.length;
         else {
@@ -74,7 +74,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, StringIndexKey key) {
-        String s = (String) key.getKey();
+        String s = (String) key.key();
 
         int len1 = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
         int len2 = s.length();
@@ -274,6 +274,6 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(StringIndexKey key) {
-        return ((String) key.getKey()).getBytes(CHARSET).length + 3;
+        return ((String) key.key()).getBytes(CHARSET).length + 3;
     }
 }

@@ -27,10 +27,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimeInli
  */
 public abstract class AbstractTimeIndexKey implements IndexKey {
     /** @return nanoseconds since midnight. */
-    public abstract long getNanos();
+    public abstract long nanos();
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.TIME;
     }
 }

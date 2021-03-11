@@ -41,7 +41,7 @@ public class IndexRowImpl implements IndexRow {
 
     /** Constructor. */
     public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row) {
-        this(rowHnd, row, new IndexKey[rowHnd.getIndexKeyDefinitions().size()]);
+        this(rowHnd, row, new IndexKey[rowHnd.indexKeyDefinitions().size()]);
     }
 
     /**
@@ -61,11 +61,11 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey getKey(int idx) {
+    @Override public IndexKey key(int idx) {
         if (keyCache[idx] != null)
             return keyCache[idx];
 
-        IndexKey key = rowHnd.getIndexKey(idx, cacheRow);
+        IndexKey key = rowHnd.indexKey(idx, cacheRow);
 
         keyCache[idx] = key;
 
@@ -73,29 +73,29 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey[] getKeys() {
-        int keysCnt = rowHnd.getIndexKeyDefinitions().size();
+    @Override public IndexKey[] keys() {
+        int keysCnt = rowHnd.indexKeyDefinitions().size();
 
         IndexKey[] keys = new IndexKey[keysCnt];
 
         for (int i = 0; i < keysCnt; ++i)
-            keys[i] = getKey(i);
+            keys[i] = key(i);
 
         return keys;
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink() {
+    @Override public long link() {
         return cacheRow.link();
     }
 
     /** {@inheritDoc} */
-    @Override public InlineIndexRowHandler getRowHandler() {
+    @Override public InlineIndexRowHandler rowHandler() {
         return rowHnd;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataRow getCacheDataRow() {
+    @Override public CacheDataRow cacheDataRow() {
         return cacheRow;
     }
 
@@ -105,23 +105,23 @@ public class IndexRowImpl implements IndexRow {
 
         sb.a(Integer.toHexString(System.identityHashCode(this)));
 
-        Object v = rowHnd.getCacheKey(cacheRow);
+        Object v = rowHnd.cacheKey(cacheRow);
 
         sb.a("[ key: ").a(v == null ? "nil" : v.toString());
 
-        v = rowHnd.getCacheValue(cacheRow);
+        v = rowHnd.cacheValue(cacheRow);
         sb.a(", val: ").a(v == null ? "nil" : (S.includeSensitive() ? v.toString() :
             "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
 
         sb.a(" ][ ");
 
         if (v != null) {
-            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = rowHnd.getIndexKeyDefinitions().size(); i < cnt; i++) {
+            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = rowHnd.indexKeyDefinitions().size(); i < cnt; i++) {
                 if (i != QueryUtils.DEFAULT_COLUMNS_COUNT)
                     sb.a(", ");
 
                 try {
-                    v = getKey(i);
+                    v = key(i);
 
                     sb.a(v == null ? "nil" : (S.includeSensitive() ? v.toString() : "data hidden"));
                 }

@@ -46,12 +46,12 @@ public class ClientIndexFactory implements IndexFactory {
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
-        List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(def.getTable(), def.getColumns()).get();
+        List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(def.getTable(), def.getColumns()).keyDefinitions();
 
-        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, DUMMY_SETTINGS);
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
 
         int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, def.getCfgInlineSize(), def.getMaxInlineSize());
 
-        return new ClientInlineIndex(def.getIdxName().idxName(), inlineSize);
+        return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
     }
 }

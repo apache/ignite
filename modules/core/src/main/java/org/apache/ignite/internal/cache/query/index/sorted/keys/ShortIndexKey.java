@@ -31,18 +31,18 @@ public class ShortIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.SHORT;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        short okey = (short) o.getKey();
+        short okey = (short) o.key();
 
         // Keep old logic there.
         return Integer.compare(key, okey);

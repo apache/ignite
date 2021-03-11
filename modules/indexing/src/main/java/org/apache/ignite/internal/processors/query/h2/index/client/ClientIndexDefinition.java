@@ -73,7 +73,7 @@ public class ClientIndexDefinition implements IndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexName getIdxName() {
+    @Override public IndexName idxName() {
         return idxName;
     }
 }

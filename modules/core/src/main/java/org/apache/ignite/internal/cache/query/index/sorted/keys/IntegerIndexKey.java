@@ -31,18 +31,18 @@ public class IntegerIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.INT;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        int okey = (int) o.getKey();
+        int okey = (int) o.key();
 
         return Integer.compare(key, okey);
     }

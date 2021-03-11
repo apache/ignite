@@ -38,12 +38,12 @@ public class IndexSearchRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey getKey(int idx) {
+    @Override public IndexKey key(int idx) {
         return keys[idx];
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey[] getKeys() {
+    @Override public IndexKey[] keys() {
         return keys;
     }
 
@@ -53,19 +53,19 @@ public class IndexSearchRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink() {
+    @Override public long link() {
         assert false : "Should not get link by IndexSearchRowImpl";
 
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public InlineIndexRowHandler getRowHandler() {
+    @Override public InlineIndexRowHandler rowHandler() {
         return rowHnd;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataRow getCacheDataRow() {
+    @Override public CacheDataRow cacheDataRow() {
         assert false : "Should not cache data row by IndexSearchRowImpl";
 
         return null;

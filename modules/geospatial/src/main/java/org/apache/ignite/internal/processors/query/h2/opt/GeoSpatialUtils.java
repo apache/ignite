@@ -49,9 +49,9 @@ public class GeoSpatialUtils {
         try {
             IndexName name = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
 
-            List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(tbl, cols).get();
+            List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(tbl, cols).keyDefinitions();
 
-            List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, DUMMY_SETTINGS);
+            List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
 
             QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyDefs, idxKeyTypes);
 

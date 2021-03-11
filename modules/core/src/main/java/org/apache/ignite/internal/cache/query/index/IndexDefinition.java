@@ -24,5 +24,5 @@ public interface IndexDefinition {
     /**
      * @return Index name.
      */
-    public IndexName getIdxName();
+    public IndexName idxName();
 }

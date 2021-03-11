@@ -101,7 +101,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTreeName() {
+    @Override public String treeName() {
         GridH2RowDescriptor rowDesc = table.rowDescriptor();
 
         String typeIdStr = "";
@@ -115,11 +115,11 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         }
 
         // Legacy in treeName from H2Tree.
-        return BPlusTree.treeName(typeIdStr + getIdxName().idxName(), "H2Tree");
+        return BPlusTree.treeName(typeIdStr + idxName().idxName(), "H2Tree");
     }
 
     /** {@inheritDoc} */
-    @Override public List<IndexKeyDefinition> getIndexKeyDefinitions() {
+    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
         if (keyDefs == null)
             throw new IllegalStateException("Index key definitions is not initialized yet.");
 
@@ -127,7 +127,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexRowComparator getRowComparator() {
+    @Override public IndexRowComparator rowComparator() {
         if (rowComparator == null)
             throw new IllegalStateException("Index key definitions is not initialized yet.");
 
@@ -135,22 +135,22 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public int getSegments() {
+    @Override public int segments() {
         return segments;
     }
 
     /** {@inheritDoc} */
-    @Override public int getInlineSize() {
+    @Override public int inlineSize() {
         return inlineSize;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPrimary() {
+    @Override public boolean primary() {
         return isPrimary;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAffinity() {
+    @Override public boolean affinity() {
         return isAffinity;
     }
 
@@ -159,17 +159,17 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         if (keyDefs == null) {
             if (created || metaPageInfo.useUnwrappedPk()) {
                 h2WrappedCols = null;
-                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).get();
+                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).keyDefinitions();
             }
             else {
                 h2UnwrappedCols = null;
-                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).get();
+                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).keyDefinitions();
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public InlineIndexRowHandlerFactory getRowHandlerFactory() {
+    @Override public InlineIndexRowHandlerFactory rowHandlerFactory() {
         return rowHndFactory;
     }
 
@@ -179,7 +179,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexName getIdxName() {
+    @Override public IndexName idxName() {
         return idxName;
     }
 

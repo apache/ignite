@@ -55,15 +55,15 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
 
     /** {@inheritDoc} */
     @Override public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
-        IndexKey lkey = left.getKey(idx);
-        IndexKey rkey = right.getKey(idx);
+        IndexKey lkey = left.key(idx);
+        IndexKey rkey = right.key(idx);
 
         if (lkey == NullIndexKey.INSTANCE)
             return lkey.compare(rkey, keyTypeSettings);
         else if (rkey == NullIndexKey.INSTANCE)
             return 1;
 
-        if (lkey.getType() == rkey.getType())
+        if (lkey.type() == rkey.type())
             return lkey.compare(rkey, keyTypeSettings);
 
         return COMPARE_UNSUPPORTED;

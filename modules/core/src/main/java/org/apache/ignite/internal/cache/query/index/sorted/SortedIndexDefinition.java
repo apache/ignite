@@ -25,31 +25,31 @@ import org.apache.ignite.internal.cache.query.index.IndexDefinition;
  */
 public interface SortedIndexDefinition extends IndexDefinition {
     /** Represents an index tree name. */
-    public String getTreeName();
+    public String treeName();
 
     /** List of index key definitions. */
-    public List<IndexKeyDefinition> getIndexKeyDefinitions();
+    public List<IndexKeyDefinition> indexKeyDefinitions();
 
     /** Comparator for comparing index rows. */
-    public IndexRowComparator getRowComparator();
+    public IndexRowComparator rowComparator();
 
     /** Index row handler. */
-    public InlineIndexRowHandlerFactory getRowHandlerFactory();
+    public InlineIndexRowHandlerFactory rowHandlerFactory();
 
     /** Index key type settings. */
     public IndexKeyTypeSettings keyTypeSettings();
 
     /** Amount of index tree segments.*/
-    public int getSegments();
+    public int segments();
 
     /** Inline size. */
-    public int getInlineSize();
+    public int inlineSize();
 
     /** Whether this index is primary key (unique) or not. */
-    public boolean isPrimary();
+    public boolean primary();
 
     /** Whether this index is affinity key index or not. */
-    public boolean isAffinity();
+    public boolean affinity();
 
     /**
      * @param created Whether index is creating or restored from PDS.

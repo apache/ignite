@@ -137,11 +137,11 @@ public class IgniteIndexing implements IndexingSpi {
         ddlLock.writeLock().lock();
 
         try {
-            String cacheName = definition.getIdxName().cacheName();
+            String cacheName = definition.idxName().cacheName();
 
             cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
 
-            String uniqIdxName = definition.getIdxName().fullName();
+            String uniqIdxName = definition.idxName().fullName();
 
             // GridQueryProcessor already checked schema operation for index duplication.
             assert cacheToIdx.get(cacheName).get(uniqIdxName) == null : "Duplicated index name " + uniqIdxName;
@@ -160,17 +160,17 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeIndex(GridCacheContext<?, ?> cctx, IndexDefinition def, boolean softDelete) {
+    @Override public void removeIndex(GridCacheContext<?, ?> cctx, IndexName idxName, boolean softDelete) {
         ddlLock.writeLock().lock();
 
         try {
-            String cacheName = def.getIdxName().cacheName();
+            String cacheName = idxName.cacheName();
 
             Map<String, Index> idxs = cacheToIdx.get(cacheName);
 
             assert idxs != null : "Try remove index for non registered cache " + cacheName;
 
-            Index idx = idxs.remove(def.getIdxName().fullName());
+            Index idx = idxs.remove(idxName.fullName());
 
             if (idx != null) {
                 idx.destroy(softDelete);
@@ -227,7 +227,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Index> getIndexes(GridCacheContext<?, ?> cctx) {
+    @Override public Collection<Index> indexes(GridCacheContext<?, ?> cctx) {
         ddlLock.readLock().lock();
 
         try {
@@ -244,7 +244,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexDefinition getIndexDefinition(UUID idxId) {
+    @Override public IndexDefinition indexDefinition(UUID idxId) {
         return idxDefs.get(idxId);
     }
 

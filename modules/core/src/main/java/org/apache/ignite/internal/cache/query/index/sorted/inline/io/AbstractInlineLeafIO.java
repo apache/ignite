@@ -76,19 +76,19 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public final void storeByOffset(long pageAddr, int off, IndexRow row) {
-        assert row.getLink() != 0 : row;
+        assert row.link() != 0 : row;
 
         int fieldOff = 0;
 
-        InlineIndexRowHandler rowHnd = ThreadLocalRowHandlerHolder.getRowHandler();
+        InlineIndexRowHandler rowHnd = ThreadLocalRowHandlerHolder.rowHandler();
 
-        for (int i = 0; i < rowHnd.getInlineIndexKeyTypes().size(); i++) {
+        for (int i = 0; i < rowHnd.inlineIndexKeyTypes().size(); i++) {
             try {
                 int maxSize = inlineSize - fieldOff;
 
-                InlineIndexKeyType keyType = rowHnd.getInlineIndexKeyTypes().get(i);
+                InlineIndexKeyType keyType = rowHnd.inlineIndexKeyTypes().get(i);
 
-                int size = keyType.put(pageAddr, off + fieldOff, row.getKey(i), maxSize);
+                int size = keyType.put(pageAddr, off + fieldOff, row.key(i), maxSize);
 
                 // Inline size has exceeded.
                 if (size == 0)
@@ -102,7 +102,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
         }
 
         // Write link after all inlined idx keys.
-        PageUtils.putLong(pageAddr, off + inlineSize, row.getLink());
+        PageUtils.putLong(pageAddr, off + inlineSize, row.link());
     }
 
     /** {@inheritDoc} */
@@ -115,11 +115,11 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        CacheGroupContext ctx = ((InlineIndexTree) tree).getContext().group();
+        CacheGroupContext ctx = ((InlineIndexTree) tree).cacheContext().group();
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
-        return new IndexRowImpl(ThreadLocalRowHandlerHolder.getRowHandler(), row);
+        return new IndexRowImpl(ThreadLocalRowHandlerHolder.rowHandler(), row);
     }
 
     /** {@inheritDoc} */
@@ -138,12 +138,12 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink(long pageAddr, int idx) {
+    @Override public long link(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
     }
 
     /** {@inheritDoc} */
-    @Override public int getInlineSize() {
+    @Override public int inlineSize() {
         return inlineSize;
     }
 
@@ -151,7 +151,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
      * @param payload Payload size.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusLeafIO<IndexRow>> getVersions(int payload) {
+    public static IOVersions<? extends BPlusLeafIO<IndexRow>> versions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)

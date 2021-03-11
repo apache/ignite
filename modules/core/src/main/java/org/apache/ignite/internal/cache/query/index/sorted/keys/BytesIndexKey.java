@@ -31,18 +31,18 @@ public class BytesIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.BYTES;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        byte[] okey = (byte[]) o.getKey();
+        byte[] okey = (byte[]) o.key();
 
         return keySettings.binaryUnsigned() ? BytesCompareUtils.compareNotNullUnsigned(key, okey) : BytesCompareUtils.compareNotNullSigned(key, okey);
     }

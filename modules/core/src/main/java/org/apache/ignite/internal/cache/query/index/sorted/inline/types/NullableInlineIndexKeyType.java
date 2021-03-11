@@ -209,8 +209,8 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * Checks whether specified val corresponds to this key type.
      */
     private void ensureKeyType(IndexKey key) {
-        if (key != NullIndexKey.INSTANCE && type != key.getType())
-            throw new UnsupportedOperationException(key.getType() + " cannot be used for inline type " + type());
+        if (key != NullIndexKey.INSTANCE && type != key.type())
+            throw new UnsupportedOperationException(key.type() + " cannot be used for inline type " + type());
     }
 
     /**

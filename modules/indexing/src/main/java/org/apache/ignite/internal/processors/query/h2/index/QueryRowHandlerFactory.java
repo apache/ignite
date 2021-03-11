@@ -38,10 +38,10 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
 
         QueryIndexDefinition def = (QueryIndexDefinition) sdef;
 
-        List<IndexKeyDefinition> keyDefs = def.getIndexKeyDefinitions();
+        List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
         List<IndexColumn> h2IdxColumns = def.getColumns();
 
-        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.getTypes(keyDefs, keyTypeSettings);
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, keyTypeSettings);
 
         return new QueryIndexRowHandler(def.getTable(), h2IdxColumns, keyDefs, keyTypes);
     }

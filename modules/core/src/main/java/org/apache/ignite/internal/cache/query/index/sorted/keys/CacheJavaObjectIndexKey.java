@@ -57,7 +57,7 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         if (key == null)
             key = obj.isPlatformType() ? obj.value(valCtx, false) : obj;
 
@@ -65,7 +65,7 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] getBytesNoCopy() {
+    @Override public byte[] bytesNoCopy() {
         try {
             if (serialized == null) {
                 // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`

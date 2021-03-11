@@ -72,7 +72,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
 
         // H2 supports comparison between different types after casting them to single type.
         if (highOrder != objType && highOrder == curType) {
-            Value va = DataType.convertToValue(ses, key.getKey(), highOrder);
+            Value va = DataType.convertToValue(ses, key.key(), highOrder);
             va = va.convertTo(highOrder);
 
             IndexKey objHighOrder = IndexKeyFactory.wrap(va.getObject(), highOrder, coctx);
@@ -95,19 +95,19 @@ public class H2RowComparator extends IndexRowCompartorImpl {
 
         int ltype, rtype;
 
-        Object lobject = left.getKey(idx).getKey();
-        Object robject = right.getKey(idx).getKey();
+        Object lobject = left.key(idx).key();
+        Object robject = right.key(idx).key();
 
         // Side of comparison can be set by user in query with type that different for specified schema.
         if (left instanceof IndexSearchRowImpl)
             ltype = DataType.getTypeFromClass(lobject.getClass());
         else
-            ltype = left.getRowHandler().getIndexKeyDefinitions().get(idx).getIdxType();
+            ltype = left.rowHandler().indexKeyDefinitions().get(idx).idxType();
 
         if (right instanceof IndexSearchRowImpl)
             rtype = DataType.getTypeFromClass(robject.getClass());
         else
-            rtype = right.getRowHandler().getIndexKeyDefinitions().get(idx).getIdxType();
+            rtype = right.rowHandler().indexKeyDefinitions().get(idx).idxType();
 
         int c = compareValues(wrap(lobject, ltype), wrap(robject, rtype));
 

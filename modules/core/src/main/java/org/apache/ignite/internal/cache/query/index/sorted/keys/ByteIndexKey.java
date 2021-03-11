@@ -31,18 +31,18 @@ public class ByteIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.BYTE;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        byte okey = (byte) o.getKey();
+        byte okey = (byte) o.key();
 
         return Byte.compare(key, okey);
     }

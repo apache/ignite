@@ -204,7 +204,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexesRebuildTask)n.context().indexing().getIdxRebuild()).stopBlock(cacheName1);
+        ((BlockingIndexesRebuildTask)n.context().indexing().idxRebuild()).stopBlock(cacheName1);
 
         n.cache(cacheName1).indexReadyFuture().get(30_000);
 
@@ -216,7 +216,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexesRebuildTask)n.context().indexing().getIdxRebuild()).stopBlock(cacheName2);
+        ((BlockingIndexesRebuildTask)n.context().indexing().idxRebuild()).stopBlock(cacheName2);
 
         n.cache(cacheName2).indexReadyFuture().get(30_000);
 

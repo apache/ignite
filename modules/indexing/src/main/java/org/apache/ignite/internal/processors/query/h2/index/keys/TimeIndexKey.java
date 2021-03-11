@@ -33,7 +33,7 @@ public class TimeIndexKey extends AbstractTimeIndexKey {
     /** */
     public TimeIndexKey(Object obj) {
         try {
-            time = (ValueTime) H2Utils.wrap(null, obj, getType());
+            time = (ValueTime) H2Utils.wrap(null, obj, type());
 
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to convert object to TimeIndexKey.", e);
@@ -51,12 +51,12 @@ public class TimeIndexKey extends AbstractTimeIndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return time.getTime();
     }
 
     /** {@inheritDoc} */
-    @Override public long getNanos() {
+    @Override public long nanos() {
         return time.getNanos();
     }
 

@@ -34,7 +34,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractT
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, AbstractTimeIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = key.getNanos();
+        long val2 = key.nanos();
 
         return Integer.signum(Long.compare(val1, val2));
     }
@@ -42,7 +42,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractT
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, AbstractTimeIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putLong(pageAddr, off + 1, key.getNanos());
+        PageUtils.putLong(pageAddr, off + 1, key.nanos());
 
         return keySize + 1;
     }

@@ -31,11 +31,11 @@ public interface InlineIndex extends SortedSegmentedIndex {
     /**
      * {@code true} if index is created and {@code false} if it is restored from disk.
      */
-    public boolean isCreated();
+    public boolean created();
 
     /**
      * @param segment Number of tree segment.
      * @return Tree segment for specified number.
      */
-    public InlineIndexTree getSegment(int segment);
+    public InlineIndexTree segment(int segment);
 }

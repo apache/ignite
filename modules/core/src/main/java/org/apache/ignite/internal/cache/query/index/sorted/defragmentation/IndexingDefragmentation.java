@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  *
@@ -89,7 +92,7 @@ public class IndexingDefragmentation {
 
         PageMemory newCachePageMemory = partPageMem;
 
-        Collection<TableIndexes> tables = getTables(grpCtx);
+        Collection<TableIndexes> tables = tables(grpCtx);
 
         long cpLockThreshold = 150L;
 
@@ -99,12 +102,10 @@ public class IndexingDefragmentation {
             defragmentationThreadPool,
             tables,
             table -> defragmentTable(
-                grpCtx,
                 newCtx,
                 mappingByPartition,
                 cpLock,
                 cancellationChecker,
-                log,
                 pageSize,
                 oldCachePageMem,
                 newCachePageMemory,
@@ -122,12 +123,10 @@ public class IndexingDefragmentation {
      * Defragment one given table.
      */
     private boolean defragmentTable(
-        CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
         IntMap<LinkMap> mappingByPartition,
         CheckpointTimeoutLock cpLock,
         Runnable cancellationChecker,
-        IgniteLogger log,
         int pageSize,
         PageMemoryEx oldCachePageMem,
         PageMemory newCachePageMemory,
@@ -145,9 +144,9 @@ public class IndexingDefragmentation {
             cancellationChecker.run();
 
             for (InlineIndex oldIdx : indexes.idxs) {
-                InlineIndexRowHandler oldRowHnd = oldIdx.getSegment(0).getRowHandler();
+                InlineIndexRowHandler oldRowHnd = oldIdx.segment(0).rowHandler();
 
-                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.getIndexDefition(oldIdx.id());
+                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.indexDefition(oldIdx.id());
 
                 InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
@@ -156,7 +155,7 @@ public class IndexingDefragmentation {
                 int segments = oldIdx.segmentsCount();
 
                 for (int i = 0; i < segments; ++i) {
-                    treeIterator.iterate(oldIdx.getSegment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                    treeIterator.iterate(oldIdx.segment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         cancellationChecker.run();
 
                         if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
@@ -178,11 +177,11 @@ public class IndexingDefragmentation {
                         if (row instanceof IndexRowImpl) {
                             IndexRowImpl r = (IndexRowImpl)row;
 
-                            CacheDataRow cacheDataRow = r.getCacheDataRow();
+                            CacheDataRow cacheDataRow = r.cacheDataRow();
 
                             int partition = cacheDataRow.partition();
 
-                            long link = r.getLink();
+                            long link = r.link();
 
                             LinkMap map = mappingByPartition.get(partition);
 
@@ -190,9 +189,9 @@ public class IndexingDefragmentation {
 
                             // Use old row handler, as MetaInfo is copied from old tree.
                             IndexRowImpl newRow = new IndexRowImpl(
-                                oldRowHnd, new CacheDataRowAdapter(newLink), r.getKeys());
+                                oldRowHnd, new CacheDataRowAdapter(newLink), r.keys());
 
-                            newIdx.putx(newRow);
+                            newIdx.putIndexRow(newRow);
                         }
 
                         return true;
@@ -202,22 +201,28 @@ public class IndexingDefragmentation {
 
             return true;
         }
+        catch (Throwable t) {
+            newCtx.cacheObjectContext().kernalContext()
+                .failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw t;
+        }
         finally {
             cpLock.checkpointReadUnlock();
         }
     }
 
     /** Returns collection of table indexes. */
-    private Collection<TableIndexes> getTables(CacheGroupContext gctx) {
+    private Collection<TableIndexes> tables(CacheGroupContext gctx) {
         Collection<TableIndexes> tables = new ArrayList<>();
 
         for (GridCacheContext<?, ?> cctx: gctx.caches()) {
             Map<String, TableIndexes> idxs = new HashMap<>();
 
-            List<InlineIndex> indexes = indexing.getTreeIndexes(cctx, false);
+            List<InlineIndex> indexes = indexing.treeIndexes(cctx, false);
 
             for (InlineIndex idx: indexes) {
-                String table = indexing.getIndexDefition(idx.id()).getIdxName().tableName();
+                String table = indexing.indexDefition(idx.id()).idxName().tableName();
 
                 idxs.putIfAbsent(table, new TableIndexes(cctx, table));
 

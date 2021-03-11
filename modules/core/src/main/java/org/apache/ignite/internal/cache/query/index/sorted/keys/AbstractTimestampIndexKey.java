@@ -28,13 +28,13 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.Timestam
  */
 public abstract class AbstractTimestampIndexKey implements IndexKey {
     /** @return a date value {@link DateValueUtils}. */
-    public abstract long getDateValue();
+    public abstract long dateValue();
 
     /** @return nanoseconds since midnight. */
-    public abstract long getNanos();
+    public abstract long nanos();
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.TIMESTAMP;
     }
 }

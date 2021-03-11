@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.SkipDaemon;
@@ -62,6 +63,8 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * Manages cache indexing.
@@ -188,8 +191,16 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
             // Populate index with cache rows.
             cacheVisitor.visit(row -> {
-                if (idx.canHandle(row))
-                    idx.putx(row);
+                try {
+                    if (idx.canHandle(row))
+                        idx.onUpdate(null, row, false);
+                }
+                catch (Throwable t) {
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+                    throw t;
+
+                }
             });
 
             return idx;
@@ -364,7 +375,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
         long metaPageId = page.pageId().pageId();
 
-        int inlineSize = getInlineSize(page, grpId, pageMemory);
+        int inlineSize = inlineSize(page, grpId, pageMemory);
 
         String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
 
@@ -380,8 +391,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             removeId,
             metaPageId,
             reuseList,
-            AbstractInlineInnerIO.getVersions(inlineSize),
-            AbstractInlineLeafIO.getVersions(inlineSize),
+            AbstractInlineInnerIO.versions(inlineSize),
+            AbstractInlineLeafIO.versions(inlineSize),
             PageIdAllocator.FLAG_IDX,
             ctx.failure(),
             lockLsnr
@@ -405,7 +416,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @return Inline size.
      * @throws IgniteCheckedException If something went wrong.
      */
-    private int getInlineSize(RootPage page, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
+    private int inlineSize(RootPage page, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
         long metaPageId = page.pageId().pageId();
 
         final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
@@ -435,8 +446,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      *
      * @param createdOnly Get only created indexes (not restored from dick).
      */
-    public List<InlineIndex> getTreeIndexes(GridCacheContext cctx, boolean createdOnly) {
-        Collection<Index> idxs = getSpi().getIndexes(cctx);
+    public List<InlineIndex> treeIndexes(GridCacheContext cctx, boolean createdOnly) {
+        Collection<Index> idxs = getSpi().indexes(cctx);
 
         List<InlineIndex> treeIdxs = new ArrayList<>();
 
@@ -444,7 +455,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             if (idx instanceof InlineIndex) {
                 InlineIndex idx0 = (InlineIndex)idx;
 
-                if (!createdOnly || idx0.isCreated())
+                if (!createdOnly || idx0.created())
                     treeIdxs.add(idx0);
             }
         }
@@ -485,19 +496,19 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param idxId UUID of index.
      * @return IndexDefinition used for creating index with id {@code idxId}.
      */
-    public IndexDefinition getIndexDefition(UUID idxId) {
-        return getSpi().getIndexDefinition(idxId);
+    public IndexDefinition indexDefition(UUID idxId) {
+        return getSpi().indexDefinition(idxId);
     }
 
     /**
      * @return Logger.
      */
-    public IgniteLogger getLogger() {
+    public IgniteLogger logger() {
         return log;
     }
 
     /** For tests purposes. */
-    public IndexesRebuildTask getIdxRebuild() {
+    public IndexesRebuildTask idxRebuild() {
         return idxRebuild;
     }
 }

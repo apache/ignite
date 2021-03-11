@@ -91,8 +91,8 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
             if (fieldOff >= inlineSize)
                 return false;
 
-            if (keyDef.getIdxType() != IndexKeyTypes.JAVA_OBJECT) {
-                InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.getIdxType(), keyTypeSettings);
+            if (keyDef.idxType() != IndexKeyTypes.JAVA_OBJECT) {
+                InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.idxType(), keyTypeSettings);
 
                 if (keyType.inlineSize() < 0)
                     varLenPresents = true;
@@ -102,7 +102,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
                 continue;
             }
 
-            IndexKey key = r.getKey(i);
+            IndexKey key = r.key(i);
 
             if (key == NullIndexKey.INSTANCE)
                 return false;
@@ -115,7 +115,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
                 len &= 0x7FFF;
 
-                byte[] originalObjBytes = ((JavaObjectIndexKey) key).getBytesNoCopy();
+                byte[] originalObjBytes = ((JavaObjectIndexKey) key).bytesNoCopy();
 
                 // Read size more then available space or more then origin length.
                 if (len > inlineSize - fieldOff - 3 || len > originalObjBytes.length) {
@@ -179,10 +179,10 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
         IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
 
         for (IndexKeyDefinition def: keyDefs) {
-            if (def.getIdxType() == IndexKeyTypes.JAVA_OBJECT)
+            if (def.idxType() == IndexKeyTypes.JAVA_OBJECT)
                 break;
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.getIdxType(), settings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.idxType(), settings);
 
             if (keyType == null)
                 return false;

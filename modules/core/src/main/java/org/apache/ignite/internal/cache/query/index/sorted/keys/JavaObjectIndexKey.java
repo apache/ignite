@@ -28,18 +28,18 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 public abstract class JavaObjectIndexKey implements IndexKey {
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return getKey().hashCode();
+        return key().hashCode();
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.JAVA_OBJECT;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        Object o1 = getKey();
-        Object o2 = o.getKey();
+        Object o1 = key();
+        Object o2 = o.key();
 
         boolean isComparable = o1 instanceof Comparable;
         boolean otherIsComparable = o2 instanceof Comparable;
@@ -59,7 +59,7 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int h2 = o2.hashCode();
 
             if (h1 == h2)
-                return o1.equals(o2) ? 0 : BytesCompareUtils.compareNotNullSigned(getBytesNoCopy(), ((JavaObjectIndexKey) o).getBytesNoCopy());
+                return o1.equals(o2) ? 0 : BytesCompareUtils.compareNotNullSigned(bytesNoCopy(), ((JavaObjectIndexKey) o).bytesNoCopy());
             else
                 return h1 > h2 ? 1 : -1;
         }
@@ -88,5 +88,5 @@ public abstract class JavaObjectIndexKey implements IndexKey {
     /**
      * @return Represents a Java Object as byte array.
      */
-    public abstract byte[] getBytesNoCopy();
+    public abstract byte[] bytesNoCopy();
 }

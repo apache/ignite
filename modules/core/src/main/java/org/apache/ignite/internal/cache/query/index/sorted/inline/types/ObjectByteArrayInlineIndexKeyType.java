@@ -44,7 +44,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, JavaObjectIndexKey key, int maxSize) {
         try {
-            byte[] b = serializer.serialize(key.getKey());
+            byte[] b = serializer.serialize(key.key());
 
             return delegate.put0(pageAddr, off, new BytesIndexKey(b), maxSize);
 
@@ -55,7 +55,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** {@inheritDoc} */
     @Override protected JavaObjectIndexKey get0(long pageAddr, int off) {
-        byte[] b = (byte[]) delegate.get0(pageAddr, off).getKey();
+        byte[] b = (byte[]) delegate.get0(pageAddr, off).key();
 
         return new PlainJavaObjectIndexKey(null, b);
     }
@@ -63,7 +63,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, JavaObjectIndexKey key) {
         try {
-            byte[] b = serializer.serialize(key.getKey());
+            byte[] b = serializer.serialize(key.key());
 
             return delegate.compare0(pageAddr, off, new BytesIndexKey(b));
 

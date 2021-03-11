@@ -34,12 +34,12 @@ public class Order {
     }
 
     /** */
-    public SortOrder getSortOrder() {
+    public SortOrder sortOrder() {
         return sortOrder;
     }
 
     /** */
-    public NullsOrder getNullsOrder() {
+    public NullsOrder nullsOrder() {
         return nullsOrder;
     }
 }

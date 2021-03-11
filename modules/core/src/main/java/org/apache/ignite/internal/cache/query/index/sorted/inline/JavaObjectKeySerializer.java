@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Serializer for representing JO as byte array in inline.
@@ -38,7 +37,7 @@ public class JavaObjectKeySerializer {
      *
      * @param cfg Ignite configuration.
      */
-    public JavaObjectKeySerializer(@NotNull IgniteConfiguration cfg) {
+    public JavaObjectKeySerializer(IgniteConfiguration cfg) {
         marshaller = cfg.getMarshaller();
         clsLdr = U.resolveClassLoader(cfg);
     }

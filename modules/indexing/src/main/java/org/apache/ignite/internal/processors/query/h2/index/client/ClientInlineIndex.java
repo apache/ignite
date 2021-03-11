@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -56,22 +55,22 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCreated() {
+    @Override public boolean created() {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public InlineIndexTree getSegment(int segment) {
+    @Override public InlineIndexTree segment(int segment) {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment,
+    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment,
         IndexingQueryFilter filter) throws IgniteCheckedException {
         throw unsupported();
     }
@@ -124,16 +123,6 @@ public class ClientInlineIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public void onUpdate(@Nullable CacheDataRow oldRow, @Nullable CacheDataRow newRow,
         boolean prevRowAvailable) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(CacheDataRow row) throws IgniteCheckedException {
         throw unsupported();
     }
 

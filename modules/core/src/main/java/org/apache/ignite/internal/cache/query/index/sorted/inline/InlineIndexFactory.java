@@ -41,24 +41,24 @@ public class InlineIndexFactory implements IndexFactory {
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition def) {
         SortedIndexDefinition sdef = (SortedIndexDefinition) def;
 
-        InlineIndexTree[] trees = new InlineIndexTree[sdef.getSegments()];
+        InlineIndexTree[] trees = new InlineIndexTree[sdef.segments()];
         InlineRecommender recommender = new InlineRecommender(cctx, sdef);
 
         IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
             SORTED_INDEX,
             cctx.name(),
-            sdef.getIdxName().idxName(),
+            sdef.idxName().idxName(),
             cctx.kernalContext().metric()
         );
 
         try {
-            for (int i = 0; i < sdef.getSegments(); ++i) {
+            for (int i = 0; i < sdef.segments(); ++i) {
                 // Required for persistence.
                 IgniteCacheDatabaseSharedManager db = cctx.shared().database();
                 db.checkpointReadLock();
 
                 try {
-                    RootPage page = getRootPage(cctx, sdef.getTreeName(), i);
+                    RootPage page = rootPage(cctx, sdef.treeName(), i);
 
                     trees[i] = createIndexSegment(cctx, sdef, page, stats, recommender, i);
 
@@ -80,22 +80,22 @@ public class InlineIndexFactory implements IndexFactory {
         return new InlineIndexTree(
             def,
             cctx,
-            def.getTreeName(),
+            def.treeName(),
             cctx.offheap(),
-            cctx.offheap().reuseListForIndex(def.getTreeName()),
+            cctx.offheap().reuseListForIndex(def.treeName()),
             cctx.dataRegion().pageMemory(),
             PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
-            def.getInlineSize(),
+            def.inlineSize(),
             def.keyTypeSettings(),
             stats,
-            def.getRowHandlerFactory(),
+            def.rowHandlerFactory(),
             recommender);
     }
 
     /** */
-    protected RootPage getRootPage(GridCacheContext<?, ?> ctx, String treeName, int segment) throws Exception {
+    protected RootPage rootPage(GridCacheContext<?, ?> ctx, String treeName, int segment) throws Exception {
         return ctx.offheap().rootPageForIndex(ctx.cacheId(), treeName, segment);
     }
 }

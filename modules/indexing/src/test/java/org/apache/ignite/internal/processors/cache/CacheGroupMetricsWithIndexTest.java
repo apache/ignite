@@ -172,7 +172,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
         ignite.cluster().active(true);
 
         BlockingIndexesRebuildTask blockingRebuild = (BlockingIndexesRebuildTask)ignite.context().indexing()
-            .getIdxRebuild();
+            .idxRebuild();
 
         while (!blockingRebuild.isBlock(cacheName2) || !blockingRebuild.isBlock(cacheName3))
             U.sleep(10);

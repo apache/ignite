@@ -28,10 +28,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValu
  */
 public abstract class AbstractDateIndexKey implements IndexKey {
     /** @return a date value {@link DateValueUtils}. */
-    public abstract long getDateValue();
+    public abstract long dateValue();
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.DATE;
     }
 }

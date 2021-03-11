@@ -61,10 +61,10 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey getIndexKey(int idx, CacheDataRow row) {
+    @Override public IndexKey indexKey(int idx, CacheDataRow row) {
         Object o = getKey(idx, row);
 
-        return IndexKeyFactory.wrap(o, keyDefs.get(idx).getIdxType(), cacheDesc.context().cacheObjectContext());
+        return IndexKeyFactory.wrap(o, keyDefs.get(idx).idxType(), cacheDesc.context().cacheObjectContext());
     }
 
     /** */
@@ -73,12 +73,12 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public List<InlineIndexKeyType> getInlineIndexKeyTypes() {
+    @Override public List<InlineIndexKeyType> inlineIndexKeyTypes() {
         return keyTypes;
     }
 
     /** {@inheritDoc} */
-    @Override public List<IndexKeyDefinition> getIndexKeyDefinitions() {
+    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
         return keyDefs;
     }
 
@@ -104,12 +104,12 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getCacheKey(CacheDataRow row) {
+    @Override public Object cacheKey(CacheDataRow row) {
         return key(row);
     }
 
     /** {@inheritDoc} */
-    @Override public Object getCacheValue(CacheDataRow row) {
+    @Override public Object cacheValue(CacheDataRow row) {
         return value(row);
     }
 

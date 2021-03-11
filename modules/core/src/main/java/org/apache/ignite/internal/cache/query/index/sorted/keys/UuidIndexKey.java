@@ -32,18 +32,18 @@ public class UuidIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.UUID;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        UUID okey = (UUID) o.getKey();
+        UUID okey = (UUID) o.key();
 
         // Keep old logic.
         if (key.getMostSignificantBits() == okey.getMostSignificantBits())

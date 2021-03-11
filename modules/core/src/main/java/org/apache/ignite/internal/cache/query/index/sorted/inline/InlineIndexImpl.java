@@ -23,14 +23,12 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
@@ -43,10 +41,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * Sorted index implementation.
@@ -79,29 +74,26 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         this.cctx = cctx;
         this.segments = segments.clone();
         this.def = def;
-        treeName = def.getTreeName();
+        treeName = def.treeName();
         this.stats = stats;
-        rowHnd = segments[0].getRowHandler();
+        rowHnd = segments[0].rowHandler();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment) throws IgniteCheckedException {
         return find(lower, upper, segment, null);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
-        InlineTreeFilterClosure closure = getFilterClosure(filter);
-
-        IndexRow rlower = (IndexRow) lower;
-        IndexRow rupper = (IndexRow) upper;
+    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+        InlineTreeFilterClosure closure = filterClosure(filter);
 
         // If it is known that only one row will be returned an optimization is employed
-        if (isSingleRowLookup(rlower, rupper)) {
+        if (isSingleRowLookup(lower, upper)) {
             try {
-                ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+                ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-                IndexRowImpl row = segments[segment].findOne(rlower, closure, null);
+                IndexRowImpl row = segments[segment].findOne(lower, closure, null);
 
                 if (row == null || isExpired(row))
                     return IndexValueCursor.EMPTY;
@@ -114,9 +106,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
 
         try {
-            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-            return segments[segment].find(rlower, rupper, closure, null);
+            return segments[segment].find(lower, upper, closure, null);
 
         } finally {
             ThreadLocalRowHandlerHolder.clearRowHandler();
@@ -130,7 +122,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
-        return segments[segment].size(getFilterClosure(filter));
+        return segments[segment].size(filterClosure(filter));
     }
 
     /**
@@ -149,20 +141,20 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** */
-    private boolean isSingleRowLookup(IndexSearchRow lower, IndexSearchRow upper) throws IgniteCheckedException {
-        return def.isPrimary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+    private boolean isSingleRowLookup(IndexRow lower, IndexRow upper) throws IgniteCheckedException {
+        return def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
      * If {@code true} then length of keys for search must be equal to length of schema, so use full
      * schema to search. If {@code false} then it's possible to use only part of schema for search.
      */
-    private boolean isFullSchemaSearch(IndexSearchRow key) {
-        int schemaLength = def.getIndexKeyDefinitions().size();
+    private boolean isFullSchemaSearch(IndexRow key) {
+        int schemaLength = def.indexKeyDefinitions().size();
 
         for (int i = 0; i < schemaLength; i++) {
             // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
-            if (key.getKey(i) == null)
+            if (key.key(i) == null)
                 return false;
         }
 
@@ -178,18 +170,18 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * @param r2 Another row.
      * @return {@code true} in case both rows are efficiently the same, {@code false} otherwise.
      */
-    private boolean checkRowsTheSame(IndexSearchRow r1, IndexSearchRow r2) throws IgniteCheckedException {
+    private boolean checkRowsTheSame(IndexRow r1, IndexRow r2) throws IgniteCheckedException {
         if (r1 == r2)
             return true;
 
         if (!(r1 != null && r2 != null))
             return false;
 
-        int keysLen = def.getIndexKeyDefinitions().size();
+        int keysLen = def.indexKeyDefinitions().size();
 
         for (int i = 0; i < keysLen; i++) {
-            Object v1 = r1.getKey(i);
-            Object v2 = r2.getKey(i);
+            Object v1 = r1.key(i);
+            Object v2 = r2.key(i);
 
             if (v1 == null && v2 == null)
                 continue;
@@ -197,7 +189,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (!(v1 != null && v2 != null))
                 return false;
 
-            if (def.getRowComparator().compareKey((IndexRow) r1, (IndexRow) r2, i) != 0)
+            if (def.rowComparator().compareKey((IndexRow) r1, (IndexRow) r2, i) != 0)
                 return false;
         }
 
@@ -207,9 +199,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         try {
-            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-            InlineTreeFilterClosure closure = getFilterClosure(filter);
+            InlineTreeFilterClosure closure = filterClosure(filter);
 
             IndexRow found = segments[segment].findFirst(closure);
 
@@ -226,9 +218,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
         try {
-            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-            InlineTreeFilterClosure closure = getFilterClosure(filter);
+            InlineTreeFilterClosure closure = filterClosure(filter);
 
             IndexRow found = segments[segment].findLast(closure);
 
@@ -249,7 +241,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return def.getIdxName().idxName();
+        return def.idxName().idxName();
     }
 
     /** {@inheritDoc} */
@@ -259,7 +251,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (destroyed.get())
                 return;
 
-            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
             boolean replaced = false;
 
@@ -268,6 +260,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 int segment = segmentForRow(newRow);
 
                 IndexRowImpl row0 = new IndexRowImpl(rowHnd, newRow);
+
+                // Validate all keys.
+                for (int i = 0; i < def.indexKeyDefinitions().size(); ++i)
+                    row0.key(i);
 
                 if (prevRowAvailable && !rebuildInProgress())
                     replaced = segments[segment].putx(row0);
@@ -290,46 +286,22 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
-        IndexRowImpl r = new IndexRowImpl(rowHnd, row);
-
-        return putx(r);
-    }
-
     /**
-     * Put index row to index.
+     * Put index row to index. This method is for internal use only.
      *
      * @param row Index row.
-     * @return {@code True} if replaced existing row.
      */
-    public boolean putx(IndexRowImpl row) throws IgniteCheckedException {
-        int segment = segmentForRow(row.getCacheDataRow());
-
-        // Validate all keys.
-        for (int i = 0; i < def.getIndexKeyDefinitions().size(); ++i)
-            row.getKey(i);
+    public void putIndexRow(IndexRowImpl row) throws IgniteCheckedException {
+        int segment = segmentForRow(row.cacheDataRow());
 
         try {
-            ThreadLocalRowHandlerHolder.setRowHandler(rowHnd);
+            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-            return segments[segment].putx(row);
-        }
-        catch (Throwable t) {
-            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
-
-            throw t;
+            segments[segment].putx(row);
         }
         finally {
             ThreadLocalRowHandlerHolder.clearRowHandler();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(CacheDataRow row) throws IgniteCheckedException {
-        int segment = segmentForRow(row);
-
-        return segments[segment].removex(new IndexRowImpl(rowHnd, row));
     }
 
     /** {@inheritDoc} */
@@ -347,7 +319,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public int inlineSize() {
-        return segments[0].getInlineSize();
+        return segments[0].inlineSize();
     }
 
     /** {@inheritDoc} */
@@ -364,7 +336,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** */
-    public InlineTreeFilterClosure getFilterClosure(IndexingQueryFilter filter) {
+    public InlineTreeFilterClosure filterClosure(IndexingQueryFilter filter) {
         if (filter != null) {
             IndexingQueryCacheFilter f = filter.forCache(cctx.cache().name());
             if (f != null)
@@ -375,19 +347,19 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCreated() {
+    @Override public boolean created() {
         assert segments != null;
 
         for (int i = 0; i < segments.length; i++) {
             try {
                 InlineIndexTree segment = segments[i];
 
-                if (segment.isCreated())
+                if (segment.created())
                     return true;
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to check index tree root page existence [cacheName=" +
-                    cctx.name() + ", tblName=" + def.getIdxName().tableName() + ", idxName=" + def.getIdxName().idxName() +
+                    cctx.name() + ", tblName=" + def.idxName().tableName() + ", idxName=" + def.idxName().idxName() +
                     ", segment=" + i + ']');
             }
         }
@@ -396,7 +368,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public InlineIndexTree getSegment(int segment) {
+    @Override public InlineIndexTree segment(int segment) {
         return segments[segment];
     }
 
@@ -406,8 +378,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * @param row row to check.
      * @throws NullPointerException if provided row is {@code null}.
      */
-    private static boolean isExpired(@NotNull IndexRow row) {
-        return row.getCacheDataRow().expireTime() > 0 && row.getCacheDataRow().expireTime() <= U.currentTimeMillis();
+    private static boolean isExpired(IndexRow row) {
+        return row.cacheDataRow().expireTime() > 0 && row.cacheDataRow().expireTime() <= U.currentTimeMillis();
     }
 
     /** If {code true} then this index is already marked as destroyed. */
@@ -451,7 +423,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     trees,
                     cctx.group().name(),
                     cctx.cache().name(),
-                    def.getIdxName()
+                    def.idxName()
                 );
 
                 cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
@@ -473,6 +445,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public boolean canHandle(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
-            cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
+            cctx, def.idxName().cacheName(), def.idxName().tableName(), row.key(), row.value());
     }
 }

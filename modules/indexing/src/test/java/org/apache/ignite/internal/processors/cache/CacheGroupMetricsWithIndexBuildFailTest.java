@@ -131,7 +131,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(true);
 
-        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexing().getIdxRebuild())
+        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexing().idxRebuild())
             .stopBlock(cacheName1);
 
         GridTestUtils.assertThrows(log, () -> ignite.cache(cacheName1).indexReadyFuture().get(30_000),
@@ -141,7 +141,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(false);
 
-        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexing().getIdxRebuild())
+        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexing().idxRebuild())
             .stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);

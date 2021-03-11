@@ -47,7 +47,7 @@ public class QueryIndexKeyDefinitionProvider {
     /**
      * @return List of index key definitions.
      */
-    public List<IndexKeyDefinition> get() {
+    public List<IndexKeyDefinition> keyDefinitions() {
         if (keyDefs != null)
             return keyDefs;
 
@@ -66,11 +66,11 @@ public class QueryIndexKeyDefinitionProvider {
     /** */
     private IndexKeyDefinition keyDefinition(IndexColumn c) {
         return new IndexKeyDefinition(
-            c.columnName, c.column.getType(), getSortOrder(c.sortType));
+            c.columnName, c.column.getType(), sortOrder(c.sortType));
     }
 
     /** Maps H2 column order to Ignite index order. */
-    private Order getSortOrder(int sortType) {
+    private Order sortOrder(int sortType) {
         SortOrder sortOrder = (sortType & 1) != 0 ? SortOrder.DESC : SortOrder.ASC;
 
         NullsOrder nullsOrder = (sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : NullsOrder.NULLS_LAST;

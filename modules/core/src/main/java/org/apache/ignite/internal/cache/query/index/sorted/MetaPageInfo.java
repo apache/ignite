@@ -25,22 +25,22 @@ import org.apache.ignite.lang.IgniteProductVersion;
  */
 public class MetaPageInfo {
     /** Inline size used for a tree. */
-    int inlineSize;
+    private final int inlineSize;
 
     /** Whether index use wrapped / unwrapped PK. */
-    boolean useUnwrappedPk;
+    private final boolean useUnwrappedPk;
 
     /** Whether any flags is supported. */
-    boolean flagsSupported;
+    private final boolean flagsSupported;
 
     /** Whether inlinining of java objects is supported. */
-    boolean inlineObjSupported;
+    private boolean inlineObjSupported;
 
     /** Whether inlinining of java objects as hash is supported. */
-    boolean inlineObjHash;
+    private boolean inlineObjHash;
 
     /** Version of Ignite. */
-    IgniteProductVersion createdVer;
+    private final IgniteProductVersion createdVer;
 
     /**
      * @param io Metapage IO.

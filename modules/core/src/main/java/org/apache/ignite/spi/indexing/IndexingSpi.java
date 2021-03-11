@@ -25,6 +25,7 @@ import javax.cache.Cache;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.spi.IgniteSpi;
@@ -135,10 +136,10 @@ public interface IndexingSpi extends IgniteSpi {
      * Removes an index.
      *
      * @param cctx Cache context.
-     * @param def Index definition.
+     * @param idxName Index name.
      * @param softDelete whether it's required to delete underlying structures.
      */
-    public default void removeIndex(GridCacheContext<?, ?> cctx, IndexDefinition def, boolean softDelete) {
+    public default void removeIndex(GridCacheContext<?, ?> cctx, IndexName idxName, boolean softDelete) {
         // No-op.
     }
 
@@ -174,7 +175,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param cctx Cache context.
      * @return Collection of indexes for specified cache.
      */
-    public default Collection<Index> getIndexes(GridCacheContext<?, ?> cctx) {
+    public default Collection<Index> indexes(GridCacheContext<?, ?> cctx) {
         return Collections.emptyList();
     }
 
@@ -184,7 +185,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param idxId UUID of index.
      * @return IndexDefinition used for creating index with id {@code idxId}.
      */
-    public default IndexDefinition getIndexDefinition(UUID idxId) {
+    public default IndexDefinition indexDefinition(UUID idxId) {
         return null;
     }
 }

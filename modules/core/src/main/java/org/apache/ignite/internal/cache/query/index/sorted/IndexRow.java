@@ -17,24 +17,36 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
  * Represents an index row stored in a tree.
  */
-public interface IndexRow extends IndexSearchRow {
+public interface IndexRow {
+    /**
+     * @param idx Index of a key.
+     * @return Underlying key by specified index.
+     */
+    public IndexKey key(int idx);
+
+    /**
+     * @return Underlying keys.
+     */
+    public IndexKey[] keys();
+
     /**
      * @return Link to a cache row.
      */
-    public long getLink();
+    public long link();
 
     /**
      * @return Schema of an index.
      */
-    public InlineIndexRowHandler getRowHandler();
+    public InlineIndexRowHandler rowHandler();
 
     /**
      * @return Cache row.
      */
-    public CacheDataRow getCacheDataRow();
+    public CacheDataRow cacheDataRow();
 }

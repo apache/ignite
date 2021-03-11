@@ -31,18 +31,18 @@ public class DoubleIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.DOUBLE;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        double okey = (double) o.getKey();
+        double okey = (double) o.key();
 
         return Double.compare(key, okey);
     }

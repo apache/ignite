@@ -32,18 +32,18 @@ public class DecimalIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getKey() {
+    @Override public Object key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public int type() {
         return IndexKeyTypes.DECIMAL;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
-        BigDecimal okey = (BigDecimal) o.getKey();
+        BigDecimal okey = (BigDecimal) o.key();
 
         return key.compareTo(okey);
     }

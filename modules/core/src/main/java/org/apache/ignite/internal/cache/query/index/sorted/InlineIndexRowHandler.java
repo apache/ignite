@@ -33,17 +33,17 @@ public interface InlineIndexRowHandler {
      * @param row Original cache data row.
      * @return Index key.
      */
-    public IndexKey getIndexKey(int idx, CacheDataRow row);
+    public IndexKey indexKey(int idx, CacheDataRow row);
 
     /**
      * @return List of key types for inlined index keys.
      */
-    public List<InlineIndexKeyType> getInlineIndexKeyTypes();
+    public List<InlineIndexKeyType> inlineIndexKeyTypes();
 
     /**
      * @return List of index key definitions.
      */
-    public List<IndexKeyDefinition> getIndexKeyDefinitions();
+    public List<IndexKeyDefinition> indexKeyDefinitions();
 
     /**
      * @return Parition for specified row.
@@ -54,11 +54,11 @@ public interface InlineIndexRowHandler {
      * @param row Cache row.
      * @return Cache key.
      */
-    public Object getCacheKey(CacheDataRow row);
+    public Object cacheKey(CacheDataRow row);
 
     /**
      * @param row Cache row.
      * @return Cache value.
      */
-    public Object getCacheValue(CacheDataRow row);
+    public Object cacheValue(CacheDataRow row);
 }

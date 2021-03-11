@@ -25,13 +25,13 @@ public class ThreadLocalRowHandlerHolder {
     private static final ThreadLocal<RowHandlerHolder> holder = ThreadLocal.withInitial(RowHandlerHolder::new);
 
     /** Set index row handler for current context. */
-    public static void setRowHandler(InlineIndexRowHandler rowHnd) {
-        holder.get().setRowHandler(rowHnd);
+    public static void rowHandler(InlineIndexRowHandler rowHnd) {
+        holder.get().rowHandler(rowHnd);
     }
 
     /** Get index row handler for current context. */
-    public static InlineIndexRowHandler getRowHandler() {
-        return holder.get().getRowHandler();
+    public static InlineIndexRowHandler rowHandler() {
+        return holder.get().rowHandler();
     }
 
     /** Clear index row handler for current context. */
@@ -45,12 +45,12 @@ public class ThreadLocalRowHandlerHolder {
         private InlineIndexRowHandler rowHnd;
 
         /** */
-        private void setRowHandler(InlineIndexRowHandler rowHnd) {
+        private void rowHandler(InlineIndexRowHandler rowHnd) {
             this.rowHnd = rowHnd;
         }
 
         /** */
-        private InlineIndexRowHandler getRowHandler() {
+        private InlineIndexRowHandler rowHandler() {
             return rowHnd;
         }
 

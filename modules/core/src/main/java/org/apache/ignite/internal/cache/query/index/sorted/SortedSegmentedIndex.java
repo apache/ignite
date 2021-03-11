@@ -35,7 +35,7 @@ public interface SortedSegmentedIndex extends Index {
      * @param segment Number of tree segment to find.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexRow> find(@Nullable IndexSearchRow lower, @Nullable IndexSearchRow upper, int segment) throws IgniteCheckedException;
+    public GridCursor<IndexRow> find(@Nullable IndexRow lower, @Nullable IndexRow upper, int segment) throws IgniteCheckedException;
 
     /**
      * Finds index rows by specified range in specifed tree segment with cache filtering. Range can be bound or unbound.
@@ -46,7 +46,7 @@ public interface SortedSegmentedIndex extends Index {
      * @param filter Cache entry filter.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexRow> find(IndexSearchRow lower, IndexSearchRow upper, int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexingQueryFilter filter)
         throws IgniteCheckedException;
 
     /**
