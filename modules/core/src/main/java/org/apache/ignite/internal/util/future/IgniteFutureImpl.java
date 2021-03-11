@@ -38,13 +38,17 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     /** */
     protected final IgniteInternalFuture<V> fut;
 
+    /** */
+    private final Executor defaultExecutor;
+
     /**
      * @param fut Future.
      */
-    public IgniteFutureImpl(IgniteInternalFuture<V> fut) {
+    public IgniteFutureImpl(IgniteInternalFuture<V> fut, @Nullable Executor defaultExecutor) {
         assert fut != null;
 
         this.fut = fut;
+        this.defaultExecutor = defaultExecutor;
     }
 
     /**
@@ -81,7 +85,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return new IgniteFutureImpl<>(chainInternal(doneCb, null));
+        return new IgniteFutureImpl<>(chainInternal(doneCb, null), defaultExecutor);
     }
 
     /** {@inheritDoc} */
@@ -90,7 +94,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         A.notNull(doneCb, "doneCb");
         A.notNull(exec, "exec");
 
-        return new IgniteFutureImpl<>(chainInternal(doneCb, exec));
+        return new IgniteFutureImpl<>(chainInternal(doneCb, exec), defaultExecutor);
     }
 
     /**
@@ -113,6 +117,9 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         };
 
         if (exec != null)
+            return fut.chain(clos, exec);
+
+        if (defaultExecutor != null)
             return fut.chain(clos, exec);
 
         return fut.chain(clos);
