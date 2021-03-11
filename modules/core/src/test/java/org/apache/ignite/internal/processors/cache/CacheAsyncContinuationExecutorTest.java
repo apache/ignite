@@ -48,6 +48,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         final String key = keyOpt.get();
 
+        // TODO: This should be Atomic cache.
         IgniteCache<String, Integer> cache = jcache(0);
         CyclicBarrier barrier = new CyclicBarrier(2);
 
