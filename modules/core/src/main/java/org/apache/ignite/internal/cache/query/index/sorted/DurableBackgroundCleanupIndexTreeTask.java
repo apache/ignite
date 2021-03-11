@@ -58,7 +58,10 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private final String cacheName;
 
     /** */
-    private final IndexName idxName;
+    private String schemaName;
+
+    /** */
+    private final String idxName;
 
     /** */
     private final String id;
@@ -76,12 +79,13 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         this.completed = false;
         this.cacheName = cacheName;
         this.id = UUID.randomUUID().toString();
-        this.idxName = idxName;
+        this.idxName = idxName.idxName();
+        this.schemaName = idxName.schemaName();
     }
 
     /** {@inheritDoc} */
     @Override public String shortName() {
-        return "DROP_SQL_INDEX-" + idxName.fullName() + "-" + id;
+        return "DROP_SQL_INDEX-" + schemaName + "." + idxName + "-" + id;
     }
 
     /** {@inheritDoc} */
@@ -96,7 +100,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
             IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
                 SORTED_INDEX,
                 cctx.name(),
-                idxName.idxName(),
+                idxName,
                 cctx.kernalContext().metric()
             );
 

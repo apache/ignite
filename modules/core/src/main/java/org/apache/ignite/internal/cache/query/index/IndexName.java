@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.io.Serializable;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents list of names that fully describes index domain (schema, cache, table, index).
  */
-public class IndexName implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IndexName {
     /** Schema name of {@code null} if index is not related to SQL schema. */
     private final @Nullable String schemaName;
 

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.IndexingDefragmentation;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -245,15 +246,15 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /**
      * Deletes specified index.
      *
-     * @param def Index definition.
+     * @param idxName Index name.
      * @param softDelete Soft delete flag.
      */
-    public void removeIndex(GridCacheContext cctx, IndexDefinition def, boolean softDelete) {
+    public void removeIndex(GridCacheContext cctx, IndexName idxName, boolean softDelete) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            getSpi().removeIndex(cctx, def, softDelete);
+            getSpi().removeIndex(cctx, idxName, softDelete);
 
         } finally {
             busyLock.leaveBusy();
