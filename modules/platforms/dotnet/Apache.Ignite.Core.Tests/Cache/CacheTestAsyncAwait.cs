@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.Threading;
     using System.Threading.Tasks;
     using NUnit.Framework;
 
@@ -26,18 +27,27 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class CacheTestAsyncAwait : TestBase
     {
         /// <summary>
+        /// Initializes a new instance of <see cref="CacheTestAsyncAwait"/> class.
+        /// </summary>
+        public CacheTestAsyncAwait() : base(2)
+        {
+            // No-op.
+        }
+
+        /// <summary>
         /// Tests that async continuations are executed on a ThreadPool thread, not on response handler thread.
         /// </summary>
         [Test]
         public async Task TestAsyncAwaitContinuationIsExecutedWithConfiguredExecutor()
         {
             var cache = Ignite.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var key = TestUtils.GetPrimaryKey(Ignite2, cache.Name);
 
             // This causes deadlock if async continuation is executed on the striped thread.
-            await cache.PutAsync(1, 1);
-            await cache.PutAsync(1, 2);
+            await cache.PutAsync(key, 1);
+            cache.Replace(key, 2);
 
-            Assert.AreEqual(2, cache.Get(1));
+            Assert.AreEqual(2, cache.Get(key));
         }
 
     }
