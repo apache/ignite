@@ -47,7 +47,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
      * Tests future listen with default executor.
      *
      * This test would hang before {@link IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
-     * was introduced.
+     * was introduced, or if we set {@link Runnable#run()} as the executor.
      */
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
