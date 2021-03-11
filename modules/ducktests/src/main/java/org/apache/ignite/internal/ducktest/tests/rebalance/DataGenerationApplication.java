@@ -98,9 +98,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      *
      */
     private static class DataModel {
-        /** Random. */
-        private static final Random RANDOM = new Random(42);
-
         /** Cached payload. */
         private static byte[] cachedPayload;
 
@@ -121,7 +118,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             if (cachedPayload == null || cachedPayload.length != payloadSize) {
                 cachedPayload = new byte[payloadSize];
 
-                RANDOM.nextBytes(cachedPayload);
+                new Random(42).nextBytes(cachedPayload);
             }
 
             return cachedPayload;

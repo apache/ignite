@@ -90,26 +90,10 @@ class RebalanceInMemoryTest(IgniteTest):
                                    num_nodes=1)
             ignite.start()
 
-        return get_rebalance_stats(ignite, preload_time, cache_count, entry_count, entry_size)
+        start_node_and_time = await_rebalance_start(ignite)
 
+        complete_time = await_rebalance_complete(ignite, start_node_and_time["node"], cache_count)
 
-# pylint: disable=too-many-arguments
-def get_rebalance_stats(ignite, preload_time, cache_count, entry_count, entry_size):
-    """
-    Awaits rebalance start, then awaits rebalance completion and measure it's time.
-    :param ignite: IgniteService instance.
-    :param preload_time: Data preload time for returnig result.
-    :param cache_count: Cache count.
-    :param entry_count: Cache entry count.
-    :param entry_size: Cache entry size.
-    :return: Rebalance test statistics.
-    """
-    start_node_and_time = await_rebalance_start(ignite)
-
-    complete_time = await_rebalance_complete(ignite, start_node_and_time["node"], cache_count)
-
-    total_data_size_mb = cache_count * entry_count * entry_size / 1000000
-
-    return {"Rebalanced in (sec)": (complete_time - start_node_and_time["time"]).total_seconds(),
-            "Preloaded in (sec):": preload_time,
-            "Preload speed (MB/sec)": total_data_size_mb / preload_time}
+        return {"Rebalanced in (sec)": (complete_time - start_node_and_time["time"]).total_seconds(),
+                "Preloaded in (sec):": preload_time,
+                "Preload speed (MB/sec)": int(cache_count * entry_count * entry_size / 1000 / preload_time) / 1000.0}
