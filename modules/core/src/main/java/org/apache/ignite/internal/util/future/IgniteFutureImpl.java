@@ -39,7 +39,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     protected final IgniteInternalFuture<V> fut;
 
     /** */
-    private final Executor defaultExecutor;
+    protected final Executor defaultExecutor;
 
     /**
      * @param fut Future.
