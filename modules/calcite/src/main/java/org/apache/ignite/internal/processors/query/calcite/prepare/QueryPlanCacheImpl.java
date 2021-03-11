@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.query.GridSysIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -110,11 +109,6 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     @Override public void onIndexCreate(String schemaName, String tblName, String idxName,
         GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
         clear();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onSysIndexCreate(String schemaName, String tblName, GridSysIndexDescriptor idxDesc) {
-        // No-op
     }
 
     /** {@inheritDoc} */

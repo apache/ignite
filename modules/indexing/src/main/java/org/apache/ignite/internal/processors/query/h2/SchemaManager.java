@@ -46,7 +46,6 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlTableViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.query.GridSysIndexDescriptor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridIndex;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QuerySysIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
@@ -600,27 +600,25 @@ public class SchemaManager {
 
     /** */
     private void registerSysIndexes(String schemaName, H2TableDescriptor tbl, Index pkIdx, Index[] idxs) {
-        Collection<GridSysIndexDescriptor> sysIdxDesc = new ArrayList<>();
-
         for (Index idx : idxs) {
             if (idx == null)
                 continue;
 
-            Collection<Integer> proxyCols = Stream.of(idx.getColumns())
-                .map(Column::getColumnId)
+            Collection<String> idxCols = Stream.of(idx.getColumns())
+                .map(Column::getName)
                 .collect(Collectors.toList());
 
-            if (!proxyCols.isEmpty()) {
+            if (!idxCols.isEmpty()) {
                 String idxName = idx.getName();
 
                 if (idx instanceof GridH2ProxyIndex)
                     idx = pkIdx;
 
-                sysIdxDesc.add(new GridSysIndexDescriptor(proxyCols, idxName, (GridIndex<?>)idx));
+                QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
+
+                lsnr.onIndexCreate(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
             }
         }
-
-        sysIdxDesc.forEach(desc -> lsnr.onSysIndexCreate(schemaName, tbl.tableName(), desc));
     }
 
     /**
@@ -939,10 +937,6 @@ public class SchemaManager {
             GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {}
 
         /** {@inheritDoc} */
-        @Override public void onSysIndexCreate(String schemaName, String tblName,
-            GridSysIndexDescriptor idxDesc) {}
-
-        /** {@inheritDoc} */
         @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {}
 
         /** {@inheritDoc} */
@@ -992,11 +986,6 @@ public class SchemaManager {
         /** {@inheritDoc} */
         @Override public void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
             lsnrs.forEach(lsnr -> lsnr.onIndexCreate(schemaName, tblName, idxName, idxDesc, idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSysIndexCreate(String schemaName, String tblName, GridSysIndexDescriptor idxDesc) {
-            lsnrs.forEach(lsnr -> lsnr.onSysIndexCreate(schemaName, tblName, idxDesc));
         }
 
         /** {@inheritDoc} */

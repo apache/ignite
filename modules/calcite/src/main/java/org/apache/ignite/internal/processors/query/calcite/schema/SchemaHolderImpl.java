@@ -32,7 +32,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.query.GridSysIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -215,27 +214,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         IgniteIndex idx = new IgniteIndex(idxCollation, idxName, (GridIndex<H2Row>)gridIdx, tbl);
         tbl.addIndex(idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void onSysIndexCreate(String schemaName, String tblName, GridSysIndexDescriptor idxDesc) {
-        List<RelFieldCollation> collations = new ArrayList<>(idxDesc.getCols().size());
-
-        for (Integer fieldIdx : idxDesc.getCols()) {
-            RelFieldCollation collation = new RelFieldCollation(fieldIdx);
-
-            collations.add(collation);
-        }
-
-        IgniteSchema schema = igniteSchemas.get(schemaName);
-        assert schema != null;
-
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
-        assert tbl != null;
-
-        IgniteIndex ignIdx = new IgniteIndex(RelCollations.of(collations), idxDesc.getIdxName(), (GridIndex<H2Row>)idxDesc.getIndex(), tbl);
-
-        tbl.addIndex(ignIdx);
     }
 
     /**
