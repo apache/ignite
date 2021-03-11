@@ -63,7 +63,7 @@ public class RelJsonReader {
     private final RelOptSchema relOptSchema;
 
     /** */
-    private final RelJson relJson = new RelJson();
+    private final RelJson relJson;
 
     /** */
     private final Map<String, RelNode> relMap = new LinkedHashMap<>();
@@ -82,6 +82,8 @@ public class RelJsonReader {
     public RelJsonReader(RelOptCluster cluster, RelOptSchema relOptSchema) {
         this.cluster = cluster;
         this.relOptSchema = relOptSchema;
+
+        relJson = new RelJson(cluster);
     }
 
     /** */
