@@ -670,7 +670,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<T> callable,
-                                                           int numPermits) throws Exception {
+                                                           int numPermits) {
         acquire(numPermits);
 
         Future<T> passedInCallableFuture = ctx.kernalContext().getExecutorService().submit(callable);
