@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import org.apache.ignite.IgniteCache;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
 /**
@@ -41,6 +43,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("select count(name) from person where salary > 10").returns(1L).check();
         assertQuery("select count(*) from person where salary > 10").returns(2L).check();
         assertQuery("select count(1) from person where salary > 10").returns(2L).check();
+        assertQuery("select count(*) from person where name is not null").returns(4L).check();
 
         assertQuery("select count(name) filter (where salary > 10) from person").returns(1L).check();
         assertQuery("select count(*) filter (where salary > 10) from person").returns(2L).check();
@@ -74,6 +77,25 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertQuery("select salary, count(name) from person group by salary having salary < 10 order by salary")
+            .check();
+
+        assertQuery("select count(_key), _key from person group by _key")
+            .returns(1L, 0)
+            .returns(1L, 1)
+            .returns(1L, 2)
+            .returns(1L, 3)
+            .returns(1L, 4)
+            .check();
+
+        assertQuery("select count(name), name from person group by name")
+            .returns(1L, "Igor")
+            .returns(1L, "Ilya")
+            .returns(2L, "Roma")
+            .returns(0L, null)
+            .check();
+
+        assertQuery("select avg(salary) from person")
+            .returns(12.0)
             .check();
     }
 }

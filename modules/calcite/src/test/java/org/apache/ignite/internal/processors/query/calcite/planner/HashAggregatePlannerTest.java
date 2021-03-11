@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.Arrays;
 
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
+import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapHashAggregate;
@@ -41,12 +44,12 @@ import org.junit.Test;
  *
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class HashAggregateTest extends AbstractPlannerTest {
+public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void test() throws Exception {
+    public void subqueryWithAggregate() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable employer = new TestTable(
@@ -99,7 +102,42 @@ public class HashAggregateTest extends AbstractPlannerTest {
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(mapAgg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+    }
 
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
+    /**
+     *
+     */
+    @Test
+    public void noGroupByAggregate() throws Exception {
+        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", tbl);
+
+        String sqlCount = "SELECT COUNT(*) FROM test";
+
+        IgniteRel phys = physicalPlan(
+            sqlCount,
+            publicSchema
+        );
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        IgniteMapHashAggregate mapAgg = findFirstNode(phys, byClass(IgniteMapHashAggregate.class));
+        IgniteReduceHashAggregate rdcAgg = findFirstNode(phys, byClass(IgniteReduceHashAggregate.class));
+
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
+
+        Assert.assertThat(
+            "Invalid plan\n" + RelOptUtil.toString(phys),
+            F.first(rdcAgg.aggregateCalls()).getAggregation(),
+            IsInstanceOf.instanceOf(SqlCountAggFunction.class));
+
+        Assert.assertThat(
+            "Invalid plan\n" + RelOptUtil.toString(phys),
+            F.first(mapAgg.getAggCallList()).getAggregation(),
+            IsInstanceOf.instanceOf(SqlCountAggFunction.class));
     }
 }

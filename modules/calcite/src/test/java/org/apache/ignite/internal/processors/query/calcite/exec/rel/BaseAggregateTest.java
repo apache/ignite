@@ -360,7 +360,6 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         }
     }
 
-
     /** */
     private SingleNode<Object[]> createAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
