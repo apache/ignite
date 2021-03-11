@@ -1,99 +1,119 @@
-# Setting up and building
+* [Prerequisites](#prerequisites)
+* [Building Ignite](#building-ignite)
+* [Running sanity checks](#running-sanity-checks)
+* [Running tests](#running-tests)
+* [Setting up IntelliJ Idea project](#setting-up-intellij-idea-project)
+* [Code structure](#code-structure)
+* [Release candidate verification](#release-candidate-verification)
+
+
 ## Prerequisites
  * Java 11 SDK
  * Maven 3.6.0+ (for building)
- 
+
+
 ## Building Ignite
-Ignite follows standard guidelines for multi-module maven projects, so it can be easily built using the following 
-command from the project root directory (you can disable the tests when building using `-DskipTests`):
+Ignite follows standard guidelines for multi-module maven projects, so it can be easily built using the following command from the project root directory (you can disable the tests when building using `-DskipTests`):
+```
+mvn clean package [-DskipTests]
+```
+Upon build completion, CLI tool can be found be under `modules/cli/target` directory. Use `ignite` on Linux and MacOS, or `ignite.exe` on Windows.
 
-    mvn clean install [-DskipTests]
 
-Upon completion, you will find the CLI tool under `modules/cli/target` directory.
-Use `ignite` on Linux and MacOS, or `ignite.exe` on Windows. 
+## Running sanity checks
+### Code style
+Code style is checked with [Apache Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/).
 
-### Running tests
-To run unit tests only, use the following command:
+[Checkstyle rules](check-rules/checkstyle-rules.xml).
 
-    mvn test
+[Checkstyle suppressions](check-rules/checkstyle-suppressions.xml).
+```
+mvn clean checkstyle:checkstyle-aggregate
+```
+Code style check result is generated at `target/site/checkstyle-aggregate.html`
 
-Before running integration tests, make sure to build the project using the ``package`` target.
+### License headers
+Project files license headers match with required template is checked with [Apache Rat Maven Plugin](https://creadur.apache.org/rat/apache-rat-plugin/).
+```
+mvn clean apache-rat:check -pl :apache-ignite
+```
+License headers check result is generated at `target/rat.txt`
 
-To run unit + integration tests, use the following command:
+### PMD
+Static code analyzer is run with [Apache Maven PMD Plugin](https://maven.apache.org/plugins/maven-pmd-plugin/). Precompilation is required 'cause PMD shoud be run on compiled code.
 
-    mvn integration-test
+[PMD rules](check-rules/pmd-rules.xml).
+```
+mvn clean compile pmd:check
+```
+PMD check result (only if there are any violations) is generated at `target/pmd.xml`.
 
-To run integration tests only, use the following command:
 
-    mvn integration-test -Dskip.surefire.tests=true
-    
-### Sanity check targets
-Use the following commands to run generic sanity checks before submitting a PR.
-
-RAT license validation:
-    
-    mvn validate
-    
-Checkstyle code validation:
-
-    mvn checkstyle:checkstyle:aggregate
-
-PMD static code analysis
-
-    mvn compile pmd:check 
+## Running tests
+Run unit tests only:
+```
+mvn test
+```
+Run unit + integration tests:
+```
+mvn integration-test
+```
+Run integration tests only:
+```
+mvn integration-test -Dskip.surefire.tests
+```
 
 
 ## Setting up IntelliJ Idea project
-You can quickly import Ignite project to your IDE using the root `pom.xml` file. In IntelliJ, choose `Open Project` 
-from the `Quick Start` box or choose `Open...` from the `File` menu and select the root `pom.xml` file.
+You can quickly import Ignite project to your IDE using the root `pom.xml` file. In IntelliJ, choose `Open Project` from the `Quick Start` box or choose `Open...` from the `File` menu and select the root `pom.xml` file.
 
 After opening the project in IntelliJ, double check that the Java SDK is properly configured for the project:
-
  * Open the `File` menu and select `Project Structure...`
  * In the SDKs section, ensure that a 1.11 JDK is selected (create one if none exist)
- * In the `Project` section, make sure the project language level is set to 11.0 as Ignite makes use of several Java 11 
+ * In the `Project` section, make sure the project language level is set to 11.0 as Ignite makes use of several Java 11
  language features
- 
-Ignite uses machine code generation for some of it's modules. To generate necessary production code, build the project
-using maven (see Building Ignite).
+
+Ignite uses machine code generation for some of it's modules. To generate necessary production code, build the project using maven (see [Building Ignite](#building-ignite)).
+
 
 ## Code structure
 High-level modules structure and detailed modules description can be found in the [modules readme](modules/README.md).
 
+
 ## Release candidate verification
-
-**1. Build the package (this will also run unit tests and the license headers check)**
-
+1. Build the package (this will also run unit tests and the license headers check)
+    ```
     mvn clean package
-
-**2. Go to the `modules/cli/target` directory which now contains the packaged CLI tool**
-
+    ```
+1. Go to the `modules/cli/target` directory which now contains the packaged CLI tool
+    ```
     cd modules/cli/target
-
-**3. Run the tool without parameters (full list of available commands should appear)**
-
+    ```
+1. Run the tool without parameters (full list of available commands should appear)
+    ```
     ./ignite
-    
-**4. Run the initialization step**
-
+    ```
+1. Run the initialization step
+    ```
     ./ignite init --repo=<path to Maven staging repository>
-
-**5. Install an additional dependency (Guava is used as an example)**
-
+    ```
+1. Install an additional dependency (Guava is used as an example)
+    ```
     ./ignite module add mvn:com.google.guava:guava:23.0
-
-**6. Verify that Guava has been installed**
-
+    ```
+1. Verify that Guava has been installed
+    ```
     ./ignite module list
-
-**7. Start a node**
-
+    ```
+1. Start a node
+    ```
     ./ignite node start myFirstNode
-
-**8. Check that the new node is up and running**
-
+    ```
+1. Check that the new node is up and running
+    ```
     ./ignite node list
-    
-**9. Stop the node**
-
+    ```
+1. Stop the node
+    ```
     ./ignite node stop myFirstNode
+    ```

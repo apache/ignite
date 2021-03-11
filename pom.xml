@@ -90,6 +90,7 @@
                         <exclude>**/*.json</exclude> <!-- Files in JSON format -->
                         <exclude>modules/cli/src/**/resources//builtin_modules.conf</exclude> <!-- CLI configuration files -->
                         <exclude>modules/configuration-annotation-processor/src/main/resources/META-INF/services/javax.annotation.processing.Processor</exclude> <!-- ? -->
+                        <exclude>**/*.iml</exclude> <!-- IntelliJ IDEA project files -->
                     </excludes>
                 </configuration>
             </plugin>
