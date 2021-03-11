@@ -1532,7 +1532,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 }
                             },
                             locBuff,
-                            io,
                             itemId,
                             false,
                             CacheDataRowAdapter.RowData.FULL,

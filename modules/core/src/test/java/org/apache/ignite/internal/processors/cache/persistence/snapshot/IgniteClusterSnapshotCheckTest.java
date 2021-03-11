@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -72,11 +73,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
-import static org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest.toBinary;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
@@ -90,8 +91,17 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
+    /** Map of intermediate compute task results collected prior performing reduce operation on them. */
+    private final Map<Class<?>, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> jobResults = new ConcurrentHashMap<>();
+
     /** Partition id used for tests. */
     private static final int PART_ID = 0;
+
+    /** Cleanup data of task execution results if need. */
+    @Before
+    public void beforeCheck() {
+        jobResults.clear();
+    }
 
     /** @throws Exception If fails. */
     @Test
@@ -394,7 +404,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 new Random().nextBytes(bytes);
 
                 try {
-                    BinaryObjectImpl newVal = toBinary(new Value(bytes), binCtx.marshaller());
+                    BinaryObjectImpl newVal = new BinaryObjectImpl(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
 
                     boolean success = cached.initialValue(
                         newVal,
@@ -463,71 +473,63 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleHashes = new HashMap<>();
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpHashes = new HashMap<>();
-
-        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(idleHashes),
+        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
             new VisorIdleVerifyTaskArg(new HashSet<>(Collections.singletonList(ccfg.getName())),
             new HashSet<>(),
             false,
             CacheFilterEnum.USER,
             true));
 
-        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(snpHashes),
+        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
             Collections.singletonMap(ignite.cluster().localNode(),
                 Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME, (String)ignite.configuration().getConsistentId()))));
 
-        assertEquals(idleHashes, snpHashes);
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
+
+        assertNotNull(idleVerifyHashes);
+        assertNotNull(snpCheckHashes);
+        assertEquals(idleVerifyHashes, snpCheckHashes);
         assertEquals(idleVerifyRes, snpVerifyRes);
     }
 
-    /** */
-    private static class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTaskV2 {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes;
+    /**
+     * @param cls Class of running task.
+     * @param results Results of compute.
+     */
+    private void saveHashes(Class<?> cls, List<ComputeJobResult> results) {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes = new HashMap<>();
 
-        /**
-         * @param hashes Map of calculated partition hashes.
-         */
-        public TestVisorBackupPartitionsTask(Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes) {
-            this.hashes = hashes;
+        for (ComputeJobResult job : results) {
+            if (job.getException() != null)
+                continue;
+
+            job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
+                hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
         }
 
+        jobResults.putIfAbsent(cls, hashes);
+    }
+
+    /** */
+    private class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTaskV2 {
         /** {@inheritDoc} */
         @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
             IdleVerifyResultV2 res = super.reduce(results);
 
-            for (ComputeJobResult job : results) {
-                if (job.getException() != null)
-                    continue;
-
-                job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
-                    hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
-            }
+            saveHashes(TestVisorBackupPartitionsTask.class, results);
 
             return res;
         }
     }
 
     /** Test compute task to collect partition data hashes when the snapshot check procedure ends. */
-    private static class TestSnapshotPartitionsVerifyTask extends SnapshotPartitionsVerifyTask {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes;
-
-        /** @param hashes Map of calculated partition hashes. */
-        public TestSnapshotPartitionsVerifyTask(Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes) {
-            this.hashes = hashes;
-        }
-
+    private class TestSnapshotPartitionsVerifyTask extends SnapshotPartitionsVerifyTask {
         /** {@inheritDoc} */
         @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
             IdleVerifyResultV2 res = super.reduce(results);
 
-            for (ComputeJobResult job : results) {
-                if (job.getException() != null)
-                    continue;
-
-                job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
-                    hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
-            }
+            saveHashes(TestSnapshotPartitionsVerifyTask.class, results);
 
             return res;
         }

@@ -166,51 +166,51 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param io Data page IO.
-     * @param itemId Row item Id.
-     * @throws IgniteCheckedException If failed.
+     * @param sctx Cache shared context.
+     * @param coctx Cache object context for data deserialization.
+     * @param reader Reader to read fragmented pages.
+     * @param pageBuff Initial page buffer with headers.
+     * @param itemId Item id to read.
+     * @param readCacheId {@code true} if cache id must be read.
+     * @param rowData Which data from page must be read.
+     * @param skipVer {@code true} if cache version must be skipped.
+     * @throws IgniteCheckedException If fails.
      */
     public final void initFromPageBuffer(
         GridCacheSharedContext<?, ?> sctx,
         CacheObjectContext coctx,
         IgniteThrowableFunction<Long, ByteBuffer> reader,
         ByteBuffer pageBuff,
-        DataPageIO io,
         int itemId,
         boolean readCacheId,
         RowData rowData,
         boolean skipVer
     ) throws IgniteCheckedException {
-        long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+        long nextLink;
+        int itemId0 = itemId;
+        ByteBuffer buff = pageBuff;
+        IncompleteObject<?> incomplete = null;
 
-        IncompleteObject<?> incomplete = readIncomplete(null, sctx, coctx, pageBuff.capacity(), pageBuff.capacity(),
-            pageAddr, itemId, io, rowData, readCacheId, skipVer);
+        for (;;) {
+            long pageAddr = GridUnsafe.bufferAddress(buff);
 
-        if (incomplete == null)
-            return;
-
-        long nextLink = incomplete.getNextLink();
-
-        if (nextLink == 0)
-            return;
-
-        do {
-            long pageId = pageId(nextLink);
-
-            ByteBuffer fragmentBuff = reader.apply(pageId);
-
-            long fragmentAddr = GridUnsafe.bufferAddress(fragmentBuff);
-            DataPageIO io2 = PageIO.getPageIO(T_DATA, PageIO.getVersion(fragmentBuff));
-
-            incomplete = readIncomplete(incomplete, sctx, coctx, fragmentBuff.capacity(), fragmentBuff.capacity(),
-                fragmentAddr, itemId(nextLink), io2, rowData, readCacheId, skipVer);
+            incomplete = readIncomplete(incomplete, sctx, coctx, buff.capacity(), buff.capacity(),
+                pageAddr, itemId0, PageIO.getPageIO(T_DATA, PageIO.getVersion(buff)), rowData, readCacheId, skipVer);
 
             if (incomplete == null)
-                return;
+                break;
 
             nextLink = incomplete.getNextLink();
+
+            if (nextLink == 0)
+                break;
+            else {
+                buff = reader.apply(pageId(nextLink));
+                itemId0 = itemId(nextLink);
+
+                assert itemId0 == 0 : "Only one item is possible on the fragmented page: " + PageIdUtils.toDetailString(nextLink);
+            }
         }
-        while (nextLink != 0);
 
         assert isReady() : "Entry must has the 'ready' state, when the init ends";
     }

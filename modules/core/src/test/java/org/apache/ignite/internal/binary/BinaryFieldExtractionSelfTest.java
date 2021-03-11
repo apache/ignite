@@ -276,7 +276,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
      * @param marsh Binary marshaller.
      * @return Binary object.
      */
-    public static BinaryObjectImpl toBinary(Object obj, BinaryMarshaller marsh) throws Exception {
+    protected BinaryObjectImpl toBinary(Object obj, BinaryMarshaller marsh) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(binaryContext(marsh), bytes, 0);
