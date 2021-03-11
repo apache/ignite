@@ -46,7 +46,8 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
                 .filter(x -> belongs(x, 1))
                 .findFirst();
 
-        final String key = String.valueOf(keyOpt.get());
+        final String key = keyOpt.get();
+
         IgniteCache<String, Integer> cache = jcache(0);
         CyclicBarrier barrier = new CyclicBarrier(2);
 
