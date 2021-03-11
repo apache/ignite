@@ -2363,9 +2363,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 "ctx.name=" + ctx.name() + ", delegate.name=" + delegate.name() + ", cacheName=" + cacheName;
     }
 
+    /**
+     * Async continuation executor.
+     */
     private Executor exec() {
-        // TODO: Where do we substitute ForkJoinPool.defaultPool? In Kernal somewhere?
-        return context().kernalContext().config().getAsyncContinuationExecutor();
+        return context().kernalContext().getAsyncContinuationExecutor();
     }
 
     /**
