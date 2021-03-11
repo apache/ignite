@@ -43,6 +43,10 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
     public void columnNames() {
         createAndPopulateTable();
 
+        assertQuery("select count(_key), _key from person group by _key")
+            .columnNames("COUNT(_KEY)","_KEY")
+            .check();
+
         assertQuery("select (select count(*) from person), (select avg(salary) from person) from person")
             .columnNames("EXPR$0", "EXPR$1").check();
         assertQuery("select (select count(*) from person) as subquery from person")

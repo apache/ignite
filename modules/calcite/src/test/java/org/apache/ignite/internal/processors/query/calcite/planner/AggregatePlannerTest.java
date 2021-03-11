@@ -17,20 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
@@ -44,12 +39,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -62,7 +54,7 @@ import org.junit.runners.Parameterized;
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 @RunWith(Parameterized.class)
-public class AggregatePlannerTest extends AbstractPlannerTest {
+public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     /** Algorithm. */
     @Parameterized.Parameter
     public AggregateAlgorithm algo;
@@ -78,22 +70,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void singleWithoutIndex() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable tbl = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("VAL0", f.createJavaType(Integer.class))
-                .add("VAL1", f.createJavaType(Integer.class))
-                .add("GRP0", f.createJavaType(Integer.class))
-                .add("GRP1", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+        TestTable tbl = createBroadcastTable().addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -129,20 +106,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
     public void singleWithIndex() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        TestTable tbl = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("VAL0", f.createJavaType(Integer.class))
-                .add("VAL1", f.createJavaType(Integer.class))
-                .add("GRP0", f.createJavaType(Integer.class))
-                .add("GRP1", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(3, 4)), "grp0_grp1");
+        TestTable tbl = createBroadcastTable().addIndex(RelCollations.of(ImmutableIntList.of(3, 4)), "grp0_grp1");
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -176,31 +140,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void mapReduceGroupBy() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable tbl = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("VAL0", f.createJavaType(Integer.class))
-                .add("VAL1", f.createJavaType(Integer.class))
-                .add("GRP0", f.createJavaType(Integer.class))
-                .add("GRP1", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forAssignments(Arrays.asList(
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2),
-                    select(nodes, 2, 0),
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ));
-            }
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "test", "hash");
-            }
-        };
+        TestTable tbl = createAffinityTable();
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -245,30 +185,7 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
     public void mapReduceDistinctWithIndex() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        TestTable tbl = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("VAL0", f.createJavaType(Integer.class))
-                .add("VAL1", f.createJavaType(Integer.class))
-                .add("GRP0", f.createJavaType(Integer.class))
-                .add("GRP1", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forAssignments(Arrays.asList(
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2),
-                    select(nodes, 2, 0),
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ));
-            }
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "test", "hash");
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -300,56 +217,6 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
 
         if (algo == AggregateAlgorithm.SORT)
             assertNotNull(findFirstNode(phys, byClass(IgniteIndexScan.class)));
-    }
-
-    /** */
-    @Test
-    public void notApplicableForSortAggregate() {
-        if (algo == AggregateAlgorithm.HASH)
-            return;
-
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable tbl = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("VAL0", f.createJavaType(Integer.class))
-                .add("VAL1", f.createJavaType(Integer.class))
-                .add("GRP0", f.createJavaType(Integer.class))
-                .add("GRP1", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forAssignments(Arrays.asList(
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2),
-                    select(nodes, 2, 0),
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ));
-            }
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "test", "hash");
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("TEST", tbl);
-
-        String sql = "SELECT MIN(val0) FROM test";
-
-        GridTestUtils.assertThrows(log,
-            () -> physicalPlan(
-                sql,
-                publicSchema,
-                "HashAggregateConverterRule"
-            ),
-            RelOptPlanner.CannotPlanException.class,
-            "There are not enough rules to produce a node with desired properties"
-        );
     }
 
     /** */

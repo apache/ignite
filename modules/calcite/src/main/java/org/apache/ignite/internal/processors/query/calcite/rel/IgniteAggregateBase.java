@@ -181,6 +181,7 @@ public abstract class IgniteAggregateBase extends IgniteAggregate implements Tra
                 if (isSimple(this)) {
                     ImmutableIntList keys = distribution.getKeys();
 
+                    //Check that group by contains all key columns
                     if (groupSet.cardinality() == keys.size()) {
                         Mappings.TargetMapping mapping = Commons.inverseMapping(
                             groupSet, getInput().getRowType().getFieldCount());
@@ -190,6 +191,10 @@ public abstract class IgniteAggregateBase extends IgniteAggregate implements Tra
                         if (outDistr.getType() == HASH_DISTRIBUTED)
                             res.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in)));
                     }
+
+                    //Map-reduce aggregates especial for non 'group by' query, like a select count(*) from table
+                    if (groupSet.isEmpty())
+                        res.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(hash(keys, distribution.function())))));
                 }
 
                 break;
