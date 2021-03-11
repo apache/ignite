@@ -44,6 +44,14 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     /**
      * @param fut Future.
      */
+    public IgniteFutureImpl(IgniteInternalFuture<V> fut) {
+        this(fut, null);
+    }
+
+    /**
+     * @param fut Future.
+     * @param defaultExecutor Default executor.
+     */
     public IgniteFutureImpl(IgniteInternalFuture<V> fut, @Nullable Executor defaultExecutor) {
         assert fut != null;
 

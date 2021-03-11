@@ -370,7 +370,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         fut = new DataStreamerFuture(this);
 
-        publicFut = new IgniteCacheFutureImpl<>(fut);
+        publicFut = new IgniteCacheFutureImpl<>(fut, ctx.getAsyncContinuationExecutor());
 
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
@@ -708,7 +708,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @NotNull protected IgniteCacheFutureImpl createDataLoadFuture() {
         GridFutureAdapter internalFut0 = new GridFutureAdapter();
 
-        IgniteCacheFutureImpl fut = new IgniteCacheFutureImpl(internalFut0);
+        IgniteCacheFutureImpl fut = new IgniteCacheFutureImpl(internalFut0, ctx.getAsyncContinuationExecutor());
 
         internalFut0.listen(rmvActiveFut);
 
