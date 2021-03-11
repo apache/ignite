@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 /**
@@ -60,9 +61,12 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         IgniteCache<String, Integer> cache = jcache(0);
         CyclicBarrier barrier = new CyclicBarrier(2);
+        AtomicReference<String> asyncThreadName = new AtomicReference<>("");
 
         cache.putAsync(key, 1).listen(f -> {
-           cache.replace(key, 2);
+            asyncThreadName.set(Thread.currentThread().getName());
+            cache.replace(key, 2);
+
             try {
                 barrier.await(5, TimeUnit.SECONDS);
             } catch (Exception e) {
@@ -72,5 +76,6 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         barrier.await(5, TimeUnit.SECONDS);
         assertEquals(2, cache.get(key).intValue());
+        assertTrue(asyncThreadName.get(), asyncThreadName.get().startsWith("ForkJoinPool.commonPool-worker"));
     }
 }
