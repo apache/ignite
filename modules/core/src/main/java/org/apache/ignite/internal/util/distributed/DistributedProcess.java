@@ -37,9 +37,11 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,6 +92,19 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param ctx Kernal context.
      * @param type Process type.
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
+     */
+    public DistributedProcess(
+        GridKernalContext ctx,
+        DistributedProcessType type,
+        Function<I, IgniteInternalFuture<R>> exec
+    ) {
+        this(ctx, type, exec, (id, res, err) -> {});
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param type Process type.
+     * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
     public DistributedProcess(
@@ -125,7 +140,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             if (msg.type() != type.ordinal())
                 return;
 
-            Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
+            Process p = processes.computeIfAbsent(msg.processId(), Process::new);
 
             // May be completed in case of double delivering.
             if (p.initFut.isDone())
@@ -180,7 +195,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id,msg.result(), msg.error());
+            finish.apply(p.id, msg.result(), msg.error());
+
+            p.finishFut.onDone(new T2<>(msg.result(), msg.error()));
 
             processes.remove(msg.processId());
         });
@@ -237,18 +254,29 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
+    /** Starts distributed process. */
+    public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start() {
+        return start(ctx.localNodeId(), (I)new DistributedStub());
+    }
+
     /**
      * Starts distributed process.
      *
      * @param id Process id.
      * @param req Initial request.
      */
-    public void start(UUID id, I req) {
+    public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start(UUID id, I req) {
         try {
             ctx.discovery().sendCustomEvent(initMsgFactory.apply(id, req));
+
+            Process p = processes.computeIfAbsent(id, Process::new);
+
+            return p.finishFut;
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to start process.", e);
+
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -392,6 +420,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         /** Nodes results. */
         private final ConcurrentHashMap<UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();
+
+        /** */
+        private final GridFutureAdapter<T2<Map<UUID, R>, Map<UUID, Exception>>> finishFut = new GridFutureAdapter<>();
 
         /** @param id Process id. */
         private Process(UUID id) {

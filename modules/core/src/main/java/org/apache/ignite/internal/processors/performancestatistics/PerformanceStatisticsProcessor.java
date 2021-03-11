@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,11 +35,11 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.DistributedStub;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,11 +69,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
-    /** Rotate performance statistics Future. */
-    private RotateFuture rotateFut;
-
     /** Rotate performance statistics Distributed Process. */
-    private final DistributedProcess<RotateRequest, RotateResponse> rotateFilePrc;
+    private final DistributedProcess<DistributedStub, DistributedStub> rotateFilePrc;
 
     /** Synchronization mutex for start/stop collecting performance statistics operations. */
     private final Object mux = new Object();
@@ -86,8 +82,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        rotateFilePrc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE, this::initRotate,
-            this::checkRotate);
+        rotateFilePrc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE, this::initRotate);
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
@@ -208,7 +203,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If starting failed.
      */
     public void startCollectStatistics() throws IgniteCheckedException {
-
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
         if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS))
@@ -246,14 +240,18 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        RotateRequest req = new RotateRequest(UUID.randomUUID(),
-            ctx.localNodeId());
+        return new IgniteFutureImpl<>(rotateFilePrc.start().chain(f -> {
+            try {
+                return f.get().values().stream()
+                    .flatMap(map -> map.values().stream())
+                    .findFirst().orElse(null);
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
 
-        rotateFut = new RotateFuture(req.getRequestId());
-
-        rotateFilePrc.start(req.getRequestId(), req);
-
-        return new IgniteFutureImpl<>(rotateFut);
+                return e;
+            }
+        }));
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -321,7 +319,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Rotate performance statistics writer. */
-    private RotateResponse rotateWriter() {
+    private DistributedStub rotateWriter() {
         try {
             synchronized (mux) {
                 if (writer != null) {
@@ -343,7 +341,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             log.error("Failed to rotate performance statistics writer.", e);
         }
 
-        return new RotateResponse();
+        return new DistributedStub();
     }
 
     /** Writes statistics through passed writer. */
@@ -391,19 +389,13 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** Rotate performance statistics response. */
-    private static class RotateResponse implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-    }
-
     /**
      * Prepares rotate performance statistics.
      *
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<RotateResponse> initRotate(RotateRequest req) {
+    private IgniteInternalFuture<DistributedStub> initRotate(Serializable req) {
         if (ctx.isStopping())
             return new GridFinishedFuture<>(
                 new NodeStoppingException("Operation has been cancelled (node is stopping)"));
@@ -412,41 +404,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Performance statistics collection not started."));
 
-        return (IgniteInternalFuture<RotateResponse>)ctx.closure().runLocalSafe(this::rotateWriter);
-    }
-
-    /**
-     * Check the rotation performance statistics has passed without errors.
-     *
-     * @param id Request id.
-     * @param res Results.
-     * @param err Errors.
-     */
-    private void checkRotate(UUID id, Map<UUID, RotateResponse> res, Map<UUID, Exception> err) {
-        completeRotateFuture(id, err);
-    }
-
-    /**
-     * @param reqId Request id.
-     * @param err Err.
-     */
-    private void completeRotateFuture(UUID reqId, Map<UUID, Exception> err) {
-        synchronized (mux) {
-            boolean isInitiator = rotateFut != null && rotateFut.id().equals(reqId);
-
-            if (!isInitiator || rotateFut.isDone())
-                return;
-
-            if (!F.isEmpty(err)) {
-                Exception e = err.values().stream().findFirst().get();
-
-                rotateFut.onDone(e);
-            }
-            else
-                rotateFut.onDone();
-
-            rotateFut = null;
-        }
+        return (IgniteInternalFuture<DistributedStub>)ctx.closure().runLocalSafe(this::rotateWriter);
     }
 
     /** Rotate performance statistics future. */
