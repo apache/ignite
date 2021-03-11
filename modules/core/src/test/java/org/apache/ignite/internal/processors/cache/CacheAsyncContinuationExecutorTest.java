@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCache;
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 /**
  * Tests {@link org.apache.ignite.configuration.IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
@@ -36,12 +38,17 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
     /**
      * TODO
      */
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testListenDefaultConfig() throws Exception {
-        final String key = "1";
+        Optional<String> keyOpt = IntStream.range(0, 1000)
+                .mapToObj(String::valueOf)
+                .filter(x -> belongs(x, 1))
+                .findFirst();
+
+        final String key = String.valueOf(keyOpt.get());
         IgniteCache<String, Integer> cache = jcache(0);
         CyclicBarrier barrier = new CyclicBarrier(2);
-
 
         cache.putAsync(key, 1).listen(f -> {
            cache.replace(key, 2);
