@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel;
+package org.apache.ignite.internal.processors.query.calcite.rel.aggregate;
 
 import java.util.List;
 
@@ -27,6 +27,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
@@ -51,7 +53,7 @@ public abstract class IgniteMapAggregateBase extends IgniteAggregate implements 
 
     /** {@inheritDoc} */
     protected IgniteMapAggregateBase(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
+        super(TraitUtils.changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */

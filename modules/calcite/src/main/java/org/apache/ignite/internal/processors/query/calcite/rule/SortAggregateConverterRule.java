@@ -29,9 +29,9 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.F;
 

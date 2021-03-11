@@ -26,9 +26,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**

@@ -26,9 +26,9 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSingleSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -177,10 +177,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "HashSingleAggregateConverterRule",
-            "HashMapReduceAggregateConverterRule"
-//            ,
-//            "SortSingleAggregateConverterRule"
+            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
             );
 
         IgniteReduceSortAggregate agg = findFirstNode(phys, byClass(IgniteReduceSortAggregate.class));

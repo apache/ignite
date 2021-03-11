@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteMapSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteReduceSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.aggregate.IgniteSingleSortAggregate;
+
 /**
  * A visitor to traverse an Ignite relational nodes tree.
  */
