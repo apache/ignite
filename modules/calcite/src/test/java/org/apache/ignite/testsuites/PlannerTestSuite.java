@@ -19,8 +19,10 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -35,6 +37,8 @@ import org.junit.runners.Suite;
     TableSpoolPlannerTest.class,
     IndexSpoolPlannerTest.class,
     AggregatePlannerTest.class,
+    HashAggregatePlannerTest.class,
+    SortAggregatePlannerTest.class,
 })
 public class PlannerTestSuite {
 }
