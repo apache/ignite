@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -27,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 /**
- * Tests {@link org.apache.ignite.configuration.IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
+ * Tests {@link IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
  */
 public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
@@ -35,8 +37,16 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
         return 2;
     }
 
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
+
     /**
-     * TODO
+     * Tests future listen with default executor.
+     *
+     * This test would hang before {@link IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
+     * was introduced.
      */
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
@@ -48,7 +58,6 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         final String key = keyOpt.get();
 
-        // TODO: This should be Atomic cache.
         IgniteCache<String, Integer> cache = jcache(0);
         CyclicBarrier barrier = new CyclicBarrier(2);
 
