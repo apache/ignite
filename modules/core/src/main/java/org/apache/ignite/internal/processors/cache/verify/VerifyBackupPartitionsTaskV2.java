@@ -516,6 +516,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+                    PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
                     if (arg.checkCrc() && gctx.persistenceEnabled()) {
                         FilePageStoreManager pageStoreMgr =
@@ -528,7 +529,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     PartitionKeyV2 key = new PartitionKeyV2(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
                     PartitionHashRecordV2 hash = calculatePartitionHash(key,
-                        updCntr == null ? 0 : updCntr.get(),
+                        updateCntrBefore == null ? 0 : updateCntrBefore.get(),
                         ignite.context().discovery().localNode().consistentId(),
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
@@ -538,12 +539,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
 
-                    PartitionUpdateCounter lastUpdCntr = part.dataStore().partUpdateCounter();
+                    PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-                    if (lastUpdCntr != null && !lastUpdCntr.equals(updCntr)) {
+                    if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
                         throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + gctx.cacheOrGroupName() +
                             ", grpId=" + gctx.groupId() + ", partId=" + part.id() + "] changed during size " +
-                            "calculation [updCntrBefore=" + updCntr + ", updCntrAfter=" + lastUpdCntr + "]");
+                            "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                     }
                 }
                 catch (IgniteCheckedException e) {
