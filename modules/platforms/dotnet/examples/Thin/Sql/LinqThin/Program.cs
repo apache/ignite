@@ -39,11 +39,11 @@ namespace Apache.Ignite.Examples.Thin.Sql.LinqThin
     /// </summary>
     public static class Program
     {
-        private const string OrganizationCacheName = "dotnet_cache_query_organization";
+        private const string OrganizationCacheName = "dotnet_linq_organization";
 
-        private const string EmployeeCacheName = "dotnet_cache_query_employee";
+        private const string EmployeeCacheName = "dotnet_linq_employee";
 
-        private const string EmployeeCacheNameColocated = "dotnet_cache_query_employee_colocated";
+        private const string EmployeeCacheNameColocated = "dotnet_linq_employee_colocated";
 
         public static void Main()
         {
