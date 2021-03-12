@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 /**
- * Tests {@link IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
+ * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
  */
 public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
@@ -46,7 +46,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
     /**
      * Tests future listen with default executor.
      *
-     * This test would hang before {@link IgniteConfiguration#setCacheAsyncContinuationExecutor(Executor)}
+     * This test would hang before {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
      * was introduced, or if we set {@link Runnable#run()} as the executor.
      */
     @SuppressWarnings("OptionalGetWithoutIsPresent")

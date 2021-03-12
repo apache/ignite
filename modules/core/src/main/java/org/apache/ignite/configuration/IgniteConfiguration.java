@@ -610,7 +610,7 @@ public class IgniteConfiguration {
     private SqlConfiguration sqlCfg = new SqlConfiguration();
 
     /** Executor for async operations continuations. */
-    private Executor cacheAsyncContinuationExecutor;
+    private Executor asyncContinuationExecutor;
 
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
@@ -3647,7 +3647,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets the async continuation executor.
+     * Gets the continuation executor for Cache and Compute async APIs.
      * <p />
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
      * <p />
@@ -3656,23 +3656,23 @@ public class IgniteConfiguration {
      *
      * @return Executor for async continuations.
      */
-    public Executor getCacheAsyncContinuationExecutor() {
-        return cacheAsyncContinuationExecutor;
+    public Executor getAsyncContinuationExecutor() {
+        return asyncContinuationExecutor;
     }
 
     /**
-     * Sets the async continuation executor.
+     * Sets the continuation executor for Cache and Compute async APIs.
      * <p />
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
      * <p />
      * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor.
      *
-     * @param cacheAsyncContinuationExecutor Executor for async continuations.
+     * @param asyncContinuationExecutor Executor for async continuations.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setCacheAsyncContinuationExecutor(Executor cacheAsyncContinuationExecutor) {
-        this.cacheAsyncContinuationExecutor = cacheAsyncContinuationExecutor;
+    public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
+        this.asyncContinuationExecutor = asyncContinuationExecutor;
 
         return this;
     }
