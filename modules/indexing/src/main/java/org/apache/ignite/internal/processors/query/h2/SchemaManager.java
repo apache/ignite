@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
@@ -576,31 +577,12 @@ public class SchemaManager {
      * @param tbl Table descriptor.
      */
     private void registerIndexes(GridH2Table h2Tbl, String schemaName, H2TableDescriptor tbl) throws IgniteCheckedException {
-        Index pk = h2Tbl.getIndex(PK_IDX_NAME);
+        Index pkIdx = h2Tbl.getIndex(PK_IDX_NAME);
 
-        Index affIdx = null;
-
-        Collection<Index> proxyIdxs = h2Tbl.getIndexes().stream().filter(idx -> idx instanceof GridH2ProxyIndex)
+        Collection<Index> sysIdxs = h2Tbl.getIndexes().stream().filter(idx -> !(idx instanceof H2TableScanIndex))
             .collect(Collectors.toList());
 
-        assert proxyIdxs.size() <= 1 : "Unexpected proxy collection size=" + proxyIdxs.size();
-
-        try {
-            affIdx = h2Tbl.getIndex(AFFINITY_KEY_IDX_NAME);
-        }
-        catch (DbException ignored) {
-            // No op.
-        };
-
-        registerSysIndexes(schemaName, tbl, pk, F.concat(proxyIdxs.toArray(new Index[0]), pk, affIdx));
-
-        for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
-            createInitialUserIndex(schemaName, tbl, usrIdx);
-    }
-
-    /** */
-    private void registerSysIndexes(String schemaName, H2TableDescriptor tbl, Index pkIdx, Index[] idxs) {
-        for (Index idx : idxs) {
+        for (Index idx : sysIdxs) {
             if (idx == null)
                 continue;
 
@@ -619,6 +601,9 @@ public class SchemaManager {
                 lsnr.onIndexCreate(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
             }
         }
+
+        for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
+            createInitialUserIndex(schemaName, tbl, usrIdx);
     }
 
     /**
