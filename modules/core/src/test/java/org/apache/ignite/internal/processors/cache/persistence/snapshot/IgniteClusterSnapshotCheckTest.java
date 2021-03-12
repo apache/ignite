@@ -508,7 +508,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
         }
 
-        jobResults.putIfAbsent(cls, hashes);
+        Object mustBeNull = jobResults.putIfAbsent(cls, hashes);
+
+        assertNull(mustBeNull);
     }
 
     /** */
