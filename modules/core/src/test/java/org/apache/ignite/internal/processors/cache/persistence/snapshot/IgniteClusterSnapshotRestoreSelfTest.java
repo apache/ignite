@@ -455,8 +455,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         String grpName = "shared";
         String cacheName = "cache1";
 
-        boolean prepare = procType == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
-
         dfltCacheCfg = txCacheConfig(new CacheConfiguration<Integer, Object>(cacheName)).setGroupName(grpName);
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
@@ -467,24 +465,13 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(grpName), IgniteCheckedException.class, null);
 
-        if (!prepare)
-            GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(cacheName), expCls, expMsg);
-        else
-            ignite.createCache(cacheName);
+        GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(cacheName), expCls, expMsg);
 
         spi.stopBlock();
 
-        if (prepare) {
-            GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IllegalStateException.class,
-                "Cache \"cache1\" should be destroyed manually before perform restore operation.");
+        fut.get(TIMEOUT);
 
-            ensureCacheDirEmpty(2, grpName);
-        }
-        else {
-            fut.get(TIMEOUT);
-
-            checkCacheKeys(grid(0).cache(cacheName), CACHE_KEYS_RANGE);
-        }
+        checkCacheKeys(grid(0).cache(cacheName), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */

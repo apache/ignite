@@ -30,12 +30,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -57,6 +54,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -252,12 +250,12 @@ public class SnapshotRestoreProcess {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (err != null) {
-            log.error("Failed to restore snapshot cache group [" +
-                "groups=" + opCtx0.groups() + ", snapshot=" + opCtx0.snapshotName() + ']', err);
+            log.error("Failed to restore snapshot cache group" + (opCtx0 == null ? "" :
+                " [group(s)=" + opCtx0.groups() + ", snapshot=" + opCtx0.snapshotName() + ']'), err);
         }
         else if (log.isInfoEnabled()) {
-            log.info("Successfully restored cache group(s) from the snapshot [" +
-                "group(s)=" + opCtx0.groups() + ", snapshot=" + opCtx0.snapshotName() + ']');
+            log.info("Successfully restored cache group(s) from the snapshot" + (opCtx0 == null ? "" :
+                " [group(s)=" + opCtx0.groups() + ", snapshot=" + opCtx0.snapshotName() + ']'));
         }
 
         GridFutureAdapter<Void> fut0 = fut;
@@ -326,19 +324,21 @@ public class SnapshotRestoreProcess {
         if (state.state() != ClusterState.ACTIVE || state.transition())
             return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "The cluster should be active."));
 
-        opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.groups(), req.nodes());
-
         try {
+            if (!allNodesInBaselineAndAlive(req.nodes()))
+                throw new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
+
+            for (String grpName : req.groups())
+                ensureCacheAbsent(grpName);
+
             Map<String, StoredCacheData> cfgMap = new HashMap<>();
             GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
             String folderName = ctx.pdsFolderResolver().resolveFolders().folderName();
 
             SnapshotMetadata meta = F.first(cctx.snapshotMgr().readSnapshotMetadatas(req.snapshotName()));
 
-            if (meta == null || !meta.consistentId().equals(cctx.localNode().consistentId().toString()))
-                return new GridFinishedFuture<>();
-
-            if (meta.pageSize() != cctx.database().pageSize()) {
+            if (meta != null && meta.consistentId().equals(cctx.localNode().consistentId().toString())
+                && meta.pageSize() != cctx.database().pageSize()) {
                 throw new IgniteCheckedException("Incompatible memory page size " +
                     "[snapshotPageSize=" + meta.pageSize() +
                     ", local=" + cctx.database().pageSize() +
@@ -346,28 +346,38 @@ public class SnapshotRestoreProcess {
                     ", nodeId=" + cctx.localNodeId() + ']');
             }
 
-            SnapshotRestoreContext opCtx0 = opCtx;
+            List<T2<File, File>> cacheDirs = new ArrayList<>();
 
             // Collect cache configuration(s) and verify cache groups page size.
-            for (File cacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), folderName)) {
-                String grpName = FilePageStoreManager.cacheGroupName(cacheDir);
+            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), folderName)) {
+                String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
-                if (!opCtx0.groups().contains(grpName))
+                if (!req.groups().contains(grpName))
                     continue;
 
-                ((FilePageStoreManager)cctx.pageStore()).readCacheConfigurations(cacheDir, cfgMap);
+                ((FilePageStoreManager)cctx.pageStore()).readCacheConfigurations(snpCacheDir, cfgMap);
+
+                File cacheDir = U.resolveWorkDirectory(ctx.config().getWorkDirectory(),
+                    Paths.get(databaseRelativePath(folderName), snpCacheDir.getName()).toString(), false);
+
+                if (!cacheDir.exists())
+                    cacheDir.mkdir();
+                else if (cacheDir.list().length > 0) {
+                    throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
+                        "[group=" + grpName + ", dir=" + cacheDir + ']');
+                }
+
+                cacheDirs.add(new T2<>(snpCacheDir, cacheDir));
             }
+
+            opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.groups(), req.nodes());
 
             if (cfgMap.isEmpty())
                 return new GridFinishedFuture<>();
 
-            ArrayList<StoredCacheData> ccfgs = new ArrayList<>(cfgMap.values());
+            SnapshotRestoreContext opCtx0 = opCtx;
 
-            if (!allNodesInBaselineAndAlive(req.nodes()))
-                throw new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
-
-            for (String grpName : opCtx0.groups())
-                ensureCacheAbsent(grpName);
+            opCtx0.configs(new ArrayList<>(cfgMap.values()));
 
             File binDir = binaryWorkDir(cctx.snapshotMgr().snapshotLocalDir(req.snapshotName()).getAbsolutePath(), folderName);
 
@@ -375,10 +385,21 @@ public class SnapshotRestoreProcess {
 
             cctx.snapshotMgr().snapshotExecutorService().execute(() -> {
                 try {
-                    restore(opCtx0, binDir, ctx.localNodeId().equals(req.updateMetaNodeId()));
+                    if (opCtx0.interrupted())
+                        return;
+
+                    if (ctx.localNodeId().equals(req.updateMetaNodeId())) {
+                        // Check binary metadata compatibility.
+                        ctx.cacheObjects().checkMetadata(binDir);
+
+                        // Cluster-wide update binary metadata.
+                        ctx.cacheObjects().updateMetadata(binDir, opCtx0::interrupted);
+                    }
+
+                    copyPartitions(cacheDirs, opCtx0);
 
                     if (!opCtx0.interrupted()) {
-                        retFut.onDone(ccfgs);
+                        retFut.onDone(new ArrayList<>(opCtx0.configs()));
 
                         return;
                     }
@@ -398,102 +419,79 @@ public class SnapshotRestoreProcess {
 
             return retFut;
         } catch (Exception e) {
-            log.error("Unable to restore cache group(s) from snapshot " +
-                "[groups=" + req.groups() + ", snapshot=" + req.snapshotName() + ']', e);
-
             return new GridFinishedFuture<>(e);
         }
     }
 
     /**
-     * Restore specified cache groups from the local snapshot directory.
+     * Copy partition filess from the local snapshot directory.
      *
-     * @param updateMetadata Update binary metadata flag.
+     * @param dirs Cache directories.
+     * @param opCtx Snapshot restore operation context.
      * @throws IgniteCheckedException If failed.
      */
-    protected void restore(SnapshotRestoreContext opCtx, File binDir, boolean updateMetadata) throws IgniteCheckedException {
-        if (opCtx.interrupted())
-            return;
+    protected void copyPartitions(Collection<T2<File, File>> dirs,
+        SnapshotRestoreContext opCtx) throws IgniteCheckedException {
+        for (T2<File, File> cacheDirs : dirs) {
+            File snpCacheDir = cacheDirs.get1();
+            File cacheDir = cacheDirs.get2();
 
-        if (updateMetadata) {
-            // Check binary metadata compatibility.
-            ctx.cacheObjects().checkMetadata(binDir);
+            try {
+                if (log.isInfoEnabled())
+                    log.info("Copying files of the cache group [from=" + snpCacheDir + ", to=" + cacheDir + ']');
 
-            // Cluster-wide update binary metadata.
-            ctx.cacheObjects().updateMetadata(binDir, opCtx::interrupted);
-        }
+                for (File snpFile : snpCacheDir.listFiles()) {
+                    if (opCtx.interrupted())
+                        return;
 
-        IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
-        String folderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+                    File target = new File(cacheDir, snpFile.getName());
 
-        for (File snpCacheDir : snapshotMgr.snapshotCacheDirectories(opCtx.snapshotName(), folderName)) {
-            String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Copying file from the snapshot " +
+                            "[snapshot=" + opCtx.snapshotName() +
+                            ", src=" + snpFile +
+                            ", target=" + target + "]");
+                    }
 
-            if (!opCtx.groups().contains(grpName))
-                continue;
-
-            File cacheDir = U.resolveWorkDirectory(ctx.config().getWorkDirectory(),
-                Paths.get(databaseRelativePath(folderName), snpCacheDir.getName()).toString(), false);
-
-            if (!cacheDir.exists())
-                cacheDir.mkdir();
-            else
-            if (cacheDir.list().length > 0) {
-                throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
-                    "[group=" + grpName + ", dir=" + cacheDir + ']');
-            }
-
-            opCtx.pushDir(cacheDir);
-
-            copyPartitions(opCtx.snapshotName(), grpName, cacheDir, snpCacheDir, opCtx::interrupted);
-        }
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param grpName Cache group name.
-     * @param cacheDir Cache group directory.
-     * @param snpCacheDir Cache group directory in snapshot.
-     * @param stopChecker Node stop or prcoess interrupt checker.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void copyPartitions(String snpName, String grpName, File cacheDir, File snpCacheDir,
-        BooleanSupplier stopChecker) throws IgniteCheckedException {
-        try {
-            if (log.isInfoEnabled())
-                log.info("Copying files of the cache group [from=" + snpCacheDir + ", to=" + cacheDir + ']');
-
-            for (File snpFile : snpCacheDir.listFiles()) {
-                if (stopChecker.getAsBoolean())
-                    return;
-
-                File target = new File(cacheDir, snpFile.getName());
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Copying file from the snapshot " +
-                        "[snapshot=" + snpName +
-                        ", grp=" + grpName +
-                        ", src=" + snpFile +
-                        ", target=" + target + "]");
+                    Files.copy(snpFile.toPath(), target.toPath());
                 }
-
-                Files.copy(snpFile.toPath(), target.toPath());
             }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to copy file [snapshot=" + snpName + ", grp=" + grpName + ']', e);
+            catch (IOException e) {
+                throw new IgniteCheckedException("Unable to copy file [snapshot=" + opCtx.snapshotName() +
+                    ", grp=" + FilePageStoreManager.cacheGroupName(cacheDir) + ']', e);
+            }
         }
     }
 
     /**
      * Rollback changes made by process in specified cache group.
+     *
+     * @param opCtx Snapshot restore operation context.
      */
-    protected void rollback(SnapshotRestoreContext opCtx) {
-        File rmvDir;
+    private void rollback(@Nullable SnapshotRestoreContext opCtx) {
+        if (opCtx == null)
+            return;
 
-        while ((rmvDir = opCtx.popDir()) != null) {
-            if (!U.delete(rmvDir))
-                log.error("Unable to delete restored cache directory [dir=" + rmvDir + ']');
+        try {
+            for (StoredCacheData cacheData : opCtx.configs()) {
+                boolean shared = !F.isEmpty(cacheData.config().getGroupName());
+
+                String grpName = shared ? cacheData.config().getGroupName() : cacheData.config().getName();
+
+                File cacheDir = ((FilePageStoreManager)ctx.cache().context().pageStore()).cacheWorkDir(shared, grpName);
+
+                if (!cacheDir.exists())
+                    continue;
+
+                if (log.isInfoEnabled())
+                    log.info("Cleaning up directory " + cacheDir);
+
+                U.delete(cacheDir);
+            }
+        }
+        catch (Exception e) {
+            log.error("Failed to perform rollback [group(s)=" + opCtx.groups() +
+                ", snapshot=" + opCtx.snapshotName() + ']', e);
         }
     }
 
@@ -505,12 +503,14 @@ public class SnapshotRestoreProcess {
     private void finishPrepare(UUID reqId, Map<UUID, ArrayList<StoredCacheData>> res, Map<UUID, Exception> errs) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 == null)
+        if (ctx.clientNode())
             return;
 
-        Exception failure = checkFailure(errs, opCtx0.nodes(), res.keySet());
+        Exception failure = checkFailure(errs, opCtx0, res.keySet());
 
         if (failure == null) {
+            assert opCtx0 != null : ctx.localNodeId();
+
             Map<String, StoredCacheData> filteredCfgs = new HashMap<>();
 
             for (List<StoredCacheData> storedCfgs : res.values()) {
@@ -529,12 +529,14 @@ public class SnapshotRestoreProcess {
             return;
         }
 
-        // Remove files asynchronously.
-        ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
-            rollback(opCtx0);
-
+        if (opCtx0 == null)
             finishProcess(failure);
-        });
+        else // Remove files asynchronously.
+            ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
+                rollback(opCtx0);
+
+                finishProcess(failure);
+            });
     }
 
     /**
@@ -614,7 +616,7 @@ public class SnapshotRestoreProcess {
         if (opCtx0 == null || !reqId.equals(opCtx0.requestId()))
             return;
 
-        Exception failure = checkFailure(errs, opCtx0.nodes(), res.keySet());
+        Exception failure = checkFailure(errs, opCtx0, res.keySet());
 
         if (failure == null) {
             finishProcess();
@@ -630,15 +632,15 @@ public class SnapshotRestoreProcess {
      * Check the response for probable failures.
      *
      * @param errs Errors.
-     * @param expNodes Expected set of responding topology nodes.
+     * @param opCtx Snapshot restore operation context.
      * @param respNodes Set of responding topology nodes.
      * @return Error, if any.
      */
-    private Exception checkFailure(Map<UUID, Exception> errs, Set<UUID> expNodes, Set<UUID> respNodes) {
+    private Exception checkFailure(Map<UUID, Exception> errs, SnapshotRestoreContext opCtx, Set<UUID> respNodes) {
         Exception err = F.first(errs.values());
 
-        if (err == null && !respNodes.containsAll(expNodes)) {
-            Set<UUID> leftNodes = new HashSet<>(expNodes);
+        if (err == null && opCtx != null && !respNodes.containsAll(opCtx.nodes())) {
+            Set<UUID> leftNodes = new HashSet<>(opCtx.nodes());
 
             leftNodes.removeAll(respNodes);
 
@@ -718,9 +720,6 @@ public class SnapshotRestoreProcess {
 
         /** Set of processed cache IDs. */
         private final Set<Integer> cacheIds = new GridConcurrentHashSet<>();
-
-        /** Directories to clean up if the restore procedure fails. */
-        private final Queue<File> grpDirs = new ConcurrentLinkedQueue<>();
 
         /** The exception that led to the interruption of the process. */
         private final AtomicReference<Throwable> errRef = new AtomicReference<>();
@@ -820,20 +819,6 @@ public class SnapshotRestoreProcess {
          */
         protected @Nullable Throwable error() {
             return errRef.get();
-        }
-
-        /**
-         * @param cacheDir Directory to clean up if the restore procedure fails
-         */
-        protected void pushDir(File cacheDir) {
-            grpDirs.offer(cacheDir);
-        }
-
-        /**
-         * @return Directory to clean up or {@code null} if nothing to clean up.
-         */
-        private @Nullable File popDir() {
-            return grpDirs.poll();
         }
     }
 }
