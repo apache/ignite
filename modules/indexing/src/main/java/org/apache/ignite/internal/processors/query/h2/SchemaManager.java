@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -56,11 +57,11 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QuerySysIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
@@ -79,13 +80,10 @@ import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.index.Index;
-import org.h2.message.DbException;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.AFFINITY_KEY_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
@@ -564,7 +562,10 @@ public class SchemaManager {
 
         lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo());
 
-        registerIndexes(h2Tbl, schemaName, tbl);
+        registerSystemIndexes(h2Tbl, schemaName, tbl);
+
+        for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
+            createInitialUserIndex(schemaName, tbl, usrIdx);
 
         return h2Tbl;
     }
@@ -576,34 +577,26 @@ public class SchemaManager {
      * @param schemaName Current schema.
      * @param tbl Table descriptor.
      */
-    private void registerIndexes(GridH2Table h2Tbl, String schemaName, H2TableDescriptor tbl) throws IgniteCheckedException {
-        Index pkIdx = h2Tbl.getIndex(PK_IDX_NAME);
-
-        Collection<Index> sysIdxs = h2Tbl.getIndexes().stream().filter(idx -> !(idx instanceof H2TableScanIndex))
+    private void registerSystemIndexes(GridH2Table h2Tbl, String schemaName, H2TableDescriptor tbl) {
+        Collection<Index> sysIdxs = h2Tbl.getIndexes().stream()
+            .filter(idx -> (idx instanceof H2TreeIndexBase) || ((idx instanceof GridH2ProxyIndex)
+                && ((GridH2ProxyIndex)idx).underlyingIndex() instanceof H2TreeIndexBase))
             .collect(Collectors.toList());
 
         for (Index idx : sysIdxs) {
-            if (idx == null)
-                continue;
-
             Collection<String> idxCols = Stream.of(idx.getColumns())
                 .map(Column::getName)
                 .collect(Collectors.toList());
 
-            if (!idxCols.isEmpty()) {
-                String idxName = idx.getName();
+            String idxName = idx.getName();
 
-                if (idx instanceof GridH2ProxyIndex)
-                    idx = pkIdx;
+            if (idx instanceof GridH2ProxyIndex)
+                idx = ((GridH2ProxyIndex)idx).underlyingIndex();
 
-                QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
+            QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
 
-                lsnr.onIndexCreate(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
-            }
+            lsnr.onIndexCreate(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
         }
-
-        for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
-            createInitialUserIndex(schemaName, tbl, usrIdx);
     }
 
     /**

@@ -192,9 +192,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testEqualsFilterWithUnwrpKeyAndAff() {
-        assertQuery("SELECT F1 FROM UNWRAP_PK WHERE F2=2")
-            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", PK_IDX_NAME))
-            .returns("Ivan")
+        assertQuery("SELECT F2 FROM UNWRAP_PK WHERE F1='Ivan'")
+            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", AFFINITY_KEY_IDX_NAME))
             .check();
     }
 
