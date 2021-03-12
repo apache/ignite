@@ -24,13 +24,8 @@ from ignitetest.services.ignite import get_event_time
 from ignitetest.services.ignite_app import IgniteApplicationService
 
 
-DFLT_PRELOAD_TIMEOUT = 3600
-REBALANCE_START_TIMEOUT = 1
-REBALANCE_COMPLETE_TIMEOUT = 300
-
-
 # pylint: disable=too-many-arguments
-def preload_data(context, config, backups, cache_count, entry_count, entry_size, timeout=DFLT_PRELOAD_TIMEOUT):
+def preload_data(context, config, backups, cache_count, entry_count, entry_size, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
@@ -55,7 +50,7 @@ def preload_data(context, config, backups, cache_count, entry_count, entry_size,
         app, app.nodes[0], "Data generation started")).total_seconds()
 
 
-def await_rebalance_start(ignite, timeout=REBALANCE_START_TIMEOUT):
+def await_rebalance_start(ignite, timeout=1):
     """
     Awaits rebalance starting on any test-cache on any node.
     :param ignite: IgniteService instance.
@@ -78,7 +73,7 @@ def await_rebalance_start(ignite, timeout=REBALANCE_START_TIMEOUT):
     raise RuntimeError("Rebalance start was not detected on any node")
 
 
-def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=REBALANCE_COMPLETE_TIMEOUT):
+def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
     """
     Awaits rebalance complete on each test-cache.
     :param ignite: IgniteService instance.

@@ -42,7 +42,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             + ", entryCount=" + entryCnt + ", entrySize=" + entrySize + "]");
 
         for (int i = 1; i <= cacheCnt; i++) {
-            IgniteCache<Integer, DataModel> cache = createCache("test-cache-" + i, backups);
+            IgniteCache<Integer, DataModel> cache = ignite.createCache(
+                new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
+                    .setBackups(backups));
 
             generateCacheData(cache.getName(), entryCnt, entrySize);
         }
@@ -83,15 +85,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             log.info("Streamed " + entryCnt + " entries into " + cacheName);
 
         log.info(cacheName + " data generated.");
-    }
-
-    /**
-     * @param name Cache name.
-     * @param backups Backups.
-     */
-    private <K, V> IgniteCache<K, V> createCache(String name, int backups) {
-        return ignite.createCache(new CacheConfiguration<K, V>(name)
-            .setBackups(backups));
     }
 
     /**
