@@ -183,11 +183,34 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var emps = svc.testEmployees(Emps);
 
+            Assert.AreEqual(typeof(Employee[]), emps);
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
 
             Assert.AreEqual("Kyle Reese", emps[0].Fio);
             Assert.AreEqual(3, emps[0].Salary);
+
+            var accs = svc.testAccounts();
+
+            Assert.AreEqual(typeof(Account[]), accs);
+            Assert.NotNull(accs);
+            Assert.AreEqual(2, accs.Length);
+            Assert.AreEqual("123", accs[0].Id);
+            Assert.AreEqual("321", accs[1].Id);
+            Assert.AreEqual(42, accs[0].Amount);
+            Assert.AreEqual(0, accs[1].Amount);
+
+            var users = svc.testUsers();
+
+            Assert.AreEqual(typeof(User[]), users);
+            Assert.NotNull(users);
+            Assert.AreEqual(2, users.Length);
+            Assert.AreEqual(1, users[0].Id);
+            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
+            Assert.AreEqual("admin", users[0].Role.Name);
+            Assert.AreEqual(2, users[1].Id);
+            Assert.AreEqual(ACL.DENY, users[1].Acl);
+            Assert.AreEqual("user", users[1].Role.Name);
 
             Assert.IsNull(svc.testMap(null));
 
@@ -201,26 +224,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(res);
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
-
-            var accs = svc.testAccounts();
-
-            Assert.NotNull(accs);
-            Assert.AreEqual(2, accs.Length);
-            Assert.AreEqual("123", accs[0].Id);
-            Assert.AreEqual("321", accs[1].Id);
-            Assert.AreEqual(42, accs[0].Amount);
-            Assert.AreEqual(0, accs[1].Amount);
-
-            var users = svc.testUsers();
-
-            Assert.NotNull(users);
-            Assert.AreEqual(2, users.Length);
-            Assert.AreEqual(1, users[0].Id);
-            Assert.AreEqual(ACL.Allow, users[0].Acl);
-            Assert.AreEqual("admin", users[0].Role.Name);
-            Assert.AreEqual(2, users[1].Id);
-            Assert.AreEqual(ACL.Deny, users[1].Acl);
-            Assert.AreEqual("user", users[1].Role.Name);
         }
 
         /// <summary>
@@ -278,7 +281,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = _client.GetServices().GetServiceProxy<IArrayFactory>(nameof(ArrayFactoryService), false);
             var arr = svc.CreateArray(2, 1);
 
-            Assert.AreEqual(arr.GetType(), typeof(R[]));
+            Assert.AreEqual(typeof(R[]), arr.GetType());
             Assert.AreEqual(1, arr[1].Value);
 
             _client.GetServices().Cancel(nameof(ArrayFactoryService));

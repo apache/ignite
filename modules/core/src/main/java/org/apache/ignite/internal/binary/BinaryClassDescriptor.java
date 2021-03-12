@@ -764,7 +764,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case OBJECT_ARR_WRAPPER:
-                    writer.doWriteBinarytArrayWrapper((BinaryArrayWrapper)obj);
+                    writer.doWriteBinaryArrayWrapper((BinaryArrayWrapper)obj);
                     break;
 
                 case COL:
