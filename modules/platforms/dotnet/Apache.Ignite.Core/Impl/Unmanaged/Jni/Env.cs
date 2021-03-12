@@ -230,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Calls the static object method.
         /// </summary>
-        private GlobalRef CallStaticObjectMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
+        public GlobalRef CallStaticObjectMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
         {
             var res = _callStaticObjectMethod(_envPtr, cls.Target, methodId, argsPtr);
 
