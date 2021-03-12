@@ -1057,7 +1057,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 validator.validateCacheGroup(grpDesc);
 
                 return null;
-            });
+            }
+        );
     }
 
     /**
