@@ -379,7 +379,7 @@ abstract class TcpDiscoveryImpl {
      *                  timeout of certain net operation will be used.
      * @see #simulateNetFailure(Socket, long)
      */
-    void simulateNetTimeout(int direction, int delay) {
+    void enableNetworkTimeoutSimulation(int direction, int delay) {
         simulateNetTimeout = new IgnitePair<>(direction, delay < 0 ? null : delay);
     }
 
@@ -390,8 +390,8 @@ abstract class TcpDiscoveryImpl {
      *
      * @param sock  The socket
      * @param delay The delay before raising {@code SocketTimeoutException}. Ignored if preset with {@link
-     *              #simulateNetTimeout(int, int)}
-     * @see #simulateNetTimeout(int, int)
+     *              #enableNetworkTimeoutSimulation(int, int)}
+     * @see #enableNetworkTimeoutSimulation(int, int)
      */
     void simulateNetFailure(Socket sock, long delay) throws SocketTimeoutException {
         IgnitePair<Integer> simulateNetTimeout = this.simulateNetTimeout;

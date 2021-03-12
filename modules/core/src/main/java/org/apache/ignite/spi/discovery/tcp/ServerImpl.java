@@ -6505,7 +6505,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Segment local node if is being pinged while missing any outgoing ring connection.
+     * Segment local node if ring connection failed while incoming traffic is present.
      *
      * @param skipNodes If not {@code null}, aren't taken in account when observing nodes left in the ring.
      */
