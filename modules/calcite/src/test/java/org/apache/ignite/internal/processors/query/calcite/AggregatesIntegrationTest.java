@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.IgniteCache;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 /**
