@@ -6568,7 +6568,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         // nodes failed. May be several failed in a row. But we got only one connectionRecoveryTimeout to establish new
         // connection. We should travers rest of the cluster with sliced timeout for each node.
         if (sndState != null)
-            absoluteThreshold = Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connCheckTick));
+            absoluteThreshold = Math.min(sndState.absoluteTimeout, System.nanoTime() + U.millisToNanos(connCheckTick));
 
         return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
     }
@@ -8238,19 +8238,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private int failedNodes;
 
-        /** */
-        private final long failTimeNanos;
+        /** Maximal time point forany recovery operation. Nanos. */
+        private final long absoluteTimeout;
 
-        /** */
-        private final long initNanos;
+        /** Time of the failure in nanos. */
+        private final long failTime;
 
         /**
-         *
+         * @param failTime Time of the failure in nanos.
          */
-        CrossRingMessageSendState(long failTimeNanos) {
-            initNanos = failTimeNanos;
+        CrossRingMessageSendState(long failTime) {
+            this.failTime = failTime;
 
-            this.failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + initNanos;
+            this.absoluteTimeout = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + this.failTime;
         }
 
         /**
@@ -8298,7 +8298,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return {@code True} if passed timeout is reached. {@code False} otherwise.
          */
         boolean checkTimeout() {
-            if (System.nanoTime() >= failTimeNanos) {
+            if (System.nanoTime() >= absoluteTimeout) {
                 state = RingMessageSendState.FAILED;
 
                 return true;
