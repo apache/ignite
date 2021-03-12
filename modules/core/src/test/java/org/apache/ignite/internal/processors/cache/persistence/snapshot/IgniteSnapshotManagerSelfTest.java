@@ -403,7 +403,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         Random rnd = new Random();
         int maxKey = 15_000;
         int maxValSize = 32_768;
-        int loadingTimeMs = 60_000;
+        int loadingTimeMs = 30_000;
 
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>("tx1"))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -422,7 +422,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                     cache.remove(rnd.nextInt(maxKey));
             }
 
-        }, 5, "change-loader-");
+        }, 10, "change-loader-");
 
         fut.get();
 
