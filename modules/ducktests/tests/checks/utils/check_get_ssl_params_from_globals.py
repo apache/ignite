@@ -19,9 +19,7 @@ Check that SslParams correctly parse SSL params from globals
 
 import pytest
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, SslParams, DEFAULT_TRUSTSTORE, \
-    DEFAULT_CLIENT_KEYSTORE, DEFAULT_PASSWORD, SSL_ENABLED_KEY, SSL_PARAMS_KEY
-from ignitetest.services.utils.auth import IGNITE_CLIENT_ALIAS
-
+    DEFAULT_CLIENT_KEYSTORE, DEFAULT_PASSWORD, IGNITE_CLIENT_ALIAS, SSL_KEY, SSL_PARAMS_KEY, ENABLED_KEY
 
 INSTALL_ROOT = '/opt/'
 CERTIFICATE_DIR = '/opt/ignite-dev/modules/ducktests/tests/certs/'
@@ -29,7 +27,6 @@ TEST_KEYSTORE_JKS = "client1.jks"
 TEST_TRUSTSTORE_JKS = "truststore.jks"
 TEST_PASSWORD = "qwe123"
 TEST_CERTIFICATE_DIR = "/opt/certs/"
-TEST_USER = IGNITE_CLIENT_ALIAS
 
 
 def _compare(expected, actual):
@@ -47,29 +44,56 @@ def _compare(expected, actual):
 class TestParams:
     """
     Globals for tests
+    Possible structure is:
+    {"ssl": {
+        "enabled": true,
+        "params": {
+          "server": {
+            "key_store_jks": "server.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          },
+          "client": {
+            "key_store_jks": "client.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          },
+          "admin": {
+            "key_store_jks": "admin.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          }
+        }
+      }
+    }
     """
 
     test_globals_jks = {
         "install_root": INSTALL_ROOT,
-        SSL_ENABLED_KEY: "True",
-        TEST_USER: {
+        SSL_KEY: {
+            ENABLED_KEY: True,
             SSL_PARAMS_KEY: {
-                "key_store_jks": TEST_KEYSTORE_JKS,
-                "key_store_password": TEST_PASSWORD,
-                "trust_store_jks": TEST_TRUSTSTORE_JKS,
-                "trust_store_password": TEST_PASSWORD}}}
+                IGNITE_CLIENT_ALIAS: {
+                    "key_store_jks": TEST_KEYSTORE_JKS,
+                    "key_store_password": TEST_PASSWORD,
+                    "trust_store_jks": TEST_TRUSTSTORE_JKS,
+                    "trust_store_password": TEST_PASSWORD}}}}
     test_globals_path = {
         "install_root": INSTALL_ROOT,
-        SSL_ENABLED_KEY: "True",
-        TEST_USER: {
+        SSL_KEY: {
+            ENABLED_KEY: True,
             SSL_PARAMS_KEY: {
-                "key_store_path": TEST_CERTIFICATE_DIR + TEST_KEYSTORE_JKS,
-                "key_store_password": TEST_PASSWORD,
-                "trust_store_path": TEST_CERTIFICATE_DIR + TEST_TRUSTSTORE_JKS,
-                "trust_store_password": TEST_PASSWORD}}}
+                IGNITE_CLIENT_ALIAS: {
+                    "key_store_path": TEST_CERTIFICATE_DIR + TEST_KEYSTORE_JKS,
+                    "key_store_password": TEST_PASSWORD,
+                    "trust_store_path": TEST_CERTIFICATE_DIR + TEST_TRUSTSTORE_JKS,
+                    "trust_store_password": TEST_PASSWORD}}}}
     test_globals_default = {
         "install_root": INSTALL_ROOT,
-        SSL_ENABLED_KEY: "True"}
+        SSL_KEY: {ENABLED_KEY: True}}
     test_globals_no_ssl = {
         "install_root": INSTALL_ROOT}
 
@@ -96,11 +120,9 @@ class CheckCaseJks:
     @pytest.mark.parametrize('test_globals, expected',
                              [(TestParams.test_globals_jks, TestParams.expected_ssl_params_jks),
                               (TestParams.test_globals_path, TestParams.expected_ssl_params_path),
-                              (TestParams.test_globals_default, TestParams.expected_ssl_params_default),
-                              (TestParams.test_globals_no_ssl, None)])
+                              (TestParams.test_globals_default, TestParams.expected_ssl_params_default)])
     def check_parse(test_globals, expected):
         """
         Check that SslParams correctly parse SSL params from globals
         """
-
-        assert _compare(expected, get_ssl_params(test_globals, TEST_USER))
+        assert _compare(expected, get_ssl_params(test_globals, IGNITE_CLIENT_ALIAS))

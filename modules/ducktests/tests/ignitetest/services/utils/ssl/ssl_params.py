@@ -18,7 +18,9 @@ This module contains classes and utilities for Ignite SslContextFactory.
 """
 import os
 
-from ignitetest.services.utils.auth import IGNITE_SERVER_ALIAS, IGNITE_CLIENT_ALIAS, IGNITE_ADMIN_ALIAS
+IGNITE_SERVER_ALIAS = 'server'
+IGNITE_CLIENT_ALIAS = 'client'
+IGNITE_ADMIN_ALIAS = 'admin'
 
 DEFAULT_SERVER_KEYSTORE = 'server.jks'
 DEFAULT_CLIENT_KEYSTORE = 'client.jks'
@@ -27,8 +29,9 @@ DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
 DEFAULT_ROOT = "/opt/"
 
-SSL_ENABLED_KEY = 'use_ssl'
-SSL_PARAMS_KEY = 'ssl'
+SSL_PARAMS_KEY = "params"
+SSL_KEY = "ssl"
+ENABLED_KEY = "enabled"
 
 default_keystore = {
     IGNITE_SERVER_ALIAS: DEFAULT_SERVER_KEYSTORE,
@@ -57,32 +60,40 @@ class SslParams:
         self.trust_store_password = trust_store_password
 
 
-def get_ssl_params(_globals: dict, service_alias: str):
+def get_ssl_params(_globals: dict, alias: str):
     """
     Gets SSL params from Globals
     Structure may be found in modules/ducktests/tests/checks/utils/check_get_ssl_params.py
 
     There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
-    which corresponds to its keystore:
+    which corresponds to keystore:
     Ignite(clientMode = False) - server
     Ignite(clientMode = True) - client
     ControlUtility - admin
 
-    If we set "use_ssl=True" in globals, these SSL params will be injected in corresponding
-    configuration You can also override keystore corresponding to alias throw globals
+    If we enable SSL in globals, these SSL params will be injected in corresponding
+    configuration
+    You can also override keystore corresponding to alias throw globals
 
     Default keystores for these services are generated automaticaly on creating envoriment
     If you specyfy ssl_params in test, you override globals
     """
 
     root_dir = _globals.get("install_root", DEFAULT_ROOT)
-    ssl_param = None
-    if _globals.get(SSL_ENABLED_KEY):
-        if service_alias in _globals and SSL_PARAMS_KEY in _globals[service_alias]:
-            ssl_param = _globals[service_alias][SSL_PARAMS_KEY]
-        elif service_alias in default_keystore:
-            ssl_param = {'key_store_jks': default_keystore[service_alias]}
-        else:
-            raise Exception("Unknown service name to get SSL params: " + service_alias)
+    if SSL_PARAMS_KEY in _globals[SSL_KEY] and alias in _globals[SSL_KEY][SSL_PARAMS_KEY]:
+        ssl_param = _globals[SSL_KEY][SSL_PARAMS_KEY][alias]
+    elif alias in default_keystore:
+        ssl_param = {'key_store_jks': default_keystore[alias]}
+    else:
+        raise Exception("We don't have SSL params for: " + alias)
 
     return SslParams(root_dir=root_dir, **ssl_param) if ssl_param else None
+
+
+def is_ssl_enabled(_globals: dict):
+    """
+    Return True if SSL enabled throw globals
+    :param _globals:
+    :return: bool
+    """
+    return "ssl" in _globals and _globals["ssl"]["enabled"]

@@ -19,28 +19,31 @@ Check that get_credentials correctly parse Credentials from globals
 
 import pytest
 from ignitetest.services.utils.auth import get_credentials, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD, \
-    AUTHENTICATION_ENABLED_KEY, CREDENTIALS_KEY
-from ignitetest.services.utils.auth import IGNITE_CLIENT_ALIAS
+    DEFAULT_CREDENTIALS_KEY, AUTHENTICATION_KEY, ENABLED_KEY
 
-TEST_USER = IGNITE_CLIENT_ALIAS
+TEST_USERNAME = "admin"
 TEST_PASSWORD = "qwe123"
 
 
 class CheckCaseJks:
     """
     Check that get_credentials correctly parse Credentials from globals
+    Posible structure is:
+    {"authentication": {
+        "enabled": true,
+        "default_credentials": ["admin","qwe123"]}}
     """
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, expected_username, expected_password',
-                             [({AUTHENTICATION_ENABLED_KEY: "True",
-                                TEST_USER: {
-                                    CREDENTIALS_KEY: [TEST_USER, TEST_PASSWORD]}}, TEST_USER, TEST_PASSWORD),
-                              ({AUTHENTICATION_ENABLED_KEY: "True"}, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD),
-                              ({}, None, None)])
+                             [({AUTHENTICATION_KEY: {
+                                 ENABLED_KEY: True,
+                                 DEFAULT_CREDENTIALS_KEY: (TEST_USERNAME, TEST_PASSWORD)}}, TEST_USERNAME,
+                               TEST_PASSWORD),
+                                 ({AUTHENTICATION_KEY: {
+                                     ENABLED_KEY: True}}, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)])
     def check_parse(test_globals, expected_username, expected_password):
         """
         Check function for pytest
         """
-
-        assert (expected_username, expected_password) == get_credentials(test_globals, TEST_USER)
+        assert (expected_username, expected_password) == get_credentials(test_globals)

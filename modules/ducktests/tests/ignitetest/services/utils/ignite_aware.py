@@ -39,8 +39,8 @@ from ignitetest.utils.enum import constructible
 
 # pylint: disable=too-many-public-methods
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_params import get_ssl_params
-from ignitetest.services.utils.auth import IGNITE_SERVER_ALIAS, IGNITE_CLIENT_ALIAS
+from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_SERVER_ALIAS, \
+    IGNITE_CLIENT_ALIAS
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
@@ -105,7 +105,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update ssl configuration from globals.
         """
         ssl_params = None
-        if self.config.ssl_params is None:
+        if self.config.ssl_params is None and is_ssl_enabled(self.globals):
             ssl_params = get_ssl_params(
                 self.globals,
                 IGNITE_CLIENT_ALIAS if self.config.client_mode else IGNITE_SERVER_ALIAS

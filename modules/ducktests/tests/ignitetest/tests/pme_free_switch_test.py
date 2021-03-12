@@ -32,7 +32,7 @@ from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_0, IgniteVersion, LATEST
-from ignitetest.services.utils.ssl.ssl_params import SSL_ENABLED_KEY
+from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 
 
 @constructible
@@ -55,7 +55,7 @@ class PmeFreeSwitchTest(IgniteTest):
     EXTRA_CACHES_AMOUNT = 100
 
     @cluster(num_nodes=NUM_NODES + 2)
-    @ignore_if(lambda version, globals: version < V_2_8_0 and globals.get(SSL_ENABLED_KEY))
+    @ignore_if(lambda version, globals: version < V_2_8_0 and is_ssl_enabled(globals))
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[LoadType.NONE, LoadType.EXTRA_CACHES, LoadType.LONG_TXS])
     def test(self, ignite_version, load_type):
