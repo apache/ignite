@@ -8238,7 +8238,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private int failedNodes;
 
-        /** Maximal time point forany recovery operation. Nanos. */
+        /** Maximal time point for any recovery operation. Nanos. */
         private final long absoluteTimeout;
 
         /** Time of the failure in nanos. */
