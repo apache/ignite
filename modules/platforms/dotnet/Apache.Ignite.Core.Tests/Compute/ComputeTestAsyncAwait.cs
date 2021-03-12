@@ -17,11 +17,27 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
+    using System.Threading.Tasks;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests compute async continuation behavior.
     /// </summary>
-    public class ComputeTestAsyncAwait
+    public class ComputeTestAsyncAwait : TestBase
     {
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [Test]
+        public async Task TestComputeAsyncContinuation()
+        {
+            // TODO: Test local and remote execution - where do we end up?
+            // Test Tasks and Funcs.
+            var compute = Ignite.GetCompute();
 
+            await compute.RunAsync(new ComputeAction());
+
+            Assert.AreEqual("x", TestUtilsJni.GetJavaThreadName());
+        }
     }
 }
