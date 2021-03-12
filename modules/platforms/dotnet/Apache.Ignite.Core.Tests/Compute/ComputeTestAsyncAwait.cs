@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             await compute.RunAsync(new ComputeAction());
 
-            Assert.AreEqual("x", TestUtilsJni.GetJavaThreadName());
+            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
         }
     }
 }
