@@ -487,8 +487,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
 
-        assertNotNull(idleVerifyHashes);
-        assertNotNull(snpCheckHashes);
+        assertFalse(F.isEmpty(idleVerifyHashes));
+        assertFalse(F.isEmpty(snpCheckHashes));
+
         assertEquals(idleVerifyHashes, snpCheckHashes);
         assertEquals(idleVerifyRes, snpVerifyRes);
     }
