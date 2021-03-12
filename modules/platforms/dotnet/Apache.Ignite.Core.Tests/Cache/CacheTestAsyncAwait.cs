@@ -44,6 +44,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var key = TestUtils.GetPrimaryKey(Ignite2, cache.Name);
 
             // This causes deadlock if async continuation is executed on the striped thread.
+            // TODO: Verify java thread name though JNI.
             await cache.PutAsync(key, 1);
             cache.Replace(key, 2);
 
