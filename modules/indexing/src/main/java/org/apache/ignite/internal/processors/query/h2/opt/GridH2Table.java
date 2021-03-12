@@ -1424,7 +1424,7 @@ public class GridH2Table extends TableBase {
         }
 
         if (modified) {
-            String proxyName = target.getName() + "_proxy";
+            String proxyName = generateProxyIdxName(target.getName());
 
             if (target.getIndexType().isSpatial())
                 return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
@@ -1433,6 +1433,11 @@ public class GridH2Table extends TableBase {
         }
 
         return null;
+    }
+
+    /** */
+    public static String generateProxyIdxName(String idxName) {
+        return idxName + "_proxy";
     }
 
     /**

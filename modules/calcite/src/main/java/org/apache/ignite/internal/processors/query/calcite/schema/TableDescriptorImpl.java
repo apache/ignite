@@ -73,7 +73,6 @@ import static java.util.Collections.singletonList;
 /**
  *
  */
-@SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "rawtypes"})
 public class TableDescriptorImpl extends NullInitializerExpressionFactory
     implements TableDescriptor {
     /** */

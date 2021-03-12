@@ -31,6 +31,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -52,8 +55,11 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QuerySysIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
@@ -74,6 +80,7 @@ import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.index.Index;
+import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -555,10 +562,41 @@ public class SchemaManager {
 
         lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo());
 
+        registerSystemIndexes(h2Tbl, schemaName, tbl);
+
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
 
         return h2Tbl;
+    }
+
+    /**
+     * Registers all available indexes.
+     *
+     * @param h2Tbl Table representation.
+     * @param schemaName Current schema.
+     * @param tbl Table descriptor.
+     */
+    private void registerSystemIndexes(GridH2Table h2Tbl, String schemaName, H2TableDescriptor tbl) {
+        Collection<Index> sysIdxs = h2Tbl.getIndexes().stream()
+            .filter(idx -> (idx instanceof H2TreeIndexBase) || ((idx instanceof GridH2ProxyIndex)
+                && ((GridH2ProxyIndex)idx).underlyingIndex() instanceof H2TreeIndexBase))
+            .collect(Collectors.toList());
+
+        for (Index idx : sysIdxs) {
+            Collection<String> idxCols = Stream.of(idx.getColumns())
+                .map(Column::getName)
+                .collect(Collectors.toList());
+
+            String idxName = idx.getName();
+
+            if (idx instanceof GridH2ProxyIndex)
+                idx = ((GridH2ProxyIndex)idx).underlyingIndex();
+
+            QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
+
+            lsnr.onIndexCreate(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
+        }
     }
 
     /**
@@ -880,8 +918,11 @@ public class SchemaManager {
         @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {}
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-            GridCacheContextInfo<?,?> cacheInfo) {}
+        @Override public void onSqlTypeCreate(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {}
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
@@ -907,9 +948,12 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-            GridCacheContextInfo<?,?> cacheInfo) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDescriptor, cacheInfo));
+        @Override public void onSqlTypeCreate(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDesc, cacheInfo));
         }
 
         /** {@inheritDoc} */

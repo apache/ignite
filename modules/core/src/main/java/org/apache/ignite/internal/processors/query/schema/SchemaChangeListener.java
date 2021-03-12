@@ -47,8 +47,7 @@ public interface SchemaChangeListener {
      * @param typeDesc type descriptor.
      * @param cacheInfo Cache info.
      */
-    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo);
+    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?, ?> cacheInfo);
 
     /**
      * Callback method.
