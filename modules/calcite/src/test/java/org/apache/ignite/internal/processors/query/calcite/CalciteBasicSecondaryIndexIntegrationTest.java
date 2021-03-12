@@ -839,11 +839,10 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     /** */
-    @Ignore("TODO")
     @Test
     public void testOrderByKeyAlias() {
-        assertQuery("SELECT * FROM Developer ORDER BY id")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+        assertQuery("SELECT * FROM Developer WHERE id<=4 ORDER BY id")
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER"))
             .matches(not(containsSubPlan("IgniteSort")))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
