@@ -90,6 +90,9 @@ public class BinaryUtils {
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
+    /** */
+    public static final ThreadLocal<Boolean> USE_ARRAY_WRAPPER = ThreadLocal.withInitial(() -> false);
+
     /** Map from class to associated write replacer. */
     public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
 
@@ -1158,6 +1161,8 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryArrayWrapper.class)
+            return BinaryWriteMode.OBJECT_ARR_WRAPPER;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -2045,22 +2050,43 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static Object doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        Class compType = doReadClass(in, ctx, ldr, deserialize);
+        if (!deserialize && USE_ARRAY_WRAPPER.get()) {
+            int compTypeId = in.readInt();
 
-        int len = in.readInt();
+            String compClsName = null;
 
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+            if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                compClsName = doReadClassName(in);
 
-        handles.setHandle(arr, hPos);
+            int len = in.readInt();
 
-        for (int i = 0; i < len; i++)
-            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+            Object[] arr = new Object[len];
 
-        return arr;
+            handles.setHandle(arr, hPos);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+            return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr);
+        }
+        else {
+            Class compType = doReadClass(in, ctx, ldr, deserialize);
+
+            int len = in.readInt();
+
+            Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+
+            handles.setHandle(arr, hPos);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+            return arr;
+        }
     }
 
     /**

@@ -188,7 +188,6 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         finally {
             GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
         }
-
     }
 
     /**

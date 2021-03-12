@@ -150,8 +150,11 @@ public class GridBinaryMarshaller {
     /** Time array. */
     public static final byte TIME_ARR = 37;
 
-    /** Binary enum */
+    /** Binary enum. */
     public static final byte BINARY_ENUM = 38;
+
+    /** Binary wrapper for {@code Object[]}. */
+    public static final byte OBJ_ARR_WRAPPER = 39;
 
     /** */
     public static final byte NULL = (byte)101;

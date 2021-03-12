@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -276,22 +277,29 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Object[] args;
 
-                if (reader.readBoolean()) {
-                    args = new Object[reader.readInt()];
-
-                    for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
-                }
-                else
-                    args = null;
+                BinaryUtils.USE_ARRAY_WRAPPER.set(true);
 
                 try {
-                    Object result = svc.invoke(mthdName, srvKeepBinary, args);
+                    if (reader.readBoolean()) {
+                        args = new Object[reader.readInt()];
 
-                    PlatformUtils.writeInvocationResult(writer, result, null);
+                        for (int i = 0; i < args.length; i++)
+                            args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
+                    }
+                    else
+                        args = null;
+
+                    try {
+                        Object result = svc.invoke(mthdName, srvKeepBinary, args);
+
+                        PlatformUtils.writeInvocationResult(writer, result, null);
+                    }
+                    catch (Throwable e) {
+                        PlatformUtils.writeInvocationResult(writer, null, e);
+                    }
                 }
-                catch (Throwable e) {
-                    PlatformUtils.writeInvocationResult(writer, null, e);
+                finally {
+                    BinaryUtils.USE_ARRAY_WRAPPER.set(false);
                 }
 
                 return null;

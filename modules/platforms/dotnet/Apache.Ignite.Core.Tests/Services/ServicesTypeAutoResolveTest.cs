@@ -52,6 +52,8 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _grid1;
 
         /** */
+        //TODO: move marshaller to another folder!
+        //TODO: add test for nested array fields.
         private IIgnite _client;
 
         [TestFixtureTearDown]
