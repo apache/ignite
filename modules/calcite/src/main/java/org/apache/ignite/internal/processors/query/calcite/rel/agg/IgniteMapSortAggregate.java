@@ -92,7 +92,7 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMapSortAggregate(
             cluster,
-            getTraitSet(),
+            getTraitSet().replace(collation),
             sole(inputs),
             getGroupSet(),
             getGroupSets(),

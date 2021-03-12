@@ -91,7 +91,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceSortAggregate(
             cluster,
-            getTraitSet(),
+            getTraitSet().replace(collation),
             sole(inputs),
             groupSet,
             groupSets,
