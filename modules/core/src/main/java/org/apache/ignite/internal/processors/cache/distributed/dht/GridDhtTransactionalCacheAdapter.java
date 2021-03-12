@@ -982,8 +982,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             filter,
             skipStore,
-            keepBinary,
-            securitySubjectId(ctx));
+            keepBinary);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
@@ -1174,8 +1173,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.accessTtl(),
                         filter,
                         req.skipStore(),
-                        req.keepBinary(),
-                        securitySubjectId(cacheCtx));
+                        req.keepBinary());
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))

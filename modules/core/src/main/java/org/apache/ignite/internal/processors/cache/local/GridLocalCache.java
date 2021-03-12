@@ -42,8 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-
 /**
  * Local cache implementation.
  */
@@ -151,8 +149,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(true);
 
-        GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter,
-            securitySubjectId(ctx));
+        GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
 
         try {
             if (!fut.addEntries(keys))

@@ -194,6 +194,7 @@ public abstract class AbstractCacheEventsTest extends AbstractSecurityTest {
         }
     }
 
+    /** */
     private void processEvent(IgniteEx ign, Event input, String cacheName, boolean isLoc) {
         TestEventAdapter evt = new TestEventAdapter(input);
 

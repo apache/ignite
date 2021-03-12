@@ -192,9 +192,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** */
     private boolean trackable = true;
 
-    /** Security subject id. */
-    private final UUID secSubjId;
-
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -219,8 +216,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery,
-        UUID secSubjId
+        boolean recovery
     ) {
         super(CU.boolReducer());
 
@@ -238,7 +234,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.secSubjId = secSubjId;
 
         ignoreInterrupts();
 
@@ -265,11 +260,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return secSubjId;
     }
 
     /** {@inheritDoc} */

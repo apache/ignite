@@ -110,7 +110,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -170,7 +169,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -5008,7 +5006,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Supplier<IgniteInternalFuture<R>> retry) {
         final GridNearTxLocal tx = checkCurrentTx();
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
-        final UUID secSubjId = securitySubjectId(ctx);
 
         GridFutureAdapter<R> fut = new GridFutureAdapter<>();
 
@@ -5021,22 +5018,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (repFut.error() != null)
                         fut.onDone(repFut.error());
                     else {
-                        try (OperationSecurityContext c = ctx.kernalContext().security().withContext(secSubjId)) {
-                            CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                        CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                            IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
-                            ctx.operationContextPerCall(opCtx); // With the same operation context.
+                        IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
+                        ctx.operationContextPerCall(opCtx); // With the same operation context.
 
-                            try {
-                                fut.onDone(retry.get().get());
-                            }
-                            catch (IgniteCheckedException e2) {
-                                fut.onDone(e2);
-                            }
-                            finally {
-                                ctx.tm().tx(prevTx);
-                                ctx.operationContextPerCall(prevOpCtx);
-                            }
+                        try {
+                            fut.onDone(retry.get().get());
+                        }
+                        catch (IgniteCheckedException e2) {
+                            fut.onDone(e2);
+                        }
+                        finally {
+                            ctx.tm().tx(prevTx);
+                            ctx.operationContextPerCall(prevOpCtx);
                         }
                     }
                 });

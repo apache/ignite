@@ -126,11 +126,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return tx.subjectId();
-    }
-
-    /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
     }

@@ -463,8 +463,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery(),
-            securitySubjectId(ctx));
+            opCtx != null && opCtx.recovery());
 
         fut.map();
 

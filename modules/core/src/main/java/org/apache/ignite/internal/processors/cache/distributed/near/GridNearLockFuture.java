@@ -174,9 +174,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Recovery mode context flag. */
     private final boolean recovery;
 
-    /** Security subject id. */
-    private final UUID secSubjId;
-
     /** */
     private int miniId;
 
@@ -206,9 +203,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery,
-        UUID secSubjId
-    ) {
+        boolean recovery) {
         super(CU.boolReducer());
 
         assert keys != null;
@@ -226,7 +221,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.secSubjId = secSubjId;
 
         ignoreInterrupts();
 
@@ -253,11 +247,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return secSubjId;
     }
 
     /**

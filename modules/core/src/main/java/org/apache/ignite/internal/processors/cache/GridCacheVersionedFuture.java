@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -28,11 +27,6 @@ public interface GridCacheVersionedFuture<T> extends GridCacheFuture<T> {
      * @return Future version.
      */
     public GridCacheVersion version();
-
-    /**
-     * @return Security subject id.
-     */
-    public UUID securitySubjectId();
 
     /**
      * @param entry Entry which received new owner.

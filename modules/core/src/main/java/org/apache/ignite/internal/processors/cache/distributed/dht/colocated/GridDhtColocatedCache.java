@@ -82,8 +82,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-
 /**
  * Colocated cache.
  */
@@ -723,9 +721,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        assert tx == null || !ctx.kernalContext().security().enabled() ||
-            F.eq(tx.subjectId(), securitySubjectId(ctx));
-
         GridDhtColocatedLockFuture fut = new GridDhtColocatedLockFuture(ctx,
             keys,
             txx,
@@ -737,8 +732,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery(),
-            securitySubjectId(ctx));
+            opCtx != null && opCtx.recovery());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -1104,8 +1098,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 filter,
                 skipStore,
-                keepBinary,
-                securitySubjectId(ctx));
+                keepBinary);
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))
