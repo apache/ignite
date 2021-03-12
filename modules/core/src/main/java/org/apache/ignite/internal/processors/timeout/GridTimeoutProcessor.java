@@ -20,15 +20,12 @@ package org.apache.ignite.internal.processors.timeout;
 import java.io.Closeable;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
@@ -173,26 +170,22 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             final WaitFutureTimeoutObject finalTimeoutObj = timeoutObj;
 
-            final UUID subjId = SecurityUtils.securitySubjectId(ctx);
-
             fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     if (finalTimeoutObj != null && !finalTimeoutObj.finishGuard.compareAndSet(false, true))
                         return;
 
-                    try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
-                        try {
-                            fut.get();
+                    try {
+                        fut.get();
 
-                            clo.apply(null, false);
-                        }
-                        catch (IgniteCheckedException e) {
-                            clo.apply(e, false);
-                        }
-                        finally {
-                            if (finalTimeoutObj != null)
-                                removeTimeoutObject(finalTimeoutObj);
-                        }
+                        clo.apply(null, false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        clo.apply(e, false);
+                    }
+                    finally {
+                        if (finalTimeoutObj != null)
+                            removeTimeoutObject(finalTimeoutObj);
                     }
                 }
             });
