@@ -1396,8 +1396,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
 
                     return null;
-                },
-                cctx.kernalContext().security()
+                }
             );
 
             fut.timeBag().finishGlobalStage("Restore partition states");

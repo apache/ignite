@@ -1865,8 +1865,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     );
 
                     return null;
-                },
-                ctx.security()
+                }
             );
 
             /*
@@ -1927,8 +1926,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     );
 
                     return null;
-                },
-                ctx.security()
+                }
             );
         }
     }
@@ -2817,8 +2815,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         return null;
-                    },
-                ctx.security()
+                    }
             );
         }
         catch (IgniteCheckedException e) {

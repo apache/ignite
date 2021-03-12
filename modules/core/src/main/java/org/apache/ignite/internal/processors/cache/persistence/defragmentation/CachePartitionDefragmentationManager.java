@@ -385,8 +385,7 @@ public class CachePartitionDefragmentationManager {
                             newGrpCtx,
                             linkMapByPart,
                             oldCacheDataStore
-                        ),
-                        sharedCtx.kernalContext().security()
+                        )
                     );
 
                     // A bit too general for now, but I like it more then saving only the last checkpoint future.

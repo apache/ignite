@@ -1809,8 +1809,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         top.beforeExchange(this, true, false); // Not expecting new moving partitions.
 
                         return null;
-                    },
-                    cctx.kernalContext().security());
+                    });
             }
             else {
                 if (crd.isLocal()) {
@@ -3694,8 +3693,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.detectLostPartitions(resTopVer, this);
 
                     return null;
-                },
-                cctx.kernalContext().security());
+                });
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
@@ -3728,8 +3726,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
 
                     return null;
-                },
-                cctx.kernalContext().security());
+                });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -3923,8 +3920,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         top.beforeExchange(this, true, true);
 
                         return null;
-                    },
-                    cctx.kernalContext().security());
+                    });
             }
 
             span.addLog(() -> "Affinity recalculation (crd)");
@@ -3941,8 +3937,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     processSingleMessageOnCrdFinish(msg, joinedNodeAff);
 
                     return null;
-                },
-                cctx.kernalContext().security()
+                }
             );
 
             timeBag.finishGlobalStage("Collect update counters and create affinity messages");
@@ -4261,8 +4256,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
 
                     return null;
-                },
-                cctx.kernalContext().security()
+                }
             );
         }
         catch (IgniteCheckedException e) {
@@ -4306,8 +4300,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         assignPartitionSizes(top);
 
                     return null;
-                },
-                cctx.kernalContext().security()
+                }
             );
         }
         catch (IgniteCheckedException e) {
@@ -4405,8 +4398,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().finalizeUpdateCounters(parts);
 
                     return null;
-                },
-                cctx.kernalContext().security()
+                }
             );
         }
         catch (IgniteCheckedException e) {
@@ -4884,8 +4876,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
 
                     return null;
-                },
-                cctx.kernalContext().security());
+                });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -5359,8 +5350,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 }
 
                                 return null;
-                            },
-                            cctx.kernalContext().security()
+                            }
                         );
                     }
                     catch (IgniteCheckedException e) {

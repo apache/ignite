@@ -508,8 +508,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                         return marshalled;
                     }
-                },
-                ctx.kernalContext().security());
+                });
 
             Iterator<byte[]> iterator = marshalled.iterator();
 
@@ -586,8 +585,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                         ? U.unmarshalZip(ctx.marshaller(), binary, classLoader)
                         : U.unmarshal(ctx, binary, classLoader);
                 }
-            },
-            ctx.kernalContext().security()
+            }
         );
 
         Iterator<Object> iterator = unmarshalled.iterator();
