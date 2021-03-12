@@ -1851,12 +1851,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheStartFailHandler.handle(
                         startCacheInfo,
                         cacheInfo -> {
-                            cacheContexts.put(cacheInfo, prepareCacheContext(
+                            GridCacheContext cacheCtx = prepareCacheContext(
                                 cacheInfo.getCacheDescriptor(),
                                 cacheInfo.getReqNearCfg(),
                                 cacheInfo.getExchangeTopVer(),
                                 cacheInfo.isDisabledAfterStart()
-                            ));
+                            );
+                            cacheContexts.put(cacheInfo, cacheCtx);
 
                             context().exchange().exchangerUpdateHeartbeat();
 
