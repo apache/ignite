@@ -2312,6 +2312,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for read on keys: " + lockKeys);
+
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
                             K keyVal = (K)

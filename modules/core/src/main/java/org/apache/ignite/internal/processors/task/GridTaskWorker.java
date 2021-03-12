@@ -67,7 +67,7 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -469,108 +469,106 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * Maps this task's jobs to nodes and sends them out.
      */
     @Override protected void body() {
-        try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
-            evtLsnr.onTaskStarted(this);
+        evtLsnr.onTaskStarted(this);
 
-            try {
-                // Use either user task or deployed one.
-                if (task == null) {
-                    assert taskCls != null;
-                    assert ComputeTask.class.isAssignableFrom(taskCls);
+        try {
+            // Use either user task or deployed one.
+            if (task == null) {
+                assert taskCls != null;
+                assert ComputeTask.class.isAssignableFrom(taskCls);
 
-                    try {
-                        task = newTask((Class<? extends ComputeTask<T, R>>)taskCls);
-                    }
-                    catch (IgniteCheckedException e) {
-                        // If cannot instantiate task, then assign internal flag based
-                        // on information available.
-                        internal = dep.internalTask(null, taskCls);
-
-                        recordTaskEvent(EVT_TASK_STARTED, "Task started.");
-
-                        throw e;
-                    }
+                try {
+                    task = newTask((Class<? extends ComputeTask<T, R>>)taskCls);
                 }
+                catch (IgniteCheckedException e) {
+                    // If cannot instantiate task, then assign internal flag based
+                    // on information available.
+                    internal = dep.internalTask(null, taskCls);
 
-                internal = ses.isInternal();
+                    recordTaskEvent(EVT_TASK_STARTED, "Task started.");
 
-                recordTaskEvent(EVT_TASK_STARTED, "Task started.");
-
-                initializeSpis();
-
-                ses.setClassLoader(dep.classLoader());
-
-                // Nodes are ignored by affinity tasks.
-                final List<ClusterNode> shuffledNodes =
-                    affCacheIds == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
-
-                // Load balancer.
-                ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
-
-                continuous = ctx.resource().isAnnotationPresent(dep, task, TaskContinuousMapperResource.class);
-
-                if (log.isDebugEnabled())
-                    log.debug("Injected task resources [continuous=" + continuous + ']');
-
-                // Inject resources.
-                ctx.resource().inject(dep, task, ses, balancer, mapper);
-
-                Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                    new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                        @Override public Map<? extends ComputeJob, ClusterNode> call() {
-                            return task.map(shuffledNodes, arg);
-                        }
-                    });
-
-                if (log.isDebugEnabled())
-                    log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
-                        ", mappedJobs=" + mappedJobs + ", ses=" + ses + ']');
-
-                if (F.isEmpty(mappedJobs)) {
-                    synchronized (mux) {
-                        // Check if some jobs are sent from continuous mapper.
-                        if (F.isEmpty(jobRes))
-                            throw new IgniteCheckedException("Task map operation produced no mapped jobs: " + ses);
-                    }
+                    throw e;
                 }
-                else
-                    processMappedJobs(mappedJobs);
-
-                synchronized (mux) {
-                    lockRespProc = false;
-                }
-
-                processDelayedResponses();
             }
-            catch (ClusterGroupEmptyCheckedException e) {
+
+            internal = ses.isInternal();
+
+            recordTaskEvent(EVT_TASK_STARTED, "Task started.");
+
+            initializeSpis();
+
+            ses.setClassLoader(dep.classLoader());
+
+            // Nodes are ignored by affinity tasks.
+            final List<ClusterNode> shuffledNodes =
+                affCacheIds == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
+
+            // Load balancer.
+            ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
+
+            continuous = ctx.resource().isAnnotationPresent(dep, task, TaskContinuousMapperResource.class);
+
+            if (log.isDebugEnabled())
+                log.debug("Injected task resources [continuous=" + continuous + ']');
+
+            // Inject resources.
+            ctx.resource().inject(dep, task, ses, balancer, mapper);
+
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
+                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
+                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
+                        return task.map(shuffledNodes, arg);
+                    }
+                });
+
+            if (log.isDebugEnabled())
+                log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
+                    ", mappedJobs=" + mappedJobs + ", ses=" + ses + ']');
+
+            if (F.isEmpty(mappedJobs)) {
+                synchronized (mux) {
+                    // Check if some jobs are sent from continuous mapper.
+                    if (F.isEmpty(jobRes))
+                        throw new IgniteCheckedException("Task map operation produced no mapped jobs: " + ses);
+                }
+            }
+            else
+                processMappedJobs(mappedJobs);
+
+            synchronized (mux) {
+                lockRespProc = false;
+            }
+
+            processDelayedResponses();
+        }
+        catch (ClusterGroupEmptyCheckedException e) {
+            if (log.isDebugEnabled())
+                U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
+
+            finishTask(null, e);
+        }
+        catch (IgniteException | IgniteCheckedException e) {
+            if (!fut.isCancelled()) {
                 if (log.isDebugEnabled())
-                    U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
+                    U.error(log, "Failed to map task jobs to nodes: " + ses, e);
 
                 finishTask(null, e);
             }
-            catch (IgniteException | IgniteCheckedException e) {
-                if (!fut.isCancelled()) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Failed to map task jobs to nodes: " + ses, e);
-
-                    finishTask(null, e);
-                }
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to map task jobs to nodes due to task cancellation: " + ses);
-            }
-            // Catch throwable to protect against bad user code.
-            catch (Throwable e) {
-                String errMsg = "Failed to map task jobs to nodes due to undeclared user exception" +
-                    " [cause=" + e.getMessage() + ", ses=" + ses + "]";
+            else if (log.isDebugEnabled())
+                log.debug("Failed to map task jobs to nodes due to task cancellation: " + ses);
+        }
+        // Catch throwable to protect against bad user code.
+        catch (Throwable e) {
+            String errMsg = "Failed to map task jobs to nodes due to undeclared user exception" +
+                " [cause=" + e.getMessage() + ", ses=" + ses + "]";
 
             if (log.isDebugEnabled())
                 U.error(log, errMsg, e);
 
-                finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
+            finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
 
-                if (e instanceof Error)
-                    throw e;
-            }
+            if (e instanceof Error)
+                throw e;
         }
     }
 
@@ -582,102 +580,100 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         if (F.isEmpty(jobs))
             return;
 
-        try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
-            List<GridJobResultImpl> jobResList = new ArrayList<>(jobs.size());
+        List<GridJobResultImpl> jobResList = new ArrayList<>(jobs.size());
 
-            Collection<ComputeJobSibling> sibs = new ArrayList<>(jobs.size());
+        Collection<ComputeJobSibling> sibs = new ArrayList<>(jobs.size());
 
-            // Map jobs to nodes for computation.
-            for (Map.Entry<? extends ComputeJob, ClusterNode> mappedJob : jobs.entrySet()) {
-                ComputeJob job = mappedJob.getKey();
-                ClusterNode node = mappedJob.getValue();
+        // Map jobs to nodes for computation.
+        for (Map.Entry<? extends ComputeJob, ClusterNode> mappedJob : jobs.entrySet()) {
+            ComputeJob job = mappedJob.getKey();
+            ClusterNode node = mappedJob.getValue();
 
-                if (job == null)
-                    throw new IgniteCheckedException("Job can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
+            if (job == null)
+                throw new IgniteCheckedException("Job can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
-                if (node == null)
-                    throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
+            if (node == null)
+                throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
-                IgniteUuid jobId = IgniteUuid.fromUuid(ctx.localNodeId());
+            IgniteUuid jobId = IgniteUuid.fromUuid(ctx.localNodeId());
 
-                GridJobSiblingImpl sib = new GridJobSiblingImpl(ses.getId(), jobId, node.id(), ctx);
+            GridJobSiblingImpl sib = new GridJobSiblingImpl(ses.getId(), jobId, node.id(), ctx);
 
-                jobResList.add(new GridJobResultImpl(job, jobId, node, sib));
+            jobResList.add(new GridJobResultImpl(job, jobId, node, sib));
 
-                // Do not add siblings if result cache is disabled.
-                if (resCache)
-                    sibs.add(sib);
+            // Do not add siblings if result cache is disabled.
+            if (resCache)
+                sibs.add(sib);
 
-                recordJobEvent(EVT_JOB_MAPPED, jobId, node, null, "Job got mapped.");
-            }
-
-            synchronized (mux) {
-                if (state != State.WAITING)
-                    throw new IgniteCheckedException("Task is not in waiting state [state=" + state + ", ses=" + ses + ']');
-
-                // Do not add siblings if result cache is disabled.
-                if (resCache)
-                    ses.addJobSiblings(sibs);
-
-                if (jobRes == null)
-                    jobRes = new HashMap<>();
-
-                // Populate all remote mappedJobs into map, before mappedJobs are sent.
-                // This is done to avoid race condition when we start
-                // getting results while still sending out references.
-                for (GridJobResultImpl res : jobResList) {
-                    if (jobRes.put(res.getJobContext().getJobId(), res) != null)
-                        throw new IgniteCheckedException("Duplicate job ID for remote job found: " + res.getJobContext().getJobId());
-
-                    res.setOccupied(true);
-
-                    if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
-                        LT.warn(log, "Number of jobs in task is too large for task: " + ses.getTaskName() +
-                            ". Consider reducing number of jobs or disabling job result cache with " +
-                            "@ComputeTaskNoResultCache annotation.");
-                }
-            }
-
-            // Set mapped flag.
-            ses.onMapped();
-
-            // Move local jobs to the end of the list, because
-            // they will be invoked in current thread that will hold other
-            // jobs.
-            int jobResSize = jobResList.size();
-
-            if (jobResSize > 1) {
-                UUID locId = ctx.discovery().localNode().id();
-
-                for (int i = 0; i < jobResSize; i++) {
-                    UUID jobNodeId = jobResList.get(i).getNode().id();
-
-                    if (jobNodeId.equals(locId) && i < jobResSize - 1) {
-                        Collections.swap(jobResList, i, jobResSize - 1);
-
-                        jobResSize--;
-                        i--;
-                    }
-                }
-            }
-
-            // Send out all remote mappedJobs.
-            for (GridJobResultImpl res : jobResList) {
-                evtLsnr.onJobSend(this, res.getSibling());
-
-                try {
-                    sendRequest(res);
-                }
-                finally {
-                    // Open job for processing results.
-                    synchronized (mux) {
-                        res.setOccupied(false);
-                    }
-                }
-            }
-
-            processDelayedResponses();
+            recordJobEvent(EVT_JOB_MAPPED, jobId, node, null, "Job got mapped.");
         }
+
+        synchronized (mux) {
+            if (state != State.WAITING)
+                throw new IgniteCheckedException("Task is not in waiting state [state=" + state + ", ses=" + ses + ']');
+
+            // Do not add siblings if result cache is disabled.
+            if (resCache)
+                ses.addJobSiblings(sibs);
+
+            if (jobRes == null)
+                jobRes = new HashMap<>();
+
+            // Populate all remote mappedJobs into map, before mappedJobs are sent.
+            // This is done to avoid race condition when we start
+            // getting results while still sending out references.
+            for (GridJobResultImpl res : jobResList) {
+                if (jobRes.put(res.getJobContext().getJobId(), res) != null)
+                    throw new IgniteCheckedException("Duplicate job ID for remote job found: " + res.getJobContext().getJobId());
+
+                res.setOccupied(true);
+
+                if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
+                    LT.warn(log, "Number of jobs in task is too large for task: " + ses.getTaskName() +
+                        ". Consider reducing number of jobs or disabling job result cache with " +
+                        "@ComputeTaskNoResultCache annotation.");
+            }
+        }
+
+        // Set mapped flag.
+        ses.onMapped();
+
+        // Move local jobs to the end of the list, because
+        // they will be invoked in current thread that will hold other
+        // jobs.
+        int jobResSize = jobResList.size();
+
+        if (jobResSize > 1) {
+            UUID locId = ctx.discovery().localNode().id();
+
+            for (int i = 0; i < jobResSize; i++) {
+                UUID jobNodeId = jobResList.get(i).getNode().id();
+
+                if (jobNodeId.equals(locId) && i < jobResSize - 1) {
+                    Collections.swap(jobResList, i, jobResSize - 1);
+
+                    jobResSize--;
+                    i--;
+                }
+            }
+        }
+
+        // Send out all remote mappedJobs.
+        for (GridJobResultImpl res : jobResList) {
+            evtLsnr.onJobSend(this, res.getSibling());
+
+            try {
+                sendRequest(res);
+            }
+            finally {
+                // Open job for processing results.
+                synchronized (mux) {
+                    res.setOccupied(false);
+                }
+            }
+        }
+
+        processDelayedResponses();
     }
 
     /**
@@ -730,297 +726,295 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             return;
         }
 
-        try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
-            GridJobExecuteResponse res = msg;
+        GridJobExecuteResponse res = msg;
 
-            while (res != null) {
-                GridJobResultImpl jobRes = null;
+        while (res != null) {
+            GridJobResultImpl jobRes = null;
 
-                // Flag indicating whether occupied flag for
-                // job response was changed in this method apply.
-                boolean selfOccupied = false;
+            // Flag indicating whether occupied flag for
+            // job response was changed in this method apply.
+            boolean selfOccupied = false;
 
-                IgniteInternalFuture<?> affFut = null;
+            IgniteInternalFuture<?> affFut = null;
 
-                boolean waitForAffTop = false;
+            boolean waitForAffTop = false;
 
-                final GridJobExecuteResponse failoverRes = res;
+            final GridJobExecuteResponse failoverRes = res;
 
-                try {
-                    synchronized (mux) {
-                        // If task is not waiting for responses,
-                        // then there is no point to proceed.
-                        if (state != State.WAITING) {
-                            if (log.isDebugEnabled())
-                                log.debug("Ignoring response since task is already reducing or finishing [res=" + res +
-                                    ", job=" + ses + ", state=" + state + ']');
-
-                            return;
-                        }
-
-                        jobRes = this.jobRes.get(res.getJobId());
-
-                        if (jobRes == null) {
-                            if (log.isDebugEnabled())
-                                U.warn(log, "Received response for unknown child job (was job presumed failed?): " + res);
-
-                            res = delayedRess.poll();
-
-                            // We can not return here because there can be more delayed messages in the queue.
-                            continue;
-                        }
-
-                        // Only process 1st response and ignore following ones. This scenario
-                        // is possible if node has left topology and and fake failure response
-                        // was created from discovery listener and when sending request failed.
-                        if (jobRes.hasResponse()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Received redundant response for a job (will ignore): " + res);
-
-                            res = delayedRess.poll();
-
-                            // We can not return here because there can be more delayed messages in the queue.
-                            continue;
-                        }
-
-                        if (!jobRes.getNode().id().equals(res.getNodeId())) {
-                            if (log.isDebugEnabled())
-                                log.debug("Ignoring stale response as job was already resent to other node [res=" + res +
-                                    ", jobRes=" + jobRes + ']');
-
-                            // Prevent processing 2 responses for the same job simultaneously.
-                            jobRes.setOccupied(true);
-
-                            selfOccupied = true;
-
-                            // We can not return here because there can be more delayed messages in the queue.
-                            continue;
-                        }
-
-                        if (jobRes.isOccupied()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Adding response to delayed queue (job is either being sent or processing " +
-                                    "another response): " + res);
-
-                            delayedRess.offer(res);
-
-                            return;
-                        }
-
-                        if (lockRespProc) {
-                            delayedRess.offer(res);
-
-                            return;
-                        }
-
-                        lockRespProc = true;
-
-                        selfOccupied = true;
-
-                        // Prevent processing 2 responses for the same job simultaneously.
-                        jobRes.setOccupied(true);
-
-                        // We don't keep reference to job if results are not cached.
-                        if (!resCache)
-                            this.jobRes.remove(res.getJobId());
-                    }
-
-                    if (res.getFakeException() != null)
-                        jobRes.onResponse(null, res.getFakeException(), null, false);
-                    else {
-                        ClassLoader clsLdr = dep.classLoader();
-
-                        try {
-                            boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
-
-                            Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                            IgniteException ex = loc ? res.getException() :
-                                U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
-                                    U.resolveClassLoader(clsLdr, ctx.config()));
-
-                            Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                                U.<Map<Object, Object>>unmarshal(marsh, res.getJobAttributesBytes(),
-                                    U.resolveClassLoader(clsLdr, ctx.config()));
-
-                            jobRes.onResponse(res0, ex, attrs, res.isCancelled());
-
-                            if (loc)
-                                ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (log.isDebugEnabled())
-                                U.error(log, "Error deserializing job response: " + res, e);
-
-                            finishTask(null, e);
-                        }
-                    }
-
-                    List<ComputeJobResult> results;
-
-                    if (!resCache)
-                        results = Collections.emptyList();
-                    else {
-                        synchronized (mux) {
-                            results = getRemoteResults();
-                        }
-                    }
-
-                    ComputeJobResultPolicy plc = result(jobRes, results);
-
-                    if (plc == null) {
-                        String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
-                            "method that returned null (will fail the whole task): " + jobRes;
-
-                        finishTask(null, new IgniteCheckedException(errMsg));
+            try {
+                synchronized (mux) {
+                    // If task is not waiting for responses,
+                    // then there is no point to proceed.
+                    if (state != State.WAITING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignoring response since task is already reducing or finishing [res=" + res +
+                                ", job=" + ses + ", state=" + state + ']');
 
                         return;
                     }
 
-                    boolean retry = false;
+                    jobRes = this.jobRes.get(res.getJobId());
+
+                    if (jobRes == null) {
+                        if (log.isDebugEnabled())
+                            U.warn(log, "Received response for unknown child job (was job presumed failed?): " + res);
+
+                        res = delayedRess.poll();
+
+                        // We can not return here because there can be more delayed messages in the queue.
+                        continue;
+                    }
+
+                    // Only process 1st response and ignore following ones. This scenario
+                    // is possible if node has left topology and and fake failure response
+                    // was created from discovery listener and when sending request failed.
+                    if (jobRes.hasResponse()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Received redundant response for a job (will ignore): " + res);
+
+                        res = delayedRess.poll();
+
+                        // We can not return here because there can be more delayed messages in the queue.
+                        continue;
+                    }
+
+                    if (!jobRes.getNode().id().equals(res.getNodeId())) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignoring stale response as job was already resent to other node [res=" + res +
+                                ", jobRes=" + jobRes + ']');
+
+                        // Prevent processing 2 responses for the same job simultaneously.
+                        jobRes.setOccupied(true);
+
+                        selfOccupied = true;
+
+                        // We can not return here because there can be more delayed messages in the queue.
+                        continue;
+                    }
+
+                    if (jobRes.isOccupied()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Adding response to delayed queue (job is either being sent or processing " +
+                                "another response): " + res);
+
+                        delayedRess.offer(res);
+
+                        return;
+                    }
+
+                    if (lockRespProc) {
+                        delayedRess.offer(res);
+
+                        return;
+                    }
+
+                    lockRespProc = true;
+
+                    selfOccupied = true;
+
+                    // Prevent processing 2 responses for the same job simultaneously.
+                    jobRes.setOccupied(true);
+
+                    // We don't keep reference to job if results are not cached.
+                    if (!resCache)
+                        this.jobRes.remove(res.getJobId());
+                }
+
+                if (res.getFakeException() != null)
+                    jobRes.onResponse(null, res.getFakeException(), null, false);
+                else {
+                    ClassLoader clsLdr = dep.classLoader();
+
+                    try {
+                        boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
+
+                        Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
+                            U.resolveClassLoader(clsLdr, ctx.config()));
+
+                        IgniteException ex = loc ? res.getException() :
+                            U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
+                                U.resolveClassLoader(clsLdr, ctx.config()));
+
+                        Map<Object, Object> attrs = loc ? res.getJobAttributes() :
+                            U.<Map<Object, Object>>unmarshal(marsh, res.getJobAttributesBytes(),
+                                U.resolveClassLoader(clsLdr, ctx.config()));
+
+                        jobRes.onResponse(res0, ex, attrs, res.isCancelled());
+
+                        if (loc)
+                            ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (log.isDebugEnabled())
+                            U.error(log, "Error deserializing job response: " + res, e);
+
+                        finishTask(null, e);
+                    }
+                }
+
+                List<ComputeJobResult> results;
+
+                if (!resCache)
+                    results = Collections.emptyList();
+                else {
                     synchronized (mux) {
-                        // If task is not waiting for responses,
-                        // then there is no point to proceed.
-                        if (state != State.WAITING) {
-                            if (log.isDebugEnabled())
-                                log.debug("Ignoring ComputeTask.result(..) value since task is already reducing or" +
-                                    "finishing [res=" + res + ", job=" + ses + ", state=" + state + ']');
+                        results = getRemoteResults();
+                    }
+                }
 
-                            return;
+                ComputeJobResultPolicy plc = result(jobRes, results);
+
+                if (plc == null) {
+                    String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
+                        "method that returned null (will fail the whole task): " + jobRes;
+
+                    finishTask(null, new IgniteCheckedException(errMsg));
+
+                    return;
+                }
+
+                boolean retry = false;
+                synchronized (mux) {
+                    // If task is not waiting for responses,
+                    // then there is no point to proceed.
+                    if (state != State.WAITING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignoring ComputeTask.result(..) value since task is already reducing or" +
+                                "finishing [res=" + res + ", job=" + ses + ", state=" + state + ']');
+
+                        return;
+                    }
+
+                    if (res.retry()) {
+                        // Retry is used only with affinity call / run.
+                        assert affCacheIds != null;
+                        retry = true;
+
+                        mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
+                        affFut = ctx.cache().context().exchange().lastTopologyFuture();
+
+                        if (affFut != null && !affFut.isDone()) {
+                            waitForAffTop = true;
+
+                            jobRes.resetResponse();
                         }
+                    }
+                    else {
+                        switch (plc) {
+                            // Start reducing all results received so far.
+                            case REDUCE: {
+                                state = State.REDUCING;
 
-                        if (res.retry()) {
-                            // Retry is used only with affinity call / run.
-                            assert affCacheIds != null;
-                            retry = true;
-
-                            mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
-                            affFut = ctx.cache().context().exchange().lastTopologyFuture();
-
-                            if (affFut != null && !affFut.isDone()) {
-                                waitForAffTop = true;
-
-                                jobRes.resetResponse();
+                                break;
                             }
-                        }
-                        else {
-                            switch (plc) {
-                                // Start reducing all results received so far.
-                                case REDUCE: {
+
+                            // Keep waiting if there are more responses to come,
+                            // otherwise, reduce.
+                            case WAIT: {
+                                assert results.size() <= this.jobRes.size();
+
+                                // If there are more results to wait for.
+                                // If result cache is disabled, then we reduce
+                                // when both collections are empty.
+                                if (results.size() == this.jobRes.size()) {
+                                    plc = ComputeJobResultPolicy.REDUCE;
+
+                                    // All results are received, proceed to reduce method.
                                     state = State.REDUCING;
-
-                                    break;
                                 }
 
-                                // Keep waiting if there are more responses to come,
-                                // otherwise, reduce.
-                                case WAIT: {
-                                    assert results.size() <= this.jobRes.size();
+                                break;
+                            }
 
-                                    // If there are more results to wait for.
-                                    // If result cache is disabled, then we reduce
-                                    // when both collections are empty.
-                                    if (results.size() == this.jobRes.size()) {
-                                        plc = ComputeJobResultPolicy.REDUCE;
+                            case FAILOVER: {
+                                if (affCacheIds != null) {
+                                    mapTopVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-                                        // All results are received, proceed to reduce method.
-                                        state = State.REDUCING;
-                                    }
+                                    affFut = ctx.cache().context().exchange().lastTopologyFuture();
 
-                                    break;
-                                }
+                                    if (affFut == null || affFut.isDone()) {
+                                        affFut = null;
 
-                                case FAILOVER: {
-                                    if (affCacheIds != null) {
-                                        mapTopVer = ctx.cache().context().exchange().readyAffinityVersion();
+                                        // Need asynchronosly fetch affinity if cache is not started on node .
+                                        if (affCacheName != null && ctx.cache().internalCache(affCacheName) == null) {
+                                            affFut = ctx.affinity().affinityCacheFuture(affCacheName, mapTopVer);
 
-                                        affFut = ctx.cache().context().exchange().lastTopologyFuture();
-
-                                        if (affFut == null || affFut.isDone()) {
-                                            affFut = null;
-
-                                            // Need asynchronosly fetch affinity if cache is not started on node .
-                                            if (affCacheName != null && ctx.cache().internalCache(affCacheName) == null) {
-                                                affFut = ctx.affinity().affinityCacheFuture(affCacheName, mapTopVer);
-
-                                                if (affFut.isDone())
-                                                    affFut = null;
-                                            }
+                                            if (affFut.isDone())
+                                                affFut = null;
                                         }
                                     }
-
-                                    if (affFut != null) {
-                                        waitForAffTop = true;
-
-                                        jobRes.resetResponse();
-                                    }
-                                    else if (!failover(res, jobRes, getTaskTopology()))
-                                        plc = null;
-
-                                    break;
                                 }
+
+                                if (affFut != null) {
+                                    waitForAffTop = true;
+
+                                    jobRes.resetResponse();
+                                }
+                                else if (!failover(res, jobRes, getTaskTopology()))
+                                    plc = null;
+
+                                break;
                             }
                         }
                     }
-
-                    // Outside of synchronization.
-                    if (retry && !waitForAffTop) {
-                        // Handle retry
-                        retryAttemptCnt++;
-
-                        final long wait = retryAttemptCnt * RETRY_DELAY_MS;
-                        sendRetryRequest(wait, jobRes, res);
-                    }
-                    else if (plc != null && !waitForAffTop && !retry) {
-                        // Handle failover.
-                        if (plc == FAILOVER)
-                            sendFailoverRequest(jobRes);
-                        else {
-                            evtLsnr.onJobFinished(this, jobRes.getSibling());
-
-                            if (plc == ComputeJobResultPolicy.REDUCE)
-                                reduce(results);
-                        }
-                    }
                 }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
 
-                    finishTask(null, e);
+                // Outside of synchronization.
+                if (retry && !waitForAffTop) {
+                    // Handle retry
+                    retryAttemptCnt++;
 
-                    waitForAffTop = false;
+                    final long wait = retryAttemptCnt * RETRY_DELAY_MS;
+                    sendRetryRequest(wait, jobRes, res);
                 }
-                finally {
-                    // Open up job for processing responses.
-                    // Only unset occupied flag, if it was
-                    // set in this method.
-                    if (selfOccupied) {
-                        assert jobRes != null;
+                else if (plc != null && !waitForAffTop && !retry) {
+                    // Handle failover.
+                    if (plc == FAILOVER)
+                        sendFailoverRequest(jobRes);
+                    else {
+                        evtLsnr.onJobFinished(this, jobRes.getSibling());
 
-                        synchronized (mux) {
-                            jobRes.setOccupied(false);
-
-                            lockRespProc = false;
-                        }
-
-                        // Process delayed responses if there are any.
-                        res = delayedRess.poll();
+                        if (plc == ComputeJobResultPolicy.REDUCE)
+                            reduce(results);
                     }
                 }
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
 
-                if (waitForAffTop && affFut != null) {
-                    affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut0) {
-                            ctx.closure().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
-                                    onResponse(failoverRes);
-                                }
-                            }, false);
-                        }
-                    });
+                finishTask(null, e);
+
+                waitForAffTop = false;
+            }
+            finally {
+                // Open up job for processing responses.
+                // Only unset occupied flag, if it was
+                // set in this method.
+                if (selfOccupied) {
+                    assert jobRes != null;
+
+                    synchronized (mux) {
+                        jobRes.setOccupied(false);
+
+                        lockRespProc = false;
+                    }
+
+                    // Process delayed responses if there are any.
+                    res = delayedRess.poll();
                 }
+            }
+
+            if (waitForAffTop && affFut != null) {
+                affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut0) {
+                        ctx.closure().runLocalSafe(new GridPlainRunnable() {
+                            @Override public void run() {
+                                onResponse(failoverRes);
+                            }
+                        }, false);
+                    }
+                });
             }
         }
     }
@@ -1035,22 +1029,20 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             @Override public void run() {
                 ctx.closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
-                        try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
-                            try {
-                                ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
-                                    mapTopVer);
+                        try {
+                            ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
+                                mapTopVer);
 
-                                if (!checkTargetNode(resp, jRes, newNode))
-                                    return;
+                            if (!checkTargetNode(resp, jRes, newNode))
+                                return;
 
-                                sendRequest(jRes);
-                            }
-                            catch (Exception e) {
-                                if (log.isDebugEnabled())
-                                    U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
+                            sendRequest(jRes);
+                        }
+                        catch (Exception e) {
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
 
-                                finishTask(null, e);
-                            }
+                            finishTask(null, e);
                         }
                     }
                 }, false);
@@ -1068,79 +1060,77 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
         return U.wrapThreadLoader(dep.classLoader(), new CO<ComputeJobResultPolicy>() {
             @Nullable @Override public ComputeJobResultPolicy apply() {
-                try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
+                try {
+                    // Obtain job result policy.
+                    ComputeJobResultPolicy plc = null;
+
                     try {
-                        // Obtain job result policy.
-                        ComputeJobResultPolicy plc = null;
+                        plc = task.result(jobRes, results);
 
-                        try {
-                            plc = task.result(jobRes, results);
+                        if (plc == FAILOVER && noFailover) {
+                            IgniteException e = jobRes.getException();
 
-                            if (plc == FAILOVER && noFailover) {
-                                IgniteException e = jobRes.getException();
+                            if (e != null)
+                                throw e;
 
-                                if (e != null)
-                                    throw e;
-
-                                plc = WAIT;
-                            }
+                            plc = WAIT;
                         }
-                        finally {
-                            recordJobEvent(EVT_JOB_RESULTED, jobRes.getJobContext().getJobId(),
-                                jobRes.getNode(), plc, "Job got resulted with: " + plc);
-                        }
-
-                        if (log.isDebugEnabled())
-                            log.debug("Obtained job result policy [policy=" + plc + ", ses=" + ses + ']');
-
-                        return plc;
                     }
-                    catch (IgniteException e) {
-                        if (X.hasCause(e, ComputeJobFailoverException.class)) {
-                            IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
-                                "ComputeJobResultPolicy.FAILOVER was not returned from " +
-                                "ComputeTask.result(...) method for job result with ComputeJobFailoverException.", e);
+                    finally {
+                        recordJobEvent(EVT_JOB_RESULTED, jobRes.getJobContext().getJobId(),
+                            jobRes.getNode(), plc, "Job got resulted with: " + plc);
+                    }
 
-                            finishTask(null, e0);
+                    if (log.isDebugEnabled())
+                        log.debug("Obtained job result policy [policy=" + plc + ", ses=" + ses + ']');
 
-                            return null;
-                        }
-                        else if (X.hasCause(e, GridServiceNotFoundException.class) ||
-                            X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                            if (log.isDebugEnabled()) {
-                                // Should be throttled, because GridServiceProxy continuously retry getting service.
-                                LT.error(log, e, "Failed to obtain remote job result policy for result from " +
-                                    "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
-                            }
-                        }
-                        else if (log.isDebugEnabled()) {
-                            U.error(log, "Failed to obtain remote job result policy for result from " +
-                                "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
-                        }
+                    return plc;
+                }
+                catch (IgniteException e) {
+                    if (X.hasCause(e, ComputeJobFailoverException.class)) {
+                        IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
+                            "ComputeJobResultPolicy.FAILOVER was not returned from " +
+                            "ComputeTask.result(...) method for job result with ComputeJobFailoverException.", e);
 
-                        finishTask(null, e);
+                        finishTask(null, e0);
 
                         return null;
                     }
-                    catch (Throwable e) {
-                        String errMsg = "Failed to obtain remote job result policy for result from" +
-                            "ComputeTask.result(..) method due to undeclared user exception " +
-                            "(will fail the whole task): " + jobRes;
-
-                        if (log.isDebugEnabled())
-                            U.error(log, errMsg, e);
-
-                        Throwable tmp = new ComputeUserUndeclaredException(errMsg, e);
-
-                        // Failed to successfully obtain result policy and
-                        // hence forced to fail the whole deployed task.
-                        finishTask(null, tmp);
-
-                        if (e instanceof Error)
-                            throw e;
-
-                        return null;
+                    else if (X.hasCause(e, GridServiceNotFoundException.class) ||
+                        X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                        if (log.isDebugEnabled()) {
+                            // Should be throttled, because GridServiceProxy continuously retry getting service.
+                            LT.error(log, e, "Failed to obtain remote job result policy for result from " +
+                                "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
+                        }
                     }
+                    else if (log.isDebugEnabled()) {
+                        U.error(log, "Failed to obtain remote job result policy for result from " +
+                            "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
+                    }
+
+                    finishTask(null, e);
+
+                    return null;
+                }
+                catch (Throwable e) {
+                    String errMsg = "Failed to obtain remote job result policy for result from" +
+                        "ComputeTask.result(..) method due to undeclared user exception " +
+                        "(will fail the whole task): " + jobRes;
+
+                    if (log.isDebugEnabled())
+                        U.error(log, errMsg, e);
+
+                    Throwable tmp = new ComputeUserUndeclaredException(errMsg, e);
+
+                    // Failed to successfully obtain result policy and
+                    // hence forced to fail the whole deployed task.
+                    finishTask(null, tmp);
+
+                    if (e instanceof Error)
+                        throw e;
+
+                    return null;
                 }
             }
         });
@@ -1365,154 +1355,152 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
         GridJobExecuteRequest req = null;
 
-        try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
-            ClusterNode node = res.getNode();
+        ClusterNode node = res.getNode();
 
-            try {
-                ClusterNode curNode = ctx.discovery().node(node.id());
+        try {
+            ClusterNode curNode = ctx.discovery().node(node.id());
 
-                // Check if node exists prior to sending to avoid cases when a discovery
-                // listener notified about node leaving after topology resolution. Note
-                // that we make this check because we cannot count on exception being
-                // thrown in case of send failure.
-                if (curNode == null) {
-                    if (log.isDebugEnabled()) {
-                        U.warn(log, "Failed to send job request because remote node left grid (if fail-over is enabled, " +
-                            "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                            ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
-                    }
-
-                    ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
-
-                    GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                        res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
-
-                    fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
-
-                    onResponse(fakeRes);
+            // Check if node exists prior to sending to avoid cases when a discovery
+            // listener notified about node leaving after topology resolution. Note
+            // that we make this check because we cannot count on exception being
+            // thrown in case of send failure.
+            if (curNode == null) {
+                if (log.isDebugEnabled()) {
+                    U.warn(log, "Failed to send job request because remote node left grid (if fail-over is enabled, " +
+                        "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                        ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
                 }
-                else {
-                    long timeout = ses.getEndTime() == Long.MAX_VALUE ? Long.MAX_VALUE :
-                        ses.getEndTime() - U.currentTimeMillis();
 
-                    if (timeout > 0) {
-                        boolean loc = node.id().equals(ctx.discovery().localNode().id()) &&
-                            !ctx.config().isMarshalLocalJobs();
-
-                        Map<Object, Object> sesAttrs = ses.isFullSupport() ? ses.getAttributes() : null;
-                        Map<? extends Serializable, ? extends Serializable> jobAttrs =
-                            (Map<? extends Serializable, ? extends Serializable>)res.getJobContext().getAttributes();
-
-                        boolean forceLocDep = internal || !ctx.deploy().enabled();
-
-                        try {
-                            MarshallerUtils.jobReceiverVersion(node.version());
-
-                            req = new GridJobExecuteRequest(
-                                ses.getId(),
-                                res.getJobContext().getJobId(),
-                                ses.getTaskName(),
-                                ses.getUserVersion(),
-                                ses.getTaskClassName(),
-                                loc ? null : U.marshal(marsh, res.getJob()),
-                                loc ? res.getJob() : null,
-                                ses.getStartTime(),
-                                timeout,
-                                ses.getTopology(),
-                                loc ? ses.getTopologyPredicate() : null,
-                                loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
-                                loc ? null : U.marshal(marsh, ses.getJobSiblings()),
-                                loc ? ses.getJobSiblings() : null,
-                                loc ? null : U.marshal(marsh, sesAttrs),
-                                loc ? sesAttrs : null,
-                                loc ? null : U.marshal(marsh, jobAttrs),
-                                loc ? jobAttrs : null,
-                                ses.getCheckpointSpi(),
-                                dep.classLoaderId(),
-                                dep.deployMode(),
-                                continuous,
-                                dep.participants(),
-                                forceLocDep,
-                                ses.isFullSupport(),
-                                internal,
-                                affCacheIds,
-                                affPartId,
-                                mapTopVer,
-                                ses.executorName());
-                        }
-                        finally {
-                            MarshallerUtils.jobReceiverVersion(null);
-                        }
-
-                        if (loc)
-                            ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
-                        else {
-                            byte plc;
-
-                            if (internal)
-                                plc = MANAGEMENT_POOL;
-                            else {
-                                Byte ctxPlc = getThreadContext(TC_IO_POLICY);
-
-                                if (ctxPlc != null)
-                                    plc = ctxPlc;
-                                else
-                                    plc = PUBLIC_POOL;
-                            }
-
-                            // Send job execution request.
-                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, plc);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Sent job request [req=" + req + ", node=" + node + ']');
-                        }
-
-                        if (!loc)
-                            ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
-                    }
-                    else
-                        U.warn(log, "Job timed out prior to sending job execution request: " + res.getJob());
-                }
-            }
-            catch (IgniteCheckedException e) {
-                IgniteException fakeErr = null;
-
-                try {
-                    boolean deadNode = e instanceof ClusterTopologyCheckedException || isDeadNode(res.getNode().id());
-
-                    // Avoid stack trace if node has left grid.
-                    if (deadNode) {
-                        if (log.isDebugEnabled()) {
-                            U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
-                                "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                                ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
-                        }
-
-                        fakeErr = new ClusterTopologyException("Failed to send job due to node failure: " + node, e);
-                    }
-                    else if (log.isDebugEnabled())
-                        U.error(log, "Failed to send job request: " + req, e);
-
-                }
-                catch (IgniteClientDisconnectedCheckedException e0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to send job request, client disconnected [node=" + node +
-                            ", taskName=" + ses.getTaskName() + ", taskSesId=" + ses.getId() + ", jobSesId=" +
-                            res.getJobContext().getJobId() + ']');
-
-                    fakeErr = U.convertException(e0);
-                }
+                ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
                     res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
 
-                if (fakeErr == null)
-                    fakeErr = U.convertException(e);
-
-                fakeRes.setFakeException(fakeErr);
+                fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
 
                 onResponse(fakeRes);
             }
+            else {
+                long timeout = ses.getEndTime() == Long.MAX_VALUE ? Long.MAX_VALUE :
+                    ses.getEndTime() - U.currentTimeMillis();
+
+                if (timeout > 0) {
+                    boolean loc = node.id().equals(ctx.discovery().localNode().id()) &&
+                        !ctx.config().isMarshalLocalJobs();
+
+                    Map<Object, Object> sesAttrs = ses.isFullSupport() ? ses.getAttributes() : null;
+                    Map<? extends Serializable, ? extends Serializable> jobAttrs =
+                        (Map<? extends Serializable, ? extends Serializable>)res.getJobContext().getAttributes();
+
+                    boolean forceLocDep = internal || !ctx.deploy().enabled();
+
+                    try {
+                        MarshallerUtils.jobReceiverVersion(node.version());
+
+                        req = new GridJobExecuteRequest(
+                            ses.getId(),
+                            res.getJobContext().getJobId(),
+                            ses.getTaskName(),
+                            ses.getUserVersion(),
+                            ses.getTaskClassName(),
+                            loc ? null : U.marshal(marsh, res.getJob()),
+                            loc ? res.getJob() : null,
+                            ses.getStartTime(),
+                            timeout,
+                            ses.getTopology(),
+                            loc ? ses.getTopologyPredicate() : null,
+                            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
+                            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
+                            loc ? ses.getJobSiblings() : null,
+                            loc ? null : U.marshal(marsh, sesAttrs),
+                            loc ? sesAttrs : null,
+                            loc ? null : U.marshal(marsh, jobAttrs),
+                            loc ? jobAttrs : null,
+                            ses.getCheckpointSpi(),
+                            dep.classLoaderId(),
+                            dep.deployMode(),
+                            continuous,
+                            dep.participants(),
+                            forceLocDep,
+                            ses.isFullSupport(),
+                            internal,
+                            affCacheIds,
+                            affPartId,
+                            mapTopVer,
+                            ses.executorName());
+                    }
+                    finally {
+                        MarshallerUtils.jobReceiverVersion(null);
+                    }
+
+                    if (loc)
+                        ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
+                    else {
+                        byte plc;
+
+                        if (internal)
+                            plc = MANAGEMENT_POOL;
+                        else {
+                            Byte ctxPlc = getThreadContext(TC_IO_POLICY);
+
+                            if (ctxPlc != null)
+                                plc = ctxPlc;
+                            else
+                                plc = PUBLIC_POOL;
+                        }
+
+                        // Send job execution request.
+                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, plc);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Sent job request [req=" + req + ", node=" + node + ']');
+                    }
+
+                    if (!loc)
+                        ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
+                }
+                else
+                    U.warn(log, "Job timed out prior to sending job execution request: " + res.getJob());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            IgniteException fakeErr = null;
+
+            try {
+                boolean deadNode = e instanceof ClusterTopologyCheckedException || isDeadNode(res.getNode().id());
+
+                // Avoid stack trace if node has left grid.
+                if (deadNode) {
+                    if (log.isDebugEnabled()) {
+                        U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
+                            "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                            ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                    }
+
+                    fakeErr = new ClusterTopologyException("Failed to send job due to node failure: " + node, e);
+                }
+                else if (log.isDebugEnabled())
+                    U.error(log, "Failed to send job request: " + req, e);
+
+            }
+            catch (IgniteClientDisconnectedCheckedException e0) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send job request, client disconnected [node=" + node +
+                        ", taskName=" + ses.getTaskName() + ", taskSesId=" + ses.getId() + ", jobSesId=" +
+                        res.getJobContext().getJobId() + ']');
+
+                fakeErr = U.convertException(e0);
+            }
+
+            GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
+                res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+
+            if (fakeErr == null)
+                fakeErr = U.convertException(e);
+
+            fakeRes.setFakeException(fakeErr);
+
+            onResponse(fakeRes);
         }
     }
 
