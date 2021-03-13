@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
-            doTestService(new JavaServiceDynamicProxy(svc));
+            DoTestService(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            doTestService(svc);
+            DoTestService(svc);
 
             Assert.IsNull(svc.testDepartments(null));
 
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests java service instance.
         /// </summary>
-        private void doTestService(IJavaService svc)
+        private static void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testAddress(null));
 
