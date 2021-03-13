@@ -21,11 +21,13 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -36,7 +38,9 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -221,6 +225,56 @@ public class IdleVerifyUtility {
         }
 
         return diff;
+    }
+
+    /**
+     * @param partKey Partition key.
+     * @param updCntr Partition update counter prior check.
+     * @param consId Local node consistent id.
+     * @param state Partition state to check.
+     * @param isPrimary {@code true} if partition is primary.
+     * @param partSize Partition size on disk.
+     * @param it Iterator though partition data rows.
+     * @throws IgniteCheckedException If fails.
+     * @return Map of calculated partition.
+     */
+    public static @Nullable PartitionHashRecordV2 calculatePartitionHash(
+        PartitionKeyV2 partKey,
+        long updCntr,
+        Object consId,
+        GridDhtPartitionState state,
+        boolean isPrimary,
+        long partSize,
+        GridIterator<CacheDataRow> it
+    ) throws IgniteCheckedException {
+        if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
+            return new PartitionHashRecordV2(partKey,
+                isPrimary,
+                consId,
+                0,
+                updCntr,
+                state == GridDhtPartitionState.MOVING ?
+                    PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                state == GridDhtPartitionState.MOVING ?
+                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST);
+        }
+
+        if (state != GridDhtPartitionState.OWNING)
+            return null;
+
+        int partHash = 0;
+
+        while (it.hasNextX()) {
+            CacheDataRow row = it.nextX();
+
+            partHash += row.key().hashCode();
+
+            // Object context is not required since the valueBytes have been read directly from page.
+            partHash += Arrays.hashCode(row.value().valueBytes(null));
+        }
+
+        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, updCntr,
+            partSize, PartitionHashRecordV2.PartitionState.OWNING);
     }
 
     /**
