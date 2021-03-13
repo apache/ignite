@@ -163,6 +163,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests java service instance.
         /// </summary>
+        private static void DoTestService(IJavaService svc)
         private void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testAddress(null));
@@ -180,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testEmployees(null));
 
             var emps = svc.testEmployees(Emps);
-            
+
             Assert.AreEqual(typeof(Employee[]), emps.GetType());
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
@@ -237,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var path = Path.Combine("Config", "Compute", "compute-grid");
 
             var cfg = GetConfiguration(path + "1.xml");
-            
+
             _grid1 = Ignition.Start(cfg);
 
             cfg.ClientMode = true;

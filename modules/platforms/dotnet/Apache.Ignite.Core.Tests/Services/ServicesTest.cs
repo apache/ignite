@@ -367,7 +367,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Exception in service.
             ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
             Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
- 
+
             Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
             Assert.AreEqual(3, svc.TestOverload(1, 2));
             Assert.AreEqual(5, svc.TestOverload(3, 2));
@@ -876,9 +876,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            DoTestService(svc, binSvc);
-
-            //DoTestJavaServiceExceptions(svc);
+            DoTestService(svc, binSvc, true);
 
             DoTestBinary(svc, binSvc);
 
@@ -904,57 +902,15 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc, binSvc);
 
-            DoTestJavaServiceExceptions(svc);
-
             DoTestBinary(svc, binSvc);
 
             Services.Cancel(javaSvcName);
         }
 
         /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
+        /// Tests service methods.
         /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
-
-            DoTestService(
-                svc,
-                new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
-                    .GetDynamicServiceProxy(javaSvcName))
-            );
-
-            DoTestJavaServiceExceptions(svc);
-        }
-
-        /// <summary>
-        /// Tests .Net service invocation.
-        /// </summary>
-        [Test]
-        public void TestCallPlatformService()
-        {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
-
-            Grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
-            var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(platformSvcName, false);
-
-            DoTestService(svc, binSvc);
-
-            Grid1.GetServices().Cancel(platformSvcName);
-        }
-
-        /// <summary>
-        /// Tests service.
-        /// </summary>
-        private void DoTestService(IJavaService svc, IJavaService binSvc)
+        private void DoTestService(IJavaService svc, IJavaService binSvc, bool isClient = false)
         {
             // Basics
             Assert.IsTrue(svc.isInitialized());
@@ -982,10 +938,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
 
-            // params / varargs
-            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
-            Assert.AreEqual(0, svc.testParams());
-
             // Arrays
             var bytes = svc.testArray(new byte[] {1, 2, 3});
 
@@ -993,7 +945,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new byte[] {2, 3, 4}, bytes);
 
             var shorts = svc.testArray(new short[] {1, 2, 3});
-            
+
             Assert.AreEqual(shorts.GetType(), typeof(short[]));
             Assert.AreEqual(new short[] {2, 3, 4}, shorts);
 
@@ -1018,7 +970,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new double[] {2, 3, 4}, doubles);
 
             var strs = svc.testArray(new [] {"a", "b"});
-            
+
             Assert.AreEqual(strs.GetType(), typeof(string[]));
             Assert.AreEqual(new[] {"a1", "b1"}, strs);
 
@@ -1036,6 +988,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(9, svc.testNull(8));
             Assert.IsNull(svc.testNull(null));
 
+            // params / varargs
+            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
+            Assert.AreEqual(0, svc.testParams());
+
             // Overloads
             Assert.AreEqual(3, svc.test(2, "1"));
             Assert.AreEqual(3, svc.test("1", 2));
@@ -1048,7 +1004,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
-            
+
             DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             Assert.AreEqual(dt, svc.test(dt));
@@ -1088,6 +1044,53 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+            // Test standard java checked exception.
+            Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
+            ex = ex.InnerException;
+            Assert.IsNotNull(ex);
+            Assert.IsInstanceOf<ThreadInterruptedException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test standard java unchecked exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
+            ex = ex.InnerException;
+            Assert.IsNotNull(ex);
+            Assert.IsInstanceOf<ArgumentException>(ex);
+            Assert.AreEqual("Test", ex.Message);
+
+            // Test user defined exception mapping by pattern.
+            ((IIgniteInternal) Grid1).PluginProcessor.RegisterExceptionMapping(
+                "org.apache.ignite.platform.PlatformDeployServiceTask$TestMapped*",
+                (c, m, e, i) => new TestServiceException(m, e));
+
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
+            ex = ex.InnerException;
+            Assert.IsNotNull(ex);
+            if (isClient)
+                Assert.IsInstanceOf<IgniteException>(ex);
+            else
+                Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.IsTrue(ex.Message.Contains("Test"));
+
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
+            ex = ex.InnerException;
+            Assert.IsNotNull(ex);
+            if (isClient)
+                Assert.IsInstanceOf<IgniteException>(ex);
+            else
+                Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.IsTrue(ex.Message.Contains("Test"));
+
+            // Test user defined unmapped exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
+            ex = ex.InnerException;
+            Assert.IsNotNull(ex);
+            Assert.IsInstanceOf<IgniteException>(ex);
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Test", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
+
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
             DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
@@ -1112,50 +1115,21 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests exceptions from Java service.
+        /// Tests Java service invocation with dynamic proxy.
         /// </summary>
-        private void DoTestJavaServiceExceptions(IJavaService svc)
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
         {
-            // Test standard java checked exception.
-            Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
-            ex = ex.InnerException;
-            Assert.IsNotNull(ex);
-            Assert.IsInstanceOf<ThreadInterruptedException>(ex);
-            Assert.AreEqual("Test", ex.Message);
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
-            // Test standard java unchecked exception.
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
-            ex = ex.InnerException;
-            Assert.IsNotNull(ex);
-            Assert.IsInstanceOf<ArgumentException>(ex);
-            Assert.AreEqual("Test", ex.Message);
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
 
-            // Test user defined exception mapping by pattern.
-            ((IIgniteInternal) Grid1).PluginProcessor.RegisterExceptionMapping(
-                "org.apache.ignite.platform.PlatformDeployServiceTask$TestMapped*",
-                (c, m, e, i) => new TestServiceException(m, e));
-
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
-            ex = ex.InnerException;
-            Assert.IsNotNull(ex);
-            Assert.IsInstanceOf<TestServiceException>(ex);
-            Assert.AreEqual("Test", ex.Message);
-
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
-            ex = ex.InnerException;
-            Assert.IsNotNull(ex);
-            Assert.IsInstanceOf<TestServiceException>(ex);
-            Assert.AreEqual("Test", ex.Message);
-
-            // Test user defined unmapped exception.
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
-            ex = ex.InnerException;
-            Assert.IsNotNull(ex);
-            Assert.IsInstanceOf<IgniteException>(ex);
-            var javaEx = ex.InnerException as JavaException;
-            Assert.IsNotNull(javaEx);
-            Assert.AreEqual("Test", javaEx.JavaMessage);
-            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
+            DoTestService(
+                svc,
+                new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
+                    .GetDynamicServiceProxy(javaSvcName))
+            );
         }
 
         /// <summary>
@@ -1174,7 +1148,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var binarizableObjs = svc.testBinarizableArrayOfObjects(arrOfObj);
 
             Assert.AreEqual(typeof(object[]), binarizableObjs.GetType());
-            Assert.AreEqual(new[] {11, 12, 13},binarizableObjs 
+            Assert.AreEqual(new[] {11, 12, 13},binarizableObjs
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
             Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
@@ -1191,7 +1165,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var binObjs = binSvc.testBinaryObjectArray(binArr);
 
-            Assert.AreEqual(typeof(IBinaryObject[]), binObjs.GetType());
             Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
         }
 
@@ -1221,7 +1194,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
 
             var cfg = GetConfiguration(path + "3.xml");
-            
+
             Grid3 = Ignition.Start(cfg);
 
             cfg.ClientMode = true;
@@ -1744,7 +1717,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // No-op.
             }
         }
-        
+
 #if NETCOREAPP
         /// <summary>
         /// Adds support of the local dates to the Ignite timestamp serialization.
