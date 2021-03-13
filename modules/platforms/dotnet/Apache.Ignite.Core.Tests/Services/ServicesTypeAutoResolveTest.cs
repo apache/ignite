@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -52,7 +53,6 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _grid1;
 
         /** */
-        //TODO: move marshaller to another folder!
         //TODO: add test for nested array fields.
         private IIgnite _client;
 
@@ -112,11 +112,11 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation.
+        /// Tests Java service invocation on local.
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaService()
+        public void TestCallJavaServiceLocal()
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
@@ -125,17 +125,44 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
+            DoTestDepartments(svc);
+
+            _grid1.GetServices().Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation on remote node..
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceRemote()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            DoTestService(svc);
+
+            DoTestDepartments(svc);
+
+            _grid1.GetServices().Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests departments call.
+        /// </summary>
+        private void DoTestDepartments(IJavaService svc)
+        {
             Assert.IsNull(svc.testDepartments(null));
 
-            var arr  = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
 
             ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-
-            _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
@@ -188,6 +215,19 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Kyle Reese", emps[0].Fio);
             Assert.AreEqual(3, emps[0].Salary);
 
+            Assert.IsNull(svc.testMap(null));
+
+            var map = new Dictionary<Key, Value>();
+
+            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
+            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
+
+            var res = svc.testMap(map);
+
+            Assert.NotNull(res);
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
+
             var accs = svc.testAccounts();
 
             Assert.AreEqual(typeof(Account[]), accs.GetType());
@@ -209,21 +249,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
-
-/*
-            Assert.IsNull(svc.testMap(null));
-
-            var map = new Dictionary<Key, Value>();
-
-            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
-            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
-
-            var res = svc.testMap(map);
-
-            Assert.NotNull(res);
-            Assert.AreEqual(1, res.Count);
-            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
-*/
         }
 
         /// <summary>
@@ -242,6 +267,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             cfg.ClientMode = true;
             cfg.IgniteInstanceName = "client";
+            cfg.WorkDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "client_work");
 
             _client = Ignition.Start(cfg);
         }
