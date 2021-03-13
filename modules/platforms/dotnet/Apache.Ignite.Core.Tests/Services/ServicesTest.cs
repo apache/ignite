@@ -908,24 +908,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
-
-            DoTestService(
-                svc,
-                new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
-                    .GetDynamicServiceProxy(javaSvcName))
-            );
-        }
-
-        /// <summary>
         /// Tests service methods.
         /// </summary>
         private void DoTestService(IJavaService svc, IJavaService binSvc, bool isClient = false)
@@ -1166,6 +1148,24 @@ namespace Apache.Ignite.Core.Tests.Services
             var binObjs = binSvc.testBinaryObjectArray(binArr);
 
             Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
+        }
+
+        /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+
+            DoTestService(
+                svc,
+                new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
+                    .GetDynamicServiceProxy(javaSvcName))
+            );
         }
 
         /// <summary>
