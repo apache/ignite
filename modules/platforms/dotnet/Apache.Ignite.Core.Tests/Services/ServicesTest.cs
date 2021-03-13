@@ -863,7 +863,33 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests Java service invocation.
         /// </summary>
         [Test]
-        public void TestCallJavaService()
+        public void TestCallJavaServiceRemote()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            // Verify descriptor
+            var descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == javaSvcName);
+            Assert.AreEqual(javaSvcName, descriptor.Name);
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+            var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            DoTestService(svc, binSvc);
+
+            //DoTestJavaServiceExceptions(svc);
+
+            DoTestBinary(svc, binSvc);
+
+            Services.Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceLocal()
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
@@ -880,29 +906,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestJavaServiceExceptions(svc);
 
-            // Binary collections
-            var arr  = new[] {10, 11, 12}.Select(
-                x => new PlatformComputeBinarizable {Field = x}).ToArray();
-            var arrOfObj = arr.ToArray<object>();
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
-
-            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
-                .Select(x => x.Field));
-
-            Assert.IsNull(svc.testBinarizableArray(null));
-
-            // Binary object array.
-            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
-
-            Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
-                .Select(x => x.GetField<int>("Field")));
+            DoTestBinary(svc, binSvc);
 
             Services.Cancel(javaSvcName);
         }
@@ -917,6 +921,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
             var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+
             DoTestService(
                 svc,
                 new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
@@ -976,7 +981,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(5.8, svc.testWrapper(3.3));
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
-            
+
             // params / varargs
             Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
             Assert.AreEqual(0, svc.testParams());
@@ -1151,6 +1156,43 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(javaEx);
             Assert.AreEqual("Test", javaEx.JavaMessage);
             Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
+        }
+
+        /// <summary>
+        /// Tets binary methods in services.
+        /// </summary>
+        private void DoTestBinary(IJavaService svc, IJavaService binSvc)
+        {
+            // Binary collections
+            var arr = new[] {10, 11, 12}.Select(
+                x => new PlatformComputeBinarizable {Field = x}).ToArray();
+            var arrOfObj = arr.ToArray<object>();
+
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
+
+            var binarizableObjs = svc.testBinarizableArrayOfObjects(arrOfObj);
+
+            Assert.AreEqual(typeof(object[]), binarizableObjs.GetType());
+            Assert.AreEqual(new[] {11, 12, 13},binarizableObjs 
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
+
+            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
+
+            var bins = svc.testBinarizableArray(arr);
+
+            Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
+            Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
+
+            Assert.IsNull(svc.testBinarizableArray(null));
+
+            // Binary object array.
+            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+
+            var binObjs = binSvc.testBinaryObjectArray(binArr);
+
+            Assert.AreEqual(typeof(IBinaryObject[]), binObjs.GetType());
+            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
         }
 
         /// <summary>

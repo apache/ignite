@@ -277,7 +277,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Object[] args;
 
-                BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+                if (svc.isPlatformService())
+                    BinaryUtils.USE_ARRAY_WRAPPER.set(true);
 
                 try {
                     if (reader.readBoolean()) {

@@ -102,6 +102,9 @@ public class PlatformUtils {
     /** Cache peek modes. */
     private static volatile CachePeekMode[][] CACHE_PEEK_MODES;
 
+    /** */
+    public static ThreadLocal<Boolean> FAIL = ThreadLocal.withInitial(() -> false);
+
     /**
      * Static initializer.
      */

@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class Marshaller
     {
         /** Register same java type flag. */
+        public static readonly ThreadLocal<Boolean> ERROR = new ThreadLocal<Boolean>(() => false);
+        
+        /** Register same java type flag. */
         public static readonly ThreadLocal<Boolean> RegisterSameJavaTypeTl = new ThreadLocal<Boolean>(() => false);
 
         /** Binary configuration. */
