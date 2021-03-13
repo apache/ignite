@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Services
         };
 
         /** */
-        protected internal static readonly Parameter[] Param = new[] 
+        protected internal static readonly Parameter[] Param = new[]
         {
             new Parameter()
                 {Id = 1, Values = new[] {new ParamValue() {Id = 1, Val = 42}, new ParamValue() {Id = 2, Val = 43}}},
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceDynamicProxy() 
+        public void TestCallJavaServiceDynamicProxy()
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
@@ -164,7 +164,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests java service instance.
         /// </summary>
         private static void DoTestService(IJavaService svc)
-        private void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testAddress(null));
 
