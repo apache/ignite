@@ -17,10 +17,6 @@
 This module contains password based authentication tests
 """
 
-from enum import IntEnum
-
-from ducktape.mark import matrix
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_USERNAME
@@ -28,25 +24,18 @@ from ignitetest.services.utils.control_utility import ControlUtility, ControlUti
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.utils import ignite_versions, cluster
-from ignitetest.utils.enum import constructible
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
-
-@constructible
-class OperationType(IntEnum):
-    """
-    Load type.
-    """
-    ADD_USER = 0
-    UPDATE_USER = 1
-    REMOVE_USER = 2
-
-
 WRONG_PASSWORD = "wrong_password"
 TEST_USERNAME = "admin"
 TEST_PASSWORD = "qwe123"
+TEST_PASSWORD2 = "123qwe"
+
+ADD_USER = 'adduser'
+UPDATE_USER = 'updateuser'
+REMOVE_USER = 'removeuser'
 
 
 # pylint: disable=W0223
@@ -54,12 +43,11 @@ class AuthenticationTests(IgniteTest):
     """
     Tests Ignite Control Utility Activation command with enabled Authentication
     """
-    NUM_NODES = 3
+    NUM_NODES = 2
 
-    @cluster(num_nodes=NUM_NODES)
+    @cluster(num_nodes=NUM_NODES - 1)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(password_is_correct=[True, False])
-    def test_activate_with_authentication(self, ignite_version, password_is_correct):
+    def test_activate_with_authentication(self, ignite_version):
         """
         Test activate cluster.
         Authentication enabled
@@ -70,101 +58,90 @@ class AuthenticationTests(IgniteTest):
             auth_enabled=True,
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(name='persistent', persistent=True),
+                default=DataRegionConfiguration(persistent=True)
             )
         )
 
-        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES - 2)
-
-        servers.start()
-
-        control_utility = ControlUtility(cluster=servers,
-                                         username=DEFAULT_AUTH_USERNAME,
-                                         password=DEFAULT_AUTH_PASSWORD if password_is_correct else WRONG_PASSWORD)
-        if password_is_correct:
-            control_utility.activate()
-        else:
-            try:
-                control_utility.activate()
-                raise Exception("User successfully execute command with wrong password")
-            except ControlUtilityError:
-                pass
-
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH))
-    @matrix(operation=[OperationType.ADD_USER, OperationType.UPDATE_USER, OperationType.REMOVE_USER])
-    def test_change_users(self, ignite_version, operation):
-        """
-        Test add, update and remove user
-        """
-
-        config = IgniteConfiguration(
-            cluster_state="INACTIVE",
-            auth_enabled=True,
-            version=IgniteVersion(ignite_version),
-            data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(name='persistent', persistent=True),
-            )
-        )
-
-        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES - 2)
+        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES - 1)
 
         servers.start()
 
         ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD).activate()
 
-        client_configuration = config._replace(client_mode=True,
-                                               discovery_spi=from_ignite_cluster(servers))
+        # Run command with right password
+        check_authenticate(servers, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)
 
-        # Add secound user because Default user cannot be removed
-        if operation is OperationType.REMOVE_USER:
-            app = IgniteApplicationService(
-                self.test_context,
-                client_configuration,
-                java_class_name="org.apache.ignite.internal.ducktest.tests.authentication.UserModifyingApplication",
-                params={"operation": operation,
-                        "auth_username": DEFAULT_AUTH_USERNAME,
-                        "auth_password": DEFAULT_AUTH_PASSWORD,
-                        "username": TEST_USERNAME,
-                        "password": TEST_PASSWORD})
+        # Run command with wrong password
+        check_authenticate(servers, DEFAULT_AUTH_USERNAME, WRONG_PASSWORD, True)
 
-            app.start()
-            app.stop()
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_change_users(self, ignite_version):
+        """
+        Test add, update and remove user
+        """
+        config = IgniteConfiguration(
+            cluster_state="INACTIVE",
+            auth_enabled=True,
+            version=IgniteVersion(ignite_version),
+            data_storage=DataStorageConfiguration(
+                default=DataRegionConfiguration(persistent=True),
+            )
+        )
 
-        if operation is OperationType.ADD_USER:
-            appointed_user = TEST_USERNAME
-            appointed_password = TEST_PASSWORD
-        elif operation is OperationType.UPDATE_USER:
-            appointed_user = DEFAULT_AUTH_USERNAME
-            appointed_password = TEST_PASSWORD
-        elif operation is OperationType.REMOVE_USER:
-            appointed_user = TEST_USERNAME
-            appointed_password = TEST_PASSWORD
+        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES - 1)
 
+        servers.start()
+
+        ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD).activate()
+
+        client_cfg = config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
+
+        # Add new user
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD, True)
+        self.run_with_creds(client_cfg, ADD_USER, TEST_USERNAME, TEST_PASSWORD)
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD)
+
+        # Update user password
+        self.run_with_creds(client_cfg, UPDATE_USER, TEST_USERNAME, TEST_PASSWORD2)
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD2)
+
+        # Remove user
+        self.run_with_creds(client_cfg, REMOVE_USER, TEST_USERNAME, free=False)
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD, True)
+
+    # pylint: disable=R0913
+    def run_with_creds(self, client_configuration, rest_key: str, name: str, password: str = None, clean=False,
+                       free=True):
+        """
+        Run user modifying command
+        """
         app = IgniteApplicationService(
             self.test_context,
             client_configuration,
             java_class_name="org.apache.ignite.internal.ducktest.tests.authentication.UserModifyingApplication",
-            params={"operation": operation,
+            params={"rest_key": rest_key,
                     "auth_username": DEFAULT_AUTH_USERNAME,
                     "auth_password": DEFAULT_AUTH_PASSWORD,
-                    "username": appointed_user,
-                    "password": appointed_password})
-
-        app.start()
+                    "username": name,
+                    "password": password}
+        )
+        app.start(clean=clean)
         app.stop()
+        if free:
+            app.free()
 
-        control_utility = ControlUtility(cluster=servers,
-                                         username=appointed_user,
-                                         password=appointed_password)
 
-        if operation is not OperationType.REMOVE_USER:
+def check_authenticate(servers, username: str, password: str, exception_expected: bool = False):
+    """
+    Check if user can run control.sh command
+    """
+    control_utility = ControlUtility(cluster=servers, username=username, password=password)
+    if exception_expected:
+        try:
             control_utility.cluster_state()
-        else:
-            try:
-                control_utility.cluster_state()
-                raise Exception("User successfully execute command from removed user")
-            except ControlUtilityError:
-                pass
-
-        servers.stop()
+            raise Exception("Something went wrong.")
+        except ControlUtilityError:
+            pass
+    else:
+        control_utility.cluster_state()

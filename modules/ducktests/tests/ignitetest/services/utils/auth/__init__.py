@@ -29,13 +29,10 @@ def get_credentials(_globals: dict):
     """
     Gets Credentials from Globals
     Structure may be found in modules/ducktests/tests/checks/utils/check_get_credentials.py
-
     If authentication is enabled in globals this function return default username and password
     If authentication is not enabled this function return None, None
     Default may be overriden throw globals
-
     """
-
     return _globals[AUTHENTICATION_KEY][DEFAULT_CREDENTIALS_KEY] if DEFAULT_CREDENTIALS_KEY in _globals[
         AUTHENTICATION_KEY] else (DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)
 

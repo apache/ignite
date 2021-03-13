@@ -96,4 +96,4 @@ def is_ssl_enabled(_globals: dict):
     :param _globals:
     :return: bool
     """
-    return "ssl" in _globals and _globals["ssl"]["enabled"]
+    return SSL_KEY in _globals and _globals[SSL_KEY][ENABLED_KEY]

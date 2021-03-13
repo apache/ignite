@@ -22,60 +22,52 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
 
 /**
  * Simple application that modify users
- * Posible operations:
- * 0 - Add User
- * 1 - Update User
- * 2 - Remove User
+ * Posible operations: 0 - Add User 1 - Update User 2 - Remove User
  */
-
 public class UserModifyingApplication extends IgniteAwareApplication {
+    /** {@inheritDoc} */
+    @Override public void run(JsonNode jsonNode) throws IgniteCheckedException {
+        String restKey = jsonNode.get("rest_key").asText();
 
-    @Override public void run(JsonNode jsonNode) {
+        String authName = jsonNode.get("auth_username").asText();
 
-        int operation = jsonNode.get("operation").asInt();
-        String authUsername = jsonNode.get("auth_username").asText();
-        String authPassword = jsonNode.get("auth_password").asText();
-        String username = jsonNode.get("username").asText();
-        String password = jsonNode.get("password").asText();
+        String authPwd = jsonNode.get("auth_password").asText();
 
-        IgniteEx igniteEx = (IgniteEx) ignite;
-        try {
-            AuthorizationContext actx = igniteEx.context().authentication().authenticate(authUsername, authPassword);
-            AuthorizationContext.context(actx);
-        } catch (IgniteCheckedException e) {
-            log.info("Exception while authenticating." + e);
-        }
+        String name = jsonNode.get("username").asText();
+
+        String pwd = jsonNode.get("password").asText();
 
         markInitialized();
 
-        switch (operation) {
-            case 0:
-                try {
-                    log.info("Adding user " + username + " with password " + password);
-                    igniteEx.context().authentication().addUser(username, password);
-                } catch (IgniteCheckedException e) {
-                    log.info("Exception while adding user." + e);
-                }
+        log.info("Input data: " + jsonNode.toString());
+
+        IgniteAuthenticationProcessor auth = ((IgniteEx)ignite).context().authentication();
+
+        AuthorizationContext actx = auth.authenticate(authName, authPwd);
+        AuthorizationContext.context(actx);
+
+        GridRestCommand cmd = GridRestCommand.fromKey(restKey);
+
+        switch (cmd) {
+            case ADD_USER:
+                auth.addUser(name, pwd);
                 break;
-            case 1:
-                try {
-                    log.info("Update user " + username + " change password " + password);
-                    igniteEx.context().authentication().updateUser(username, password);
-                } catch (IgniteCheckedException e) {
-                    log.info("Exception while updating user." + e);
-                }
+
+            case UPDATE_USER:
+                auth.updateUser(name, pwd);
                 break;
-            case 2:
-                try {
-                    log.info("Remove user " + username);
-                    igniteEx.context().authentication().removeUser(username);
-                } catch (IgniteCheckedException e) {
-                    log.info("Exception while removing user." + e);
-                }
+
+            case REMOVE_USER:
+                auth.removeUser(name);
                 break;
+
+            default:
+                throw new IgniteCheckedException("Unknown operation: " + cmd + ".");
         }
 
         markFinished();
