@@ -34,7 +34,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -149,31 +148,19 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
      */
     @Test
     public void testCurrentClientToOldServer() throws Exception {
-        IgniteProcessProxy proxy = null;
-
         try {
             if (verFormatted.equals(IgniteVersionUtils.VER_STR)) {
                 Ignite ignite = startGrid(0);
 
                 initNode(ignite);
             }
-            else {
-                Ignite ignite = startGrid(1, verFormatted, this::processRemoteConfiguration, this::initNode);
-
-                proxy = IgniteProcessProxy.ignite(ignite.name());
-            }
+            else
+                startGrid(1, verFormatted, this::processRemoteConfiguration, this::initNode);
 
             testClient(verFormatted);
         }
         finally {
             stopAllGrids();
-
-            if (proxy != null) {
-                Process proc = proxy.getProcess().getProcess();
-
-                // We should wait until process exits, or it can affect next tests.
-                assertTrue(GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L));
-            }
         }
     }
 

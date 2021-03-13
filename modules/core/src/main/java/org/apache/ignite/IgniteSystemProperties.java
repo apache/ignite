@@ -34,14 +34,15 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -492,7 +493,7 @@ public final class IgniteSystemProperties {
      * concurrency level for structure holding job metrics snapshots.
      * Default value is {@code 64}.
      *
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=compute.jobs" instead.
      */
     @Deprecated
     @SystemProperty(value = "Job metrics processor property defining concurrency level " +
@@ -1889,6 +1890,14 @@ public final class IgniteSystemProperties {
         "master key name", type = String.class)
     public static final String IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP =
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
+
+    /**
+     * Disable group state lazy store. It means that group state won't be cached for {@link CheckpointEntry} and will be
+     * read from wal every time. Should be used for test purposes only.
+     */
+    @SystemProperty(value = "Disable group state lazy store. It means that group state won't be cached " +
+        "and will be read from wal every time", defaults = "false")
+    public static final String IGNITE_DISABLE_GRP_STATE_LAZY_STORE = "IGNITE_DISABLE_GRP_STATE_LAZY_STORE";
 
     /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.

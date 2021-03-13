@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
-    using org.apache.ignite.platform.model;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Services tests.
