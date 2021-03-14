@@ -150,6 +150,58 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceRemote()
+        {
+            // Deploy .Net service.
+            var platformSvcName = nameof(PlatformTestService);
+
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+
+            try
+            {
+                DoTestService(svc);
+
+                DoTestDepartments(svc);
+            }
+            finally
+            {
+                _grid1.GetServices().Cancel(platformSvcName);
+            }
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            // Deploy .Net service.
+            var platformSvcName = nameof(PlatformTestService);
+
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+
+            try
+            {
+                DoTestService(svc);
+
+                DoTestDepartments(svc);
+            }
+            finally
+            {
+                _grid1.GetServices().Cancel(platformSvcName);
+            }
+        }
+
+        /// <summary>
         /// Tests departments call.
         /// </summary>
         private void DoTestDepartments(IJavaService svc)
@@ -163,28 +215,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-        }
-
-        /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
-        /// </summary>
-        [Test]
-        public void TestCallPlatformService()
-        {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
-
-            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            try
-            {
-                DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(platformSvcName));
-            }
-            finally
-            {
-                _grid1.GetServices().Cancel(platformSvcName);
-            }
         }
 
         /// <summary>

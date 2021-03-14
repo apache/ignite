@@ -908,6 +908,62 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceRemote()
+        {
+            // Deploy .Net service.
+            var platformSvcName = nameof(PlatformTestService);
+
+            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+            var binSvc = _client.GetServices().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(platformSvcName, false);
+
+            try
+            {
+                DoTestService(svc, binSvc);
+
+                DoTestBinary(svc, binSvc);
+            }
+            finally
+            {
+                Services.Cancel(platformSvcName);
+            }
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            // Deploy .Net service.
+            var platformSvcName = nameof(PlatformTestService);
+
+            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = Services.GetServiceProxy<IJavaService>(platformSvcName);
+            var binSvc = Services.WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(platformSvcName, false);
+
+            try
+            {
+                DoTestService(svc, binSvc);
+
+                DoTestBinary(svc, binSvc);
+            }
+            finally
+            {
+                Services.Cancel(platformSvcName);
+            }
+        }
+
+        /// <summary>
         /// Tests service methods.
         /// </summary>
         private void DoTestService(IJavaService svc, IJavaService binSvc, bool isClient = false)
