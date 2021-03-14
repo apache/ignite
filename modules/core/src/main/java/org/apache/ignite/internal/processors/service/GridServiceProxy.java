@@ -42,6 +42,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -199,13 +200,17 @@ public class GridServiceProxy<T> implements Serializable {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
                         // Execute service remotely.
-                        return ctx.closure().callAsyncNoFailover(
+                        Object res = ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
                             new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
                             true).get();
+
+                        //TODO pass USE_ARRAY_WRAPPER!!!
+                        if (BinaryUtils.THROW_ERR.get())
+                            throw new RuntimeException(res.getClass().getName());
                     }
                 }
                 catch (InvocationTargetException e) {

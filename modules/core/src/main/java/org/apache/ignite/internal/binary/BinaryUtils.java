@@ -93,6 +93,9 @@ public class BinaryUtils {
     /** */
     public static final ThreadLocal<Boolean> USE_ARRAY_WRAPPER = ThreadLocal.withInitial(() -> false);
 
+    /** */
+    public static final ThreadLocal<Boolean> THROW_ERR = ThreadLocal.withInitial(() -> false);
+
     /** Map from class to associated write replacer. */
     public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
 
@@ -2054,7 +2057,10 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        if (!deserialize && USE_ARRAY_WRAPPER.get()) {
+        if (BinaryUtils.THROW_ERR.get())
+            throw new RuntimeException("doReadObjectArray - " + USE_ARRAY_WRAPPER.get());
+
+        if (USE_ARRAY_WRAPPER.get()) {
             int compTypeId = in.readInt();
 
             String compClsName = null;
@@ -2073,20 +2079,19 @@ public class BinaryUtils {
 
             return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr);
         }
-        else {
-            Class compType = doReadClass(in, ctx, ldr, deserialize);
 
-            int len = in.readInt();
+        Class compType = doReadClass(in, ctx, ldr, deserialize);
 
-            Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+        int len = in.readInt();
 
-            handles.setHandle(arr, hPos);
+        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
-            for (int i = 0; i < len; i++)
-                arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+        handles.setHandle(arr, hPos);
 
-            return arr;
-        }
+        for (int i = 0; i < len; i++)
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+        return arr;
     }
 
     /**

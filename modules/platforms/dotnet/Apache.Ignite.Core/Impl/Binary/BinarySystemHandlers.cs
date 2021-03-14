@@ -584,6 +584,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     var typeId = ctx.ReadInt();
                     elemType = BinaryUtils.GetArrayElementType(typeId, ctx.Marshaller);
 
+                    //if (Marshaller.ERROR.Value)
+                    //    throw new Exception(typeId + " - " + elemType + " - " + false);
+
                     return BinaryUtils.ReadTypedArray(ctx, false, elemType ?? typeof(object));
                 }
             }
