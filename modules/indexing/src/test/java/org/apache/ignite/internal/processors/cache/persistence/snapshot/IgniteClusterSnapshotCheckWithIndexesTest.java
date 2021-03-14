@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.UUID;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -37,6 +40,22 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
 
     /** @throws Exception If fails. */
     @Test
+    public void testClusterSnapshotCheckEmptyCache() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, 0, key -> new Account(key, key), indexedCcfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertTrue("Exceptions: " + b, F.isEmpty(res.exceptions()));
+        assertTrue(F.isEmpty(res.exceptions()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testClusterSnapshotCheckWithIndexes() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key), indexedCcfg);
 
@@ -47,7 +66,46 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
-        assertTrue(F.isEmpty(res.exceptions()));
+        assertTrue("Exceptions: " + b, F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testClusterSnapshotCheckWithNodeFilter() throws Exception {
+        startGridsWithoutCache(2);
+
+        // Cache creation from different nodes may leave to different results on disk.
+        IgniteCache<Integer, Account> cache1 = grid(0).createCache(txFilteredCache("cache0",
+            grid(0).localNode().id()));
+        IgniteCache<Integer, Account> cache2 = grid(1).createCache(txFilteredCache("cache1",
+            grid(1).localNode().id()));
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
+            cache1.put(i, new Account(i, i));
+            cache2.put(i, new Account(i, i));
+        }
+
+        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        IdleVerifyResultV2 res = grid(0).context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get();
+
+        StringBuilder b = new StringBuilder();
+        res.print(b::append, true);
+
+        assertTrue("Exceptions: " + b, F.isEmpty(res.exceptions()));
+        assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param filtered Node id to run cache at.
+     * @return Cache configuration.
+     */
+    private static CacheConfiguration<Integer, Account> txFilteredCache(String cacheName, UUID filtered) {
+        return txCacheConfig(new CacheConfiguration<Integer, Account>(cacheName))
+            .setCacheMode(CacheMode.REPLICATED)
+            .setNodeFilter(node -> node.id().equals(filtered))
+            .setQueryEntities(singletonList(new QueryEntity(Integer.class.getName(), Account.class.getName())));
     }
 }
