@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
-        public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh,
+        public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh, 
             out string mthdName, out object[] mthdArgs)
         {
             var reader = marsh.StartUnmarshal(stream);
