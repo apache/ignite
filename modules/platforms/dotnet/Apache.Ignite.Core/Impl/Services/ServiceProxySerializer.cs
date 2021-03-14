@@ -148,8 +148,6 @@ namespace Apache.Ignite.Core.Impl.Services
 
             object err;
 
-            Marshaller.ERROR.Value = true;
-
             var res = BinaryUtils.ReadInvocationResult(reader, out err);
 
             if (err == null)
