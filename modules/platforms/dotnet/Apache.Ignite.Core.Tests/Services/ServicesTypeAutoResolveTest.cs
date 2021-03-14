@@ -198,6 +198,17 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private static void DoTestService(IJavaService svc)
         {
+            Assert.IsNull(svc.testDepartments(null));
+
+            var deps = svc.testDepartments(new[]
+            {
+                new Department {Name = "HR"},
+                new Department {Name = "IT"}
+            }.ToList());
+
+            Assert.NotNull(deps);
+            Assert.AreEqual(1, deps.Count);
+            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
@@ -255,18 +266,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
-
-            Assert.IsNull(svc.testDepartments(null));
-
-            var deps = svc.testDepartments(new[]
-            {
-                new Department {Name = "HR"},
-                new Department {Name = "IT"}
-            }.ToList());
-
-            Assert.NotNull(deps);
-            Assert.AreEqual(1, deps.Count);
-            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
         }
 
         /// <summary>
