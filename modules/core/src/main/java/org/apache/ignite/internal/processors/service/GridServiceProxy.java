@@ -207,7 +207,6 @@ public class GridServiceProxy<T> implements Serializable {
                             false,
                             waitTimeout,
                             true).get();
-
                     }
                 }
                 catch (InvocationTargetException e) {
