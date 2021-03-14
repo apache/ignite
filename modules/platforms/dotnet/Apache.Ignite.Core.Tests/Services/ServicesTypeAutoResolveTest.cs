@@ -98,54 +98,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// Types should be resolved implicitly.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-            var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
-
-            DoTestService(new JavaServiceDynamicProxy(svc));
-        }
-
-        /// <summary>
-        /// Tests Java service invocation on local.
-        /// Types should be resolved implicitly.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceLocal()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
-        }
-
-        /// <summary>
-        /// Tests Java service invocation on remote node..
-        /// Types should be resolved implicitly.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceRemote()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
-        }
-
-        /// <summary>
         /// Tests Java service invocation.
         /// Types should be resolved implicitly.
         /// </summary>
@@ -191,6 +143,54 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 _grid1.GetServices().Cancel(platformSvcName);
             }
+        }
+
+        /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+            var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
+
+            DoTestService(new JavaServiceDynamicProxy(svc));
+        }
+
+        /// <summary>
+        /// Tests Java service invocation on local.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceLocal()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            DoTestService(svc);
+
+            _grid1.GetServices().Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation on remote node..
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceRemote()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            DoTestService(svc);
+
+            _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
