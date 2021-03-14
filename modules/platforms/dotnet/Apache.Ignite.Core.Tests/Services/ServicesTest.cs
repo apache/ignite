@@ -931,9 +931,9 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 DoTestService(svc);
 
-                DoTestBinary(svc, binSvc);
+                //DoTestBinary(svc, binSvc);
 
-                DoTestExceptions(svc, true);
+                //DoTestExceptions(svc, true);
             }
             finally
             {
@@ -961,9 +961,9 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 DoTestService(svc);
 
-                DoTestBinary(svc, binSvc);
+                //DoTestBinary(svc, binSvc);
 
-                DoTestExceptions(svc);
+                //DoTestExceptions(svc);
             }
             finally
             {
@@ -1137,8 +1137,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsInstanceOf<ThreadInterruptedException>(ex);
             Assert.AreEqual("Test", ex.Message);
 
-            // Binary object array.
-            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+            // Test standard java unchecked exception.
+            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
+            ex = ex.InnerException;
+            Assert.IsNotNull(ex);
+            Assert.IsInstanceOf<ArgumentException>(ex);
+            Assert.AreEqual("Test", ex.Message);
 
             // Test user defined exception mapping by pattern.
             ((IIgniteInternal) Grid1).PluginProcessor.RegisterExceptionMapping(

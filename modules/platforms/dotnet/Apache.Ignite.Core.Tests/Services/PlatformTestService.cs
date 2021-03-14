@@ -3,6 +3,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
@@ -13,7 +14,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// IService .Net implementation.
     /// </summary>
     public class PlatformTestService : IJavaService, IService
-    { 
+    {
         /** Injected Ignite instance. */
         [InstanceResource] private readonly IIgnite _ignite;
 
@@ -380,7 +381,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 res.Add(new ServicesTest.PlatformComputeBinarizable
                     {Field = ((ServicesTest.PlatformComputeBinarizable) x).Field + 1});
             }
- 
+
             return res;
         }
 
@@ -505,23 +506,12 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(2, deps.Count);
 
-            var iter = deps.GetEnumerator();
+            var arr = deps.OfType<Department>().ToArray();
 
-            iter.MoveNext();
+            Assert.AreEqual("HR", arr[0].Name);
+            Assert.AreEqual("IT", arr[1].Name);
 
-            Assert.AreEqual("HR", ((Department)iter.Current).Name);
-
-            iter.MoveNext();
-
-            Assert.AreEqual("IT", ((Department)iter.Current).Name);
-
-            var res = new List<Department>();
-
-            Department d = new Department {Name = "Executive"};
-
-            res.Add(d);
-
-            return res;
+            return new[] {new Department {Name = "Executive"}}.ToList();
         }
 
         /** <inheritDoc /> */

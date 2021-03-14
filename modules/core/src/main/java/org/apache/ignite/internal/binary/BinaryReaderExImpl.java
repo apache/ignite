@@ -74,6 +74,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.MAP;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR_WRAPPER;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PROXY;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
@@ -1914,6 +1915,18 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case OBJ_ARR:
                 obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+
+                break;
+
+            case OBJ_ARR_WRAPPER:
+                BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+
+                try {
+                    obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                }
+                finally {
+                    BinaryUtils.USE_ARRAY_WRAPPER.set(false);
+                }
 
                 break;
 

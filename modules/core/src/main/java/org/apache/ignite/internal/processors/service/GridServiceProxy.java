@@ -200,7 +200,7 @@ public class GridServiceProxy<T> implements Serializable {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
                         // Execute service remotely.
-                        Object res = ctx.closure().callAsyncNoFailover(
+                        return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
                             new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
@@ -208,9 +208,6 @@ public class GridServiceProxy<T> implements Serializable {
                             waitTimeout,
                             true).get();
 
-                        //TODO pass USE_ARRAY_WRAPPER!!!
-                        if (BinaryUtils.THROW_ERR.get())
-                            throw new RuntimeException(res.getClass().getName());
                     }
                 }
                 catch (InvocationTargetException e) {
@@ -466,10 +463,18 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            if (ctx.service() instanceof PlatformService && mtd == null)
-                return callPlatformService((PlatformService)ctx.service());
-            else
-                return callService(ctx.service(), mtd);
+            if (ctx.service() instanceof PlatformService)
+                BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+
+            try {
+                if (ctx.service() instanceof PlatformService && mtd == null)
+                    return callPlatformService((PlatformService)ctx.service());
+                else
+                    return callService(ctx.service(), mtd);
+            }
+            finally {
+                BinaryUtils.USE_ARRAY_WRAPPER.set(false);
+            }
         }
 
         /** */

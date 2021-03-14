@@ -93,9 +93,6 @@ public class BinaryUtils {
     /** */
     public static final ThreadLocal<Boolean> USE_ARRAY_WRAPPER = ThreadLocal.withInitial(() -> false);
 
-    /** */
-    public static final ThreadLocal<Boolean> THROW_ERR = ThreadLocal.withInitial(() -> false);
-
     /** Map from class to associated write replacer. */
     public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
 
@@ -2056,9 +2053,6 @@ public class BinaryUtils {
     public static Object doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        if (BinaryUtils.THROW_ERR.get())
-            throw new RuntimeException("doReadObjectArray - " + USE_ARRAY_WRAPPER.get());
 
         if (USE_ARRAY_WRAPPER.get()) {
             int compTypeId = in.readInt();

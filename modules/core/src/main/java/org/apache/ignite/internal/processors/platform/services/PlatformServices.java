@@ -291,8 +291,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                         args = null;
 
                     try {
-                        BinaryUtils.THROW_ERR.set(true);
-
                         Object result = svc.invoke(mthdName, srvKeepBinary, args);
 
                         PlatformUtils.writeInvocationResult(writer, result, null);
@@ -621,9 +619,9 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws NoSuchMethodException On error.
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
-            if (isPlatformService()) {
+            if (isPlatformService())
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
-            } else {
+            else {
                 assert proxy instanceof GridServiceProxy;
 
                 // Deserialize arguments for Java service when not in binary mode
