@@ -25,15 +25,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -41,8 +42,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -50,26 +52,33 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /**
  * Default snapshot manager test.
  */
 public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
+    /** The size of value array to fit 3 pages. */
+    private static final int SIZE_FOR_FIT_3_PAGES = 12008;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -388,31 +397,150 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         snpFut.get(5_000, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * @param src Source node to calculate.
-     * @param grps Groups to collect owning parts.
-     * @param rmtNodeId Remote node id.
-     * @return Map of collected parts.
-     */
-    private static Map<Integer, Set<Integer>> owningParts(IgniteEx src, Set<Integer> grps, UUID rmtNodeId) {
-        Map<Integer, Set<Integer>> result = new HashMap<>();
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotIteratorRandomizedLoader() throws Exception {
+        Random rnd = new Random();
+        int maxKey = 15_000;
+        int maxValSize = 32_768;
+        int loadingTimeMs = 30_000;
 
-        for (Integer grpId : grps) {
-            Set<Integer> parts = src.context()
-                .cache()
-                .cacheGroup(grpId)
-                .topology()
-                .partitions(rmtNodeId)
-                .entrySet()
-                .stream()
-                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>("tx1"))
+            .setAffinity(new RendezvousAffinityFunction(false, 1));
 
-            result.put(grpId, parts);
+        IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, k -> new Value(new byte[1024]), ccfg);
+
+        IgniteCache<Integer, Value> cache = ignite.cache(ccfg.getName());
+
+        long startTime = U.currentTimeMillis();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!Thread.currentThread().isInterrupted() && startTime + loadingTimeMs > U.currentTimeMillis()) {
+                if (rnd.nextBoolean())
+                    cache.put(rnd.nextInt(maxKey), new Value(new byte[rnd.nextInt(maxValSize)]));
+                else
+                    cache.remove(rnd.nextInt(maxKey));
+            }
+
+        }, 10, "change-loader-");
+
+        fut.get();
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        Map<Integer, Value> iterated = new HashMap<>();
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            ccfg.getName(),
+            0)
+        ) {
+            CacheObjectContext coctx = ignite.cachex(ccfg.getName()).context().cacheObjectContext();
+
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                iterated.put(row.key().value(coctx, true), row.value().value(coctx, true));
+            }
         }
 
-        return result;
+        stopAllGrids();
+
+        IgniteEx snpIgnite = startGridsFromSnapshot(1, SNAPSHOT_NAME);
+
+        IgniteCache<Integer, Value> snpCache = snpIgnite.cache(ccfg.getName());
+
+        assertEquals(snpCache.size(CachePeekMode.PRIMARY), iterated.size());
+        snpCache.forEach(e -> {
+            Value val = iterated.remove(e.getKey());
+
+            assertNotNull(val);
+            assertEquals(val.arr().length, e.getValue().arr().length);
+        });
+
+        assertTrue(iterated.isEmpty());
+    }
+
+    /** @throws Exception If fails */
+    @Test
+    public void testSnapshotIterator() throws Exception {
+        int keys = 127;
+
+        IgniteEx ignite = startGridsWithCache(2,
+            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)), keys);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int rows = 0;
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            dfltCacheCfg.getName(),
+            0)
+        ) {
+            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                // Invariant for cache: cache key always equals to cache value.
+                assertEquals("Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']',
+                    row.key().value(coctx, false, U.resolveClassLoader(ignite.configuration())),
+                    (Integer)row.value().value(coctx, false));
+
+                rows++;
+            }
+        }
+
+        assertEquals("Invalid number of rows: " + rows, keys, rows);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotIteratorLargeRows() throws Exception {
+        int keys = 2;
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
+            .setAffinity(new RendezvousAffinityFunction(false, 1));
+
+        IgniteEx ignite = startGridsWithoutCache(2);
+
+        assertEquals(DFLT_PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
+
+        for (int i = 0; i < keys; i++)
+            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
+
+        forceCheckpoint();
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int rows = 0;
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
+            dfltCacheCfg.getName(),
+            0)
+        ) {
+            CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
+
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                assertEquals(SIZE_FOR_FIT_3_PAGES, ((Value)row.value().value(coctx, false)).arr().length);
+                assertTrue((Integer)row.key().value(coctx, false, null) < 2);
+
+                rows++;
+            }
+        }
+
+        assertEquals("Invalid number of rows: " + rows, keys, rows);
+    }
+
+    /**
+     * @param ignite Ignite instance to set factory.
+     * @param factory New factory to use.
+     */
+    private static void snapshotStoreFactory(IgniteEx ignite, BiFunction<Integer, Boolean, FileVersionCheckingFactory> factory) {
+        setFieldValue(snp(ignite), "storeFactory", factory);
     }
 
     /**
