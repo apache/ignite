@@ -2006,7 +2006,13 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
+                if (USE_ARRAY_WRAPPER.get())
+                    return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, deserialize);
+                else
+                    return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
+
+            case GridBinaryMarshaller.OBJ_ARR_WRAPPER:
+                return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2050,29 +2056,9 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Object doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        if (USE_ARRAY_WRAPPER.get()) {
-            int compTypeId = in.readInt();
-
-            String compClsName = null;
-
-            if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                compClsName = doReadClassName(in);
-
-            int len = in.readInt();
-
-            Object[] arr = new Object[len];
-
-            handles.setHandle(arr, hPos);
-
-            for (int i = 0; i < len; i++)
-                arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
-
-            return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr);
-        }
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
@@ -2086,6 +2072,39 @@ public class BinaryUtils {
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
         return arr;
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
+     * @param deserialize Deep flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static BinaryArrayWrapper doReadObjectArrayWrapper(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
+        int hPos = positionForHandle(in);
+
+        int compTypeId = in.readInt();
+
+        String compClsName = null;
+
+        if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            compClsName = doReadClassName(in);
+
+        int len = in.readInt();
+
+        Object[] arr = new Object[len];
+
+        handles.setHandle(arr, hPos);
+
+        for (int i = 0; i < len; i++)
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr);
     }
 
     /**

@@ -787,7 +787,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 return;
 
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(BinaryUtils.USE_ARRAY_WRAPPER.get() ? GridBinaryMarshaller.OBJ_ARR : GridBinaryMarshaller.OBJ_ARR_WRAPPER);
+            out.unsafeWriteByte(BinaryUtils.USE_ARRAY_WRAPPER.get()
+                ? GridBinaryMarshaller.OBJ_ARR
+                : GridBinaryMarshaller.OBJ_ARR_WRAPPER);
             out.unsafeWriteInt(val.componentTypeId());
 
             if (val.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)

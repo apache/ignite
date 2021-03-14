@@ -1365,7 +1365,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return (Object[])BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
             case HANDLE:
                 return readHandleField();
@@ -1914,19 +1914,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                if (BinaryUtils.USE_ARRAY_WRAPPER.get())
+                    obj = BinaryUtils.doReadObjectArrayWrapper(in, ctx, ldr, this, false, true);
+                else
+                    obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
                 break;
 
             case OBJ_ARR_WRAPPER:
-                BinaryUtils.USE_ARRAY_WRAPPER.set(true);
-
-                try {
-                    obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
-                }
-                finally {
-                    BinaryUtils.USE_ARRAY_WRAPPER.set(false);
-                }
+                obj = BinaryUtils.doReadObjectArrayWrapper(in, ctx, ldr, this, false, true);
 
                 break;
 

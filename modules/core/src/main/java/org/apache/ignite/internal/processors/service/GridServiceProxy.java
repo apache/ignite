@@ -463,8 +463,13 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            if (ctx.service() instanceof PlatformService)
+            boolean useArrWrapper = false;
+
+            if (ctx.service() instanceof PlatformService) {
+                useArrWrapper = BinaryUtils.USE_ARRAY_WRAPPER.get();
+
                 BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+            }
 
             try {
                 if (ctx.service() instanceof PlatformService && mtd == null)
@@ -473,7 +478,8 @@ public class GridServiceProxy<T> implements Serializable {
                     return callService(ctx.service(), mtd);
             }
             finally {
-                BinaryUtils.USE_ARRAY_WRAPPER.set(false);
+                if (ctx.service() instanceof PlatformService)
+                    BinaryUtils.USE_ARRAY_WRAPPER.set(useArrWrapper);
             }
         }
 

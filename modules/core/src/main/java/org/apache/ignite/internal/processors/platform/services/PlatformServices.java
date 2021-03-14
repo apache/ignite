@@ -277,8 +277,13 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Object[] args;
 
-                if (svc.isPlatformService())
+                boolean useArrWrapper = false;
+
+                if (svc.isPlatformService()) {
+                    useArrWrapper = BinaryUtils.USE_ARRAY_WRAPPER.get();
+
                     BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+                }
 
                 try {
                     if (reader.readBoolean()) {
@@ -300,7 +305,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                     }
                 }
                 finally {
-                    BinaryUtils.USE_ARRAY_WRAPPER.set(false);
+                    if (svc.isPlatformService())
+                        BinaryUtils.USE_ARRAY_WRAPPER.set(useArrWrapper);
                 }
 
                 return null;
