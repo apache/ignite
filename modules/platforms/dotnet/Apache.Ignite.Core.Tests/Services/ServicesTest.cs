@@ -1202,11 +1202,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testBinarizableArray(null));
 
             // Binary object array.
-            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+            var binArr = new[] {10, 11, 12}.Select(x =>
+                Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = x})).ToArray();
 
             var binObjs = binSvc.testBinaryObjectArray(binArr).Select(x => x.GetField<int>("Field")).ToArray();
-
-            Array.Sort(binObjs);
 
             Assert.AreEqual(new[] {11, 12, 13}, binObjs);
 
