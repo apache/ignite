@@ -241,10 +241,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(users);
             Assert.AreEqual(2, users.Length);
             Assert.AreEqual(1, users[0].Id);
-            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
+            Assert.AreEqual(ACL.Allow, users[0].Acl);
             Assert.AreEqual("admin", users[0].Role.Name);
             Assert.AreEqual(2, users[1].Id);
-            Assert.AreEqual(ACL.DENY, users[1].Acl);
+            Assert.AreEqual(ACL.Deny, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
         }
 

@@ -912,6 +912,22 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+
+            DoTestService(svc);
+
+            DoTestJavaExceptions(svc);
+        }
+
+        /// <summary>
         /// Tests .Net service invocation.
         /// </summary>
         [Test]
@@ -1114,22 +1130,6 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(9, now);
             Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
 #endif
-        }
-
-        /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
-
-            DoTestService(svc);
-
-            DoTestJavaExceptions(svc);
         }
 
         /// <summary>
