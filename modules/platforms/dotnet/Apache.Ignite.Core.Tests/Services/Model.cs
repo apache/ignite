@@ -123,7 +123,7 @@ namespace Apache.Ignite.Platform.Model
     // ReSharper disable once InconsistentNaming
     public enum ACL
     {
-        ALLOW, DENY
+        Allow, Deny
     }
 
     /// <summary>
