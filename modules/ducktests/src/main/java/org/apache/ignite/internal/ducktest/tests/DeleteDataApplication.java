@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
@@ -40,7 +41,9 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         int size = jNode.get("size").asInt();
 
-        int batchSize = jNode.get("batchSize").asInt();
+        int batchSize = Optional.ofNullable(jNode.get("batchSize"))
+            .map(JsonNode::asInt)
+            .orElse(1000);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
@@ -54,13 +57,8 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         ArrayList<Object> keys = new ArrayList<>(size);
 
-        int cnt = 0;
-
-        while (iter.hasNext() && cnt < size) {
+        for (int cnt = 0; iter.hasNext() && cnt < size; cnt++)
             keys.add(iter.next().getKey());
-
-            cnt++;
-        }
 
         log.info("Start removing: " + keys.size());
 
@@ -68,18 +66,13 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         List<IgniteFuture<Void>> futures = new LinkedList<>();
 
-        int fromIdx = 0;
-        int toIdx = 0;
+        for (int from = 0; from < listSize; from += batchSize) {
+            int to = Math.min(from + batchSize, listSize);
 
-        while (fromIdx < listSize) {
-            toIdx = Math.min(fromIdx + batchSize, listSize);
-
-            futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
-
-            fromIdx = toIdx;
+            futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(from, to))));
         }
 
-        futures.forEach(IgniteFuture::get);
+        futures.forEach(f -> f.get(TimeUnit.MINUTES.toMillis(5)));
 
         log.info("Cache size after: " + cache.size());
 

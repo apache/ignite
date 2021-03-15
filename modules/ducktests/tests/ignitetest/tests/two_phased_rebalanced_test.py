@@ -20,7 +20,6 @@ import math
 from typing import List
 from ducktape import errors
 from ducktape.cluster.cluster import ClusterNode
-from ducktape.mark.resource import cluster
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration, Affinity
@@ -32,7 +31,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.util import copy_file_to_dest
-from ignitetest.utils import ignite_versions
+from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATEST_2_8
 
@@ -112,8 +111,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.DeleteDataApplication",
             shutdown_timeout_sec=5 * 60,
             params={"cacheName": "test-cache",
-                    "size": 400 * 1024,
-                    "batchSize": 1000}
+                    "size": 400 * 1024}
         )
         app.start(clean=False)
         app.stop()
