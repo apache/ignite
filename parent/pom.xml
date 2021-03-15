@@ -84,6 +84,7 @@
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
         <maven.failsafe.plugin.version>3.0.0-M5</maven.failsafe.plugin.version>
+        <maven.flatten.plugin.version>1.2.2</maven.flatten.plugin.version>
         <maven.pmd.plugin.version>3.14.0</maven.pmd.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
@@ -357,23 +358,18 @@
                     <artifactId>maven-pmd-plugin</artifactId>
                     <version>${maven.pmd.plugin.version}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>${maven.flatten.plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
-             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-pmd-plugin</artifactId>
-                <configuration>
-                    <aggregate>true</aggregate>
-                    <rulesets>
-                        <ruleset>${project.basedir}/check-rules/pmd-rules.xml</ruleset>
-                    </rulesets>
-                </configuration>
-            </plugin>
-
             <!--
-              Plugin that adds integration test sources and resources from integrationTest directory.
+                Plugin that adds integration test sources and resources from integrationTest directory.
             -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -409,7 +405,7 @@
             </plugin>
 
             <!--
-              Plugin for unit testing.
+                Plugin for unit testing.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -422,7 +418,7 @@
             </plugin>
 
             <!--
-              Plugin for integration testing.
+                Plugin for integration testing.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -436,6 +432,128 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!--
+                Plugin for flattening installed pom
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+
+                <executions>
+                    <!-- enable flattening -->
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- ensure proper cleanup before start -->
+                    <execution>
+                        <id>flatten.clean.before</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                This plugin is used to check the code for coding guidelines
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <sourceDirectories>
+                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                        <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+                    </sourceDirectories>
+                    <consoleOutput>true</consoleOutput>
+                    <logViolationsToConsole>true</logViolationsToConsole>
+                    <failsOnError>true</failsOnError>
+                    <failOnViolation>true</failOnViolation>
+                    <outputFile>${project.build.directory}/checkstyle.xml</outputFile>
+                    <configLocation>${project.basedir}/check-rules/checkstyle-rules.xml</configLocation>
+                    <suppressionsLocation>${project.basedir}/check-rules/checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <excludes>**/generated/**/*</excludes>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.puppycrawl.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!--
+                This plugin is used for checking that all files in project are compliant with target licenses headers.
+                Exclusions are possible, but every exclusion should have it's own motivated comment and/or issue key.
+            -->
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <configuration>
+                    <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
+                    <licenses>
+                        <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
+                            <licenseFamilyCategory>IAL20</licenseFamilyCategory>
+                            <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
+                            <fullText>
+                                Licensed to the Apache Software Foundation (ASF) under one or more
+                                contributor license agreements.  See the NOTICE file distributed with
+                                this work for additional information regarding copyright ownership.
+                                The ASF licenses this file to You under the Apache License, Version 2.0
+                                (the "License"); you may not use this file except in compliance with
+                                the License.  You may obtain a copy of the License at
+
+                                http://www.apache.org/licenses/LICENSE-2.0
+
+                                Unless required by applicable law or agreed to in writing, software
+                                distributed under the License is distributed on an "AS IS" BASIS,
+                                WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                                See the License for the specific language governing permissions and
+                                limitations under the License.
+                            </fullText>
+                        </license>
+                    </licenses>
+                    <licenseFamilies>
+                        <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                            <familyName>Ignite Apache License 2.0</familyName>
+                        </licenseFamily>
+                    </licenseFamilies>
+                    <excludeSubProjects>false</excludeSubProjects>
+                    <excludes>
+                        <exclude>**/target/**</exclude> <!-- All generated files -->
+                        <exclude>**/*.md</exclude> <!-- Markdown files -->
+                        <exclude>docs/assets/images/**</exclude> <!-- SVG images are XML files, but they cannot have license header -->
+                        <exclude>docs/assets/js/anchor.min.js</exclude> <!-- Distributed under the MIT license. The original license header is badly formatted -->
+                        <exclude>**/*.json</exclude> <!-- Files in JSON format -->
+                        <exclude>modules/cli/src/**/resources//builtin_modules.conf</exclude> <!-- CLI configuration files -->
+                        <exclude>modules/configuration-annotation-processor/src/main/resources/META-INF/services/javax.annotation.processing.Processor</exclude> <!-- ? -->
+                        <exclude>**/*.iml</exclude> <!-- IntelliJ IDEA project files -->
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!--
+                Plugin for static code analysis
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <aggregate>true</aggregate>
+                    <rulesets>
+                        <ruleset>${project.basedir}/check-rules/pmd-rules.xml</ruleset>
+                    </rulesets>
+                </configuration>
             </plugin>
         </plugins>
     </build>

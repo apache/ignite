@@ -2,3 +2,4 @@
 *.iml
 target
 .DS_Store
+.flattened-pom.xml
