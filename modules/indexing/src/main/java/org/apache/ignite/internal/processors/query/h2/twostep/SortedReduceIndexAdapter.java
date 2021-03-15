@@ -22,10 +22,13 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
+import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.h2.value.Value;
+import org.h2.value.ValueNull;
 
 /**
  * H2 {@link Index} adapter for {@link SortedReducer}.
@@ -63,5 +66,38 @@ public final class SortedReduceIndexAdapter extends AbstractReduceIndexAdapter {
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColumnsSet) {
         return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false, allColumnsSet);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareRows(SearchRow rowData, SearchRow compare) {
+        if (rowData == compare)
+            return 0;
+
+        for (int i = 0, len = indexColumns.length; i < len; i++) {
+            int index = columnIds[i];
+            int sortType = indexColumns[i].sortType;
+            Value v1 = rowData.getValue(index);
+            Value v2 = compare.getValue(index);
+
+            if (v1 == null || v2 == null)
+                return 0;
+
+            else if (v1 == v2) continue;
+
+            else if (v1 == ValueNull.INSTANCE || v2 == ValueNull.INSTANCE) {
+                if ((sortType & SortOrder.NULLS_FIRST) != 0)
+                    return v1 == ValueNull.INSTANCE ? -1 : 1;
+                else if ((sortType & SortOrder.NULLS_LAST) != 0)
+                    return v1 == ValueNull.INSTANCE ? 1 : -1;
+            }
+
+            int comp = table.compareTypeSafe(v1, v2);
+            if ((sortType & SortOrder.DESCENDING) != 0)
+                comp = -comp;
+
+            if (comp != 0)
+                return comp;
+        }
+        return 0;
     }
 }
