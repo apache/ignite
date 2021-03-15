@@ -928,53 +928,35 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests .Net service invocation.
+        /// Test remote .Net service invocation.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
+            DoTestPlatformService(_client.GetServices());
+        }
 
-            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
-            var binSvc = _client.GetServices().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(platformSvcName, false);
-
-            try
-            {
-                DoTestService(svc);
-            }
-            finally
-            {
-                Services.Cancel(platformSvcName);
-            }
+        /// <summary>
+        /// Test local .Net service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            DoTestPlatformService(Services);
         }
 
         /// <summary>
         /// Tests .Net service invocation.
         /// </summary>
-        [Test]
-        public void TestCallPlatformServiceLocal()
+        public void DoTestPlatformService(IServices svcsForProxy)
         {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
+            Services.DeployClusterSingleton(nameof(PlatformTestService), new PlatformTestService());
 
-            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(nameof(PlatformTestService));
 
-            var svc = Services.GetServiceProxy<IJavaService>(platformSvcName);
-            var binSvc = Services.WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(platformSvcName, false);
+            DoTestService(svc);
 
-            try
-            {
-                DoTestService(svc);
-            }
-            finally
-            {
-                Services.Cancel(platformSvcName);
-            }
+            Services.Cancel(nameof(PlatformTestService));
         }
 
         /// <summary>

@@ -102,21 +102,13 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
+            _grid1.GetServices().DeployClusterSingleton(nameof(PlatformTestService), new PlatformTestService());
 
-            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(nameof(PlatformTestService));
 
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+            DoTestService(svc);
 
-            try
-            {
-                DoTestService(svc);
-            }
-            finally
-            {
-                _grid1.GetServices().Cancel(platformSvcName);
-            }
+            _grid1.GetServices().Cancel(nameof(PlatformTestService));
         }
 
         /// <summary>
