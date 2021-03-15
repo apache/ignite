@@ -284,7 +284,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Throwable err0 = err;
 
         if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
-                (err0 == null || tx.needCheckBackup()))
+            (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {
@@ -405,10 +405,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         // Assign keys to primary nodes.
         GridDistributedTxMapping cur = null;
 
-        boolean reInit = !topLocked && cctx.kernalContext().clientNode();
-
-        Map<Object, GridDistributedTxMapping> map = new HashMap<>();
-
         Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>();
 
         boolean hasNearCache = false;
@@ -419,15 +415,15 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (write.context().isNear())
                 hasNearCache = true;
 
-            GridDistributedTxMapping updated = map0(write, topVer, cur, topLocked, remap, perNodesMapping, hasNearCache);
+            GridDistributedTxMapping updated = map0(write, topVer, cur, topLocked, remap, perNodesMapping, hasNearCache, mappings);
 
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
                 break;
 
             if (cur != updated) {
-                if (!perNodesMapping.values().contains(updated)) // todo !!!
-                    mappings.offer(updated);
+                if (cur == null && !topLocked && cctx.kernalContext().clientNode())
+                    updated.clientFirst(true);
 
                 if (updated.primary().isLocal()) {
                     if (write.context().isNear())
@@ -440,29 +436,33 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             }
         }
 
-        //Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>(perPriNodesMapping.size());
+        if (perNodesMapping.size() > 1) {
+            Map<UUID, GridDistributedTxMapping> preNodeMappingTree = new TreeMap<>(perNodesMapping);
 
-        Map<UUID, GridDistributedTxMapping> preNodeMappingTree = new TreeMap<>();
+            mappings.addAll(preNodeMappingTree.values());
+        }
+        else
+            mappings.addAll(perNodesMapping.values());
 
-        preNodeMappingTree.putAll(perNodesMapping);
+        if (hasNearCache) {
+            Map<Object, GridDistributedTxMapping> map = new HashMap<>();
 
-        mappings.addAll(preNodeMappingTree.values());
+            for (GridDistributedTxMapping ent : mappings) {
+                ent.last(true);
 
-        if (reInit && !mappings.isEmpty())
-            mappings.peek().clientFirst(true);
+                if (hasNearCache) {
+                    ClusterNode primary = ent.primary();
 
-        for (GridDistributedTxMapping ent : mappings) {
-            ent.last(true);
-            ClusterNode primary = ent.primary();
+                    // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
+                    Object key = cctx.kernalContext().clientNode() ? primary.id() :
+                        new MappingKey(primary.id(), primary.isLocal() && ent.hasNearCacheEntries());
 
-            // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
-            Object key = cctx.kernalContext().clientNode() ? primary.id() :
-                new MappingKey(primary.id(), primary.isLocal() && ent.hasNearCacheEntries());
+                    GridDistributedTxMapping prev = map.put(key, ent);
 
-            GridDistributedTxMapping prev = map.put(key, ent);
-
-            if (prev != null)
-                prev.last(false);
+                    if (prev != null)
+                        prev.last(false);
+                }
+            }
         }
 
         if (isDone()) {
@@ -570,7 +570,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                     IgniteInternalFuture<GridNearTxPrepareResponse> prepFut =
                         m.hasNearCacheEntries() ? cctx.tm().txHandler().prepareNearTxLocal(tx, req)
-                        : cctx.tm().txHandler().prepareColocatedTx(tx, req);
+                            : cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
                     prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
                         @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
@@ -731,7 +731,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         boolean topLocked,
         boolean remap,
         Map<UUID, GridDistributedTxMapping> mOut,
-        boolean hasNearCache
+        boolean hasNearCache,
+        Queue<GridDistributedTxMapping> mappings
     ) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -791,8 +792,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (cur == null || !cur.primary().id().equals(primary.id()) || cacheCtx.isNear() ||
             (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
 
-            if (hasNearCache)
+            if (hasNearCache) {
                 cur = new GridDistributedTxMapping(primary);
+
+                mappings.offer(cur);
+            }
             else {
                 cur = mOut.computeIfAbsent(primary.id(), k -> new GridDistributedTxMapping(primary));
 
@@ -1002,7 +1006,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         MiniFuture(GridNearOptimisticTxPrepareFuture parent,
             GridDistributedTxMapping m,
             int futId,
-            Queue<GridDistributedTxMapping> mappings) {
+            Queue<GridDistributedTxMapping> mappings
+        ) {
             this.parent = parent;
             this.m = m;
             this.futId = futId;
