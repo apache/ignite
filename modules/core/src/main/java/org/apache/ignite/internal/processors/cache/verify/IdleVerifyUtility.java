@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.verify;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -35,8 +38,10 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -45,6 +50,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 
 /**
  * Utility class for idle verify command.
@@ -55,52 +61,42 @@ public class IdleVerifyUtility {
         "Cluster not idle. Modifications found in caches or groups: ";
 
     /**
-     * See {@link IdleVerifyUtility#checkPartitionsPageCrcSum(FilePageStore, CacheGroupContext, int, byte)}.
-     */
-    public static void checkPartitionsPageCrcSum(
-        @Nullable FilePageStoreManager pageStoreMgr,
-        CacheGroupContext grpCtx,
-        int partId,
-        byte pageType
-    ) throws IgniteCheckedException, GridNotIdleException {
-        if (!grpCtx.persistenceEnabled() || pageStoreMgr == null)
-            return;
-
-        FilePageStore pageStore = (FilePageStore)pageStoreMgr.getStore(grpCtx.groupId(), partId);
-
-        checkPartitionsPageCrcSum(pageStore, grpCtx, partId, pageType);
-    }
-
-    /**
-     * Checks CRC sum of pages with {@code pageType} page type stored in partiion with {@code partId} id and assosiated
-     * with cache group. <br/> Method could be invoked only on idle cluster!
+     * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
+     * and associated with cache group.
      *
-     * @param pageStore Page store.
-     * @param grpCtx Passed cache group context.
+     * @param pageStoreSup Page store supplier.
      * @param partId Partition id.
      * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
      *      and {@link PageIdAllocator#FLAG_AUX}.
-     * @throws IgniteCheckedException If reading page failed.
-     * @throws GridNotIdleException If cluster not idle.
      */
     public static void checkPartitionsPageCrcSum(
-        FilePageStore pageStore,
-        CacheGroupContext grpCtx,
+        IgniteThrowableSupplier<FilePageStore> pageStoreSup,
         int partId,
-        @Deprecated byte pageType
-    ) throws IgniteCheckedException, GridNotIdleException {
+        byte pageType
+    ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
-        long pageId = PageIdUtils.pageId(partId, (byte)0, 0);
+        FilePageStore pageStore = null;
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(grpCtx.dataRegion().pageMemory().pageSize());
+        try {
+            pageStore = pageStoreSup.get();
 
-        buf.order(ByteOrder.nativeOrder());
+            long pageId = PageIdUtils.pageId(partId, (byte)0, 0);
 
-        for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
-            buf.clear();
+            ByteBuffer buf = ByteBuffer.allocateDirect(pageStore.getPageSize()).order(ByteOrder.nativeOrder());
 
-            pageStore.read(pageId, buf, true);
+            for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
+                buf.clear();
+
+                pageStore.read(pageId, buf, true,true);
+            }
+        }
+        catch (Throwable e) {
+            String msg0 = "CRC check of partition failed [partId=" + partId +
+                ", grpName=" + (pageStore == null ? "" : cacheGroupName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
+                ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
+
+            throw new IgniteException(msg0, e);
         }
     }
 
@@ -229,6 +225,56 @@ public class IdleVerifyUtility {
         }
 
         return diff;
+    }
+
+    /**
+     * @param partKey Partition key.
+     * @param updCntr Partition update counter prior check.
+     * @param consId Local node consistent id.
+     * @param state Partition state to check.
+     * @param isPrimary {@code true} if partition is primary.
+     * @param partSize Partition size on disk.
+     * @param it Iterator though partition data rows.
+     * @throws IgniteCheckedException If fails.
+     * @return Map of calculated partition.
+     */
+    public static @Nullable PartitionHashRecordV2 calculatePartitionHash(
+        PartitionKeyV2 partKey,
+        long updCntr,
+        Object consId,
+        GridDhtPartitionState state,
+        boolean isPrimary,
+        long partSize,
+        GridIterator<CacheDataRow> it
+    ) throws IgniteCheckedException {
+        if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
+            return new PartitionHashRecordV2(partKey,
+                isPrimary,
+                consId,
+                0,
+                updCntr,
+                state == GridDhtPartitionState.MOVING ?
+                    PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                state == GridDhtPartitionState.MOVING ?
+                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST);
+        }
+
+        if (state != GridDhtPartitionState.OWNING)
+            return null;
+
+        int partHash = 0;
+
+        while (it.hasNextX()) {
+            CacheDataRow row = it.nextX();
+
+            partHash += row.key().hashCode();
+
+            // Object context is not required since the valueBytes have been read directly from page.
+            partHash += Arrays.hashCode(row.value().valueBytes(null));
+        }
+
+        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, updCntr,
+            partSize, PartitionHashRecordV2.PartitionState.OWNING);
     }
 
     /**

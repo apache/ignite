@@ -100,4 +100,8 @@ CP="${IGNITE_LIBS}"
 
 CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 
-"$JAVA" ${JVM_OPTS} -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver $@
+# Between version 2 and 3, jline changed the format of its history file. After this change,
+# the Ignite provides --historyfile argument to SQLLine usage
+SQLLINE_HISTORY="~/.sqlline/ignite_history"
+
+"$JAVA" ${JVM_OPTS} -cp ${CP} sqlline.SqlLine --historyFile=${SQLLINE_HISTORY} $@

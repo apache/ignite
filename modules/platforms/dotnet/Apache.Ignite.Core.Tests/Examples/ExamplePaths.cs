@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System.IO;
+    using System.Reflection;
     using System.Text.RegularExpressions;
 
     /// <summary>
@@ -27,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     {
         /** */
         public const string SharedProjFileName = "Shared.csproj";
-        
+
         /** */
         public static readonly string SourcesPath =
             Path.Combine(Impl.Common.IgniteHome.Resolve(), "modules", "platforms", "dotnet", "examples");
@@ -44,6 +45,12 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         public static readonly string TasksJsonFile = Path.Combine(SourcesPath, ".vscode", "tasks.json");
 
+        /** */
+        public static readonly string ExpectedOutputDir = Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+            "Examples",
+            "ExpectedOutput");
+
         /// <summary>
         /// Gets the assembly file path.
         /// </summary>
@@ -52,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             var targetFw = GetTargetFramework(projFile);
             var name = Path.GetFileNameWithoutExtension(projFile);
             var path = Path.GetDirectoryName(projFile);
-            
+
             return Path.Combine(path, "bin", "Debug", targetFw, $"{name}.dll");
         }
 
