@@ -168,8 +168,7 @@ public class CacheEventsInsideTransactionTest extends AbstractCacheEventsTest {
             new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
 
-            //todo не работает для оптимистик транзакций, нужно сделать репродюсер и создать задачу с ошибкой.
-            //https://github.com/apache/ignite/pull/8841 репродюссер
+            //todo uncomment after IGNITE-14317 IgniteCache.removeAsync(key,val) fails inside an optimistic transaction
             //new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, CacheEventsTest.TestOperation.REMOVE_VAL_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL_ASYNC},
 
