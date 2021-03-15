@@ -400,7 +400,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        Map<UUID, GridDistributedTxMapping> perNodesMapping = new LinkedHashMap<>();
+        Map<UUID, GridDistributedTxMapping> perNodesMapping = new TreeMap<>();
 
         // Assign keys to primary nodes.
         GridDistributedTxMapping cur = null;
@@ -437,9 +437,10 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         if (perNodesMapping.size() > 1) {
-            Map<UUID, GridDistributedTxMapping> preNodeMappingTree = new TreeMap<>(perNodesMapping);
+/*            Map<UUID, GridDistributedTxMapping> preNodeMappingTree = new TreeMap<>(perNodesMapping);
 
-            mappings.addAll(preNodeMappingTree.values());
+            mappings.addAll(preNodeMappingTree.values());*/
+            mappings.addAll(perNodesMapping.values());
         }
         else
             mappings.addAll(perNodesMapping.values());
