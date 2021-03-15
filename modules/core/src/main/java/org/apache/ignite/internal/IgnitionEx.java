@@ -1122,11 +1122,23 @@ public class IgnitionEx {
 
         if (old != null)
             if (old.grid() == null) { // Stopped but not removed from map yet.
-                boolean replaced = grids.replace(name, old, grid);
+                boolean replaced;
 
-                if (!replaced)
+                if (name != null)
+                    replaced = grids.replace(name, old, grid);
+                else {
+                    synchronized (dfltGridMux) {
+                        replaced = old == dfltGrid;
+
+                        if (replaced)
+                            dfltGrid = grid;
+                    }
+                }
+
+                if (!replaced) {
                     throw new IgniteCheckedException("Ignite instance with this name has been concurrently started: " +
                         name);
+                }
                 else
                     notifyStateChange(old.getName(), old.state());
             }
