@@ -15,11 +15,11 @@
  limitations under the License.
 #}
 
-{% macro ssl_factory(factory) %}
+{% macro ssl_params(ctx) %}
 <bean class="org.apache.ignite.ssl.SslContextFactory">
-    <property name="keyStoreFilePath" value="{{ factory.key_store_path }}"/>
-    <property name="keyStorePassword" value="{{ factory.key_store_password }}"/>
-    <property name="trustStoreFilePath" value="{{ factory.trust_store_path }}"/>
-    <property name="trustStorePassword" value="{{ factory.trust_store_password }}"/>
+    <property name="keyStoreFilePath" value="{{ ctx.key_store_path }}"/>
+    <property name="keyStorePassword" value="{{ ctx.key_store_password }}"/>
+    <property name="trustStoreFilePath" value="{{ ctx.trust_store_path }}"/>
+    <property name="trustStorePassword" value="{{ ctx.trust_store_password }}"/>
 </bean>
 {% endmacro %}
