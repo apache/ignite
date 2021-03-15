@@ -96,6 +96,30 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            // Deploy .Net service.
+            var platformSvcName = nameof(PlatformTestService);
+
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+
+            try
+            {
+                DoTestService(svc);
+            }
+            finally
+            {
+                _grid1.GetServices().Cancel(platformSvcName);
+            }
+        }
+
+        /// <summary>
         /// Tests Java service invocation with dynamic proxy.
         /// Types should be resolved implicitly.
         /// </summary>
@@ -217,10 +241,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(users);
             Assert.AreEqual(2, users.Length);
             Assert.AreEqual(1, users[0].Id);
-            Assert.AreEqual(ACL.Allow, users[0].Acl);
+            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
             Assert.AreEqual("admin", users[0].Role.Name);
             Assert.AreEqual(2, users[1].Id);
-            Assert.AreEqual(ACL.Deny, users[1].Acl);
+            Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
         }
 
