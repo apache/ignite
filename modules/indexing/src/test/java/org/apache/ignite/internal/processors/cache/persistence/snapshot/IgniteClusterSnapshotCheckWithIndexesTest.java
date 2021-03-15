@@ -98,6 +98,9 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
 
     /** Node filter to run cache on single node. */
     private static class SelfNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Node id to run cache at. */
         private final UUID nodeId;
 
