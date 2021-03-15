@@ -66,6 +66,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -90,7 +92,10 @@ public class BinaryUtils {
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
-    /** */
+    /**
+     * This flag turns on usage of {@link BinaryArrayWrapper}.
+     * @see PlatformServices#processInObjectStreamOutObjectStream(int, PlatformTarget, BinaryRawReaderEx, BinaryRawWriterEx)
+     */
     public static final ThreadLocal<Boolean> USE_ARRAY_WRAPPER = ThreadLocal.withInitial(() -> false);
 
     /** Map from class to associated write replacer. */
