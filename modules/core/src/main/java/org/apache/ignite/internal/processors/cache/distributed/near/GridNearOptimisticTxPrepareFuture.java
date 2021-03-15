@@ -349,7 +349,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap, new HashMap<>());
+        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -400,12 +400,10 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        Map<UUID, GridDistributedTxMapping> perPriNodesMapping = new LinkedHashMap<>();
+        Map<UUID, GridDistributedTxMapping> perNodesMapping = new LinkedHashMap<>();
 
         // Assign keys to primary nodes.
         GridDistributedTxMapping cur = null;
-
-        boolean hasNearCache = false;
 
         boolean reInit = !topLocked && cctx.kernalContext().clientNode();
 
@@ -413,20 +411,22 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>();
 
+        boolean hasNearCache = false;
+
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
             if (write.context().isNear())
                 hasNearCache = true;
 
-            GridDistributedTxMapping updated = map0(write, topVer, cur, topLocked, remap, perPriNodesMapping, hasNearCache);
+            GridDistributedTxMapping updated = map0(write, topVer, cur, topLocked, remap, perNodesMapping, hasNearCache);
 
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
                 break;
 
             if (cur != updated) {
-                if (!perPriNodesMapping.values().contains(updated)) // todo !!!
+                if (!perNodesMapping.values().contains(updated)) // todo !!!
                     mappings.offer(updated);
 
                 if (updated.primary().isLocal()) {
@@ -444,7 +444,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         Map<UUID, GridDistributedTxMapping> preNodeMappingTree = new TreeMap<>();
 
-        preNodeMappingTree.putAll(perPriNodesMapping);
+        preNodeMappingTree.putAll(perNodesMapping);
 
         mappings.addAll(preNodeMappingTree.values());
 
@@ -630,8 +630,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         AffinityTopologyVersion topVer,
         @Nullable GridDistributedTxMapping cur,
         boolean topLocked,
-        boolean remap,
-        Map<UUID, GridDistributedTxMapping> mOut
+        boolean remap
     ) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -692,12 +691,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
             boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
 
-            cur = mOut.computeIfAbsent(primary.id(), k -> new GridDistributedTxMapping(primary));
-            if (clientFirst)
-                cur.clientFirst(clientFirst);
+            cur = new GridDistributedTxMapping(primary);
 
-/*            cur = new GridDistributedTxMapping(primary);
-            cur.clientFirst(clientFirst);*/
+            cur.clientFirst(clientFirst);
         }
 
         cur.add(entry);
@@ -795,7 +791,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (cur == null || !cur.primary().id().equals(primary.id()) || cacheCtx.isNear() ||
             (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
 
-            if (hasNearCache || cur != null && primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())
+            if (hasNearCache)
                 cur = new GridDistributedTxMapping(primary);
             else {
                 cur = mOut.computeIfAbsent(primary.id(), k -> new GridDistributedTxMapping(primary));
