@@ -50,15 +50,15 @@ class TwoPhasedRebalancedTest(IgniteTest):
     Two-phase rebalancing test case.
     """
     # pylint: disable=R0914
-    @cluster(num_nodes=NUM_NODES_CELL * NUM_CELL + 2)
+    @cluster(num_nodes=(NUM_NODES_CELL * NUM_CELL) + 1)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9), str(LATEST_2_8))
     def two_phased_rebalancing_test(self, ignite_version):
         """
         Test case of two-phase rebalancing.
         Preparations.
             1. Start 4 cells.
-            2. Load data to cache with the mentioned above affinity function and fix PDS size on all nodes.
-            3. Delete 80% of data and fix PDS size on all nodes.
+            2. Load data to cache with the mentioned above affinity function.
+            3. Delete 80% of data and measure PDS size on all nodes.
         Phase 1.
             1. Stop two nodes in each cell, total a half of all nodes and clean PDS.
             2. Start cleaned node with preservance of consistent id and cell attributes.
@@ -73,7 +73,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                      data_storage=DataStorageConfiguration(
                                          default=DataRegionConfiguration(persistent=True), checkpoint_frequency=30000),
                                      caches=[CacheConfiguration(
-                                         name=CACHE_NAME, backups=NUM_NODES_CELL-1, affinity=Affinity(),
+                                         name=CACHE_NAME, backups=2, affinity=Affinity(),
                                          indexed_types=['java.lang.Long', 'byte[]'])],
                                      metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi')
 
@@ -88,7 +88,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                             discovery_spi=from_ignite_cluster(cells[0]))
 
         # Load data to cache.
-        IgniteApplicationService(
+        app = IgniteApplicationService(
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
@@ -96,21 +96,26 @@ class TwoPhasedRebalancedTest(IgniteTest):
                     "cacheName": "test-cache",
                     "interval": 500 * 1024,
                     "valueSizeKb": 1}
-        ).run()
+        )
+        app.run()
+        app.free()
 
-        # Delete 80% of data and fix PDS size on all nodes.
-        IgniteApplicationService(
+        # Delete 80% of data and measure PDS size on all nodes.
+        app = IgniteApplicationService(
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.DeleteDataApplication",
-            shutdown_timeout_sec=15 * 60,
+            shutdown_timeout_sec=5 * 60,
             params={"cacheName": "test-cache",
-                    "size": 400 * 1024}
-        ).run()
+                    "size": 400 * 1024,
+                    "batchSize": 1000}
+        )
+        app.start(clean=False)
+        app.stop()
 
         node = cells[0].nodes[0]
 
-        self.await_cluster_idle(node)
+        await_cluster_idle(node)
 
         dump_1 = create_idle_dump_and_copy_to_log_dir(control_utility, node, cells[0].log_dir)
 
@@ -120,7 +125,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         restart_with_clean_idx_node_on_cell_and_await_rebalance(cells, [0, 1])
         restart_with_clean_idx_node_on_cell_and_await_rebalance(cells, [2, 3])
 
-        self.await_cluster_idle(node)
+        await_cluster_idle(node)
 
         pds_after = self.get_pds_size(cells, "After rebalancing complete, PDS.")
 
@@ -145,15 +150,21 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells = []
 
-        cell = start_cell(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}=0'])
+        first = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}=0'],
+                              startup_timeout_sec=180)
+        first.start()
 
-        discovery_spi = from_ignite_cluster(cell)
+        discovery_spi = from_ignite_cluster(first)
         config = config._replace(discovery_spi=discovery_spi)
 
-        cells.append(cell)
+        cells.append(first)
 
         for i in range(1, NUM_CELL):
-            cells.append(start_cell(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}={i}']))
+            cell = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}={i}'],
+                                 startup_timeout_sec=180,)
+            cell.start()
+
+            cells.append(cell)
 
         return cells
 
@@ -164,7 +175,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
         :param msg Information message.
         :return dict with hostname -> pds size in megabytes.
         """
-        assert len(cells) > 0
 
         res = {}
         for cell in cells:
@@ -180,15 +190,17 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         return res
 
-    def await_cluster_idle(self, node: ClusterNode):
-        """
-        Await Skipping checkpoint.
-        :param node ClusterNode.
-        """
-        try:
-            IgniteAwareService.await_event_on_node('Skipping checkpoint', node, timeout_sec=60)
-        except errors.TimeoutError as ex:
-            self.logger.warn(ex)
+
+def await_cluster_idle(node: ClusterNode, timeout_sec=30):
+    """
+    Await Skipping checkpoint.
+    :param node ClusterNode.
+    :param timeout_sec Number of seconds to await event.
+    """
+    try:
+        IgniteAwareService.await_event_on_node('Skipping checkpoint', node, timeout_sec=timeout_sec)
+    except errors.TimeoutError:
+        pass
 
 
 def restart_with_clean_idx_node_on_cell_and_await_rebalance(cells: [IgniteService], idxs: [int]):
@@ -212,11 +224,7 @@ def stop_idx_node_on_cell(cells: [IgniteService], idxs: [int]):
     :param idxs List of index nodes to stop.
     """
     for cell in cells:
-        size = len(cell.nodes)
-
         for i in idxs:
-            assert i < size
-
             cell.stop_node(cell.nodes[i])
 
     for cell in cells:
@@ -231,11 +239,7 @@ def clean_work_idx_node_on_cell(cells: [IgniteService], idxs: [int]):
     :param idxs List of index nodes to clean.
     """
     for cell in cells:
-        size = len(cell.nodes)
-
         for i in idxs:
-            assert i < size
-
             node = cell.nodes[i]
 
             assert not cell.pids(node)
@@ -250,11 +254,7 @@ def start_idx_node_on_cell(cells: [IgniteService], idxs: [int]):
     :param idxs List of index nodes to start.
     """
     for cell in cells:
-        size = len(cell.nodes)
-
         for i in idxs:
-            assert i < size
-
             node = cell.nodes[i]
 
             cell.start_node(node)
@@ -276,19 +276,3 @@ def create_idle_dump_and_copy_to_log_dir(control_utility: ControlUtility, node: 
     dump = control_utility.idle_verify_dump(node)
 
     return copy_file_to_dest(node, dump, log_dir)
-
-
-def start_cell(test_context, config: IgniteConfiguration, num_nodes: int, jvm_opts: list) -> IgniteService:
-    """
-    Start cell.
-    :param test_context Context.
-    :param config IgniteConfig.
-    :param num_nodes Number nodes.
-    :param jvm_opts: List JVM options.
-    :return IgniteService.
-    """
-    ignites = IgniteService(test_context, config, num_nodes=num_nodes, jvm_opts=jvm_opts)
-
-    ignites.start()
-
-    return ignites

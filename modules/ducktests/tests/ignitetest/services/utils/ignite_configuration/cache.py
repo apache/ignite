@@ -27,7 +27,7 @@ class Affinity(NamedTuple):
     Affinity.
     """
     name: str = AFFINITY_BACKUP_FILTER
-    constructor_arg: str = CELL
+    attr_name: str = CELL
 
 
 class CacheConfiguration(NamedTuple):

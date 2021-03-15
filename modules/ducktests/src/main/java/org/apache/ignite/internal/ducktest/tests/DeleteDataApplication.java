@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,9 +40,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         int size = jNode.get("size").asInt();
 
-        int bachSize = Optional.ofNullable(jNode.get("bachSize"))
-            .map(JsonNode::asInt)
-            .orElse(1000);
+        int batchSize = jNode.get("batchSize").asInt();
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
@@ -74,7 +72,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
         int toIdx = 0;
 
         while (fromIdx < listSize) {
-            toIdx = Math.min(fromIdx + bachSize, listSize);
+            toIdx = Math.min(fromIdx + batchSize, listSize);
 
             futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
 
@@ -85,7 +83,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         log.info("Cache size after: " + cache.size());
 
-        recordResult("DURATION", System.currentTimeMillis() - start);
+        recordResult("DURATION_SECONDS", TimeUnit.MILLISECONDS.toSeconds( System.currentTimeMillis() - start));
 
         markFinished();
     }

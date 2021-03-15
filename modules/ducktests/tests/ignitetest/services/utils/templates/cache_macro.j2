@@ -20,7 +20,7 @@
     <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
         <property name="affinityBackupFilter">
             <bean class="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.CellularAffinityBackupFilter">
-                <constructor-arg value="{{ affinity.constructor_arg }}"/>
+                <constructor-arg value="{{ affinity.attr_name }}"/>
             </bean>
         </property>
     </bean>
