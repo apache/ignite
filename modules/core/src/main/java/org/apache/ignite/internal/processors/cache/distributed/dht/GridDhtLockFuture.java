@@ -791,7 +791,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         try {
-            if (err == null && !stopping)
+            if (err == null && !stopping && cctx.config() != null)
                 loadMissingFromStore();
         }
         finally {
