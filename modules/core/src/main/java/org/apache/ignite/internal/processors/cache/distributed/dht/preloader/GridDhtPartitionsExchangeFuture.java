@@ -2006,9 +2006,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.exchange().exchangerBlockingSectionEnd();
                 }
             }
-        }
 
-        timeBag.finishGlobalStage("Wait partitions release [latch=" + latchId + "]");
+            timeBag.finishGlobalStage("Wait partitions release [latch=" + latchId + "]");
+        }
 
         if (releaseLatch == null) {
             assert !distributed : "Partitions release latch must be initialized in distributed mode.";
