@@ -950,13 +950,15 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public void DoTestPlatformService(IServices svcsForProxy)
         {
-            Services.DeployClusterSingleton(nameof(PlatformTestService), new PlatformTestService());
+            const string platformSvcName = "PlatformTestService";
 
-            var svc = svcsForProxy.GetServiceProxy<IJavaService>(nameof(PlatformTestService));
+            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
 
             DoTestService(svc);
 
-            Services.Cancel(nameof(PlatformTestService));
+            Services.Cancel(platformSvcName);
         }
 
         /// <summary>
