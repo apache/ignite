@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /** */
 public class BytesIndexKey implements IndexKey {
     /** */
-    private final byte[] key;
+    protected final byte[] key;
 
     /** */
     public BytesIndexKey(byte[] key) {
@@ -41,9 +40,9 @@ public class BytesIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
+    @Override public int compare(IndexKey o) {
         byte[] okey = (byte[]) o.key();
 
-        return keySettings.binaryUnsigned() ? BytesCompareUtils.compareNotNullUnsigned(key, okey) : BytesCompareUtils.compareNotNullSigned(key, okey);
+        return BytesCompareUtils.compareNotNullUnsigned(key, okey);
     }
 }

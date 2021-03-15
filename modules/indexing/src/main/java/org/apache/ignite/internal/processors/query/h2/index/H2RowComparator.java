@@ -75,7 +75,8 @@ public class H2RowComparator extends IndexRowCompartorImpl {
             Value va = DataType.convertToValue(ses, key.key(), highOrder);
             va = va.convertTo(highOrder);
 
-            IndexKey objHighOrder = IndexKeyFactory.wrap(va.getObject(), highOrder, coctx);
+            IndexKey objHighOrder = IndexKeyFactory.wrap(
+                va.getObject(), highOrder, coctx, keyTypeSettings);
 
             InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
 

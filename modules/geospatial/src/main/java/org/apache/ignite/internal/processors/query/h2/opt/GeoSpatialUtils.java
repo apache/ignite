@@ -53,7 +53,7 @@ public class GeoSpatialUtils {
 
             List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
 
-            QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyDefs, idxKeyTypes);
+            QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyDefs, idxKeyTypes, DUMMY_SETTINGS);
 
             final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
 

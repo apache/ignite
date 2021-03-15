@@ -52,11 +52,8 @@ public class InlineIndexKeyTypeRegistry {
     /** Type mapping. */
     private static final Map<Integer, InlineIndexKeyType> typeMapping = new ConcurrentHashMap<>();
 
-    /** Object key type does not map to known java type. */
+    /** Object key type that maps for custom POJO. Inline stores a hash of the object. */
     private static final ObjectHashInlineIndexKeyType hashObjectType = new ObjectHashInlineIndexKeyType();
-
-    /** Object key type does not map to known java type. */
-    private static final ObjectByteArrayInlineIndexKeyType bytesObjectType = new ObjectByteArrayInlineIndexKeyType();
 
     /** Default String key type use optimized algorithm for comparison. */
     private static final StringInlineIndexKeyType optimizedCompareStringType = new StringInlineIndexKeyType();
@@ -69,6 +66,12 @@ public class InlineIndexKeyTypeRegistry {
 
     /** Do not compare inlined String keys. */
     private static final SignedBytesInlineIndexKeyType signedBytesType = new SignedBytesInlineIndexKeyType();
+
+    /** Object key type that maps for custom POJO. Inline stores a byte array representation of the object. */
+    private static final ObjectByteArrayInlineIndexKeyType bytesObjectType = new ObjectByteArrayInlineIndexKeyType(bytesType);
+
+    /** Object key type that maps for custom POJO. Inline stores a signed byte array representation of the object. */
+    private static final ObjectByteArrayInlineIndexKeyType signedBytesObjectType = new ObjectByteArrayInlineIndexKeyType(signedBytesType);
 
     static {
         register(IndexKeyTypes.BOOLEAN, new BooleanInlineIndexKeyType());
@@ -145,7 +148,10 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for the POJO type.
      */
     private static InlineIndexKeyType javaObjectType(IndexKeyTypeSettings keyTypeSettings) {
-        return !keyTypeSettings.inlineObjHash() ? bytesObjectType : hashObjectType;
+        if (keyTypeSettings.inlineObjHash())
+            return hashObjectType;
+
+        return keyTypeSettings.binaryUnsigned() ? bytesObjectType : signedBytesObjectType;
     }
 
     /**

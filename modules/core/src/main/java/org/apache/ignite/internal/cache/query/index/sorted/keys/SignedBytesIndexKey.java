@@ -17,33 +17,17 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.math.BigDecimal;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-
 /** */
-public class DecimalIndexKey implements IndexKey {
+public class SignedBytesIndexKey extends BytesIndexKey {
     /** */
-    private final BigDecimal key;
-
-    /** */
-    public DecimalIndexKey(BigDecimal key) {
-        this.key = key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.DECIMAL;
+    public SignedBytesIndexKey(byte[] key) {
+        super(key);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        BigDecimal okey = (BigDecimal) o.key();
+        byte[] okey = (byte[]) o.key();
 
-        return key.compareTo(okey);
+        return BytesCompareUtils.compareNotNullSigned(key, okey);
     }
 }

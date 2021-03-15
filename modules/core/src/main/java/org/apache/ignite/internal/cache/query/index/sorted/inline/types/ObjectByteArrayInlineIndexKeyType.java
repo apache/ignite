@@ -31,14 +31,16 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectI
  */
 public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyType<JavaObjectIndexKey> {
     /** */
-    private final BytesInlineIndexKeyType delegate = new BytesInlineIndexKeyType();
+    private final BytesInlineIndexKeyType delegate;
 
     /** */
     private final JavaObjectKeySerializer serializer = IndexProcessor.serializer;
 
     /** */
-    public ObjectByteArrayInlineIndexKeyType() {
+    public ObjectByteArrayInlineIndexKeyType(BytesInlineIndexKeyType delegate) {
         super(IndexKeyTypes.JAVA_OBJECT, (short) -1);
+
+        this.delegate = delegate;
     }
 
     /** {@inheritDoc} */
@@ -46,6 +48,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
         try {
             byte[] b = serializer.serialize(key.key());
 
+            // Signed or unsigned doesn't matter there.
             return delegate.put0(pageAddr, off, new BytesIndexKey(b), maxSize);
 
         } catch (IgniteCheckedException e) {
@@ -65,6 +68,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
         try {
             byte[] b = serializer.serialize(key.key());
 
+            // Signed or unsigned doesn't matter there.
             return delegate.compare0(pageAddr, off, new BytesIndexKey(b));
 
         } catch (IgniteCheckedException e) {
@@ -77,6 +81,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
         try {
             byte[] b = serializer.serialize(key);
 
+            // Signed or unsigned doesn't matter there.
             return delegate.inlineSize0(new BytesIndexKey(b));
 
         } catch (IgniteCheckedException e) {

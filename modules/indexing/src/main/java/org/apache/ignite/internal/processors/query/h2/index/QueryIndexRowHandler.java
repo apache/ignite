@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.index;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
@@ -47,24 +48,29 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** List of index key definitions. */
     private final List<IndexKeyDefinition> keyDefs;
 
+    /** Index key type settings. */
+    private final IndexKeyTypeSettings keyTypeSettings;
+
     /** H2 Table. */
     private final GridH2Table h2Table;
 
     /** */
     public QueryIndexRowHandler(GridH2Table h2table, List<IndexColumn> h2IdxColumns,
-        List<IndexKeyDefinition> keyDefs, List<InlineIndexKeyType> keyTypes) {
+        List<IndexKeyDefinition> keyDefs, List<InlineIndexKeyType> keyTypes, IndexKeyTypeSettings keyTypeSettings) {
         this.h2IdxColumns = h2IdxColumns;
         this.keyTypes = keyTypes;
         this.keyDefs = keyDefs;
         this.h2Table = h2table;
         cacheDesc = h2table.rowDescriptor();
+        this.keyTypeSettings = keyTypeSettings;
     }
 
     /** {@inheritDoc} */
     @Override public IndexKey indexKey(int idx, CacheDataRow row) {
         Object o = getKey(idx, row);
 
-        return IndexKeyFactory.wrap(o, keyDefs.get(idx).idxType(), cacheDesc.context().cacheObjectContext());
+        return IndexKeyFactory.wrap(
+            o, keyDefs.get(idx).idxType(), cacheDesc.context().cacheObjectContext(), keyTypeSettings);
     }
 
     /** */
@@ -80,6 +86,11 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** {@inheritDoc} */
     @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
         return keyDefs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexKeyTypeSettings indexKeyTypeSettings() {
+        return keyTypeSettings;
     }
 
     /** */

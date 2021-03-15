@@ -28,6 +28,7 @@ import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
@@ -295,7 +296,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             return replaced;
 
-        }  catch (Throwable t) {
+        } catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;
@@ -309,7 +310,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             segments[segment].remove(new IndexRowImpl(rowHnd, row));
 
-        }  catch (Throwable t) {
+        } catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;
@@ -350,6 +351,11 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public int inlineSize() {
         return segments[0].inlineSize();
+    }
+
+    /** */
+    public IndexKeyTypeSettings keyTypeSettings() {
+        return rowHnd.indexKeyTypeSettings();
     }
 
     /** {@inheritDoc} */

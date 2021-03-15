@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /** */
@@ -42,7 +41,7 @@ public class UuidIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
+    @Override public int compare(IndexKey o) {
         UUID okey = (UUID) o.key();
 
         // Keep old logic.

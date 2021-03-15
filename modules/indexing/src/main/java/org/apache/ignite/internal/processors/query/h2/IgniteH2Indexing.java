@@ -59,6 +59,7 @@ import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
@@ -472,7 +473,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             else
                 index = ctx.indexProcessor().createIndex(tbl.cacheContext(), InlineIndexFactory.INSTANCE, idxDef);
 
-            InlineIndex queryIndex = index.unwrap(InlineIndex.class);
+            InlineIndexImpl queryIndex = index.unwrap(InlineIndexImpl.class);
 
             return new H2TreeIndex(queryIndex, tbl, unwrappedCols.toArray(new IndexColumn[0]), pk, log);
         }

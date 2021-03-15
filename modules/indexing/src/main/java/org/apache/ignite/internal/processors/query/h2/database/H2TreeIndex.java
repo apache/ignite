@@ -34,7 +34,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -106,7 +106,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
     /** Underlying Ignite index. */
-    private InlineIndex queryIndex;
+    private InlineIndexImpl queryIndex;
 
     /** Kernal context. */
     private GridKernalContext ctx;
@@ -140,7 +140,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     };
 
     /** */
-    public H2TreeIndex(InlineIndex queryIndex, GridH2Table tbl, IndexColumn[] cols, boolean pk, IgniteLogger log) {
+    public H2TreeIndex(InlineIndexImpl queryIndex, GridH2Table tbl, IndexColumn[] cols, boolean pk, IgniteLogger log) {
         super(tbl, queryIndex.name(), cols,
             pk ? IndexType.createPrimaryKey(false, false) :
                 IndexType.createNonUnique(false, false, false));
@@ -249,7 +249,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
             if (key == null)
                 break;
 
-            cached[i] = IndexKeyFactory.wrap(key, columns[i].getType(), cctx.cacheObjectContext());
+            cached[i] = IndexKeyFactory.wrap(
+                key, columns[i].getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
         }
 
         return cached;
@@ -266,7 +267,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             Value v = row.getValue(colId);
 
-            keys[i] = v == null ? null : IndexKeyFactory.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext());
+            keys[i] = v == null ? null : IndexKeyFactory.wrap(
+                v.getObject(), v.getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
         }
 
         return new IndexSearchRowImpl(keys, rowHnd);

@@ -43,6 +43,6 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, keyTypeSettings);
 
-        return new QueryIndexRowHandler(def.getTable(), h2IdxColumns, keyDefs, keyTypes);
+        return new QueryIndexRowHandler(def.getTable(), h2IdxColumns, keyDefs, keyTypes, keyTypeSettings);
     }
 }

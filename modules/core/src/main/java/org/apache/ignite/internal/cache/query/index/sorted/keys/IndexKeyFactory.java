@@ -25,6 +25,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -55,7 +56,7 @@ public class IndexKeyFactory {
     }
 
     /** Wraps user object to {@code IndexKey} object.  */
-    public static IndexKey wrap(Object o, int keyType, CacheObjectValueContext coctx) {
+    public static IndexKey wrap(Object o, int keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
         if (o == null || keyType == IndexKeyTypes.NULL)
             return NullIndexKey.INSTANCE;
 
@@ -77,7 +78,8 @@ public class IndexKeyFactory {
             case IndexKeyTypes.FLOAT:
                 return new FloatIndexKey((float) o);
             case IndexKeyTypes.BYTES:
-                return new BytesIndexKey((byte[]) o);
+                return keyTypeSettings.binaryUnsigned() ?
+                    new BytesIndexKey((byte[]) o) : new SignedBytesIndexKey((byte[]) o);
             case IndexKeyTypes.STRING:
                 return new StringIndexKey((String) o);
             case IndexKeyTypes.UUID:

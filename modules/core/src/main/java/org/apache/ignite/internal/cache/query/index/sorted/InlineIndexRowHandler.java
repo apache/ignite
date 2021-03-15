@@ -46,6 +46,11 @@ public interface InlineIndexRowHandler {
     public List<IndexKeyDefinition> indexKeyDefinitions();
 
     /**
+     * @return Index key type settings.
+     */
+    public IndexKeyTypeSettings indexKeyTypeSettings();
+
+    /**
      * @return Parition for specified row.
      */
     public int partition(CacheDataRow row);
