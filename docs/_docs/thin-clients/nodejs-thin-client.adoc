@@ -39,8 +39,8 @@ npm install -g apache-ignite-client
 
 The thin client can be installed from the zip archive available for download from the Ignite website:
 
-*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite binary package,window=_blank].
-*  Unpack the archive and navigate to the `{IGNITE_HOME}/platforms/nodejs` folder.
+*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite Node.js Thin Client,window=_blank].
+*  Unpack the archive and navigate to the root folder.
 *  Run the commands below to finish the installation.
 
 [source,shell]
