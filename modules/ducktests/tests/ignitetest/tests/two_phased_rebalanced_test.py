@@ -16,6 +16,7 @@
 """
 This module contains Cellular Affinity tests.
 """
+import math
 from typing import List
 from ducktape import errors
 from ducktape.cluster.cluster import ClusterNode
@@ -56,7 +57,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         """
         Test case of two-phase rebalancing.
         Preparations.
-            1. Start 2 cells.
+            1. Start cells.
             2. Load data to cache with the mentioned above affinity function.
             3. Delete 80% of data and measure PDS size on all nodes.
         Phase 1.
@@ -77,8 +78,12 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                          indexed_types=['java.lang.Long', 'byte[]'])],
                                      metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi')
 
-        # Start 2 cells.
-        cells = self.start_cells(config)
+        cluster_size = len(self.test_context.cluster)
+
+        num_cell = math.floor((cluster_size - 1) / NUM_NODES_CELL)
+
+        # Start cells.
+        cells = self.start_cells(config, num_cell)
 
         control_utility = ControlUtility(cells[0])
         control_utility.activate()
@@ -141,10 +146,11 @@ class TwoPhasedRebalancedTest(IgniteTest):
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert not diff, f"Validation error, files are different. Difference:\n {diff}"
 
-    def start_cells(self, config: IgniteConfiguration) -> List[IgniteService]:
+    def start_cells(self, config: IgniteConfiguration, num_cell: int) -> List[IgniteService]:
         """
         Start cells.
         :param config IgniteConfiguration.
+        :param num_cell Number of cell.
         :return List of IgniteServices.
         """
 
@@ -159,7 +165,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells.append(first)
 
-        for i in range(1, NUM_CELL):
+        for i in range(1, num_cell):
             cell = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}={i}'],
                                  startup_timeout_sec=180,)
             cell.start()
