@@ -1612,22 +1612,27 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         Socket sock = null;
 
         try {
-            if (isSslEnabled())
-                sock = sslSockFactory.createSocket();
-            else
-                sock = new Socket();
+            sock = createSocket0(isSslEnabled());
 
             sock.bind(new InetSocketAddress(locHost, 0));
 
             configureSocketOptions(sock);
 
             return sock;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
             throw e;
         }
+    }
+
+    /**
+     * Creates proper socket and binds it to local address.
+     */
+    protected Socket createSocket0(boolean encrypted) throws IOException {
+        return encrypted ? sslSockFactory.createSocket() : new Socket();
     }
 
     /**
@@ -1765,8 +1770,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         IgniteCheckedException err = null;
 
         try {
-            impl.simulateNetFailure(sock, timeout);
-
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
