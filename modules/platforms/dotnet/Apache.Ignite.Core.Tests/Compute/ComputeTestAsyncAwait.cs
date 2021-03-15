@@ -43,5 +43,20 @@ namespace Apache.Ignite.Core.Tests.Compute
             // so reducing never completes and there is a resource leak.
             StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
         }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [Test]
+        public async Task TestAffinityAsyncContinuation()
+        {
+            // TODO: Test local and remote execution.
+            var compute = Ignite.GetCompute();
+            var cache = Ignite.GetOrCreateCache<int, int>("c");
+
+            await compute.AffinityRunAsync(new[] {cache.Name}, 1, new ComputeAction());
+
+            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
+        }
     }
 }
