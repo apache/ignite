@@ -920,7 +920,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Future that will be completed when all affected transactions are recovered.
      */
     public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
-
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "TxRecovery",
