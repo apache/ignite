@@ -46,12 +46,13 @@ class RebalanceInMemoryTest(IgniteTest):
     Tests rebalance scenarios in in-memory mode.
     """
     NUM_NODES = 4
+    DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(trigger_event=[TriggerEvent.NODE_JOIN, TriggerEvent.NODE_LEFT],
-              backups=[1], cache_count=[1], entry_count=[15000], entry_size=[50000],
+              backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000],
               rebalance_thread_pool_size=[None], rebalance_batch_size=[None],
               rebalance_batches_prefetch_count=[None], rebalance_throttle=[None])
     def test(self, ignite_version, trigger_event,
@@ -71,7 +72,7 @@ class RebalanceInMemoryTest(IgniteTest):
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(max_size=max(
                     cache_count * entry_count * entry_size * (backups + 1),
-                    512 * 1024 * 1024))),
+                    self.DEFAULT_DATA_REGION_SZ))),
             rebalance_thread_pool_size=rebalance_thread_pool_size,
             rebalance_batch_size=rebalance_batch_size,
             rebalance_batches_prefetch_count=rebalance_batches_prefetch_count,

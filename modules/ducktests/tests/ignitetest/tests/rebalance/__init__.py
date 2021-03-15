@@ -46,7 +46,7 @@ def preload_data(context, config, backups, cache_count, entry_count, entry_size,
     app.run()
 
     return (get_event_time(
-        app, app.nodes[0], "Data generation finished") - get_event_time(
+        app, app.nodes[0], "Marking as initialized") - get_event_time(
         app, app.nodes[0], "Data generation started")).total_seconds()
 
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.rebalance;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- *
+ * Application generates cache data by specified parameters.
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
     /** Max streamer data size. */
@@ -42,14 +42,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             + ", entryCount=" + entryCnt + ", entrySize=" + entrySize + "]");
 
         for (int i = 1; i <= cacheCnt; i++) {
-            IgniteCache<Integer, DataModel> cache = ignite.createCache(
+            // TODO https://issues.apache.org/jira/browse/IGNITE-14319
+            IgniteCache<Integer, DataModel> cache = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
                     .setBackups(backups));
 
             generateCacheData(cache.getName(), entryCnt, entrySize);
         }
-
-        log.info("Data generation finished.");
 
         markSyncExecutionComplete();
     }
@@ -88,14 +87,14 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     }
 
     /**
-     *
+     * Data model class, which instances used as cache entry values.
      */
     private static class DataModel {
         /** Cached payload. */
         private static byte[] cachedPayload;
 
         /** Payload. */
-        final byte[] payload;
+        private final byte[] payload;
 
         /**
          * @param entrySize Entry size.
@@ -111,7 +110,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             if (cachedPayload == null || cachedPayload.length != payloadSize) {
                 cachedPayload = new byte[payloadSize];
 
-                new Random(42).nextBytes(cachedPayload);
+                ThreadLocalRandom.current().nextBytes(cachedPayload);
             }
 
             return cachedPayload;
