@@ -5,7 +5,7 @@
 >>> Put value with key: 1
 >>> Put value with key: 2
 >>> Put value with key: 3
-Ignite node stopped OK [name=serverNode, uptime=
+Ignite node stopped OK [name=serverNode, uptime=*
 >>> Server node stopped.
 >>> Put value with key: 4
 >>> Client disconnected from the cluster. Failed to put value with key: 4
@@ -16,3 +16,4 @@ Ignite node stopped OK [name=serverNode, uptime=
 >>> Put value with key: 7
 >>> Put value with key: 8
 >>> Put value with key: 9
+Ignite node stopped OK [name=serverNode, uptime=*
