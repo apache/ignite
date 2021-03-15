@@ -44,6 +44,19 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         private bool _cancelled;
 
+        /** */
+        public PlatformTestService()
+        {
+            // No-Op.
+        }
+
+
+        /** */
+        public PlatformTestService(IIgnite ignite)
+        {
+            _ignite = ignite;
+        }
+
         /** <inheritDoc /> */
         public void Init(IServiceContext context)
         {
