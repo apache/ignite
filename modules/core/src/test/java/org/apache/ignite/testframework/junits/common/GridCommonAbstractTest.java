@@ -2444,10 +2444,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             assertEquals("Expecting same counters [partId=" + partId +
                 ", cntrs=" + cntrMap + ']', cnt, cntr.get2().get());
 
-            if (withReserveCntr)
+            if (withReserveCntr) {
                 assertEquals("Expecting same reservation counters [partId=" + partId +
                         ", cntrs=" + cntrMap + ']',
                     reserved, cntr.get2().reserved());
+            }
         }
     }
 
