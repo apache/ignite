@@ -37,7 +37,7 @@ from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATE
 
 NUM_NODES_CELL = 4
 
-NUM_CELL = 4
+NUM_CELL = 2
 
 ATTRIBUTE = "CELL"
 
@@ -56,7 +56,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         """
         Test case of two-phase rebalancing.
         Preparations.
-            1. Start 4 cells.
+            1. Start 2 cells.
             2. Load data to cache with the mentioned above affinity function.
             3. Delete 80% of data and measure PDS size on all nodes.
         Phase 1.
@@ -77,7 +77,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                          indexed_types=['java.lang.Long', 'byte[]'])],
                                      metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi')
 
-        # Start 4 cells.
+        # Start 2 cells.
         cells = self.start_cells(config)
 
         control_utility = ControlUtility(cells[0])
