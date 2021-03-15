@@ -134,49 +134,49 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public byte? testWrapper(byte? x)
         {
-            return (byte?) (x == null ? null : x + 1);
+            return (byte?) (x + 1);
         }
 
         /** <inheritDoc /> */
         public short? testWrapper(short? x)
         {
-            return (short?) (x == null ? null : x + 1);
+            return (short?) (x + 1);
         }
 
         /** <inheritDoc /> */
         public int? testWrapper(int? x)
         {
-            return (int?) (x == null ? null : x + 1);
+            return x + 1;
         }
 
         /** <inheritDoc /> */
         public long? testWrapper(long? x)
         {
-            return (long?) (x == null ? null : x + 1);
+            return x + 1;
         }
 
         /** <inheritDoc /> */
         public float? testWrapper(float? x)
         {
-            return (float?) (x == null ? null : x + 1.5f);
+            return x + 1.5f;
         }
 
         /** <inheritDoc /> */
         public double? testWrapper(double? x)
         {
-            return (double?) (x == null ? null : x + 2.5);
+            return x + 2.5;
         }
 
         /** <inheritDoc /> */
         public char? testWrapper(char? x)
         {
-            return (char?) (x == null ? null : x + 1);
+            return (char?) (x + 1);
         }
 
         /** <inheritDoc /> */
         public bool? testWrapper(bool? x)
         {
-            return (bool?) (x == null ? null : !x);
+            return !x;
         }
 
         /** <inheritDoc /> */
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Tests.Services
             kyle.Fio = "Kyle Reese";
             kyle.Salary = 3;
 
-            return new Employee[] { kyle };
+            return new[] { kyle };
 
         }
 
@@ -493,8 +493,8 @@ namespace Apache.Ignite.Core.Tests.Services
         public User[] testUsers()
         {
             return new[] {
-                new User {Id = 1, Acl = ACL.ALLOW, Role = new Role {Name = "admin"}},
-                new User {Id = 2, Acl = ACL.DENY, Role = new Role {Name = "user"}}
+                new User {Id = 1, Acl = ACL.Allow, Role = new Role {Name = "admin"}},
+                new User {Id = 2, Acl = ACL.Deny, Role = new Role {Name = "user"}}
             };
         }
 
@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public void testException(string exceptionClass)
+        public void testException(string exCls)
         {
             throw new NotImplementedException();
         }

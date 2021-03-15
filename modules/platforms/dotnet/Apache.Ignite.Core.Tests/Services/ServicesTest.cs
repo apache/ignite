@@ -880,7 +880,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestBinary(svc, binSvc);
 
-            DoTestExceptions(svc, true);
+            DoTestJavaExceptions(svc, true);
 
             Services.Cancel(javaSvcName);
         }
@@ -906,69 +906,57 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestBinary(svc, binSvc);
 
-            DoTestExceptions(svc);
+            DoTestJavaExceptions(svc);
 
             Services.Cancel(javaSvcName);
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+
+            DoTestService(svc);
+
+            DoTestJavaExceptions(svc);
+        }
+
+        /// <summary>
+        /// Test remote .Net service invocation.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
-
-            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
-            var binSvc = _client.GetServices().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(platformSvcName, false);
-
-            try
-            {
-                DoTestService(svc);
-
-                //DoTestBinary(svc, binSvc);
-
-                //DoTestExceptions(svc, true);
-            }
-            finally
-            {
-                Services.Cancel(platformSvcName);
-            }
+            DoTestPlatformService(_client.GetServices());
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
+        /// Test local .Net service invocation.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
+            DoTestPlatformService(Services);
+        }
 
-            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
+        /// <summary>
+        /// Tests .Net service invocation.
+        /// </summary>
+        public void DoTestPlatformService(IServices svcsForProxy)
+        {
+            Services.DeployClusterSingleton(nameof(PlatformTestService), new PlatformTestService());
 
-            var svc = Services.GetServiceProxy<IJavaService>(platformSvcName);
-            var binSvc = Services.WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(platformSvcName, false);
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(nameof(PlatformTestService));
 
-            try
-            {
-                DoTestService(svc);
+            DoTestService(svc);
 
-                //DoTestBinary(svc, binSvc);
-
-                //DoTestExceptions(svc);
-            }
-            finally
-            {
-                Services.Cancel(platformSvcName);
-            }
+            Services.Cancel(nameof(PlatformTestService));
         }
 
         /// <summary>
@@ -1102,6 +1090,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
             DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
@@ -1126,9 +1115,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Exceptions from Service.
+        /// Tests handling of the Java exception in the .Net.
         /// </summary>
-        private void DoTestExceptions(IJavaService svc, bool isClient = false)
+        public void DoTestJavaExceptions(IJavaService svc, bool isClient = false)
         {
             // Test standard java checked exception.
             Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
@@ -1176,18 +1165,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(javaEx);
             Assert.AreEqual("Test", javaEx.JavaMessage);
             Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
-        }
-
-        /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            DoTestService(new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true)));
         }
 
         /// <summary>
