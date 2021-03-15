@@ -22,7 +22,7 @@
 {% import 'cache_macro.j2' as cache_utils %}
 {% import 'datastorage_macro.j2' as datastorage_utils %}
 {% import 'misc_macro.j2' as misc_utils %}
-{% import 'ssl_factory_macro.j2' as ssl_factory_util %}
+{% import 'ssl_params_macro.j2' as ssl_params_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -41,6 +41,7 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
+        <property name="authenticationEnabled" value="{{ config.auth_enabled | lower }}"/>
         {% if config.rebalance_thread_pool_size %}
             <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
         {% endif %}
@@ -78,9 +79,9 @@
             {{ config.properties }}
         {% endif %}
 
-        {% if config.ssl_context_factory %}
+        {% if config.ssl_params %}
             <property name="sslContextFactory">
-                {{ ssl_factory_util.ssl_factory(config.ssl_context_factory) }}
+                {{ ssl_params_util.ssl_params(config.ssl_params) }}
             </property>
         {% endif %}
         {% if config.connector_configuration %}

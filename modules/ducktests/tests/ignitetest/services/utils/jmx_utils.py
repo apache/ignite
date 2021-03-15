@@ -96,7 +96,7 @@ class JmxClient:
         return iter(s.strip() for s in self.__run_cmd(cmd))
 
     def __run_cmd(self, cmd):
-        return self.node.account.ssh_capture(cmd, allow_fail=False, callback=str)
+        return self.node.account.ssh_capture(cmd, allow_fail=False, callback=str, combine_stderr=False)
 
 
 class DiscoveryInfo:
