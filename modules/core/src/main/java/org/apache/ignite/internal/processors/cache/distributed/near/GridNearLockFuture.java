@@ -203,7 +203,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery) {
+        boolean recovery
+    ) {
         super(CU.boolReducer());
 
         assert keys != null;

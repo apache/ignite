@@ -22,13 +22,13 @@ import org.apache.ignite.internal.GridKernalContext;
 /** */
 public abstract class SecurityAwareHolder<T> {
     /** */
-    protected final GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /** */
-    protected final T original;
+    private final T original;
 
     /** */
-    protected T securityAwareInstance;
+    private T securityAwareInstance;
 
     /** */
     protected SecurityAwareHolder(GridKernalContext ctx, T original) {

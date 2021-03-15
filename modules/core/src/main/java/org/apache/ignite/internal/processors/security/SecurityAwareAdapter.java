@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.security;
 /** */
 public class SecurityAwareAdapter {
     /** */
-    protected final IgniteSecurity security;
+    private final IgniteSecurity security;
 
     /** */
     private final SecurityContext secCtx;

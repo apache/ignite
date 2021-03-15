@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -78,7 +77,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -233,7 +231,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                     taskFut = ctx.closure().callAsync(
                         BALANCE,
-                        new ExeCallable(name, params, timeout, securitySubjectId(ctx)), prj.nodes());
+                        new ExeCallable(name, params, timeout), prj.nodes());
                 }
 
                 if (async) {
@@ -613,9 +611,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         private long timeout;
 
         /** */
-        private UUID clientId;
-
-        /** */
         @IgniteInstanceResource
         private IgniteEx g;
 
@@ -630,21 +625,17 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
          * @param name Name.
          * @param params Params.
          * @param timeout Timeout.
-         * @param clientId Client ID.
          */
-        private ExeCallable(String name, List<Object> params, long timeout, UUID clientId) {
+        private ExeCallable(String name, List<Object> params, long timeout) {
             this.name = name;
             this.params = params;
             this.timeout = timeout;
-            this.clientId = clientId;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            try (OperationSecurityContext c = g.context().security().withContext(clientId)) {
-                return g.compute(g.cluster()).execute(name,
-                    !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null);
-            }
+            return g.compute().execute(name,
+                !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null);
         }
 
         /** {@inheritDoc} */
@@ -652,7 +643,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             U.writeString(out, name);
             out.writeObject(params);
             out.writeLong(timeout);
-            U.writeUuid(out, clientId);
         }
 
         /** {@inheritDoc} */
@@ -660,7 +650,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             name = U.readString(in);
             params = (List<Object>)in.readObject();
             timeout = in.readLong();
-            clientId = U.readUuid(in);
         }
     }
 }

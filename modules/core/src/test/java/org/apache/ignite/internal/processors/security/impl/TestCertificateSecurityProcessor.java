@@ -55,7 +55,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
     public static final Map<String, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
     /** */
-    private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
+    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
@@ -82,7 +82,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setPerms(ALLOW_ALL)
         );
 
-        SECURITY_CONTEXTS.put(res.subject().id(), res);
+        secCtxs.put(res.subject().id(), res);
 
         return res;
     }
@@ -118,7 +118,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setCerts(ctx.certificates())
         );
 
-        SECURITY_CONTEXTS.put(res.subject().id(), res);
+        secCtxs.put(res.subject().id(), res);
 
         return res;
     }
@@ -135,7 +135,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(UUID subjId) {
-        return SECURITY_CONTEXTS.get(subjId);
+        return secCtxs.get(subjId);
     }
 
     /** {@inheritDoc} */
