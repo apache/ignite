@@ -137,7 +137,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @return The list of cache groups ids which were included into the snapshot globally.
+     * @return The list of cache group IDs which were included into the snapshot globally.
      */
     public List<Integer> cacheGroupIds() {
         return grpIds;
