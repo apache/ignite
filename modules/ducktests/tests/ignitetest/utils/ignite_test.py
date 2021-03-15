@@ -55,3 +55,11 @@ class IgniteTest(Test):
         self.logger.debug("All services killed.")
 
         super().tearDown()
+
+    def _global_param(self, param_name, default=None):
+        """Reads global parameter passed to the test suite."""
+        return self.test_context.globals.get(param_name, default)
+
+    def _global_int(self, param_name, default: int = None):
+        """Reads global parameter passed to the test suite and converts to int."""
+        return int(self._global_param(param_name, default))

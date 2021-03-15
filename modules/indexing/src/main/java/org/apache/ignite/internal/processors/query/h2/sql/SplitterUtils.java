@@ -165,6 +165,35 @@ public class SplitterUtils {
     }
 
     /**
+     * Checks whether the expression has an OUTER JOIN from replicated to partitioned.
+     *
+     * This is used to infer the `treatReplicatedAsPartitioned` flag
+     * to eventually pass it to {@link org.apache.ignite.spi.indexing.IndexingQueryFilterImpl}.
+     *
+     * @param from FROM expression.
+     * @return {@code true} if the expression has an OUTER JOIN from replicated to partitioned.
+     */
+    public static boolean hasOuterJoinReplicatedPartitioned(GridSqlAst from) {
+        boolean isRightPartitioned = false;
+        while (from instanceof GridSqlJoin) {
+            GridSqlJoin join = (GridSqlJoin)from;
+
+            assert !(join.rightTable() instanceof GridSqlJoin);
+
+            isRightPartitioned = isRightPartitioned || hasPartitionedTables(join.rightTable());
+
+            if (join.isLeftOuter()) {
+                boolean isLeftPartitioned = hasPartitionedTables(join.leftTable());
+                return !isLeftPartitioned && isRightPartitioned;
+            }
+
+            from = join.leftTable();
+        }
+
+        return false;
+    }
+
+    /**
      * @param ast Reduce query AST.
      * @param rdcQry Reduce query string.
      */

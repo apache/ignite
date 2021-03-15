@@ -1471,10 +1471,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
 
-        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrps.stream()
+        List<Integer> stoppedGrpIds = stoppedGrps.stream()
             .filter(IgniteBiTuple::get2)
             .map(t -> t.get1().groupId())
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+
+        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrpIds);
+
+        initiallyLocalWalDisabledGrps.removeAll(stoppedGrpIds);
+        initiallyGlobalWalDisabledGrps.removeAll(stoppedGrpIds);
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
@@ -1591,10 +1596,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cctx.wal().reserved(cpEntry.checkpointMark())
                     : "WAL segment for checkpoint " + cpEntry + " has not reserved";
 
-                Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
+                try {
+                    Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
 
-                if (updCntr != null)
-                    grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
+                    if (updCntr != null)
+                        grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
+                }
+                catch (IgniteCheckedException ex) {
+                    log.warning("Reservation failed because counters are not available [grpId=" + grpId
+                        + ", part=" + partId
+                        + ", cp=(" + cpEntry.checkpointId() + ", " + U.format(cpEntry.timestamp()) + ")]", ex);
+                }
             }
         }
 

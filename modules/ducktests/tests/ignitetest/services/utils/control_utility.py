@@ -16,15 +16,18 @@
 """
 This module contains control utility wrapper.
 """
-import os
 import random
 import re
+import socket
 import time
+from datetime import datetime, timedelta
 from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, DEFAULT_ADMIN_KEYSTORE
+from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
+from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
+from ignitetest.services.utils.jmx_utils import JmxClient
 
 
 class ControlUtility:
@@ -34,33 +37,19 @@ class ControlUtility:
     BASE_COMMAND = "control.sh"
 
     # pylint: disable=R0913
-    def __init__(self, cluster,
-                 key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
-                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
+    def __init__(self, cluster, ssl_params=None, username=None, password=None):
         self._cluster = cluster
         self.logger = cluster.context.logger
 
-        if cluster.context.globals.get("use_ssl", False):
-            admin_dict = cluster.globals.get("admin", dict())
+        if ssl_params:
+            self.ssl_params = ssl_params
+        elif is_ssl_enabled(cluster.context.globals):
+            self.ssl_params = get_ssl_params(cluster.context.globals, IGNITE_ADMIN_ALIAS)
 
-            self.key_store_path = admin_dict.get("key_store_path",
-                                                 self.jks_path(admin_dict.get('key_store_jks', DEFAULT_ADMIN_KEYSTORE)))
-            self.key_store_password = admin_dict.get('key_store_password', DEFAULT_PASSWORD)
-            self.trust_store_path = admin_dict.get("trust_store_path",
-                                                   self.jks_path(admin_dict.get('trust_store_jks', DEFAULT_TRUSTSTORE)))
-            self.trust_store_password = admin_dict.get('trust_store_password', DEFAULT_PASSWORD)
-
-        elif key_store_jks is not None:
-            self.key_store_path = self.jks_path(key_store_jks)
-            self.key_store_password = key_store_password
-            self.trust_store_path = self.jks_path(trust_store_jks)
-            self.trust_store_password = trust_store_password
-
-    def jks_path(self, jks_name: str):
-        """
-        :return Path to jks file.
-        """
-        return os.path.join(self._cluster.certificate_dir, jks_name)
+        if username and password:
+            self.username, self.password = username, password
+        elif is_auth_enabled(cluster.context.globals):
+            self.username, self.password = get_credentials(cluster.context.globals)
 
     def baseline(self):
         """
@@ -153,6 +142,63 @@ class ControlUtility:
         output = self.__run(self.__tx_command(kill=True, **kwargs))
         res = self.__parse_tx_list(output)
         return res if res else output
+
+    def validate_indexes(self):
+        """
+        Validate indexes.
+        """
+        data = self.__run("--cache validate_indexes")
+
+        assert ('no issues found.' in data), data
+
+    def idle_verify(self):
+        """
+        Idle verify.
+        """
+        data = self.__run("--cache idle_verify")
+
+        assert ('idle_verify check has finished, no conflicts have been found.' in data), data
+
+    def idle_verify_dump(self, node=None):
+        """
+        Idle verify dump.
+        :param node: Node on which the command will be executed and the dump file will be located.
+        """
+        data = self.__run("--cache idle_verify --dump", node=node)
+
+        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+
+        return re.search(r'/.*.txt', data).group(0)
+
+    def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
+        """
+        Create snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param timeout_sec: Timeout to await snapshot to complete.
+        """
+        res = self.__run(f"--snapshot create {snapshot_name}")
+
+        assert "Command [SNAPSHOT] finished with code: 0" in res
+
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            for node in self._cluster.nodes:
+                mbean = JmxClient(node).find_mbean('.*name=snapshot')
+
+                if snapshot_name != next(mbean.LastSnapshotName):
+                    continue
+
+                start_time = int(next(mbean.LastSnapshotStartTime))
+                end_time = int(next(mbean.LastSnapshotEndTime))
+                err_msg = next(mbean.LastSnapshotErrorMessage)
+
+                if (start_time < end_time) and (err_msg == ''):
+                    assert snapshot_name == next(mbean.LastSnapshotName)
+                    return
+
+        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
+                           f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
     @staticmethod
     def __tx_command(**kwargs):
@@ -275,12 +321,15 @@ class ControlUtility:
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline)
 
-    def __run(self, cmd):
-        node = random.choice(self.__alives())
+    def __run(self, cmd, node=None):
+        if node is None:
+            node = random.choice(self.__alives())
 
         self.logger.debug(f"Run command {cmd} on node {node.name}")
 
-        raw_output = node.account.ssh_capture(self.__form_cmd(node, cmd), allow_fail=True)
+        node_ip = socket.gethostbyname(node.account.hostname)
+
+        raw_output = node.account.ssh_capture(self.__form_cmd(node_ip, cmd), allow_fail=True)
         code, output = self.__parse_output(raw_output)
 
         self.logger.debug(f"Output of command {cmd} on node {node.name}, exited with code {code}, is {output}")
@@ -290,13 +339,17 @@ class ControlUtility:
 
         return output
 
-    def __form_cmd(self, node, cmd):
+    def __form_cmd(self, node_ip, cmd):
         ssl = ""
-        if hasattr(self, 'key_store_path'):
-            ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_password} " \
-                  f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_password}"
-
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl}")
+        if hasattr(self, "ssl_params"):
+            ssl = f" --keystore {self.ssl_params.key_store_path} " \
+                  f"--keystore-password {self.ssl_params.key_store_password} " \
+                  f"--truststore {self.ssl_params.trust_store_path} " \
+                  f"--truststore-password {self.ssl_params.trust_store_password}"
+        auth = ""
+        if hasattr(self, "username"):
+            auth = f" --user {self.username} --password {self.password} "
+        return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
 
     @staticmethod
     def __parse_output(raw_output):
@@ -374,6 +427,7 @@ class ControlUtilityError(RemoteCommandError):
     """
     Error is raised when control utility failed.
     """
+
     def __init__(self, account, cmd, exit_status, output):
         super().__init__(account, cmd, exit_status, "".join(output))
 

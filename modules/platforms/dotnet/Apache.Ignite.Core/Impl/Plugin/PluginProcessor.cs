@@ -42,8 +42,12 @@ namespace Apache.Ignite.Core.Impl.Plugin
         private readonly Dictionary<string, IPluginProviderProxy> _pluginProvidersByName
             = new Dictionary<string, IPluginProviderProxy>();
 
-        /** Plugin exception mappings. */
-        private readonly CopyOnWriteConcurrentDictionary<string, ExceptionFactory> _exceptionMappings
+        /** Plugin exception mappings by exact class name. */
+        private readonly CopyOnWriteConcurrentDictionary<string, ExceptionFactory> _exactExceptionMappings
+            = new CopyOnWriteConcurrentDictionary<string, ExceptionFactory>();
+
+        /** Plugin exception mappings by class name pattern. */
+        private readonly CopyOnWriteConcurrentDictionary<string, ExceptionFactory> _patternExceptionMappings
             = new CopyOnWriteConcurrentDictionary<string, ExceptionFactory>();
 
         /** Plugin callbacks. */
@@ -145,18 +149,40 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             ExceptionFactory res;
 
-            return _exceptionMappings.TryGetValue(className, out res) ? res : null;
+            if (_exactExceptionMappings.TryGetValue(className, out res))
+            {
+                return res;
+            }
+
+            foreach (var mapping in _patternExceptionMappings)
+            {
+                if (className.StartsWith(mapping.Key, StringComparison.Ordinal))
+                {
+                    return mapping.Value;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
         /// Registers the exception mapping.
         /// </summary>
+        /// <param name="className">Full class name of java exception or class name pattern (if ends with '*').</param>
+        /// <param name="factory">Exception factory for matched java class name.</param>
         public void RegisterExceptionMapping(string className, ExceptionFactory factory)
         {
             Debug.Assert(className != null);
             Debug.Assert(factory != null);
 
-            _exceptionMappings.GetOrAdd(className, _ => factory);
+            if (className.EndsWith("*", StringComparison.Ordinal))
+            {
+                _patternExceptionMappings.GetOrAdd(className.Substring(0, className.Length - 1), _ => factory);
+            }
+            else
+            {
+                _exactExceptionMappings.GetOrAdd(className, _ => factory);
+            }
         }
 
         /// <summary>

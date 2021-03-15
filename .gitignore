@@ -94,3 +94,4 @@ packages
 /tests/venv
 modules/ducktests/tests/docker/build/**
 modules/ducktests/tests/.tox
+modules/ducktests/tests/certs/*

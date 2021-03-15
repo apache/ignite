@@ -14,13 +14,26 @@
 // limitations under the License.
 = Apache Ignite Documentation
 
-Apache Ignite is a distributed database for in-memory speed at petabyte scale.
+Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
 The technical documentation introduces you to the key capabilities, shows how to use certain features, or how to
-approach cluster optimizations and issues troubleshooting. If you are new to Ignite, then start with the
-link:quick-start/java[Quick Start Guides], and build the first application in a matter of 5-10 minutes.
+approach cluster optimizations and issues troubleshooting. If you are new to Ignite, then start with our
+quick start guides, and build the first application in a matter of 5-10 minutes.
 Otherwise, select the topic of your interest and have your problems solved, and questions answered.
 Good luck with your Ignite journey!
+
+== Quick Start Guides
+
+Build the first application in a matter of minutes.
+
+* link:quick-start/java[Java]
+* link:quick-start/sql[SQL]
+* link:quick-start/restapi[REST API]
+* link:quick-start/dotnet[C#/.NET]
+* link:quick-start/cpp[C++]
+* link:quick-start/python[Python]
+* link:quick-start/nodejs[Node.JS]
+* link:quick-start/php[PHP]
 
 == APIs
 
