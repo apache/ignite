@@ -35,8 +35,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             // Test Tasks and Funcs.
             var compute = Ignite.GetCompute();
 
+            // TODO: Most of the Compute goes through PlatformAbstractTask.reduce, except for Affinity* overloads
+            // - test them separately.
             await compute.RunAsync(new ComputeAction());
 
+            // TODO: More problems: here we hold the pub- thread that called PlatformAbstractTask.reduce,
+            // so reducing never completes and there is a resource leak.
             StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
         }
     }
