@@ -41,7 +41,8 @@ REMOVE_USER = 'removeuser'
 # pylint: disable=W0223
 class AuthenticationTests(IgniteTest):
     """
-    Tests Ignite Control Utility Activation command with enabled Authentication
+    Tests Ignite Authentication
+    https://ignite.apache.org/docs/latest/security/authentication
     """
     NUM_NODES = 2
 
