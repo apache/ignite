@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestampIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueTimestamp;
@@ -58,7 +57,7 @@ public class TimestampIndexKey extends AbstractTimestampIndexKey implements H2Va
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
+    @Override public int compare(IndexKey o) {
         return timestamp.compareTo(((TimestampIndexKey)o).timestamp, null);
     }
 }

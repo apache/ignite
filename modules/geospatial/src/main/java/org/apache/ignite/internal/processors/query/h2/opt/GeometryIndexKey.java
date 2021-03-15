@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueGeometry;
@@ -44,7 +43,7 @@ public class GeometryIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o, IndexKeyTypeSettings keySettings) {
+    @Override public int compare(IndexKey o) {
         return geometry.compareTo(((GeometryIndexKey)o).geometry, null);
     }
 }

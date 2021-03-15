@@ -59,12 +59,12 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
         IndexKey rkey = right.key(idx);
 
         if (lkey == NullIndexKey.INSTANCE)
-            return lkey.compare(rkey, keyTypeSettings);
+            return lkey.compare(rkey);
         else if (rkey == NullIndexKey.INSTANCE)
             return 1;
 
         if (lkey.type() == rkey.type())
-            return lkey.compare(rkey, keyTypeSettings);
+            return lkey.compare(rkey);
 
         return COMPARE_UNSUPPORTED;
     }

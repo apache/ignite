@@ -187,6 +187,10 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     return Collections.emptyList();
                 }
 
+                @Override public IndexKeyTypeSettings indexKeyTypeSettings() {
+                    return null;
+                }
+
                 /** {@inheritDoc} */
                 @Override public int partition(CacheDataRow row) {
                     return 0;
