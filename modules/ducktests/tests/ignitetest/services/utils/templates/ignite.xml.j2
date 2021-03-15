@@ -47,6 +47,9 @@
         {% if config.rebalance_batch_size %}
             <property name="rebalanceBatchSize" value="{{ config.rebalance_batch_size }}"/>
         {% endif %}
+        {% if config.rebalance_batches_prefetch_count %}
+            <property name="rebalanceBatchesPrefetchCount" value="{{ config.rebalance_batches_prefetch_count }}"/>
+        {% endif %}
         {% if config.rebalance_throttle %}
             <property name="rebalanceThrottle" value="{{ config.rebalance_throttle }}"/>
         {% endif %}

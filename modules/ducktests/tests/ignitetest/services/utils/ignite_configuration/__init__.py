@@ -48,6 +48,7 @@ class IgniteConfiguration(NamedTuple):
     metric_exporter: str = None
     rebalance_thread_pool_size: int = None
     rebalance_batch_size: int = None
+    rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
 
 

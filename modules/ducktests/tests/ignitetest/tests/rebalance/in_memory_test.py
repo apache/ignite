@@ -52,10 +52,12 @@ class RebalanceInMemoryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(trigger_event=[TriggerEvent.NODE_JOIN, TriggerEvent.NODE_LEFT],
               backups=[1], cache_count=[1], entry_count=[15000], entry_size=[50000],
-              rebalance_thread_pool_size=[None], rebalance_batch_size=[None], rebalance_throttle=[None])
+              rebalance_thread_pool_size=[None], rebalance_batch_size=[None],
+              rebalance_batches_prefetch_count=[None], rebalance_throttle=[None])
     def test(self, ignite_version, trigger_event,
              backups, cache_count, entry_count, entry_size,
-             rebalance_thread_pool_size, rebalance_batch_size, rebalance_throttle):
+             rebalance_thread_pool_size, rebalance_batch_size,
+             rebalance_batches_prefetch_count, rebalance_throttle):
         """
         Test performs rebalance test which consists of following steps:
             * Start cluster.
@@ -72,6 +74,7 @@ class RebalanceInMemoryTest(IgniteTest):
                     512 * 1024 * 1024))),
             rebalance_thread_pool_size=rebalance_thread_pool_size,
             rebalance_batch_size=rebalance_batch_size,
+            rebalance_batches_prefetch_count=rebalance_batches_prefetch_count,
             rebalance_throttle=rebalance_throttle)
 
         ignites = IgniteService(self.test_context, config=node_config,
@@ -96,5 +99,5 @@ class RebalanceInMemoryTest(IgniteTest):
         complete_time = await_rebalance_complete(ignite, start_node_and_time["node"], cache_count)
 
         return {"Rebalanced in (sec)": (complete_time - start_node_and_time["time"]).total_seconds(),
-                "Preloaded in (sec):": preload_time,
+                "Preloaded in (sec)": preload_time,
                 "Preload speed (MB/sec)": int(cache_count * entry_count * entry_size / 1000 / preload_time) / 1000.0}
