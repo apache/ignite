@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -337,6 +338,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Functions manager. */
     private FunctionsManager funcMgr;
+
+    /** Index rebuilding futures for caches. */
+    private final Map<Integer, GridFutureAdapter<?>> idxRebuildFuts = new ConcurrentHashMap<>();
 
     /**
      * @return Kernal context.
@@ -2086,8 +2090,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
-        //to avoid possible data race
+        // To avoid possible data race.
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
+
+        // For internal needs, ex: waiting for rebuilding at stopping caches.
+        GridFutureAdapter<?> newRebFut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> oldRebFut = idxRebuildFuts.put(cctx.cacheId(), newRebFut);
+
+        if (oldRebFut != null)
+            oldRebFut.onDone();
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
@@ -2105,6 +2116,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
 
             outRebuildCacheIdxFut.onDone(err);
+
+            idxRebuildFuts.remove(cctx.cacheId(), newRebFut);
+            newRebFut.onDone(err);
         });
 
         rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
@@ -3269,5 +3283,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log,
             defragmentationThreadPool
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteInternalFuture<?> indexRebuildFuture(GridCacheContext<?, ?> cacheCtx) {
+        return idxRebuildFuts.get(cacheCtx.cacheId());
     }
 }

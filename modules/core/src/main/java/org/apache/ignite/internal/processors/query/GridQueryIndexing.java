@@ -515,4 +515,12 @@ public interface GridQueryIndexing {
         Runnable cancellationChecker,
         IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException;
+
+    /**
+     * Getting index rebuild futures for the cache.
+     *
+     * @param cacheCtx Cache context.
+     * @return Indexes rebuilding future.
+     */
+    @Nullable IgniteInternalFuture<?> indexRebuildFuture(GridCacheContext<?, ?> cacheCtx);
 }

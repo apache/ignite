@@ -352,4 +352,9 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteInternalFuture<?> indexRebuildFuture(GridCacheContext<?, ?> cacheCtx) {
+        return null;
+    }
 }

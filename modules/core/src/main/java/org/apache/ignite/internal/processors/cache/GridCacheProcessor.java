@@ -1044,13 +1044,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (destroy)
                 cache.removeMetrics();
 
-            IgniteInternalFuture<?> rebuildIdxFut = ctx.kernalContext().query().indexRebuildFuture(ctx.cacheId());
+            if (ctx.kernalContext().query().moduleEnabled()) {
+                IgniteInternalFuture<?> rebFut = ctx.kernalContext().query().getIndexing().indexRebuildFuture(ctx);
 
-            if (rebuildIdxFut != null) {
-                try {
-                    rebuildIdxFut.get();
-                }
-                catch (IgniteCheckedException ignore) {
+                if (rebFut != null) {
+                    try {
+                        rebFut.get();
+                    }
+                    catch (IgniteCheckedException ignore) {
+                    }
                 }
             }
 

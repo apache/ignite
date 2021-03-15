@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,6 +33,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheCompoundFuture;
@@ -40,7 +43,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -58,6 +60,7 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         IgniteH2IndexingEx.cacheRowConsumer.clear();
+        IgniteH2IndexingEx.cacheRebuildRunner.clear();
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -68,6 +71,7 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
         super.afterTest();
 
         IgniteH2IndexingEx.cacheRowConsumer.clear();
+        IgniteH2IndexingEx.cacheRebuildRunner.clear();
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -166,6 +170,58 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checking the correctness of the {@link GridQueryIndexing#indexRebuildFuture}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIndexingRebuildFuture() throws Exception {
+        GridQueryProcessor.idxCls = IgniteH2IndexingEx.class;
+
+        IgniteEx n = prepareCluster(10);
+
+        CountDownLatch l0 = new CountDownLatch(1);
+        CountDownLatch l1 = new CountDownLatch(1);
+
+        GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+
+        IgniteH2IndexingEx.cacheRebuildRunner.put(DEFAULT_CACHE_NAME, () -> {
+            assertNull(n.context().query().getIndexing().indexRebuildFuture(cacheCtx));
+        });
+
+        IgniteH2IndexingEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, row -> {
+            l0.countDown();
+
+            try {
+                l1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteCheckedException(e);
+            }
+        });
+
+        n.context().cache().context().database().forceRebuildIndexes(F.asList(cacheCtx));
+
+        IgniteInternalFuture<?> rebFut0 = n.context().query().indexRebuildFuture(cacheCtx.cacheId());
+        assertNotNull(rebFut0);
+
+        IgniteInternalFuture<?> rebFut1 = n.context().query().getIndexing().indexRebuildFuture(cacheCtx);
+        assertNotNull(rebFut1);
+
+        assertTrue(l0.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertFalse(rebFut0.isDone());
+        assertFalse(rebFut1.isDone());
+
+        l1.countDown();
+
+        rebFut0.get(getTestTimeout());
+        rebFut1.get(getTestTimeout());
+
+        assertNull(n.context().query().indexRebuildFuture(cacheCtx.cacheId()));
+        assertNull(n.context().query().getIndexing().indexRebuildFuture(cacheCtx));
+    }
+
+    /**
      * Restart the rebuild of the indexes, checking that it completes gracefully.
      *
      * @param stopRebuildIndexes Stop index rebuild function.
@@ -174,26 +230,20 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
     private void stopRebuildIndexes(IgniteThrowableConsumer<IgniteEx> stopRebuildIndexes) throws Exception {
         GridQueryProcessor.idxCls = IgniteH2IndexingEx.class;
 
-        IgniteEx n = startGrid(0);
-
-        n.cluster().state(ACTIVE);
-        awaitPartitionMapExchange();
-
         int keys = 100_000;
-
-        for (int i = 0; i < keys; i++)
-            n.cache(DEFAULT_CACHE_NAME).put(i, new Person(i, "p_" + i));
+        IgniteEx n = prepareCluster(keys);
 
         IgniteH2IndexingEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, row -> {
             U.sleep(10);
         });
 
-        n.context().cache().context().database().forceRebuildIndexes(F.asList(n.cachex(DEFAULT_CACHE_NAME).context()));
+        GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+        n.context().cache().context().database().forceRebuildIndexes(F.asList(cacheCtx));
 
-        IgniteInternalFuture<?> idxFut = n.context().query().indexRebuildFuture(CU.cacheId(DEFAULT_CACHE_NAME));
+        IgniteInternalFuture<?> idxFut = n.context().query().indexRebuildFuture(cacheCtx.cacheId());
         assertNotNull(idxFut);
 
-        CacheMetricsImpl metrics0 = n.cachex(DEFAULT_CACHE_NAME).context().cache().metrics0();
+        CacheMetricsImpl metrics0 = cacheCtx.cache().metrics0();
         assertTrue(metrics0.isIndexRebuildInProgress());
         assertFalse(idxFut.isDone());
 
@@ -211,11 +261,32 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Prepare cluster for test.
+     *
+     * @param keys Key count.
+     * @throws Exception If failed.
+     */
+    private IgniteEx prepareCluster(int keys) throws Exception {
+        IgniteEx n = startGrid(0);
+
+        n.cluster().state(ACTIVE);
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < keys; i++)
+            n.cache(DEFAULT_CACHE_NAME).put(i, new Person(i, "p_" + i));
+
+        return n;
+    }
+
+    /**
      * Extension {@link IgniteH2Indexing} for the test.
      */
     private static class IgniteH2IndexingEx extends IgniteH2Indexing {
-        /** Consumer for cache lines when rebuilding indexes. */
+        /** Consumer for cache rows when rebuilding indexes. */
         private static Map<String, IgniteThrowableConsumer<CacheDataRow>> cacheRowConsumer = new ConcurrentHashMap<>();
+
+        /** A function that should run before preparing to rebuild the cache indexes. */
+        private static Map<String, Runnable> cacheRebuildRunner = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override protected void rebuildIndexesFromHash0(
@@ -231,6 +302,13 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
                     clo.apply(row);
                 }
             }, rebuildIdxFut);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+            cacheRebuildRunner.getOrDefault(cctx.name(), () -> {}).run();
+
+            return super.rebuildIndexesFromHash(cctx);
         }
     }
 }
