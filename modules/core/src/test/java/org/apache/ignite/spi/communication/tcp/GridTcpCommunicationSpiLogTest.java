@@ -37,11 +37,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Class for {@link TcpCommunicationSpi} logging tests.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
     /** Listener log messages. */
     private static ListeningTestLogger srvTestLog;

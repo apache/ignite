@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
@@ -565,6 +566,11 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type != null)
                 {
+                    if (_typeToDesc.TryGetValue(type, out desc))
+                    {
+                        return desc;
+                    }
+
                     return AddUserType(type, typeId, GetTypeName(type), true, desc);
                 }
             }
@@ -596,11 +602,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Try to get java type name and register corresponding DotNet type.
                     var javaTypeName =
                         _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId);
-                    var netTypeName = GetTypeName(javaTypeName);
 
-                    _ignite.BinaryProcessor.RegisterType(typeId, netTypeName, false);
+                    _ignite.BinaryProcessor.RegisterType(typeId, javaTypeName, false);
 
-                    return netTypeName;
+                    return javaTypeName;
                 }
                 : (Func<Exception, string>) null;
 
@@ -666,9 +671,23 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(type, desc0.Type, typeId);
             }
 
+            ValidateRegistration(type);
             _typeToDesc.Set(type, desc);
 
             return desc;
+        }
+
+        /// <summary>
+        /// Validates type registration.
+        /// </summary>
+        [ExcludeFromCodeCoverage]
+        private void ValidateRegistration(Type type)
+        {
+            BinaryFullTypeDescriptor desc;
+            if (_typeToDesc.TryGetValue(type, out desc) && !desc.UserType)
+            {
+                throw new BinaryObjectException("Invalid attempt to overwrite system type registration: " + type);
+            }
         }
 
         /// <summary>
@@ -806,6 +825,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
+                ValidateRegistration(type);
                 _typeToDesc.Set(type, descriptor);
             }
 

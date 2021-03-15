@@ -438,6 +438,20 @@ public class JavaThinClient {
         //end::client-services[]
     }
 
+    void asyncApi() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::async-api[]
+        IgniteClient client = Ignition.startClient(clientCfg);
+        ClientCache<Integer, String> cache = client.getOrCreateCache("cache");
+
+        IgniteClientFuture<Void> putFut = cache.putAsync(1, "hello");
+        putFut.get(); // Blocking wait.
+
+        IgniteClientFuture<String> getFut = cache.getAsync(1);
+        getFut.thenAccept(val -> System.out.println(val)); // Non-blocking continuation.
+        //end::async-api[]
+    }
+
     private static class MyTask {
     }
 

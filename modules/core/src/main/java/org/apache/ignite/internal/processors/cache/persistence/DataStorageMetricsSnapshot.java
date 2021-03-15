@@ -17,11 +17,19 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 public class DataStorageMetricsSnapshot implements DataStorageMetrics {

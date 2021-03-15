@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -682,21 +683,21 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return Collection of {@link MemoryMetrics} snapshots.
-     * @deprecated Use {@link #dataRegionMetrics()} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Use {@link #dataRegionMetrics(String)} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
-     * @deprecated Use {@link #dataStorageMetrics()} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public PersistenceMetrics persistentStoreMetrics();
@@ -708,6 +709,7 @@ public interface Ignite extends AutoCloseable {
      * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
      *
      * @return Collection of {@link DataRegionMetrics} snapshots.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     public Collection<DataRegionMetrics> dataRegionMetrics();
 
@@ -725,6 +727,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return {@link DataStorageMetrics} snapshot.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
      */
     public DataStorageMetrics dataStorageMetrics();
 

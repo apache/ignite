@@ -39,7 +39,6 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -129,13 +128,6 @@ abstract class TcpDiscoveryImpl {
 
     /** Tracing. */
     protected Tracing tracing;
-
-    /**
-     * FOR TEST ONLY!!
-     * If not {@code null}, enables network timeout simulation.
-     * First value switches traffic droppage: negative for all incoming, positive for all outgoing, 0 for both.
-     */
-    protected volatile IgnitePair<Integer> simulateNetTimeout;
 
     /**
      * Upcasts collection type.
@@ -367,54 +359,6 @@ abstract class TcpDiscoveryImpl {
      * This method is intended for test purposes only.
      */
     abstract void simulateNodeFailure();
-
-    /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * Enabled network timeout simulation.
-     *
-     * @param direction If negative, enables timeout simulation for reading incomming traffic. If positive, enables
-     *                  timeout simulation on traffic.
-     * @param delay     Milliseconds of awaiting before raising {@code SocketTimeoutException}. If negative, the passed
-     *                  timeout of certain net operation will be used.
-     * @see #simulateNetFailure(Socket, long)
-     */
-    void enableNetworkTimeoutSimulation(int direction, int delay) {
-        simulateNetTimeout = new IgnitePair<>(direction, delay < 0 ? null : delay);
-    }
-
-    /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * If enabled, simulates network timeout. Throws {@code SocketTimeoutException} after a delay.
-     *
-     * @param sock  The socket
-     * @param delay The delay before raising {@code SocketTimeoutException}. Ignored if preset with {@link
-     *              #enableNetworkTimeoutSimulation(int, int)}
-     * @see #enableNetworkTimeoutSimulation(int, int)
-     */
-    void simulateNetFailure(Socket sock, long delay) throws SocketTimeoutException {
-        IgnitePair<Integer> simulateNetTimeout = this.simulateNetTimeout;
-
-        if (simulateNetTimeout == null)
-            return;
-
-        boolean incoming = sock.getLocalPort() < spi.locPort + spi.locPortRange + 1;
-
-        if (incoming && simulateNetTimeout.get1() > 0 || !incoming && simulateNetTimeout.get1() < 0)
-            return;
-
-        long wait = simulateNetTimeout.get2() == null ? delay : simulateNetTimeout.get2();
-
-        try {
-            Thread.sleep(wait);
-        }
-        catch (InterruptedException ignored) {
-            // No-op.
-        }
-
-        throw new SocketTimeoutException("Simulated failure after delay: " + wait + "ms.");
-    }
 
     /**
      * FOR TEST PURPOSE ONLY!

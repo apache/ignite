@@ -66,12 +66,12 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Cleans performance statistics directory. */
-    protected static void cleanPerformanceStatisticsDir() throws Exception {
+    public static void cleanPerformanceStatisticsDir() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
     }
 
     /** Starts collecting performance statistics. */
-    protected static void startCollectStatistics() throws Exception {
+    public static void startCollectStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -82,7 +82,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Stops and reads collecting performance statistics. */
-    protected static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
+    public static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
