@@ -431,7 +431,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     @Test
     public void testParallelCacheStartWithTheSameNameOnPrepare() throws Exception {
         checkCacheStartWithTheSameName(RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, IgniteCheckedException.class,
-            "Cache start failed. A cache named \"cache1\" is currently being restored from a snapshot.");
+            "Cache start failed. A cache or group with the same name is currently being restored from a snapshot");
     }
 
     /**
@@ -670,7 +670,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             assertNull("nodeIdx=" + nodeIdx + ", cache=" + cacheName, desc);
 
             GridTestUtils.waitForCondition(
-                () -> !grid.context().cache().context().snapshotMgr().isCacheRestoring(null),
+                () -> !grid.context().cache().context().snapshotMgr().isSnapshotRestoring(),
                 TIMEOUT);
 
             File dir = resolveCacheDir(grid, cacheName);

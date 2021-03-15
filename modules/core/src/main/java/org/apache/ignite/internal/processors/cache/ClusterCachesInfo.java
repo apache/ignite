@@ -1030,12 +1030,10 @@ public class ClusterCachesInfo {
         if (err == null && !req.restoredCache()) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
-            String conflictingName = cacheName;
-
-            if (snapshotMgr.isCacheRestoring(conflictingName) ||
-                ((conflictingName = ccfg.getGroupName()) != null && snapshotMgr.isCacheRestoring(conflictingName))) {
-                err = new IgniteCheckedException("Cache start failed. A cache named \"" + conflictingName +
-                    "\" is currently being restored from a snapshot.");
+            if (snapshotMgr.isCacheRestoring(cacheName, ccfg.getGroupName())) {
+                err = new IgniteCheckedException("Cache start failed. A cache or group with the same name is " +
+                    "currently being restored from a snapshot [cache=" + cacheName +
+                    (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
             }
         }
 
