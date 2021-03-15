@@ -171,14 +171,6 @@ namespace Apache.Ignite.Platform.Model
     }
 
     /// <summary>
-    /// Test result class.
-    /// </summary>
-    public class R
-    {
-        public int Value { get; set; }
-    }
-
-    /// <summary>
     /// A class is a clone of Java class V1 with the same namespace.
     /// </summary>
     public class V1 { public String Name { get; set; } }
