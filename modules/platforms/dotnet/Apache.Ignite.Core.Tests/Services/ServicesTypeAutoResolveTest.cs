@@ -128,13 +128,15 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            _grid1.GetServices().DeployClusterSingleton(nameof(PlatformTestService), new PlatformTestService());
+            const string platformSvcName = "PlatformTestService";
 
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(nameof(PlatformTestService));
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
 
             DoTestService(svc);
 
-            _grid1.GetServices().Cancel(nameof(PlatformTestService));
+            _grid1.GetServices().Cancel(platformSvcName);
         }
 
         /// <summary>
