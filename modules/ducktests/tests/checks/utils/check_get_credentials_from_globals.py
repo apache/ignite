@@ -19,7 +19,7 @@ Check that get_credentials correctly parse Credentials from globals
 
 import pytest
 from ignitetest.services.utils.auth import get_credentials, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD, \
-    DEFAULT_CREDENTIALS_KEY, AUTHENTICATION_KEY, ENABLED_KEY
+    USERNAME_KEY, PASSWORD_KEY, AUTHENTICATION_KEY, ENABLED_KEY
 
 TEST_USERNAME = "admin"
 TEST_PASSWORD = "qwe123"
@@ -31,14 +31,16 @@ class CheckCaseJks:
     Posible structure is:
     {"authentication": {
         "enabled": true,
-        "default_credentials": ["admin","qwe123"]}}
+        "username": "admin",
+        "password": "qwe123"}}
     """
 
     @staticmethod
     @pytest.mark.parametrize('test_globals, expected_username, expected_password',
                              [({AUTHENTICATION_KEY: {
                                  ENABLED_KEY: True,
-                                 DEFAULT_CREDENTIALS_KEY: (TEST_USERNAME, TEST_PASSWORD)}}, TEST_USERNAME,
+                                 USERNAME_KEY: TEST_USERNAME,
+                                 PASSWORD_KEY: TEST_PASSWORD}}, TEST_USERNAME,
                                TEST_PASSWORD),
                                  ({AUTHENTICATION_KEY: {
                                      ENABLED_KEY: True}}, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)])

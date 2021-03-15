@@ -26,8 +26,7 @@ import org.apache.ignite.internal.processors.authentication.IgniteAuthentication
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 
 /**
- * Simple application that modify users
- * Posible operations: 0 - Add User 1 - Update User 2 - Remove User
+ * Simple application that modify users.
  */
 public class UserModifyingApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */

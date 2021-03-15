@@ -45,37 +45,8 @@ class AuthenticationTests(IgniteTest):
     """
     NUM_NODES = 2
 
-    @cluster(num_nodes=NUM_NODES - 1)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    def test_activate_with_authentication(self, ignite_version):
-        """
-        Test activate cluster.
-        Authentication enabled
-        """
-
-        config = IgniteConfiguration(
-            cluster_state="INACTIVE",
-            auth_enabled=True,
-            version=IgniteVersion(ignite_version),
-            data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(persistent=True)
-            )
-        )
-
-        servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES - 1)
-
-        servers.start()
-
-        ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD).activate()
-
-        # Run command with right password
-        check_authenticate(servers, DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)
-
-        # Run command with wrong password
-        check_authenticate(servers, DEFAULT_AUTH_USERNAME, WRONG_PASSWORD, True)
-
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_change_users(self, ignite_version):
         """
         Test add, update and remove user
@@ -103,12 +74,14 @@ class AuthenticationTests(IgniteTest):
         check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD)
 
         # Update user password
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD2, True)
         self.run_with_creds(client_cfg, UPDATE_USER, TEST_USERNAME, TEST_PASSWORD2)
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD, True)
         check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD2)
 
         # Remove user
         self.run_with_creds(client_cfg, REMOVE_USER, TEST_USERNAME, free=False)
-        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD, True)
+        check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD2, True)
 
     # pylint: disable=R0913
     def run_with_creds(self, client_configuration, rest_key: str, name: str, password: str = None, clean=False,
