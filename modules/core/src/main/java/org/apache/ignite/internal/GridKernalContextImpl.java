@@ -1326,7 +1326,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public Executor getCacheAsyncContinuationExecutor() {
+    @Override public Executor getAsyncContinuationExecutor() {
         return config().getAsyncContinuationExecutor() == null
                 ? ForkJoinPool.commonPool()
                 : config().getAsyncContinuationExecutor();

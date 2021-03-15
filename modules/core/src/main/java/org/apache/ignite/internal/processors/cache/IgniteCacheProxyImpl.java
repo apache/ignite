@@ -2367,7 +2367,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Async continuation executor.
      */
     private Executor exec() {
-        return context().kernalContext().getCacheAsyncContinuationExecutor();
+        return context().kernalContext().getAsyncContinuationExecutor();
     }
 
     /**

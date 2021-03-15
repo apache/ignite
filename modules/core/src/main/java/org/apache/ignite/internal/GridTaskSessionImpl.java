@@ -188,7 +188,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.subjId = subjId;
         this.execName = execName;
 
-        mapFut = new IgniteFutureImpl(new GridFutureAdapter());
+        mapFut = new IgniteFutureImpl(new GridFutureAdapter(), ctx.getAsyncContinuationExecutor());
     }
 
     /** {@inheritDoc} */
