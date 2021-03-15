@@ -477,7 +477,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public int size() {
         if (valBytes == null) {
-            return -1;
+            try {
+                valBytes = U.marshal(ctx.marshaller(), this);
+            } catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         return BinaryPrimitives.readInt(valBytes, ord + GridBinaryMarshaller.TOTAL_LEN_POS);
