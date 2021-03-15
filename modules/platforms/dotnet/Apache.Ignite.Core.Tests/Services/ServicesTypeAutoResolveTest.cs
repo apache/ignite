@@ -203,6 +203,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
+
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
@@ -232,13 +233,13 @@ namespace Apache.Ignite.Core.Tests.Services
 
             map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
             map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
-/*
+
             var res = svc.testMap(map);
 
             Assert.NotNull(res);
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
-*/
+
             var accs = svc.testAccounts();
 
             Assert.AreEqual(typeof(Account[]), accs.GetType());
