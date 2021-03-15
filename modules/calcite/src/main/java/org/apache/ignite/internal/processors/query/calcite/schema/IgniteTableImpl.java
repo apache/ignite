@@ -36,6 +36,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,15 +63,20 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private final Statistic statistic;
 
     /** */
+    private final GridKernalContext ctx;
+
+    /** */
     private volatile GridH2Table tbl;
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
     /**
-     *  @param desc Table descriptor.
+     * @param ctx Kernal context.
+     * @param desc Table descriptor.
      */
-    public IgniteTableImpl(TableDescriptor desc) {
+    public IgniteTableImpl(GridKernalContext ctx, TableDescriptor desc) {
+        this.ctx = ctx;
         this.desc = desc;
         statistic = new StatisticsImpl();
     }
@@ -81,7 +89,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
         if (tbl == null) {
-            IgniteH2Indexing idx = (IgniteH2Indexing) desc.cacheContext().kernalContext().query().getIndexing();
+            IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
 
             final String tblName = desc.typeDescription().tableName();
             final String schemaName = desc.typeDescription().schemaName();
@@ -166,6 +174,21 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             return aCls.cast(desc);
 
         return super.unwrap(aCls);
+    }
+
+    /**
+     * Start cache context for lazy caches.
+     */
+    public void ensureCacheStarted() {
+        if (desc.cacheContext() == null) {
+            try {
+                ctx.cache().dynamicStartCache(null, desc.cacheInfo().config().getName(), null,
+                    false, true, true).get();
+            }
+            catch (IgniteCheckedException ex) {
+                throw U.convertException(ex);
+            }
+        }
     }
 
     /** */
