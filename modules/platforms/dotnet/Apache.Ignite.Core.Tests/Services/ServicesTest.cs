@@ -920,7 +920,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+            var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(javaSvcName, true));
 
             DoTestService(svc);
 
@@ -955,8 +955,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
 
             var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
+            var binSvc = svcsForProxy.WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(platformSvcName, false);
 
             DoTestService(svc);
+
+            DoTestBinary(svc, binSvc);
 
             Services.Cancel(platformSvcName);
         }
@@ -1200,9 +1204,11 @@ namespace Apache.Ignite.Core.Tests.Services
             // Binary object array.
             var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
 
-            var binObjs = binSvc.testBinaryObjectArray(binArr);
+            var binObjs = binSvc.testBinaryObjectArray(binArr).Select(x => x.GetField<int>("Field")).ToArray();
 
-            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
+            Array.Sort(binObjs);
+
+            Assert.AreEqual(new[] {11, 12, 13}, binObjs);
 
             // Binary object
             Assert.AreEqual(15,

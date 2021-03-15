@@ -104,21 +104,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            // Deploy .Net service.
-            var platformSvcName = nameof(PlatformTestService);
-
-            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
-
-            try
-            {
-                DoTestService(svc);
-            }
-            finally
-            {
-                _grid1.GetServices().Cancel(platformSvcName);
-            }
+            DoTestPlatformService(_client.GetServices());
         }
 
         /// <summary>
@@ -128,11 +114,19 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceLocal()
         {
+            DoTestPlatformService(_grid1.GetServices());
+        }
+
+        /// <summary>
+        /// Tests .Net service invocation.
+        /// </summary>
+        public void DoTestPlatformService(IServices svcsForProxy)
+        {
             const string platformSvcName = "PlatformTestService";
 
             _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
 
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
 
             DoTestService(svc);
 
