@@ -28,8 +28,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -143,10 +143,10 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
 
         final UUID id1 = ignite1.localNode().id();
@@ -178,10 +178,10 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         startGrid(GRIDS_NUM - 2);
 
         final UUID id1 = ignite1.localNode().id();

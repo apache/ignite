@@ -17,27 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.keys;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestampIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.h2.value.ValueTimestamp;
 
 /** */
-public class TimestampIndexKey extends AbstractTimestampIndexKey {
+public class TimestampIndexKey extends AbstractTimestampIndexKey implements H2ValueWrapperMixin {
     /** */
     private final ValueTimestamp timestamp;
 
     /** */
     public TimestampIndexKey(Object obj) {
-        try {
-            timestamp = (ValueTimestamp) H2Utils.wrap(null, obj, type());
-
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to convert object to TimestampIndexKey.", e);
-        }
+        timestamp = (ValueTimestamp) wrapToValue(obj, type());
     }
 
     /** */

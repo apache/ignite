@@ -68,6 +68,8 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -339,6 +341,11 @@ public class ValidationOnNodeJoinUtils {
                     ", dataRegionName=" + memPlcName + ", pageEvictionMode=" +
                     dataRegion.config().getPageEvictionMode() + ']');
             }
+
+            IndexingSpi idxSpi = ctx.config().getIndexingSpi();
+
+            apply(assertParam, idxSpi == null || idxSpi instanceof NoopIndexingSpi,
+                "Custom IndexingSpi cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
         }
 
         // This method can be called when memory recovery is in progress,

@@ -62,8 +62,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -181,8 +181,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final @Nullable GridQueryIndexing idx;
 
-    /** */
-    private final GridIndexingManager idxMng;
+    /** Indexing manager. */
+    private final IndexProcessor idxProc;
 
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
@@ -254,9 +254,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
 
-        valCtx = new CacheQueryObjectValueContext(ctx);
+        idxProc = ctx.indexProcessor();
 
-        idxMng = ctx.indexing();
+        valCtx = new CacheQueryObjectValueContext(ctx);
 
         ioLsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -2295,7 +2295,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (rebuildIsMeaningless(cctx))
             return;
 
-        idxMng.markIndexesRebuildForCache(cctx, val);
+        idxProc.markRebuildIndexesForCache(cctx, val);
 
         idx.markAsRebuildNeeded(cctx, val);
     }
@@ -2366,7 +2366,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
-        IgniteInternalFuture<?> idxFut = idxMng.rebuildIndexesForCache(cctx);
+        IgniteInternalFuture<?> idxFut = idxProc.rebuildIndexesForCache(cctx);
 
         return chainIndexRebuildFuture(idxFut, cctx);
     }
@@ -2467,7 +2467,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (prevValDesc != desc) {
                 if (prevValDesc != null) {
-                    idxMng.remove(cacheName, prevRow);
+                    idxProc.remove(cacheName, prevRow);
 
                     if (idx != null)
                         idx.remove(cctx, prevValDesc, prevRow);
@@ -2478,7 +2478,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        idxMng.store(cctx, newRow, prevRow, prevRowAvailable);
+        idxProc.store(cctx, newRow, prevRow, prevRowAvailable);
 
         if (desc == null) {
             int typeId = ctx.cacheObjects().typeId(val);
@@ -3261,7 +3261,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
 
-        idxMng.remove(cctx.name(), row);
+        idxProc.remove(cctx.name(), row);
 
         if (idx == null)
             return;

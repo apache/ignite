@@ -38,7 +38,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -877,7 +877,7 @@ public class CachePartitionDefragmentationManager {
         if (!query.moduleEnabled())
             return;
 
-        final GridIndexingManager idx = grpCtx.caches().get(0).kernalContext().indexing();
+        final IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 

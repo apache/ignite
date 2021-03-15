@@ -542,7 +542,7 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl, ctx.indexing());
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl, ctx.indexProcessor());
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);

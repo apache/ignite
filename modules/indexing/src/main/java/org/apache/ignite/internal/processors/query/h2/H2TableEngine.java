@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.api.TableEngine;
@@ -42,7 +42,7 @@ public class H2TableEngine implements TableEngine {
     private static GridH2Table resTbl0;
 
     /** */
-    private static GridIndexingManager idxMgr0;
+    private static IndexProcessor idxMgr0;
 
     /**
      * Creates table using given connection, DDL clause for given type descriptor and list of indexes.
@@ -59,7 +59,7 @@ public class H2TableEngine implements TableEngine {
         String sql,
         GridH2RowDescriptor rowDesc,
         H2TableDescriptor tblDesc,
-        GridIndexingManager idxMgr
+        IndexProcessor idxMgr
     )
         throws SQLException {
         rowDesc0 = rowDesc;

@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.IgniteIndexing;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -129,11 +132,32 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Indexing SPI implementation for test
      */
-    private static class MyBrokenIndexingSpi extends IgniteIndexing {
+    private static class MyBrokenIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** {@inheritDoc} */
-        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-            boolean prevRowAvailable) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void spiStop() throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
+            @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
+            throws IgniteSpiException {
             throw new IgniteSpiException("Test exception");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
+            // No-op.
         }
     }
 }

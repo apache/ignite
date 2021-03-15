@@ -1330,7 +1330,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     RootPage page = indexStorage.allocateIndex(name);
 
-                    ctx.kernalContext().indexing().destroyOrphanIndex(
+                    ctx.kernalContext().indexProcessor().destroyOrphanIndex(
                         ctx.kernalContext(),
                         page,
                         name,

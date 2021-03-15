@@ -38,9 +38,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -178,7 +178,7 @@ public class GridH2Table extends TableBase {
 
     /** Index manager. */
     @GridToStringExclude
-    private GridIndexingManager idxMgr;
+    private IndexProcessor idxMgr;
 
     /** Table name. Use it to persist table name for destroy index after destroying table. */
     private String tableName;
@@ -197,7 +197,7 @@ public class GridH2Table extends TableBase {
         GridH2RowDescriptor desc,
         H2TableDescriptor tblDesc,
         GridCacheContextInfo cacheInfo,
-        GridIndexingManager idxMgr
+        IndexProcessor idxMgr
     ) {
         super(createTblData);
 

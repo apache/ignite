@@ -57,12 +57,12 @@ public class IndexesRebuildTask {
             clo = row -> cctx.queries().store(row, null, mvccEnabled);
         }
         else {
-            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexing().treeIndexes(cctx, true);
+            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx, true);
 
             if (F.isEmpty(toRebuild))
                 return null;
 
-            clo = row -> cctx.kernalContext().indexing().store(toRebuild, row, null, false);
+            clo = row -> cctx.kernalContext().indexProcessor().store(toRebuild, row, null, false);
         }
 
         // Closure prepared, do rebuild.

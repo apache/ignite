@@ -47,8 +47,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -116,7 +116,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
 
         for (T2<CountDownLatch, CountDownLatch> block : BLOCKS.values())
             block.get1().countDown();
@@ -603,7 +603,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      * @throws Exception If failed.
      */
     private IgniteEx ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) throws Exception {
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         IgniteEx node = startGrid(cfg);
 

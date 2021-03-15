@@ -19,12 +19,12 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 
 /**
  * Inline index key implementation for inlining Java Objects as byte array.
@@ -34,7 +34,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
     private final BytesInlineIndexKeyType delegate = new BytesInlineIndexKeyType();
 
     /** */
-    private final JavaObjectKeySerializer serializer = GridIndexingManager.serializer;
+    private final JavaObjectKeySerializer serializer = IndexProcessor.serializer;
 
     /** */
     public ObjectByteArrayInlineIndexKeyType() {

@@ -1462,6 +1462,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!rebuildCond.test(cacheCtx))
                 continue;
 
+            // TODO: safely replace qryProc -> idxProc.
             IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);
 
             if (nonNull(rebuildFut))

@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -97,7 +97,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /**
@@ -143,13 +143,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
-        GridIndexingManager.idxRebuildCls = CaptureRebuildGridQueryIndexing.class;
+        IndexProcessor.idxRebuildCls = CaptureRebuildGridQueryIndexing.class;
 
         IgniteEx node = startGrid(0);
 
         awaitPartitionMapExchange();
 
-        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexing().idxRebuild();
+        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexProcessor().idxRebuild();
 
         assertFalse(idxRebuild.didRebuildIndexes());
 

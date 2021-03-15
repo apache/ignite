@@ -36,7 +36,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest.BlockingIndexesRebuildTask;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -130,7 +130,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         cleanPersistenceDir();
 
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /**
@@ -140,7 +140,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
         pds = true;
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         IgniteEx ignite = startGrid(0);
 
@@ -171,7 +171,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
-        BlockingIndexesRebuildTask blockingRebuild = (BlockingIndexesRebuildTask)ignite.context().indexing()
+        BlockingIndexesRebuildTask blockingRebuild = (BlockingIndexesRebuildTask)ignite.context().indexProcessor()
             .idxRebuild();
 
         while (!blockingRebuild.isBlock(cacheName2) || !blockingRebuild.isBlock(cacheName3))

@@ -62,8 +62,8 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
@@ -112,7 +112,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = false;
 
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /** @return System schema name. */
@@ -369,7 +369,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         srv = startGrid(getConfiguration());
 
@@ -378,14 +378,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexesRebuildTask)srv.context().indexing().idxRebuild()).stopBlock(cacheSqlName1);
+        ((BlockingIndexesRebuildTask)srv.context().indexProcessor().idxRebuild()).stopBlock(cacheSqlName1);
 
         srv.cache(cacheSqlName1).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexesRebuildTask)srv.context().indexing().idxRebuild()).stopBlock(cacheSqlName2);
+        ((BlockingIndexesRebuildTask)srv.context().indexProcessor().idxRebuild()).stopBlock(cacheSqlName2);
 
         srv.cache(cacheSqlName2).indexReadyFuture().get(30_000);
 

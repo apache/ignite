@@ -20,8 +20,6 @@ package org.apache.ignite.spi.indexing.noop;
 import java.util.Collection;
 import java.util.Iterator;
 import javax.cache.Cache;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
@@ -43,12 +41,6 @@ public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     /** {@inheritDoc} */
     @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
         throws IgniteSpiException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-        boolean prevRowAvailable) throws IgniteSpiException {
         assert false;
     }
 

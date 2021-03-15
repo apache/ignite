@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
@@ -73,7 +73,7 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
                     return obj.valueBytes(valCtx);
 
                 // For user-provided and array types.
-                serialized = GridIndexingManager.serializer.serialize(obj);
+                serialized = IndexProcessor.serializer.serialize(obj);
             }
 
             return serialized;

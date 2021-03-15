@@ -17,27 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.keys;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractDateIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.h2.value.ValueDate;
 
 /** */
-public class DateIndexKey extends AbstractDateIndexKey {
+public class DateIndexKey extends AbstractDateIndexKey implements H2ValueWrapperMixin {
     /** */
     private final ValueDate date;
 
     /** */
     public DateIndexKey(Object obj) {
-        try {
-            date = (ValueDate) H2Utils.wrap(null, obj, type());
-
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to convert object to DateIndexKey.", e);
-        }
+        date = (ValueDate) wrapToValue(obj, type());
     }
 
     /** */

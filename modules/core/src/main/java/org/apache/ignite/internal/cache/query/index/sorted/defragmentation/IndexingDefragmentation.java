@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -55,10 +55,10 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
  */
 public class IndexingDefragmentation {
     /** Indexing. */
-    private final GridIndexingManager indexing;
+    private final IndexProcessor indexing;
 
     /** Constructor. */
-    public IndexingDefragmentation(GridIndexingManager indexing) {
+    public IndexingDefragmentation(IndexProcessor indexing) {
         this.indexing = indexing;
     }
 
@@ -146,7 +146,7 @@ public class IndexingDefragmentation {
             for (InlineIndex oldIdx : indexes.idxs) {
                 InlineIndexRowHandler oldRowHnd = oldIdx.segment(0).rowHandler();
 
-                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.indexDefition(oldIdx.id());
+                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.indexDefinition(oldIdx.id());
 
                 InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
@@ -222,7 +222,7 @@ public class IndexingDefragmentation {
             List<InlineIndex> indexes = indexing.treeIndexes(cctx, false);
 
             for (InlineIndex idx: indexes) {
-                String table = indexing.indexDefition(idx.id()).idxName().tableName();
+                String table = indexing.indexDefinition(idx.id()).idxName().tableName();
 
                 idxs.putIfAbsent(table, new TableIndexes(cctx, table));
 

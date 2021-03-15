@@ -61,7 +61,7 @@ public class InlineRecommender {
 
     /** Constructor. */
     public InlineRecommender(GridCacheContext<?, ?> cctx, SortedIndexDefinition def) {
-        log = cctx.kernalContext().indexing().logger();
+        log = cctx.kernalContext().indexProcessor().logger();
         this.def = def;
     }
 

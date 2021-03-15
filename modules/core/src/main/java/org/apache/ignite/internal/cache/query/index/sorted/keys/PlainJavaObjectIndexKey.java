@@ -19,7 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -40,7 +40,7 @@ public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
     @Override public byte[] bytesNoCopy() {
         try {
             if (serialized == null)
-                serialized = GridIndexingManager.serializer.serialize(key);
+                serialized = IndexProcessor.serializer.serialize(key);
 
             return serialized;
         }
@@ -53,7 +53,7 @@ public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
     @Override public Object key() {
         try {
             if (key == null)
-                key = GridIndexingManager.serializer.deserialize(serialized);
+                key = IndexProcessor.serializer.deserialize(serialized);
 
             return key;
 

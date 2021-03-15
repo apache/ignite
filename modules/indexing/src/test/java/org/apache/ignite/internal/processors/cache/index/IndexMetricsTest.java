@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -76,7 +76,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         cleanPersistenceDir();
 
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /**
@@ -137,7 +137,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         n = startGrid(0);
 
@@ -204,7 +204,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexesRebuildTask)n.context().indexing().idxRebuild()).stopBlock(cacheName1);
+        ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName1);
 
         n.cache(cacheName1).indexReadyFuture().get(30_000);
 
@@ -216,7 +216,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexesRebuildTask)n.context().indexing().idxRebuild()).stopBlock(cacheName2);
+        ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName2);
 
         n.cache(cacheName2).indexReadyFuture().get(30_000);
 

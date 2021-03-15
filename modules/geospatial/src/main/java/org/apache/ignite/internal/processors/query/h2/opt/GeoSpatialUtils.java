@@ -59,7 +59,7 @@ public class GeoSpatialUtils {
 
             IndexDefinition def = new GeoSpatialIndexDefinition(name, rowHnd, segments);
 
-            Index idx = tbl.cacheContext().kernalContext().indexing().createIndex(
+            Index idx = tbl.cacheContext().kernalContext().indexProcessor().createIndex(
                 tbl.cacheContext(), GeoSpatialIndexFactory.INSTANCE, def);
 
             return new GridH2SpatialIndex(idx.unwrap(GeoSpatialIndexImpl.class));

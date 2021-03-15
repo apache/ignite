@@ -29,14 +29,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.IgniteIndexing;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +89,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         cleanPersistenceDir();
 
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /** */
@@ -117,7 +117,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         IgniteEx ignite = startGrid(0);
 
@@ -131,7 +131,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(true);
 
-        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexing().idxRebuild())
+        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexProcessor().idxRebuild())
             .stopBlock(cacheName1);
 
         GridTestUtils.assertThrows(log, () -> ignite.cache(cacheName1).indexReadyFuture().get(30_000),
@@ -141,7 +141,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(false);
 
-        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexing().idxRebuild())
+        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexProcessor().idxRebuild())
             .stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
@@ -150,7 +150,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
     }
 
     /** */
-    private class TestIndexingSpi extends IgniteIndexing {
+    private class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
@@ -158,11 +158,25 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
         }
 
         /** {@inheritDoc} */
-        @Override public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-            boolean prevRowAvailable)
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
             if (failIndexRebuild.get())
                 throw new IgniteSpiException("Test exception.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void spiStop() throws IgniteSpiException {
+            // No-op.
         }
     }
 }

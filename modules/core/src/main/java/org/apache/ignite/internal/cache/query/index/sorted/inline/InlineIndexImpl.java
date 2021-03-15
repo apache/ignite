@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
@@ -42,6 +43,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * Sorted index implementation.
@@ -261,28 +264,55 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
                 IndexRowImpl row0 = new IndexRowImpl(rowHnd, newRow);
 
-                // Validate all keys.
+                // Validate all keys before an actual put. User may specify wrong data types for an insert query.
                 for (int i = 0; i < def.indexKeyDefinitions().size(); ++i)
                     row0.key(i);
 
-                if (prevRowAvailable && !rebuildInProgress())
-                    replaced = segments[segment].putx(row0);
-                else {
-                    IndexRow prevRow0 = segments[segment].put(row0);
-
-                    replaced = prevRow0 != null;
-                }
+                replaced = putx(row0, segment, prevRowAvailable && !rebuildInProgress());
             }
 
             // Delete.
-            if (!replaced && oldRow != null) {
-                int segment = segmentForRow(oldRow);
-
-                segments[segment].remove(new IndexRowImpl(rowHnd, oldRow));
-            }
+            if (!replaced && oldRow != null)
+                remove(oldRow);
 
         } finally {
             ThreadLocalRowHandlerHolder.clearRowHandler();
+        }
+    }
+
+    /** */
+    private boolean putx(IndexRowImpl idxRow, int segment, boolean flag) throws IgniteCheckedException {
+        try {
+            boolean replaced;
+
+            if (flag)
+                replaced = segments[segment].putx(idxRow);
+            else {
+                IndexRow prevRow0 = segments[segment].put(idxRow);
+
+                replaced = prevRow0 != null;
+            }
+
+            return replaced;
+
+        }  catch (Throwable t) {
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw t;
+        }
+    }
+
+    /** */
+    private void remove(CacheDataRow row) throws IgniteCheckedException {
+        try {
+            int segment = segmentForRow(row);
+
+            segments[segment].remove(new IndexRowImpl(rowHnd, row));
+
+        }  catch (Throwable t) {
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw t;
         }
     }
 

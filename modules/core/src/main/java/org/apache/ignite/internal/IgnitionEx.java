@@ -77,7 +77,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.cache.query.index.IgniteIndexing;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -129,6 +128,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -2516,7 +2516,7 @@ public class IgnitionEx {
             }
 
             if (cfg.getIndexingSpi() == null)
-                cfg.setIndexingSpi(new IgniteIndexing());
+                cfg.setIndexingSpi(new NoopIndexingSpi());
 
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());

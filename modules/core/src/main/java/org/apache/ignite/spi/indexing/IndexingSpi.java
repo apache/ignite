@@ -18,16 +18,8 @@
 package org.apache.ignite.spi.indexing;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.UUID;
 import javax.cache.Cache;
-import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.IndexDefinition;
-import org.apache.ignite.internal.cache.query.index.IndexFactory;
-import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
@@ -92,56 +84,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteSpiException If failed.
      */
-    public default void store(@Nullable String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException {
-        // No-op.
-    }
-
-    /**
-     * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
-     * the key should be removed from indexes other than one being updated.
-     *
-     * @param cctx Cache context.
-     * @param newRow cache row to store in index.
-     * @param prevRow optional cache row that will be replaced with new row.
-     */
-    public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-        boolean prevRowAvailable) throws IgniteSpiException;
-
-    /**
-     * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
-     * the key should be removed from indexes other than one being updated.
-     *
-     * @param idxs List of indexes to update.
-     * @param newRow cache row to store in index.
-     * @param prevRow optional cache row that will be replaced with new row.
-     */
-    public default void store(Collection<? extends Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-        boolean prevRowAvailable)
-        throws IgniteSpiException {
-        // No-Op.
-    }
-
-    /**
-     * Creates a new index.
-     *
-     * @param cctx Cache context.
-     * @param factory Index factory.
-     * @param def Description of an index to create.
-     */
-    public default Index createIndex(GridCacheContext<?, ?> cctx, IndexFactory factory, IndexDefinition def) {
-        throw new IllegalStateException("IndexingSpi must implement createIndex method.");
-    }
-
-    /**
-     * Removes an index.
-     *
-     * @param cctx Cache context.
-     * @param idxName Index name.
-     * @param softDelete whether it's required to delete underlying structures.
-     */
-    public default void removeIndex(GridCacheContext<?, ?> cctx, IndexName idxName, boolean softDelete) {
-        // No-op.
-    }
+    public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException;
 
     /**
      * Removes index entry by key.
@@ -151,41 +94,4 @@ public interface IndexingSpi extends IgniteSpi {
      * @throws IgniteSpiException If failed.
      */
     public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException;
-
-    /**
-     * Delete specified row from index.
-     *
-     * @param cacheName Cache name.
-     * @param prevRow Cache row to delete from index.
-     */
-    public default void remove(String cacheName, @Nullable CacheDataRow prevRow) {
-        // No-op.
-    }
-
-    /**
-     * Mark/unmark for rebuild indexes for a specific cache.
-     */
-    public default void markRebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean val) {
-        // No-op.
-    }
-
-    /**
-     * Returns collection of indexes for specified cache.
-     *
-     * @param cctx Cache context.
-     * @return Collection of indexes for specified cache.
-     */
-    public default Collection<Index> indexes(GridCacheContext<?, ?> cctx) {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Returns IndexDefinition used for creating index specified id.
-     *
-     * @param idxId UUID of index.
-     * @return IndexDefinition used for creating index with id {@code idxId}.
-     */
-    public default IndexDefinition indexDefinition(UUID idxId) {
-        return null;
-    }
 }

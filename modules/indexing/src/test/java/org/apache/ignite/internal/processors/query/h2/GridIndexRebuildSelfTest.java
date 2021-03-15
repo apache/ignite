@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -91,7 +91,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         IgniteConfiguration cfg = super.serverConfiguration(idx);
 
         if (nonNull(blkIndexingCls))
-            GridIndexingManager.idxRebuildCls = blkIndexingCls;
+            IndexProcessor.idxRebuildCls = blkIndexingCls;
 
         return cfg;
     }
@@ -116,7 +116,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-        GridIndexingManager.idxRebuildCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /** {@inheritDoc} */
