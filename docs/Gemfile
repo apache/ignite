@@ -12,3 +12,6 @@ end
 gem 'thread_safe', '~> 0.3.6'
 gem 'slim', '~> 4.0.1'
 gem 'tilt', '~> 2.0.9'
+
+# Ruby 3.0.0 requires dependency which doesn't contains in the bundle
+gem "webrick", "~> 1.7"
