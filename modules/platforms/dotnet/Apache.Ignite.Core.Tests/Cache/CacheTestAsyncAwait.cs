@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             await cache.PutAsync(key, key);
             
-            Assert.AreEqual(origThread, Thread.CurrentThread);
+            Assert.AreEqual(origThread.ManagedThreadId, Thread.CurrentThread.ManagedThreadId);
         }
     }
 }
