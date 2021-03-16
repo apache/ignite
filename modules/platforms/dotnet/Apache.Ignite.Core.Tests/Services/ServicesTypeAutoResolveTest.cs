@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -141,8 +140,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestDepartments(svc);
-
             _grid1.GetServices().Cancel(javaSvcName);
         }
 
@@ -160,25 +157,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestDepartments(svc);
-
             _grid1.GetServices().Cancel(javaSvcName);
-        }
-
-        /// <summary>
-        /// Tests departments call.
-        /// </summary>
-        private void DoTestDepartments(IJavaService svc)
-        {
-            Assert.IsNull(svc.testDepartments(null));
-
-            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
-
-            ICollection deps = svc.testDepartments(arr);
-
-            Assert.NotNull(deps);
-            Assert.AreEqual(1, deps.Count);
-            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
         }
 
         /// <summary>
@@ -186,6 +165,18 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private static void DoTestService(IJavaService svc)
         {
+            Assert.IsNull(svc.testDepartments(null));
+
+            var deps = svc.testDepartments(new[]
+            {
+                new Department() {Name = "HR"},
+                new Department() {Name = "IT"}
+            }.ToList());
+
+            Assert.NotNull(deps);
+            Assert.AreEqual(1, deps.Count);
+            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
+
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
