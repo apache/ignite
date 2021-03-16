@@ -1112,6 +1112,52 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /**
+     * Set the TTL of the specified key.
+     *
+     * @param key
+     * @param ttl
+     */
+    @Override
+    public void setTtl(K key, long ttl) {
+
+    }
+
+    /**
+     * Set the TTL of the specified key using the supplied policy.
+     *
+     * @param key
+     * @param ttlPolicy
+     */
+    @Override
+    public void setTtl(K key, ExpiryPolicy ttlPolicy) {
+
+    }
+
+    /**
+     * Set the TTL of the specified key.
+     *
+     * @param key
+     * @param ttl
+     * @return
+     */
+    @Override
+    public IgniteFuture<Void> setTtlAsync(K key, long ttl) {
+        return null;
+    }
+
+    /**
+     * Set the TTL of the specified key using the supplied policy.
+     *
+     * @param key
+     * @param ttlPolicy
+     * @return
+     */
+    @Override
+    public IgniteFuture<Void> setTtlAsync(K key, ExpiryPolicy ttlPolicy) {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) throws TransactionException {
         CacheOperationGate opGate = onEnter();
