@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSingleGrid([Values(false, true)] bool customMapper)
         {
-            using (var ignite = Ignition.Start(GetConfig(client: false, customMapper)))
+            using (var ignite = Ignition.Start(GetConfig(false, customMapper)))
             {
                 Test(ignite, ignite);
             }
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestTwoGrids([Values(false, true)] bool clientMode, [Values(false, true)] bool customMapper)
         {
-            var cfg1 = GetConfig(client: false, customMapper);
+            var cfg1 = GetConfig(false, customMapper);
             var cfg2 = GetConfig(clientMode, customMapper, "grid2");
 
             using (var ignite1 = Ignition.Start(cfg1))
