@@ -177,19 +177,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
 
-            Assert.IsNull(svc.testMap(null));
-
-            var map = new Dictionary<Key, Value>();
-
-            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
-            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
-
-            var res = svc.testMap(map);
-
-            Assert.NotNull(res);
-            Assert.AreEqual(1, res.Count);
-            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
-
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
@@ -211,6 +198,19 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("Kyle Reese", emps[0].Fio);
             Assert.AreEqual(3, emps[0].Salary);
+
+            Assert.IsNull(svc.testMap(null));
+
+            var map = new Dictionary<Key, Value>();
+
+            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
+            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
+
+            var res = svc.testMap(map);
+
+            Assert.NotNull(res);
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
 
             var accs = svc.testAccounts();
 
