@@ -128,14 +128,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
 
-            try
-            {
-                DoTestService(svc);
-            }
-            finally
-            {
-                _grid1.GetServices().Cancel(platformSvcName);
-            }
+            DoTestService(svc);
+
+            _grid1.GetServices().Cancel(platformSvcName);
         }
 
         /// <summary>
@@ -193,13 +188,13 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             Assert.IsNull(svc.testDepartments(null));
 
-            var arr = new[] { new Department {Name = "HR"}, new Department {Name = "IT"} }.ToList();
+            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToList();
 
             ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
-            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
+            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
 
             Assert.IsNull(svc.testAddress(null));
 
