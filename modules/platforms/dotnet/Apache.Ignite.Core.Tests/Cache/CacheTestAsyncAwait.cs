@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.Threading;
     using System.Threading.Tasks;
     using NUnit.Framework;
 
@@ -48,6 +49,18 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(2, cache.Get(key));
             StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
+        }
+
+        [Test]
+        public async Task TestLocalOperationExecutesSynchronously()
+        {
+            var cache = Ignite.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var key = TestUtils.GetPrimaryKey(Ignite, cache.Name);
+            var origThread = Thread.CurrentThread;
+
+            await cache.PutAsync(key, key);
+            
+            Assert.AreEqual(origThread, Thread.CurrentThread);
         }
     }
 }
