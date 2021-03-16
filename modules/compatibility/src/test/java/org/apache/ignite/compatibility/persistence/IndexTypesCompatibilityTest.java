@@ -324,4 +324,11 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
             }
         }
     }
+
+    /**
+     * Too many insert queries for every type. Need wait more time.
+     */
+    @Override protected long getNodeJoinTimeout() {
+        return 90_000;
+    }
 }
