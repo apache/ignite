@@ -92,7 +92,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             rootPage.isAllocated(),
             oldIdx.inlineSize(),
             def.keyTypeSettings(),
-            null,
+            stats,
             rowHndFactory,
             null
         );
