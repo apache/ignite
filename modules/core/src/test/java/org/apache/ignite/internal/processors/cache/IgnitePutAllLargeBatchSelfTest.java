@@ -180,10 +180,10 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-            int keyCnt = 20000;
+            int keyCnt = 200;
 
-/*            for (int i = 0; i < keyCnt; i++)
-                cache.put(i, i);*/
+            for (int i = 0; i < keyCnt; i++)
+                cache.put(i, i);
 
             // Create readers if near cache is enabled.
             for (int g = 1; g < 2; g++) {
@@ -199,7 +199,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < keyCnt; i++)
                     map.put(i, i * i);
 
-                //cache.getAll(map.keySet());
+                cache.getAll(map.keySet());
 
                 cache.putAll(map);
 
