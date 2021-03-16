@@ -45,22 +45,22 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("System.String[]", mapper.GetTypeName(typeof(string[]).FullName));
 
             // Generics.
-            Assert.AreEqual("System.Collections.Generic.List`1[[System.String]]",
+            Assert.AreEqual("System.Collections.Generic.List`1[[System.String]]", 
                 mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
-
-            Assert.AreEqual("System.Collections.Generic.Dictionary`2[[System.Int32],[System.String]]",
+            
+            Assert.AreEqual("System.Collections.Generic.Dictionary`2[[System.Int32],[System.String]]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
-
+            
             Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core." +
-                            "Tests.Binary.BinaryNameMapperTest+Foo]]",
+                            "Tests.Binary.BinaryNameMapperTest+Foo]]", 
                             mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
 
             Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core.Tests" +
-                            ".Binary.BinaryNameMapperTest+Foo]][]",
+                            ".Binary.BinaryNameMapperTest+Foo]][]", 
                             mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
-
+            
             Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core.Tests." +
-                            "Binary.BinaryNameMapperTest+Foo[]]][]",
+                            "Binary.BinaryNameMapperTest+Foo[]]][]", 
                             mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
 
             // Open generics.
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestSimpleName()
         {
             var mapper = new BinaryBasicNameMapper {IsSimpleName = true};
-
+                        
             // Simple type.
             Assert.AreEqual("Int32", mapper.GetTypeName(typeof(int).AssemblyQualifiedName));
             Assert.AreEqual("Int32", mapper.GetTypeName(typeof(int).FullName));
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Generics.
             Assert.AreEqual("List`1[[String]]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
-            Assert.AreEqual("Dictionary`2[[Int32],[String]]",
+            Assert.AreEqual("Dictionary`2[[Int32],[String]]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
             Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
             Assert.AreEqual("Bar`1[[Foo]][]", mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
@@ -110,10 +110,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Org.Company.MyClass"));
             Assert.AreEqual("org.company.URL", mapper.GetTypeName("Org.Company.URL"));
 
-            Assert.AreEqual("apache.ignite.platform.model.Address",
+            Assert.AreEqual("apache.ignite.platform.model.Address", 
                 mapper.GetTypeName(typeof(Address).FullName));
 
-            Assert.AreEqual("apache.ignite.platform.model.Address[]",
+            Assert.AreEqual("apache.ignite.platform.model.Address[]", 
                 mapper.GetTypeName(typeof(Address[]).FullName));
 
             Assert.AreEqual("System.Collections.Generic.List`1",
@@ -190,10 +190,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("org.company.MyClass", mapper.GetTypeName("Company.MyClass"));
             Assert.AreEqual("org.company.URL", mapper.GetTypeName("Company.URL"));
 
-            Assert.AreEqual("org.apache.ignite.platform.model.Address",
+            Assert.AreEqual("org.apache.ignite.platform.model.Address", 
                 mapper.GetTypeName(typeof(Address).FullName));
 
-            Assert.AreEqual("org.apache.ignite.platform.model.Address[]",
+            Assert.AreEqual("org.apache.ignite.platform.model.Address[]", 
                 mapper.GetTypeName(typeof(Address[]).FullName));
 
             Assert.AreEqual("System.Collections.Generic.List`1[[org.apache.ignite.platform.model.Address]]",
@@ -216,10 +216,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Org.Company.MyClass", mapper.GetTypeName("Company.MyClass"));
             Assert.AreEqual("Org.Company.URL", mapper.GetTypeName("Company.URL"));
 
-            Assert.AreEqual("Org.Apache.Ignite.Platform.Model.Address",
+            Assert.AreEqual("Org.Apache.Ignite.Platform.Model.Address", 
                 mapper.GetTypeName(typeof(Address).FullName));
 
-            Assert.AreEqual("Org.Apache.Ignite.Platform.Model.Address[]",
+            Assert.AreEqual("Org.Apache.Ignite.Platform.Model.Address[]", 
                 mapper.GetTypeName(typeof(Address[]).FullName));
 
             Assert.AreEqual("System.Collections.Generic.List`1[[Org.Apache.Ignite.Platform.Model.Address]]",
