@@ -32,9 +32,9 @@ include::includes/install-python-pip.adoc[]
 
 === Using ZIP Archive
 
-The thin client can be installed from the zip archive:
+The thin client can be installed from the zip archive available for download from the Apache Ignite website:
 
-*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite binary package,window=_blank].
+*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite Python Thin Client,window=_blank].
 *  Unpack the archive and navigate to the root folder.
 *  Install the client using the command below.
 
@@ -78,8 +78,8 @@ Refer to the https://setuptools.readthedocs.io/en/latest/[Setuptools manual] for
 
 == Connecting to Cluster
 
-The distribution package contains runnable examples that demonstrate basic usage scenarios of the Python thin client.
-The examples are located in the `{ROOT_FOLDER}/examples` directory.
+The ZIP distribution package contains runnable examples that demonstrate basic usage scenarios of the Python thin client.
+The examples are located in the `{client_dir}/examples` directory.
 
 The following code snippet shows how to connect to a cluster from the Python thin client:
 
