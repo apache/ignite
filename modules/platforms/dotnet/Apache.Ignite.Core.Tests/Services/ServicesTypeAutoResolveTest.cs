@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(new JavaServiceDynamicProxy(svc));
 
-            DoTestCollections(new JavaServiceDynamicProxy(svc));
+            DoTestDepartments(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestCollections(svc);
+            DoTestDepartments(svc);
 
             _grid1.GetServices().Cancel(javaSvcName);
         }
@@ -184,40 +184,25 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestCollections(svc);
+            DoTestDepartments(svc);
 
             _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
-        /// Tests collections call.
+        /// Tests departments call.
         /// </summary>
-        private void DoTestCollections(IJavaService svc)
+        private void DoTestDepartments(IJavaService svc)
         {
             Assert.IsNull(svc.testDepartments(null));
 
-            var deps = svc.testDepartments(new[]
-            {
-                new Department {Name = "HR"},
-                new Department {Name = "IT"}
-            }.ToList());
+            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+
+            ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
-            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
-
-            Assert.IsNull(svc.testMap(null));
-
-            var map = new Dictionary<Key, Value>();
-
-            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
-            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
-
-            var res = svc.testMap(map);
-
-            Assert.NotNull(res);
-            Assert.AreEqual(1, res.Count);
-            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
+            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
         }
 
         /// <summary>
@@ -247,6 +232,19 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("Kyle Reese", emps[0].Fio);
             Assert.AreEqual(3, emps[0].Salary);
+
+            Assert.IsNull(svc.testMap(null));
+
+            var map = new Dictionary<Key, Value>();
+
+            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
+            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
+
+            var res = svc.testMap(map);
+
+            Assert.NotNull(res);
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
 
             var accs = svc.testAccounts();
 

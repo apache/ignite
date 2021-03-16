@@ -2109,7 +2109,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr);
+        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr, in.position() - hPos);
     }
 
     /**

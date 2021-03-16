@@ -50,6 +50,9 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
     /** Value bytes. */
     private Object[] arr;
 
+    /** Size of the object */
+    private int size;
+
     /**
      * {@link Externalizable} support.
      */
@@ -62,12 +65,14 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
      * @param compTypeId Component type id.
      * @param compClsName Component class name.
      * @param arr Array.
+     * @param size Size of the object.
      */
-    public BinaryArrayWrapper(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr) {
+    public BinaryArrayWrapper(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr, int size) {
         this.ctx = ctx;
         this.compTypeId = compTypeId;
         this.compClsName = compClsName;
         this.arr = arr;
+        this.size = size;
     }
 
     /** {@inheritDoc} */
@@ -130,7 +135,7 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
-        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr.clone());
+        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr.clone(), size);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +148,7 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
         out.writeInt(compTypeId);
         out.writeObject(compClsName);
         out.writeObject(arr);
+        out.writeInt(size);
 
     }
 
@@ -153,6 +159,7 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
         compTypeId = in.readInt();
         compClsName = (String)in.readObject();
         arr = (Object[])in.readObject();
+        size = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -168,6 +175,11 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
     /** {@inheritDoc} */
     @Override public String enumName() throws BinaryObjectException {
         throw new BinaryObjectException("Object is not enum.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return size;
     }
 
     /** {@inheritDoc} */
