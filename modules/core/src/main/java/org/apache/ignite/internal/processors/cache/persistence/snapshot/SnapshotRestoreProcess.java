@@ -121,16 +121,16 @@ public class SnapshotRestoreProcess {
      */
     public IgniteFuture<Void> start(String snpName, Collection<String> cacheGrpNames) {
         if (ctx.clientNode()) {
-            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
-                "perform this operation."));
+            return new IgniteFinishedFutureImpl<>(
+                new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation."));
         }
 
         synchronized (this) {
             GridFutureAdapter<Void> fut0 = fut;
 
             if (opCtx != null || (fut0 != null && !fut0.isDone())) {
-                return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG +
-                    "The previous snapshot restore operation was not completed."));
+                return new IgniteFinishedFutureImpl<>(
+                    new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed."));
             }
 
             fut = new GridFutureAdapter<>();
@@ -142,19 +142,21 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG + "The cluster should be active."));
 
         if (!clusterState.hasBaselineTopology()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG +
-                "The baseline topology is not configured for cluster."));
+            return new IgniteFinishedFutureImpl<>(
+                new IgniteException(OP_REJECT_MSG + "The baseline topology is not configured for cluster."));
         }
 
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
         if (snpMgr.isSnapshotCreating()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG +
-                "A cluster snapshot operation is in progress."));
+            return new IgniteFinishedFutureImpl<>(
+                new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress."));
         }
 
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP))
-            throw new IgniteException("Not all nodes in the cluster support a snapshot restore operation.");
+        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP)) {
+            return new IgniteFinishedFutureImpl<>(
+                new IgniteException(OP_REJECT_MSG + "Not all nodes in the cluster support restore operation."));
+        }
 
         snpMgr.collectSnapshotMetadata(snpName).listen(
             f -> {
@@ -332,12 +334,13 @@ public class SnapshotRestoreProcess {
      * Ensures that a cache with the specified name does not exist locally.
      *
      * @param name Cache name.
+     * @throws IgniteCheckedException If cache is present.
      */
-    private void ensureCacheAbsent(String name) {
+    private void ensureCacheAbsent(String name) throws IgniteCheckedException {
         int id = CU.cacheId(name);
 
         if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null) {
-            throw new IllegalStateException("Cache \"" + name +
+            throw new IgniteCheckedException("Cache \"" + name +
                 "\" should be destroyed manually before perform restore operation.");
         }
     }
@@ -351,8 +354,19 @@ public class SnapshotRestoreProcess {
             return new GridFinishedFuture<>();
 
         try {
+            DiscoveryDataClusterState state = ctx.state().clusterState();
+
+            if (state.state() != ClusterState.ACTIVE || state.transition())
+                throw new IgniteCheckedException(OP_REJECT_MSG + "The cluster should be active.");
+
+            if (!allNodesInBaselineAndAlive(req.nodes()))
+                throw new IgniteCheckedException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
+
+            for (String grpName : req.groups())
+                ensureCacheAbsent(grpName);
+
             opCtx = prepareContext(req);
-        } catch (Exception e) {
+        } catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
         }
 
@@ -401,19 +415,10 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If failed.
      */
     private SnapshotRestoreContext prepareContext(SnapshotRestorePrepareRequest req) throws IgniteCheckedException {
-        if (isSnapshotRestoring())
-            throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
-
-        DiscoveryDataClusterState state = ctx.state().clusterState();
-
-        if (state.state() != ClusterState.ACTIVE || state.transition())
-            throw new IgniteException(OP_REJECT_MSG + "The cluster should be active.");
-
-        if (!allNodesInBaselineAndAlive(req.nodes()))
-            throw new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
-
-        for (String grpName : req.groups())
-            ensureCacheAbsent(grpName);
+        if (isSnapshotRestoring()) {
+            throw new IgniteCheckedException(OP_REJECT_MSG +
+                "The previous snapshot restore operation was not completed.");
+        }
 
         GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
 
@@ -598,8 +603,10 @@ public class SnapshotRestoreProcess {
         if (opCtx0 == null)
             return new GridFinishedFuture<>();
 
-        if (!reqId.equals(opCtx0.reqId))
-            return new GridFinishedFuture<>(new IgniteException("Unknown snapshot restore operation was rejected."));
+        if (!reqId.equals(opCtx0.reqId)) {
+            return new GridFinishedFuture<>(
+                new IgniteCheckedException("Unknown snapshot restore operation was rejected."));
+        }
 
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
@@ -607,7 +614,7 @@ public class SnapshotRestoreProcess {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (state.state() != ClusterState.ACTIVE || state.transition())
-            return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "The cluster should be active."));
+            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "The cluster should be active."));
 
         Throwable err = opCtx0.err.get();
 
@@ -615,7 +622,7 @@ public class SnapshotRestoreProcess {
             return new GridFinishedFuture<>(err);
 
         if (!allNodesInBaselineAndAlive(opCtx0.nodes))
-            return new GridFinishedFuture<>(new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster."));
+            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Server node(s) has left the cluster."));
 
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
@@ -646,7 +653,7 @@ public class SnapshotRestoreProcess {
                         retFut.onDone(true);
                 }
             );
-        } catch (Exception e) {
+        } catch (IgniteCheckedException e) {
             log.error("Unable to restore cache group(s) from snapshot " +
                 "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']', e);
 
@@ -695,7 +702,8 @@ public class SnapshotRestoreProcess {
 
             leftNodes.removeAll(respNodes);
 
-            err = new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
+            err = new IgniteCheckedException(OP_REJECT_MSG +
+                "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
         }
 
         return err;
