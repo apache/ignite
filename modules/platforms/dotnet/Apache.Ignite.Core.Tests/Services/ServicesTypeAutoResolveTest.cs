@@ -128,11 +128,14 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
 
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(platformSvcName);
+            try
+            {
+                DoTestService(svc);
+            }
+            finally
+            {
+                _grid1.GetServices().Cancel(platformSvcName);
+            }
         }
 
         /// <summary>
@@ -147,8 +150,6 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
             DoTestService(new JavaServiceDynamicProxy(svc));
-
-            DoTestDepartments(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
@@ -164,8 +165,6 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
             DoTestService(svc);
-
-            DoTestDepartments(svc);
 
             _grid1.GetServices().Cancel(javaSvcName);
         }
@@ -184,32 +183,24 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestDepartments(svc);
-
             _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
         /// Tests departments call.
         /// </summary>
-        private void DoTestDepartments(IJavaService svc)
+        private static void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testDepartments(null));
 
-            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+            var arr = new[] { new Department {Name = "HR"}, new Department {Name = "IT"} }.ToList();
 
             ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
-            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-        }
+            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
 
-        /// <summary>
-        /// Tests java service instance.
-        /// </summary>
-        private static void DoTestService(IJavaService svc)
-        {
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
