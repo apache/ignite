@@ -23,52 +23,50 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.nio.channels.SocketChannel;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The Tcp Disocvery being able to simulate network failure after given timeout.
+ * The TcpDiscovery able to simulate network failure.
  */
 public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
     /**
-     * FOR TEST ONLY!! If not {@code null}, enables network timeout simulation. First value switches traffic droppage:
-     * negative for all incoming, positive for all outgoing, 0 for both.
+     * If not {@code null}, enables network timeout simulation. First value switches traffic droppage: negative for all
+     * incoming, positive for all outgoing, 0 for both.
      */
     protected volatile IgnitePair<Integer> simulateNetTimeout;
 
     /** {@inheritDoc} */
-    @Override protected Socket createSocket0(boolean encrypted) throws IOException {
+    @Override protected Socket createSocket0(boolean encrypted) {
         if (encrypted)
-            throw new IllegalArgumentException("Failure simulation on encrypted socket isn't supported");
+            throw new IllegalArgumentException("Failure simulation of encrypted socket isn't supported yet.");
 
         return new SocketWrap();
     }
 
     /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * Enabled network timeout simulation.
+     * Enables simulation of network timeout.
      *
-     * @param direction If negative, enables timeout simulation for reading incomming traffic. If positive, enables
-     *                  timeout simulation on traffic.
+     * @param direction If negative, enables timeout simulation for incomming traffic. If positive, enables timeout
+     *                  simulation for outgoing traffic. Set 0 to simlate failure for both traffics.
      * @param delay     Milliseconds of awaiting before raising {@code SocketTimeoutException}.
-     * @see SocketWrap#simulateNetFailure(Socket, int)
+     * @see SocketWrap#simulateTimeout(Socket, int)
      */
     public void enableNetworkTimeoutSimulation(int direction, int delay) {
         simulateNetTimeout = new IgnitePair<>(direction, delay);
     }
 
     /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * If enabled, simulates network timeout. Throws {@code SocketTimeoutException} after the delay.
+     * Simulates network timeout if enabled, raises {@code SocketTimeoutException}.
      *
      * @param sock         The socket to simulate failure at.
-     * @param forceTimeout Overrides the value preset in {@link #enableNetworkTimeoutSimulation(int, int)}.
+     * @param forceTimeout If positive of 0, overrides the delay preset in {@link #enableNetworkTimeoutSimulation(int,
+     *                     int)}.
      * @see #enableNetworkTimeoutSimulation(int, int)
      */
-    private void simulateNetFailure(Socket sock, int forceTimeout) throws SocketTimeoutException {
+    private void simulateTimeout(Socket sock, int forceTimeout) throws SocketTimeoutException {
         IgnitePair<Integer> simulateNetTimeout = this.simulateNetTimeout;
 
         if (simulateNetTimeout == null)
@@ -79,7 +77,7 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
         if (incomingSock && simulateNetTimeout.get1() > 0 || !incomingSock && simulateNetTimeout.get1() < 0)
             return;
 
-        int timeout = forceTimeout > 0 ? forceTimeout : simulateNetTimeout.get2();
+        int timeout = forceTimeout >= 0 ? forceTimeout : simulateNetTimeout.get2();
 
         try {
             Thread.sleep(timeout);
@@ -92,10 +90,10 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
     }
 
     /**
-     * @see #simulateNetFailure(Socket, int)
+     * @see #simulateTimeout(Socket, int)
      */
-    private void simulateNetFailure(Socket sock) throws SocketTimeoutException {
-        simulateNetFailure(sock, 0);
+    private void simulateTimeout(Socket sock) throws SocketTimeoutException {
+        simulateTimeout(sock, -1);
     }
 
     /**
@@ -109,28 +107,28 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
             return new OutputStream() {
                 /** {@inheritDoc} */
                 @Override public void write(@NotNull byte[] b) throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     src.write(b);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void write(@NotNull byte[] b, int off, int len) throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     src.write(b, off, len);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void write(int b) throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     src.write(b);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void flush() throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     src.flush();
                 }
@@ -147,19 +145,19 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
 
             return new InputStream() {
                 @Override public int read(@NotNull byte[] b) throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     return src.read(b);
                 }
 
                 @Override public int read(@NotNull byte[] b, int off, int len) throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     return src.read(b, off, len);
                 }
 
                 @Override public long skip(long n) throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     return src.skip(n);
                 }
@@ -185,7 +183,7 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
                 }
 
                 @Override public int read() throws IOException {
-                    simulateNetFailure(SocketWrap.this);
+                    simulateTimeout(SocketWrap.this);
 
                     return src.read();
                 }
@@ -193,15 +191,20 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
         }
 
         /** {@inheritDoc} */
+        @Override public SocketChannel getChannel() {
+            throw new UnsupportedOperationException("Failure simulation for socket channel is not supported yet.");
+        }
+
+        /** {@inheritDoc} */
         @Override public void connect(SocketAddress endpoint) throws IOException {
-            simulateNetFailure(this);
+            simulateTimeout(this);
 
             super.connect(endpoint);
         }
 
         /** {@inheritDoc} */
         @Override public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            simulateNetFailure(this);
+            simulateTimeout(this);
 
             super.connect(endpoint, timeout);
         }

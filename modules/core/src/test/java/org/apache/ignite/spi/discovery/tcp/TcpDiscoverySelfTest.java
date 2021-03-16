@@ -417,7 +417,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks node
+     * Checks that node leaves the cluster after lose of outgoing connections.
      *
      * @throws Exception If any error occurs.
      */

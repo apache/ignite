@@ -1627,7 +1627,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Creates proper socket and binds it to local address.
+     * Creates proper socket.
      */
     protected Socket createSocket0(boolean encrypted) throws IOException {
         return encrypted ? sslSockFactory.createSocket() : new Socket();
