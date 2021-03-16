@@ -528,7 +528,7 @@ a primary partition and a corresponding backup partitions and prints a report an
 Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
 recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
 
-This procedure doesn't require the cluster to be in the `idle` state.
+This procedure does not require the cluster to be in the `idle` state.
 
 [tabs]
 --
