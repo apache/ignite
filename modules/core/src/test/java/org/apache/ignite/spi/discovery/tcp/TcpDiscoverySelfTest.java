@@ -423,33 +423,36 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOutgoingConnectionsFailure() throws Exception {
-        final int gridCnt = 4;
+        try {
+            final int gridCnt = 4;
 
-        failureDetectionTimeout = 2000;
+            failureDetectionTimeout = 2000;
 
-        startGrids(gridCnt - 1);
+            startGrids(gridCnt - 1);
 
-        nodeSpi.set(new FailureSimulatingTcpDiscoverySpi());
+            nodeSpi.set(new FailureSimulatingTcpDiscoverySpi());
 
-        startGrid(gridCnt - 1);
+            startGrid(gridCnt - 1);
 
-        assert grid(0).cluster().nodes().size() == gridCnt;
+            assert grid(0).cluster().nodes().size() == gridCnt;
 
-        awaitPartitionMapExchange();
+            FailureSimulatingTcpDiscoverySpi failSpi = ((FailureSimulatingTcpDiscoverySpi)grid(gridCnt - 1)
+                .configuration().getDiscoverySpi());
 
-        FailureSimulatingTcpDiscoverySpi failSpi = ((FailureSimulatingTcpDiscoverySpi)grid(gridCnt - 1)
-            .configuration().getDiscoverySpi());
+            long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
+                .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / (gridCnt + 1);
 
-        long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
-            .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / (gridCnt + 1);
+            failSpi.enableNetworkTimeoutSimulation(1, (int)simulatedNetDelay);
 
-        failSpi.enableNetworkTimeoutSimulation(1, (int)(simulatedNetDelay / (gridCnt + 1)));
+            waitNodeStop(grid(gridCnt - 1).name());
 
-        waitNodeStop(grid(gridCnt - 1).name());
+            for (int i = 0; i < gridCnt - 1; ++i)
+                assert grid(i).cluster().nodes().size() == 3;
 
-        assert grid(0).cluster().nodes().size() == 3;
-        assert grid(1).cluster().nodes().size() == 3;
-        assert grid(2).cluster().nodes().size() == 3;
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
