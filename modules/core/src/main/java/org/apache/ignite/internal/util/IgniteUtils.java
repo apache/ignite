@@ -4226,12 +4226,12 @@ public abstract class IgniteUtils {
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
         if (sock != null) {
             try {
-                //avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+                // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
                 sock.shutdownOutput();
                 sock.shutdownInput();
             }
             catch (Exception e) {
-                warn(log, "Failed to close socket: " + e.getMessage(), e);
+                warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
             }
 
             try {
@@ -4398,7 +4398,7 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
             sock.shutdownOutput();
             sock.shutdownInput();
         }
