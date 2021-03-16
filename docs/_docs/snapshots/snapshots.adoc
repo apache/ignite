@@ -133,7 +133,7 @@ include::{javaCodeDir}/Snapshots.java[tags=create, indent=0]
 
 == Checking Snapshot Consistency
 
-Usually all the cluster nodes are running on different machines and having the snapshot data spread across the cluster.
+Usually all the cluster nodes run on different machines and have the snapshot data spread across the cluster.
 Each node stores its own snapshot segment, so in some cases it may be necessary to check the snapshot for completeness
 of data and for data consistency across the cluster before restoring from the snapshot.
 
