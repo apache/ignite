@@ -110,6 +110,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
+            DoTestDepartments(svc);
+
             _grid1.GetServices().Cancel(platformSvcName);
         }
 
@@ -141,6 +143,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
+            DoTestDepartments(svc);
+
             _grid1.GetServices().Cancel(javaSvcName);
         }
 
@@ -158,13 +162,15 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
+            DoTestDepartments(svc);
+
             _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
-        /// Tests java service instance.
+        /// Tests departments call.
         /// </summary>
-        private static void DoTestService(IJavaService svc)
+        private void DoTestDepartments(IJavaService svc)
         {
             Assert.IsNull(svc.testDepartments(null));
 
@@ -175,7 +181,13 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
+        }
 
+        /// <summary>
+        /// Tests java service instance.
+        /// </summary>
+        private static void DoTestService(IJavaService svc)
+        {
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
