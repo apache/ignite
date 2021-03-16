@@ -523,7 +523,7 @@ Like `idle_verify`, index validation tool works correctly only if updates are st
 
 === Checking Snapshot Consistency
 
-The checking snapshot consistency command working the same way as the `idle_verify` command does. It compares hashes between
+The checking snapshot consistency command works the same way as the `idle_verify` command does. It compares hashes between
 a primary partition and a corresponding backup partitions and prints a report if any differences are found.
 Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
 recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
