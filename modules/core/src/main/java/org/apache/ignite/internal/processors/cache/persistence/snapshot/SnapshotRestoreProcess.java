@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -351,140 +351,150 @@ public class SnapshotRestoreProcess {
             return new GridFinishedFuture<>();
 
         try {
-            if (isSnapshotRestoring())
-                throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
-
-            DiscoveryDataClusterState state = ctx.state().clusterState();
-
-            if (state.state() != ClusterState.ACTIVE || state.transition())
-                throw new IgniteException(OP_REJECT_MSG + "The cluster should be active.");
-
-            if (!allNodesInBaselineAndAlive(req.nodes()))
-                throw new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
-
-            for (String grpName : req.groups())
-                ensureCacheAbsent(grpName);
-
-            GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
-
-            SnapshotMetadata meta = F.first(cctx.snapshotMgr().readSnapshotMetadatas(req.snapshotName()));
-
-            if (meta != null && meta.consistentId().equals(cctx.localNode().consistentId().toString())
-                && meta.pageSize() != cctx.database().pageSize()) {
-                throw new IgniteCheckedException("Incompatible memory page size " +
-                    "[snapshotPageSize=" + meta.pageSize() +
-                    ", local=" + cctx.database().pageSize() +
-                    ", snapshot=" + req.snapshotName() +
-                    ", nodeId=" + cctx.localNodeId() + ']');
-            }
-
-            String folderName = ctx.pdsFolderResolver().resolveFolders().folderName();
-            Map<File, File> dirs = new IdentityHashMap<>();
-            Map<String, StoredCacheData> cfgMap = new HashMap<>();
-
-            // Collect cache configuration(s) and verify cache groups page size.
-            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), folderName)) {
-                String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
-
-                if (!req.groups().contains(grpName))
-                    continue;
-
-                ((FilePageStoreManager)cctx.pageStore()).readCacheConfigurations(snpCacheDir, cfgMap);
-
-                File cacheDir = U.resolveWorkDirectory(ctx.config().getWorkDirectory(),
-                    Paths.get(databaseRelativePath(folderName), snpCacheDir.getName()).toString(), false);
-
-                if (!cacheDir.exists())
-                    cacheDir.mkdir();
-                else if (cacheDir.list().length > 0) {
-                    throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
-                        "[group=" + grpName + ", dir=" + cacheDir + ']');
-                }
-
-                dirs.put(snpCacheDir, cacheDir);
-            }
-
-            Map<Integer, StoredCacheData> idsCfgMap = cfgMap.isEmpty() ? Collections.emptyMap() :
-                cfgMap.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
-
-            opCtx = new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.nodes(),
-                new ArrayList<>(dirs.values()), idsCfgMap);
-
-            SnapshotRestoreContext opCtx0 = opCtx;
-
-            if (opCtx0.dirs.isEmpty())
-                return new GridFinishedFuture<>();
-
-            if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot restore operation [requestID=" + req.requestId() +
-                    ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
-            }
-
-            File binDir = binaryWorkDir(cctx.snapshotMgr().snapshotLocalDir(req.snapshotName()).getAbsolutePath(), folderName);
-
-            GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
-
-            cctx.snapshotMgr().snapshotExecutorService().execute(() -> {
-                try {
-                    if (opCtx0.err.get() != null)
-                        return;
-
-                    if (ctx.localNodeId().equals(req.updateMetaNodeId())) {
-                        // Check binary metadata compatibility.
-                        ctx.cacheObjects().checkMetadata(binDir);
-
-                        // Cluster-wide update binary metadata.
-                        ctx.cacheObjects().updateMetadata(binDir, () -> opCtx0.err.get() != null);
-                    }
-
-                    copyPartitions(dirs, opCtx0);
-
-                    Throwable err = opCtx0.err.get();
-
-                    if (err == null) {
-                        retFut.onDone(new ArrayList<>(opCtx0.cfgs.values()));
-
-                        return;
-                    }
-
-                    log.error("Snapshot restore process has been interrupted " +
-                        "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']', err);
-
-                    rollback(opCtx0);
-
-                    retFut.onDone(err);
-
-                }
-                catch (Throwable t) {
-                    retFut.onDone(t);
-                }
-            });
-
-            return retFut;
+            opCtx = prepareContext(req);
         } catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
+
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (opCtx0.dirs.isEmpty())
+            return new GridFinishedFuture<>();
+
+        if (log.isInfoEnabled()) {
+            log.info("Starting local snapshot restore operation [requestID=" + req.requestId() +
+                ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
+        }
+
+        GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
+
+        ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
+            try {
+                restore(opCtx0, ctx.localNodeId().equals(req.updateMetaNodeId()));
+
+                Throwable err = opCtx0.err.get();
+
+                if (err == null) {
+                    retFut.onDone(new ArrayList<>(opCtx0.cfgs.values()));
+
+                    return;
+                }
+
+                log.error("Snapshot restore process has been interrupted " +
+                    "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']', err);
+
+                rollback(opCtx0);
+
+                retFut.onDone(err);
+            }
+            catch (Throwable t) {
+                retFut.onDone(t);
+            }
+        });
+
+        return retFut;
     }
 
     /**
-     * Copy partition filess from the local snapshot directory.
-     *
-     * @param dirs Cache directories.
-     * @param opCtx Snapshot restore operation context.
+     * @param req Request to prepare cache group restore from the snapshot.
+     * @return Snapshot restore operation context.
      * @throws IgniteCheckedException If failed.
      */
-    protected void copyPartitions(Map<File, File> dirs,
-        SnapshotRestoreContext opCtx) throws IgniteCheckedException {
-        for (Map.Entry<File, File> cacheDirs : dirs.entrySet()) {
-            File snpCacheDir = cacheDirs.getKey();
-            File cacheDir = cacheDirs.getValue();
+    private SnapshotRestoreContext prepareContext(SnapshotRestorePrepareRequest req) throws IgniteCheckedException {
+        if (isSnapshotRestoring())
+            throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
+
+        DiscoveryDataClusterState state = ctx.state().clusterState();
+
+        if (state.state() != ClusterState.ACTIVE || state.transition())
+            throw new IgniteException(OP_REJECT_MSG + "The cluster should be active.");
+
+        if (!allNodesInBaselineAndAlive(req.nodes()))
+            throw new IgniteException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
+
+        for (String grpName : req.groups())
+            ensureCacheAbsent(grpName);
+
+        GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
+
+        SnapshotMetadata meta = F.first(cctx.snapshotMgr().readSnapshotMetadatas(req.snapshotName()));
+
+        if (meta != null && meta.consistentId().equals(cctx.localNode().consistentId().toString())
+            && meta.pageSize() != cctx.database().pageSize()) {
+            throw new IgniteCheckedException("Incompatible memory page size " +
+                "[snapshotPageSize=" + meta.pageSize() +
+                ", local=" + cctx.database().pageSize() +
+                ", snapshot=" + req.snapshotName() +
+                ", nodeId=" + cctx.localNodeId() + ']');
+        }
+
+        String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+        List<File> cacheDirs = new ArrayList<>();
+        Map<String, StoredCacheData> cfgsByName = new HashMap<>();
+
+        // Collect cache configuration(s) and verify cache groups page size.
+        for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), pdsFolderName)) {
+            String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
+
+            if (!req.groups().contains(grpName))
+                continue;
+
+            ((FilePageStoreManager)cctx.pageStore()).readCacheConfigurations(snpCacheDir, cfgsByName);
+
+            File cacheDir = U.resolveWorkDirectory(ctx.config().getWorkDirectory(),
+                Paths.get(databaseRelativePath(pdsFolderName), snpCacheDir.getName()).toString(), false);
+
+            if (!cacheDir.exists())
+                cacheDir.mkdir();
+            else if (cacheDir.list().length > 0) {
+                throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
+                    "[group=" + grpName + ", dir=" + cacheDir + ']');
+            }
+
+            cacheDirs.add(cacheDir);
+        }
+
+        Map<Integer, StoredCacheData> cfgsById = cfgsByName.isEmpty() ? Collections.emptyMap() :
+            cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
+
+        return new SnapshotRestoreContext(req.requestId(), req.snapshotName(), req.nodes(), cacheDirs, cfgsById);
+    }
+
+    /**
+     * Copy partition files and update binary metadata.
+     *
+     * @param opCtx Snapshot restore operation context.
+     * @param updateMeta Update binary metadata flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void restore(SnapshotRestoreContext opCtx, boolean updateMeta) throws IgniteCheckedException {
+        BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
+        String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+
+        if (updateMeta) {
+            File binDir = binaryWorkDir(
+                ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx.snpName).getAbsolutePath(), pdsFolderName);
+
+            if (stopChecker.getAsBoolean())
+                return;
+
+            // Check binary metadata compatibility.
+            ctx.cacheObjects().checkMetadata(binDir);
+
+            // Cluster-wide update binary metadata.
+            ctx.cacheObjects().updateMetadata(binDir, stopChecker);
+        }
+
+        for (File cacheDir : opCtx.dirs) {
+            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx.snpName),
+                Paths.get(databaseRelativePath(pdsFolderName), cacheDir.getName()).toString());
 
             try {
                 if (log.isInfoEnabled())
                     log.info("Copying files of the cache group [from=" + snpCacheDir + ", to=" + cacheDir + ']');
 
                 for (File snpFile : snpCacheDir.listFiles()) {
-                    if (opCtx.err.get() != null)
+                    if (stopChecker.getAsBoolean())
                         return;
 
                     File target = new File(cacheDir, snpFile.getName());
