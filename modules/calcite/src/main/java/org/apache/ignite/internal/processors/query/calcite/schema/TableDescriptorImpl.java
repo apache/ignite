@@ -44,6 +44,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -79,7 +80,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private static final ColumnDescriptor[] DUMMY = new ColumnDescriptor[0];
 
     /** */
-    private final GridCacheContext cctx;
+    private final GridCacheContextInfo<?, ?> cacheInfo;
 
     /** */
     private final GridQueryTypeDescriptor typeDesc;
@@ -106,8 +107,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final ImmutableBitSet insertFields;
 
     /** */
-    public TableDescriptorImpl(GridCacheContext<?,?> cctx, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
-        this.cctx = cctx;
+    public TableDescriptorImpl(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc,
+        Object affinityIdentity) {
+        this.cacheInfo = cacheInfo;
         this.typeDesc = typeDesc;
         this.affinityIdentity = affinityIdentity;
 
@@ -183,7 +185,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** {@inheritDoc} */
     @Override public GridCacheContext cacheContext() {
-        return cctx;
+        return cacheInfo.cacheContext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheContextInfo cacheInfo() {
+        return cacheInfo;
     }
 
     /** {@inheritDoc} */
@@ -193,7 +200,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         else if (affField == -1)
             return IgniteDistributions.random();
         else
-            return IgniteDistributions.affinity(affField, cctx.cacheId(), affinityIdentity);
+            return IgniteDistributions.affinity(affField, cacheInfo.cacheId(), affinityIdentity);
     }
 
     /** {@inheritDoc} */
@@ -221,7 +228,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 ColumnDescriptor desc = descriptors[i];
 
                 handler.set(i, res, TypeUtils.toInternal(ectx,
-                    desc.value(ectx, cctx, row), desc.storageType()));
+                    desc.value(ectx, cacheContext(), row), desc.storageType()));
             }
         }
         else {
@@ -229,7 +236,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 ColumnDescriptor desc = descriptors[j];
 
                 handler.set(i, res, TypeUtils.toInternal(ectx,
-                    desc.value(ectx, cctx, row), desc.storageType()));
+                    desc.value(ectx, cacheContext(), row), desc.storageType()));
             }
         }
 
@@ -286,7 +293,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = insertKey(row, ectx);
         Object val = insertVal(row, ectx);
 
-        if (cctx.binaryMarshaller()) {
+        if (cacheContext().binaryMarshaller()) {
             if (key instanceof BinaryObjectBuilder)
                 key = ((BinaryObjectBuilder) key).build();
 
@@ -351,6 +358,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = cacheContext();
+
         if (cctx.binaryMarshaller()) {
             BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
             cctx.prepareAffinityField(builder);
@@ -409,7 +418,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
 
-        if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder)
+        if (cacheContext().binaryMarshaller() && val instanceof BinaryObjectBuilder)
             val = ((BinaryObjectBuilder) val).build();
 
         typeDesc.validateKeyAndValue(key, val);
@@ -421,6 +430,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private Object clone(Object val) throws IgniteCheckedException {
         if (val == null || QueryUtils.isSqlType(val.getClass()))
             return val;
+
+        GridCacheContext<?, ?> cctx = cacheContext();
 
         if (!cctx.binaryMarshaller())
             return cctx.marshaller().unmarshal(cctx.marshaller().marshal(val), U.resolveClassLoader(cctx.gridConfig()));
@@ -463,6 +474,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** {@inheritDoc} */
     @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+        GridCacheContext<?, ?> cctx = cacheContext();
+
         if (!cctx.gate().enterIfNotStopped())
             throw U.convertException(new CacheStoppedException(cctx.name()));
 
@@ -479,6 +492,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private ColocationGroup partitionedGroup(@NotNull AffinityTopologyVersion topVer) {
+        GridCacheContext<?, ?> cctx = cacheContext();
+
         List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
         List<List<UUID>> assignments0;
 
@@ -496,6 +511,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private ColocationGroup replicatedGroup(@NotNull AffinityTopologyVersion topVer) {
+        GridCacheContext<?, ?> cctx = cacheContext();
+
         GridDhtPartitionTopology top = cctx.topology();
 
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.groupId());
