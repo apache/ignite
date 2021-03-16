@@ -1043,7 +1043,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         return Arrays.stream(files)
             .filter(File::isFile)
-            .filter(f -> f.getName().startsWith(PART_FILE_PREFIX))
+            .filter(f -> f.getName().endsWith(FILE_SUFFIX))
             .collect(Collectors.toList());
     }
 

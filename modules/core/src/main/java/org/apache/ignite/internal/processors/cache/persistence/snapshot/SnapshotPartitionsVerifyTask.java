@@ -57,6 +57,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
@@ -64,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
@@ -233,6 +236,12 @@ public class SnapshotPartitionsVerifyTask
                                     val -> {
                                     })
                             ) {
+                                if (partId == INDEX_PARTITION) {
+                                    checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+
+                                    return null;
+                                }
+
                                 ByteBuffer pageBuff = buff.get();
                                 pageBuff.clear();
                                 pageStore.read(0, pageBuff, true);
