@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -167,15 +168,13 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             Assert.IsNull(svc.testDepartments(null));
 
-            var deps = svc.testDepartments(new[]
-            {
-                new Department {Name = "HR"},
-                new Department {Name = "IT"}
-            }.ToList());
+            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+
+            ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
-            Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
+            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
 
             Assert.IsNull(svc.testAddress(null));
 
