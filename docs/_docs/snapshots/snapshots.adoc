@@ -137,7 +137,7 @@ Usually all the cluster nodes are running on different machines and having the s
 Each node stores its own snapshot segment, so in some cases it may be necessary to check the snapshot for completeness
 of data and for data consistency across the cluster before restoring from the snapshot.
 
-For such cases, the Apache Ignite ships with the built-in snapshot consistency check commands that enable you to verify
+For such cases, Apache Ignite is delivered with built-in snapshot consistency check commands that enable you to verify
 internal data consistency, calculate data partitions hashes and pages checksums, and print out the result if a
 problem is found. The check command also compares hashes of a primary partitions with corresponding backup partitions
 and reports any differences.
