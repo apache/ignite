@@ -64,7 +64,7 @@ public class HashAggregateConverterRule {
             return new IgniteSingleHashAggregate(
                 cluster,
                 outTrait,
-                convert(input, inTrait),
+                input,
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList()
@@ -90,7 +90,7 @@ public class HashAggregateConverterRule {
             RelNode map = new IgniteMapHashAggregate(
                 cluster,
                 outTrait,
-                convert(input, inTrait),
+                input,
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList()
