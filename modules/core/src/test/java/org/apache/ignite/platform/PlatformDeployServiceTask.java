@@ -21,7 +21,6 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -530,7 +529,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals("HR", iter.next().getName());
             assertEquals("IT", iter.next().getName());
 
-            return Arrays.asList(new Department("Executive"));
+            List<Department> res = new ArrayList<>();
+
+            res.add(new Department("Executive"));
+
+            return res;
         }
 
         /** */
@@ -564,12 +567,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals("IT", ((Department)iter.next()).getName());
             assertEquals("Accounts", ((Department)iter.next()).getName());
 
-            return new Collection[] {
-                Arrays.asList(new Department("Executive")),
-                Arrays.asList(new Department("Legal"), new Department("DevRel"))
-            };
-        }
+            List<Department> res1 = new ArrayList<>();
 
+            res1.add(new Department("Executive"));
+
+            List<Department> res2 = new ArrayList<>();
+
+            res2.add(new Department("Legal"));
+            res2.add(new Department("DevRel"));
+
+            return new Collection[] {res1, res2};
+        }
 
         /** */
         public Account[] testAccounts() {

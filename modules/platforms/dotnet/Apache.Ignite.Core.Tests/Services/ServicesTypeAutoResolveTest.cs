@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 new[] {new Department {Name = "IT"}, new Department {Name = "Accounts"}}.ToList(),
             });
 
-            Assert.AreEqual(typeof(ICollection[]), arrayOfDeps.GetType());
+            Assert.AreEqual(typeof(List<Department>[]), arrayOfDeps.GetType());
             Assert.AreEqual(2, arrayOfDeps.Length);
             Assert.AreEqual(1, arrayOfDeps[0].Count);
             Assert.AreEqual(2, arrayOfDeps[1].Count);

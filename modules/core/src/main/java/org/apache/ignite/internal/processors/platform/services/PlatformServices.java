@@ -282,7 +282,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (svc.isPlatformService()) {
                     useArrWrapper = BinaryUtils.USE_ARRAY_WRAPPER.get();
 
-                    //BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+                    BinaryUtils.USE_ARRAY_WRAPPER.set(true);
                 }
 
                 try {
