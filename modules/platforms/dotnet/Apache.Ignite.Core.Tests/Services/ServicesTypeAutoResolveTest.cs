@@ -23,6 +23,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Services;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -169,13 +171,26 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var deps = svc.testDepartments(new[]
             {
-                new Department() {Name = "HR"},
-                new Department() {Name = "IT"}
+                new Department {Name = "HR"},
+                new Department {Name = "IT"}
             }.ToList());
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().ToArray()[0].Name);
+
+            Assert.IsNull(svc.testMap(null));
+
+            var map = new Dictionary<Key, Value>();
+
+            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
+            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
+
+            var res = svc.testMap(map);
+
+            Assert.NotNull(res);
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
 
             Assert.IsNull(svc.testAddress(null));
 
@@ -199,19 +214,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Kyle Reese", emps[0].Fio);
             Assert.AreEqual(3, emps[0].Salary);
 
-            Assert.IsNull(svc.testMap(null));
-
-            var map = new Dictionary<Key, Value>();
-
-            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
-            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
-
-            var res = svc.testMap(map);
-
-            Assert.NotNull(res);
-            Assert.AreEqual(1, res.Count);
-            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
-
             var accs = svc.testAccounts();
 
             Assert.NotNull(accs);
@@ -226,10 +228,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(users);
             Assert.AreEqual(2, users.Length);
             Assert.AreEqual(1, users[0].Id);
-            Assert.AreEqual(ACL.Allow, users[0].Acl);
+            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
             Assert.AreEqual("admin", users[0].Role.Name);
             Assert.AreEqual(2, users[1].Id);
-            Assert.AreEqual(ACL.Deny, users[1].Acl);
+            Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
         }
 
