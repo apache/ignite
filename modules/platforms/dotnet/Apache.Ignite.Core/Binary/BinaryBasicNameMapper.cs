@@ -140,9 +140,12 @@ namespace Apache.Ignite.Core.Binary
             if (IsSimpleName)
                 return name.GetName();
 
-            var fullName = NamespaceToLower && name.HasNamespace()
+            var fullName = NamespaceToLower && name.HasNamespace() && !name.IsSystem()
                 ? name.GetNamespace().ToLower(CultureInfo.InvariantCulture) + name.GetName()
                 : name.GetNameWithNamespace();
+
+            if (name.IsSystem())
+                return fullName;
 
             return NamespacePrefix + fullName;
         }

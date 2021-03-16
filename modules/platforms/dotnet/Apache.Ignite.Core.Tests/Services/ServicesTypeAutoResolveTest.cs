@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
@@ -53,7 +54,6 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _grid1;
 
         /** */
-        //TODO: add test for nested array fields.
         private IIgnite _client;
 
         [TestFixtureTearDown]
@@ -145,8 +145,6 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
             DoTestService(new JavaServiceDynamicProxy(svc));
-
-            DoTestCollections(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
@@ -162,8 +160,6 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
             DoTestService(svc);
-
-            DoTestCollections(svc);
 
             _grid1.GetServices().Cancel(javaSvcName);
         }
@@ -182,15 +178,13 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestCollections(svc);
-
             _grid1.GetServices().Cancel(javaSvcName);
         }
 
         /// <summary>
-        /// Tests collections call.
+        /// Tests java service instance.
         /// </summary>
-        private void DoTestCollections(IJavaService svc)
+        private static void DoTestService(IJavaService svc)
         {
             Assert.IsNull(svc.testDepartments(null));
 
@@ -216,13 +210,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(res);
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
-        }
 
-        /// <summary>
-        /// Tests java service instance.
-        /// </summary>
-        private static void DoTestService(IJavaService svc)
-        {
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
