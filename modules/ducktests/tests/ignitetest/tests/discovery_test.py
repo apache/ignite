@@ -109,9 +109,9 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            net_part=[IgniteService.NetPart.INPUT], disable_conn_recovery=[False, True])
-    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, disable_conn_recovery: bool,
-                                          net_part: IgniteService.NetPart):
+            net_part=[IgniteService.NetPart.INPUT], disable_conn_recovery=[False])
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, disable_conn_recovery: bool,
+                                         net_part: IgniteService.NetPart):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
