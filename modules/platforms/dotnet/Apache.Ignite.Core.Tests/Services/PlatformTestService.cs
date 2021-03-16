@@ -560,6 +560,24 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public ICollection[] testArrayOfCollections(ICollection[] colls)
+        {
+            Assert.AreEqual(2, colls.Length);
+            Assert.AreEqual(1, colls[0].Count);
+            Assert.AreEqual(2, colls[1].Count);
+
+            Assert.AreEqual(new[] {"HR"}, colls[0].OfType<Department>().Select(x => x.Name).ToArray());
+            Assert.AreEqual(new[] {"IT", "Accounts"},
+                colls[1].OfType<Department>().Select(x => x.Name).ToArray());
+
+            return new[]
+            {
+                new[] {new Department {Name = "Executive"}}.ToList(),
+                new[] {new Department {Name = "Legal"}, new Department {Name = "DevRel"}}.ToList(),
+            };
+        }
+
+        /** <inheritDoc /> */
         public void testDateArray(DateTime?[] dates)
         {
             Assert.NotNull(dates);

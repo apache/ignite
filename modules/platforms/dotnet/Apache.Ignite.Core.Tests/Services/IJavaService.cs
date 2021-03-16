@@ -193,6 +193,9 @@ namespace Apache.Ignite.Core.Tests.Services
         IDictionary testMap(IDictionary<Key, Value> dict);
 
         /** */
+        ICollection[] testArrayOfCollections(ICollection[] colls);
+
+        /** */
         void testDateArray(DateTime?[] dates);
 
         /** */

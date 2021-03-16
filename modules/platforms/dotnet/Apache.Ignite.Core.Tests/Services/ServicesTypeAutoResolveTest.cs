@@ -196,6 +196,21 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
 
+            var arrayOfDeps = svc.testArrayOfCollections(new[]
+            {
+                new[] {new Department {Name = "HR"}}.ToList(),
+                new[] {new Department {Name = "IT"}, new Department {Name = "Accounts"}}.ToList(),
+            });
+
+            Assert.AreEqual(typeof(ICollection[]), arrayOfDeps.GetType());
+            Assert.AreEqual(2, arrayOfDeps.Length);
+            Assert.AreEqual(1, arrayOfDeps[0].Count);
+            Assert.AreEqual(2, arrayOfDeps[1].Count);
+
+            Assert.AreEqual(new[] {"Executive"}, arrayOfDeps[0].OfType<Department>().Select(x => x.Name).ToArray());
+            Assert.AreEqual(new[] {"Legal", "DevRel"},
+                arrayOfDeps[1].OfType<Department>().Select(x => x.Name).ToArray());
+
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});

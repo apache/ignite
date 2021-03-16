@@ -467,7 +467,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (ctx.service() instanceof PlatformService) {
                 useArrWrapper = BinaryUtils.USE_ARRAY_WRAPPER.get();
 
-                BinaryUtils.USE_ARRAY_WRAPPER.set(true);
+                //BinaryUtils.USE_ARRAY_WRAPPER.set(true);
             }
 
             try {

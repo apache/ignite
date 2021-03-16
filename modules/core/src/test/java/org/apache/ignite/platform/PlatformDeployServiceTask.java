@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -529,15 +530,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals("HR", iter.next().getName());
             assertEquals("IT", iter.next().getName());
 
-            Collection<Department> res = new ArrayList<>();
-
-            Department d = new Department();
-
-            d.setName("Executive");
-
-            res.add(d);
-
-            return res;
+            return Arrays.asList(new Department("Executive"));
         }
 
         /** */
@@ -557,6 +550,26 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             return m;
         }
+
+        /** */
+        Collection[] testArrayOfCollections(Collection[] deps) {
+            assertEquals(2, deps.length);
+            assertEquals(1, deps[0].size());
+            assertEquals(2, deps[1].size());
+
+            assertEquals("HR", ((Department)deps[0].iterator().next()).getName());
+
+            Iterator iter = deps[1].iterator();
+
+            assertEquals("IT", ((Department)iter.next()).getName());
+            assertEquals("Accounts", ((Department)iter.next()).getName());
+
+            return new Collection[] {
+                Arrays.asList(new Department("Executive")),
+                Arrays.asList(new Department("Legal"), new Department("DevRel"))
+            };
+        }
+
 
         /** */
         public Account[] testAccounts() {
