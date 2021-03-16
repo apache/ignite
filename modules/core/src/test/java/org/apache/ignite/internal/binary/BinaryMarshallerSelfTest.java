@@ -2644,6 +2644,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 obj.array().length);
 
             assertTrue(offheapObj.equals(offheapObj));
+            assertEquals(offheapObj.size(), obj.size());
             assertFalse(offheapObj.equals(null));
             assertFalse(offheapObj.equals("str"));
             assertTrue(offheapObj.equals(obj));
