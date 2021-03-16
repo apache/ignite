@@ -440,7 +440,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         FailureSimulatingTcpDiscoverySpi failSpi = ((FailureSimulatingTcpDiscoverySpi)grid(gridCnt - 1)
             .configuration().getDiscoverySpi());
 
-        long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt-1).configuration()
+        long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
             .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / (gridCnt + 1);
 
         failSpi.enableNetworkTimeoutSimulation(1, (int)(simulatedNetDelay / (gridCnt + 1)));
