@@ -24,10 +24,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class InlineIndexKeyTypeRegistryTest {
+public class InlineIndexKeyTypeRegistryTest extends GridCommonAbstractTest {
     /** */
     private static final IndexKeyTypeSettings pojoHashKeyTypeSettings =
         new IndexKeyTypeSettings();
@@ -44,45 +45,45 @@ public class InlineIndexKeyTypeRegistryTest {
     @Test
     public void testNulls() {
         int t = InlineIndexKeyTypeRegistry.get(NullIndexKey.INSTANCE, IndexKeyTypes.INT, pojoArrayKeyTypeSettings).type();
-        assert t == IndexKeyTypes.INT;
+        assertEquals(IndexKeyTypes.INT, t);
 
         t = InlineIndexKeyTypeRegistry.get(NullIndexKey.INSTANCE, IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings).type();
-        assert t == IndexKeyTypes.JAVA_OBJECT;
+        assertEquals(IndexKeyTypes.JAVA_OBJECT, t);
 
         t = InlineIndexKeyTypeRegistry.get(NullIndexKey.INSTANCE, IndexKeyTypes.JAVA_OBJECT, pojoHashKeyTypeSettings).type();
-        assert t == IndexKeyTypes.JAVA_OBJECT;
+        assertEquals(IndexKeyTypes.JAVA_OBJECT, t);
     }
 
     /** */
     @Test
     public void testObjectCheck() {
         InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(new IntegerIndexKey(3), IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.INT;
+        assertEquals(IndexKeyTypes.INT, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null), IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.JAVA_OBJECT;
+        assertEquals(IndexKeyTypes.JAVA_OBJECT, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null), IndexKeyTypes.INT, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.JAVA_OBJECT;
+        assertEquals(IndexKeyTypes.JAVA_OBJECT, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(new IntegerIndexKey(3), IndexKeyTypes.JAVA_OBJECT, pojoHashKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.INT;
+        assertEquals(IndexKeyTypes.INT, t.type());
     }
 
     /** */
     @Test
     public void testMismatchType() {
         InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(new IntegerIndexKey(3), 11, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.INT;
+        assertEquals(IndexKeyTypes.INT, t.type());
     }
 
     /** */
     @Test
     public void testStrings() {
         InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(new StringIndexKey(""), IndexKeyTypes.STRING, pojoArrayKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.STRING;
+        assertEquals(IndexKeyTypes.STRING, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(new StringIndexKey(""), IndexKeyTypes.STRING, strNoCompareKeyTypeSettings);
-        assert t.type() == IndexKeyTypes.STRING;
+        assertEquals(IndexKeyTypes.STRING, t.type());
     }
 }
