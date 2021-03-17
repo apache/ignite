@@ -265,7 +265,11 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      * @param cls Cache metrics MXBean implementation.
      * @return Cache metrics MXBean.
      */
-    private <T extends CacheMetricsMXBean> T cacheMetricsMXBean(IgniteEx n, String cacheName, Class<? super T> cls) {
+    private <T extends CacheMetricsMXBean> T cacheMetricsMXBean(
+        IgniteEx n,
+        String cacheName,
+        Class<? super T> cls
+    ) {
         requireNonNull(n);
         requireNonNull(cacheName);
         requireNonNull(cls);
