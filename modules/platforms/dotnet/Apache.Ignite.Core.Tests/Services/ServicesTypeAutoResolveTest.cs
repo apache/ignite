@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceThin()
         {
-            DoTestPlatformService(name => _thinClient.GetServices().GetServiceProxy<IJavaService>(name), true);
+            DoTestPlatformService(name => _thinClient.GetServices().GetServiceProxy<IJavaService>(name));
         }
 
         /// <summary>
