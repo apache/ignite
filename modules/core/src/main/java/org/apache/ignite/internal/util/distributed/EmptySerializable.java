@@ -20,9 +20,9 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 
 /**
- * Empty stub.
+ * Empty serializable.
  */
-public class EmptyStub implements Serializable {
+public class EmptySerializable implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 }

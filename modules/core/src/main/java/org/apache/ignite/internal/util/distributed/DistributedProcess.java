@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -244,7 +243,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /** Starts distributed process. */
     public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start() {
-        return start(UUID.randomUUID(), (I)new EmptyStub());
+        return start(UUID.randomUUID(), (I)new EmptySerializable());
     }
 
     /**
@@ -409,7 +408,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /** Nodes results. */
         private final ConcurrentHashMap<UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();
 
-        /** */
+        /** Future will be completed when the results of closing the process are received from all nodes. */
         private final GridFutureAdapter<T2<Map<UUID, R>, Map<UUID, Exception>>> finishFut = new GridFutureAdapter<>();
 
         /** @param id Process id. */

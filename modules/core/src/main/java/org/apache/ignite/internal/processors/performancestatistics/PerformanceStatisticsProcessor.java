@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -243,14 +244,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         return rotateProc.start().chain(
             new CX1<IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>>, Void>() {
                 @Override public Void applyx(
-                    IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut1)
+                    IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut)
                     throws IgniteCheckedException {
+                    Map<UUID, Exception> err = fut.get().get2();
 
-                    Exception ex = fut1.get().get2().values().stream()
-                        .filter(Objects::nonNull).findAny().orElse(null);
-
-                    if (ex != null)
-                        throw new IgniteCheckedException(ex);
+                    if (!err.isEmpty())
+                        throw new IgniteCheckedException(F.first(err.values()));
 
                     return null;
                 }
