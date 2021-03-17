@@ -195,7 +195,8 @@ public class ClientFastReplyCoordinatorFailureTest extends GridCommonAbstractTes
         newSrvSingleMesssageLatch.await();
 
         // Client join will be hanging on local join exchange.
-        IgniteInternalFuture<Ignite> startFut = GridTestUtils.runAsync(() -> startGrid("client-1"));
+        IgniteInternalFuture<Ignite> startFut =
+            GridTestUtils.runAsync(() -> startClientGrid("client-1"));
 
         clientSingleMesssageLatch.await();
 
