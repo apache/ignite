@@ -995,22 +995,27 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void checkMetadata(File metadataDir) throws IgniteCheckedException {
-        for (BinaryMetadata newMeta : readMetadata(metadataDir)) {
-            BinaryMetadata oldMeta = binaryMetadata(newMeta.typeId());
-
-            if (oldMeta != null)
-                BinaryUtils.mergeMetadata(oldMeta, newMeta, null);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        for (BinaryMetadata newMeta : readMetadata(metadataDir)) {
-            if (stopChecker.getAsBoolean())
-                return;
+        Collection<BinaryMetadata> metadata = readMetadata(metadataDir);
 
-            addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
+        try {
+            // Check the compatibility of the binary metadata files stored in the specified directory.
+            for (BinaryMetadata newMeta : metadata) {
+                BinaryMetadata oldMeta = binaryMetadata(newMeta.typeId());
+
+                if (oldMeta != null)
+                    BinaryUtils.mergeMetadata(oldMeta, newMeta, null);
+            }
+
+            // Update cluster metadata.
+            for (BinaryMetadata newMeta : metadata) {
+                if (stopChecker.getAsBoolean())
+                    return;
+
+                addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
+            }
+        } catch (BinaryObjectException e) {
+            throw new IgniteCheckedException(e);
         }
     }
 

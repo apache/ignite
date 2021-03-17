@@ -1372,7 +1372,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return The executor used to run snapshot tasks.
      */
-    Executor snapshotExecutorService() {
+    ExecutorService snapshotExecutorService() {
         assert snpRunner != null;
 
         return snpRunner;

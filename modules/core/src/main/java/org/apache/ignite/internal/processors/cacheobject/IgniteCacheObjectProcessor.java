@@ -308,14 +308,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public void saveMetadata(Collection<BinaryType> types, File dir);
 
     /**
-     * Check the compatibility of the binary metadata files stored in the specified directory.
-     *
-     * @param metadataDir Directory containing binary metadata files.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void checkMetadata(File metadataDir) throws IgniteCheckedException;
-
-    /**
      * Merge the binary metadata files stored in the specified directory.
      *
      * @param metadataDir Directory containing binary metadata files.
