@@ -515,11 +515,4 @@ public interface GridQueryIndexing {
         Runnable cancellationChecker,
         IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException;
-
-    /**
-     * Callback when stopping cache.
-     *
-     * @param cacheInfo Cache context info.
-     */
-    void onCacheStop(GridCacheContextInfo cacheInfo);
 }

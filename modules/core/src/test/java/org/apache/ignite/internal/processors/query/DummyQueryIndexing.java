@@ -352,9 +352,4 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         // No-op.
     }
-
-    /** {@inheritDoc} */
-    @Override public void onCacheStop(GridCacheContextInfo cacheInfo) {
-        // No-op.
-    }
 }

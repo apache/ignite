@@ -2481,6 +2481,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) {
+        cancelIndexRebuildFuture(idxRebuildFuts.remove(cacheInfo.cacheId()));
+
         rowCache.onCacheUnregistered(cacheInfo);
 
         String cacheName = cacheInfo.name();
@@ -3285,11 +3287,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log,
             defragmentationThreadPool
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onCacheStop(GridCacheContextInfo cacheInfo) {
-        cancelIndexRebuildFuture(idxRebuildFuts.remove(cacheInfo.cacheId()));
     }
 
     /**
