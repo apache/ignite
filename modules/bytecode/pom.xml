@@ -26,22 +26,38 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
         <version>1</version>
-        <relativePath>parent</relativePath>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>apache-ignite</artifactId>
+    <artifactId>ignite-bytecode</artifactId>
     <version>3.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
 
-    <modules>
-        <module>modules/bytecode</module>
-        <module>modules/cli</module>
-        <module>modules/cli-common</module>
-        <module>modules/configuration</module>
-        <module>modules/configuration-annotation-processor</module>
-        <module>modules/rest</module>
-        <module>modules/runner</module>
-        <module>modules/network</module>
-        <module>modules/schema</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-tree</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-util</artifactId>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

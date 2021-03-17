@@ -20,21 +20,27 @@
 <ruleset name="Default Maven PMD Plugin Ruleset"
          xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
     <description>
         PMD Ruleset for Apache Ignite
     </description>
 
-    <rule ref="category/java/errorprone.xml/EmptyFinallyBlock" />
-    <rule ref="category/java/errorprone.xml/AvoidCatchingNPE" />
-    <rule ref="category/java/errorprone.xml/BrokenNullCheck" />
-    <rule ref="category/java/errorprone.xml/EmptySwitchStatements" />
-    <rule ref="category/java/errorprone.xml/EmptyStatementNotInLoop" />
-    <rule ref="category/java/errorprone.xml/EmptySynchronizedBlock" />
-    <rule ref="category/java/errorprone.xml/UselessOperationOnImmutable" />
+    <rule ref="category/java/errorprone.xml/EmptyFinallyBlock"/>
+    <rule ref="category/java/errorprone.xml/AvoidCatchingNPE"/>
+    <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
+    <rule ref="category/java/errorprone.xml/EmptySwitchStatements"/>
+    <rule ref="category/java/errorprone.xml/EmptyStatementNotInLoop"/>
+    <rule ref="category/java/errorprone.xml/EmptySynchronizedBlock"/>
+    <rule ref="category/java/errorprone.xml/UselessOperationOnImmutable"/>
 
-    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable" />
-    <rule ref="category/java/bestpractices.xml/UnusedPrivateField" />
-    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod" />
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <!--
+        UnusedPrivateMethod has a known bug which leads to false positive triggering if
+        method signature contains generic parameter and\or descendant class is passed as parameter.
+        See for details: https://github.com/pmd/pmd/issues/770
+    -->
+    <!--    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod" />-->
+
 </ruleset>

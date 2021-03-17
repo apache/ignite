@@ -10,10 +10,12 @@ We prohibit cyclic dependencies between modules in order to simplify JIGSAW migr
 
 Module Name | Description
 ----------- | -----------
-[network](network/README.md)|Networking module: group membership and message passing
-[configuration-annotation-processor](configuration-annotation-processor/README.md)|Tooling for generating Ignite configuration model classes from configuration schema definition
-[configuration](configuration/README.md)|Ignite configuration classes and configuration management framework
-[runner](runner/README.md)|Ignite server node runner. The module that wires up the Ignite components and handles node lifecycle
-[rest](rest/README.md)|REST management endpoint bindings and command handlers
-[cli-common](cli-common/README.md)|Shared interfaces definitions for pluggable CLI
+[bytecode](bytecode/README.md)|Ignite Bytecode module.
 [cli](cli/README.md)|Ignite CLI implementation
+[cli-common](cli-common/README.md)|Shared interfaces definitions for pluggable CLIng
+[configuration](configuration/README.md)|Ignite configuration classes and configuration management framework
+[configuration-annotation-processor](configuration-annotation-processor/README.md)|Tooling for generating Ignite configuration model classes from configuration schema definition
+[network](network/README.md)|Networking module: group membership and message passi
+[rest](rest/README.md)|REST management endpoint bindings and command handlers
+[runner](runner/README.md)|Ignite server node runner. The module that wires up the Ignite components and handles node lifecycle
+[schema](schema/README.md)|Ignite schema API implementation and schema management classes.
