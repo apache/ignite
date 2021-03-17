@@ -434,21 +434,36 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(gridCnt - 1);
 
-            assert grid(0).cluster().nodes().size() == gridCnt;
+            UUID failingNodeId = grid(gridCnt - 1).localNode().id();
+
+            CountDownLatch testWaiter = new CountDownLatch(gridCnt - 1);
+
+            for (int i = 0; i < gridCnt - 1; ++i) {
+                grid(0).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (evt.type() == EventType.EVT_NODE_FAILED
+                            && failingNodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
+                            testWaiter.countDown();
+
+                        return false;
+                    }
+                }, EVT_NODE_FAILED);
+            }
 
             FailureSimulatingTcpDiscoverySpi failSpi = ((FailureSimulatingTcpDiscoverySpi)grid(gridCnt - 1)
                 .configuration().getDiscoverySpi());
 
             long simulatedNetDelay = ((TcpDiscoverySpi)grid(gridCnt - 1).configuration()
-                .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / (gridCnt + 1);
+                .getDiscoverySpi()).getEffectiveConnectionRecoveryTimeout() / gridCnt;
 
             failSpi.enableNetworkTimeoutSimulation(1, (int)simulatedNetDelay);
 
             waitNodeStop(grid(gridCnt - 1).name());
 
-            for (int i = 0; i < gridCnt - 1; ++i)
-                assert grid(i).cluster().nodes().size() == 3;
+            testWaiter.await(failureDetectionTimeout * 3, MILLISECONDS);
 
+            for (int i = 0; i < gridCnt - 1; ++i)
+                assert grid(i).cluster().nodes().size() == gridCnt - 1;
         }
         finally {
             stopAllGrids();

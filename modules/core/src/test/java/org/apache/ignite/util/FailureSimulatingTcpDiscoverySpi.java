@@ -20,8 +20,10 @@ package org.apache.ignite.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -36,14 +38,11 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
      * If not {@code null}, enables network timeout simulation. First value switches traffic droppage: negative for all
      * incoming, positive for all outgoing, 0 for both.
      */
-    protected volatile IgnitePair<Integer> simulateNetTimeout;
+    protected volatile IgnitePair<Integer> simulatedTimeout;
 
     /** {@inheritDoc} */
-    @Override protected Socket createSocket0(boolean encrypted) {
-        if (encrypted)
-            throw new IllegalArgumentException("Failure simulation of encrypted socket isn't supported yet.");
-
-        return new SocketWrap();
+    @Override protected Socket createSocket0() throws IOException {
+        return new SocketWrap(super.createSocket0());
     }
 
     /**
@@ -55,7 +54,7 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
      * @see SocketWrap#simulateTimeout(Socket, int)
      */
     public void enableNetworkTimeoutSimulation(int direction, int delay) {
-        simulateNetTimeout = new IgnitePair<>(direction, delay);
+        simulatedTimeout = new IgnitePair<>(direction, delay);
     }
 
     /**
@@ -67,7 +66,7 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
      * @see #enableNetworkTimeoutSimulation(int, int)
      */
     private void simulateTimeout(Socket sock, int forceTimeout) throws SocketTimeoutException {
-        IgnitePair<Integer> simulateNetTimeout = this.simulateNetTimeout;
+        IgnitePair<Integer> simulateNetTimeout = this.simulatedTimeout;
 
         if (simulateNetTimeout == null)
             return;
@@ -100,9 +99,21 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
      * Network failure simulator.
      */
     private class SocketWrap extends Socket {
+        /** The real socket to simulate failure of. */
+        private final Socket delegate;
+
+        /**
+         * Constructor.
+         *
+         * @param sock The real socket to simulate failure of.
+         */
+        private SocketWrap(Socket sock) {
+            delegate = sock;
+        }
+
         /** {@inheritDoc} */
         @Override public OutputStream getOutputStream() throws IOException {
-            OutputStream src = super.getOutputStream();
+            OutputStream src = delegate.getOutputStream();
 
             return new OutputStream() {
                 /** {@inheritDoc} */
@@ -140,8 +151,9 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
             };
         }
 
+        /** {@inheritDoc} */
         @Override public InputStream getInputStream() throws IOException {
-            InputStream src = super.getInputStream();
+            InputStream src = delegate.getInputStream();
 
             return new InputStream() {
                 @Override public int read(@NotNull byte[] b) throws IOException {
@@ -199,14 +211,194 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
         @Override public void connect(SocketAddress endpoint) throws IOException {
             simulateTimeout(this);
 
-            super.connect(endpoint);
+            delegate.connect(endpoint);
         }
 
         /** {@inheritDoc} */
         @Override public void connect(SocketAddress endpoint, int timeout) throws IOException {
             simulateTimeout(this);
 
-            super.connect(endpoint, timeout);
+            delegate.connect(endpoint, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void bind(SocketAddress bindpoint) throws IOException {
+            delegate.bind(bindpoint);
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetAddress getInetAddress() {
+            return delegate.getInetAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetAddress getLocalAddress() {
+            return delegate.getLocalAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getPort() {
+            return delegate.getPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPort() {
+            return delegate.getLocalPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SocketAddress getRemoteSocketAddress() {
+            return delegate.getRemoteSocketAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SocketAddress getLocalSocketAddress() {
+            return delegate.getLocalSocketAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setTcpNoDelay(boolean on) throws SocketException {
+            delegate.setTcpNoDelay(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getTcpNoDelay() throws SocketException {
+            return delegate.getTcpNoDelay();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setSoLinger(boolean on, int linger) throws SocketException {
+            delegate.setSoLinger(on, linger);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSoLinger() throws SocketException {
+            return delegate.getSoLinger();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendUrgentData(int data) throws IOException {
+            delegate.sendUrgentData(data);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setOOBInline(boolean on) throws SocketException {
+            delegate.setOOBInline(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getOOBInline() throws SocketException {
+            return delegate.getOOBInline();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void setSoTimeout(int timeout) throws SocketException {
+            delegate.setSoTimeout(timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int getSoTimeout() throws SocketException {
+            return delegate.getSoTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void setSendBufferSize(int size) throws SocketException {
+            delegate.setSendBufferSize(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int getSendBufferSize() throws SocketException {
+            return delegate.getSendBufferSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void setReceiveBufferSize(int size) throws SocketException {
+            delegate.setReceiveBufferSize(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int getReceiveBufferSize() throws SocketException {
+            return delegate.getReceiveBufferSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setKeepAlive(boolean on) throws SocketException {
+            delegate.setKeepAlive(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getKeepAlive() throws SocketException {
+            return delegate.getKeepAlive();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setTrafficClass(int tc) throws SocketException {
+            delegate.setTrafficClass(tc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTrafficClass() throws SocketException {
+            return delegate.getTrafficClass();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setReuseAddress(boolean on) throws SocketException {
+            delegate.setReuseAddress(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getReuseAddress() throws SocketException {
+            return delegate.getReuseAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void close() throws IOException {
+            delegate.close();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdownInput() throws IOException {
+            delegate.shutdownInput();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdownOutput() throws IOException {
+            delegate.shutdownOutput();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return delegate.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isConnected() {
+            return delegate.isConnected();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isBound() {
+            return delegate.isBound();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClosed() {
+            return delegate.isClosed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInputShutdown() {
+            return delegate.isInputShutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isOutputShutdown() {
+            return delegate.isOutputShutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setPerformancePreferences(int connectionTime, int latency, int bandwidth) {
+            delegate.setPerformancePreferences(connectionTime, latency, bandwidth);
         }
     }
 }

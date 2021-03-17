@@ -1610,7 +1610,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         Socket sock = null;
 
         try {
-            sock = createSocket0(isSslEnabled());
+            sock = createSocket0();
 
             sock.bind(new InetSocketAddress(locHost, 0));
 
@@ -1629,8 +1629,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Creates proper socket.
      */
-    protected Socket createSocket0(boolean encrypted) throws IOException {
-        return encrypted ? sslSockFactory.createSocket() : new Socket();
+    protected Socket createSocket0() throws IOException {
+        return isSslEnabled() ? sslSockFactory.createSocket() : new Socket();
     }
 
     /**
