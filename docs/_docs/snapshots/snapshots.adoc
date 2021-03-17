@@ -83,22 +83,8 @@ media where Ignite Persistence keeps data, index, WAL, and other files. Since th
 already taken by the persistence files and can affect your applications' performance by sharing the disk I/O with the
 Ignite Persistence routines, it's suggested to store the snapshot and persistence files on different media.
 
-You can avoid this interference between Ignite Native persistence and snapshotting
-by either changing link:persistence/native-persistence#configuring-persistent-storage-directory[storage directories of the persistence files]
-or overriding the default snapshots' location as shown below:
-[tabs]
---
-tab:XML[]
-[source, xml]
-----
-include::code-snippets/xml/snapshots.xml[tags=ignite-config;!discovery, indent=0]
-----
-tab:Java[]
-[source, java]
-----
-include::{javaCodeDir}/Snapshots.java[tags=config, indent=0]
-----
---
+See the link:persistence/snapshot-directory#configuring-snapshot-directory[Configuring Snapshot Directory] page for
+configuration examples.
 
 == Creating Snapshot
 
@@ -106,7 +92,7 @@ Ignite provides several APIs for the snapshot creation. Let's review all the opt
 
 === Using Control Script
 
-Ignite ships the link:control-script[control script] that supports snapshots-related commands listed below:
+Ignite ships the link:tools/control-script[Control Script] that supports snapshots-related commands listed below:
 
 [source,shell]
 ----
@@ -144,6 +130,20 @@ tab:Java[]
 include::{javaCodeDir}/Snapshots.java[tags=create, indent=0]
 ----
 --
+
+== Checking Snapshot Consistency
+
+Usually all the cluster nodes run on different machines and have the snapshot data spread across the cluster.
+Each node stores its own snapshot segment, so in some cases it may be necessary to check the snapshot for completeness
+of data and for data consistency across the cluster before restoring from the snapshot.
+
+For such cases, Apache Ignite is delivered with built-in snapshot consistency check commands that enable you to verify
+internal data consistency, calculate data partitions hashes and pages checksums, and print out the result if a
+problem is found. The check command also compares hashes of a primary partitions with corresponding backup partitions
+and reports any differences.
+
+See the link:tools/control-script#checking-snapshot-consistency[Control Script] that supports snapshots-related checking
+commands.
 
 == Restoring From Snapshot
 
