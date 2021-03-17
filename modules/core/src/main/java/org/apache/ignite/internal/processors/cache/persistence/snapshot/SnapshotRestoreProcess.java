@@ -411,12 +411,18 @@ public class SnapshotRestoreProcess {
                     retFut.onDone(err);
                 }
                 catch (IgniteCheckedException e) {
+                    log.error("Unable to restore cache group(s) from the snapshot " +
+                        "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']', e);
+
                     retFut.onDone(e);
                 }
             });
 
             return retFut;
         } catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
+            log.error("Unable to restore cache group(s) from the snapshot " +
+                "[requestID=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
+
             return new GridFinishedFuture<>(e);
         }
     }
@@ -537,7 +543,7 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Rollback changes made by process in specified cache group.
+     * Rollback changes made by process.
      *
      * @param opCtx Snapshot restore operation context.
      */
@@ -545,8 +551,10 @@ public class SnapshotRestoreProcess {
         if (opCtx == null || F.isEmpty(opCtx.dirs))
             return;
 
-        if (log.isInfoEnabled())
-            log.info("Performing local rollback routine for restored cache groups [requestID=" + opCtx.reqId + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Performing local rollback routine for restored cache groups " +
+                "[requestID=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']');
+        }
 
         for (File cacheDir : opCtx.dirs) {
             if (!cacheDir.exists())
@@ -613,11 +621,6 @@ public class SnapshotRestoreProcess {
 
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
-
-        DiscoveryDataClusterState state = ctx.state().clusterState();
-
-        if (state.state() != ClusterState.ACTIVE || state.transition())
-            return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "The cluster should be active."));
 
         Throwable err = opCtx0.err.get();
 

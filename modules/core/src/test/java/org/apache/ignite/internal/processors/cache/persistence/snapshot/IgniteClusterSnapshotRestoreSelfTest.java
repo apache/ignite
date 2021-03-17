@@ -551,7 +551,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     @Test
     public void testClusterStateChangeActiveReadonlyOnPrepare() throws Exception {
         checkClusterStateChange(ClusterState.ACTIVE_READ_ONLY, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
-            IgniteException.class, "The cluster should be active.");
+            IgniteException.class, "Failed to perform start cache operation (cluster is in read-only mode)");
     }
 
     /**
@@ -568,7 +568,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     @Test
     public void testClusterDeactivateOnPrepare() throws Exception {
         checkClusterStateChange(ClusterState.INACTIVE, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
-            IgniteException.class, "The cluster should be active.");
+            IgniteException.class, "The cluster has been deactivated.");
     }
 
     /**
