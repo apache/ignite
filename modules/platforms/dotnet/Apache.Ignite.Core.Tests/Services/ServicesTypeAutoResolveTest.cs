@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            DoTestPlatformService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            DoTestPlatformService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name), true);
+            DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name), true);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            DoTestPlatformService(name =>
+            DoTestService(name =>
                 new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(name, true)));
         }
 
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceLocal()
         {
-            DoTestPlatformService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name, false));
+            DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name, false));
         }
 
         /// <summary>
@@ -143,13 +143,13 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceRemote()
         {
-            DoTestPlatformService(name => _client.GetServices().GetServiceProxy<IJavaService>(name, false));
+            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(name, false));
         }
 
         /// <summary>
-        /// Tests .Net service invocation.
+        /// Tests service invocation.
         /// </summary>
-        public void DoTestPlatformService(Func<String, IJavaService> svc, bool isPlatform = false)
+        public void DoTestService(Func<String, IJavaService> svcProvider, bool isPlatform = false)
         {
             string svcName;
             if (isPlatform)
@@ -161,21 +161,8 @@ namespace Apache.Ignite.Core.Tests.Services
             else
                 svcName = TestUtils.DeployJavaService(_grid1);
 
-            try
-            {
-                DoTestService(svc.Invoke(svcName));
-            }
-            finally
-            {
-                _grid1.GetServices().Cancel(PlatformSvcName);
-            }
-        }
+            var svc = svcProvider.Invoke(svcName);
 
-        /// <summary>
-        /// Tests departments call.
-        /// </summary>
-        private static void DoTestService(IJavaService svc)
-        {
             Assert.IsNull(svc.testDepartments(null));
 
             var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToList();
@@ -243,6 +230,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+
+            _grid1.GetServices().Cancel(PlatformSvcName);
         }
 
         /// <summary>
