@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
@@ -137,7 +138,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = metaInfo();
 
-            def.initByMeta(initNew, metaInfo);
+            if (def != null)
+                def.initByMeta(initNew, metaInfo);
 
             inlineSize = metaInfo.inlineSize();
             setIos(inlineSize);
@@ -532,8 +534,27 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** {@inheritDoc} */
+    @Override protected void temporaryReleaseLock() {
+        cctx.kernalContext().cache().context().database().checkpointReadUnlock();
+        cctx.kernalContext().cache().context().database().checkpointReadLock();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long maxLockHoldTime() {
+        long sysWorkerBlockedTimeout = cctx.kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
+
+        // Using timeout value reduced by 10 times to increase possibility of lock releasing before timeout.
+        return sysWorkerBlockedTimeout == 0 ? Long.MAX_VALUE : (sysWorkerBlockedTimeout / 10);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IoStatisticsHolder statisticsHolder() {
         return stats != null ? stats : super.statisticsHolder();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(InlineIndexTree.class, this, "super", super.toString());
     }
 
     /**

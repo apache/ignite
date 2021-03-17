@@ -468,7 +468,6 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      * @param batchArgs Batch arguments.
      * @throws Exception If failed.
      */
-    // TODO: try use it for compatibility test.
     private void batchQuery(Ignite ignite, String qry, List<Object[]> batchArgs) throws Exception {
         String host = ignite.configuration().getLocalHost();
 
