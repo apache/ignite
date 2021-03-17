@@ -588,7 +588,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
-            if (protocolCtx.isFeatureSupported(BITMAP_FEATURES)) {
+            if (protocolCtx.isFeatureSupported(BITMAP_FEATURES) && !protocolCtx.isIse281Compatible()) {
                 byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());
                 writer.writeByteArray(features);
             }
@@ -615,10 +615,17 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private ProtocolContext protocolContextFromVersion(ProtocolVersion ver) {
         EnumSet<ProtocolBitmaskFeature> features = null;
-        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES))
-            features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
 
-        return new ProtocolContext(ver, features);
+        final boolean isIse281Compatible = ProtocolContext.isIse281Compatible(ver);
+
+        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES)) {
+            if (isIse281Compatible)
+                features = EnumSet.of(USER_ATTRIBUTES);
+            else
+                features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
+        }
+
+        return new ProtocolContext(ver, features, isIse281Compatible);
     }
 
     /** Receive and handle handshake response. */
@@ -630,12 +637,18 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             boolean success = res.readBoolean();
 
             if (success) {
-                byte[] features = EMPTY_BYTES;
+                EnumSet<ProtocolBitmaskFeature> features = null;
 
-                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES))
-                    features = reader.readByteArray();
+                final boolean ise281Compatible = ProtocolContext.isIse281Compatible(proposedVer);
 
-                protocolCtx = new ProtocolContext(proposedVer, ProtocolBitmaskFeature.enumSet(features));
+                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES)) {
+                    if (ise281Compatible)
+                        features = EnumSet.of(USER_ATTRIBUTES);
+                    else
+                        features = ProtocolBitmaskFeature.enumSet(reader.readByteArray());
+                }
+
+                protocolCtx = new ProtocolContext(proposedVer, features, ise281Compatible);
 
                 if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
                     // Reading server UUID
