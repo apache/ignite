@@ -17,6 +17,9 @@
 This package contains rebalance tests.
 """
 
+from datetime import datetime
+from typing import NamedTuple
+
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
@@ -47,7 +50,7 @@ def preload_data(context, config, backups, cache_count, entry_count, entry_size,
 
     return (get_event_time(
         app, app.nodes[0], "Marking as initialized") - get_event_time(
-        app, app.nodes[0], "Data generation started")).total_seconds()
+        app, app.nodes[0], "Application params")).total_seconds()
 
 
 def await_rebalance_start(ignite, timeout=1):
@@ -68,7 +71,7 @@ def await_rebalance_start(ignite, timeout=1):
         except TimeoutError:
             continue
         else:
-            return {"node": node, "time": rebalance_start_time}
+            return node, rebalance_start_time
 
     raise RuntimeError("Rebalance start was not detected on any node")
 
@@ -88,8 +91,78 @@ def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
         rebalance_complete_times.append(get_event_time(
             ignite,
             node if node else ignite.nodes[0],
-            "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
-            ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
+            "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\"
+            "[grp=test-cache-%d" % (cache_idx + 1),
             timeout=timeout))
 
     return max(rebalance_complete_times)
+
+
+def get_rebalance_metrics(node, cache_group):
+    """
+    Gets rebalance metrics for specified node and cache group.
+    :param node: Ignite node.
+    :param cache_group: Cache group.
+    :return: RebalanceMetrics instance.
+    """
+    mbean = node.jmx_client().find_mbean('.*group=cacheGroups.*name="%s"' % cache_group)
+    start_time = to_datetime(int(next(mbean.RebalancingStartTime)))
+    end_time = to_datetime(int(next(mbean.RebalancingEndTime)))
+
+    return RebalanceMetrics(
+        received_bytes=int(next(mbean.RebalancingReceivedBytes)),
+        start_time=start_time,
+        end_time=end_time,
+        duration=(end_time - start_time).total_seconds() if start_time and end_time else 0)
+
+
+def to_datetime(ts):
+    """
+    Converts timestamp in millicesonds to datetime.
+    :param ts: Timestamp in milliseconds.
+    :return: datetime constructed from timestamp or None if ts == -1.
+    """
+    return None if ts == -1 else datetime.fromtimestamp(ts / 1000.0)
+
+
+class RebalanceMetrics(NamedTuple):
+    """
+    Rebalance metrics
+    """
+    received_bytes: int = 0
+    start_time: datetime = None
+    end_time: datetime = None
+    duration: float = 0
+
+
+def aggregate_rebalance_stats(nodes, cache_count):
+    """
+    Aggregates rebalance stats for specified nodes and cache count:
+    received_bytes -> sum(all of received_bytes)
+    start_time -> min(all of start_time)
+    end_time -> max(all of end_time)
+    duration -> sum(all of duration)
+    :param nodes: Nodes list.
+    :param cache_count: Cache count.
+    :return: RebalanceMetrics instance with aggregated values.
+    """
+    received_bytes = 0
+    start_time = None
+    end_time = None
+    duration = 0
+
+    for node in nodes:
+        for cache_idx in range(cache_count):
+            m = get_rebalance_metrics(node, "test-cache-%d" % (cache_idx + 1))
+            received_bytes += m.received_bytes
+            if m.start_time is not None:
+                start_time = min(t for t in [start_time, m.start_time] if t is not None)
+            if m.end_time is not None:
+                end_time = max(t for t in [end_time, m.end_time] if t is not None)
+            duration += m.duration
+
+    return RebalanceMetrics(
+        received_bytes=received_bytes,
+        start_time=start_time,
+        end_time=end_time,
+        duration=duration)
