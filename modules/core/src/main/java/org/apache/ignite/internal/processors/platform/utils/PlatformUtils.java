@@ -898,7 +898,7 @@ public class PlatformUtils {
      * @param o Object to unwrap.
      * @return Unwrapped object.
      */
-    private static Object unwrapBinary(Object o) {
+    public static Object unwrapBinary(Object o) {
         if (o == null)
             return null;
 

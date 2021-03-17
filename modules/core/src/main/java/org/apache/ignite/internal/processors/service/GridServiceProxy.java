@@ -202,7 +202,7 @@ public class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args),
+                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, BinaryUtils.USE_ARRAY_WRAPPER.get()),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
@@ -427,6 +427,9 @@ public class GridServiceProxy<T> implements Serializable {
         /** Args. */
         private Object[] args;
 
+        /** Use array wrapper. */
+        private boolean useArrayWrapper;
+
         /** Grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -443,12 +446,15 @@ public class GridServiceProxy<T> implements Serializable {
          * @param svcName Service name.
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
+         * @param useArrayWrapper Use Array Wrapper flag.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args) {
+        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args,
+            boolean useArrayWrapper) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;
             this.args = args;
+            this.useArrayWrapper = useArrayWrapper;
         }
 
         /** {@inheritDoc} */
@@ -462,10 +468,10 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            boolean useArrWrapper = false;
+            boolean useArrWrap = false;
 
-            if (ctx.service() instanceof PlatformService) {
-                useArrWrapper = BinaryUtils.USE_ARRAY_WRAPPER.get();
+            if (useArrayWrapper) {
+                useArrWrap = BinaryUtils.USE_ARRAY_WRAPPER.get();
 
                 BinaryUtils.USE_ARRAY_WRAPPER.set(true);
             }
@@ -477,8 +483,8 @@ public class GridServiceProxy<T> implements Serializable {
                     return callService(ctx.service(), mtd);
             }
             finally {
-                if (ctx.service() instanceof PlatformService)
-                    BinaryUtils.USE_ARRAY_WRAPPER.set(useArrWrapper);
+                if (useArrayWrapper)
+                    BinaryUtils.USE_ARRAY_WRAPPER.set(useArrWrap);
             }
         }
 
@@ -514,6 +520,7 @@ public class GridServiceProxy<T> implements Serializable {
             U.writeString(out, mtdName);
             U.writeArray(out, argTypes);
             U.writeArray(out, args);
+            out.writeBoolean(useArrayWrapper);
         }
 
         /** {@inheritDoc} */
@@ -522,6 +529,7 @@ public class GridServiceProxy<T> implements Serializable {
             mtdName = U.readString(in);
             argTypes = U.readClassArray(in);
             args = U.readArray(in);
+            useArrayWrapper = in.readBoolean();
         }
 
         /** {@inheritDoc} */
