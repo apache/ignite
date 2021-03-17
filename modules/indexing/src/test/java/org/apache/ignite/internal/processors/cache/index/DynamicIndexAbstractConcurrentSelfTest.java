@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -478,10 +479,9 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Unblock indexing and see what happens.
         unblockIndexing(srv1);
 
-        // It is expected that the completion of the rebuild will be canceled by stopping the cache.
-        idxFut.get(getTestTimeout());
+        GridTestUtils.assertThrows(log, (Callable<?>)idxFut::get, SchemaOperationException.class, null);
 
-        assertTrue(desFut.get(getTestTimeout()));
+        assertTrue(desFut.get());
     }
 
     /**

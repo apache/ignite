@@ -30,11 +30,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -46,8 +44,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -257,48 +253,6 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * Checking that the {@link GridCacheContext#stopping()} is working correctly.
-     */
-    @Test
-    public void testStoppingCacheContext() throws Exception {
-        IgniteEx n = startGrid(0);
-
-        assertFalse(cacheCtx(n, DEFAULT_CACHE_NAME).stopping());
-
-        n.cluster().state(ACTIVE);
-
-        GridCacheContext<Object, Object> cacheCtx = cacheCtx(n, DEFAULT_CACHE_NAME);
-        assertFalse(cacheCtx.stopping());
-
-        n.cluster().state(INACTIVE);
-        assertTrue(cacheCtx.stopping());
-
-        n.cluster().state(ACTIVE);
-
-        assertNotSame(cacheCtx, cacheCtx(n, DEFAULT_CACHE_NAME));
-        assertFalse(cacheCtx(n, DEFAULT_CACHE_NAME).stopping());
-
-        IgniteCache<Object, Object> cache0 = n.getOrCreateCache(DEFAULT_CACHE_NAME + "0");
-        GridCacheContext<Object, Object> cacheCtx0 = cacheCtx(n, DEFAULT_CACHE_NAME + "0");
-
-        assertFalse(cacheCtx0.stopping());
-
-        cache0.destroy();
-        assertTrue(cacheCtx0.stopping());
-    }
-
-    /**
-     * Getting cache context.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Cache context.
-     */
-    private GridCacheContext<Object, Object> cacheCtx(IgniteEx n, String cacheName) {
-        return n.context().cache().context().cacheContext(CU.cacheId(cacheName));
     }
 
     /**

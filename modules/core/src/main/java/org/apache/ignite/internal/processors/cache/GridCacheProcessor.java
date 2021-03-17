@@ -1024,8 +1024,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy, boolean clearDbObjects) {
         GridCacheContext ctx = cache.context();
 
-        ctx.stopping(true);
-
         try {
             if (!cache.isNear() && ctx.shared().wal() != null) {
                 try {
@@ -1043,18 +1041,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (destroy)
                 cache.removeMetrics();
-
-            if (ctx.kernalContext().query().moduleEnabled()) {
-                IgniteInternalFuture<?> rebFut = ctx.kernalContext().query().getIndexing().indexRebuildFuture(ctx);
-
-                if (rebFut != null) {
-                    try {
-                        rebFut.get();
-                    }
-                    catch (IgniteCheckedException ignore) {
-                    }
-                }
-            }
 
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 

@@ -517,10 +517,9 @@ public interface GridQueryIndexing {
     ) throws IgniteCheckedException;
 
     /**
-     * Getting index rebuild futures for the cache.
+     * Callback when stopping cache.
      *
-     * @param cacheCtx Cache context.
-     * @return Indexes rebuilding future.
+     * @param cacheInfo Cache context info.
      */
-    @Nullable IgniteInternalFuture<?> indexRebuildFuture(GridCacheContext<?, ?> cacheCtx);
+    void onCacheStop(GridCacheContextInfo cacheInfo);
 }

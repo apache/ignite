@@ -354,7 +354,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable IgniteInternalFuture<?> indexRebuildFuture(GridCacheContext<?, ?> cacheCtx) {
-        return null;
+    @Override public void onCacheStop(GridCacheContextInfo cacheInfo) {
+        // No-op.
     }
 }

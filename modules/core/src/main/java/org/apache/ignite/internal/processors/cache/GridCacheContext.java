@@ -207,7 +207,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheGateway<K, V> gate;
 
     /** Grid cache. */
-    private GridCacheAdapter<K, V> cache;
+    private volatile GridCacheAdapter<K, V> cache;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -294,9 +294,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Last remove all job future. */
     private AtomicReference<IgniteInternalFuture<Boolean>> lastRmvAllJobFut = new AtomicReference<>();
-
-    /** Flag to indicate that the context in the process of stopping. */
-    private volatile boolean stopping;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -2444,27 +2441,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         finally {
             stash.remove();
         }
-    }
-
-    /**
-     * Changing the stopping status.
-     *
-     * @param status Stopping status.
-     */
-    public void stopping(boolean status) {
-        if (log.isDebugEnabled())
-            log.debug("Changing the stop status [cache=" + name() + ", status=" + status + ']');
-
-        stopping = status;
-    }
-
-    /**
-     * Checking the context in the process of stopping.
-     *
-     * @return {@code True} if the context is in the process of stopping.
-     */
-    public boolean stopping() {
-        return stopping;
     }
 
     /** {@inheritDoc} */

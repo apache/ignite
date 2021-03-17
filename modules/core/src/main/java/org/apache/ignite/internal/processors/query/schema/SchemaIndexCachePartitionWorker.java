@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -56,7 +57,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private static final int BATCH_SIZE = 1000;
 
     /** Cache context. */
-    private final GridCacheContext<?, ?> cctx;
+    private final GridCacheContext cctx;
 
     /** Stop flag between all workers for one cache. */
     private final AtomicBoolean stop;
@@ -88,7 +89,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @param partsCnt Count of partitions to be processed.
      */
     public SchemaIndexCachePartitionWorker(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         GridDhtLocalPartition locPart,
         AtomicBoolean stop,
         @Nullable SchemaIndexOperationCancellationToken cancel,
@@ -125,7 +126,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             processPartition();
         }
         catch (Throwable e) {
-            err = e instanceof Error ? new IgniteException(e) : e;
+            err = Error.class.isInstance(e) ? new IgniteException(e) : e;
 
             U.error(log, "Error during create/rebuild index for partition: " + locPart.id(), e);
 
@@ -137,7 +138,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 cctx.group().metrics().addIndexBuildCountPartitionsLeft(-cnt);
         }
         finally {
-            fut.onDone(wrappedClo.idxCacheStat, err);
+            fut.onDone(wrappedClo.indexCacheStat, err);
         }
     }
 
@@ -147,7 +148,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @throws IgniteCheckedException If failed.
      */
     private void processPartition() throws IgniteCheckedException {
-        if (stopRebuilding())
+        if (stop())
             return;
 
         checkCancelled();
@@ -155,7 +156,6 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         boolean reserved = false;
 
         GridDhtPartitionState partState = locPart.state();
-
         if (partState != EVICTED)
             reserved = (partState == OWNING || partState == MOVING || partState == LOST) && locPart.reserve();
 
@@ -175,7 +175,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             try {
                 int cntr = 0;
 
-                while (!stopRebuilding() && cursor.next()) {
+                while (!stop() && cursor.next()) {
                     KeyCacheObject key = cursor.get().key();
 
                     if (!locked) {
@@ -192,17 +192,16 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                         locked = false;
                     }
 
-                    if (!stopRebuilding())
-                        cctx.cache().metrics0().addIndexRebuildKeyProcessed(1);
+                    GridCacheAdapter cache = cctx.cache();
+
+                    if (cache != null)
+                        cache.metrics0().addIndexRebuildKeyProcessed(1);
 
                     if (locPart.state() == RENTING)
                         break;
                 }
 
                 wrappedClo.addNumberProcessedKeys(cntr);
-
-                if (stopRebuilding())
-                    U.warn(log, "Index rebuilding stopped.");
             }
             finally {
                 if (locked)
@@ -226,23 +225,24 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private void processKey(KeyCacheObject key) throws IgniteCheckedException {
         assert nonNull(key);
 
-        while (true) {
+        while (!stop()) {
             try {
                 checkCancelled();
 
-                if (stopRebuilding())
-                    return;
+                GridCacheAdapter cache = cctx.cache();
 
-                GridCacheEntryEx entry = cctx.cache().entryEx(key);
+                if (cache != null) {
+                    GridCacheEntryEx entry = cache.entryEx(key);
 
-                try {
-                    entry.updateIndex(wrappedClo);
+                    try {
+                        entry.updateIndex(wrappedClo);
+                    }
+                    finally {
+                        entry.touch();
+                    }
+
+                    break;
                 }
-                finally {
-                    entry.touch();
-                }
-
-                break;
             }
             catch (GridDhtInvalidPartitionException ignore) {
                 break;
@@ -256,20 +256,20 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     /**
      * Check if visit process is not cancelled.
      *
-     * @throws IgniteCheckedException If cancelled.
+     * @throws SchemaIndexOperationCancellationException If cancelled.
      */
-    private void checkCancelled() throws IgniteCheckedException {
+    private void checkCancelled() throws SchemaIndexOperationCancellationException {
         if (nonNull(cancel) && cancel.isCancelled())
-            throw new IgniteCheckedException("Index creation was cancelled.");
+            throw new SchemaIndexOperationCancellationException("Index creation was cancelled.");
     }
 
     /**
      * Check if index rebuilding needs to be stopped.
      *
-     * @return {@code True} if need to stop.
+     * @return {@code True} if necessary to stop rebuilding indexes.
      */
-    private boolean stopRebuilding() {
-        return stop.get() || cctx.kernalContext().isStopping() || cctx.stopping();
+    private boolean stop() {
+        return stop.get() || cctx.kernalContext().isStopping() || cctx.cache() == null;
     }
 
     /** {@inheritDoc} */
@@ -285,14 +285,14 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         private final SchemaIndexCacheVisitorClosure clo;
 
         /** Object for collecting statistics about index update. */
-        @Nullable private final SchemaIndexCacheStat idxCacheStat;
+        @Nullable private final SchemaIndexCacheStat indexCacheStat;
 
         /** */
         private SchemaIndexCacheVisitorClosureWrapper(
             SchemaIndexCacheVisitorClosure clo
         ) {
             this.clo = clo;
-            idxCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
+            indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
         }
 
         /** {@inheritDoc} */
@@ -300,7 +300,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             if (row != null) {
                 clo.apply(row);
 
-                if (idxCacheStat != null) {
+                if (indexCacheStat != null) {
                     QueryTypeDescriptorImpl type = cctx.kernalContext().query().typeByValue(
                         cctx.cache().name(),
                         cctx.cacheObjectContext(),
@@ -310,15 +310,15 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                     );
 
                     if (type != null)
-                        idxCacheStat.addType(type);
+                        indexCacheStat.addType(type);
                 }
             }
         }
 
         /** */
         private void addNumberProcessedKeys(int cnt) {
-            if (nonNull(idxCacheStat))
-                idxCacheStat.add(cnt);
+            if (nonNull(indexCacheStat))
+                indexCacheStat.add(cnt);
         }
     }
 }
