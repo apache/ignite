@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.Map;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.EmptySerializable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,7 +70,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Rotate performance statistics process. */
-    private final DistributedProcess<EmptySerializable, EmptySerializable> rotateProc;
+    private final DistributedProcess<Serializable, Serializable> rotateProc;
 
     /** Synchronization mutex for start/stop collecting performance statistics operations. */
     private final Object mux = new Object();
@@ -86,7 +86,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             req -> ctx.closure().callLocalSafe(() -> {
                 rotateWriter();
 
-                return new EmptySerializable();
+                return null;
             }),
             (id, res, err) -> {});
 
@@ -246,10 +246,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        return rotateProc.start(UUID.randomUUID(), new EmptySerializable()).chain(
-            new CX1<IgniteInternalFuture<T2<Map<UUID, EmptySerializable>, Map<UUID, Exception>>>, Void>() {
+        return rotateProc.start(UUID.randomUUID(), null).chain(
+            new CX1<IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>>, Void>() {
                 @Override public Void applyx(
-                    IgniteInternalFuture<T2<Map<UUID, EmptySerializable>, Map<UUID, Exception>>> fut)
+                    IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut)
                     throws IgniteCheckedException {
                     Map<UUID, Exception> err = fut.get().get2();
 

@@ -248,7 +248,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param req Initial request.
      * @return Future on the result of the finished process.
      */
-    public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start(UUID id, I req) {
+    public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start(UUID id, @Nullable I req) {
         try {
             ctx.discovery().sendCustomEvent(initMsgFactory.apply(id, req));
 
