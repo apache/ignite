@@ -52,7 +52,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     private static final String TEST_CACHE_NAME = IndexTypesCompatibilityTest.class.getSimpleName();
 
     /** */
-    private static final int ROWS_CNT = 500;
+    private static final int ROWS_CNT = 300;
 
     /** */
     private static final String TABLE_PREFIX = "TABLE_";
@@ -329,6 +329,6 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
      * Too many insert queries for every type. Need wait more time.
      */
     @Override protected long getNodeJoinTimeout() {
-        return 90_000;
+        return 60_000;
     }
 }
