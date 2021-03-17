@@ -37,7 +37,7 @@ import static org.apache.ignite.testframework.LogListener.matches;
  */
 public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
-    private static final int NODES_CNT = 2;
+    private static final int NODES_CNT = 3;
 
     /** Listener test logger. */
     private static ListeningTestLogger listeningLog;
@@ -56,7 +56,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     @Override protected void beforeTestsStarted() throws Exception {
         listeningLog = new ListeningTestLogger(log);
 
-        startGrid(NODES_CNT - 1);
+        startGrids(NODES_CNT - 1);
 
         startClientGrid(NODES_CNT);
     }
@@ -89,7 +89,9 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         stopCollectStatistics();
 
-        checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
+        List<File> files = statisticsFiles();
+
+        checkFiles(files, NODES_CNT * (cnt + 1), NODES_CNT * cnt);
     }
 
     /** Checks files and operations count. */

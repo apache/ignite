@@ -35,13 +35,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.DistributedStub;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -69,8 +64,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
-    /** Rotate performance statistics Distributed Process. */
-    private final DistributedProcess<DistributedStub, DistributedStub> rotateFilePrc;
+    /** Rotate performance statistics process. */
+    private final DistributedProcess<Serializable, Serializable> rotateProc;
 
     /** Synchronization mutex for start/stop collecting performance statistics operations. */
     private final Object mux = new Object();
@@ -82,7 +77,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        rotateFilePrc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE, this::initRotate);
+        rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
+            req -> ctx.closure().callLocalSafe(this::rotateWriter), (id, res, err) -> {});
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
@@ -233,25 +229,14 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If rotating failed.
      */
-    public IgniteFuture<?> rotateCollectStatistics() throws IgniteCheckedException {
+    public IgniteInternalFuture<?> rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        return new IgniteFutureImpl<>(rotateFilePrc.start().chain(f -> {
-            try {
-                return f.get().values().stream()
-                    .flatMap(map -> map.values().stream())
-                    .findFirst().orElse(null);
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-
-                return e;
-            }
-        }));
+        return rotateProc.start();
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -319,7 +304,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Rotate performance statistics writer. */
-    private DistributedStub rotateWriter() {
+    private Serializable rotateWriter() throws Exception {
         try {
             synchronized (mux) {
                 if (writer != null) {
@@ -339,9 +324,11 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         }
         catch (Exception e) {
             log.error("Failed to rotate performance statistics writer.", e);
+
+            throw e;
         }
 
-        return new DistributedStub();
+        return null;
     }
 
     /** Writes statistics through passed writer. */
@@ -356,75 +343,5 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
-    }
-
-    /** Rotate performance statistics request for {@link DistributedProcess} initiate message. */
-    private static class RotateRequest implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Unique snapshot request id. */
-        private final UUID rqId;
-
-        /** Source node id which trigger request. */
-        private final UUID srcNodeId;
-
-        /** @return Request ID. */
-        public UUID getRequestId() {
-            return rqId;
-        }
-
-        /**
-         * @param rqId Request id.
-         * @param srcNodeId Source node id.
-         */
-        public RotateRequest(UUID rqId, UUID srcNodeId) {
-            this.rqId = rqId;
-            this.srcNodeId = srcNodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RotateRequest.class, this);
-        }
-    }
-
-    /**
-     * Prepares rotate performance statistics.
-     *
-     * @param req Request.
-     * @return Result future.
-     */
-    private IgniteInternalFuture<DistributedStub> initRotate(Serializable req) {
-        if (ctx.isStopping())
-            return new GridFinishedFuture<>(
-                new NodeStoppingException("Operation has been cancelled (node is stopping)"));
-
-        if (!enabled())
-            return new GridFinishedFuture<>(
-                new IgniteCheckedException("Performance statistics collection not started."));
-
-        return (IgniteInternalFuture<DistributedStub>)ctx.closure().runLocalSafe(this::rotateWriter);
-    }
-
-    /** Rotate performance statistics future. */
-    protected static class RotateFuture extends GridFutureAdapter<Void> {
-        /** Request ID. */
-        private final UUID id;
-
-        /** @param id Request ID. */
-        RotateFuture(UUID id) {
-            this.id = id;
-        }
-
-        /** @return Request ID. */
-        public UUID id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RotateFuture.class, this);
-        }
     }
 }

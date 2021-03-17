@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,19 +93,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param ctx Kernal context.
      * @param type Process type.
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
-     */
-    public DistributedProcess(
-        GridKernalContext ctx,
-        DistributedProcessType type,
-        Function<I, IgniteInternalFuture<R>> exec
-    ) {
-        this(ctx, type, exec, (id, res, err) -> {});
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param type Process type.
-     * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
     public DistributedProcess(
@@ -140,7 +128,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             if (msg.type() != type.ordinal())
                 return;
 
-            Process p = processes.computeIfAbsent(msg.processId(), Process::new);
+            Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
             // May be completed in case of double delivering.
             if (p.initFut.isDone())
@@ -197,7 +185,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             finish.apply(p.id, msg.result(), msg.error());
 
-            p.finishFut.onDone(new T2<>(msg.result(), msg.error()));
+            p.finishFut.onDone(msg.error().values().stream()
+                .filter(Objects::nonNull)
+                .findAny().orElse(null));
 
             processes.remove(msg.processId());
         });
@@ -256,7 +246,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /** Starts distributed process. */
     public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start() {
-        return start(ctx.localNodeId(), (I)new DistributedStub());
+        return start(UUID.randomUUID(), (I)new EmptyStub());
     }
 
     /**
@@ -474,7 +464,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         CACHE_GROUP_KEY_CHANGE_FINISH,
 
         /**
-         * Cache group encyption key change perform phase.
+         * Rotate performance statistics.
          */
         PERFORMANCE_STATISTICS_ROTATE
     }

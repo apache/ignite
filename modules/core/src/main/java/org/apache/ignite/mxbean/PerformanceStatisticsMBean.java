@@ -34,8 +34,8 @@ public interface PerformanceStatisticsMBean {
     @MXBeanDescription("Stop collecting performance statistics in the cluster.")
     public void stop() throws IgniteCheckedException;
 
-    /** Rotate current file. */
-    @MXBeanDescription("Rotate current file.")
+    /** Rotate performance statistics in the cluster. */
+    @MXBeanDescription("Rotate performance statistics in the cluster.")
     public void rotate() throws IgniteCheckedException;
 
     /** @return {@code True} if performance statistics collection is started. */

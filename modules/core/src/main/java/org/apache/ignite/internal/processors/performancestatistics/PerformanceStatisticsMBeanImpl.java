@@ -45,10 +45,7 @@ public class PerformanceStatisticsMBeanImpl implements PerformanceStatisticsMBea
 
     /** {@inheritDoc} */
     @Override public void rotate() throws IgniteCheckedException {
-        Object ex = ctx.performanceStatistics().rotateCollectStatistics().get();
-
-        if (ex instanceof IgniteCheckedException)
-            throw (IgniteCheckedException)ex;
+        ctx.performanceStatistics().rotateCollectStatistics().get();
     }
 
     /** {@inheritDoc} */
