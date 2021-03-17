@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,6 +43,9 @@ public class User implements Serializable {
      */
     private static int bCryptGensaltLog2Rounds = 10;
 
+    /** */
+    private transient UUID id;
+
     /** User name. */
     private String name;
 
@@ -60,8 +64,15 @@ public class User implements Serializable {
      * @param hashedPasswd Hashed password.
      */
     private User(String name, String hashedPasswd) {
+        id = toSubjectId(name);
+
         this.name = name;
         this.hashedPasswd = hashedPasswd;
+    }
+
+    /** @return User identifier. */
+    public UUID id() {
+        return id;
     }
 
     /**
@@ -124,6 +135,18 @@ public class User implements Serializable {
             return hashedPasswd == null;
 
         return BCrypt.checkpw(passwd, hashedPasswd);
+    }
+
+    /** Calculates user ID after deserialization. */
+    protected Object readResolve() {
+        id = toSubjectId(name);
+
+        return this;
+    }
+
+    /** Calculates user id based on specified login. */
+    public static UUID toSubjectId(String login) {
+        return UUID.nameUUIDFromBytes(login.getBytes());
     }
 
     /** {@inheritDoc} */

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.PASSWORD;
@@ -33,8 +35,9 @@ public class SqlCreateUserCommand implements SqlCommand {
     /** User name. */
     private String userName;
 
-    /** User's password. */
-    private String passwd;
+    /** User options. */
+    @GridToStringExclude
+    private UserOptions userOpts;
 
     /** {@inheritDoc} */
     @Override public String schemaName() {
@@ -53,21 +56,20 @@ public class SqlCreateUserCommand implements SqlCommand {
         return userName;
     }
 
-    /**
-     * @return User's password.
-     */
-    public String password() {
-        return passwd;
+    /** User options. */
+    public UserOptions userOptions() {
+        return userOpts;
     }
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         userName = SqlParserUtils.parseUsername(lex);
+        userOpts = new UserOptions();
 
         skipIfMatchesKeyword(lex, WITH);
         skipIfMatchesKeyword(lex, PASSWORD);
 
-        passwd = parseString(lex);
+        userOpts.password(parseString(lex));
 
         return this;
     }

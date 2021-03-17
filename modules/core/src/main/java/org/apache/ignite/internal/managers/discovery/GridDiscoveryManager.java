@@ -768,8 +768,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         ctx.service().onLocalJoin(discoEvt, discoCache);
 
-                        ctx.authentication().onLocalJoin();
-
                         ctx.encryption().onLocalJoin();
 
                         ctx.cluster().onLocalJoin();

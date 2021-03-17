@@ -628,7 +628,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             log.debug("Started cache processor.");
 
         ctx.state().cacheProcessorStarted();
-        ctx.authentication().cacheProcessorStarted();
 
         ctx.systemView().registerFiltrableView(
             CACHE_GRP_PAGE_LIST_VIEW,

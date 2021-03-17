@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
+import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -799,7 +800,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 RestUserActionRequest restReq0 = new RestUserActionRequest();
 
                 restReq0.user(params.get("user"));
-                restReq0.password(params.get("password"));
+
+                UserOptions opts = new UserOptions();
+
+                opts.password(params.get("password"));
+
+                restReq0.userOptions(opts);
 
                 restReq = restReq0;
 

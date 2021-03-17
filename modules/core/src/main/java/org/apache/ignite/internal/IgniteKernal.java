@@ -133,6 +133,7 @@ import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationPluginProvider;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -1079,8 +1080,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
-        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
-           Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+        List<PluginProvider> plugins = getPluginProviders(cfg);
 
         // Spin out SPIs & managers.
         try {
@@ -1250,7 +1250,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startTimer.finishGlobalStage("Configure binary metadata");
 
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
-                startProcessor(new IgniteAuthenticationProcessor(ctx));
                 startProcessor(new PerformanceStatisticsProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new IndexProcessor(ctx));
@@ -1567,6 +1566,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private GridProcessor securityProcessor() throws IgniteCheckedException {
         GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
+
+        if (cfg.isAuthenticationEnabled() && !(prc instanceof IgniteAuthenticationProcessor)) {
+            throw new IgniteCheckedException("Invalid security configuration: both authentication is enabled" +
+                " and security plugin is provided.");
+        }
 
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
@@ -4648,6 +4652,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ClusterState newState = ClusterState.valueOf(state);
 
         cluster().state(newState);
+    }
+
+    /** Gets configured plugin providers. */
+    private List<PluginProvider> getPluginProviders(IgniteConfiguration cfg) {
+        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0
+            ? new ArrayList<>(Arrays.asList(cfg.getPluginProviders()))
+            : U.allPluginProviders();
+
+        if (cfg.isAuthenticationEnabled())
+            plugins.add(new IgniteAuthenticationPluginProvider());
+
+        return plugins;
     }
 
     /** {@inheritDoc} */
