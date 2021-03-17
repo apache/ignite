@@ -243,6 +243,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexKeyFactory.registerDateValueFactory(IndexKeyTypes.TIMESTAMP, TimestampIndexKey::fromDateValueAndNanos);
     }
 
+    /** Make it public for test purposes. */
+    public static InlineIndexFactory idxFactory = InlineIndexFactory.INSTANCE;
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -469,9 +472,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (cacheVisitor != null)
                 index = ctx.indexProcessor().createIndexDynamically(
-                    tbl.cacheContext(), InlineIndexFactory.INSTANCE, idxDef, cacheVisitor);
+                    tbl.cacheContext(), idxFactory, idxDef, cacheVisitor);
             else
-                index = ctx.indexProcessor().createIndex(tbl.cacheContext(), InlineIndexFactory.INSTANCE, idxDef);
+                index = ctx.indexProcessor().createIndex(tbl.cacheContext(), idxFactory, idxDef);
 
             InlineIndexImpl queryIndex = index.unwrap(InlineIndexImpl.class);
 
