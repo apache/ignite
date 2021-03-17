@@ -76,7 +76,7 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            algo.rulesToDisableOtherAlgorithm
+            algo.rulesToDisable
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -133,18 +133,18 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
         /** */
-        public final String[] rulesToDisableOtherAlgorithm;
+        public final String[] rulesToDisable;
 
         /** */
         AggregateAlgorithm(
             Class<? extends IgniteSingleAggregateBase> single,
             Class<? extends IgniteMapAggregateBase> map,
             Class<? extends IgniteReduceAggregateBase> reduce,
-            String... rulesToDisableOtherAlgorithm) {
+            String... rulesToDisable) {
             this.single = single;
             this.map = map;
             this.reduce = reduce;
-            this.rulesToDisableOtherAlgorithm = rulesToDisableOtherAlgorithm;
+            this.rulesToDisable = rulesToDisable;
         }
     }
 }
