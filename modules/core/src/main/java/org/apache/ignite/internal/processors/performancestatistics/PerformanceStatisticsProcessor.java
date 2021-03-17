@@ -242,7 +242,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
         return rotateProc.start().chain(
             new CX1<IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>>, Void>() {
-                /** {@inheritDoc} */
                 @Override public Void applyx(
                     IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut1)
                     throws IgniteCheckedException {
