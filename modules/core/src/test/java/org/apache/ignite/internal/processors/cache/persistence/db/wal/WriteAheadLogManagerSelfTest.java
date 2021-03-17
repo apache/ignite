@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,6 +34,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -161,6 +165,36 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
         assertEquals(1, walMgr(n).truncate(segment1WalPtr));
         assertEquals(0, walMgr(n).getWalFilesFromArchive(segment0WalPtr, segment2WalPtr).size());
         assertEquals(1, walMgr(n).getWalFilesFromArchive(segment1WalPtr, segment2WalPtr).size());
+    }
+
+    /**
+     * Check that auto archive will execute without {@link NullPointerException}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAutoArchiveWithoutNullPointerException() throws Exception {
+        LogListener logLsnr = LogListener.matches(
+            Pattern.compile("Rollover segment \\[\\d+ to \\d+\\], recordType=null")).build();
+
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.setGridLogger(new ListeningTestLogger(cfg.getGridLogger(), logLsnr))
+                .getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(50);
+        });
+
+        n.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        assertNotNull(GridTestUtils.getFieldValue(walMgr(n), "nextAutoArchiveTimeoutObj"));
+
+        for (int i = 0; i < 1_000; i++) {
+            if (i % 100 == 0)
+                U.sleep(20);
+
+            n.cache(DEFAULT_CACHE_NAME).put(i, new byte[32]);
+        }
+
+        assertTrue(logLsnr.check());
     }
 
     /**
