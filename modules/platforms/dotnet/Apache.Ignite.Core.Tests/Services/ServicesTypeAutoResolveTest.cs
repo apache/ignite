@@ -22,9 +22,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -33,6 +34,8 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTest
     {
+        const string PlatformSvcName = "PlatformTestService";
+
         /** */
         protected internal static readonly Employee[] Emps = new[]
         {
@@ -53,8 +56,10 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _grid1;
 
         /** */
-        //TODO: add test for nested array fields.
         private IIgnite _client;
+
+        /** */
+        private IIgniteClient _thinClient;
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
@@ -98,39 +103,30 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
+        /// Tests .Net service invocation on remote node.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            DoTestPlatformService(_client.GetServices());
+            DoTestPlatformService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
+        /// Tests .Net service invocation on local node.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            DoTestPlatformService(_grid1.GetServices());
+            DoTestPlatformService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name), true);
         }
 
         /// <summary>
-        /// Tests .Net service invocation.
+        /// Tests .Net service invocation via thin client.
         /// </summary>
-        public void DoTestPlatformService(IServices svcsForProxy)
+        [Test]
+        public void TestCallPlatformServiceThin()
         {
-            const string platformSvcName = "PlatformTestService";
-
-            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
-
-            DoTestService(svc);
-
-            _grid1.GetServices().Cancel(platformSvcName);
+            DoTestPlatformService(name => _thinClient.GetServices().GetServiceProxy<IJavaService>(name), true);
         }
 
         /// <summary>
@@ -140,11 +136,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-            var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
-
-            DoTestService(new JavaServiceDynamicProxy(svc));
+            DoTestPlatformService(name =>
+                new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(name, true)));
         }
 
         /// <summary>
@@ -154,14 +147,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceLocal()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
+            DoTestPlatformService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name, false));
         }
 
         /// <summary>
@@ -171,14 +157,42 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceRemote()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+            DoTestPlatformService(name => _client.GetServices().GetServiceProxy<IJavaService>(name, false));
+        }
 
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+        /// <summary>
+        /// Tests Java service invocation on remote node..
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceThin()
+        {
+            DoTestPlatformService(name => _thinClient.GetServices().GetServiceProxy<IJavaService>(name), true);
+        }
 
-            DoTestService(svc);
+        /// <summary>
+        /// Tests .Net service invocation.
+        /// </summary>
+        public void DoTestPlatformService(Func<String, IJavaService> svc, bool isPlatform = false)
+        {
+            string svcName;
+            if (isPlatform)
+            {
+                svcName = PlatformSvcName;
 
-            _grid1.GetServices().Cancel(javaSvcName);
+                _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+            }
+            else
+                svcName = TestUtils.DeployJavaService(_grid1);
+
+            try
+            {
+                DoTestService(svc.Invoke(svcName));
+            }
+            finally
+            {
+                _grid1.GetServices().Cancel(PlatformSvcName);
+            }
         }
 
         /// <summary>
@@ -275,6 +289,16 @@ namespace Apache.Ignite.Core.Tests.Services
                 "client_work");
 
             _client = Ignition.Start(cfg);
+
+            _thinClient = Ignition.StartClient(new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> {IPAddress.Loopback + ":" + IgniteClientConfiguration.DefaultPort},
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
+                }
+            });
+
         }
 
         /// <summary>
