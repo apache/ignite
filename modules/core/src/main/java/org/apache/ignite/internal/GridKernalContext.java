@@ -35,7 +35,6 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
@@ -307,13 +306,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Data streamer processor.
      */
     public <K, V> DataStreamProcessor<K, V> dataStream();
-
-    /**
-     * Gets authentication processor.
-     *
-     * @return Authentication processor.
-     */
-    public IgniteAuthenticationProcessor authentication();
 
     /**
      * Gets event continuous processor.

@@ -25,11 +25,18 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.alterUserPassword;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.dropUser;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -44,8 +51,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /** Client node. */
     private static final int CLI_NODE = NODES_COUNT - 1;
 
-    /** Authorization context for default user. */
-    private AuthorizationContext actxDflt;
+    /** Security context for default user. */
+    private SecurityContext secCtxDflt;
 
     /** Random. */
     private static final Random RND = new Random(System.currentTimeMillis());
@@ -89,9 +96,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         grid(0).cluster().active(true);
 
-        actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
+        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        assertNotNull(actxDflt);
+        assertNotNull(secCtxDflt);
     }
 
     /** {@inheritDoc} */
@@ -109,13 +116,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
         final IgniteInternalFuture restartFut = restartCoordinator();
 
-        AuthorizationContext.context(actxDflt);
-
         final AtomicInteger usrCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
             String user = "test" + usrCnt.getAndIncrement();
 
             try {
@@ -124,17 +127,17 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                     try {
                         switch (state) {
                             case 0:
-                                grid(CLI_NODE).context().authentication().addUser(user, "passwd_" + user);
+                                createUser(grid(CLI_NODE), secCtxDflt, user, "passwd_" + user);
 
                                 break;
 
                             case 1:
-                                grid(CLI_NODE).context().authentication().updateUser(user, "new_passwd_" + user);
+                                alterUserPassword(grid(CLI_NODE), secCtxDflt, user, "new_passwd_" + user);
 
                                 break;
 
                             case 2:
-                                grid(CLI_NODE).context().authentication().removeUser(user);
+                                dropUser(grid(CLI_NODE), secCtxDflt, user);
 
                                 break;
 
@@ -170,10 +173,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     public void testConcurrentAuthorize() throws Exception {
         final int testUsersCnt = 10;
 
-        AuthorizationContext.context(actxDflt);
-
         for (int i = 0; i < testUsersCnt; ++i)
-            grid(CLI_NODE).context().authentication().addUser("test" + i, "passwd_test" + i);
+            createUser(grid(CLI_NODE), secCtxDflt, "test" + i, "passwd_test" + i);
 
         final IgniteInternalFuture restartFut = GridTestUtils.runAsync(() -> {
             try {
@@ -202,12 +203,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
             String user = "test" + usrCnt.getAndIncrement();
 
             try {
-                while (!restartFut.isDone()) {
-                    AuthorizationContext actx = grid(CLI_NODE).context().authentication()
-                        .authenticate(user, "passwd_" + user);
-
-                    assertNotNull(actx);
-                }
+                while (!restartFut.isDone())
+                    assertNotNull(authenticate(grid(CLI_NODE), user, "passwd_" + user));
             }
             catch (ClusterTopologyCheckedException ignored) {
                 // No-op.
@@ -260,14 +257,14 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         final AtomicInteger usrCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
             try {
                 while (usrCnt.get() < 200) {
                     String user = "test" + usrCnt.getAndIncrement();
 
-                    System.out.println("+++ CREATE  " + user);
-                    grid(0).context().authentication().addUser(user, "init");
+                    if (log.isDebugEnabled())
+                        log.debug("+++ CREATE  " + user);
+
+                    createUser(grid(0), secCtxDflt, user, "init");
                 }
             }
             catch (Exception e) {
@@ -280,15 +277,14 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         usrCnt.set(0);
 
         GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
             try {
                 while (usrCnt.get() < 200) {
                     String user = "test" + usrCnt.getAndIncrement();
 
-                    System.out.println("+++ ALTER " + user);
+                    if (log.isDebugEnabled())
+                        log.debug("+++ ALTER " + user);
 
-                    grid(0).context().authentication().updateUser(user, "passwd_" + user);
+                    alterUserPassword(grid(0), secCtxDflt, user, "passwd_" + user);
                 }
             }
             catch (Exception e) {
@@ -298,40 +294,41 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
             }
         }, 3, "user-op");
 
-        System.out.println("+++ STOP");
+        if (log.isDebugEnabled())
+            log.debug("+++ STOP");
+
         stopGrid(0, true);
 
         U.sleep(1000);
 
-        System.out.println("+++ START");
+        if (log.isDebugEnabled())
+            log.debug("+++ START");
+
         startGrid(0);
 
-        AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
+        authenticate(grid(0), "ignite", "ignite");
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-14301")
     public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
-
-        AuthorizationContext.context(actxDflt);
 
         final AtomicInteger usrCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
             String user = "test" + usrCnt.getAndIncrement();
 
             try {
                 while (!restartFut.isDone()) {
-                    grid(CLI_NODE).context().authentication().addUser(user, "init");
+                    createUser(grid(CLI_NODE), secCtxDflt, user, "init");
 
-                    grid(CLI_NODE).context().authentication().updateUser(user, "passwd_" + user);
+                    alterUserPassword(grid(CLI_NODE), secCtxDflt, user, "passwd_" + user);
 
-                    grid(CLI_NODE).context().authentication().removeUser(user);
+                    dropUser(grid(CLI_NODE), secCtxDflt, user);
                 }
             }
             catch (Exception e) {
@@ -351,17 +348,13 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 
-        AuthorizationContext.context(actxDflt);
-
-        grid(CLI_NODE).context().authentication().addUser("test", "test");
+        createUser(grid(CLI_NODE), secCtxDflt, "test", "test");
 
         GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
             try {
                 while (!restartFut.isDone()) {
                     GridTestUtils.assertThrows(log, () -> {
-                        grid(CLI_NODE).context().authentication().addUser("test", "test");
+                        createUser(grid(CLI_NODE), secCtxDflt, "test", "test");
 
                         return null;
                     }, UserManagementException.class, "User already exists");

@@ -20,10 +20,15 @@ package org.apache.ignite.internal.processors.authentication;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
@@ -86,10 +91,10 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
         startClientGrid(CLI_NODE);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
-            AuthorizationContext actx = grid(i).context().authentication().authenticate("ignite", "ignite");
+            SecurityContext secCtx = authenticate(ignite(i), "ignite", "ignite");
 
-            assertNotNull(actx);
-            assertEquals("ignite", actx.userName());
+            assertNotNull(secCtx);
+            assertEquals("ignite", secCtx.subject().login());
         }
     }
 
@@ -104,12 +109,10 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
 
         grid(0).cluster().active(true);
 
-        AuthorizationContext actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
-
-        AuthorizationContext.context(actxDflt);
+        SecurityContext secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
         for (int i = 0; i < 10; ++i)
-            grid(0).context().authentication().addUser("test" + i, "passwd");
+           createUser(grid(0), secCtxDflt, "test" + i, "passwd");
 
         stopAllGrids();
 
@@ -120,10 +123,10 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             for (int usrCnt = 0; usrCnt < 10; ++usrCnt) {
-                AuthorizationContext actx = grid(i).context().authentication().authenticate("test" + usrCnt, "passwd");
+                SecurityContext secCtx = authenticate(grid(i), "test" + usrCnt, "passwd");
 
-                assertNotNull(actx);
-                assertEquals("test" + usrCnt, actx.userName());
+                assertNotNull(secCtx);
+                assertEquals("test" + usrCnt, secCtx.subject().login());
             }
         }
     }

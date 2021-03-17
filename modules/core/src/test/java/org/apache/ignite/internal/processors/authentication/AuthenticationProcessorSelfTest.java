@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.util.Base64;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -27,10 +26,21 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.UserOptions;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.commons.lang3.StringUtils.repeat;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
@@ -48,8 +58,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /** Random. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
-    /** Authorization context for default user. */
-    protected AuthorizationContext actxDflt;
+    /** Security context for default user. */
+    protected SecurityContext secCtxDflt;
 
     /**
      * @param len String length.
@@ -102,9 +112,9 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
+        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        assertNotNull(actxDflt);
+        assertNotNull(secCtxDflt);
     }
 
     /** {@inheritDoc} */
@@ -120,10 +130,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDefaultUser() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
-            AuthorizationContext actx = grid(i).context().authentication().authenticate("ignite", "ignite");
+            SecurityContext secCtx = authenticate(grid(i), "ignite", "ignite");
 
-            assertNotNull(actx);
-            assertEquals("ignite", actx.userName());
+            assertNotNull(secCtx);
+            assertEquals("ignite", secCtx.subject().login());
         }
     }
 
@@ -132,24 +142,17 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDefaultUserUpdate() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        // Change from all nodes
+        for (int nodeIdx = 0; nodeIdx < NODES_COUNT; ++nodeIdx) {
+            alterUserPassword(grid(nodeIdx), secCtxDflt, "ignite", "ignite" + nodeIdx);
 
-        try {
-            // Change from all nodes
-            for (int nodeIdx = 0; nodeIdx < NODES_COUNT; ++nodeIdx) {
-                grid(nodeIdx).context().authentication().updateUser("ignite", "ignite" + nodeIdx);
+            // Check each change from all nodes
+            for (int i = 0; i < NODES_COUNT; ++i) {
+                SecurityContext secCtx = authenticate(grid(i), "ignite", "ignite" + nodeIdx);
 
-                // Check each change from all nodes
-                for (int i = 0; i < NODES_COUNT; ++i) {
-                    AuthorizationContext actx = grid(i).context().authentication().authenticate("ignite", "ignite" + nodeIdx);
-
-                    assertNotNull(actx);
-                    assertEquals("ignite", actx.userName());
-                }
+                assertNotNull(secCtx);
+                assertEquals("ignite", secCtx.subject().login());
             }
-        }
-        finally {
-            AuthorizationContext.clear();
         }
     }
 
@@ -158,25 +161,13 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveDefault() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int nodeIdx = i;
 
-        try {
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                final int nodeIdx = i;
+            assertThrows(() -> dropUser(grid(nodeIdx), secCtxDflt, "ignite"),
+                IgniteAccessControlException.class, "Default user cannot be removed");
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().removeUser("ignite");
-
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "Default user cannot be removed");
-
-                assertNotNull(grid(nodeIdx).context().authentication().authenticate("ignite", "ignite"));
-            }
-        }
-        finally {
-            AuthorizationContext.context(null);
+            assertNotNull(authenticate(grid(nodeIdx), "ignite", "ignite"));
         }
     }
 
@@ -185,52 +176,25 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUserManagementPermission() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        createUser(grid(0), secCtxDflt, "test", "test");
 
-        try {
-            grid(0).context().authentication().addUser("test", "test");
+        final SecurityContext secCtx = authenticate(grid(0), "test", "test");
 
-            final AuthorizationContext actx = grid(0).context().authentication().authenticate("test", "test");
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int nodeIdx = i;
 
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                final int nodeIdx = i;
+            assertThrows(() -> createUser(grid(nodeIdx), secCtx, "test1", "test1"),
+                IgniteAccessControlException.class, "User management operations are not allowed for user");
 
-                AuthorizationContext.context(actx);
+            assertThrows(() -> dropUser(grid(nodeIdx), secCtx, "test"),
+                IgniteAccessControlException.class, "User management operations are not allowed for user");
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().addUser("test1", "test1");
+            alterUserPassword(grid(nodeIdx), secCtx, "test", "new_password");
 
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+            alterUserPassword(grid(nodeIdx), secCtx, "test", "test");
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().removeUser("test");
-
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
-
-                grid(nodeIdx).context().authentication().updateUser("test", "new_password");
-
-                grid(nodeIdx).context().authentication().updateUser("test", "test");
-
-                // Check error on empty auth context:
-                AuthorizationContext.context(null);
-
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().removeUser("test");
-
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
-            }
-        }
-        finally {
-            AuthorizationContext.context(null);
+            assertThrows(() -> dropUser(grid(nodeIdx), null, "test"),
+                IgniteAccessControlException.class, "Operation not allowed: security context is empty");
         }
     }
 
@@ -239,27 +203,20 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testProceedUsersOnJoinNode() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        createUser(grid(0), secCtxDflt, "test0", "test");
+        createUser(grid(0), secCtxDflt, "test1", "test");
 
-        try {
-            grid(0).context().authentication().addUser("test0", "test");
-            grid(0).context().authentication().addUser("test1", "test");
+        int nodeIdx = NODES_COUNT;
 
-            int nodeIdx = NODES_COUNT;
+        startGrid(nodeIdx);
 
-            startGrid(nodeIdx);
+        SecurityContext secCtx0 = authenticate(grid(nodeIdx), "test0", "test");
+        SecurityContext secCtx1 = authenticate(grid(nodeIdx), "test1", "test");
 
-            AuthorizationContext actx0 = grid(nodeIdx).context().authentication().authenticate("test0", "test");
-            AuthorizationContext actx1 = grid(nodeIdx).context().authentication().authenticate("test1", "test");
-
-            assertNotNull(actx0);
-            assertEquals("test0", actx0.userName());
-            assertNotNull(actx1);
-            assertEquals("test1", actx1.userName());
-        }
-        finally {
-            AuthorizationContext.context(null);
-        }
+        assertNotNull(secCtx0);
+        assertEquals("test0", secCtx0.subject().login());
+        assertNotNull(secCtx1);
+        assertEquals("test1", secCtx1.subject().login());
     }
 
     /**
@@ -267,31 +224,14 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAuthenticationInvalidUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int nodeIdx = i;
 
-        try {
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                final int nodeIdx = i;
+            assertThrows(() -> authenticate(grid(nodeIdx), "invalid_name", "test"),
+                IgniteAccessControlException.class, "The user name or password is incorrect");
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().authenticate("invalid_name", "test");
-
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "The user name or password is incorrect");
-
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().authenticate("test", "invalid_password");
-
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "The user name or password is incorrect");
-            }
-        }
-        finally {
-            AuthorizationContext.context(null);
+            assertThrows(() -> authenticate(grid(nodeIdx), "test", "invalid_password"),
+                IgniteAccessControlException.class, "The user name or password is incorrect");
         }
     }
 
@@ -300,16 +240,9 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAddUpdateRemoveUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
-
-        try {
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                for (int j = 0; j < NODES_COUNT; ++j)
-                    checkAddUpdateRemoveUser(grid(i), grid(j));
-            }
-        }
-        finally {
-            AuthorizationContext.context(null);
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            for (int j = 0; j < NODES_COUNT; ++j)
+                checkAddUpdateRemoveUser(grid(i), grid(j));
         }
     }
 
@@ -318,21 +251,14 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+            createUser(grid(0), secCtxDflt, "test", "test");
 
-        try {
-            grid(0).context().authentication().addUser("test", "test");
-
-            AuthorizationContext actx = grid(0).context().authentication().authenticate("test", "test");
+            SecurityContext secCtx = authenticate(grid(0), "test", "test");
 
             for (int i = 0; i < NODES_COUNT; ++i) {
                 for (int j = 0; j < NODES_COUNT; ++j)
-                    checkUpdateUser(actx, grid(i), grid(j));
+                    checkUpdateUser(secCtx, grid(i), grid(j));
             }
-        }
-        finally {
-            AuthorizationContext.context(null);
-        }
     }
 
     /**
@@ -340,31 +266,14 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateRemoveDoesNotExistsUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int nodeIdx = i;
 
-        try {
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                final int nodeIdx = i;
+            assertThrows(() -> alterUserPassword(grid(nodeIdx), secCtxDflt, "invalid_name", "test"),
+                UserManagementException.class, "User doesn't exist");
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().updateUser("invalid_name", "test");
-
-                        return null;
-                    }
-                }, UserManagementException.class, "User doesn't exist");
-
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().removeUser("invalid_name");
-
-                        return null;
-                    }
-                }, UserManagementException.class, "User doesn't exist");
-            }
-        }
-        finally {
-            AuthorizationContext.context(null);
+            assertThrows(() -> dropUser(grid(nodeIdx), secCtxDflt, "invalid_name"),
+                UserManagementException.class, "User doesn't exist");
         }
     }
 
@@ -373,25 +282,13 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAddAlreadyExistsUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        createUser(grid(0), secCtxDflt, "test", "test");
 
-        try {
-            grid(0).context().authentication().addUser("test", "test");
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int nodeIdx = i;
 
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                final int nodeIdx = i;
-
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        grid(nodeIdx).context().authentication().addUser("test", "new_passwd");
-
-                        return null;
-                    }
-                }, UserManagementException.class, "User already exists");
-            }
-        }
-        finally {
-            AuthorizationContext.context(null);
+            assertThrows(() -> createUser(grid(nodeIdx), secCtxDflt, "test", "new_passwd"),
+                UserManagementException.class, "User already exists");
         }
     }
 
@@ -400,39 +297,25 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAuthorizeOnClientDisconnect() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        createUser(grid(CLI_NODE), secCtxDflt, "test", "test");
 
-        grid(CLI_NODE).context().authentication().addUser("test", "test");
+        final IgniteInternalFuture stopServersFut = GridTestUtils.runAsync(() -> {
+            try {
+                for (int i = 0; i < CLI_NODE; ++i) {
+                    Thread.sleep(500);
 
-        AuthorizationContext.context(null);
-
-        final IgniteInternalFuture stopServersFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 0; i < CLI_NODE; ++i) {
-                        Thread.sleep(500);
-
-                        stopGrid(i);
-                    }
+                    stopGrid(i);
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception");
-                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                fail("Unexpected exception");
             }
         });
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    while (!stopServersFut.isDone()) {
-                        AuthorizationContext actx = grid(CLI_NODE).context().authentication()
-                            .authenticate("test", "test");
-
-                        assertNotNull(actx);
-                    }
-
-                    return null;
-                }
+        assertThrows(() -> {
+                while (!stopServersFut.isDone())
+                    assertNotNull(authenticate(grid(CLI_NODE), "test", "test"));
             },
             IgniteCheckedException.class,
             "Client node was disconnected from topology (operation result is unknown)");
@@ -447,22 +330,19 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     public void testConcurrentAddRemove() throws Exception {
         final AtomicInteger usrCnt = new AtomicInteger();
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                AuthorizationContext.context(actxDflt);
-                String user = "test" + usrCnt.getAndIncrement();
+        GridTestUtils.runMultiThreaded(() -> {
+            String user = "test" + usrCnt.getAndIncrement();
 
-                try {
-                    for (int i = 0; i < ITERATIONS; ++i) {
-                        grid(CLI_NODE).context().authentication().addUser(user, "passwd_" + user);
+            try {
+                for (int i = 0; i < ITERATIONS; ++i) {
+                   createUser(grid(CLI_NODE), secCtxDflt, user, "passwd_" + user);
 
-                        grid(CLI_NODE).context().authentication().removeUser(user);
-                    }
+                   dropUser(grid(CLI_NODE), secCtxDflt, user);
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception");
-                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                fail("Unexpected exception");
             }
         }, 10, "user-op");
     }
@@ -472,37 +352,28 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUserPersistence() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        for (int i = 0; i < NODES_COUNT; ++i)
+            createUser(grid(i), secCtxDflt, "test" + i, "passwd" + i);
 
-        try {
-            for (int i = 0; i < NODES_COUNT; ++i)
-                grid(i).context().authentication().addUser("test" + i, "passwd" + i);
+        alterUserPassword(grid(CLI_NODE), secCtxDflt, "ignite", "new_passwd");
 
-            grid(CLI_NODE).context().authentication().updateUser("ignite", "new_passwd");
+        stopAllGrids();
 
-            stopAllGrids();
+        startGrids(NODES_COUNT - 1);
+        startClientGrid(CLI_NODE);
 
-            startGrids(NODES_COUNT - 1);
-            startClientGrid(CLI_NODE);
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
+                SecurityContext secCtx0 = authenticate(grid(i), "test" + usrIdx, "passwd" + usrIdx);
 
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
-                    AuthorizationContext actx0 = grid(i).context().authentication()
-                        .authenticate("test" + usrIdx, "passwd" + usrIdx);
-
-                    assertNotNull(actx0);
-                    assertEquals("test" + usrIdx, actx0.userName());
-                }
-
-                AuthorizationContext actx = grid(i).context().authentication()
-                    .authenticate("ignite", "new_passwd");
-
-                assertNotNull(actx);
-                assertEquals("ignite", actx.userName());
+                assertNotNull(secCtx0);
+                assertEquals("test" + usrIdx, secCtx0.subject().login());
             }
-        }
-        finally {
-            AuthorizationContext.clear();
+
+            SecurityContext secCtz = authenticate(grid(i),"ignite", "new_passwd");
+
+            assertNotNull(secCtz);
+            assertEquals("ignite", secCtxDflt.subject().login());
         }
     }
 
@@ -511,35 +382,26 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDefaultUserPersistence() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        createUser(grid(CLI_NODE), secCtxDflt, "test", "passwd");
 
-        try {
-            grid(CLI_NODE).context().authentication().addUser("test", "passwd");
+        stopAllGrids();
 
-            stopAllGrids();
+        U.sleep(500);
 
-            U.sleep(500);
+        startGrids(NODES_COUNT - 1);
+        startClientGrid(CLI_NODE);
 
-            startGrids(NODES_COUNT - 1);
-            startClientGrid(CLI_NODE);
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            SecurityContext secCtx = authenticate(grid(i),"ignite", "ignite");
 
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                AuthorizationContext actx = grid(i).context().authentication()
-                    .authenticate("ignite", "ignite");
+            assertNotNull(secCtx);
+            assertEquals("ignite", secCtx.subject().login());
 
-                assertNotNull(actx);
-                assertEquals("ignite", actx.userName());
+            secCtx = authenticate(grid(i), "test", "passwd");
 
-                actx = grid(i).context().authentication()
-                    .authenticate("test", "passwd");
+            assertNotNull(secCtx);
+            assertEquals("test", secCtx.subject().login());
 
-                assertNotNull(actx);
-                assertEquals("test", actx.userName());
-
-            }
-        }
-        finally {
-            AuthorizationContext.clear();
         }
     }
 
@@ -548,71 +410,28 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInvalidUserNamePassword() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        assertThrows(() -> createUser(grid(CLI_NODE), null, null, "test"),
+            UserManagementException.class, "User name is empty");
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(CLI_NODE).context().authentication().addUser(null, "test");
+        assertThrows(() -> createUser(grid(CLI_NODE), null, "", "test"),
+            UserManagementException.class, "User name is empty");
 
-                return null;
-            }
-        }, UserManagementException.class, "User name is empty");
+        assertThrows(() -> createUser(grid(CLI_NODE), null, "test", null),
+            UserManagementException.class, "Password is empty");
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(CLI_NODE).context().authentication().addUser("", "test");
+        assertThrows(() -> createUser(grid(CLI_NODE), null, "test", ""),
+            UserManagementException.class, "Password is empty");
 
-                return null;
-            }
-        }, UserManagementException.class, "User name is empty");
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(CLI_NODE).context().authentication().addUser("test", null);
-
-                return null;
-            }
-        }, UserManagementException.class, "Password is empty");
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(CLI_NODE).context().authentication().addUser("test", "");
-
-                return null;
-            }
-        }, UserManagementException.class, "Password is empty");
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(CLI_NODE).context().authentication().addUser(
-                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                    "a");
-
-                return null;
-            }
-        }, UserManagementException.class, "User name is too long");
-    }
-
-    /**
-     * @param name User name to check.
-     */
-    private void checkInvalidUsername(final String name) {
-
+        assertThrows(() -> createUser(grid(CLI_NODE), null, repeat('a', 60), "a"),
+            UserManagementException.class, "User name is too long");
     }
 
     /**
      * @param passwd User's password to check.
      */
     private void checkInvalidPassword(final String passwd) {
-        AuthorizationContext.context(actxDflt);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(CLI_NODE).context().authentication().addUser("test", passwd);
-
-                return null;
-            }
-        }, UserManagementException.class, "Invalid user name");
+        assertThrows(() -> createUser(grid(CLI_NODE), secCtxDflt, "test", passwd),
+            UserManagementException.class, "Invalid user name");
     }
 
     /**
@@ -621,37 +440,96 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     private void checkAddUpdateRemoveUser(IgniteEx createNode, IgniteEx authNode) throws Exception {
-        createNode.context().authentication().addUser("test", "test");
+        createUser(createNode, secCtxDflt, "test", "test");
 
-        AuthorizationContext newActx = authNode.context().authentication().authenticate("test", "test");
+        SecurityContext newSecCtx = authenticate(authNode,"test", "test");
 
-        assertNotNull(newActx);
-        assertEquals("test", newActx.userName());
+        assertNotNull(newSecCtx);
+        assertEquals("test", newSecCtx.subject().login());
 
-        createNode.context().authentication().updateUser("test", "newpasswd");
+        alterUserPassword(createNode, secCtxDflt, "test", "newpasswd");
 
-        newActx = authNode.context().authentication().authenticate("test", "newpasswd");
+        newSecCtx = authenticate(authNode, "test", "newpasswd");
 
-        assertNotNull(newActx);
-        assertEquals("test", newActx.userName());
+        assertNotNull(newSecCtx);
+        assertEquals("test", newSecCtx.subject().login());
 
-        createNode.context().authentication().removeUser("test");
+        dropUser(createNode, secCtxDflt, "test");
     }
 
     /**
-     * @param actx Authorization context.
+     * @param secCtx Security context.
      * @param updNode Node to execute update operation.
      * @param authNode Node to execute authentication.
      * @throws Exception On error.
      */
-    private void checkUpdateUser(AuthorizationContext actx, IgniteEx updNode, IgniteEx authNode) throws Exception {
+    private void checkUpdateUser(SecurityContext secCtx, IgniteEx updNode, IgniteEx authNode) throws Exception {
         String newPasswd = randomString(16);
 
-        updNode.context().authentication().updateUser("test", newPasswd);
+        alterUserPassword(updNode, secCtx, "test", newPasswd);
 
-        AuthorizationContext actxNew = authNode.context().authentication().authenticate("test", newPasswd);
+        SecurityContext secCtxNew = authenticate(authNode, "test", newPasswd);
 
-        assertNotNull(actxNew);
-        assertEquals("test", actxNew.userName());
+        assertNotNull(secCtxNew);
+        assertEquals("test", secCtxNew.subject().login());
+    }
+
+    /** */
+    public static SecurityContext authenticate(IgniteEx ignite, String login, String pwd) throws IgniteCheckedException {
+        AuthenticationContext authCtx = new AuthenticationContext();
+
+        authCtx.credentials(new SecurityCredentials(login, pwd));
+
+        return ignite.context().security().authenticate(authCtx);
+    }
+
+    /** Creates user with specified login and password. */
+    public static void createUser(IgniteEx ignite, SecurityContext ctx, String login, String pwd)
+        throws IgniteCheckedException {
+        withSecurityContext(ignite, ctx, ign ->
+            ign.context().security().createUser(login, new UserOptions().password(pwd)));
+    }
+
+    /** Alters password of the user with the specified login. */
+    public static void alterUserPassword(IgniteEx ignite, SecurityContext ctx, String login, String newPwd)
+        throws IgniteCheckedException {
+        withSecurityContext(ignite, ctx, ign ->
+            ign.context().security().alterUser(login, new UserOptions().password(newPwd)));
+    }
+
+    /** Drops the user with specified login. */
+    public static void dropUser(IgniteEx ignite, SecurityContext ctx, String login) throws IgniteCheckedException {
+        withSecurityContext(ignite, ctx, ign -> ign.context().security().dropUser(login));
+    }
+
+    /**
+     * @param ignite Ignite instance to perform the operation on.
+     * @param ctx Security context in which operation will be executed.
+     * @param op Operation to execute.
+     */
+    public static void withSecurityContext(
+        IgniteEx ignite,
+        SecurityContext ctx,
+        IgniteThrowableConsumer<IgniteEx> op
+    ) throws IgniteCheckedException {
+        IgniteSecurity security = ignite.context().security();
+
+        if (ctx != null) {
+            try (OperationSecurityContext ignored = security.withContext(ctx)) {
+                op.accept(ignite);
+            }
+        }
+        else
+            op.accept(ignite);
+    }
+
+    /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    static void assertThrows(IgniteThrowableRunner r, Class<? extends Throwable> errCls, String msg) {
+        GridTestUtils.assertThrows(log, () -> {
+            r.run();
+
+            return null;
+        }, errCls, msg);
     }
 }

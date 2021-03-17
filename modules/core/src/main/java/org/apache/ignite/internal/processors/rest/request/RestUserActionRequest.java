@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.internal.processors.security.UserOptions;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -26,8 +28,9 @@ public class RestUserActionRequest extends GridRestRequest {
     /** User name. */
     private String user;
 
-    /** Password. */
-    private String pwd;
+    /** User options. */
+    @GridToStringExclude
+    private UserOptions opts;
 
     /**
      * @param user User name.
@@ -43,18 +46,14 @@ public class RestUserActionRequest extends GridRestRequest {
         return user;
     }
 
-    /**
-     * @param pwd User password.
-     */
-    public void password(String pwd) {
-        this.pwd = pwd;
+    /** Sets user options. */
+    public void userOptions(UserOptions opts) {
+        this.opts = opts;
     }
 
-    /**
-     * @return User password.
-     */
-    public String password() {
-        return pwd;
+    /** Gets user options. */
+    public UserOptions userOptions() {
+        return opts;
     }
 
     /** {@inheritDoc} */

@@ -352,6 +352,21 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         return secPrc.onReconnected(clusterRestarted);
     }
 
+    /** {@inheritDoc} */
+    @Override public void createUser(String login, UserOptions opts) throws IgniteCheckedException {
+        secPrc.createUser(login, opts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void alterUser(String login, UserOptions opts) throws IgniteCheckedException {
+        secPrc.alterUser(login, opts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dropUser(String login) throws IgniteCheckedException {
+        secPrc.dropUser(login);
+    }
+
     /**
      * Getting local node's security context.
      *
@@ -378,5 +393,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         }
 
         return null;
+    }
+
+    /** Gets the security processor to which the current security facade delegates operations. */
+    public GridSecurityProcessor securityProcessor() {
+        return secPrc;
     }
 }

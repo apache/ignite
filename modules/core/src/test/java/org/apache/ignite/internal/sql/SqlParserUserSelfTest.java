@@ -99,7 +99,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
         SqlCreateUserCommand cmd = (SqlCreateUserCommand)new SqlParser(null, sql).nextCommand();
 
         assertEquals(expUserName, cmd.userName());
-        assertEquals(expPasswd, cmd.password());
+        assertEquals(expPasswd, cmd.userOptions().password());
 
         return cmd;
     }
@@ -116,7 +116,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
         SqlAlterUserCommand cmd = (SqlAlterUserCommand)new SqlParser(null, sql).nextCommand();
 
         assertEquals(expUserName, cmd.userName());
-        assertEquals(expPasswd, cmd.password());
+        assertEquals(expPasswd, cmd.userOptions().password());
 
         return cmd;
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +39,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -52,6 +53,9 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -62,7 +66,13 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -73,11 +83,17 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.AUTH_PROC;
+import static org.apache.ignite.internal.GridTopic.TOPIC_AUTH;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
+import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
+import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
 
 /**
  *
  */
-public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
+public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements GridSecurityProcessor, MetastorageLifecycleListener {
     /** Store user prefix. */
     private static final String STORE_USER_PREFIX = "user.";
 
@@ -90,7 +106,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
 
-    /** Whan the future is done the node is ready for authentication. */
+    /** When the future is done the node is ready for authentication. */
     private final GridFutureAdapter<Void> readyForAuthFut = new GridFutureAdapter<>();
 
     /** Operation mutex. */
@@ -115,9 +131,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Coordinator node. */
     private ClusterNode crdNode;
 
-    /** Is authentication enabled. */
-    private boolean isEnabled;
-
     /** Disconnected flag. */
     private volatile boolean disconnected;
 
@@ -136,9 +149,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Node activate future. */
     private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
 
-    /** Validate error. */
-    private String validateErr;
-
     /**
      * @param ctx Kernal context.
      */
@@ -150,58 +160,14 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        isEnabled = ctx.config().isAuthenticationEnabled();
-
-        if (isEnabled && !GridCacheUtils.isPersistenceEnabled(ctx.config())) {
-            isEnabled = false;
-
+        if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
         }
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
 
-        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED, isEnabled);
-
-        GridDiscoveryManager discoMgr = ctx.discovery();
-
-        GridIoManager ioMgr = ctx.io();
-
-        discoMgr.setCustomEventListener(UserProposedMessage.class, new UserProposedListener());
-
-        discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
-
-        discoLsnr = (evt, discoCache) -> {
-            if (!isEnabled || ctx.isStopping())
-                return;
-
-            switch (evt.type()) {
-                case EVT_NODE_LEFT:
-                case EVT_NODE_FAILED:
-                    onNodeLeft(evt.eventNode().id());
-                    break;
-
-                case EVT_NODE_JOINED:
-                    onNodeJoin(evt.eventNode());
-                    break;
-            }
-        };
-
-        ctx.event().addDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
-
-        ioLsnr = (nodeId, msg, plc) -> {
-            if (!isEnabled || ctx.isStopping())
-                return;
-
-            if (msg instanceof UserManagementOperationFinishedMessage)
-                onFinishMessage(nodeId, (UserManagementOperationFinishedMessage)msg);
-            else if (msg instanceof UserAuthenticateRequestMessage)
-                onAuthenticateRequestMessage(nodeId, (UserAuthenticateRequestMessage)msg);
-            else if (msg instanceof UserAuthenticateResponseMessage)
-                onAuthenticateResponseMessage((UserAuthenticateResponseMessage)msg);
-        };
-
-        ioMgr.addMessageListener(GridTopic.TOPIC_AUTH, ioLsnr);
+        ctx.addNodeAttribute(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null));
 
         exec = new IgniteThreadPoolExecutor(
             "auth",
@@ -221,26 +187,24 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (!isEnabled)
-            return;
+        if (ioLsnr != null)
+            ctx.io().removeMessageListener(TOPIC_AUTH, ioLsnr);
 
-        ctx.io().removeMessageListener(GridTopic.TOPIC_AUTH, ioLsnr);
-
-        ctx.event().removeDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
+        if (discoLsnr != null)
+            ctx.event().removeDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
 
         cancelFutures("Node stopped");
 
-        if (!cancel)
-            exec.shutdown();
-        else
-            exec.shutdownNow();
+        if (exec != null) {
+            if (!cancel)
+                exec.shutdown();
+            else
+                exec.shutdownNow();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (!isEnabled)
-            return;
-
         synchronized (mux) {
             cancelFutures("Kernal stopped.");
         }
@@ -250,15 +214,49 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         super.onKernalStart(active);
 
-        if (validateErr != null)
-            throw new IgniteCheckedException(validateErr);
+        GridDiscoveryManager discoMgr = ctx.discovery();
+
+        GridIoManager ioMgr = ctx.io();
+
+        discoMgr.setCustomEventListener(UserProposedMessage.class, new UserProposedListener());
+
+        discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
+
+        discoLsnr = (evt, discoCache) -> {
+            if (ctx.isStopping())
+                return;
+
+            switch (evt.type()) {
+                case EVT_NODE_LEFT:
+                case EVT_NODE_FAILED:
+                    onNodeLeft(evt.eventNode().id());
+                    break;
+
+                case EVT_NODE_JOINED:
+                    onNodeJoin(evt.eventNode());
+                    break;
+            }
+        };
+
+        ctx.event().addDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
+
+        ioLsnr = (nodeId, msg, plc) -> {
+            if (ctx.isStopping())
+                return;
+
+            if (msg instanceof UserManagementOperationFinishedMessage)
+                onFinishMessage(nodeId, (UserManagementOperationFinishedMessage)msg);
+            else if (msg instanceof UserAuthenticateRequestMessage)
+                onAuthenticateRequestMessage(nodeId, (UserAuthenticateRequestMessage)msg);
+            else if (msg instanceof UserAuthenticateResponseMessage)
+                onAuthenticateResponseMessage((UserAuthenticateResponseMessage)msg);
+        };
+
+        ioMgr.addMessageListener(TOPIC_AUTH, ioLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
-        if (!isEnabled)
-            return;
-
         synchronized (mux) {
             assert !disconnected;
 
@@ -270,9 +268,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean active) {
-        if (!isEnabled)
-            return null;
-
         synchronized (mux) {
             assert disconnected;
 
@@ -282,25 +277,21 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    /**
-     * Authenticate user.
-     *
-     * @param login User's login.
-     * @param passwd Plain text password.
-     * @return User object on successful authenticate. Otherwise returns {@code null}.
-     * @throws IgniteCheckedException On error.
-     * @throws IgniteAccessControlException On authentication error.
-     */
-    public AuthorizationContext authenticate(String login, String passwd) throws IgniteCheckedException {
-        checkEnabled();
+    /** {@inheritDoc} */
+    @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
+        SecurityCredentials creds = authCtx.credentials();
+
+        String login = (String)creds.getLogin();
 
         if (F.isEmpty(login))
             throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
 
-        if (ctx.clientNode()) {
-            while (true) {
-                AuthenticateFuture fut;
+        String passwd = (String)creds.getPassword();
 
+        if (ctx.clientNode()) {
+            AuthenticateFuture fut;
+
+            do {
                 synchronized (mux) {
                     ClusterNode rndNode = U.randomServerNode(ctx);
 
@@ -310,19 +301,16 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
                     authFuts.put(msg.id(), fut);
 
-                    ctx.io().sendToGridTopic(rndNode, GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(rndNode, TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
                 }
 
                 fut.get();
-
-                if (fut.retry())
-                    continue;
-
-                return new AuthorizationContext(User.create(login));
-            }
+            } while (fut.retry());
         }
         else
-            return new AuthorizationContext(authenticateOnServer(login, passwd));
+            authenticateOnServer(login, passwd);
+
+        return new SecurityContextImpl(authCtx.subjectId(), login);
     }
 
     /**
@@ -342,41 +330,27 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 "The user name length must be less then 60 bytes in UTF8");
     }
 
-    /**
-     * Adds new user.
-     *
-     * @param login User's login.
-     * @param passwd Plain text password.
-     * @throws IgniteCheckedException On error.
-     */
-    public void addUser(String login, String passwd) throws IgniteCheckedException {
-        validate(login, passwd);
+    /** {@inheritDoc} */
+    @Override public void createUser(String login, UserOptions opts) throws IgniteCheckedException {
+        String pwd = opts.password();
 
-        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
-            UserManagementOperation.OperationType.ADD);
+        validate(login, pwd);
+
+        UserManagementOperation op = new UserManagementOperation(User.create(login, pwd), ADD);
 
         execUserOperation(op).get();
     }
 
-    /**
-     * @param login User name.
-     * @throws IgniteCheckedException On error.
-     */
-    public void removeUser(String login) throws IgniteCheckedException {
-        UserManagementOperation op = new UserManagementOperation(User.create(login),
-            UserManagementOperation.OperationType.REMOVE);
+    /** {@inheritDoc} */
+    @Override public void dropUser(String login) throws IgniteCheckedException {
+        UserManagementOperation op = new UserManagementOperation(User.create(login), REMOVE);
 
         execUserOperation(op).get();
     }
 
-    /**
-     * @param login User name.
-     * @param passwd User password.
-     * @throws IgniteCheckedException On error.
-     */
-    public void updateUser(String login, String passwd) throws IgniteCheckedException {
-        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
-            UserManagementOperation.OperationType.UPDATE);
+    /** {@inheritDoc} */
+    @Override public void alterUser(String login, UserOptions opts) throws IgniteCheckedException {
+        UserManagementOperation op = new UserManagementOperation(User.create(login, opts.password()), UPDATE);
 
         execUserOperation(op).get();
     }
@@ -410,24 +384,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
-        Boolean rmtEnabled = node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED);
-
-        if (isEnabled && rmtEnabled == null) {
-            String errMsg = "Failed to add node to topology because user authentication is enabled on cluster and " +
-                "the node doesn't support user authentication [nodeId=" + node.id() + ']';
-
-            return new IgniteNodeValidationResult(node.id(), errMsg);
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         // 1. Collect users info only on coordinator
         // 2. Doesn't collect users info to send on client node due to security reason.
-        if (!isEnabled || !isLocalNodeCoordinator() || dataBag.isJoiningNodeClient())
+        if (!isLocalNodeCoordinator() || dataBag.isJoiningNodeClient())
             return;
 
         synchronized (mux) {
@@ -462,11 +422,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         initUsrs = (InitialUsersData)data.commonData();
     }
 
-    /**
-     * @return {@code true} if authentication is enabled, {@code false} if not.
-     */
-    public boolean enabled() {
-        return isEnabled;
+    /** {@inheritDoc} */
+    @Override public boolean enabled() {
+        return true;
     }
 
     /**
@@ -477,16 +435,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
                 "join the cluster. To activate the cluster call Ignite.active(true).");
-        }
-    }
-
-    /**
-     *
-     */
-    private void checkEnabled() {
-        if (!isEnabled) {
-            throw new IgniteException("Can not perform the operation because the authentication" +
-                " is not enabled for the cluster.");
         }
     }
 
@@ -509,24 +457,16 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      *
      * @param login User's login.
      * @param passwd Plain text password.
-     * @return User object on successful authenticate. Otherwise returns {@code null}.
      * @throws IgniteCheckedException On authentication error.
      */
-    private User authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
+    private void authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
         assert !ctx.clientNode() : "Must be used on server node";
 
         readyForAuthFut.get();
 
-        User usr;
+        User usr = users.get(login);
 
-        usr = users.get(login);
-
-        if (usr == null)
-            throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
-
-        if (usr.authorize(passwd))
-            return usr;
-        else
+        if (usr == null || !usr.authorize(passwd))
             throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
     }
 
@@ -537,7 +477,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private UserOperationFinishFuture execUserOperation(UserManagementOperation op) throws IgniteCheckedException {
         checkActivate();
-        checkEnabled();
 
         synchronized (mux) {
             if (disconnected) {
@@ -545,12 +484,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     + "client node is disconnected.");
             }
 
-            AuthorizationContext actx = AuthorizationContext.context();
-
-            if (actx == null)
-                throw new IgniteAccessControlException("Operation not allowed: authorized context is empty.");
-
-            actx.checkUserOperation(op);
+            checkUserOperation(op);
 
             UserOperationFinishFuture fut = new UserOperationFinishFuture(op.id());
 
@@ -677,8 +611,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     U.warn(log, "Cannot find the server coordinator node. "
                         + "Possible a client is started with forceServerMode=true. " +
                         "Security warning: user authentication will be disabled on the client.");
-
-                    isEnabled = false;
                 }
                 else
                     assert res != null;
@@ -803,7 +735,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void onAuthenticateRequestMessage(UUID nodeId, UserAuthenticateRequestMessage msg) {
         UserAuthenticateResponseMessage respMsg;
         try {
-            User u = authenticateOnServer(msg.name(), msg.password());
+            authenticateOnServer(msg.name(), msg.password());
 
             respMsg = new UserAuthenticateResponseMessage(msg.id(), null);
         }
@@ -841,9 +773,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             return;
 
         if (F.eq(coordinator().id(), ctx.localNodeId())) {
-            if (!isEnabled)
-                return;
-
             assert initUsrs == null;
 
             // Creates default user on coordinator if it is the first start of PDS cluster
@@ -852,35 +781,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 addDefaultUser();
         }
         else {
-            Boolean rmtEnabled = coordinator().attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED);
-
-            // The cluster doesn't support authentication (ver < 2.5)
-            if (rmtEnabled == null)
-                rmtEnabled = false;
-
-            if (isEnabled != rmtEnabled) {
-                if (rmtEnabled)
-                    U.warn(log, "User authentication is enabled on cluster. Enables on local node");
-                else {
-                    validateErr = "User authentication is disabled on cluster";
-
-                    return;
-                }
-            }
-
-            isEnabled = rmtEnabled;
-
-            if (!isEnabled) {
-                try {
-                    stop(false);
-                }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Unexpected exception on stopped authentication processor", e);
-                }
-
-                return;
-            }
-
             if (ctx.clientNode())
                 return;
 
@@ -971,6 +871,63 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         return !n.isClient() && !n.isDaemon();
     }
 
+    /** {@inheritDoc} */
+    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException {
+        return new SecurityContextImpl(node.id(), null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGlobalNodeAuthentication() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx) throws SecurityException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSessionExpired(UUID subjId) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return new SecurityContextImpl(subjId, null);
+    }
+
+    /**
+     * @param op User operation to check.
+     * @throws IgniteAccessControlException If operation check fails: user hasn't permissions for user management
+     *      or try to remove default user.
+     */
+    private void checkUserOperation(UserManagementOperation op) throws IgniteAccessControlException {
+        assert op != null;
+
+        Object login = ctx.security().securityContext().subject().login();
+
+        if (login == null)
+            throw new IgniteAccessControlException("Operation not allowed: security context is empty.");
+
+        if (!DFAULT_USER_NAME.equals(login) && !(UPDATE == op.type() && Objects.equals(login, op.user().name()))) {
+            throw new IgniteAccessControlException("User management operations are not allowed for user" +
+                " [curUser=" + login + ']');
+        }
+
+        if (op.type() == REMOVE && DFAULT_USER_NAME.equals(op.user().name()))
+            throw new IgniteAccessControlException("Default user cannot be removed.");
+    }
+
     /**
      * Initial data is collected on coordinator to send to join node.
      */
@@ -1008,7 +965,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
             final UserProposedMessage msg) {
-            if (!isEnabled || ctx.isStopping() || ctx.clientNode())
+            if (ctx.isStopping() || ctx.clientNode())
                 return;
 
             if (log.isDebugEnabled())
@@ -1024,7 +981,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final class UserAcceptedListener implements CustomEventListener<UserAcceptedMessage> {
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, UserAcceptedMessage msg) {
-            if (!isEnabled || ctx.isStopping())
+            if (ctx.isStopping())
                 return;
 
             if (log.isDebugEnabled())
@@ -1197,7 +1154,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /**
-         * @return {@code true} if need retry (aftyer node left).
+         * @return {@code true} if need retry (after node left).
          */
         boolean retry() {
             return retry;
@@ -1333,6 +1290,96 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 if (sharedCtx != null)
                     sharedCtx.database().checkpointReadUnlock();
             }
+        }
+    }
+
+    /** */
+    private static class SecuritySubjectImpl implements SecuritySubject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final UUID id;
+
+        /**  */
+        private final Object login;
+
+        /** */
+        public SecuritySubjectImpl(UUID id, Object login) {
+            this.id = id;
+            this.login = login;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubjectType type() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object login() {
+            return login;
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetSocketAddress address() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet permissions() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SecuritySubjectImpl.class, this);
+        }
+    }
+
+    /** */
+    private static class SecurityContextImpl implements SecurityContext, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final SecuritySubject subj;
+
+        /** */
+        public SecurityContextImpl(UUID subjId, String login) {
+            subj = new SecuritySubjectImpl(subjId, login);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubject subject() {
+            return subj;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            // This is the only permission check that is not orphaned and is used when a new node joins the cluster.
+            // Since the current implementation of the security processor always trusts the server nodes,
+            // we return {@code true} here.
+            return true;
         }
     }
 }

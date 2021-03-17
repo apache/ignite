@@ -23,10 +23,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.alterUserPassword;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -72,8 +78,6 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        AuthorizationContext.clear();
-
         stopAllGrids();
 
         super.afterTest();
@@ -88,48 +92,30 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         grid(0).cluster().active(true);
 
-        IgniteAuthenticationProcessor authenticationProcessor = grid(0).context().authentication();
+        SecurityContext secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        AuthorizationContext actxDflt = authenticationProcessor.authenticate(User.DFAULT_USER_NAME, "ignite");
-
-        AuthorizationContext.context(actxDflt);
-
-        IntStream.range(0, USERS_COUNT).parallel().forEach(
-            i -> {
-                AuthorizationContext.context(actxDflt);
-
-                try {
-                    authenticationProcessor.addUser("test" + i, "init");
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-                finally {
-                    AuthorizationContext.clear();
-                }
+        IntStream.range(0, USERS_COUNT).parallel().forEach(i -> {
+            try {
+                createUser(grid(0), secCtxDflt, "test" + i, "init");
             }
-        );
-
-        IntStream.range(0, USERS_COUNT).parallel().forEach(
-            i -> {
-                AuthorizationContext.context(actxDflt);
-
-                try {
-                    authenticationProcessor.updateUser("test" + i, "passwd_" + i);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-                finally {
-                    AuthorizationContext.clear();
-                }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
-        );
+        });
+
+        IntStream.range(0, USERS_COUNT).parallel().forEach(i -> {
+            try {
+                alterUserPassword(grid(0), secCtxDflt, "test" + i, "passwd_" + i);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        });
 
         stopGrid(0);
 
         startGrid(0);
 
-        authenticationProcessor.authenticate("ignite", "ignite");
+        authenticate(grid(0), "ignite", "ignite");
     }
 }
