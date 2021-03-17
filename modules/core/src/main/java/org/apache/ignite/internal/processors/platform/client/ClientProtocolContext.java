@@ -31,13 +31,27 @@ public class ClientProtocolContext {
     /** Features. */
     private final EnumSet<ClientBitmaskFeature> features;
 
+    /** */
+    private boolean ise281Compatible;
+
     /**
      * @param ver Protocol version.
      * @param features Supported features.
      */
     public ClientProtocolContext(ClientListenerProtocolVersion ver, EnumSet<ClientBitmaskFeature> features) {
+        this(ver, features, false);
+    }
+
+    /**
+     * @param ver Protocol version.
+     * @param features Supported features.
+     * @param ise281Compatible Ignite SE 4.281.3 compatibility flag.
+     */
+    public ClientProtocolContext(ClientListenerProtocolVersion ver,
+        EnumSet<ClientBitmaskFeature> features, boolean ise281Compatible) {
         this.ver = ver;
         this.features = features != null ? features : EnumSet.noneOf(ClientBitmaskFeature.class);
+        this.ise281Compatible = ise281Compatible;
     }
 
     /**
@@ -83,5 +97,10 @@ public class ClientProtocolContext {
      */
     public static boolean isFeatureSupported(ClientListenerProtocolVersion ver, ClientProtocolVersionFeature feature) {
         return ver.compareTo(feature.verIntroduced()) >= 0;
+    }
+
+    /** */
+    public boolean isIse281Compatible() {
+        return ise281Compatible;
     }
 }
