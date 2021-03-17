@@ -555,31 +555,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        Collection[] testArrayOfCollections(Collection[] deps) {
-            assertEquals(2, deps.length);
-            assertEquals(1, deps[0].size());
-            assertEquals(2, deps[1].size());
-
-            assertEquals("HR", ((Department)deps[0].iterator().next()).getName());
-
-            Iterator iter = deps[1].iterator();
-
-            assertEquals("IT", ((Department)iter.next()).getName());
-            assertEquals("Accounts", ((Department)iter.next()).getName());
-
-            List<Department> res1 = new ArrayList<>();
-
-            res1.add(new Department("Executive"));
-
-            List<Department> res2 = new ArrayList<>();
-
-            res2.add(new Department("Legal"));
-            res2.add(new Department("DevRel"));
-
-            return new Collection[] {res1, res2};
-        }
-
-        /** */
         public Account[] testAccounts() {
             return new Account[] {
                 new Account("123", 42),

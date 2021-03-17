@@ -359,11 +359,6 @@ namespace Apache.Ignite.Core.Tests.Services
             return _svc.testMap(dict);
         }
 
-        public ICollection[] testArrayOfCollections(ICollection[] colls)
-        {
-            return _svc.testArrayOfCollections(colls);
-        }
-
         /** <inheritDoc /> */
         public void testDateArray(DateTime?[] dates)
         {
