@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.security.client.AdditionalSecurityC
 import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityWith281CompatibilityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
@@ -84,6 +85,7 @@ import org.junit.runners.Suite;
     ComputePermissionCheckTest.class,
     ThinClientPermissionCheckTest.class,
     ThinClientPermissionCheckSecurityTest.class,
+    ThinClientPermissionCheckSecurityWith281CompatibilityTest.class,
     ContinuousQueryPermissionCheckTest.class,
     IgniteClientContainSubjectAddressTest.class,
     SnapshotPermissionCheckTest.class,
