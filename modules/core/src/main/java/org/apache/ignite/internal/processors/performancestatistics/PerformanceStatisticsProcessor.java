@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +38,8 @@ import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMeta
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -236,7 +240,22 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        return rotateProc.start();
+        return rotateProc.start().chain(
+            new CX1<IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>>, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void applyx(
+                    IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut1)
+                    throws IgniteCheckedException {
+
+                    Exception ex = fut1.get().get2().values().stream()
+                        .filter(Objects::nonNull).findAny().orElse(null);
+
+                    if (ex != null)
+                        throw new IgniteCheckedException(ex);
+
+                    return null;
+                }
+        });
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */

@@ -185,9 +185,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             finish.apply(p.id, msg.result(), msg.error());
 
-            p.finishFut.onDone(msg.error().values().stream()
-                .filter(Objects::nonNull)
-                .findAny().orElse(null));
+            p.finishFut.onDone(new T2<>(msg.result(), msg.error()));
 
             processes.remove(msg.processId());
         });
