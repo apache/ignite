@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.EnumSet;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SE_281_THIN_CLIENT_COMPATIBLE;
 
 /**
  * Protocol Context.
@@ -30,13 +33,26 @@ public class ProtocolContext {
     /** Features. */
     private final EnumSet<ProtocolBitmaskFeature> features;
 
+    /** */
+    private final boolean ise281Compatible;
+
     /**
      * @param ver Protocol version.
      * @param features Supported features.
      */
     public ProtocolContext(ProtocolVersion ver, EnumSet<ProtocolBitmaskFeature> features) {
+        this(ver, features, false);
+    }
+
+    /**
+     * @param ver Protocol version.
+     * @param features Supported features.
+     * @param ise281Compatible Ignite SE 4.281 compatibility flag.
+     */
+    public ProtocolContext(ProtocolVersion ver, EnumSet<ProtocolBitmaskFeature> features, boolean ise281Compatible) {
         this.ver = ver;
         this.features = features != null ? features : EnumSet.noneOf(ProtocolBitmaskFeature.class);
+        this.ise281Compatible = ise281Compatible;
     }
 
     /**
@@ -86,5 +102,18 @@ public class ProtocolContext {
      */
     public static boolean isFeatureSupported(ProtocolVersion ver, ProtocolVersionFeature feature) {
         return ver.compareTo(feature.verIntroduced()) >= 0;
+    }
+
+    /** */
+    public boolean isIse281Compatible() {
+        return ise281Compatible;
+    }
+
+    /**
+     * @param ver Protocol version.
+     */
+    public static boolean isIse281Compatible(ProtocolVersion ver) {
+        return IgniteSystemProperties.getBoolean(IGNITE_SE_281_THIN_CLIENT_COMPATIBLE, false) &&
+            ProtocolVersion.V1_7_0.equals(ver);
     }
 }
