@@ -22,10 +22,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -57,9 +55,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private IIgnite _client;
-
-        /** */
-        private IIgniteClient _thinClient;
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
@@ -121,15 +116,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests .Net service invocation via thin client.
-        /// </summary>
-        [Test]
-        public void TestCallPlatformServiceThin()
-        {
-            DoTestPlatformService(name => _thinClient.GetServices().GetServiceProxy<IJavaService>(name), true);
-        }
-
-        /// <summary>
         /// Tests Java service invocation with dynamic proxy.
         /// Types should be resolved implicitly.
         /// </summary>
@@ -158,16 +144,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestCallJavaServiceRemote()
         {
             DoTestPlatformService(name => _client.GetServices().GetServiceProxy<IJavaService>(name, false));
-        }
-
-        /// <summary>
-        /// Tests Java service invocation on remote node..
-        /// Types should be resolved implicitly.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceThin()
-        {
-            DoTestPlatformService(name => _thinClient.GetServices().GetServiceProxy<IJavaService>(name));
         }
 
         /// <summary>
@@ -289,16 +265,6 @@ namespace Apache.Ignite.Core.Tests.Services
                 "client_work");
 
             _client = Ignition.Start(cfg);
-
-            _thinClient = Ignition.StartClient(new IgniteClientConfiguration
-            {
-                Endpoints = new List<string> {IPAddress.Loopback + ":" + IgniteClientConfiguration.DefaultPort},
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
-                }
-            });
-
         }
 
         /// <summary>
