@@ -34,14 +34,15 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>modules/api</module>
         <module>modules/bytecode</module>
         <module>modules/cli</module>
         <module>modules/cli-common</module>
         <module>modules/configuration</module>
         <module>modules/configuration-annotation-processor</module>
+        <module>modules/network</module>
         <module>modules/rest</module>
         <module>modules/runner</module>
-        <module>modules/network</module>
         <module>modules/schema</module>
     </modules>
 </project>

@@ -10,6 +10,7 @@ We prohibit cyclic dependencies between modules in order to simplify JIGSAW migr
 
 Module Name | Description
 ----------- | -----------
+[api](api/README.md)|Ignite public API
 [bytecode](bytecode/README.md)|Ignite Bytecode module.
 [cli](cli/README.md)|Ignite CLI implementation
 [cli-common](cli-common/README.md)|Shared interfaces definitions for pluggable CLIng
