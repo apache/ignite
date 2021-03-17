@@ -1351,6 +1351,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
+    /** Thin client compatibility flag for Ignite SE 4.290 clients with Ignite SE 4.281 servers.
+     * NOTE: in order to enable client compatibility mode, this option must be set to <code>true</code>
+     * on the <em>thin client side</em>. Default value is <code>false</code>. */
+    public static final String IGNITE_SE_281_THIN_CLIENT_COMPATIBLE = "IGNITE_SE_281_THIN_CLIENT_COMPATIBLE";
+
     /**
      * Enforces singleton.
      */
