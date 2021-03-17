@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.Serializable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.EmptySerializable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,7 +70,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Rotate performance statistics process. */
-    private final DistributedProcess<Serializable, Serializable> rotateProc;
+    private final DistributedProcess<EmptySerializable, EmptySerializable> rotateProc;
 
     /** Synchronization mutex for start/stop collecting performance statistics operations. */
     private final Object mux = new Object();
@@ -83,7 +83,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         super(ctx);
 
         rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
-            req -> ctx.closure().callLocalSafe(this::rotateWriter), (id, res, err) -> {});
+            req -> ctx.closure().callLocalSafe(() -> {
+                rotateWriter();
+
+                return new EmptySerializable();
+            }),
+            (id, res, err) -> {});
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
@@ -241,10 +246,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        return rotateProc.start().chain(
-            new CX1<IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>>, Void>() {
+        return rotateProc.start(UUID.randomUUID(), new EmptySerializable()).chain(
+            new CX1<IgniteInternalFuture<T2<Map<UUID, EmptySerializable>, Map<UUID, Exception>>>, Void>() {
                 @Override public Void applyx(
-                    IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut)
+                    IgniteInternalFuture<T2<Map<UUID, EmptySerializable>, Map<UUID, Exception>>> fut)
                     throws IgniteCheckedException {
                     Map<UUID, Exception> err = fut.get().get2();
 
@@ -321,7 +326,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Rotate performance statistics writer. */
-    private Serializable rotateWriter() throws Exception {
+    private void rotateWriter() throws IgniteCheckedException, IOException {
         try {
             synchronized (mux) {
                 if (writer != null) {
@@ -339,13 +344,11 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
             log.info("Performance statistics writer rotated.");
         }
-        catch (Exception e) {
+        catch (IgniteCheckedException | IOException e) {
             log.error("Failed to rotate performance statistics writer.", e);
 
             throw e;
         }
-
-        return null;
     }
 
     /** Writes statistics through passed writer. */

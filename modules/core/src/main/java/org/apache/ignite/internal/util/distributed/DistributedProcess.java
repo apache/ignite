@@ -241,11 +241,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
-    /** Starts distributed process. */
-    public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start() {
-        return start(UUID.randomUUID(), (I)new EmptySerializable());
-    }
-
     /**
      * Starts distributed process.
      *
@@ -408,7 +403,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /** Nodes results. */
         private final ConcurrentHashMap<UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();
 
-        /** Future will be completed when the results of closing the process are received from all nodes. */
+        /** Future to get results of finished process on the initiator node. */
         private final GridFutureAdapter<T2<Map<UUID, R>, Map<UUID, Exception>>> finishFut = new GridFutureAdapter<>();
 
         /** @param id Process id. */
