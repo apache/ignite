@@ -2211,8 +2211,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     op.manager().worker().cancel();
             }
 
-            idx.onCacheStop(cacheInfo);
-
             // Notify indexing.
             try {
                 idx.unregisterCache(cacheInfo, destroy);
