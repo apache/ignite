@@ -207,7 +207,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheGateway<K, V> gate;
 
     /** Grid cache. */
-    private volatile GridCacheAdapter<K, V> cache;
+    private GridCacheAdapter<K, V> cache;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
