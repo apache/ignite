@@ -66,17 +66,17 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
      * @see #enableNetworkTimeoutSimulation(int, int)
      */
     private void simulateTimeout(Socket sock, int forceTimeout) throws SocketTimeoutException {
-        IgnitePair<Integer> simulateNetTimeout = this.simulatedTimeout;
+        IgnitePair<Integer> simulatedTimeout = this.simulatedTimeout;
 
-        if (simulateNetTimeout == null)
+        if (simulatedTimeout == null)
             return;
 
-        boolean incomingSock = sock.getLocalPort() < locPort + locPortRange + 1;
+        boolean isClientSock = sock.getLocalPort() < locPort || sock.getLocalPort() > locPort + locPortRange;
 
-        if (incomingSock && simulateNetTimeout.get1() > 0 || !incomingSock && simulateNetTimeout.get1() < 0)
+        if (isClientSock && simulatedTimeout.get1() < 0 || !isClientSock && simulatedTimeout.get1() > 0)
             return;
 
-        int timeout = forceTimeout >= 0 ? forceTimeout : simulateNetTimeout.get2();
+        int timeout = forceTimeout >= 0 ? forceTimeout : simulatedTimeout.get2();
 
         try {
             Thread.sleep(timeout);
@@ -118,28 +118,28 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
             return new OutputStream() {
                 /** {@inheritDoc} */
                 @Override public void write(@NotNull byte[] b) throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     src.write(b);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void write(@NotNull byte[] b, int off, int len) throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     src.write(b, off, len);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void write(int b) throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     src.write(b);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void flush() throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     src.flush();
                 }
@@ -157,19 +157,19 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
 
             return new InputStream() {
                 @Override public int read(@NotNull byte[] b) throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     return src.read(b);
                 }
 
                 @Override public int read(@NotNull byte[] b, int off, int len) throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     return src.read(b, off, len);
                 }
 
                 @Override public long skip(long n) throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     return src.skip(n);
                 }
@@ -195,7 +195,7 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
                 }
 
                 @Override public int read() throws IOException {
-                    simulateTimeout(SocketWrap.this);
+                    simulateTimeout(delegate);
 
                     return src.read();
                 }
@@ -209,14 +209,14 @@ public class FailureSimulatingTcpDiscoverySpi extends TcpDiscoverySpi {
 
         /** {@inheritDoc} */
         @Override public void connect(SocketAddress endpoint) throws IOException {
-            simulateTimeout(this);
+            simulateTimeout(delegate);
 
             delegate.connect(endpoint);
         }
 
         /** {@inheritDoc} */
         @Override public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            simulateTimeout(this);
+            simulateTimeout(delegate);
 
             delegate.connect(endpoint, timeout);
         }

@@ -458,8 +458,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             failSpi.enableNetworkTimeoutSimulation(1, (int)simulatedNetDelay);
 
-            waitNodeStop(grid(gridCnt - 1).name());
-
             testWaiter.await(failureDetectionTimeout * 3, MILLISECONDS);
 
             for (int i = 0; i < gridCnt - 1; ++i)
