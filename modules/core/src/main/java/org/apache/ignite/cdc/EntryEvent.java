@@ -18,15 +18,19 @@
 package org.apache.ignite.cdc;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Event for single entry change.
+ * Instance presents new value of modified entry.
  *
  * @param <K> Key type.
  * @param <V> Value type.
+ * @see IgniteCDC
+ * @see CDCConsumer
  */
 @IgniteExperimental
 public class EntryEvent<K, V> implements Serializable {

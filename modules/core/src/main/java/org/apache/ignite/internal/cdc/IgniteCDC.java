@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +36,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CDCConsumer;
+import org.apache.ignite.cdc.EntryEvent;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -55,6 +58,44 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 
 /**
  * CDC(Capture Data Change) application.
+ * Application run independently of Ignite node process and provide ability for the {@link CDCConsumer} to consume events({@link EntryEvent}) from WAL segments.
+ * User should responsible {@link CDCConsumer} implementation with custom consumption logic.
+ *
+ * Ignite node should be explicitly configured for using {@link IgniteCDC}.
+ * <ol>
+ *     <li>Set {@link DataStorageConfiguration#setCdcPath(String)} to true.</li>
+ *     <li>Optional: Set {@link DataStorageConfiguration#setCdcPath(String)} to path to the directory to store WAL setgments for CDC.</li>
+ *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for force WAL rollover,
+ *     so new events will be available for consumptions with the predicted time.</li>
+ * </ol>
+ *
+ * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates hard link
+ * to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
+ * {@link IgniteCDC} application takes segment file and consumes events from it. After successfull consumption (see {@link CDCConsumer#onChange(Iterator)})
+ * WAL segement will be deleted from directory.
+ *
+ * Several Ignite nodes can be started on the same host.
+ * In that case you can specify {@link IgniteConfiguration#getConsistentId()} in provided {@link IgniteConfiguration} or set system properties to specify node to use.
+ * <ul>
+ *     <li>{@link #IGNITE_CDC_CONSISTENT_ID} - property to specify node consistent id.</li>
+ *     <li>{@link #IGNITE_CDC_NODE_IDX} - property to specify node index.</li>
+ * </ul>
+ *
+ * Application works as follows:
+ * <ol>
+ *     <li>Search node work directory based on provided {@link IgniteConfiguration} and system properties.</li>
+ *     <li>Await for creation of CDC directory if it not exists.</li>
+ *     <li>Acquire file lock to ensure exclusive consumption.</li>
+ *     <li>Loads state of consumption if it exists.</li>
+ *     <li>Infinetely wait for new available segement and process it.</li>
+ * </ol>
+ *
+ * @see DataStorageConfiguration#setCdcEnabled(boolean)
+ * @see DataStorageConfiguration#setCdcPath(String)
+ * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
+ * @see CommandLineStartup
+ * @see CDCConsumer
+ * @see DataStorageConfiguration#DFLT_CDC_PATH
  */
 public class IgniteCDC implements Runnable {
     /** System property to specify consistent id for CDC. */
@@ -81,7 +122,7 @@ public class IgniteCDC implements Runnable {
     /** WAL iterator factory. */
     private final IgniteWalIteratorFactory factory;
 
-    /** Events consumers. */
+    /** Events consumer. */
     private final WALRecordsConsumer<?, ?> consumer;
 
     /** Keep binary flag. */
@@ -184,13 +225,13 @@ public class IgniteCDC implements Runnable {
             try {
                 Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
 
-                Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentNumber);
+                Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentIndex);
 
                 long[] lastSgmnt = new long[] { -1 };
 
                 waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
                     try {
-                        long nextSgmnt = segmentNumber(segment);
+                        long nextSgmnt = segmentIndex(segment);
 
                         assert lastSgmnt[0] == -1 || nextSgmnt - lastSgmnt[0] == 1;
 
@@ -214,7 +255,7 @@ public class IgniteCDC implements Runnable {
         }
     }
 
-    /** Founds required directories. */
+    /** Searches required directories. */
     private void init() throws IOException {
         String workDir = workDir(cfg);
         String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
@@ -243,7 +284,7 @@ public class IgniteCDC implements Runnable {
             .filesOrDirs(segment.toFile());
 
         if (initState != null) {
-            long segmentIdx = segmentNumber(segment);
+            long segmentIdx = segmentIndex(segment);
 
             if (segmentIdx > initState.index()) {
                 log.error("Found segment greater then saved state. Some events are missed. Exiting!" +
@@ -269,21 +310,23 @@ public class IgniteCDC implements Runnable {
         }
 
         try (WALIterator it = factory.iterator(builder)) {
-            boolean commit = consumer.onRecords(F.iterator(it.iterator(), IgniteBiTuple::get2, true));
+            while (it.hasNext()) {
+                boolean commit = consumer.onRecords(F.iterator(it.iterator(), IgniteBiTuple::get2, true));
 
-            if (commit) {
-                assert it.lastRead().isPresent();
+                if (commit) {
+                    assert it.lastRead().isPresent();
 
-                state.save(it.lastRead().get());
+                    state.save(it.lastRead().get());
 
-                // Can delete after new file state save.
-                if (!prevSegments.isEmpty()) {
-                    // WAL segment is a hard link to a segment file in a specifal CDC folder.
-                    // So we can safely delete it after success processing.
-                    for (Path prevSegment : prevSegments)
-                        Files.deleteIfExists(prevSegment);
+                    // Can delete after new file state save.
+                    if (!prevSegments.isEmpty()) {
+                        // WAL segment is a hard link to a segment file in a specifal CDC folder.
+                        // So we can safely delete it after success processing.
+                        for (Path prevSegment : prevSegments)
+                            Files.deleteIfExists(prevSegment);
 
-                    prevSegments.clear();
+                        prevSegments.clear();
+                    }
                 }
             }
         }
@@ -293,7 +336,7 @@ public class IgniteCDC implements Runnable {
 
     /**
      * @param workDir Working directory.
-     * @return WAL archive directory.
+     * @return Path to CDC directory.
      */
     private Path findCDCDir(String workDir) throws InterruptedException {
         Path parent;
@@ -379,7 +422,7 @@ public class IgniteCDC implements Runnable {
      * @param segment WAL segment file.
      * @return Segment index.
      */
-    public long segmentNumber(Path segment) {
+    public long segmentIndex(Path segment) {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));

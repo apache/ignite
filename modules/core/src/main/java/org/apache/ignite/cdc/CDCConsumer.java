@@ -22,7 +22,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteExperimental;
 
-/** Consumer of data change events. */
+/**
+ * Consumer of data change events.
+ */
 @IgniteExperimental
 public interface CDCConsumer<K, V> {
     /**

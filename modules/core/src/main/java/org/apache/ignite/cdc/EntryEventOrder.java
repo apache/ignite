@@ -28,6 +28,7 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheVersi
 
 /**
  * Entry event order.
+ * Two concurrent updates of the same entry can be ordered based on {@link EntryEventOrder} comparsion.
  * Greater value means that event occurs later.
  */
 public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializable {

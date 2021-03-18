@@ -17,10 +17,15 @@
 
 package org.apache.ignite.cdc;
 
+import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Type of operations.
+ *
+ * @see IgniteCDC
+ * @see CDCConsumer
+ * @see EntryEvent
  */
 @IgniteExperimental
 public enum EntryEventType {

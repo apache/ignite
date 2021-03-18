@@ -41,7 +41,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
- * Transform {@link DataEntry} to {@link EntryEvent} and send it to {@link CDCConsumer}.
+ * Transform {@link DataEntry} to {@link EntryEvent} and sends it to {@link CDCConsumer}.
+ *
+ * @see IgniteCDC
+ * @see CDCConsumer
  */
 public class WALRecordsConsumer<K, V> {
     /** Ignite logger. */
@@ -59,12 +62,14 @@ public class WALRecordsConsumer<K, V> {
     /** Operations filter. */
     private static final IgnitePredicate<? super DataEntry> OPS_FILTER = e -> {
         if (!(e instanceof UnwrappedDataEntry))
-            throw new RuntimeException("Unexpected data entry type[" + e.getClass().getName());
+            throw new IllegalStateException("Unexpected data entry type[" + e.getClass().getName());
 
         return OPS_TYPES.contains(e.op());
     };
 
-    /** Empty constructor. */
+    /**
+     * @param dataConsumer User provided CDC consumer.
+     */
     public WALRecordsConsumer(CDCConsumer<K, V> dataConsumer) {
         this.dataConsumer = dataConsumer;
     }
