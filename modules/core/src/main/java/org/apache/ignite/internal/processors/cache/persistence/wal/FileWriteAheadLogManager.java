@@ -918,7 +918,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private FileWriteHandle closeBufAndRollover(
         FileWriteHandle currWriteHandle,
-        WALRecord rec,
+        @Nullable WALRecord rec,
         RolloverType rolloverType
     ) throws IgniteCheckedException {
         long idx = currWriteHandle.getSegmentId();
@@ -927,8 +927,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWriteHandle res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
 
-        if (log != null && log.isInfoEnabled())
-            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" + rec.type());
+        if (log != null && log.isInfoEnabled()) {
+            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" +
+                (rec == null ? null : rec.type()));
+        }
 
         return res;
     }
