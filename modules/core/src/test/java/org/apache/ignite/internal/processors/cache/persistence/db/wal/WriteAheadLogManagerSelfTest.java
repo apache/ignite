@@ -40,8 +40,10 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.concurrent.ThreadLocalRandom.current;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Class for testing WAL manager.
@@ -179,7 +181,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteEx n = startGrid(0, cfg -> {
             cfg.setGridLogger(new ListeningTestLogger(cfg.getGridLogger(), logLsnr))
-                .getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(50);
+                .getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(200);
         });
 
         n.cluster().state(ClusterState.ACTIVE);
@@ -187,14 +189,11 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(GridTestUtils.getFieldValue(walMgr(n), "nextAutoArchiveTimeoutObj"));
 
-        for (int i = 0; i < 1_000; i++) {
-            if (i % 100 == 0)
-                U.sleep(20);
+        assertTrue(waitForCondition(() -> {
+            n.cache(DEFAULT_CACHE_NAME).put(current().nextInt(), new byte[16]);
 
-            n.cache(DEFAULT_CACHE_NAME).put(i, new byte[32]);
-        }
-
-        assertTrue(logLsnr.check());
+            return logLsnr.check();
+        }, getTestTimeout()));
     }
 
     /**
