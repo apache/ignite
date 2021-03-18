@@ -898,7 +898,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (ptr != null) {
-                metrics.onWalRecordLogged();
+                metrics.onWalRecordLogged(rec.size());
 
                 if (walAutoArchiveAfterInactivity > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
@@ -918,7 +918,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private FileWriteHandle closeBufAndRollover(
         FileWriteHandle currWriteHandle,
-        WALRecord rec,
+        @Nullable WALRecord rec,
         RolloverType rolloverType
     ) throws IgniteCheckedException {
         long idx = currWriteHandle.getSegmentId();
@@ -927,8 +927,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWriteHandle res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
 
-        if (log != null && log.isInfoEnabled())
-            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" + rec.type());
+        if (log != null && log.isInfoEnabled()) {
+            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" +
+                (rec == null ? null : rec.type()));
+        }
 
         return res;
     }
@@ -2113,6 +2115,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (alreadyCompressed.length > 0)
                 segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
+
+            for (FileDescriptor fd : alreadyCompressed)
+                metrics.onWalSegmentCompressed(fd.file().length());
         }
 
         /**
@@ -2236,8 +2241,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             f0.force();
                         }
 
-                        segmentSize.put(segIdx, zip.length());
-                        segmentAware.addCurrentWalArchiveSize(zip.length());
+                        long zipLen = zip.length();
+
+                        segmentSize.put(segIdx, zipLen);
+                        segmentAware.addCurrentWalArchiveSize(zipLen);
+
+                        metrics.onWalSegmentCompressed(zipLen);
 
                         segmentAware.onSegmentCompressed(segIdx);
 

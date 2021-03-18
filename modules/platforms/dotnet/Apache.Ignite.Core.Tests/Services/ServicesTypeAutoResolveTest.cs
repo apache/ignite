@@ -110,6 +110,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
+            DoTestDepartments(svc);
+
             _grid1.GetServices().Cancel(platformSvcName);
         }
 
