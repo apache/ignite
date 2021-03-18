@@ -237,7 +237,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /**
      * Rotate collecting performance statistics.
      *
-     * @throws IgniteCheckedException If rotating failed.
+     * @throws IgniteCheckedException If rotation failed.
      */
     public IgniteInternalFuture<?> rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
@@ -328,13 +328,15 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics writer. */
     private void rotateWriter() throws IgniteCheckedException, IOException {
         try {
+            FilePerformanceStatisticsWriter oldWriter = null;
+
             synchronized (mux) {
                 if (writer != null) {
                     FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
 
                     newWriter.start();
 
-                    FilePerformanceStatisticsWriter oldWriter = writer;
+                    oldWriter = writer;
 
                     writer = newWriter;
 
@@ -342,7 +344,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 }
             }
 
-            log.info("Performance statistics writer rotated.");
+            if (oldWriter != null)
+                log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.getFile() + "].");
         }
         catch (IgniteCheckedException | IOException e) {
             log.error("Failed to rotate performance statistics writer.", e);

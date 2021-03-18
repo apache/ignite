@@ -74,7 +74,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         for (int i = 0; i < cnt; i++) {
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
-            LogListener lsnr = matches("Performance statistics writer rotated.")
+            LogListener lsnr = matches("Performance statistics writer rotated")
                 .times(NODES_CNT)
                 .build();
 
@@ -89,9 +89,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         stopCollectStatistics();
 
-        List<File> files = statisticsFiles();
-
-        checkFiles(files, NODES_CNT * (cnt + 1), NODES_CNT * cnt);
+        checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
     }
 
     /** Checks files and operations count. */

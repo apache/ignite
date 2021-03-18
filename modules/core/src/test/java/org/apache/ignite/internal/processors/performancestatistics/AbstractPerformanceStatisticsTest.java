@@ -22,6 +22,7 @@ import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -35,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader.FILE_PATTERN;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -46,6 +46,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstractTest {
     /** */
     public static final long TIMEOUT = 30_000;
+
+    /** File performance statistics pattern {@link FilePerformanceStatisticsReader}. */
+    static final Pattern FILE_PATTERN = Pattern.compile(
+        "^node-([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})(-(\\d+))?.prf$");
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
