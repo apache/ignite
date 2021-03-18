@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public JavaServiceDynamicProxy(dynamic svc)
         {
             _svc = svc;
-        } 
+        }
 
         /** <inheritDoc /> */
         public bool isCancelled()
@@ -393,6 +393,12 @@ namespace Apache.Ignite.Core.Tests.Services
         public void sleep(long delayMs)
         {
             _svc.sleep(delayMs);
+        }
+
+        /** <inheritDoc /> */
+        public object testRoundtrip(object x)
+        {
+            return x;
         }
     }
 }

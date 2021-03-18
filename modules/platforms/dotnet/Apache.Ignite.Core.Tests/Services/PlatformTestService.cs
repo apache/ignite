@@ -615,5 +615,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             throw new NotImplementedException();
         }
+
+        /** <inheritDoc /> */
+        public object testRoundtrip(object x)
+        {
+            return x;
+        }
     }
 }

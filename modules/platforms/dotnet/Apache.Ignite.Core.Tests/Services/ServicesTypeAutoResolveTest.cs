@@ -226,10 +226,15 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, users.Length);
             Assert.AreEqual(1, users[0].Id);
             Assert.AreEqual(ACL.ALLOW, users[0].Acl);
+
             Assert.AreEqual("admin", users[0].Role.Name);
             Assert.AreEqual(2, users[1].Id);
             Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+
+            var users2 = svc.testRoundtrip(users);
+            Assert.NotNull(users2);
+            Assert.AreEqual(typeof(User[]), users2.GetType());
 
             _grid1.GetServices().Cancel(PlatformSvcName);
         }

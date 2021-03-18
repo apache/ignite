@@ -638,6 +638,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 throw new IgniteException(e);
             }
         }
+
+        /** */
+        public Object testRoundtrip(Object x) {
+            return x;
+        }
     }
 
     /** */
