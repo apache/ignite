@@ -21,14 +21,25 @@ import javax.cache.Cache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Intermediate component to provide {@link CDCCacheConflictResolutionManager} for specific cache.
  *
+ * @see CDCCacheConflictResolutionManager
+ * @see DrIdCacheVersionConflictResolver
+ * @see CacheVersionConflictResolver
  */
 public class ConflictResolutionProvider implements CachePluginProvider {
-    /** */
+    /**
+     * Field for conflict resolve.
+     * Value of this field will be used to compare two entries in case of conflicting changes.
+     * Note, values of this field must implement {@link Comparable} interface.
+     *
+     * @see DrIdCacheVersionConflictResolver
+     */
     private final String conflictResolveField;
 
     /**

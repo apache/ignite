@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -41,7 +42,13 @@ import static org.apache.ignite.cdc.Utils.properties;
 import static org.apache.ignite.cdc.Utils.property;
 
 /**
- * CDC consumer that streams all data changes to Kafka.
+ * CDC consumer that streams all data changes to Kafka topic.
+ * {@link EntryEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
+ * In case of any error during write consumer just fail. Fail of consumer will lead to the fail of whole application.
+ * It expected that CDC application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka unavailability.
+ *
+ * @see IgniteCDC
+ * @see CDCKafkaToIgnite
  */
 public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject> {
     /** Default kafka topic name. */
@@ -63,10 +70,7 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     private static final String ERR_MSG = CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS +
         " should point to the Kafka properties file.";
 
-    /** Timeout minutes. */
-    public static final int TIMEOUT_MIN = 1;
-
-    /** */
+    /** Log. */
     private IgniteLogger log;
 
     /** Kafka producer to stream events. */
@@ -81,10 +85,7 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     /** Number Kafka topic partitions. */
     private int kafkaPartitionsNum;
 
-    /** Data replication ID. */
-    private int drId;
-
-    /** */
+    /** Cache IDs. */
     private Set<Integer> cachesIds;
 
     /** Kafka properties. */
@@ -98,28 +99,26 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
 
     /** Empty constructor. */
     public CDCIgniteToKafka() {
-        this.startFromProps = true;
+        startFromProps = true;
     }
 
     /**
      * @param topic Topic name.
-     * @param drId Data center ID.
      * @param caches Cache names.
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafpa properties.
      */
-    public CDCIgniteToKafka(String topic, int drId,
-        Set<String> caches, boolean onlyPrimary, Properties kafkaProps) {
+    public CDCIgniteToKafka(String topic, Set<String> caches, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;
-        this.drId = drId;
-        this.cachesIds = caches.stream()
+        this.onlyPrimary = onlyPrimary;
+        this.kafkaProps = kafkaProps;
+
+        cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
             .boxed()
             .collect(Collectors.toSet());
-        this.onlyPrimary = onlyPrimary;
-        this.kafkaProps = kafkaProps;
     }
 
     /** {@inheritDoc} */
@@ -148,18 +147,18 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
 
         try {
             for (Future<RecordMetadata> fut : futs)
-                fut.get(TIMEOUT_MIN, TimeUnit.MINUTES);
+                fut.get(KafkaUtils.TIMEOUT_MIN, TimeUnit.MINUTES);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
-        log.info("cntSntMsgs=" + cntSntMsgs + ",topic=" + topic);
+        log.info("cntSntMsgs=" + cntSntMsgs);
 
         return true;
     }
 
-    /** Start event consumer with possible error. */
+    /** Starts event consumer. */
     public void startFromProperties() throws Exception {
         kafkaProps = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
 
@@ -181,13 +180,15 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
             kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 
             producer = new KafkaProducer<>(kafkaProps);
+
+            log.info("Ignite To Kafka started[topic=" + topic + ",onlyPrimary=" + onlyPrimary + ",cacheIds=" + cachesIds + ']');
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    /** */
+    /** Reads cache ids from properties. */
     private Set<Integer> cachesIds(Properties props) {
         String cacheNames = property(IGNITE_TO_KAFKA_CACHES, props);
 

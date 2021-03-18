@@ -17,21 +17,29 @@
 
 package org.apache.ignite.cdc.cfgplugin;
 
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
+ * Intermediate component to provide {@link DrIdCacheVersionConflictResolver} for specific cache.
  *
+ * @see DrIdCacheVersionConflictResolver
+ * @see CacheVersionConflictResolver
  */
 public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictResolutionManager<K, V> {
-    /** */
-    private byte drId;
-
-    /** */
+    /**
+     * Field for conflict resolve.
+     * Value of this field will be used to compare two entries in case of conflicting changes.
+     * Note, values of this field must implement {@link Comparable} interface.
+     *
+     * @see DrIdCacheVersionConflictResolver
+     */
     private final String conflictResolveField;
+
+    /** Grid cache context. */
+    private GridCacheContext<K, V> cctx;
 
     /**
      * @param conflictResolveField Field to resolve conflicts.
@@ -40,18 +48,18 @@ public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictRes
         this.conflictResolveField = conflictResolveField;
     }
 
-    /** */
-    private IgniteLogger log;
-
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        return new DrIdCacheVersionConflictResolver(drId, conflictResolveField, log);
+        return new DrIdCacheVersionConflictResolver(
+            cctx.versions().dataCenterId(),
+            conflictResolveField,
+            cctx.logger(DrIdCacheVersionConflictResolver.class)
+        );
     }
 
     /** {@inheritDoc} */
     @Override public void start(GridCacheContext<K, V> cctx) {
-        drId = cctx.versions().dataCenterId();
-        log = cctx.logger(DrIdCacheVersionConflictResolver.class);
+        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */

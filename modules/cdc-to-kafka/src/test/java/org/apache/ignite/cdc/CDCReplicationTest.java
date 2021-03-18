@@ -250,8 +250,8 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testActivePassiveReplication() throws Exception {
-        IgniteInternalFuture<?> fut1 = igniteToKafka(source[0], SOURCE_DRID, AP_TOPIC_NAME, AP_CACHE);
-        IgniteInternalFuture<?> fut2 = igniteToKafka(source[1], SOURCE_DRID, AP_TOPIC_NAME, AP_CACHE);
+        IgniteInternalFuture<?> fut1 = igniteToKafka(source[0], AP_TOPIC_NAME, AP_CACHE);
+        IgniteInternalFuture<?> fut2 = igniteToKafka(source[1], AP_TOPIC_NAME, AP_CACHE);
 
         try {
             IgniteCache<Integer, Data> destCache = dest[0].createCache(AP_CACHE);
@@ -300,10 +300,10 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, dest[dest.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1));
 
-        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(source[0], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(source[1], SOURCE_DRID, sourceDestTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(dest[0], DEST_DRID, destSourceTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(dest[1], DEST_DRID, destSourceTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(source[0], sourceDestTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(source[1], sourceDestTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(dest[0], destSourceTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(dest[1], destSourceTopic, ACTIVE_ACTIVE_CACHE);
 
         try {
             IgniteInternalFuture<?> k2iFut1 = runAsync(new CDCKafkaToIgnite(dest[0], props, sourceDestTopic,
@@ -404,9 +404,9 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
      * @param caches Caches names to stream to kafka.
      * @return Future for CDC application.
      */
-    private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, byte drId, String topic, String...caches) {
+    private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
         return runAsync(() -> {
-            CDCIgniteToKafka cdc = new CDCIgniteToKafka(topic, drId, new HashSet<>(Arrays.asList(caches)), false, props);
+            CDCIgniteToKafka cdc = new CDCIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), false, props);
 
             cdc.setKafkaProps(props);
 

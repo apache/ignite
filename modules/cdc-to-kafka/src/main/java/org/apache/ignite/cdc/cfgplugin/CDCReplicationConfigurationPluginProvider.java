@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -34,28 +35,36 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Plugin to enable {@link DrIdCacheVersionConflictResolver} for provided caches.
  *
+ * @see DrIdCacheVersionConflictResolver
+ * @see CacheVersionConflictResolver
  */
 public class CDCReplicationConfigurationPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
-    /** */
+    /** Plugin context. */
     private PluginContext ctx;
 
-    /** */
+    /** Data center replication id. */
     private byte drId;
 
-    /** */
+    /** Cache names. */
     private Set<String> caches;
 
-    /** */
+    /**
+     * Field for conflict resolve.
+     * Value of this field will be used to compare two entries in case of conflicting changes.
+     * Note, values of this field must implement {@link Comparable} interface.
+     *
+     * @see DrIdCacheVersionConflictResolver
+     */
     private String conflictResolveField;
 
-    /** */
+    /** Cache plugin provider. */
     private CachePluginProvider<?> provider;
 
-    /**
-     * @param conflictResolveField Field to resolve conflicts.
-     */
+    /** */
     public CDCReplicationConfigurationPluginProvider() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

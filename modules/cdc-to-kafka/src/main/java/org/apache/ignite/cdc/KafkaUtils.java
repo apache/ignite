@@ -33,9 +33,9 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
 import static org.apache.ignite.cdc.Utils.property;
 
-/** */
+/** Kafka Utils. */
 public class KafkaUtils {
-    /** */
+    /** Default kafka request timeout. */
     public static final int TIMEOUT_MIN = 1;
 
     /** Ignite to Kafka topic partitions number. */
@@ -45,28 +45,61 @@ public class KafkaUtils {
     public static final String IGNITE_TO_KAFKA_REPLICATION_FACTOR = "ignite.to.kafka.replication.factor";
 
     /**
-     * Initialize Kafka topics.
+     * Initialize Kafka topic.
      *
      * @param props Properties.
      */
     public static int initTopic(String topic, Properties props)
         throws InterruptedException, ExecutionException, TimeoutException {
         try (AdminClient adminCli = AdminClient.create(props)) {
-            return createTopic(topic, props, adminCli);
+            return createTopic(
+                topic,
+                Integer.parseInt(property(IGNITE_TO_KAFKA_NUM_PARTITIONS, props, "32")),
+                property(IGNITE_TO_KAFKA_REPLICATION_FACTOR, props, "1"),
+                adminCli
+            );
         }
     }
 
     /**
-     * @param topic
-     * @param props
-     * @param adminCli
-     * @param guard
-     * @return
-     * @throws InterruptedException
-     * @throws TimeoutException
-     * @throws ExecutionException
+     * Creates Kafka topic, returns partitions count if topic already exists.
+     *
+     * @param topic Topic name.
+     * @param kafkaPartsCnt Kafka topic partitions count.
+     * @param adminCli Admin client.
+     * @return Kafka topic partitions count.
      */
-    private static int describeTopic(String topic, AdminClient adminCli, int guard)
+    private static int createTopic(String topic, int kafkaPartsCnt, String replicationFactorStr, AdminClient adminCli)
+        throws InterruptedException, ExecutionException, TimeoutException {
+        try {
+            adminCli.createTopics(Collections.singleton(new NewTopic(
+                topic,
+                kafkaPartsCnt,
+                replicationFactorStr == null ? 1 : Short.parseShort(replicationFactorStr))
+            )).all().get(TIMEOUT_MIN, TimeUnit.MINUTES);
+
+            return kafkaPartsCnt;
+        }
+        catch (ExecutionException e) {
+            if (!(e.getCause() instanceof TopicExistsException))
+                throw e;
+
+            // Waits some time for concurrent topic creation.
+            Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
+
+            return topicPartitionsCount(topic, adminCli, 10);
+        }
+    }
+
+    /**
+     * Query topic partitions count from Kafka cluster.
+     *
+     * @param topic Topic name.
+     * @param adminCli Admin client.
+     * @param guard Guard number.
+     * @return Kafka topic partitions count.
+     */
+    private static int topicPartitionsCount(String topic, AdminClient adminCli, int guard)
         throws InterruptedException, TimeoutException, ExecutionException {
         if (guard == 0)
             throw new IllegalStateException("guard == 0, topic = " + topic);
@@ -88,43 +121,7 @@ public class KafkaUtils {
             // Waits some time for concurrent topic creation.
             Thread.sleep(1000 + ThreadLocalRandom.current().nextInt(500));
 
-            return describeTopic(topic, adminCli, guard - 1);
-        }
-    }
-
-    /**
-     *
-     * @param topic
-     * @param props
-     * @param adminCli
-     * @return
-     * @throws InterruptedException
-     * @throws ExecutionException
-     * @throws TimeoutException
-     */
-    private static int createTopic(String topic, Properties props, AdminClient adminCli)
-        throws InterruptedException, ExecutionException, TimeoutException {
-        int kafkaPartitionsNum = Integer.parseInt(property(IGNITE_TO_KAFKA_NUM_PARTITIONS, props, "32"));
-
-        String replicationFactorStr = property(IGNITE_TO_KAFKA_REPLICATION_FACTOR, props, "1");
-
-        try {
-            adminCli.createTopics(Collections.singleton(new NewTopic(
-                topic,
-                kafkaPartitionsNum,
-                replicationFactorStr == null ? 1 : Short.parseShort(replicationFactorStr))
-            )).all().get(TIMEOUT_MIN, TimeUnit.MINUTES);
-
-            return kafkaPartitionsNum;
-        }
-        catch (ExecutionException e) {
-            if (!(e.getCause() instanceof TopicExistsException))
-                throw e;
-
-            // Waits some time for concurrent topic creation.
-            Thread.sleep(ThreadLocalRandom.current().nextInt(1_500));
-
-            return describeTopic(topic, adminCli, 10);
+            return topicPartitionsCount(topic, adminCli, guard - 1);
         }
     }
 }

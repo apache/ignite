@@ -26,13 +26,29 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
+/**
+ * Utility class.
+ */
 public class Utils {
-    /** @return Property value. */
+    /**
+     * Reads property from properties.
+     *
+     * @param propName Property name.
+     * @param props Properties.
+     * @return Property value, {@code null} if property don't exists.
+     */
     public static String property(String propName, Properties props) {
         return property(propName, props, null);
     }
 
-    /** @return Kafka topic name. */
+    /**
+     * Reads property from properties.
+     *
+     * @param propName Property name.
+     * @param props Properties.
+     * @param def Default value.
+     * @return Property value.
+     */
     public static String property(String propName, Properties props, String def) {
         String val = System.getProperty(propName);
 
@@ -47,7 +63,13 @@ public class Utils {
         return def;
     }
 
-    /** @return Loads properties. */
+    /**
+     * Reads properties from file.
+     *
+     * @param path Path to properties.
+     * @param errMsg Error message.
+     * @return Properties from file.
+     */
     public static Properties properties(String path, String errMsg) throws IOException {
         File propsFile = new File(Objects.requireNonNull(path, errMsg));
 
