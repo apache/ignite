@@ -91,7 +91,10 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         A.notNull(lsnr, "lsnr");
         A.notNull(exec, "exec");
 
-        fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
+        if (isDone())
+            fut.listen(new InternalFutureListener(lsnr));
+        else
+            fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
     }
 
     /** {@inheritDoc} */
