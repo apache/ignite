@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -37,7 +38,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -57,15 +57,22 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
-/** */
+/**
+ * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
+ * Since a snapshot partitions already stored apart on disk the is no requirement for a cluster upcoming updates
+ * to be hold on.
+ */
 @GridInternal
 public class SnapshotPartitionsVerifyTask
     extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
@@ -207,7 +214,7 @@ public class SnapshotPartitionsVerifyTask
                     ", meta=" + meta + ']');
             }
 
-            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
@@ -229,6 +236,12 @@ public class SnapshotPartitionsVerifyTask
                                     val -> {
                                     })
                             ) {
+                                if (partId == INDEX_PARTITION) {
+                                    checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+
+                                    return null;
+                                }
+
                                 ByteBuffer pageBuff = buff.get();
                                 pageBuff.clear();
                                 pageStore.read(0, pageBuff, true);
@@ -253,13 +266,21 @@ public class SnapshotPartitionsVerifyTask
                                         + ", size=" + size + "]");
                                 }
 
-                                checkPartitionsPageCrcSum(() -> pageStore, partId, PageIdAllocator.FLAG_DATA);
-
                                 // Snapshot partitions must always be in OWNING state.
                                 // There is no `primary` partitions for snapshot.
-                                res.computeIfAbsent(new PartitionKeyV2(grpId, partId, grpName),
-                                    key -> new PartitionHashRecordV2(key, false, consId,
-                                    0, updateCntr, size, PartitionHashRecordV2.PartitionState.OWNING));
+                                PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+
+                                PartitionHashRecordV2 hash = calculatePartitionHash(key,
+                                    updateCntr,
+                                    consId,
+                                    GridDhtPartitionState.OWNING,
+                                    false,
+                                    size,
+                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+
+                                assert hash != null : "OWNING must have hash: " + key;
+
+                                res.put(key, hash);
                             }
                         }
                         catch (IOException e) {

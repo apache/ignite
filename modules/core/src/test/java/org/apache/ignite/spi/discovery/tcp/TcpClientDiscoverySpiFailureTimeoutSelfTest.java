@@ -443,6 +443,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** */
         private volatile long readDelay;
 
+        /** */
         private volatile long writeToSocketDelay;
 
         /** */
