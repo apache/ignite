@@ -562,6 +562,27 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests the server binary flag.
+        /// </summary>
+        [Test]
+        public void TestWithKeepBinaryServerArray()
+        {
+            var svc = new TestIgniteServiceBinarizable();
+
+            Grid1.GetCluster()
+                .ForNodeIds(Grid2.GetCluster().GetLocalNode().Id)
+                .GetServices()
+                .WithServerKeepBinary()
+                .DeployNodeSingleton(SvcName, svc);
+
+            var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
+            var obj = new [] {new BinarizableObject{Val = 1}};
+
+            var res = prx.Method(obj);
+            Assert.IsNotNull(res);
+        }
+
+        /// <summary>
         /// Tests server and client binary flag.
         /// </summary>
         [Test]
