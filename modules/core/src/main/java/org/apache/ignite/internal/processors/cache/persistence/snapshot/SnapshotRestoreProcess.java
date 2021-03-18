@@ -234,7 +234,7 @@ public class SnapshotRestoreProcess {
      *
      * @return {@code True} if the snapshot restore operation is in progress.
      */
-    public boolean isSnapshotRestoring() {
+    public boolean isRestoring() {
         return opCtx != null;
     }
 
@@ -245,7 +245,7 @@ public class SnapshotRestoreProcess {
      * @param grpName Cache group name.
      * @return {@code True} if the cache or group with the specified name is currently being restored.
      */
-    public boolean isCacheRestoring(String cacheName, @Nullable String grpName) {
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
@@ -261,17 +261,15 @@ public class SnapshotRestoreProcess {
         for (File grpDir : opCtx0.dirs) {
             String locGrpName = FilePageStoreManager.cacheGroupName(grpDir);
 
-            if (grpName == null) {
-                if (CU.cacheId(locGrpName) == cacheId)
-                    return true;
-            }
-            else {
+            if (grpName != null) {
                 if (cacheName.equals(locGrpName))
                     return true;
 
                 if (CU.cacheId(locGrpName) == CU.cacheId(grpName))
                     return true;
             }
+            else if (CU.cacheId(locGrpName) == cacheId)
+                return true;
         }
 
         return false;
@@ -496,7 +494,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If failed.
      */
     private SnapshotRestoreContext prepareContext(SnapshotRestorePrepareRequest req) throws IgniteCheckedException {
-        if (isSnapshotRestoring()) {
+        if (isRestoring()) {
             throw new IgniteCheckedException(OP_REJECT_MSG +
                 "The previous snapshot restore operation was not completed.");
         }

@@ -670,7 +670,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             assertNull("nodeIdx=" + nodeIdx + ", cache=" + cacheName, desc);
 
             GridTestUtils.waitForCondition(
-                () -> !grid.context().cache().context().snapshotMgr().isSnapshotRestoring(),
+                () -> !grid.context().cache().context().snapshotMgr().isRestoring(),
                 TIMEOUT);
 
             File dir = resolveCacheDir(grid, cacheName);

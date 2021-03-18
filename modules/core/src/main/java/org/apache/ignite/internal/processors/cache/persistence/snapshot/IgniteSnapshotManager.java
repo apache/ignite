@@ -772,8 +772,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @return {@code True} if the snapshot restore operation is in progress.
      */
-    public boolean isSnapshotRestoring() {
-        return restoreCacheGrpProc.isSnapshotRestoring();
+    public boolean isRestoring() {
+        return restoreCacheGrpProc.isRestoring();
     }
 
     /**
@@ -783,8 +783,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpName Cache group name.
      * @return {@code True} if the cache or group with the specified name is being restored.
      */
-    public boolean isCacheRestoring(String cacheName, @Nullable String grpName) {
-        return restoreCacheGrpProc.isCacheRestoring(cacheName, grpName);
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
     }
 
     /**
@@ -1042,7 +1042,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
 
-            if (isSnapshotRestoring()) {
+            if (isRestoring()) {
                 throw new IgniteException("Snapshot operation has been rejected. " +
                     "Cache group restore operation is currently in progress.");
             }
