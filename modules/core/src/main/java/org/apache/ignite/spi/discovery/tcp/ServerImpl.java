@@ -3949,7 +3949,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     assert next == null : next;
 
-                    checkOutgoingConnection(failedNodes);
+                    checkOutgoingConnection();
 
                     if (log.isDebugEnabled())
                         log.debug("Pending messages will be resent to local node");
@@ -6506,16 +6506,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /**
      * Segment local node if ring connection failed while incoming traffic is present.
-     *
-     * @param skipNodes If not {@code null}, aren't taken in account when observing nodes left in the ring.
      */
-    private void checkOutgoingConnection(Collection<TcpDiscoveryNode> skipNodes) {
+    private void checkOutgoingConnection() {
         // Skip if there is no msg sending failure or wait for ping comming after the failure.
         if (msgNotSentNanos == 0 || lastRingMsgReceivedTime < msgNotSentNanos + U.millisToNanos(connCheckInterval))
             return;
 
         synchronized (mux) {
-            if (spiState == CONNECTED && ring.serverNodes(skipNodes).size() == 1)
+            if (spiState == CONNECTED && ring.serverNodes(failedNodes.keySet()).size() == 1)
                 segmentLocalNodeOnSendFail(failedNodes.keySet());
         }
     }
@@ -7409,7 +7407,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
 
-            checkOutgoingConnection(null);
+            checkOutgoingConnection();
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
