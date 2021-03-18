@@ -577,38 +577,45 @@ public class SnapshotRestoreProcess {
      * @param errs Errors.
      */
     private void finishPrepare(UUID reqId, Map<UUID, ArrayList<StoredCacheData>> res, Map<UUID, Exception> errs) {
-        SnapshotRestoreContext opCtx0 = opCtx;
-
         if (ctx.clientNode())
             return;
 
-        Exception failure = checkFailure(errs, opCtx0, res.keySet());
+        SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (failure == null) {
-            assert opCtx0 != null : ctx.localNodeId();
+        Exception failure = F.first(errs.values());
 
-            Map<Integer, StoredCacheData> globalCfgs = new HashMap<>();
+        assert opCtx0 != null || failure != null : ctx.localNodeId();
 
-            for (List<StoredCacheData> storedCfgs : res.values()) {
-                if (storedCfgs == null)
-                    continue;
-
-                for (StoredCacheData cacheData : storedCfgs)
-                    globalCfgs.put(CU.cacheId(cacheData.config().getName()), cacheData);
-            }
-
-            opCtx0.cfgs = globalCfgs;
-
-            if (U.isLocalNodeCoordinator(ctx.discovery()))
-                cacheStartProc.start(reqId, reqId);
+        if (opCtx0 == null) {
+            finishProcess(failure);
 
             return;
         }
 
-        if (opCtx0 == null)
-            finishProcess(failure);
-        else if (U.isLocalNodeCoordinator(ctx.discovery()))
+        if (failure == null)
+            failure = checNodeLeft(opCtx0.nodes, res.keySet());
+
+        // Context has been created - should rollback changes cluster-wide.
+        if (failure != null && U.isLocalNodeCoordinator(ctx.discovery())) {
             rollbackRestoreProc.start(reqId, new SnapshotRestoreRollbackRequest(reqId, failure));
+
+            return;
+        }
+
+        Map<Integer, StoredCacheData> globalCfgs = new HashMap<>();
+
+        for (List<StoredCacheData> storedCfgs : res.values()) {
+            if (storedCfgs == null)
+                continue;
+
+            for (StoredCacheData cacheData : storedCfgs)
+                globalCfgs.put(CU.cacheId(cacheData.config().getName()), cacheData);
+        }
+
+        opCtx0.cfgs = globalCfgs;
+
+        if (U.isLocalNodeCoordinator(ctx.discovery()))
+            cacheStartProc.start(reqId, reqId);
     }
 
     /**
@@ -653,7 +660,10 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        Exception failure = checkFailure(errs, opCtx0, res.keySet());
+        Exception failure = F.first(errs.values());
+
+        if (failure == null)
+            failure = checNodeLeft(opCtx0.nodes, res.keySet());
 
         if (failure == null) {
             finishProcess();
@@ -666,26 +676,21 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Check the response for probable failures.
-     *
-     * @param errs Errors.
-     * @param opCtx Snapshot restore operation context.
+     * @param reqNodes Set of required topology nodes.
      * @param respNodes Set of responding topology nodes.
-     * @return Error, if any.
+     * @return Error, if no response was received from the required topology node.
      */
-    private Exception checkFailure(Map<UUID, Exception> errs, SnapshotRestoreContext opCtx, Set<UUID> respNodes) {
-        Exception err = F.first(errs.values());
-
-        if (err == null && opCtx != null && !respNodes.containsAll(opCtx.nodes)) {
-            Set<UUID> leftNodes = new HashSet<>(opCtx.nodes);
+    private Exception checNodeLeft(Set<UUID> reqNodes, Set<UUID> respNodes) {
+        if (!respNodes.containsAll(reqNodes)) {
+            Set<UUID> leftNodes = new HashSet<>(reqNodes);
 
             leftNodes.removeAll(respNodes);
 
-            err = new IgniteCheckedException(OP_REJECT_MSG +
+            return new IgniteCheckedException(OP_REJECT_MSG +
                 "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
         }
 
-        return err;
+        return null;
     }
 
     /**
