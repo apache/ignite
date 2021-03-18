@@ -472,7 +472,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
-        rebalanced = False
         for node in self.nodes:
             rebalanced = False
             mbean = JmxClient(node).find_mbean('.*name=cluster')
