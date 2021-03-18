@@ -37,7 +37,7 @@ import static org.apache.ignite.testframework.LogListener.matches;
  */
 public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
-    private static final int NODES_CNT = 3;
+    private static final int NODES_CNT = 2;
 
     /** Listener test logger. */
     private static ListeningTestLogger listeningLog;
