@@ -468,6 +468,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         to the config.
         :param timeout_sec: timeout to wait the rebalance to complete.
         """
+        assert self.nodes, 'Node list is empty.'
+
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         rebalanced = False
