@@ -15,20 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.cfgplugin;
+package org.apache.ignite.cdc.conflictplugin;
 
+import javax.cache.Cache;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Intermediate component to provide {@link DrIdCacheVersionConflictResolver} for specific cache.
+ * Intermediate component to provide {@link CDCCacheConflictResolutionManager} for specific cache.
  *
+ * @see CDCCacheConflictResolutionManager
  * @see DrIdCacheVersionConflictResolver
  * @see CacheVersionConflictResolver
  */
-public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictResolutionManager<K, V> {
+public class ConflictResolutionProvider implements CachePluginProvider {
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
@@ -38,52 +42,53 @@ public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictRes
      */
     private final String conflictResolveField;
 
-    /** Grid cache context. */
-    private GridCacheContext<K, V> cctx;
-
     /**
      * @param conflictResolveField Field to resolve conflicts.
      */
-    public CDCCacheConflictResolutionManager(String conflictResolveField) {
+    public ConflictResolutionProvider(String conflictResolveField) {
         this.conflictResolveField = conflictResolveField;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersionConflictResolver conflictResolver() {
-        return new DrIdCacheVersionConflictResolver(
-            cctx.versions().dataCenterId(),
-            conflictResolveField,
-            cctx.logger(DrIdCacheVersionConflictResolver.class)
-        );
+    @Nullable @Override public Object createComponent(Class cls) {
+        if (cls.equals(CacheConflictResolutionManager.class))
+            return new CDCCacheConflictResolutionManager(conflictResolveField);
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void start(GridCacheContext<K, V> cctx) {
-        this.cctx = cctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel, boolean destroy) {
+    @Override public void start() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() {
+    @Override public void stop(boolean cancel) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
+    @Override public void onIgniteStart() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void printMemoryStats() {
+    @Override public void onIgniteStop(boolean cancel) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+    @Override public void validate() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateRemote(CacheConfiguration locCfg, CacheConfiguration rmtCfg, ClusterNode rmtNode) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object unwrapCacheEntry(Cache.Entry entry, Class cls) {
+        return null;
     }
 }

@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cdc.CDCReplicationTest.Data;
-import org.apache.ignite.cdc.cfgplugin.CDCReplicationConfigurationPluginProvider;
+import org.apache.ignite.cdc.conflictplugin.CDCReplicationConfigurationPluginProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;

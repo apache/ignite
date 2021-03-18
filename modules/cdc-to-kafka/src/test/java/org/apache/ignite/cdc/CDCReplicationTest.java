@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cdc.cfgplugin.CDCReplicationConfigurationPluginProvider;
+import org.apache.ignite.cdc.conflictplugin.CDCReplicationConfigurationPluginProvider;
 import org.apache.ignite.cdc.serde.JavaObjectSerializer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;

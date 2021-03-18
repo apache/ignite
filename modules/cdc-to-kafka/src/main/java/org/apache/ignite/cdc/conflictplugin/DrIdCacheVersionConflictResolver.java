@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.cfgplugin;
+package org.apache.ignite.cdc.conflictplugin;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;

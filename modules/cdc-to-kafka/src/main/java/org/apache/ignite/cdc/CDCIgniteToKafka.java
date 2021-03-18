@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cdc.conflictplugin.DrIdCacheVersionConflictResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -47,8 +48,13 @@ import static org.apache.ignite.cdc.Utils.property;
  * In case of any error during write consumer just fail. Fail of consumer will lead to the fail of whole application.
  * It expected that CDC application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka unavailability.
  *
+ * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
+ * e.g. concurrent updates of the same entry in other cluster is possible, please, be aware of {@link DrIdCacheVersionConflictResolver} conflict resolved.
+ * Configuration of {@link DrIdCacheVersionConflictResolver} can be found in {@link CDCKafkaToIgnite} documentation.
+ *
  * @see IgniteCDC
  * @see CDCKafkaToIgnite
+ * @see DrIdCacheVersionConflictResolver
  */
 public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject> {
     /** Default kafka topic name. */
@@ -224,5 +230,4 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     @Override public String id() {
         return "ignite-to-kafka";
     }
-
 }
