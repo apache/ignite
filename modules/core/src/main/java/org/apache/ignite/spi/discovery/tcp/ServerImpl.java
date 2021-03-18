@@ -6513,7 +6513,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             return;
 
         synchronized (mux) {
-            if (spiState == CONNECTED && ring.serverNodes(failedNodes.keySet()).size() == 1)
+            if (spiState == CONNECTED && failedNodes.size() > 1 && ring.serverNodes(failedNodes.keySet()).size() == 1)
                 segmentLocalNodeOnSendFail(failedNodes.keySet());
         }
     }
