@@ -69,6 +69,11 @@ LATEST_2_8 = V_2_8_1
 
 # 2.9.x versions
 V_2_9_0 = IgniteVersion("2.9.0")
-LATEST_2_9 = V_2_9_0
+V_2_9_1 = IgniteVersion("2.9.1")
+LATEST_2_9 = V_2_9_1
 
-LATEST = LATEST_2_9
+# 2.10.x versions
+V_2_10_0 = IgniteVersion("2.10.0")
+LATEST_2_10 = V_2_10_0
+
+LATEST = LATEST_2_10
