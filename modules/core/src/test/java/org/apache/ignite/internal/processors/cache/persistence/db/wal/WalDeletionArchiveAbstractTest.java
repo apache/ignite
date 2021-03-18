@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -108,30 +107,6 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      * @return WAL mode used in test.
      */
     protected abstract WALMode walMode();
-
-    /**
-     * History size parameters consistency check. Should be set just one of wal history size or max wal archive size.
-     */
-    @Test
-    public void testGridDoesNotStart_BecauseBothWalHistorySizeAndMaxWalArchiveSizeUsed() throws Exception {
-        //given: wal history size and max wal archive size are both set.
-        IgniteConfiguration configuration = getConfiguration(getTestIgniteInstanceName());
-
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-        dbCfg.setWalHistorySize(12);
-        dbCfg.setMaxWalArchiveSize(9);
-        configuration.setDataStorageConfiguration(dbCfg);
-
-        try {
-            //when: start grid.
-            startGrid(getTestIgniteInstanceName(), configuration);
-            fail("Should be fail because both wal history size and max wal archive size was used");
-        }
-        catch (IgniteException e) {
-            //then: exception is occurrence because should be set just one parameters.
-            assertTrue(findSourceMessage(e).startsWith("Should be used only one of wal history size or max wal archive size"));
-        }
-    }
 
     /**
      * find first cause's message
