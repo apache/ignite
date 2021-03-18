@@ -23,12 +23,13 @@ from distutils.version import LooseVersion
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
-from ignitetest.services.utils.path import PathAware
+from ignitetest.services.utils.IgniteTestService import IgniteTestService
 from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.services.utils.path import PathAware
 
 
 # pylint: disable=abstract-method
-class SparkService(Service, PathAware):
+class SparkService(Service, IgniteTestService, PathAware):
     """
     Start a spark node.
     """
@@ -123,9 +124,12 @@ class SparkService(Service, PathAware):
         """
         Clean spark persistence files
         """
-        node.account.kill_java_processes(self.java_class_name(node),
-                                         clean_shutdown=False, allow_fail=True)
+        node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
+
+    def kill(self):
+        for node in self.nodes:
+            node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
 
     def pids(self, node):
         """
@@ -168,9 +172,3 @@ class SparkService(Service, PathAware):
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)
-
-    def kill(self):
-        """
-        Kills the service.
-        """
-        self.stop()

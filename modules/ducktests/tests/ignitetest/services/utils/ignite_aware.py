@@ -30,17 +30,15 @@ from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
-from ignitetest.utils.enum import constructible
-
-
+from ignitetest.services.utils.path import IgnitePathAware
 # pylint: disable=too-many-public-methods
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_SERVER_ALIAS, \
     IGNITE_CLIENT_ALIAS
+from ignitetest.utils.enum import constructible
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
@@ -170,9 +168,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.signal(pid, signal.SIGTERM, allow_fail=False)
 
     def kill(self):
-        """
-        Kills nodes.
-        """
         self.logger.info("Killing IgniteAware(s) ...")
 
         for node in self.nodes:

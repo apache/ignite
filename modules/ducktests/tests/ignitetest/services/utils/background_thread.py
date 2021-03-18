@@ -23,8 +23,10 @@ import traceback
 
 from ducktape.services.service import Service
 
+from ignitetest.services.utils.IgniteTestService import IgniteTestService
 
-class BackgroundThreadService(Service, metaclass=ABCMeta):
+
+class BackgroundThreadService(Service, IgniteTestService, metaclass=ABCMeta):
     """BackgroundThreadService allow to start nodes simultaneously using pool of threads."""
 
     def __init__(self, context, num_nodes=None, cluster_spec=None, **kwargs):

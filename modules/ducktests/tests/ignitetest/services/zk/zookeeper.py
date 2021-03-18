@@ -22,6 +22,8 @@ from distutils.version import LooseVersion
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
+
+from ignitetest.services.utils.IgniteTestService import IgniteTestService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
@@ -49,7 +51,7 @@ class ZookeeperSettings:
         assert self.tick_time <= self.min_session_timeout // 2, "'tick_time' must be <= 'min_session_timeout' / 2"
 
 
-class ZookeeperService(Service, PathAware):
+class ZookeeperService(Service, IgniteTestService, PathAware):
     """
     Zookeeper service.
     """
@@ -177,7 +179,5 @@ class ZookeeperService(Service, PathAware):
         node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)
 
     def kill(self):
-        """
-        Kills the service.
-        """
-        self.stop()
+        for node in self.nodes:
+            node.account.kill_process("zookeeper", clean_shutdown=False, allow_fail=True)
