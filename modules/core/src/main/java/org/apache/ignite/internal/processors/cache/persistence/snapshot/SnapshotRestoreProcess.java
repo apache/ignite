@@ -46,6 +46,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -87,7 +88,7 @@ public class SnapshotRestoreProcess {
     private final DistributedProcess<UUID, Boolean> cacheStartProc;
 
     /** Cache group restore rollback phase. */
-    private final DistributedProcess<SnapshotRestoreRollbackRequest, SnapshotRestoreRollbackResponse> rollbackRestoreProc;
+    private final DistributedProcess<UUID, Boolean> rollbackRestoreProc;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -317,7 +318,7 @@ public class SnapshotRestoreProcess {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 != null && opCtx0.nodes.contains(leftNodeId)) {
-            opCtx0.err.compareAndSet(null, new IgniteException(OP_REJECT_MSG +
+            opCtx0.err.compareAndSet(null, new ClusterTopologyCheckedException(OP_REJECT_MSG +
                 "Server node(s) has left the cluster [nodeId=" + leftNodeId + ']'));
         }
     }
@@ -596,8 +597,11 @@ public class SnapshotRestoreProcess {
             failure = checNodeLeft(opCtx0.nodes, res.keySet());
 
         // Context has been created - should rollback changes cluster-wide.
-        if (failure != null && U.isLocalNodeCoordinator(ctx.discovery())) {
-            rollbackRestoreProc.start(reqId, new SnapshotRestoreRollbackRequest(reqId, failure));
+        if (failure != null) {
+            opCtx0.err.compareAndSet(null, failure);
+
+            if (U.isLocalNodeCoordinator(ctx.discovery()))
+                rollbackRestoreProc.start(reqId, reqId);
 
             return;
         }
@@ -671,8 +675,10 @@ public class SnapshotRestoreProcess {
             return;
         }
 
+        opCtx0.err.compareAndSet(null, failure);
+
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            rollbackRestoreProc.start(reqId, new SnapshotRestoreRollbackRequest(reqId, failure));
+            rollbackRestoreProc.start(reqId, reqId);
     }
 
     /**
@@ -694,16 +700,16 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param req Request to rollback cache group restore process.
+     * @param reqId Request ID.
      * @return Result future.
      */
-    private IgniteInternalFuture<SnapshotRestoreRollbackResponse> rollback(SnapshotRestoreRollbackRequest req) {
+    private IgniteInternalFuture<Boolean> rollback(UUID reqId) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
         rollback(opCtx);
 
-        return new GridFinishedFuture<>(new SnapshotRestoreRollbackResponse(req.error()));
+        return new GridFinishedFuture<>(true);
     }
 
     /**
@@ -711,7 +717,7 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishRollback(UUID reqId, Map<UUID, SnapshotRestoreRollbackResponse> res, Map<UUID, Exception> errs) {
+    private void finishRollback(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
         if (ctx.clientNode())
             return;
 
@@ -726,9 +732,7 @@ public class SnapshotRestoreProcess {
                 " operation [requestID=" + reqId + ", snapshot=" + opCtx0.snpName + ", node(s)=" + leftNodes + ']');
         }
 
-        SnapshotRestoreRollbackResponse resp = F.first(res.values());
-
-        finishProcess(resp.error());
+        finishProcess(opCtx0.err.get());
     }
 
     /**
