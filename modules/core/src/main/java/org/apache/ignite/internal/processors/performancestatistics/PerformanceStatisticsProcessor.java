@@ -345,7 +345,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             }
 
             if (oldWriter != null)
-                log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.getFile() + "].");
+                log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
         }
         catch (IgniteCheckedException | IOException e) {
             log.error("Failed to rotate performance statistics writer.", e);

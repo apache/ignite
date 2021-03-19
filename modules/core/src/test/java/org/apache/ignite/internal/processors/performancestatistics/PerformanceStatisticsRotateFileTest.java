@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,6 +72,8 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         int cnt = 3;
 
+        List<File> filesBefore = new ArrayList<>();
+
         for (int i = 0; i < cnt; i++) {
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
@@ -80,11 +83,17 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
             listeningLog.registerListener(lsnr);
 
+            List<File> files = statisticsFiles();
+
+            files.removeAll(filesBefore);
+
+            filesBefore.addAll(files);
+
             rotateCollectStatistics();
 
             assertTrue(waitForCondition(lsnr::check, TIMEOUT));
 
-            checkFiles(statisticsFiles(0 < i ? i : null), NODES_CNT, NODES_CNT);
+            checkFiles(files, NODES_CNT, NODES_CNT);
         }
 
         stopCollectStatistics();

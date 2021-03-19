@@ -192,7 +192,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** @return Performance statistics file. */
-    public File getFile() {
+    File file() {
         return file;
     }
 

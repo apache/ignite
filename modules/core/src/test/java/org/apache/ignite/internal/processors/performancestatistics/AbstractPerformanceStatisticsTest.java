@@ -21,19 +21,14 @@ import java.io.File;
 import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
@@ -46,10 +41,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstractTest {
     /** */
     public static final long TIMEOUT = 30_000;
-
-    /** File performance statistics pattern {@link FilePerformanceStatisticsReader}. */
-    static final Pattern FILE_PATTERN = Pattern.compile(
-        "^node-([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})(-(\\d+))?.prf$");
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -162,25 +153,6 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         File perfStatDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
         return FilePerformanceStatisticsReader.resolveFiles(singletonList(perfStatDir));
-    }
-
-    /**
-     * @param idx File index.
-     * @return Performance statistics files with index.
-     */
-    public static List<File> statisticsFiles(@Nullable Integer idx) {
-        try {
-            return statisticsFiles().stream()
-                .filter(file -> {
-                    Matcher matcher = FILE_PATTERN.matcher(file.getName());
-
-                    return matcher.find() && F.eq(matcher.group(3), U.toStringSafe(idx));
-                })
-                .collect(Collectors.toList());
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /** Test performance statistics handler. */
