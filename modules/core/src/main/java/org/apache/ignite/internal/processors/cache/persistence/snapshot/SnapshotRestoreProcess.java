@@ -554,31 +554,6 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Rollback changes made by process.
-     *
-     * @param opCtx Snapshot restore operation context.
-     */
-    private void rollback(@Nullable SnapshotRestoreContext opCtx) {
-        if (opCtx == null || F.isEmpty(opCtx.dirs))
-            return;
-
-        if (log.isInfoEnabled()) {
-            log.info("Performing local rollback routine for restored cache groups " +
-                "[requestID=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']');
-        }
-
-        for (File cacheDir : opCtx.dirs) {
-            if (!cacheDir.exists())
-                continue;
-
-            if (log.isInfoEnabled())
-                log.info("Cleaning up directory " + cacheDir);
-
-            U.delete(cacheDir);
-        }
-    }
-
-    /**
      * @param reqId Request ID.
      * @param res Results.
      * @param errs Errors.
@@ -713,7 +688,25 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
-        rollback(opCtx);
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (F.isEmpty(opCtx0.dirs))
+            return new GridFinishedFuture<>();
+
+        if (log.isInfoEnabled()) {
+            log.info("Performing local rollback routine for restored cache groups " +
+                "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
+        }
+
+        for (File cacheDir : opCtx0.dirs) {
+            if (!cacheDir.exists())
+                continue;
+
+            if (log.isInfoEnabled())
+                log.info("Cleaning up directory " + cacheDir);
+
+            U.delete(cacheDir);
+        }
 
         return new GridFinishedFuture<>(true);
     }
