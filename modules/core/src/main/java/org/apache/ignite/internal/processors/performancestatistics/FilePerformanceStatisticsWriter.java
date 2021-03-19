@@ -191,11 +191,6 @@ public class FilePerformanceStatisticsWriter {
         started = false;
     }
 
-    /** @return Performance statistics file. */
-    File file() {
-        return file;
-    }
-
     /**
      * @param cacheId Cache id.
      * @param name Cache name.
@@ -315,6 +310,11 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(duration);
             buf.put(timedOut ? (byte)1 : 0);
         });
+    }
+
+    /** @return Performance statistics file. */
+    File file() {
+        return file;
     }
 
     /**
