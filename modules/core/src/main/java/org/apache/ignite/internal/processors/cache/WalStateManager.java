@@ -215,11 +215,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         if (F.eq(enabled, msg.enable()))
                             res = new WalStateResult(msg, false);
-                        else {
+                        else
                             res = new WalStateResult(msg, true);
-
-                            grpDesc.walEnabled(!enabled);
-                        }
 
                         initialRess.add(res);
 
@@ -796,6 +793,22 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 assert F.eq(oldProposeMsg.operationId(), msg.operationId());
 
                 grpDesc.removeWalChangeRequest();
+
+                CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
+
+                Iterator<WalStateResult> iter = initialRess.iterator();
+
+                while (iter.hasNext()) {
+                    WalStateResult initRes = iter.next();
+                    WalStateProposeMessage initPropMsg = initRes.message();
+
+                    if (initPropMsg.operationId().equals(msg.operationId())) {
+                        if (initRes.changed())
+                            grpCtx.globalWalEnabled(initPropMsg.enable());
+
+                        iter.remove();
+                    }
+                }
 
                 // Move next message to exchange thread.
                 WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
