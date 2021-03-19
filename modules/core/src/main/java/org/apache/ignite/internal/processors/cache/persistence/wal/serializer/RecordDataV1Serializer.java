@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -121,7 +122,9 @@ import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
@@ -406,7 +409,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case PARTITION_DESTROY:
                 return /*cacheId*/4 + /*partId*/4;
 
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)record;
 
                 return 4 + dataSize(dataRec);
@@ -667,12 +670,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_RECORD:
+            case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
 
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in));
+                    entries.add(readPlainDataEntry(in, type));
 
                 res = new DataRecord(entries, 0L);
 
@@ -680,12 +684,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case ENCRYPTED_DATA_RECORD:
             case ENCRYPTED_DATA_RECORD_V2:
+            case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
 
                 entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type == ENCRYPTED_DATA_RECORD_V2));
+                    entries.add(readEncryptedDataEntry(in, type));
 
                 res = new DataRecord(entries, 0L);
 
@@ -1352,6 +1357,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());
@@ -1956,6 +1962,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
+
+        if (!(entry instanceof MvccDataEntry))
+            buf.put(entry.primary() ? (byte)1 : 0);
     }
 
     /**
@@ -2002,13 +2011,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param in Input to read from.
-     * @param readKeyId If {@code true} encryption key identifier will be read from {@code in}.
+     * @param recordType Record type
      * @return Read entry.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, boolean readKeyId) throws IOException, IgniteCheckedException {
+    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, RecordType recordType) throws IOException, IgniteCheckedException {
         boolean needDecryption = in.readByte() == ENCRYPTED;
+
+        RecordType dataRecordType = recordType == ENCRYPTED_DATA_RECORD_V3 ? DATA_RECORD_V2 : DATA_RECORD;
 
         if (needDecryption) {
             if (encSpi == null) {
@@ -2017,22 +2028,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return new EncryptedDataEntry();
             }
 
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false, readKeyId);
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false,
+                recordType == ENCRYPTED_DATA_RECORD_V2 || recordType == ENCRYPTED_DATA_RECORD_V3);
 
             if (clData.get1() == null)
                 return null;
 
-            return readPlainDataEntry(clData.get1());
+            return readPlainDataEntry(clData.get1(), dataRecordType);
         }
 
-        return readPlainDataEntry(in);
+        return readPlainDataEntry(in, dataRecordType);
     }
 
     /**
      * @param in Input to read from.
      * @return Read entry.
      */
-    DataEntry readPlainDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readPlainDataEntry(ByteBufferBackedDataInput in, RecordType type) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();
@@ -2061,6 +2073,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
+        boolean primary = type == DATA_RECORD_V2 && in.readByte() == (byte)1;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2075,31 +2088,34 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(
-                    cacheId,
-                    key,
-                    val,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                primary
             );
         }
         else
             return new LazyDataEntry(
-                    cctx,
-                    cacheId,
-                    keyType,
-                    keyBytes,
-                    valType,
-                    valBytes,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr);
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                primary
+            );
     }
 
     /**
@@ -2113,10 +2129,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (needEncryption(rec))
             return ENCRYPTED_RECORD_V2;
 
-        if (rec.type() != DATA_RECORD)
+        if (rec.type() != DATA_RECORD && rec.type() != DATA_RECORD_V2)
             return rec.type();
 
-        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V2 : DATA_RECORD;
+        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V3 : rec.type();
     }
 
     /**
@@ -2235,7 +2251,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8;
+            /*part cnt*/8 +
+            /*primary*/(entry instanceof MvccDataEntry ? 0 : 1);
     }
 
     /**
@@ -2268,7 +2285,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0);
+            super(0, null, null, READ, null, null, 0, 0, 0, false);
         }
     }
 }

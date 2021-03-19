@@ -1569,7 +1569,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
+                logPtr = logTxUpdate(tx, val, expireTime, updateCntr0, topVer);
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1791,7 +1791,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, null, 0, updateCntr0);
+                logPtr = logTxUpdate(tx, null, 0, updateCntr0, topVer);
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -2148,7 +2148,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(updated, expireTime, ttl, ver, true);
 
-                logUpdate(op, updated, ver, expireTime, 0);
+                logUpdate(op, updated, ver, expireTime, 0, cctx.affinity().affinityTopologyVersion());
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -2180,7 +2180,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
 
-                logUpdate(op, null, ver, CU.EXPIRE_TIME_ETERNAL, 0);
+                logUpdate(op, null, ver, CU.EXPIRE_TIME_ETERNAL, 0, cctx.affinity().affinityTopologyVersion());
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -3495,7 +3495,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             ver,
                             expireTime,
                             partition(),
-                            updateCntr
+                            updateCntr,
+                            cctx.affinity().primaryByPartition(cctx.localNode(), partition(), topVer)
                         )));
                     }
                 }
@@ -4323,9 +4324,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param writeVer Write version.
      * @param expireTime Expire time.
      * @param updCntr Update counter.
+     * @param topVer Topology version.
      */
-    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime, long updCntr)
-        throws IgniteCheckedException {
+    protected void logUpdate(
+        GridCacheOperation op,
+        CacheObject val,
+        GridCacheVersion writeVer,
+        long expireTime,
+        long updCntr,
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
 
@@ -4340,7 +4348,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     writeVer,
                     expireTime,
                     partition(),
-                    updCntr)));
+                    updCntr,
+                    cctx.affinity().primaryByPartition(cctx.localNode(), partition(), topVer))));
         }
         catch (StorageException e) {
             throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
@@ -4353,10 +4362,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param val Value.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
+     * @param topVer Topology version.
      * @throws IgniteCheckedException In case of log failure.
      */
-    protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
-        throws IgniteCheckedException {
+    protected WALPointer logTxUpdate(
+        IgniteInternalTx tx,
+        CacheObject val,
+        long expireTime,
+        long updCntr,
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         assert cctx.transactional() && !cctx.transactionalSnapshot();
 
         if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
@@ -4375,7 +4390,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 tx.writeVersion(),
                 expireTime,
                 key.partition(),
-                updCntr)));
+                updCntr,
+                cctx.affinity().primaryByPartition(cctx.localNode(), partition(), topVer))));
         }
         else
             return null;
@@ -6484,7 +6500,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
+            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, topVer);
 
             if (!entry.isNear()) {
                 newRow = entry.localPartition().dataStore().createRow(
@@ -6571,7 +6587,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, null, newVer, 0, updateCntr0);
+            entry.logUpdate(op, null, newVer, 0, updateCntr0, topVer);
 
             if (oldVal != null) {
                 assert !entry.deletedUnlocked();

@@ -354,7 +354,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
-        if (processor != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
+        if (processor != null && (rec.type() == RecordType.DATA_RECORD
+            || rec.type() == RecordType.DATA_RECORD_V2
+            || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
@@ -498,7 +500,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionId(),
                 dataEntry.partitionCounter(),
                 coCtx,
-                keepBinary);
+                keepBinary,
+                dataEntry.primary());
     }
 
     /** {@inheritDoc} */
