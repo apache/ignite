@@ -578,10 +578,9 @@ public class ClusterCachesInfo {
     /**
      * @param batch Cache change request.
      * @param topVer Topology version.
-     * @param topSnapshot Topology snapshot.
      * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer, Collection<ClusterNode> topSnapshot) {
+    public boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (!state.active() || state.transition()) {
@@ -601,12 +600,14 @@ public class ClusterCachesInfo {
         }
 
         if (!F.isEmpty(batch.topologyNodes())) {
-            Set<UUID> srvNodeIds =
-                new HashSet<>(F.viewReadOnly(topSnapshot, ClusterNode::id, n -> !n.isClient() && !n.isDaemon()));
+            for (UUID nodeId : batch.topologyNodes()) {
+                ClusterNode node = ctx.discovery().node(nodeId);
 
-            if (!srvNodeIds.containsAll(batch.topologyNodes()) || !ctx.discovery().aliveAll(batch.topologyNodes())) {
+                if (node != null && CU.baselineNode(node, state) && ctx.discovery().alive(node))
+                    continue;
+
                 ClusterTopologyCheckedException err =
-                    new ClusterTopologyCheckedException("Server node(s) has left the cluster.");
+                    new ClusterTopologyCheckedException("Required node has left the cluster [nodeId=" + nodeId + ']');
 
                 for (DynamicCacheChangeRequest req : batch.requests())
                     ctx.cache().completeCacheStartFuture(req, false, err);
@@ -628,7 +629,7 @@ public class ClusterCachesInfo {
             batch.exchangeActions(exchangeActions);
 
             if (!F.isEmpty(batch.topologyNodes()))
-                exchangeActions.checkCacheStartTopology(true);
+                exchangeActions.cacheStartTopologySnapshot(batch.topologyNodes());
         }
 
         return res.needExchange;

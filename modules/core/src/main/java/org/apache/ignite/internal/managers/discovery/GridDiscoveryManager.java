@@ -638,8 +638,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         incMinorTopVer = ctx.cache().onCustomEvent(
                             customMsg,
                             new AffinityTopologyVersion(topVer, minorTopVer),
-                            node,
-                            notification.getTopSnapshot());
+                            node);
                     }
 
                     if (incMinorTopVer) {

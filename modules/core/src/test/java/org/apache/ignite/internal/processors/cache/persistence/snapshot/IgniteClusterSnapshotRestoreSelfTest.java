@@ -506,7 +506,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
                 log,
                 () -> fut.get(TIMEOUT),
                 ClusterTopologyCheckedException.class,
-                "Server node(s) has left the cluster"
+                "Required node has left the cluster"
             );
 
             ensureCacheDirEmpty(3, dfltCacheCfg.getName());

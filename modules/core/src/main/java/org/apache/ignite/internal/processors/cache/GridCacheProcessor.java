@@ -4251,10 +4251,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Customer message.
      * @param topVer Current topology version.
      * @param node Node sent message.
-     * @param topSnapshot Topology snapshot.
      * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node, Collection<ClusterNode> topSnapshot) {
+    public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node) {
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
             ctx.query().onDiscovery((SchemaAbstractDiscoveryMessage)msg);
 
@@ -4280,7 +4279,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (msg instanceof DynamicCacheChangeBatch) {
-            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer, topSnapshot);
+            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
             ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
 

@@ -197,8 +197,6 @@ public class SnapshotRestoreProcess {
                     return;
                 }
 
-                dataNodes.add(ctx.localNodeId());
-
                 snpMgr.runSnapshotVerfification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
@@ -319,7 +317,7 @@ public class SnapshotRestoreProcess {
 
         if (opCtx0 != null && opCtx0.nodes.contains(leftNodeId)) {
             opCtx0.err.compareAndSet(null, new ClusterTopologyCheckedException(OP_REJECT_MSG +
-                "Server node(s) has left the cluster [nodeId=" + leftNodeId + ']'));
+                "Required node has left the cluster [nodeId=" + leftNodeId + ']'));
         }
     }
 
@@ -366,8 +364,10 @@ public class SnapshotRestoreProcess {
             for (UUID nodeId : req.nodes()) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
-                if (node == null || !CU.baselineNode(node, state) || !ctx.discovery().alive(node))
-                    throw new IgniteCheckedException(OP_REJECT_MSG + "Server node(s) has left the cluster.");
+                if (node == null || !CU.baselineNode(node, state) || !ctx.discovery().alive(node)) {
+                    throw new IgniteCheckedException(
+                        OP_REJECT_MSG + "Required node has left the cluster [nodeId-" + nodeId + ']');
+                }
             }
 
             for (String grpName : req.groups())
@@ -678,7 +678,7 @@ public class SnapshotRestoreProcess {
             leftNodes.removeAll(respNodes);
 
             return new ClusterTopologyCheckedException(OP_REJECT_MSG +
-                "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
+                "Required node has left the cluster [nodeId=" + leftNodes + ']');
         }
 
         return null;

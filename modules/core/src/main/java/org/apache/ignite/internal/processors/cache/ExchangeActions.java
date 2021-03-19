@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -44,10 +45,10 @@ public class ExchangeActions {
     private Map<String, CacheActionData> cachesToStart;
 
     /**
-     * Topology check after cache start flag. If this flag is enabled and any of the server nodes is missing after
-     * starting the cache, the whole procedure fails and is rolled back.
+     * Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when starting
+     * the cache(s), the whole procedure is rolled back.
      */
-    private boolean checkCacheStartTop;
+    private Collection<UUID> cacheStartTopSnapshot;
 
     /** */
     private Map<String, CacheActionData> cachesToStop;
@@ -326,17 +327,19 @@ public class ExchangeActions {
     }
 
     /**
-     * @return Topology check after cache start flag.
+     * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
+     *      starting the cache(s), the whole procedure is rolled back.
      */
-    public boolean checkCacheStartTopology() {
-        return checkCacheStartTop;
+    public Collection<UUID> cacheStartTopologySnapshot() {
+        return cacheStartTopSnapshot == null ? Collections.emptyList() : cacheStartTopSnapshot;
     }
 
     /**
-     * @param checkCacheStartTop Topology check after cache start flag.
+     * @param cacheStartTopSnapshot Server nodes on which a successful start of the cache(s) is required, if any of
+     *                              these nodes fails when starting the cache(s), the whole procedure is rolled back.
      */
-    public void checkCacheStartTopology(boolean checkCacheStartTop) {
-        this.checkCacheStartTop = checkCacheStartTop;
+    public void cacheStartTopologySnapshot(Collection<UUID> cacheStartTopSnapshot) {
+        this.cacheStartTopSnapshot = new ArrayList<>(cacheStartTopSnapshot);
     }
 
     /**
