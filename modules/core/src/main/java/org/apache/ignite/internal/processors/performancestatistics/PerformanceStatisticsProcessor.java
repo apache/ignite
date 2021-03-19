@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -68,7 +67,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Rotate performance statistics future. */
-    private RotateFuture rotateFut;
+    private GridFutureAdapter<Serializable> rotateFut;
 
     /** Rotate performance statistics process. */
     private final DistributedProcess<Serializable, Serializable> rotateProc;
@@ -252,9 +251,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        rotateFut = new RotateFuture(UUID.randomUUID());
+        rotateFut = new GridFutureAdapter<>();
 
-        rotateProc.start(rotateFut.id(), null);
+        rotateProc.start(UUID.randomUUID(), null);
 
         return rotateFut;
     }
@@ -325,31 +324,24 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Rotate performance statistics writer. */
     private void rotateWriter() throws Exception {
-        try {
-            FilePerformanceStatisticsWriter oldWriter = null;
+        FilePerformanceStatisticsWriter oldWriter = null;
 
-            synchronized (mux) {
-                if (writer != null) {
-                    FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
+        synchronized (mux) {
+            if (writer != null) {
+                FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
 
-                    newWriter.start();
+                newWriter.start();
 
-                    oldWriter = writer;
+                oldWriter = writer;
 
-                    writer = newWriter;
+                writer = newWriter;
 
-                    oldWriter.stop();
-                }
+                oldWriter.stop();
             }
-
-            if (oldWriter != null)
-                log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
         }
-        catch (Exception e) {
-            log.error("Failed to rotate performance statistics writer.", e);
 
-            throw e;
-        }
+        if (oldWriter != null)
+            log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
     }
 
     /** Writes statistics through passed writer. */
@@ -364,26 +356,5 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
-    }
-
-    /** Rotate performance statistics future. */
-    protected static class RotateFuture extends GridFutureAdapter<Serializable> {
-        /** Request ID. */
-        private final UUID id;
-
-        /** @param id Request ID. */
-        RotateFuture(UUID id) {
-            this.id = id;
-        }
-
-        /** @return Request ID. */
-        public UUID id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RotateFuture.class, this);
-        }
     }
 }
