@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,8 +43,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -51,6 +50,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -847,6 +849,109 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(ImmutableIntList.of(2, 3), tblMap.get("MY_TBL_1").descriptor().distribution().getKeys());
         assertEquals(ImmutableIntList.of(3), tblMap.get("MY_TBL_2").descriptor().distribution().getKeys());
+    }
+
+    /**
+     * Verifies that table modification events are passed to a calcite schema modification listener.
+     */
+    @Test
+    public void testIgniteSchemaAwaresAlterTableCommand() {
+        String selectAllQry = "select * from test_tbl";
+
+        execute(client, "drop table if exists test_tbl");
+        execute(client, "create table test_tbl(id int primary key, val varchar)");
+
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        {
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL")));
+        }
+
+        {
+            execute(client, "alter table test_tbl add column new_col int");
+
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL", "NEW_COL")));
+        }
+
+        {
+            try {
+                execute(client, "alter table test_tbl add column new_col int");
+            }
+            catch (Exception ignored) {
+                // it's expected because column with such name already exists
+            }
+
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL", "NEW_COL")));
+        }
+
+        {
+            execute(client, "alter table test_tbl add column if not exists new_col int");
+
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL", "NEW_COL")));
+        }
+
+        {
+            execute(client, "alter table test_tbl drop column new_col");
+
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL")));
+        }
+
+        {
+            try {
+                execute(client, "alter table test_tbl drop column new_col");
+            }
+            catch (Exception ignored) {
+                // it's expected since the column was already removed
+            }
+
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL")));
+        }
+
+        {
+            execute(client, "alter table test_tbl drop column if exists new_col");
+
+            List<String> names = deriveColumnNamesFromCursor(
+                qryProc.query(null, "PUBLIC", selectAllQry).get(0)
+            );
+
+            assertThat(names, equalTo(F.asList("ID", "VAL")));
+        }
+    }
+
+    /** */
+    private static List<String> deriveColumnNamesFromCursor(FieldsQueryCursor cursor) {
+        List<String> names = new ArrayList<>(cursor.getColumnsCount());
+
+        assertNotNull(cursor.getAll());
+
+        for (int i = 0; i < cursor.getColumnsCount(); i++)
+            names.add(cursor.getFieldName(i));
+
+        return names;
     }
 
     /** for test purpose only. */
