@@ -20,6 +20,9 @@ from abc import abstractmethod
 
 
 class IgniteTestService:
+    """
+    Base class for Ignite's test services.
+    """
     @abstractmethod
     def kill(self):
         """
