@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -389,8 +390,36 @@ public class SnapshotRestoreProcess {
                     ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
             }
 
-            return restoreAsync(opCtx0, ctx.localNodeId().equals(req.updateMetaNodeId()));
+            boolean updateMeta = ctx.localNodeId().equals(req.updateMetaNodeId());
+            Consumer<Exception> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
+            BooleanSupplier stopChecker = () -> {
+                if (opCtx.err.get() != null)
+                    return true;
 
+                if (Thread.currentThread().isInterrupted()) {
+                    errHnd.accept(new IgniteInterruptedCheckedException("Thread has been interrupted."));
+
+                    return true;
+                }
+
+                return false;
+            };
+
+            GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
+
+            restoreAsync(opCtx0.snpName, opCtx0.dirs, updateMeta, stopChecker, errHnd).thenAccept(res -> {
+                Throwable err = opCtx.err.get();
+
+                if (err != null) {
+                    log.error("Unable to restore cache group(s) from the snapshot " +
+                        "[requestID=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
+
+                    retFut.onDone(err);
+                } else
+                    retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
+            });
+
+            return retFut;
         } catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
             log.error("Unable to restore cache group(s) from the snapshot " +
                 "[requestID=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
@@ -402,49 +431,40 @@ public class SnapshotRestoreProcess {
     /**
      * Copy partition files and update binary metadata.
      *
-     * @param opCtx Snapshot restore operation context.
+     * @param snpName Snapshot name.
+     * @param dirs Cache directories to restore from the snapshot.
      * @param updateMeta Update binary metadata flag.
+     * @param stopChecker Prcoess interrupt checker.
+     * @param errHnd Error handler.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteInternalFuture<ArrayList<StoredCacheData>> restoreAsync(
-        SnapshotRestoreContext opCtx,
-        boolean updateMeta
+    private CompletableFuture<Void> restoreAsync(
+        String snpName,
+        Collection<File> dirs,
+        boolean updateMeta,
+        BooleanSupplier stopChecker,
+        Consumer<Exception> errHnd
     ) throws IgniteCheckedException {
         IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
         String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
 
-        BooleanSupplier stopChecker = () -> {
-            if (opCtx.err.get() != null)
-                return true;
-
-            if (Thread.currentThread().isInterrupted()) {
-                opCtx.err.compareAndSet(null, new IgniteInterruptedCheckedException("Thread has been interrupted."));
-
-                return true;
-            }
-
-            return false;
-        };
-
-        GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
-
         List<CompletableFuture<Void>> futs = new ArrayList<>();
 
         if (updateMeta) {
-            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(opCtx.snpName).getAbsolutePath(), pdsFolderName);
+            File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(), pdsFolderName);
 
             futs.add(CompletableFuture.runAsync(() -> {
                 try {
                     ctx.cacheObjects().updateMetadata(binDir, stopChecker);
                 }
                 catch (IgniteCheckedException e) {
-                    opCtx.err.compareAndSet(null, e);
+                    errHnd.accept(e);
                 }
             }, snapshotMgr.snapshotExecutorService()));
         }
 
-        for (File cacheDir : this.opCtx.dirs) {
-            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(this.opCtx.snpName),
+        for (File cacheDir : dirs) {
+            File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(snpName),
                 Paths.get(databaseRelativePath(pdsFolderName), cacheDir.getName()).toString());
 
             assert snpCacheDir.exists() : "node=" + ctx.localNodeId() + ", dir=" + snpCacheDir;
@@ -458,7 +478,7 @@ public class SnapshotRestoreProcess {
 
                     if (log.isDebugEnabled()) {
                         log.debug("Copying file from the snapshot " +
-                            "[snapshot=" + this.opCtx.snpName +
+                            "[snapshot=" + snpName +
                             ", src=" + snpFile +
                             ", target=" + target + "]");
                     }
@@ -467,25 +487,13 @@ public class SnapshotRestoreProcess {
                         Files.copy(snpFile.toPath(), target.toPath());
                     }
                     catch (IOException e) {
-                        opCtx.err.compareAndSet(null, e);
+                        errHnd.accept(e);
                     }
                 }, ctx.cache().context().snapshotMgr().snapshotExecutorService()));
             }
         }
 
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[0])).thenAccept(res -> {
-            Throwable err = opCtx.err.get();
-
-            if (err != null) {
-                log.error("Unable to restore cache group(s) from the snapshot " +
-                    "[requestID=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
-
-                retFut.onDone(err);
-            } else
-                retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
-        });
-
-        return retFut;
+        return CompletableFuture.allOf(futs.toArray(new CompletableFuture[0]));
     }
 
     /**
@@ -690,7 +698,7 @@ public class SnapshotRestoreProcess {
 
             leftNodes.removeAll(respNodes);
 
-            return new IgniteCheckedException(OP_REJECT_MSG +
+            return new ClusterTopologyCheckedException(OP_REJECT_MSG +
                 "Server node(s) has left the cluster [nodeId=" + leftNodes + ']');
         }
 

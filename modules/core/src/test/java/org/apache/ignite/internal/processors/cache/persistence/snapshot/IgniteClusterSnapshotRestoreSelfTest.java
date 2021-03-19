@@ -505,8 +505,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> fut.get(TIMEOUT),
-                IgniteException.class,
-                "Cache group restore operation was rejected. Server node(s) has left the cluster"
+                ClusterTopologyCheckedException.class,
+                "Server node(s) has left the cluster"
             );
 
             ensureCacheDirEmpty(3, dfltCacheCfg.getName());
