@@ -2011,15 +2011,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param in Input to read from.
-     * @param recordType Record type
+     * @param recType Record type.
      * @return Read entry.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, RecordType recordType) throws IOException, IgniteCheckedException {
+    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, RecordType recType) throws IOException, IgniteCheckedException {
         boolean needDecryption = in.readByte() == ENCRYPTED;
 
-        RecordType dataRecordType = recordType == ENCRYPTED_DATA_RECORD_V3 ? DATA_RECORD_V2 : DATA_RECORD;
+        RecordType dataRecordType = recType == ENCRYPTED_DATA_RECORD_V3 ? DATA_RECORD_V2 : DATA_RECORD;
 
         if (needDecryption) {
             if (encSpi == null) {
@@ -2029,7 +2029,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             }
 
             T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false,
-                recordType == ENCRYPTED_DATA_RECORD_V2 || recordType == ENCRYPTED_DATA_RECORD_V3);
+                recType == ENCRYPTED_DATA_RECORD_V2 || recType == ENCRYPTED_DATA_RECORD_V3);
 
             if (clData.get1() == null)
                 return null;
@@ -2088,33 +2088,33 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(
-                cacheId,
-                key,
-                val,
-                op,
-                nearXidVer,
-                writeVer,
-                expireTime,
-                partId,
-                partCntr,
-                primary
+                    cacheId,
+                    key,
+                    val,
+                    op,
+                    nearXidVer,
+                    writeVer,
+                    expireTime,
+                    partId,
+                    partCntr,
+                    primary
             );
         }
         else
             return new LazyDataEntry(
-                cctx,
-                cacheId,
-                keyType,
-                keyBytes,
-                valType,
-                valBytes,
-                op,
-                nearXidVer,
-                writeVer,
-                expireTime,
-                partId,
-                partCntr,
-                primary
+                    cctx,
+                    cacheId,
+                    keyType,
+                    keyBytes,
+                    valType,
+                    valBytes,
+                    op,
+                    nearXidVer,
+                    writeVer,
+                    expireTime,
+                    partId,
+                    partCntr,
+                    primary
             );
     }
 

@@ -61,7 +61,7 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
-    /** */
+    /** If {@code true} then change made on primary node. */
     @GridToStringInclude
     protected boolean primary;
 
