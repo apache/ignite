@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
@@ -36,14 +36,16 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
  */
-public class IgniteMapSortAggregate extends IgniteAggregate {
+public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements IgniteSortAggregateBase {
     /** Collation. */
     private final RelCollation collation;
 
@@ -67,7 +69,7 @@ public class IgniteMapSortAggregate extends IgniteAggregate {
 
     /** */
     public IgniteMapSortAggregate(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
+        super(TraitUtils.changeTraits(input, IgniteConvention.INSTANCE));
 
         collation = input.getCollation();
 
@@ -82,14 +84,15 @@ public class IgniteMapSortAggregate extends IgniteAggregate {
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls) {
-        return new IgniteMapSortAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls, collation);
+        return new IgniteMapSortAggregate(
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMapSortAggregate(
             cluster,
-            getTraitSet(),
+            getTraitSet().replace(collation),
             sole(inputs),
             getGroupSet(),
             getGroupSets(),

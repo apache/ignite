@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 
@@ -32,12 +32,18 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 
 /**
  *
  */
-public abstract class IgniteReduceAggregateBase extends SingleRel implements IgniteRel {
+public abstract class IgniteReduceAggregateBase extends SingleRel implements TraitsAwareIgniteRel {
     /** */
     protected final ImmutableBitSet groupSet;
 
@@ -102,17 +108,50 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
     }
 
     /** */
-    public ImmutableBitSet groupSet() {
+    public ImmutableBitSet getGroupSet() {
         return groupSet;
     }
 
     /** */
-    public List<ImmutableBitSet> groupSets() {
+    public List<ImmutableBitSet> getGroupSets() {
         return groupSets;
     }
 
     /** */
-    public List<AggregateCall> aggregateCalls() {
+    public List<AggregateCall> getAggregateCalls() {
         return aggCalls;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
+        return ImmutableList.of(
+            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), ImmutableList.of(inputTraits.get(0))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
+        RelTraitSet in = inputTraits.get(0);
+
+        return ImmutableList.of(
+            Pair.of(
+                nodeTraits.replace(IgniteDistributions.single()),
+                ImmutableList.of(in.replace(IgniteDistributions.single()))
+            )
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits
+    ) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
+            inTraits));
     }
 }

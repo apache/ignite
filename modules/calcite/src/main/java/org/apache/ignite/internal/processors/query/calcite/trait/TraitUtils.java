@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,7 +49,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -414,42 +411,6 @@ public class TraitUtils {
             .propagate(rel::deriveRewindability)
             .propagate(rel::deriveCorrelation)
             .nodes(rel::createNode);
-    }
-
-    /**
-     * Creates collations list with all permutation of specified keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    public static List<RelCollation> permute(List<Integer> keys) {
-        keys = new ArrayList<>(keys);
-
-        List<RelCollation> res = new ArrayList<>();
-
-        int[] indexes = new int[keys.size()];
-        Arrays.fill(indexes, 0);
-
-        res.add(RelCollations.of(ImmutableIntList.copyOf(keys)));
-
-        int i = 0;
-
-        while (i < keys.size()) {
-            if (indexes[i] < i) {
-                Collections.swap(keys, i % 2 == 0 ? 0 : indexes[i], i);
-
-                res.add(RelCollations.of(ImmutableIntList.copyOf(keys)));
-
-                indexes[i]++;
-                i = 0;
-            }
-            else {
-                indexes[i] = 0;
-                i++;
-            }
-        }
-
-        return res;
     }
 
     /**

@@ -27,9 +27,9 @@ import org.apache.calcite.sql.fun.SqlCountAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -95,7 +95,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         Assert.assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
-            F.first(rdcAgg.aggregateCalls()).getAggregation(),
+            F.first(rdcAgg.getAggregateCalls()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
         Assert.assertThat(
@@ -132,7 +132,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         Assert.assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
-            F.first(rdcAgg.aggregateCalls()).getAggregation(),
+            F.first(rdcAgg.getAggregateCalls()).getAggregation(),
             IsInstanceOf.instanceOf(SqlCountAggFunction.class));
 
         Assert.assertThat(
