@@ -17,28 +17,21 @@
 
 package org.apache.ignite.configuration.internal.validation;
 
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.configuration.validation.FieldValidator;
+import javax.validation.constraints.Max;
+import org.apache.ignite.configuration.validation.ValidationContext;
+import org.apache.ignite.configuration.validation.ValidationIssue;
+import org.apache.ignite.configuration.validation.Validator;
 
 /**
  * Validate that field value is not greater than some maximum value.
- *
- * @param <C> Root configuration type.
  */
-public class MaxValidator<C extends DynamicConfiguration<?, ?, ?>> extends FieldValidator<Number, C> {
-    /** Maximum value. */
-    private final long maxValue;
-
-    /** Constructor. */
-    public MaxValidator(long maxValue, String message) {
-        super(message);
-        this.maxValue = maxValue;
-    }
-
+public class MaxValidator implements Validator<Max, Number> {
     /** {@inheritDoc} */
-    @Override public void validate(Number value, C newRoot, C oldRoot) throws ConfigurationValidationException {
-        if (value.longValue() > maxValue)
-            throw new ConfigurationValidationException(message);
+    @Override public void validate(Max annotation, ValidationContext<Number> ctx) {
+        if (ctx.getNewValue().longValue() > annotation.value()) {
+            ctx.addIssue(new ValidationIssue(
+                "Configuration value '" + ctx.currentKey() + "' must not be greater than " + annotation.value()
+            ));
+        }
     }
 }

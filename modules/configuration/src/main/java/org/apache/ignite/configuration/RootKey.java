@@ -21,7 +21,7 @@ import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
-public abstract class RootKey<T extends ConfigurationTree<?, ?>> {
+public abstract class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
     /** */
     public abstract String key();
 

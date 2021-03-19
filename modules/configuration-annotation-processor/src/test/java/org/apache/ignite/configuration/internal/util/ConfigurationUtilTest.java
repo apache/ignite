@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.internal.util.impl.ParentNode;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonMap;

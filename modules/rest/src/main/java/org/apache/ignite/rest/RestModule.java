@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.util.Collections;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.rest.configuration.RestConfigurationImpl;
+import org.apache.ignite.rest.configuration.RestConfiguration;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.apache.ignite.rest.presentation.FormatConverter;
 import org.apache.ignite.rest.presentation.json.JsonConverter;
@@ -128,8 +128,8 @@ public class RestModule {
 
     /** */
     private Javalin startRestEndpoint() {
-        Integer port = sysConf.getConfiguration(RestConfigurationImpl.KEY).port().value();
-        Integer portRange = sysConf.getConfiguration(RestConfigurationImpl.KEY).portRange().value();
+        Integer port = sysConf.getConfiguration(RestConfiguration.KEY).port().value();
+        Integer portRange = sysConf.getConfiguration(RestConfiguration.KEY).portRange().value();
 
         Javalin app = null;
 

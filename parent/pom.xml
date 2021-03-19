@@ -71,7 +71,7 @@
         <mockito.junit.jupiter.version>3.3.3</mockito.junit.jupiter.version>
         <picocli.version>4.5.2</picocli.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <spoon.framework.version>8.3.0</spoon.framework.version>
+        <spoon.framework.version>8.4.0-beta-18</spoon.framework.version>
         <typesafe.version>1.4.1</typesafe.version>
         <hamcrest.version>2.2</hamcrest.version>
         <scalecube.version>2.6.6</scalecube.version>

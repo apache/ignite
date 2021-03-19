@@ -146,7 +146,7 @@ public class Utils {
     /** */
     public static ClassName getNodeName(ClassName schemaClassName) {
         return ClassName.get(
-            schemaClassName.packageName() + ".impl",
+            schemaClassName.packageName(),
             schemaClassName.simpleName().replace("ConfigurationSchema", "Node")
         );
     }

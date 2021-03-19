@@ -17,8 +17,8 @@
 
 package org.apache.ignite.rest.presentation.json;
 
+import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.ignite.configuration.Configurator;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
@@ -38,10 +38,11 @@ public class JsonPresentation implements ConfigurationPresentation<String> {
 
     /** {@inheritDoc} */
     @Override public String represent() {
-        Map<String, ?> preparedMap = configsMap.entrySet().stream().collect(Collectors.toMap(
-            e -> e.getKey(),
-            e -> e.getValue().getRoot().value()
-        ));
+        Map<String, ?> preparedMap = Collections.emptyMap();
+//        configsMap.entrySet().stream().collect(Collectors.toMap(
+//            e -> e.getKey(),
+//            e -> e.getValue().getRoot().value()
+//        ));
 
         return converter.convertTo(preparedMap);
     }

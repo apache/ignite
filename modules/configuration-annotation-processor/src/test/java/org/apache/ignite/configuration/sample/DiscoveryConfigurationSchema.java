@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.annotation.Value;
 @Config
 public class DiscoveryConfigurationSchema {
     /** Node failure detection timeout. */
-    @Value
-    public int failureDetectionTimeout;
+    @Value(hasDefault = true)
+    public int failureDetectionTimeout = 10_000;
 
     /** Node join timeout. */
-    @Value
-    public int joinTimeout;
+    @Value(hasDefault = true)
+    public int joinTimeout = 5_000;
 }

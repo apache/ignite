@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 import java.util.stream.Collectors;
-import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.internal.SuperRoot;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
@@ -282,96 +282,49 @@ public class ConfigurationUtil {
      * @return Map of changes.
      */
     public static Map<String, Serializable> nodeToFlatMap(
-        RootKey<?> rootKey,
-        TraversableTreeNode curRoot,
-        TraversableTreeNode updates
+        SuperRoot curRoots,
+        SuperRoot updates
     ) {
-        return updates.accept(rootKey.key(), new ConfigurationVisitor<>() {
-            /** Resulting flat map. */
-            private Map<String, Serializable> values = new HashMap<>();
+        Map<String, Serializable> values = new HashMap<>();
 
-            /** Current key, aggregated by visitor. */
-            private StringBuilder currentKey = new StringBuilder();
-
-            /** Current keys list, almost the same as {@link #currentKey}. */
-            private List<String> currentPath = new ArrayList<>();
-
+        updates.traverseChildren(new KeysTrackingConfigurationVisitor<>() {
             /** Write nulls instead of actual values. Makes sense for deletions from named lists. */
             private boolean writeNulls;
 
             /** {@inheritDoc} */
-            @Override public Map<String, Serializable> visitLeafNode(String key, Serializable val) {
+            @Override public Map<String, Serializable> doVisitLeafNode(String key, Serializable val) {
                 if (val != null)
-                    values.put(currentKey.toString() + key, writeNulls ? null : val);
+                    values.put(currentKey(), writeNulls ? null : val);
 
                 return values;
             }
 
             /** {@inheritDoc} */
-            @Override public Map<String, Serializable> visitInnerNode(String key, InnerNode node) {
+            @Override public Map<String, Serializable> doVisitInnerNode(String key, InnerNode node) {
                 if (node == null)
                     return null;
 
-                int previousKeyLength = startVisit(key, false);
-
                 node.traverseChildren(this);
-
-                endVisit(previousKeyLength);
 
                 return values;
             }
 
             /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Map<String, Serializable> visitNamedListNode(String key, NamedListNode<N> node) {
-                int previousKeyLength = startVisit(key, false);
-
+            @Override public <N extends InnerNode> Map<String, Serializable> doVisitNamedListNode(String key, NamedListNode<N> node) {
                 for (String namedListKey : node.namedListKeys()) {
-                    int loopPreviousKeyLength = startVisit(namedListKey, true);
-
                     N namedElement = node.get(namedListKey);
 
-                    if (namedElement == null)
-                        visitDeletedNamedListElement();
-                    else
-                        namedElement.traverseChildren(this);
+                    withTracking(namedListKey, true, false, () -> {
+                        if (namedElement == null)
+                            visitDeletedNamedListElement();
+                        else
+                            namedElement.traverseChildren(this);
 
-                    endVisit(loopPreviousKeyLength);
+                        return null;
+                    });
                 }
 
-                endVisit(previousKeyLength);
-
                 return values;
-            }
-
-            /**
-             * Prepares values of {@link #currentKey} and {@link #currentPath} for further processing.
-             *
-             * @param key Key.
-             * @param escape Whether we need to escape the key before appending it to {@link #currentKey}.
-             * @return Previous length of {@link #currentKey} so it can be passed to {@link #endVisit(int)} later.
-             */
-            private int startVisit(String key, boolean escape) {
-                int previousKeyLength = currentKey.length();
-
-                currentKey.append(escape ? ConfigurationUtil.escape(key) : key).append('.');
-
-                if (!writeNulls)
-                    currentPath.add(key);
-
-                return previousKeyLength;
-            }
-
-            /**
-             * Puts {@link #currentKey} and {@link #currentPath} in the same state as they were before
-             * {@link #startVisit(String, boolean)}.
-             *
-             * @param previousKeyLength Value return by corresponding {@link #startVisit(String, boolean)} invocation.
-             */
-            private void endVisit(int previousKeyLength) {
-                currentKey.setLength(previousKeyLength);
-
-                if (!writeNulls)
-                    currentPath.remove(currentPath.size() - 1);
             }
 
             /**
@@ -384,11 +337,13 @@ public class ConfigurationUtil {
 
                 Object originalNamedElement = null;
 
+                List<String> currentPath = currentPath();
+
                 try {
                     // This code can in fact be better optimized for deletion scenario,
                     // but there's no point in doing that, since the operation is so rare and it will
                     // complicate code even more.
-                    originalNamedElement = find(currentPath.subList(1, currentPath.size()), curRoot);
+                    originalNamedElement = find(currentPath, curRoots);
                 }
                 catch (KeyNotFoundException ignore) {
                     // May happen, not a big deal. This means that element never existed in the first place.
@@ -405,6 +360,8 @@ public class ConfigurationUtil {
                 }
             }
         });
+
+        return values;
     }
 
     /**
@@ -456,7 +413,94 @@ public class ConfigurationUtil {
         return copy;
     }
 
-    /** */
+    /**
+     * Fill {@code dst} node with default values, required to complete {@code src} node.
+     * These two objects can be the same, this would mean that all {@code null} values of {@code scr} will be
+     * replaced with defaults if it's possible.
+     *
+     * @param src Source node.
+     * @param dst Destination node.
+     */
+    public static void addDefaults(InnerNode src, InnerNode dst) {
+        assert src.getClass() == dst.getClass();
+
+        src.traverseChildren(new ConfigurationVisitor<>() {
+            @Override public Object visitLeafNode(String key, Serializable val) {
+                // If source value is null then inititalise the same value on the destination node.
+                if (val == null)
+                    dst.constructDefault(key);
+
+                return null;
+            }
+
+            @Override public Object visitInnerNode(String key, InnerNode srcNode) {
+                // Instantiate field in destination node before doing something else.
+                // Not a big deal if it wasn't null.
+                dst.construct(key, new ConfigurationSource() {});
+
+                // Get that inner node from destination to continue the processing.
+                InnerNode dstNode = dst.traverseChild(key, innerNodeVisitor());
+
+                // "dstNode" is guaranteed to not be null even if "src" and "dst" match.
+                // Null in "srcNode" means that we should initialize everything that we can in "dstNode"
+                // unconditionally. It's only possible if we pass it as a source as well.
+                addDefaults(srcNode == null ? dstNode : srcNode, dstNode);
+
+                return null;
+            }
+
+            @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> srcNamedList) {
+                // Here we don't need to preemptively initialise corresponsing field, because it can never be null.
+                NamedListNode<?> dstNamedList = dst.traverseChild(key, namedListNodeVisitor());
+
+                for (String namedListKey : srcNamedList.namedListKeys()) {
+                    // But, in order to get non-null value from "dstNamedList.get(namedListKey)" we must explicitly
+                    // ensure its existance.
+                    dstNamedList.construct(namedListKey, new ConfigurationSource() {});
+
+                    addDefaults(srcNamedList.get(namedListKey), dstNamedList.get(namedListKey));
+                }
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * @return Visitor that returns leaf value or {@code null} if node is not a leaf.
+     */
+    public static ConfigurationVisitor<Serializable> leafNodeVisitor() {
+        return new ConfigurationVisitor<>() {
+            @Override public Serializable visitLeafNode(String key, Serializable val) {
+                return val;
+            }
+        };
+    }
+
+    /**
+     * @return Visitor that returns inner node or {@code null} if node is not an inner node.
+     */
+    public static ConfigurationVisitor<InnerNode> innerNodeVisitor() {
+        return new ConfigurationVisitor<>() {
+            @Override public InnerNode visitInnerNode(String key, InnerNode node) {
+                return node;
+            }
+        };
+    }
+
+    /**
+     * @return Visitor that returns named list node or {@code null} if node is not a named list node.
+     */
+    public static ConfigurationVisitor<NamedListNode<?>> namedListNodeVisitor() {
+        return new ConfigurationVisitor<>() {
+            @Override
+            public <N extends InnerNode> NamedListNode<?> visitNamedListNode(String key, NamedListNode<N> node) {
+                return node;
+            }
+        };
+    }
+
+    /** @see #patch(ConstructableTreeNode, TraversableTreeNode) */
     private static class PatchLeafConfigurationSource implements ConfigurationSource {
         /** */
         private final Serializable val;
@@ -481,7 +525,7 @@ public class ConfigurationUtil {
         }
     }
 
-    /** */
+    /** @see #patch(ConstructableTreeNode, TraversableTreeNode) */
     private static class PatchInnerConfigurationSource implements ConfigurationSource {
         /** */
         private final InnerNode srcNode;
@@ -527,7 +571,7 @@ public class ConfigurationUtil {
         }
     }
 
-    /** */
+    /** @see #patch(ConstructableTreeNode, TraversableTreeNode) */
     private static class PatchNamedListConfigurationSource implements ConfigurationSource {
         /** */
         private final NamedListNode<?> srcNode;

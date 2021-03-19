@@ -39,8 +39,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Filer;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
@@ -66,7 +64,6 @@ import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.configuration.internal.DynamicProperty;
 import org.apache.ignite.configuration.internal.NamedListConfiguration;
-import org.apache.ignite.configuration.processor.internal.validation.ValidationGenerator;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
@@ -95,20 +92,10 @@ public class Processor extends AbstractProcessor {
     /** Inherit doc javadoc. */
     private static final String INHERIT_DOC = "{@inheritDoc}";
 
-    /** Class file writer. */
-    private Filer filer;
-
     /**
      * Constructor.
      */
     public Processor() {
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
-
-        filer = processingEnv.getFiler();
     }
 
     /** {@inheritDoc} */
@@ -167,7 +154,7 @@ public class Processor extends AbstractProcessor {
 
             TypeSpec.Builder configurationClassBuilder = TypeSpec.classBuilder(configClass)
                 .addSuperinterface(configInterface)
-                .addModifiers(PUBLIC, FINAL);
+                .addModifiers(FINAL);
 
             TypeSpec.Builder configurationInterfaceBuilder = TypeSpec.interfaceBuilder(configInterface)
                 .addModifiers(PUBLIC);
@@ -258,12 +245,10 @@ public class Processor extends AbstractProcessor {
 
                     configurationClassBuilder.addField(generatedField);
 
-                    final CodeBlock validatorsBlock = ValidationGenerator.generateValidators(field);
-
                     // Constructor statement
                     constructorBodyBuilder.addStatement(
-                        "add($L = new $T(keys, $S, rootKey, changer), $L)",
-                        fieldName, fieldType, fieldName, validatorsBlock
+                        "add($L = new $T(keys, $S, rootKey, changer))",
+                        fieldName, fieldType, fieldName
                     );
                 }
 
@@ -281,6 +266,12 @@ public class Processor extends AbstractProcessor {
                 TypeMirror storageType = null;
 
                 try {
+                    //  From JavaDocs: The annotation returned by this method could contain an element whose value is of type Class.
+                    //  This value cannot be returned directly: information necessary to locate and load a class
+                    //  (such as the class loader to use) is not available, and the class might not be loadable at all.
+                    //  Attempting to read a Class object by invoking the relevant method on the returned annotation will
+                    //  result in a MirroredTypeException, from which the corresponding TypeMirror may be extracted.
+                    //  Similarly, attempting to read a Class[]-valued element will result in a MirroredTypesException.
                     rootAnnotation.storage();
                 }
                 catch (MirroredTypesException e) {
@@ -291,7 +282,7 @@ public class Processor extends AbstractProcessor {
             }
 
             // Create constructors for configuration class
-            createConstructors(configurationClassBuilder, constructorBodyBuilder);
+            createConstructors(isRoot, configName, configurationClassBuilder, constructorBodyBuilder);
 
             // Write configuration interface
             buildClass(packageName, configurationInterfaceBuilder.build());
@@ -303,22 +294,23 @@ public class Processor extends AbstractProcessor {
     }
 
     /** */
-    private void createRootKeyField(ClassName configInterface,
+    private void createRootKeyField(
+        ClassName configInterface,
         TypeSpec.Builder configurationClassBuilder,
         ConfigurationDescription configDesc,
         TypeMirror storageType,
         ClassName schemaClassName
     ) {
-        ParameterizedTypeName fieldTypeName = ParameterizedTypeName.get(ClassName.get(RootKey.class), configInterface);
+        ClassName viewClassName = Utils.getViewName(schemaClassName);
+        ParameterizedTypeName fieldTypeName = ParameterizedTypeName.get(ClassName.get(RootKey.class), configInterface, viewClassName);
 
         ClassName nodeClassName = Utils.getNodeName(schemaClassName);
 
-        FieldSpec keyField = FieldSpec.builder(
-            fieldTypeName, "KEY", PUBLIC, STATIC, FINAL)
+        FieldSpec keyField = FieldSpec.builder(fieldTypeName, "KEY", PUBLIC, STATIC, FINAL)
             .initializer(
-                "$T.newRootKey($S, $T.class, $T::new, (rootKey, changer) -> new $T($T.emptyList(), $S, rootKey, changer))",
+                "$T.newRootKey($S, $T.class, $T::new, $T::new)",
                 ConfigurationRegistry.class, configDesc.getName(), storageType, nodeClassName,
-                Utils.getConfigurationName(schemaClassName), Collections.class, configDesc.getName()
+                Utils.getConfigurationName(schemaClassName)
             )
             .build();
 
@@ -483,24 +475,38 @@ public class Processor extends AbstractProcessor {
     /**
      * Create configuration class constructors.
      *
-     * @param configuratorClassName Configurator (configuration wrapper) class name.
-     * @param copyConstructorBodyBuilder Copy constructor body.
+     * @param isRoot Flag that indincates whether current configuration is root or not.
+     * @param configName Name of the root if configuration is root, {@code null} otherwise.
      * @param configurationClassBuilder Configuration class builder.
      * @param constructorBodyBuilder Constructor body.
      */
     private void createConstructors(
+        boolean isRoot,
+        String configName,
         TypeSpec.Builder configurationClassBuilder,
         CodeBlock.Builder constructorBodyBuilder
     ) {
-        final MethodSpec constructorWithName = MethodSpec.constructorBuilder()
-            .addModifiers(PUBLIC)
-            .addParameter(ParameterizedTypeName.get(List.class, String.class), "prefix")
-            .addParameter(String.class, "key")
-            .addParameter(ParameterizedTypeName.get(ClassName.get(RootKey.class), WILDCARD), "rootKey")
-            .addParameter(ConfigurationChanger.class, "changer")
-            .addStatement("super(prefix, key, rootKey, changer)")
+        MethodSpec.Builder builder = MethodSpec.constructorBuilder().addModifiers(PUBLIC);
+
+        if (!isRoot) {
+            builder
+                .addParameter(ParameterizedTypeName.get(List.class, String.class), "prefix")
+                .addParameter(String.class, "key");
+        }
+
+        builder
+            .addParameter(ParameterizedTypeName.get(ClassName.get(RootKey.class), WILDCARD, WILDCARD), "rootKey")
+            .addParameter(ConfigurationChanger.class, "changer");
+
+        if (isRoot)
+            builder.addStatement("super($T.emptyList(), $S, rootKey, changer)", Collections.class, configName);
+        else
+            builder.addStatement("super(prefix, key, rootKey, changer)");
+
+        MethodSpec constructorWithName = builder
             .addCode(constructorBodyBuilder.build())
             .build();
+
         configurationClassBuilder.addMethod(constructorWithName);
     }
 
@@ -553,7 +559,7 @@ public class Processor extends AbstractProcessor {
             .addModifiers(PUBLIC);
 
         TypeSpec.Builder nodeClsBuilder = TypeSpec.classBuilder(nodeClsName)
-            .addModifiers(PUBLIC, FINAL)
+            .addModifiers(FINAL)
             .superclass(ClassName.get(InnerNode.class))
             .addSuperinterface(viewClsName)
             .addSuperinterface(changeClsName)
@@ -627,25 +633,13 @@ public class Processor extends AbstractProcessor {
 
             boolean namedListField = field.getAnnotation(NamedConfigValue.class) != null;
 
-            TypeName viewFieldType = leafField ? schemaFieldType : ClassName.get(
-                ((ClassName)schemaFieldType).packageName(),
-                ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "View")
-            );
+            TypeName viewFieldType = leafField ? schemaFieldType : Utils.getViewName((ClassName)schemaFieldType);
 
-            TypeName changeFieldType = leafField ? schemaFieldType : ClassName.get(
-                ((ClassName)schemaFieldType).packageName(),
-                ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "Change")
-            );
+            TypeName changeFieldType = leafField ? schemaFieldType : Utils.getChangeName((ClassName)schemaFieldType);
 
-            TypeName initFieldType = leafField ? schemaFieldType : ClassName.get(
-                ((ClassName)schemaFieldType).packageName(),
-                ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "Init")
-            );
+            TypeName initFieldType = leafField ? schemaFieldType : Utils.getInitName((ClassName)schemaFieldType);
 
-            TypeName nodeFieldType = leafField ? schemaFieldType.box() : ClassName.get(
-                ((ClassName)schemaFieldType).packageName() + (leafField ? "" : ".impl"),
-                ((ClassName)schemaFieldType).simpleName().replace("ConfigurationSchema", "Node")
-            );
+            TypeName nodeFieldType = leafField ? schemaFieldType.box() : Utils.getNodeName((ClassName)schemaFieldType);
 
             TypeName namedListParamType = nodeFieldType;
 
@@ -849,7 +843,7 @@ public class Processor extends AbstractProcessor {
 
                     if (valAnnotation.hasDefault()) {
                         constructDefaultBuilder
-                            .addStatement("case $S: $L = _spec.$L", fieldName, fieldName, fieldName)
+                            .addStatement("case $S: $L = _spec.$L" + (isArray ? ".clone()" : ""), fieldName, fieldName, fieldName)
                             .addStatement(INDENT + "return true");
                     }
                     else
@@ -927,7 +921,7 @@ public class Processor extends AbstractProcessor {
             JavaFile.builder(packageName, cls)
                 .indent(INDENT)
                 .build()
-                .writeTo(filer);
+                .writeTo(processingEnv.getFiler());
         }
         catch (IOException e) {
             throw new ProcessorException("Failed to generate class " + packageName + "." + cls.name, e);

@@ -16,5 +16,23 @@
  */
 package org.apache.ignite.configuration.validation;
 
+/** */
 public class ValidationIssue {
+    /** */
+    private String message;
+
+    /** */
+    public ValidationIssue(String message) {
+        this.message = message;
+    }
+
+    /** */
+    public String message() {
+        return message;
+    }
+
+    /** */
+    @Override public String toString() {
+        return "ValidationIssue [message=" + message + ']';
+    }
 }

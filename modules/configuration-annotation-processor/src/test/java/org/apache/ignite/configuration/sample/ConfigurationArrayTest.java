@@ -17,14 +17,12 @@
 
 package org.apache.ignite.configuration.sample;
 
-import java.io.Serializable;
 import java.util.function.Supplier;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.sample.impl.TestArrayNode;
-import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.junit.jupiter.api.Test;
 
+import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.leafNodeVisitor;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -95,11 +93,6 @@ public class ConfigurationArrayTest {
      * @return Array field value.
      */
     private String[] getArray(TestArrayNode arrayNode) {
-        return arrayNode.traverseChild("array", new ConfigurationVisitor<String[]>() {
-            /** {@inheritDoc} */
-            @Override public String[] visitLeafNode(String key, Serializable val) {
-                return (String[]) val;
-            }
-        });
+        return (String[])arrayNode.traverseChild("array", leafNodeVisitor());
     }
 }

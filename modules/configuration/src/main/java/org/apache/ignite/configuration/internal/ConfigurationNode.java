@@ -37,7 +37,7 @@ public abstract class ConfigurationNode<VIEW> {
     protected final String key;
 
     /** Root key instance for the current trees root. */
-    protected final RootKey<?> rootKey;
+    protected final RootKey<?, ?> rootKey;
 
     /** Configuration changer instance to get latest value of the root. */
     protected final ConfigurationChanger changer;
@@ -64,7 +64,7 @@ public abstract class ConfigurationNode<VIEW> {
      * @param rootKey Root key.
      * @param changer Configuration changer.
      */
-    protected ConfigurationNode(List<String> prefix, String key, RootKey<?> rootKey, ConfigurationChanger changer) {
+    protected ConfigurationNode(List<String> prefix, String key, RootKey<?, ?> rootKey, ConfigurationChanger changer) {
         this.keys = ConfigurationUtil.appendKey(prefix, key);
         this.key = key;
         this.rootKey = rootKey;
@@ -131,5 +131,7 @@ public abstract class ConfigurationNode<VIEW> {
      *
      * @param newValue New configuration value.
      */
-    protected abstract void beforeRefreshValue(VIEW newValue);
+    protected void beforeRefreshValue(VIEW newValue) {
+        // No-op.
+    }
 }

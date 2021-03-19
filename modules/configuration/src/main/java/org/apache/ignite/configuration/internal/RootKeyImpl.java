@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
-public class RootKeyImpl<T extends ConfigurationTree<?, ?>> extends RootKey<T> {
+public class RootKeyImpl<T extends ConfigurationTree<VIEW, ?>, VIEW> extends RootKey<T, VIEW> {
     /** */
     private final String rootName;
 
@@ -37,14 +37,14 @@ public class RootKeyImpl<T extends ConfigurationTree<?, ?>> extends RootKey<T> {
     private final Supplier<InnerNode> rootSupplier;
 
     /** */
-    private final BiFunction<RootKey<T>, ConfigurationChanger, T> publicRootCreator;
+    private final BiFunction<RootKey<T, VIEW>, ConfigurationChanger, T> publicRootCreator;
 
     /** */
     public RootKeyImpl(
         String rootName,
         Class<? extends ConfigurationStorage> storageType,
         Supplier<InnerNode> rootSupplier,
-        BiFunction<RootKey<T>, ConfigurationChanger, T> publicRootCreator
+        BiFunction<RootKey<T, VIEW>, ConfigurationChanger, T> publicRootCreator
     ) {
         this.rootName = rootName;
         this.storageType = storageType;

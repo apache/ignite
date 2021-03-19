@@ -19,9 +19,6 @@ package org.apache.ignite.configuration.sample;
 
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import org.apache.ignite.configuration.sample.impl.ChildNode;
-import org.apache.ignite.configuration.sample.impl.NamedElementNode;
-import org.apache.ignite.configuration.sample.impl.ParentNode;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.configuration.tree.NamedListNode;

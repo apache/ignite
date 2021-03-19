@@ -32,6 +32,8 @@ public class ConfigurationValidationException extends RuntimeException {
     }
 
     public ConfigurationValidationException(List<ValidationIssue> issues) {
+        super(issues.toString());
+
         this.issues = issues;
     }
 

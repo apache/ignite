@@ -19,10 +19,7 @@ package org.apache.ignite.configuration.sample;
 
 import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.Validate;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.sample.validation.AutoAdjustValidator;
-import org.apache.ignite.configuration.sample.validation.AutoAdjustValidator2;
 
 /**
  * Test auto adjust configuration schema.
@@ -30,13 +27,11 @@ import org.apache.ignite.configuration.sample.validation.AutoAdjustValidator2;
 @Config
 public class AutoAdjustConfigurationSchema {
     /** Timeout. */
-    @Value
+    @Value(hasDefault = true)
     @Min(value = 0, message = "Minimal is 0")
-    @Validate(value = AutoAdjustValidator.class, message = "a")
-    @Validate(value = AutoAdjustValidator2.class, message = "b")
-    public long timeout;
+    public long timeout = 0L;
 
     /** Enabled. */
-    @Value
-    public boolean enabled;
+    @Value(hasDefault = true)
+    public boolean enabled = true;
 }

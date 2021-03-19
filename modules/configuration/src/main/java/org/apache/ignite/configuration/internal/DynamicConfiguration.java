@@ -17,7 +17,6 @@
 
 package org.apache.ignite.configuration.internal;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +33,6 @@ import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.configuration.validation.FieldValidator;
 
 /**
  * This class represents configuration root or node.
@@ -54,7 +52,7 @@ public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends Configura
     protected DynamicConfiguration(
         List<String> prefix,
         String key,
-        RootKey<?> rootKey,
+        RootKey<?, ?> rootKey,
         ConfigurationChanger changer
     ) {
         super(prefix, key, rootKey, changer);
@@ -65,29 +63,22 @@ public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends Configura
      * @param member Configuration member (leaf or node).
      * @param <P> Type of member.
      */
-    protected <P extends ConfigurationProperty<?, ?>> void add(P member) {
+    protected final <P extends ConfigurationProperty<?, ?>> void add(P member) {
         members.put(member.key(), member);
     }
 
     /**
-     * Add new configuration member with validators.
+     * Add new configuration member.
+     *
      * @param member Configuration member (leaf or node).
-     * @param validators Validators for new member.
-     * @param <PROP> Type of {@link DynamicProperty}.
      * @param <M> Type of member.
      */
-    protected <PROP extends Serializable, M extends DynamicProperty<PROP>> void add(
-        M member,
-        List<FieldValidator<? super PROP, ? extends ConfigurationTree<?, ?>>> validators
-    ) {
+    protected final <M extends DynamicProperty<?>> void add(M member) {
         members.put(member.key(), member);
-
-        //TODO IGNITE-14183
-//        configurator.addValidations((Class<? extends ConfigurationTree<?, ?>>) getClass(), member.key(), validators);
     }
 
     /** {@inheritDoc} */
-    @Override public Future<Void> change(Consumer<CHANGE> change) throws ConfigurationValidationException {
+    @Override public final Future<Void> change(Consumer<CHANGE> change) throws ConfigurationValidationException {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
 
         InnerNode rootNodeChange = ((RootKeyImpl)rootKey).createRootNode();
@@ -127,12 +118,7 @@ public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends Configura
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ConfigurationProperty<?, ?>> members() {
+    @Override public final Map<String, ConfigurationProperty<?, ?>> members() {
         return Collections.unmodifiableMap(members);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeRefreshValue(VIEW newValue) {
-        // No-op.
     }
 }

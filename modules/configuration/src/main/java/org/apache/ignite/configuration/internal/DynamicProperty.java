@@ -51,7 +51,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     public DynamicProperty(
         List<String> prefix,
         String key,
-        RootKey<?> rootKey,
+        RootKey<?, ?> rootKey,
         ConfigurationChanger changer
     ) {
         super(prefix, key, rootKey, changer);
@@ -105,10 +105,5 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     /** {@inheritDoc} */
     @Override public String key() {
         return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeRefreshValue(T newValue) {
-        // No-op.
     }
 }

@@ -17,28 +17,21 @@
 
 package org.apache.ignite.configuration.internal.validation;
 
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.configuration.validation.FieldValidator;
+import javax.validation.constraints.Min;
+import org.apache.ignite.configuration.validation.ValidationContext;
+import org.apache.ignite.configuration.validation.ValidationIssue;
+import org.apache.ignite.configuration.validation.Validator;
 
 /**
  * Validate that field value is not less than some minimal value.
- *
- * @param <C> Root configuration type.
  */
-public class MinValidator<C extends DynamicConfiguration<?, ?, ?>> extends FieldValidator<Number, C> {
-    /** Minimal value. */
-    private final long minValue;
-
-    /** Constructor. */
-    public MinValidator(long minValue, String message) {
-        super(message);
-        this.minValue = minValue;
-    }
-
+public class MinValidator implements Validator<Min, Number> {
     /** {@inheritDoc} */
-    @Override public void validate(Number value, C newRoot, C oldRoot) throws ConfigurationValidationException {
-        if (value.longValue() < minValue)
-            throw new ConfigurationValidationException(message);
+    @Override public void validate(Min annotation, ValidationContext<Number> ctx) {
+        if (ctx.getNewValue().longValue() < annotation.value()) {
+            ctx.addIssue(new ValidationIssue(
+                "Configuration value '" + ctx.currentKey() + "' must not be less than " + annotation.value()
+            ));
+        }
     }
 }
