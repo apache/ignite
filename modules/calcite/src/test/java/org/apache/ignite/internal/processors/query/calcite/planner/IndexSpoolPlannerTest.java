@@ -25,7 +25,7 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -93,7 +93,7 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteIndexSpool.class));
+        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
 
         List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
 
@@ -168,7 +168,7 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteIndexSpool.class));
+        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
 
         List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
 
@@ -241,7 +241,7 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteIndexSpool.class));
+        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
 
         assertTrue(idxSpool.getInput() instanceof IgniteSort);
 

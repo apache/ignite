@@ -134,7 +134,7 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteIndexSpool rel);
+    T visit(IgniteSortedIndexSpool rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}

@@ -24,13 +24,13 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
@@ -39,9 +39,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
  * Relational operator that returns the sorted contents of a table
  * and allow to lookup rows by specified bounds.
  */
-public class IgniteIndexSpool extends Spool implements IgniteRel {
+public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** */
-    private final RelCollation collation;
+    private final ImmutableBitSet keys;
 
     /** Index condition. */
     private final IndexConditions idxCond;
@@ -50,11 +50,11 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     protected final RexNode condition;
 
     /** */
-    public IgniteIndexSpool(
+    public IgniteHashIndexSpool(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
-        RelCollation collation,
+        ImmutableBitSet keys,
         RexNode condition,
         IndexConditions idxCond
     ) {
@@ -65,7 +65,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
         this.idxCond = idxCond;
         this.condition = condition;
-        this.collation = collation;
+        this.keys = keys;
     }
 
     /**
@@ -73,11 +73,11 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
      *
      * @param input Serialized representation.
      */
-    public IgniteIndexSpool(RelInput input) {
+    public IgniteHashIndexSpool(RelInput input) {
         this(input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
-            input.getCollation(),
+            input.getBitSet("keys"),
             input.getExpression("condition"),
             new IndexConditions(input)
         );
@@ -90,12 +90,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexSpool(cluster, getTraitSet(), inputs.get(0), collation, condition, idxCond);
+        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), keys, condition, idxCond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteIndexSpool(getCluster(), traitSet, input, collation, condition, idxCond);
+        return new IgniteHashIndexSpool(getCluster(), traitSet, input, keys, condition, idxCond);
     }
 
     /** {@inheritDoc} */
@@ -108,7 +108,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         RelWriter writer = super.explainTerms(pw);
 
         writer.item("condition", condition);
-        writer.item("collation", collation);
+        writer.item("keys", keys);
 
         return idxCond.explainTerms(writer);
     }
@@ -121,7 +121,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         double cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
 
         if (idxCond.lowerCondition() != null)
-            cpuCost += Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
+            cpuCost += IgniteCost.ROW_COMPARISON_COST;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
@@ -139,8 +139,8 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     }
 
     /** */
-    @Override public RelCollation collation() {
-        return collation;
+    public ImmutableBitSet keys() {
+        return keys;
     }
 
     /** */
