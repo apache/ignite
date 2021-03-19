@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  *
  * Ignite node should be explicitly configured for using {@link IgniteCDC}.
  * <ol>
- *     <li>Set {@link DataStorageConfiguration#setCdcPath(String)} to true.</li>
+ *     <li>Set {@link DataStorageConfiguration#setCdcEnabled(boolean)} to true.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setCdcPath(String)} to path to the directory to store WAL setgments for CDC.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for force WAL rollover,
  *     so new events will be available for consumptions with the predicted time.</li>
