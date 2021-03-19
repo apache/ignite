@@ -93,6 +93,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     rotateFut.onDone(F.first(err.values()));
                 else
                     rotateFut.onDone();
+
+                rotateFut = null;
             });
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
@@ -250,6 +252,11 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
+
+        synchronized (mux) {
+            if (rotateFut != null)
+                throw new IgniteCheckedException("Rotation already in progress");
+        }
 
         rotateFut = new GridFutureAdapter<>();
 
