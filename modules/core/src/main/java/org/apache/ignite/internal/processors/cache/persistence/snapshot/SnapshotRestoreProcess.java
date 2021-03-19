@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -293,11 +294,11 @@ public class SnapshotRestoreProcess {
 
         if (err != null) {
             log.error("Failed to restore snapshot cache group" + (opCtx0 == null ? "" :
-                " [requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']'), err);
+                " [reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']'), err);
         }
         else if (log.isInfoEnabled()) {
             log.info("Successfully restored cache group(s) from the snapshot" + (opCtx0 == null ? "" :
-                " [requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']'));
+                " [reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']'));
         }
 
         GridFutureAdapter<Void> fut0 = fut;
@@ -386,7 +387,7 @@ public class SnapshotRestoreProcess {
             }
 
             if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot restore operation [requestID=" + req.requestId() +
+                log.info("Starting local snapshot restore operation [reqId=" + req.requestId() +
                     ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
             }
 
@@ -412,7 +413,7 @@ public class SnapshotRestoreProcess {
 
                 if (err != null) {
                     log.error("Unable to restore cache group(s) from the snapshot " +
-                        "[requestID=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
+                        "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
 
                     retFut.onDone(err);
                 } else
@@ -422,7 +423,7 @@ public class SnapshotRestoreProcess {
             return retFut;
         } catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
             log.error("Unable to restore cache group(s) from the snapshot " +
-                "[requestID=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
+                "[reqId=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
 
             return new GridFinishedFuture<>(e);
         }
@@ -493,7 +494,9 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        return CompletableFuture.allOf(futs.toArray(new CompletableFuture[0]));
+        int futsSize = futs.size();
+
+        return CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]));
     }
 
     /**
@@ -613,21 +616,24 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        assert opCtx0 != null : ctx.localNodeId();
-
-        if (!U.isLocalNodeCoordinator(ctx.discovery()))
-            return new GridFinishedFuture<>();
+        if (opCtx0 == null) {
+            return new GridFinishedFuture<>(new IgniteIllegalStateException("Context has not been created on server " +
+                "node during prepare operation [reqId=" + reqId + ", nodeId=" + ctx.localNodeId() + ']'));
+        }
 
         Throwable err = opCtx0.err.get();
 
         if (err != null)
             return new GridFinishedFuture<>(err);
 
+        if (!U.isLocalNodeCoordinator(ctx.discovery()))
+            return new GridFinishedFuture<>();
+
         Collection<StoredCacheData> ccfgs = opCtx0.cfgs.values();
 
         if (log.isInfoEnabled()) {
             log.info("Starting restored caches " +
-                "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName +
+                "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName +
                 ", caches=" + F.viewReadOnly(ccfgs, c -> c.config().getName()) + ']');
         }
 
@@ -645,10 +651,8 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        Exception failure = F.first(errs.values());
-
-        if (failure == null)
-            failure = checNodeLeft(opCtx0.nodes, res.keySet());
+        Exception failure = errs.values().stream().filter(Objects::nonNull).
+            findFirst().orElse(checNodeLeft(opCtx0.nodes, res.keySet()));
 
         if (failure == null) {
             finishProcess();
@@ -695,7 +699,7 @@ public class SnapshotRestoreProcess {
 
         if (log.isInfoEnabled()) {
             log.info("Performing local rollback routine for restored cache groups " +
-                "[requestID=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
+                "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
         }
 
         for (File cacheDir : opCtx0.dirs) {
@@ -728,7 +732,7 @@ public class SnapshotRestoreProcess {
             leftNodes.removeAll(res.keySet());
 
             log.warning("Some of the nodes left the cluster and were unable to complete the rollback" +
-                " operation [requestID=" + reqId + ", snapshot=" + opCtx0.snpName + ", node(s)=" + leftNodes + ']');
+                " operation [reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", node(s)=" + leftNodes + ']');
         }
 
         finishProcess(opCtx0.err.get());
