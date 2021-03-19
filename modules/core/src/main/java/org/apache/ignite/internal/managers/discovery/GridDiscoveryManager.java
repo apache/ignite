@@ -428,7 +428,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         }
 
-        return res == null ? Collections.<String, Map<UUID,Boolean>>emptyMap() : res;
+        return res == null ? Collections.<String, Map<UUID, Boolean>>emptyMap() : res;
     }
 
     /**

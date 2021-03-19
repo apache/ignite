@@ -63,7 +63,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -95,7 +95,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * @param collocated Colocated.
      * @return Result.
      */
-    private static List<List<?>> query(IgniteCache<AffinityUuid,Purchase> c, boolean collocated) {
+    private static List<List<?>> query(IgniteCache<AffinityUuid, Purchase> c, boolean collocated) {
         return c.query(new SqlFieldsQuery(QRY).setArgs(30, 5).setCollocated(collocated)).getAll();
     }
 
@@ -104,7 +104,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testColocatedQueryRight() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<AffinityUuid, Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 
@@ -132,7 +132,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testColocatedQueryWrong() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<AffinityUuid, Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 

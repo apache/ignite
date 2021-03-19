@@ -1786,7 +1786,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     void prepareStartCaches(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
         prepareStartCaches(startCacheInfos, (data, operation) -> {
-            operation.apply(data);// PROXY
+            operation.apply(data); // PROXY
         });
     }
 

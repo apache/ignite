@@ -303,7 +303,7 @@ public class QueryEntity implements Serializable {
                 queryFieldsToAdd.add(new QueryField(
                     targetFieldName,
                     targetFieldType,
-                    !contains(target.getNotNullFields(),targetFieldName),
+                    !contains(target.getNotNullFields(), targetFieldName),
                     getFromMap(target.getDefaultFieldValues(), targetFieldName),
                     precision == null ? -1 : precision,
                     scale == null ? -1 : scale
