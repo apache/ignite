@@ -37,11 +37,9 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -184,8 +182,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             finish.apply(p.id,msg.result(), msg.error());
 
-            p.finishFut.onDone(new T2<>(msg.result(), msg.error()));
-
             processes.remove(msg.processId());
         });
 
@@ -246,20 +242,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      *
      * @param id Process id.
      * @param req Initial request.
-     * @return Future on the result of the finished process.
      */
-    public IgniteInternalFuture<T2<Map<UUID, R>, Map<UUID, Exception>>> start(UUID id, @Nullable I req) {
+    public void start(UUID id, I req) {
         try {
             ctx.discovery().sendCustomEvent(initMsgFactory.apply(id, req));
-
-            Process p = processes.computeIfAbsent(id, Process::new);
-
-            return p.finishFut;
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to start process.", e);
-
-            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -403,9 +392,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         /** Nodes results. */
         private final ConcurrentHashMap<UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();
-
-        /** Future to get results of finished process on the initiator node. */
-        private final GridFutureAdapter<T2<Map<UUID, R>, Map<UUID, Exception>>> finishFut = new GridFutureAdapter<>();
 
         /** @param id Process id. */
         private Process(UUID id) {

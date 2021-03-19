@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,11 +35,11 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -69,6 +67,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
+    /** Rotate performance statistics future. */
+    private RotateFuture rotateFut;
+
     /** Rotate performance statistics process. */
     private final DistributedProcess<Serializable, Serializable> rotateProc;
 
@@ -88,7 +89,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
                 return null;
             }),
-            (id, res, err) -> {});
+            (id, res, err) -> {
+                if (!err.isEmpty())
+                    rotateFut.onDone(F.first(err.values()));
+                else
+                    rotateFut.onDone();
+            });
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
@@ -239,26 +245,18 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If rotation failed.
      */
-    public IgniteInternalFuture<?> rotateCollectStatistics() throws IgniteCheckedException {
+    public IgniteInternalFuture<Serializable> rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        return rotateProc.start(UUID.randomUUID(), null).chain(
-            new CX1<IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>>, Void>() {
-                @Override public Void applyx(
-                    IgniteInternalFuture<T2<Map<UUID, Serializable>, Map<UUID, Exception>>> fut)
-                    throws IgniteCheckedException {
-                    Map<UUID, Exception> err = fut.get().get2();
+        rotateFut = new RotateFuture(UUID.randomUUID());
 
-                    if (!err.isEmpty())
-                        throw new IgniteCheckedException(F.first(err.values()));
+        rotateProc.start(rotateFut.id(), null);
 
-                    return null;
-                }
-        });
+        return rotateFut;
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -326,7 +324,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** Rotate performance statistics writer. */
-    private void rotateWriter() throws IgniteCheckedException, IOException {
+    private void rotateWriter() throws Exception {
         try {
             FilePerformanceStatisticsWriter oldWriter = null;
 
@@ -347,7 +345,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             if (oldWriter != null)
                 log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
         }
-        catch (IgniteCheckedException | IOException e) {
+        catch (Exception e) {
             log.error("Failed to rotate performance statistics writer.", e);
 
             throw e;
@@ -366,5 +364,26 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
+    }
+
+    /** Rotate performance statistics future. */
+    protected static class RotateFuture extends GridFutureAdapter<Serializable> {
+        /** Request ID. */
+        private final UUID id;
+
+        /** @param id Request ID. */
+        RotateFuture(UUID id) {
+            this.id = id;
+        }
+
+        /** @return Request ID. */
+        public UUID id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RotateFuture.class, this);
+        }
     }
 }
