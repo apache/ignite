@@ -1020,7 +1020,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
-     * record logging. <br> Positive value enables incomplete segment archiving after timeout (inactivity). <br> Zero or
+     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
      * negative  value disables auto archiving.
      * @return current configuration instance for chaining
      */
