@@ -42,7 +42,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(3);
 
-        client = startClientGrid();
+        client = startClientGrid("client");
     }
 
     /** {@inheritDoc} */

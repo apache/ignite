@@ -31,6 +31,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -137,35 +138,16 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         List<Integer> newLeftCollation, newRightCollation;
 
-        if (isPrefix(leftCollation.getKeys(), joinInfo.leftKeys)) { // preserve left collation
-            newLeftCollation = new ArrayList<>(leftCollation.getKeys());
+        if (isPrefix(leftCollation.getKeys(), joinInfo.leftKeys)) // preserve left collation
+            rightCollation = leftCollation.apply(buildProjectionMapping(true));
 
-            Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
-                .collect(Collectors.toMap(p -> p.source, p -> p.target));
+        else if (isPrefix(rightCollation.getKeys(), joinInfo.rightKeys))// preserve right collation
+            leftCollation = rightCollation.apply(buildProjectionMapping(false));
 
-            newRightCollation = newLeftCollation.stream()
-                .limit(joinInfo.pairs().size())
-                .map(leftToRight::get)
-                .collect(Collectors.toList());
-        }
-        else if (isPrefix(rightCollation.getKeys(), joinInfo.rightKeys)) { // preserve right collation
-            newRightCollation = new ArrayList<>(rightCollation.getKeys());
-
-            Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
-                .collect(Collectors.toMap(p -> p.target, p -> p.source));
-
-            newLeftCollation = newRightCollation.stream()
-                .limit(joinInfo.pairs().size())
-                .map(rightToLeft::get)
-                .collect(Collectors.toList());
-        }
         else { // generate new collations
-            newLeftCollation = new ArrayList<>(joinInfo.leftKeys);
-            newRightCollation = new ArrayList<>(joinInfo.rightKeys);
+            leftCollation = RelCollations.of(joinInfo.leftKeys);
+            rightCollation = RelCollations.of(joinInfo.rightKeys);
         }
-
-        leftCollation = createCollation(newLeftCollation);
-        rightCollation = createCollation(newRightCollation);
 
         return ImmutableList.of(
             Pair.of(

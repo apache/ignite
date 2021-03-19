@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -38,8 +39,10 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -50,12 +53,11 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.rel.core.JoinRelType.INNER;
-import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount.joinRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /** */
@@ -110,27 +112,23 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
         RewindabilityTrait rightRewindability = TraitUtils.rewindability(right);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
+        List<Pair<RelTraitSet, List<RelTraitSet>>> pairs = new ArrayList<>();
 
-        if (leftRewindability.rewindable() && rightRewindability.rewindable()) {
-            outTraits = nodeTraits.replace(RewindabilityTrait.REWINDABLE);
-            leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
-            rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
-        }
-        else {
-            outTraits = nodeTraits.replace(RewindabilityTrait.ONE_WAY);
-            leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
-            rightTraits = right.replace(RewindabilityTrait.ONE_WAY);
-        }
+        pairs.add(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
+            ImmutableList.of(left.replace(RewindabilityTrait.ONE_WAY), right.replace(RewindabilityTrait.ONE_WAY))));
 
-        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        if (leftRewindability.rewindable() && rightRewindability.rewindable())
+            pairs.add(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE),
+                ImmutableList.of(left.replace(RewindabilityTrait.REWINDABLE), right.replace(RewindabilityTrait.REWINDABLE))));
+
+        return ImmutableList.copyOf(pairs);
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // Tere are several rules:
+        // There are several rules:
         // 1) any join is possible on broadcast or single distribution
-        // 2) hash distributed join is possible when join keys equal to source distribution keys
+        // 2) hash distributed join is possible when join keys are superset of source distribution keys
         // 3) hash and broadcast distributed tables can be joined when join keys equal to hash
         //    distributed table distribution keys and:
         //      3.1) it's a left join and a hash distributed table is at left
@@ -144,71 +142,55 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         IgniteDistribution leftDistr = TraitUtils.distribution(left);
         IgniteDistribution rightDistr = TraitUtils.distribution(right);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
+        IgniteDistribution left2rightProjectedDistr = leftDistr.apply(buildProjectionMapping(true));
+        IgniteDistribution right2leftProjectedDistr = rightDistr.apply(buildProjectionMapping(false));
 
-        if (leftDistr == broadcast() || rightDistr == broadcast()) {
+        RelTraitSet outTraits;
+        RelTraitSet leftTraits;
+        RelTraitSet rightTraits;
+
+        if (leftDistr == broadcast() && rightDistr == broadcast()) {
             outTraits = nodeTraits.replace(broadcast());
             leftTraits = left.replace(broadcast());
             rightTraits = right.replace(broadcast());
-
-            res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
         }
-
-        if (leftDistr == single() || rightDistr == single()) {
+        else {
             outTraits = nodeTraits.replace(single());
             leftTraits = left.replace(single());
             rightTraits = right.replace(single());
+        }
+
+        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+        if (F.isEmpty(joinInfo.pairs()))
+            return ImmutableList.copyOf(res);
+
+        if (leftDistr.getType() == HASH_DISTRIBUTED && left2rightProjectedDistr != random()) {
+            outTraits = nodeTraits.replace(leftDistr);
+            leftTraits = left.replace(leftDistr);
+            rightTraits = right.replace(left2rightProjectedDistr);
 
             res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
         }
 
-        if (!F.isEmpty(joinInfo.pairs())) {
-            Set<DistributionFunction> functions = new HashSet<>();
+        if (rightDistr.getType() == HASH_DISTRIBUTED && right2leftProjectedDistr != random()) {
+            outTraits = nodeTraits.replace(rightDistr);
+            leftTraits = left.replace(right2leftProjectedDistr);
+            rightTraits = right.replace(rightDistr);
 
-            if (leftDistr.getType() == HASH_DISTRIBUTED
-                && Objects.equals(joinInfo.leftKeys, leftDistr.getKeys()))
-                functions.add(leftDistr.function());
-
-            if (rightDistr.getType() == HASH_DISTRIBUTED
-                && Objects.equals(joinInfo.rightKeys, rightDistr.getKeys()))
-                functions.add(rightDistr.function());
-
-            functions.add(DistributionFunction.hash());
-
-            for (DistributionFunction function : functions) {
-                leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                // TODO distribution multitrait support
-                outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, function));
-                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, function));
-                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                if (joinType == INNER || joinType == LEFT) {
-                    outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, function));
-                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                    rightTraits = right.replace(broadcast());
-
-                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                }
-
-                if (joinType == INNER || joinType == RIGHT) {
-                    outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, function));
-                    leftTraits = left.replace(broadcast());
-                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                }
-            }
+            res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
         }
 
-        if (!res.isEmpty())
-            return res;
+        leftTraits = left.replace(hash(joinInfo.leftKeys, DistributionFunction.hash()));
+        rightTraits = right.replace(hash(joinInfo.rightKeys, DistributionFunction.hash()));
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
-            ImmutableList.of(left.replace(single()), right.replace(single()))));
+        outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, DistributionFunction.hash()));
+        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+        outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, DistributionFunction.hash()));
+        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+        return ImmutableList.copyOf(res);
     }
 
     /** {@inheritDoc} */
@@ -315,5 +297,21 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
                 return false;
         }
         return true;
+    }
+
+    /** Creates mapping from left join keys to the right and vice versa with regards to {@code left2Right}. */
+    protected Mappings.TargetMapping buildProjectionMapping(boolean left2Right) {
+        ImmutableIntList sourceKeys = left2Right ? joinInfo.leftKeys : joinInfo.rightKeys;
+        ImmutableIntList targetKeys = left2Right ? joinInfo.rightKeys : joinInfo.leftKeys;
+
+        Map<Integer, Integer> keyMap = new HashMap<>();
+        for (int i = 0; i < joinInfo.leftKeys.size(); i++)
+            keyMap.put(sourceKeys.get(i), targetKeys.get(i));
+
+        return Mappings.target(
+            keyMap,
+            (left2Right ? left : right).getRowType().getFieldCount(),
+            (left2Right ? right : left).getRowType().getFieldCount()
+        );
     }
 }
