@@ -83,7 +83,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    DEFAULT_DETECTION_TIMEOUT = 1000
+    DEFAULT_DETECTION_TIMEOUT = 2000
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
