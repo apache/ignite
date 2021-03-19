@@ -299,7 +299,7 @@ class GridNioSslHandler extends ReentrantLock {
             long elapsed = U.currentTimeMillis() - startTs;
 
             if (elapsed > LONG_HANDSHAKE_THRESHOLD_MS) {
-                log.warning("Handshake took too long: [millis=" + elapsed + ", handshakeStatus=" + handshakeStatus +
+                log.info("Handshake took too long: [millis=" + elapsed + ", handshakeStatus=" + handshakeStatus +
                     ", ses=" + ses + ']');
             }
         }
