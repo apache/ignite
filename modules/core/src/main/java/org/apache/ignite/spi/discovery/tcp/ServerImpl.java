@@ -55,9 +55,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
@@ -82,6 +84,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -92,6 +95,7 @@ import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -1001,6 +1005,14 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
                 msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
                     U.marshal(spi.marshaller(), evt));
+            else if (((CustomMessageWrapper)evt).delegate() instanceof DynamicCacheChangeBatch) {
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+
+                System.err.println("!!!msg DynamicCacheChangeBatch " + ((DynamicCacheChangeBatch)((CustomMessageWrapper)evt).delegate()));
+
+                msg.topologyVersion(ring.allNodes().size());
+            }
             else
                 msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
                     U.marshal(spi.marshaller(), evt));
@@ -1120,6 +1132,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // TODO IGNITE-11272
                 FutureTask<Void> fut = msgWorker.addTask(new FutureTask<Void>() {
                     @Override protected Void body() {
+                        System.err.println("!!! pendingCustomMsgs.clear " + pendingCustomMsgs.size());
                         pendingCustomMsgs.clear();
                         msgWorker.pendingMsgs.reset(null, null, null);
                         msgWorker.next = null;
@@ -3082,6 +3095,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Message has been added to a worker's queue: " + msg);
             }
+
+            if (queue.size() > 2048)
+                throw new AssertionError("pending me !!");
         }
 
         /** */
@@ -3260,7 +3276,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false, false);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -4898,6 +4914,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             worker.addMessage(msg);
         }
 
+        GridSpinBusyLock nodeJoined = new GridSpinBusyLock();
+
         /**
          * Processes node added message.
          *
@@ -5103,7 +5121,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg.client())
                     node.clientAliveTime(spi.clientFailureDetectionTimeout());
 
+                //nodeJoined.block();
+
                 boolean topChanged = ring.add(node);
+
+                //nodeJoined.unblock();
 
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
@@ -5129,6 +5151,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     processMessageFailedNodes(msg);
+
+                    TcpDiscoveryCustomEventMessage msg0;
+
+                    while ((msg0 = pollPendingCustomMessage()) != null)
+                        processCustomMessage(msg0, true, true);
                 }
 
                 if (log.isDebugEnabled())
@@ -5436,8 +5463,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
-
-            checkPendingCustomMessages();
         }
 
         /**
@@ -6216,10 +6241,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification, boolean na) {
             if (isLocalNodeCoordinator()) {
-                boolean delayMsg;
-
                 assert ring.minimumNodeVersion() != null : ring;
 
                 boolean joiningEmpty;
@@ -6228,7 +6251,25 @@ class ServerImpl extends TcpDiscoveryImpl {
                     joiningEmpty = joiningNodes.isEmpty();
                 }
 
-                delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
+                boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty && !na;
+
+                try {
+                    @Nullable CustomMessageWrapper msgObj = (CustomMessageWrapper)msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                    if (msgObj != null) {
+
+                        if (msgObj.delegate() instanceof DynamicCacheChangeBatch) {
+                            System.err.println("!!!add : " + msgObj.delegate());
+                            new Exception().printStackTrace();
+                        }
+
+/*                                if (msgObj.delegate() instanceof DistributedMetaStorageUpdateMessage)
+                                    pr = false;*/
+                    }
+                }
+                catch (Throwable throwable) {
+                    throwable.printStackTrace();
+                }
 
                 if (delayMsg) {
                     if (log.isDebugEnabled()) {
@@ -6239,7 +6280,27 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     synchronized (mux) {
-                        pendingCustomMsgs.add(msg);
+                        boolean pr = true;
+                        if (msg.verified()) {
+                            pendingCustomMsgs.add(msg);
+
+                            try {
+                                @Nullable CustomMessageWrapper msgObj = (CustomMessageWrapper)msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                                if (msgObj != null) {
+                                    System.err.println("!!!add pending: " + msgObj.delegate());
+
+                                if (msgObj.delegate() instanceof DynamicCacheChangeBatch)
+                                    new Exception().printStackTrace();
+
+/*                                if (msgObj.delegate() instanceof DistributedMetaStorageUpdateMessage)
+                                    pr = false;*/
+                                }
+                            }
+                            catch (Throwable throwable) {
+                                throwable.printStackTrace();
+                            }
+                        }
                     }
 
                     return;
@@ -6261,9 +6322,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             registerPendingMessage(msg);
 
-                            processCustomMessage(msg, waitForNotification);
+                            processCustomMessage(msg, waitForNotification, false);
                         }
                     }
+                    else
+                        System.err.println("!!! pendingMsgs.procCustomMsgs miss " + msg);
 
                     msg.message(null, msg.messageBytes());
                 }
@@ -6289,7 +6352,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
-                                processCustomMessage(ackMsg, waitForNotification);
+                                processCustomMessage(ackMsg, waitForNotification, false);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -6391,8 +6454,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
+                //nodeJoined.block();
+
                 while ((msg = pollPendingCustomMessage()) != null)
-                    processCustomMessage(msg, true);
+                    processCustomMessage(msg, true, false);
+
+                //nodeJoined.unblock();
             }
         }
 

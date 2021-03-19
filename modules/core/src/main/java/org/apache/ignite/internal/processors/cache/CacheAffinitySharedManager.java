@@ -637,12 +637,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param msg Change request.
      * @param topVer Current topology version.
-     * @param crd Coordinator flag.
      * @return Closed caches IDs.
      */
     private Set<Integer> processCacheCloseRequests(
         ClientCacheChangeDummyDiscoveryMessage msg,
-        boolean crd,
         AffinityTopologyVersion topVer
     ) {
         Set<String> cachesToClose = msg.cachesToClose();
@@ -704,7 +702,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         // Check and close caches via dummy message.
         if (msg.cachesToClose() != null)
-            closedCaches = processCacheCloseRequests(msg, crd, topVer);
+            closedCaches = processCacheCloseRequests(msg, topVer);
 
         // Shedule change message.
         if (startedCaches != null || closedCaches != null)

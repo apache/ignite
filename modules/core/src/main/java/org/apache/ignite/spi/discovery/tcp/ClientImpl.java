@@ -259,9 +259,9 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public void dumpRingStructure(IgniteLogger log) {
         ClusterNode[] serverNodes = getRemoteNodes().stream()
-                .filter(node -> !node.isClient())
-                .sorted(Comparator.comparingLong(ClusterNode::order))
-                .toArray(ClusterNode[]::new);
+            .filter(node -> !node.isClient())
+            .sorted(Comparator.comparingLong(ClusterNode::order))
+            .toArray(ClusterNode[]::new);
 
         U.quietAndInfo(log, Arrays.toString(serverNodes));
     }
@@ -596,11 +596,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                         return null;
 
                     LT.warn(log, "IP finder returned empty addresses list. " +
-                            "Please check IP finder configuration" +
-                            (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
-                                " and make sure multicast works on your network. " : ". ") +
-                            "Will retry every " + spi.getReconnectDelay() + " ms. " +
-                            "Change 'reconnectDelay' to configure the frequency of retries.", true);
+                        "Please check IP finder configuration" +
+                        (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
+                            " and make sure multicast works on your network. " : ". ") +
+                        "Will retry every " + spi.getReconnectDelay() + " ms. " +
+                        "Change 'reconnectDelay' to configure the frequency of retries.", true);
 
                     sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
                 }
@@ -1483,10 +1483,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (unacked != null) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to get acknowledge for message, will try to reconnect " +
-                                "[msg=" + unacked +
-                                (spi.failureDetectionTimeoutEnabled() ?
-                                ", failureDetectionTimeout=" + spi.failureDetectionTimeout() :
-                                ", timeout=" + spi.getAckTimeout()) + ']');
+                                    "[msg=" + unacked +
+                                    (spi.failureDetectionTimeoutEnabled() ?
+                                        ", failureDetectionTimeout=" + spi.failureDetectionTimeout() :
+                                        ", timeout=" + spi.getAckTimeout()) + ']');
 
                             throw new IOException("Failed to get acknowledge for message: " + unacked);
                         }
@@ -1991,7 +1991,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 err = spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
                             else if (discoMsg instanceof TcpDiscoveryAuthFailedMessage)
                                 err = spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)msg);
-                            //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
+                                //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
                             else if (discoMsg instanceof TcpDiscoveryCheckFailedMessage)
                                 err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
 
@@ -2148,8 +2148,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 final int joinCnt0 = joinCnt;
 
                 executorService.schedule(() -> {
-                        queue.add(new JoinTimeout(joinCnt0));
-                    }, spi.joinTimeout, MILLISECONDS);
+                    queue.add(new JoinTimeout(joinCnt0));
+                }, spi.joinTimeout, MILLISECONDS);
             }
 
             sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());
@@ -2194,8 +2194,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 tracing.messages().finishProcessing((TraceableMessage) msg);
 
             if (spi.ensured(msg)
-                    && state == CONNECTED
-                    && !(msg instanceof TcpDiscoveryClientReconnectMessage))
+                && state == CONNECTED
+                && !(msg instanceof TcpDiscoveryClientReconnectMessage))
                 lastMsgId = msg.id();
         }
 
