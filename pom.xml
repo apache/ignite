@@ -87,7 +87,6 @@
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
-        <module>modules/cdc-to-kafka</module>
     </modules>
 
     <profiles>
