@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -99,6 +102,21 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         stopCollectStatistics();
 
         checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRotateTwiceOnTheSameNode() throws Exception {
+        startCollectStatistics();
+
+        IgniteInternalFuture<Serializable> fut = grid(0).context().performanceStatistics().rotateCollectStatistics();
+
+        assertThrows(log, () -> grid(0).context().performanceStatistics().rotateCollectStatistics(),
+            IgniteCheckedException.class, "Rotation already in progress.");
+
+        fut.get();
+
+        assertEquals(NODES_CNT * 2, statisticsFiles().size());
     }
 
     /** Checks files and operations count. */

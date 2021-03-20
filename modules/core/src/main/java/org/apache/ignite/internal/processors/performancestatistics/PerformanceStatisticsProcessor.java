@@ -67,7 +67,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Rotate performance statistics future. */
-    private GridFutureAdapter<Serializable> rotateFut;
+    @Nullable private volatile GridFutureAdapter<Serializable> rotateFut;
 
     /** Rotate performance statistics process. */
     private final DistributedProcess<Serializable, Serializable> rotateProc;
@@ -89,12 +89,16 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return null;
             }),
             (id, res, err) -> {
-                if (!err.isEmpty())
-                    rotateFut.onDone(F.first(err.values()));
-                else
-                    rotateFut.onDone();
+            synchronized (mux) {
+                if (id.equals(ctx.localNodeId())) {
+                    if (!err.isEmpty())
+                        rotateFut.onDone(F.first(err.values()));
+                    else
+                        rotateFut.onDone();
 
-                rotateFut = null;
+                    rotateFut = null;
+                }
+            }
             });
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
@@ -246,7 +250,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If rotation failed.
      */
-    public IgniteInternalFuture<Serializable> rotateCollectStatistics() throws IgniteCheckedException {
+    public synchronized IgniteInternalFuture<Serializable> rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
@@ -255,14 +259,14 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
         synchronized (mux) {
             if (rotateFut != null)
-                throw new IgniteCheckedException("Rotation already in progress");
+                throw new IgniteCheckedException("Rotation already in progress.");
+
+            rotateFut = new GridFutureAdapter<>();
+
+            rotateProc.start(ctx.localNodeId(), null);
+
+            return rotateFut;
         }
-
-        rotateFut = new GridFutureAdapter<>();
-
-        rotateProc.start(UUID.randomUUID(), null);
-
-        return rotateFut;
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
