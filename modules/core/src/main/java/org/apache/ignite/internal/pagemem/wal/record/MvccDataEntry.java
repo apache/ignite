@@ -56,7 +56,7 @@ public class MvccDataEntry extends DataEntry {
         long partCnt,
         MvccVersion mvccVer
     ) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, false);
 
         this.mvccVer = mvccVer;
     }

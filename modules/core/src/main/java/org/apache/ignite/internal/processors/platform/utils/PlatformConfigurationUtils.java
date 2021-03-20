@@ -2055,8 +2055,7 @@ public class PlatformConfigurationUtils {
                 .setSystemRegionMaxSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
-                .setWalAutoArchiveAfterInactivity(in.readLong())
-                .setWalForceArchiveTimeout(in.readLong());
+                .setWalAutoArchiveAfterInactivity(in.readLong());
 
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
@@ -2192,7 +2191,6 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getPageSize());
             w.writeInt(cfg.getConcurrencyLevel());
             w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
-            w.writeLong(cfg.getWalForceArchiveTimeout());
 
             if (cfg.getCheckpointReadLockTimeout() != null) {
                 w.writeBoolean(true);
