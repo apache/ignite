@@ -36,7 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CDCConsumer;
-import org.apache.ignite.cdc.EntryEvent;
+import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 
 /**
  * CDC(Capture Data Change) application.
- * Application run independently of Ignite node process and provide ability for the {@link CDCConsumer} to consume events({@link EntryEvent}) from WAL segments.
+ * Application run independently of Ignite node process and provide ability for the {@link CDCConsumer} to consume events({@link ChangeEvent}) from WAL segments.
  * User should responsible {@link CDCConsumer} implementation with custom consumption logic.
  *
  * Ignite node should be explicitly configured for using {@link IgniteCDC}.

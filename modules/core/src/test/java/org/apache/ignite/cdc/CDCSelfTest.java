@@ -48,8 +48,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cdc.EntryEventType.DELETE;
-import static org.apache.ignite.cdc.EntryEventType.UPDATE;
+import static org.apache.ignite.cdc.ChangeEventType.DELETE;
+import static org.apache.ignite.cdc.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -386,7 +386,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private boolean waitForSize(int expSz, String cacheName, EntryEventType evtType, TestCDCConsumer... lsnrs) throws IgniteInterruptedCheckedException {
+    private boolean waitForSize(int expSz, String cacheName, ChangeEventType evtType, TestCDCConsumer... lsnrs) throws IgniteInterruptedCheckedException {
         return waitForCondition(
             () -> Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(evtType, cacheId(cacheName)))).sum() >= expSz,
             getTestTimeout());
@@ -417,7 +417,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestCDCConsumer implements CDCConsumer<Integer, User> {
         /** Keys */
-        private final ConcurrentMap<IgniteBiTuple<EntryEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
+        private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
         /** */
         public boolean stoped;
@@ -443,7 +443,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterator<EntryEvent<Integer, User>> events) {
+        @Override public boolean onChange(Iterator<ChangeEvent<Integer, User>> events) {
             events.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;
@@ -466,7 +466,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** @return Read keys. */
-        public List<Integer> keys(EntryEventType op, int cacheId) {
+        public List<Integer> keys(ChangeEventType op, int cacheId) {
             return cacheKeys.get(F.t(op, cacheId));
         }
     }

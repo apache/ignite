@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Event for single entry change.
+ * Event of single entry change.
  * Instance presents new value of modified entry.
  *
  * @param <K> Key type.
@@ -33,7 +33,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see CDCConsumer
  */
 @IgniteExperimental
-public class EntryEvent<K, V> implements Serializable {
+public class ChangeEvent<K, V> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -52,10 +52,10 @@ public class EntryEvent<K, V> implements Serializable {
     private final int part;
 
     /** Order of the entry change. */
-    private final EntryEventOrder ord;
+    private final ChangeEventOrder ord;
 
     /** Event type. */
-    private final EntryEventType op;
+    private final ChangeEventType op;
 
     /** Cache id. */
     private final int cacheId;
@@ -73,8 +73,8 @@ public class EntryEvent<K, V> implements Serializable {
      * @param cacheId Cache id.
      * @param expireTime Entry expire time.
      */
-    public EntryEvent(K key, V val, boolean primary, int part,
-        EntryEventOrder ord, EntryEventType op, int cacheId, long expireTime) {
+    public ChangeEvent(K key, V val, boolean primary, int part,
+        ChangeEventOrder ord, ChangeEventType op, int cacheId, long expireTime) {
         this.key = key;
         this.val = val;
         this.primary = primary;
@@ -117,14 +117,14 @@ public class EntryEvent<K, V> implements Serializable {
     /**
      * @return Order of the update operation.
      */
-    public EntryEventOrder order() {
+    public ChangeEventOrder order() {
         return ord;
     }
 
     /**
      * @return Operation type.
      */
-    public EntryEventType operation() {
+    public ChangeEventType operation() {
         return op;
     }
 
@@ -145,6 +145,6 @@ public class EntryEvent<K, V> implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(EntryEvent.class, this);
+        return S.toString(ChangeEvent.class, this);
     }
 }

@@ -25,10 +25,10 @@ import org.apache.ignite.lang.IgniteExperimental;
  *
  * @see IgniteCDC
  * @see CDCConsumer
- * @see EntryEvent
+ * @see ChangeEvent
  */
 @IgniteExperimental
-public enum EntryEventType {
+public enum ChangeEventType {
     /** Update operation. */
     UPDATE,
 

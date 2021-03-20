@@ -26,7 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CDCConsumer;
-import org.apache.ignite.cdc.EntryEvent;
+import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * CDC Consumer state.
  *
  * Each time {@link CDCConsumer#onChange(Iterator)} returns {@code true} current offset in WAL segment saved to file.
- * This allows to the {@link CDCConsumer} to continue consumption of the {@link EntryEvent} from the last saved offset in case of fail or restart.
+ * This allows to the {@link CDCConsumer} to continue consumption of the {@link ChangeEvent} from the last saved offset in case of fail or restart.
  *
  * @see CDCConsumer#onChange(Iterator)
  * @see IgniteCDC

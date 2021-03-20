@@ -28,10 +28,10 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheVersi
 
 /**
  * Entry event order.
- * Two concurrent updates of the same entry can be ordered based on {@link EntryEventOrder} comparsion.
+ * Two concurrent updates of the same entry can be ordered based on {@link ChangeEventOrder} comparsion.
  * Greater value means that event occurs later.
  */
-public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializable {
+public class ChangeEventOrder implements Comparable<ChangeEventOrder>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,14 +45,14 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
     private final long order;
 
     /** Replica version. */
-    private @Nullable EntryEventOrder otherDcOrder;
+    private @Nullable ChangeEventOrder otherDcOrder;
 
     /**
      * @param topVer Topology version plus number of seconds from the start time of the first grid node.
      * @param nodeOrderDrId Node order and DR ID.
      * @param order Version order.
      */
-    public EntryEventOrder(int topVer, int nodeOrderDrId, long order) {
+    public ChangeEventOrder(int topVer, int nodeOrderDrId, long order) {
         this.topVer = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
         this.order = order;
@@ -81,17 +81,17 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
     }
 
     /** @param replicaVer Replication version. */
-    public void otherDcOrder(EntryEventOrder replicaVer) {
+    public void otherDcOrder(ChangeEventOrder replicaVer) {
         this.otherDcOrder = replicaVer;
     }
 
     /** @return Replication version. */
-    public EntryEventOrder otherDcOrder() {
+    public ChangeEventOrder otherDcOrder() {
         return otherDcOrder;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull EntryEventOrder other) {
+    @Override public int compareTo(@NotNull ChangeEventOrder other) {
         int res = Integer.compare(topVer, other.topVer);
 
         if (res != 0)
@@ -111,7 +111,7 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        EntryEventOrder order1 = (EntryEventOrder)o;
+        ChangeEventOrder order1 = (ChangeEventOrder)o;
         return topVer == order1.topVer && nodeOrderDrId == order1.nodeOrderDrId && order == order1.order;
     }
 
@@ -122,6 +122,6 @@ public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializabl
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(EntryEventOrder.class, this);
+        return S.toString(ChangeEventOrder.class, this);
     }
 }

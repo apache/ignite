@@ -21,9 +21,9 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CDCConsumer;
-import org.apache.ignite.cdc.EntryEvent;
-import org.apache.ignite.cdc.EntryEventOrder;
-import org.apache.ignite.cdc.EntryEventType;
+import org.apache.ignite.cdc.ChangeEvent;
+import org.apache.ignite.cdc.ChangeEventOrder;
+import org.apache.ignite.cdc.ChangeEventType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
- * Transform {@link DataEntry} to {@link EntryEvent} and sends it to {@link CDCConsumer}.
+ * Transform {@link DataEntry} to {@link ChangeEvent} and sends it to {@link CDCConsumer}.
  *
  * @see IgniteCDC
  * @see CDCConsumer
@@ -87,7 +87,7 @@ public class WALRecordsConsumer<K, V> {
         return dataConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
-            EntryEventType type;
+            ChangeEventType type;
 
             switch (e.op()) {
                 // Combine two types of the events because `CREATE` only generated for first `put`
@@ -95,12 +95,12 @@ public class WALRecordsConsumer<K, V> {
                 // For `ATOMIC` caches every `put` generate `UPDATE` event.
                 case CREATE:
                 case UPDATE:
-                    type = EntryEventType.UPDATE;
+                    type = ChangeEventType.UPDATE;
 
                     break;
 
                 case DELETE:
-                    type = EntryEventType.DELETE;
+                    type = ChangeEventType.DELETE;
 
                     break;
 
@@ -110,16 +110,16 @@ public class WALRecordsConsumer<K, V> {
 
             GridCacheVersion ver = e.writeVersion();
 
-            EntryEventOrder ord = new EntryEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order());
+            ChangeEventOrder ord = new ChangeEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order());
 
             GridCacheVersion replicaVer = ver.conflictVersion();
 
             if (replicaVer != ver) {
-                ord.otherDcOrder(new EntryEventOrder(
+                ord.otherDcOrder(new ChangeEventOrder(
                     replicaVer.topologyVersion(), replicaVer.nodeOrderAndDrIdRaw(), replicaVer.order()));
             }
 
-            return new EntryEvent<>(
+            return new ChangeEvent<>(
                 (K)ue.unwrappedKey(),
                 (V)ue.unwrappedValue(),
                 e.primary(),
