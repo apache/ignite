@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +32,7 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheVersi
  * Two concurrent updates of the same entry can be ordered based on {@link EntryEventOrder} comparsion.
  * Greater value means that event occurs later.
  */
+@IgniteExperimental
 public class EntryEventOrder implements Comparable<EntryEventOrder>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
