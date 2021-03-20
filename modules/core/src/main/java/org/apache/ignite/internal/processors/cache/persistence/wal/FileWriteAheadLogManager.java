@@ -273,6 +273,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL archive directory (including consistent ID as subfolder). */
     private File walArchiveDir;
 
+    /** WAL cdc directory (including consistent ID as subfolder) */
+    private File cdcDir;
+
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
 
@@ -325,6 +328,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * See {@link DataStorageConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
      */
     private final long walAutoArchiveAfterInactivity;
+
+    /** Positive (non-0) value indicates WAL must be archived even if not complete. */
+    private final long walForceArchiveTimeout;
 
     /**
      * Container with last WAL record logged timestamp.<br> Zero value means there was no records logged to current
@@ -401,6 +407,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = mode == WALMode.FSYNC ? dsCfg.getFileIOFactory() : new RandomAccessFileIOFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
+        walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
 
         double thresholdWalArchiveSizePercentage = IgniteSystemProperties.getDouble(
             IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
@@ -453,6 +460,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
+
+            if (dsCfg.isCdcEnabled()) {
+                cdcDir = initDirectory(
+                    dsCfg.getCdcPath(),
+                    DataStorageConfiguration.DFLT_CDC_PATH,
+                    resolveFolders.folderName(),
+                    "cdc directory"
+                );
+            }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
@@ -749,20 +765,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.BACKGROUND)
             backgroundFlushSchedule = cctx.time().schedule(this::doFlush, flushFreq, flushFreq);
 
-        if (walAutoArchiveAfterInactivity > 0)
-            scheduleNextInactivityPeriodElapsedCheck();
+        if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
+            scheduleNextRollover();
     }
 
     /**
-     * Schedules next check of inactivity period expired. Based on current record update timestamp. At timeout method
-     * does check of inactivity period and schedules new launch.
+     * Schedules next rollover check.
+     * If {@link DataStorageConfiguration#getWalForceArchiveTimeout()} configured rollover happens forcefully.
+     * Else check based on current record update timestamp and at timeout method does check of inactivity period and schedules new launch.
      */
-    private void scheduleNextInactivityPeriodElapsedCheck() {
-        final long lastRecMs = lastRecordLoggedMs.get();
-        final long nextPossibleAutoArchive = (lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs) + walAutoArchiveAfterInactivity;
+    private void scheduleNextRollover() {
+        final long nextPossibleAutoArchive;
 
-        if (log.isDebugEnabled())
-            log.debug("Schedule WAL rollover check at " + new Time(nextPossibleAutoArchive).toString());
+        if (walForceArchiveTimeout > 0) {
+            nextPossibleAutoArchive = U.currentTimeMillis() + walForceArchiveTimeout;
+
+            if (log.isDebugEnabled())
+                log.debug("Schedule WAL rollover at " + new Time(nextPossibleAutoArchive).toString());
+        } else {
+            final long lastRecMs = lastRecordLoggedMs.get();
+
+            nextPossibleAutoArchive = (lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs) + walAutoArchiveAfterInactivity;
+
+            if (log.isDebugEnabled())
+                log.debug("Schedule WAL rollover check at " + new Time(nextPossibleAutoArchive).toString());
+        }
 
         nextAutoArchiveTimeoutObj = new GridTimeoutObject() {
             private final IgniteUuid id = IgniteUuid.randomUuid();
@@ -779,9 +806,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (log.isDebugEnabled())
                     log.debug("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()).toString() + ")");
 
-                checkWalRolloverRequiredDuringInactivityPeriod();
+                checkWalRolloverRequired();
 
-                scheduleNextInactivityPeriodElapsedCheck();
+                scheduleNextRollover();
             }
         };
         cctx.time().addTimeoutObject(nextAutoArchiveTimeoutObj);
@@ -793,11 +820,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Checks if there was elapsed significant period of inactivity. If WAL auto-archive is enabled using
-     * {@link #walAutoArchiveAfterInactivity} > 0 this method will activate roll over by timeout.<br>
+     * Checks if there was elapsed significant period of inactivity or force archive timeout.
+     * If WAL auto-archive is enabled using {@link #walAutoArchiveAfterInactivity} > 0 or {@link #walForceArchiveTimeout}
+     * this method will activate roll over by timeout.
      */
-    private void checkWalRolloverRequiredDuringInactivityPeriod() {
-        if (walAutoArchiveAfterInactivity <= 0)
+    private void checkWalRolloverRequired() {
+        if (walAutoArchiveAfterInactivity <= 0 && walForceArchiveTimeout <= 0)
             return; // feature not configured, nothing to do
 
         final long lastRecMs = lastRecordLoggedMs.get();
@@ -805,13 +833,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (lastRecMs == 0)
             return; //no records were logged to current segment, does not consider inactivity
 
-        final long elapsedMs = U.currentTimeMillis() - lastRecMs;
+        if (walForceArchiveTimeout <= 0) {
+            final long elapsedMs = U.currentTimeMillis() - lastRecMs;
 
-        if (elapsedMs <= walAutoArchiveAfterInactivity)
-            return; // not enough time elapsed since last write
+            if (elapsedMs <= walAutoArchiveAfterInactivity)
+                return; // not enough time elapsed since last write
 
-        if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
-            return; // record write occurred concurrently
+            if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
+                return; // record write occurred concurrently
+        }
 
         final FileWriteHandle handle = currentHandle();
 
@@ -900,7 +930,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (ptr != null) {
                 metrics.onWalRecordLogged(rec.size());
 
-                if (walAutoArchiveAfterInactivity > 0)
+                if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
 
                 return ptr;
@@ -1324,7 +1354,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert updated : "Concurrent updates on rollover are not allowed";
 
-            if (walAutoArchiveAfterInactivity > 0)
+            if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
                 lastRecordLoggedMs.set(0);
 
             // Let other threads to proceed with new segment.
@@ -2019,6 +2049,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 segmentSize.put(absIdx, dstFile.length());
                 segmentAware.addCurrentWalArchiveSize(dstFile.length());
+
+                if (dsCfg.isCdcEnabled())
+                    Files.createLink(cdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
             }
             catch (IOException e) {
                 deleteArchiveFiles(dstFile, dstTmpFile);

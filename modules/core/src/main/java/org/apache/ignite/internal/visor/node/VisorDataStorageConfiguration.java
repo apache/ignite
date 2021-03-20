@@ -116,8 +116,11 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval;
 
-    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment */
+    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
     private long walAutoArchiveAfterInactivity;
+
+    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
+    private long walForceArchiveTimeout;
 
     /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
     private boolean writeThrottlingEnabled;
@@ -177,6 +180,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         metricsSubIntervalCount = cfg.getMetricsSubIntervalCount();
         metricsRateTimeInterval = cfg.getMetricsRateTimeInterval();
         walAutoArchiveAfterInactivity = cfg.getWalAutoArchiveAfterInactivity();
+        walForceArchiveTimeout = cfg.getWalForceArchiveTimeout();
         writeThrottlingEnabled = cfg.isWriteThrottlingEnabled();
         walCompactionEnabled = cfg.isWalCompactionEnabled();
     }
@@ -371,6 +375,13 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
+     * @return Time in millis.
+     */
+    public long getWalForceArchiveTimeout() {
+        return walForceArchiveTimeout;
+    }
+
+    /**
      * @return Flag indicating whether write throttling is enabled.
      */
     public boolean isWriteThrottlingEnabled() {
@@ -425,6 +436,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         out.writeInt(metricsSubIntervalCount);
         out.writeLong(metricsRateTimeInterval);
         out.writeLong(walAutoArchiveAfterInactivity);
+        out.writeLong(walForceArchiveTimeout);
         out.writeBoolean(writeThrottlingEnabled);
         out.writeInt(walBufSize);
         out.writeBoolean(walCompactionEnabled);
@@ -460,6 +472,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         metricsSubIntervalCount = in.readInt();
         metricsRateTimeInterval = in.readLong();
         walAutoArchiveAfterInactivity = in.readLong();
+        walForceArchiveTimeout = in.readLong();
         writeThrottlingEnabled = in.readBoolean();
 
         if (protoVer > V1) {
