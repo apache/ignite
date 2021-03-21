@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// TODO
         /// </summary>
         [Test]
-        public async Task TestComputeAsyncContinuation()
+        public async Task TestComputeRunAsyncContinuation()
         {
             // TODO: Test local and remote execution - where do we end up?
             // Test Tasks and Funcs.
@@ -48,7 +48,20 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// TODO
         /// </summary>
         [Test]
-        public async Task TestAffinityAsyncContinuation()
+        public async Task TestComputeExecuteAsyncContinuation()
+        {
+            var compute = Ignite.GetCompute();
+
+            await compute.ExecuteAsync(new StringLengthEmptyTask(), "abc");
+
+            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [Test]
+        public async Task TestComputeAffinityRunAsyncContinuation()
         {
             // TODO: Test local and remote execution.
             var compute = Ignite.GetCompute();
