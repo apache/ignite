@@ -80,8 +80,8 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     @Override public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
         A.notNull(lsnr, "lsnr");
 
-        if (defaultExecutor != null)
-            listenAsync(lsnr, defaultExecutor);
+        if (defaultExecutor != null && !isDone())
+            fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, defaultExecutor)));
         else
             fut.listen(new InternalFutureListener(lsnr));
     }
@@ -91,10 +91,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         A.notNull(lsnr, "lsnr");
         A.notNull(exec, "exec");
 
-        if (isDone())
-            fut.listen(new InternalFutureListener(lsnr));
-        else
-            fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
+        fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
     }
 
     /** {@inheritDoc} */
