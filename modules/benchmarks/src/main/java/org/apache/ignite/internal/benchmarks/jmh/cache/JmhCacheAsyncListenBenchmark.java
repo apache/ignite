@@ -22,16 +22,20 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.profile.GCProfiler;
 
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Put benchmark.
+ * Cache async listen benchmark.
+ * Measures {@link IgniteFuture#listen(IgniteInClosure)} performance.
  */
-@SuppressWarnings("unchecked")
-public class JmhCacheAsyncBenchmark extends JmhCacheAbstractBenchmark {
+@SuppressWarnings({"unchecked", "rawtypes"})
+public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
@@ -55,7 +59,7 @@ public class JmhCacheAsyncBenchmark extends JmhCacheAbstractBenchmark {
     public void put() throws Exception {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
-        cache.put(key, new IntValue(key));
+        blockingListen(cache.putAsync(key, new IntValue(key)));
     }
 
     /**
@@ -64,10 +68,29 @@ public class JmhCacheAsyncBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     @Benchmark
-    public Object get() throws Exception {
+    public void get() throws Exception {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
-        return cache.get(key);
+        blockingListen(cache.getAsync(key));
+    }
+
+    /**
+     * Blocks until future completion using {@link IgniteFuture#listen(IgniteInClosure)}.
+     *
+     * @param future Future
+     */
+    private static void blockingListen(IgniteFuture future) throws Exception {
+        CyclicBarrier cb = new CyclicBarrier(2);
+
+        future.listen(f -> {
+            try {
+                cb.await();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        cb.await();
     }
 
     /**
@@ -104,7 +127,7 @@ public class JmhCacheAsyncBenchmark extends JmhCacheAbstractBenchmark {
      */
     private static void run(String benchmark, int threads, boolean client, CacheAtomicityMode atomicityMode,
         CacheWriteSynchronizationMode writeSyncMode) throws Exception {
-        String simpleClsName = JmhCacheAsyncBenchmark.class.getSimpleName();
+        String simpleClsName = JmhCacheAsyncListenBenchmark.class.getSimpleName();
 
         String output = simpleClsName + "-" + benchmark +
             "-" + threads + "-threads" +
