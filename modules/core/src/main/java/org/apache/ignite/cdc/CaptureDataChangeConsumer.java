@@ -28,9 +28,9 @@ import org.apache.ignite.lang.IgniteExperimental;
  * This consumer will receive event of data changes during {@link IgniteCDC} application invocation.
  * Lifecycle of consumer is the following:
  * <ul>
- *     <li>Start of the consumer {@link #start(IgniteConfiguration, IgniteLogger)}</li>
+ *     <li>Start of the consumer {@link #start(IgniteConfiguration, IgniteLogger)}.</li>
  *     <li>Notification of the consumer by the {@link #onChange(Iterator)} call.</li>
- *     <li>Stop of the consumer {@link #stop()}</li>
+ *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
  *
  * Note, consumption of the {@link ChangeEvent} will started from the last saved offset.
@@ -41,7 +41,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see ChangeEventOrder
  */
 @IgniteExperimental
-public interface CDCConsumer<K, V> {
+public interface CaptureDataChangeConsumer<K, V> {
     /**
      * @return Consumer ID.
      */
@@ -54,11 +54,6 @@ public interface CDCConsumer<K, V> {
      * @param log Logger.
      */
     void start(IgniteConfiguration configuration, IgniteLogger log);
-
-    /**
-     * @return {@code True} if entry key and value should be keeped in binary format.
-     */
-    boolean keepBinary();
 
     /**
      * Handles entry changes events.

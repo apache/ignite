@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CDCConsumer;
+import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -115,13 +115,13 @@ public class CommandLineStartup {
      * @return CDC consumer defined in spring configuration.
      * @throws IgniteCheckedException
      */
-    private static CDCConsumer<?, ?> consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
-        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
+    private static CaptureDataChangeConsumer<?, ?> consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
+        Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CaptureDataChangeConsumer.class);
 
         if (consumersMap == null || consumersMap.size() != 1)
             exit("Exact 1 consumer should be defined", false, 1);
 
-        return (CDCConsumer<?, ?>)consumersMap.values().iterator().next();
+        return (CaptureDataChangeConsumer<?, ?>)consumersMap.values().iterator().next();
     }
 
     /**

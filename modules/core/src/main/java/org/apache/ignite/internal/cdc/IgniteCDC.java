@@ -35,7 +35,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CDCConsumer;
+import org.apache.ignite.SystemProperty;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -58,8 +60,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 
 /**
  * CDC(Capture Data Change) application.
- * Application run independently of Ignite node process and provide ability for the {@link CDCConsumer} to consume events({@link ChangeEvent}) from WAL segments.
- * User should responsible {@link CDCConsumer} implementation with custom consumption logic.
+ * Application run independently of Ignite node process and provide ability for the {@link CaptureDataChangeConsumer} to consume events({@link ChangeEvent}) from WAL segments.
+ * User should responsible {@link CaptureDataChangeConsumer} implementation with custom consumption logic.
  *
  * Ignite node should be explicitly configured for using {@link IgniteCDC}.
  * <ol>
@@ -71,7 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  *
  * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates hard link
  * to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
- * {@link IgniteCDC} application takes segment file and consumes events from it. After successfull consumption (see {@link CDCConsumer#onChange(Iterator)})
+ * {@link IgniteCDC} application takes segment file and consumes events from it. After successfull consumption (see {@link CaptureDataChangeConsumer#onChange(Iterator)})
  * WAL segement will be deleted from directory.
  *
  * Several Ignite nodes can be started on the same host.
@@ -94,27 +96,54 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * @see DataStorageConfiguration#setCdcPath(String)
  * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
  * @see CommandLineStartup
- * @see CDCConsumer
+ * @see CaptureDataChangeConsumer
  * @see DataStorageConfiguration#DFLT_CDC_PATH
  */
 public class IgniteCDC implements Runnable {
+    /** Default lock timeout. */
+    private static final int DFLT_LOCK_TIMEOUT = 1000;
+
+    /** Default keepBinary value. */
+    private static final boolean DFLT_KEEP_BINARY = true;
+
+    /** Default wait for new files timeout. */
+    private static final long DFLT_WAIT_FOR_NEW_FILES_TIMEOUT = 1000;
+
     /** System property to specify consistent id for CDC. */
+    @SystemProperty(value = "Consistent id for CDC", type = String.class)
     public static final String IGNITE_CDC_CONSISTENT_ID = "IGNITE_CDC_CONSISTENT_ID";
 
     /** System property to specify node index for CDC. */
+    @SystemProperty(value = "Node index for CDC.", type = String.class)
     public static final String IGNITE_CDC_NODE_IDX = "IGNITE_CDC_NODE_IDX";
 
     /** System property to specify lock file timeout for CDC. */
+    @SystemProperty(value = "Timeout to acquire file lock during CDC startup.", type = Integer.class,
+        defaults = "" + DFLT_LOCK_TIMEOUT)
     public static final String IGNITE_CDC_LOCK_TIMEOUT = "IGNITE_CDC_LOCK_TIMEOUT";
+
+    /** System property to specify if entries should be in {@link BinaryObject} form or deserialized before consumption. */
+    @SystemProperty(value = "Specifies if entries should be in BinaryObject form or deserialized before consumption.",
+        defaults = "" + DFLT_KEEP_BINARY)
+    public static final String IGNITE_CDC_KEEP_BINARY = "IGNITE_CDC_KEEP_BINARY";
+
+    /**
+     * CDC application periodically scans {@link DataStorageConfiguration#getCdcPath()} folder to find new WAL segments.
+     * This timeout specify amount of time application waits between subsequent checks when no new files available.
+     */
+    @SystemProperty(value = "CDC application periodically scans CDC folder to find new WAL segments. " +
+        "This timeout specify amount of time application waits between subsequent checks when no new files available.",
+        type = Long.class, defaults = "" + DFLT_KEEP_BINARY)
+    public static final String IGNITE_CDC_WAIT_FOR_NEW_FILE_TIMEOUT = "IGNITE_CDC_WAIT_FOR_NEW_FILE_TIMEOUT";
 
     /** State dir. */
     public static final String STATE_DIR = "state";
 
-    /** Default lock timeout. */
-    public static final int DFLT_LOCK_TIMEOUT = 1000;
+    /** Keep binary flag. */
+    private final boolean keepBinary;
 
-    /** Default wait for new files timeout. */
-    public static final int WAIT_FOR_NEW_FILES_TIMEOUT = 1000;
+    /** Wait for new files timeout. */
+    private final long waitForNewFilesTimeout;
 
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
@@ -124,9 +153,6 @@ public class IgniteCDC implements Runnable {
 
     /** Events consumer. */
     private final WALRecordsConsumer<?, ?> consumer;
-
-    /** Keep binary flag. */
-    private boolean keepBinary;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -156,9 +182,13 @@ public class IgniteCDC implements Runnable {
      * @param cfg Ignite configuration.
      * @param consumer Event consumer.
      */
-    public IgniteCDC(IgniteConfiguration cfg, CDCConsumer<?, ?> consumer) {
+    public IgniteCDC(IgniteConfiguration cfg, CaptureDataChangeConsumer<?, ?> consumer) {
         this.cfg = cfg;
         this.consumer = new WALRecordsConsumer<>(consumer);
+
+        keepBinary = IgniteSystemProperties.getBoolean(IGNITE_CDC_KEEP_BINARY, DFLT_KEEP_BINARY);
+        waitForNewFilesTimeout = IgniteSystemProperties.getLong(IGNITE_CDC_WAIT_FOR_NEW_FILE_TIMEOUT,
+            DFLT_WAIT_FOR_NEW_FILES_TIMEOUT);
 
         log = logger(cfg, workDir(cfg));
         factory = new IgniteWalIteratorFactory(log);
@@ -220,8 +250,6 @@ public class IgniteCDC implements Runnable {
 
             consumer.start(cfg, log);
 
-            keepBinary = consumer.keepBinary();
-
             try {
                 Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
 
@@ -244,7 +272,7 @@ public class IgniteCDC implements Runnable {
                     catch (IgniteCheckedException | IOException e) {
                         throw new IgniteException(e);
                     }
-                }, log);
+                }, waitForNewFilesTimeout, log);
             }
             finally {
                 consumer.stop();
@@ -366,7 +394,9 @@ public class IgniteCDC implements Runnable {
                 cdcDir[0] = dir;
 
                 return false;
-            }, log
+            },
+            waitForNewFilesTimeout,
+            log
         );
 
         return cdcDir[0];
@@ -465,11 +495,12 @@ public class IgniteCDC implements Runnable {
      * @param sorter Sorter of files.
      * @param callback Callback to be notified.
      */
+    @SuppressWarnings("BusyWait")
     public static void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> sorter,
-        Predicate<Path> callback, IgniteLogger log) throws InterruptedException {
+        Predicate<Path> callback, long timeout, IgniteLogger log) throws InterruptedException {
         // If watch dir not exists waiting for it creation.
         if (!Files.exists(watchDir))
-            waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false, log);
+            waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false, timeout, log);
 
         try {
             // Clear deleted file.
@@ -495,7 +526,7 @@ public class IgniteCDC implements Runnable {
                         return;
                 }
 
-                Thread.sleep(WAIT_FOR_NEW_FILES_TIMEOUT);
+                Thread.sleep(timeout);
             }
         }
         catch (IOException e) {

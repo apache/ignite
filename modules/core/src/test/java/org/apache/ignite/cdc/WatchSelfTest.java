@@ -89,7 +89,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
                 waitFor(parent, file::equals, Path::compareTo, p -> {
                     found[0] = p.equals(file);
                     return !found[0];
-                }, log());
+                }, 1000, log());
             }
             catch (InterruptedException e) {
                 throw new RuntimeException();
@@ -105,6 +105,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
         fut.cancel();
     }
 
+    /** */
     @Test
     public void testCallbackIfAlreadyExists() throws Exception {
         Files.createDirectories(parent);
@@ -118,7 +119,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
                 waitFor(parent, file::equals, Path::compareTo, p -> {
                     found[0] = p.equals(file);
                     return !found[0];
-                }, log());
+                }, 1000, log());
             }
             catch (InterruptedException e) {
                 throw new RuntimeException();
@@ -130,6 +131,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
         fut.cancel();
     }
 
+    /** */
     @Test
     public void testMultipleCallbacks() throws Exception {
         Files.createDirectories(parent);
@@ -147,7 +149,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
                         cnt[0]++;
 
                     return cnt[0] < expCnt;
-                }, log());
+                }, 1000, log());
             }
             catch (InterruptedException e) {
                 throw new RuntimeException();
@@ -169,6 +171,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
         fut.cancel();
     }
 
+    /** */
     @Test
     public void testCallbackAfterRemove() throws Exception {
         Files.createDirectories(parent);
@@ -189,7 +192,7 @@ public class WatchSelfTest extends GridCommonAbstractTest {
                             cnt[0]++;
 
                         return cnt[0] < expCnt;
-                    }, log());
+                    }, 1000, log());
             }
             catch (InterruptedException e) {
                 throw new RuntimeException();

@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.cdc.IgniteCDC;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -30,7 +29,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @param <K> Key type.
  * @param <V> Value type.
  * @see IgniteCDC
- * @see CDCConsumer
+ * @see CaptureDataChangeConsumer
  */
 @IgniteExperimental
 public class ChangeEvent<K, V> implements Serializable {
@@ -38,11 +37,9 @@ public class ChangeEvent<K, V> implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    @GridToStringInclude(sensitive = true)
     private final K key;
 
     /** Value. */
-    @GridToStringInclude(sensitive = true)
     private final V val;
 
     /** {@code True} if changes made on primary node. */

@@ -24,7 +24,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * Type of operations.
  *
  * @see IgniteCDC
- * @see CDCConsumer
+ * @see CaptureDataChangeConsumer
  * @see ChangeEvent
  */
 @IgniteExperimental

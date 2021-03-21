@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,6 +58,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
+@WithSystemProperty(key = IgniteCDC.IGNITE_CDC_KEEP_BINARY, value = "false")
 public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
@@ -415,7 +417,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestCDCConsumer implements CDCConsumer<Integer, User> {
+    private static class TestCDCConsumer implements CaptureDataChangeConsumer<Integer, User> {
         /** Keys */
         private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
@@ -430,11 +432,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
             stoped = false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean keepBinary() {
-            return false;
         }
 
         /** {@inheritDoc} */

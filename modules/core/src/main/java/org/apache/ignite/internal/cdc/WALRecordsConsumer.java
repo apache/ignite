@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cdc;
 import java.util.EnumSet;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.CDCConsumer;
+import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.cdc.ChangeEventOrder;
 import org.apache.ignite.cdc.ChangeEventType;
@@ -41,17 +41,17 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
- * Transform {@link DataEntry} to {@link ChangeEvent} and sends it to {@link CDCConsumer}.
+ * Transform {@link DataEntry} to {@link ChangeEvent} and sends it to {@link CaptureDataChangeConsumer}.
  *
  * @see IgniteCDC
- * @see CDCConsumer
+ * @see CaptureDataChangeConsumer
  */
 public class WALRecordsConsumer<K, V> {
     /** Ignite logger. */
     private IgniteLogger log;
 
     /** Data change events consumer. */
-    private final CDCConsumer<K, V> dataConsumer;
+    private final CaptureDataChangeConsumer<K, V> dataConsumer;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -70,7 +70,7 @@ public class WALRecordsConsumer<K, V> {
     /**
      * @param dataConsumer User provided CDC consumer.
      */
-    public WALRecordsConsumer(CDCConsumer<K, V> dataConsumer) {
+    public WALRecordsConsumer(CaptureDataChangeConsumer<K, V> dataConsumer) {
         this.dataConsumer = dataConsumer;
     }
 
@@ -79,7 +79,7 @@ public class WALRecordsConsumer<K, V> {
      * If this method return {@code true} then current offset in WAL will be stored and WAL iteration will be
      * started from it on CDC application fail/restart.
      *
-     * @param records WAL records iterator.
+     * @param recs WAL records iterator.
      * @param <T> Record type.
      * @return {@code True} if current offset in WAL should be commited.
      */
@@ -150,13 +150,6 @@ public class WALRecordsConsumer<K, V> {
         dataConsumer.start(configuration, log);
 
         log.info("DataChangeConsumer started[id=" + dataConsumer.id() + ']');
-    }
-
-    /**
-     * @return {@code True} if entry key and value should be keeped in binary format.
-     */
-    public boolean keepBinary() {
-        return dataConsumer.keepBinary();
     }
 
     /**
