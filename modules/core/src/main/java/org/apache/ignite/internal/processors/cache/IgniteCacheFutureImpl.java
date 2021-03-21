@@ -40,8 +40,6 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
      */
     public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut, Executor defaultExecutor) {
         super(fut, defaultExecutor);
-
-        assert defaultExecutor != null;
     }
 
     /** {@inheritDoc} */
