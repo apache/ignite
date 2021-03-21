@@ -17,6 +17,7 @@
 This module contains Cellular Affinity tests.
 """
 import math
+import os
 from typing import List
 from ducktape import errors
 from ducktape.cluster.cluster import ClusterNode
@@ -30,7 +31,6 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.util import copy_file_to_dest
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATEST_2_8
@@ -279,4 +279,6 @@ def create_idle_dump_and_copy_to_log_dir(control_utility: ControlUtility, node: 
 
     dump = control_utility.idle_verify_dump(node)
 
-    return copy_file_to_dest(node, dump, log_dir)
+    node.account.ssh_output(f'cp {dump} {log_dir}')
+
+    return os.path.join(log_dir, os.path.basename(dump))
