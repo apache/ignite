@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
     /// <summary>
