@@ -27,12 +27,16 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
 
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Cache async listen benchmark.
  * Measures {@link IgniteFuture#listen(IgniteInClosure)} performance.
+ *
+ * Results on i7-9700K, Ubuntu 20.04.1, JDK 1.8.0_275:
+ * Benchmark                          Mode  Cnt      Score      Error  Units
+ * JmhCacheAsyncListenBenchmark.put  thrpt   10  72334.080 ± 1741.519  ops/s
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
@@ -68,17 +72,24 @@ public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
      * @param future Future
      */
     private static void blockingListen(IgniteFuture future) throws Exception {
-        CyclicBarrier cb = new CyclicBarrier(2);
+        AtomicBoolean ab = new AtomicBoolean();
 
         future.listen(f -> {
             try {
-                cb.await();
+                synchronized (ab) {
+                    ab.set(true);
+                    ab.notifyAll();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
 
-        cb.await();
+        synchronized (ab) {
+            while (!ab.get()) {
+                ab.wait(5000);
+            }
+        }
     }
 
     /**
