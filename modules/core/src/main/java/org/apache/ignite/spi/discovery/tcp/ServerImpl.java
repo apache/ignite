@@ -2216,10 +2216,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /**
      * Thread that cleans IP finder and keeps it in the correct state, unregistering
-     * addresses of the nodes that has left the topology.
+     * addresses of the nodes that has left the topology and re-registries missing addresses.
      * <p>
      * This thread should run only on coordinator node and will clean IP finder
      * if and only if {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * <p>
+     * Run with frequency {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi#ipFinderCleanFreq}
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**
@@ -6803,9 +6805,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?" +
                                 (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
-                                ") " +
-                                "[rmtAddr=" + rmtAddr +
-                                ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                                ") [rmtAddr=" + rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, "Unknown connection detected (is some other software connecting to " +
                             "this Ignite port?" +
@@ -7364,11 +7364,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     U.interrupt(clientMsgWrk.runner());
                 }
 
-                U.closeQuiet(sock);
+                U.close(sock, log);
 
                 if (log.isInfoEnabled())
                     log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
-                        ", rmtPort=" + sock.getPort());
+                        ", rmtPort=" + sock.getPort() + ", rmtNodeId=" + nodeId + ']');
 
                 if (isLocalNodeCoordinator() && !ring.hasRemoteServerNodes())
                     U.enhanceThreadName(msgWorkerThread, "crd");
@@ -7862,7 +7862,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     U.interrupt(runner());
 
-                    U.closeQuiet(sock);
+                    U.close(sock, log);
                 }
             }
         }

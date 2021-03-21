@@ -180,6 +180,9 @@ public class GridCacheUtils {
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
+    /** System cache group id. */
+    public static final int UTILITY_CACHE_GROUP_ID = cacheGroupId(UTILITY_CACHE_NAME, null);
+
     /** Reserved cache names */
     public static final String[] RESERVED_NAMES = new String[] {
         UTILITY_CACHE_NAME,
