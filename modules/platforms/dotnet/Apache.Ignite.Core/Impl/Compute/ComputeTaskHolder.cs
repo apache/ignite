@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -489,8 +490,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="err">Error.</param>
         private void Finish(TR res, Exception err)
         {
-            // TODO: Always call this on the ThreadPool to avoid capturing public pool thread.
-            _fut.OnDone(res, err);
+            // Always complete the future on a ThreadPool thread to avoid capturing Ignite "pub-" thread.
+            ThreadPool.QueueUserWorkItem(_ => _fut.OnDone(res, err));
         }
 
         /// <summary>
