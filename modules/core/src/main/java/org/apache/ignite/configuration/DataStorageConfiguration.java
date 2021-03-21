@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -289,6 +290,7 @@ public class DataStorageConfiguration implements Serializable {
     private long walAutoArchiveAfterInactivity = -1;
 
     /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
     /**
@@ -1033,6 +1035,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
      */
+    @IgniteExperimental
     public long getWalForceArchiveTimeout() {
         return walForceArchiveTimeout;
     }
