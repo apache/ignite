@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -245,9 +246,11 @@ public class DataStorageConfiguration implements Serializable {
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
     /** CDC path. */
+    @IgniteExperimental
     private String cdcPath = DFLT_CDC_PATH;
 
     /** CDC enabled flag. */
+    @IgniteExperimental
     private boolean cdcEnabled;
 
     /** Metrics enabled flag. */
@@ -737,6 +740,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return CDC directory.
      */
+    @IgniteExperimental
     public String getCdcPath() {
         return cdcPath;
     }
@@ -748,6 +752,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param cdcPath CDC directory.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public DataStorageConfiguration setCdcPath(String cdcPath) {
         this.cdcPath = cdcPath;
 
@@ -759,6 +764,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param cdcEnabled CDC enabled flag.
      */
+    @IgniteExperimental
     public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
         this.cdcEnabled = cdcEnabled;
 
@@ -771,6 +777,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Metrics enabled flag.
      */
+    @IgniteExperimental
     public boolean isCdcEnabled() {
         return cdcEnabled;
     }
