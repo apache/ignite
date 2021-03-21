@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,48 +27,36 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeTestAsyncAwait : TestBase
     {
         /// <summary>
-        /// TODO
+        /// Tests that RunAsync continuation does not capture Ignite threads.
         /// </summary>
         [Test]
         public async Task TestComputeRunAsyncContinuation()
         {
-            // TODO: Test local and remote execution - where do we end up?
-            // Test Tasks and Funcs.
-            var compute = Ignite.GetCompute();
+            await Ignite.GetCompute().RunAsync(new ComputeAction());
 
-            // TODO: Most of the Compute goes through PlatformAbstractTask.reduce, except for Affinity* overloads
-            // - test them separately.
-            await compute.RunAsync(new ComputeAction());
-
-            // TODO: More problems: here we hold the pub- thread that called PlatformAbstractTask.reduce,
-            // so reducing never completes and there is a resource leak.
-            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
+            StringAssert.StartsWith("Thread-", TestUtilsJni.GetJavaThreadName());
         }
 
         /// <summary>
-        /// TODO
+        /// Tests that ExecuteAsync continuation does not capture Ignite threads.
         /// </summary>
         [Test]
         public async Task TestComputeExecuteAsyncContinuation()
         {
-            var compute = Ignite.GetCompute();
+            await Ignite.GetCompute().ExecuteAsync(new StringLengthEmptyTask(), "abc");
 
-            await compute.ExecuteAsync(new StringLengthEmptyTask(), "abc");
-
-            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
+            StringAssert.StartsWith("Thread-", TestUtilsJni.GetJavaThreadName());
         }
 
         /// <summary>
-        /// TODO
+        /// Tests that AffinityRunAsync continuation does not capture Ignite threads.
         /// </summary>
         [Test]
         public async Task TestComputeAffinityRunAsyncContinuation()
         {
-            // TODO: Test local and remote execution.
-            var compute = Ignite.GetCompute();
             var cache = Ignite.GetOrCreateCache<int, int>("c");
 
-            await compute.AffinityRunAsync(new[] {cache.Name}, 1, new ComputeAction());
+            await Ignite.GetCompute().AffinityRunAsync(new[] {cache.Name}, 1, new ComputeAction());
 
             StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
         }
