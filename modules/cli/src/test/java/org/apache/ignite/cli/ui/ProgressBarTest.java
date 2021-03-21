@@ -20,6 +20,7 @@ package org.apache.ignite.cli.ui;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import org.apache.ignite.cli.AbstractCliTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static picocli.CommandLine.Help.Ansi.AUTO;
 
 /** */
-public class ProgressBarTest {
+public class ProgressBarTest extends AbstractCliTest {
     /** */
     private PrintWriter out;
 
