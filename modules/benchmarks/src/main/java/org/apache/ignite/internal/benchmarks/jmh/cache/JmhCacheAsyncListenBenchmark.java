@@ -35,8 +35,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Measures {@link IgniteFuture#listen(IgniteInClosure)} performance.
  *
  * Results on i7-9700K, Ubuntu 20.04.1, JDK 1.8.0_275:
+ *
+ * Without ForkJoinPool async continuation executor:
  * Benchmark                          Mode  Cnt      Score      Error  Units
- * JmhCacheAsyncListenBenchmark.put  thrpt   10  72334.080 ± 1741.519  ops/s
+ * JmhCacheAsyncListenBenchmark.get  thrpt   10  82052.664 ± 2891.182  ops/s
+ * JmhCacheAsyncListenBenchmark.put  thrpt   10  77859.584 ± 2071.196  ops/s
+ *
+ * With ForkJoinPool async continuation executor:
+ * Benchmark                          Mode  Cnt      Score      Error  Units
+ * JmhCacheAsyncListenBenchmark.get  thrpt   10  76008.272 ± 1506.928  ops/s
+ * JmhCacheAsyncListenBenchmark.put  thrpt   10  73393.986 ± 1336.420  ops/s
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
@@ -64,6 +72,18 @@ public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
         blockingListen(cache.putAsync(key, new IntValue(key)));
+    }
+
+    /**
+     * Test GET operation.
+     *
+     * @throws Exception If failed.
+     */
+    @Benchmark
+    public void get() throws Exception {
+        int key = ThreadLocalRandom.current().nextInt(CNT);
+
+        blockingListen(cache.getAsync(key));
     }
 
     /**
