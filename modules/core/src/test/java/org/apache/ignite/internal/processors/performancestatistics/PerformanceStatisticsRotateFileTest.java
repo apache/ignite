@@ -117,6 +117,8 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         fut.get();
 
         assertEquals(NODES_CNT * 2, statisticsFiles().size());
+
+        stopCollectStatistics();
     }
 
     /** Checks files and operations count. */

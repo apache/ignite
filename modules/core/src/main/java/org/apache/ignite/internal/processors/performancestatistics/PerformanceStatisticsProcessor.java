@@ -69,6 +69,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics future. */
     @Nullable private volatile GridFutureAdapter<Serializable> rotateFut;
 
+    /** Process id. */
+    private final UUID procId = UUID.randomUUID();
+
     /** Rotate performance statistics process. */
     private final DistributedProcess<Serializable, Serializable> rotateProc;
 
@@ -90,7 +93,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             }),
             (id, res, err) -> {
             synchronized (mux) {
-                if (id.equals(ctx.localNodeId())) {
+                if (id.equals(procId)) {
                     if (!err.isEmpty())
                         rotateFut.onDone(F.first(err.values()));
                     else
@@ -263,7 +266,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
             rotateFut = new GridFutureAdapter<>();
 
-            rotateProc.start(ctx.localNodeId(), null);
+            rotateProc.start(procId, null);
 
             return rotateFut;
         }
