@@ -48,6 +48,11 @@ namespace Apache.Ignite.Core.Configuration
         /// This mode can improve performance, because continuations do not have to be scheduled on another thread.
         /// However, special care is required to release striped threads as soon as possible.
         /// </summary>
-        UnsafeSynchronous = 1
+        UnsafeSynchronous = 1,
+
+        /// <summary>
+        /// Indicates that custom executor is configured on the Java side.
+        /// </summary>
+        Custom = 2
     }
 }
