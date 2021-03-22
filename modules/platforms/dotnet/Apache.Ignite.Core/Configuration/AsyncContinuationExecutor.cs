@@ -52,6 +52,8 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Indicates that custom executor is configured on the Java side.
+        /// <para />
+        /// This value should not be used explicitly.
         /// </summary>
         Custom = 2
     }

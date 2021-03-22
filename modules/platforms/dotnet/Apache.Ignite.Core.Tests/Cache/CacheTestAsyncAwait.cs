@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -94,6 +95,21 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Jump away from striped pool to avoid deadlock on node stop.
                 await Task.Yield();
             }
+        }
+
+        /// <summary>
+        /// Tests that invalid executor configuration is rejected.
+        /// </summary>
+        [Test]
+        public void TestInvalidExecutorConfigurationFailsOnStart()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                AsyncContinuationExecutor = AsyncContinuationExecutor.Custom
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("Invalid AsyncContinuationExecutor mode: 2", ex.Message);
         }
     }
 }
