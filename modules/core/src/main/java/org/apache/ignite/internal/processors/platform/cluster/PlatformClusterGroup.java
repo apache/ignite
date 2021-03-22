@@ -471,7 +471,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 return new PlatformEvents(platformCtx, platformCtx.kernalContext().grid().events(prj));
 
             case OP_GET_SERVICES:
-                return new PlatformServices(platformCtx, platformCtx.kernalContext().grid().services(prj),false);
+                return new PlatformServices(platformCtx, platformCtx.kernalContext().grid().services(prj), false);
         }
 
         return super.processOutObject(type);

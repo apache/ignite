@@ -102,7 +102,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
 
         long maxKey = 10_000;
 
-        Map<Long,String> map = new ConcurrentHashMap<>();
+        Map<Long, String> map = new ConcurrentHashMap<>();
 
         int threads = 16;
         AtomicInteger threadShift = new AtomicInteger();
@@ -128,10 +128,10 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
         info("Alloc size: " + metrics.getTotalAllocatedSize());
         info("Store size: " + metrics.getStorageSize());
 
-        HashMap<Long,String> map2 = new HashMap<>(map);
+        HashMap<Long, String> map2 = new HashMap<>(map);
 
-        IgniteCache<Long,String> c = ignite.cache(CACHE);
-        for (Cache.Entry<Long,String> e : c.query(new ScanQuery<Long,String>()).getAll())
+        IgniteCache<Long, String> c = ignite.cache(CACHE);
+        for (Cache.Entry<Long, String> e : c.query(new ScanQuery<Long, String>()).getAll())
             assertEquals(e.getValue(), map.remove(e.getKey()));
 
         assertTrue(map.isEmpty());
@@ -143,7 +143,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         c = ignite.cache(CACHE);
-        for (Cache.Entry<Long,String> e : c.query(new ScanQuery<Long,String>()).getAll())
+        for (Cache.Entry<Long, String> e : c.query(new ScanQuery<Long, String>()).getAll())
             assertEquals(e.getValue(), map2.remove(e.getKey()));
 
         assertTrue(map2.isEmpty());
