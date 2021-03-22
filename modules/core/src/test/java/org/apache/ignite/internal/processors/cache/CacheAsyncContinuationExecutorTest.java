@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.junit.Test;
-
 import java.util.Optional;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
 
 /**
  * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
