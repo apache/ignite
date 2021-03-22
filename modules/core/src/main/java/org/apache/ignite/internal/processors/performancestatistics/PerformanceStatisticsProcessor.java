@@ -266,7 +266,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
         synchronized (rotateMux) {
             if (rotateFut != null)
-                throw new IgniteCheckedException("Rotation already in progress.");
+                throw new IgniteCheckedException("Rotation of performance statistics collection already in progress.");
 
             rotateFut = new GridFutureAdapter<>();
 
