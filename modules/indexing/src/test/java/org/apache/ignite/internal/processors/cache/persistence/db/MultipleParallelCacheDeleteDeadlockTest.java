@@ -32,6 +32,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
@@ -223,6 +224,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 rootPage.isAllocated(),
                 def.inlineSize(),
                 def.keyTypeSettings(),
+                def.idxRowCache(),
                 stats,
                 def.rowHandlerFactory(),
                 recommender);
@@ -246,6 +248,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
             boolean initNew,
             int configuredInlineSize,
             IndexKeyTypeSettings keyTypeSettings,
+            IndexRowCache rowCache,
             IoStatisticsHolder stats,
             InlineIndexRowHandlerFactory rowHndFactory,
             InlineRecommender recommender
@@ -262,6 +265,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 initNew,
                 configuredInlineSize,
                 keyTypeSettings,
+                rowCache,
                 stats,
                 rowHndFactory,
                 recommender

@@ -113,13 +113,24 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
         assert link != 0;
 
+        InlineIndexTree inlineTree = (InlineIndexTree) tree;
+
+        IndexRowImpl cachedRow = inlineTree.getCachedIndexRow(link);
+
+        if (cachedRow != null)
+            return cachedRow;
+
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        CacheGroupContext ctx = ((InlineIndexTree) tree).cacheContext().group();
+        CacheGroupContext ctx = inlineTree.cacheContext().group();
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
-        return new IndexRowImpl(ThreadLocalRowHandlerHolder.rowHandler(), row);
+        IndexRowImpl r = new IndexRowImpl(ThreadLocalRowHandlerHolder.rowHandler(), row);
+
+        inlineTree.cacheIndexRow(r);
+
+        return r;
     }
 
     /** {@inheritDoc} */

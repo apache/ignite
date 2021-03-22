@@ -28,6 +28,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
@@ -90,6 +93,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** */
     private final IgniteLogger log;
 
+    /** Row cache. */
+    private final @Nullable IndexRowCache idxRowCache;
+
     /**
      * Constructor.
      */
@@ -105,7 +111,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         boolean initNew,
         int configuredInlineSize,
         IndexKeyTypeSettings keyTypeSettings,
-        IoStatisticsHolder stats,
+        @Nullable IndexRowCache idxRowCache,
+        @Nullable IoStatisticsHolder stats,
         InlineIndexRowHandlerFactory rowHndFactory,
         InlineRecommender recommender) throws IgniteCheckedException {
         super(
@@ -132,6 +139,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         created = initNew;
 
         this.def = def;
+
+        this.idxRowCache = idxRowCache;
 
         if (!initNew) {
             // Init from metastore.
@@ -346,6 +355,19 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      */
     private static int applySortOrder(int c, SortOrder order) {
         return order == SortOrder.ASC ? c : -c;
+    }
+
+    /** Get cached index row or {@code null} if the index row cache is not configured. */
+    public IndexRowImpl getCachedIndexRow(long link) throws IgniteCheckedException {
+        return idxRowCache == null ? null : idxRowCache.get(link);
+    }
+
+    /** Cache index row.  */
+    public void cacheIndexRow(IndexRowImpl row) {
+        if (idxRowCache == null)
+            return;
+
+        idxRowCache.put(row);
     }
 
     /** {@inheritDoc} */

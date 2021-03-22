@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -47,6 +48,9 @@ public class RowStore {
 
     /** */
     private final boolean persistenceEnabled;
+
+    /** Row cache cleaner. */
+    private volatile GridQueryRowCacheCleaner rowCacheCleaner;
 
     /** */
     protected final CacheGroupContext grp;
@@ -75,6 +79,9 @@ public class RowStore {
      */
     public void removeRow(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
+
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
 
         if (!persistenceEnabled)
             freeList.removeDataRowByLink(link, statHolder);
@@ -139,6 +146,9 @@ public class RowStore {
     public boolean updateRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
+
         return freeList.updateDataRow(link, row, statHolder);
     }
 
@@ -171,5 +181,14 @@ public class RowStore {
      */
     public FreeList freeList() {
         return freeList;
+    }
+
+    /**
+     * Inject rows cache cleaner.
+     *
+     * @param rowCacheCleaner Rows cache cleaner.
+     */
+    public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+        this.rowCacheCleaner = rowCacheCleaner;
     }
 }

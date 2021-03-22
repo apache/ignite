@@ -461,6 +461,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryIndexDefinition idxDef = new QueryIndexDefinition(
                 tbl,
                 name,
+                ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
                 pk,
                 affinityKey,
                 unwrappedCols,
@@ -2361,12 +2362,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException {
+        ctx.indexProcessor().idxRowCacheRegistry().onCacheRegistered(cacheInfo);
 
         schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());
     }
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) {
+        ctx.indexProcessor().idxRowCacheRegistry().onCacheUnregistered(cacheInfo);
+
         String cacheName = cacheInfo.name();
 
         partReservationMgr.onCacheStop(cacheName);

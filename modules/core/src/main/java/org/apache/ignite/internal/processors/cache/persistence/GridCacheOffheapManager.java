@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -1889,6 +1890,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          */
         private volatile long nextStoreCleanTimeNanos;
 
+        /** */
+        private GridQueryRowCacheCleaner rowCacheCleaner;
+
         /**
          * Mutex used to synchronise publication of initialized delegate link and actions that should change
          * the delegate's state, so the delegate will not be in obsolete state.
@@ -2189,6 +2193,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
 
                     synchronized (delegatePublicationMux) {
+                        delegate0.setRowCacheCleaner(rowCacheCleaner);
+
                         delegate = delegate0;
                     }
                 }
@@ -2567,6 +2573,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 // Partition may not exists before recovery starts in case of recovering counters from RollbackRecord.
                 delegate0.updateInitialCounter(start, delta);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+            try {
+                synchronized (delegatePublicationMux) {
+                    this.rowCacheCleaner = rowCacheCleaner;
+                }
+
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 != null)
+                    delegate0.setRowCacheCleaner(rowCacheCleaner);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

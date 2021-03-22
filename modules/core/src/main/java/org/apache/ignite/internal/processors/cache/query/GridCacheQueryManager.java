@@ -404,7 +404,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public void store(CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable) throws IgniteCheckedException {
-        assert enabled() || isIndexingSpiEnabled();
+        assert enabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
 
         if (!enterBusy())

@@ -39,6 +39,9 @@ public interface SortedIndexDefinition extends IndexDefinition {
     /** Index key type settings. */
     public IndexKeyTypeSettings keyTypeSettings();
 
+    /** Cache of index rows. */
+    public IndexRowCache idxRowCache();
+
     /** Amount of index tree segments.*/
     public int segments();
 

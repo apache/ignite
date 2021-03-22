@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
@@ -73,14 +74,19 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     /** Index key type settings. */
     private IndexKeyTypeSettings keyTypeSettings;
 
+    /** Index rows cache. */
+    private IndexRowCache idxRowCache;
+
     /** Row handler factory. */
     private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();
 
     /** */
-    public QueryIndexDefinition(GridH2Table tbl, String idxName, boolean isPrimary, boolean isAffinity,
-        List<IndexColumn> h2UnwrappedCols, List<IndexColumn> h2WrappedCols, int cfgInlineSize) {
+    public QueryIndexDefinition(GridH2Table tbl, String idxName, IndexRowCache idxRowCache,
+        boolean isPrimary, boolean isAffinity, List<IndexColumn> h2UnwrappedCols, List<IndexColumn> h2WrappedCols,
+        int cfgInlineSize) {
 
         this.idxName = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
+        this.idxRowCache = idxRowCache;
         this.segments = tbl.rowDescriptor().context().config().getQueryParallelism();
         this.inlineSize = cfgInlineSize;
         this.isPrimary = isPrimary;
@@ -176,6 +182,11 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     /** {@inheritDoc} */
     @Override public IndexKeyTypeSettings keyTypeSettings() {
         return keyTypeSettings;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexRowCache idxRowCache() {
+        return idxRowCache;
     }
 
     /** {@inheritDoc} */

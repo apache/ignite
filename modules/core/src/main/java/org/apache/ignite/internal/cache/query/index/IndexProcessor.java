@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCacheRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.IndexingDefragmentation;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
@@ -88,6 +90,9 @@ public class IndexProcessor extends GridProcessorAdapter {
 
     /** Serializer for representing JO as byte array in inline. */
     public static JavaObjectKeySerializer serializer;
+
+    /** Row cache. */
+    private final IndexRowCacheRegistry idxRowCacheRegistry = new IndexRowCacheRegistry();
 
     /**
      * Registry of all indexes. High key is a cache name, lower key is an unique index name.
@@ -293,6 +298,25 @@ public class IndexProcessor extends GridProcessorAdapter {
 
         if (err != null)
             throw err;
+    }
+
+    /**
+     * Index row cache.
+     *
+     * @param grpId Cache group id.
+     * @return Index row cache.
+     */
+    public IndexRowCache rowCacheCleaner(int grpId) {
+        return idxRowCacheRegistry.forGroup(grpId);
+    }
+
+    /**
+     * Index row cache registry.
+     *
+     * @return Index row cache registry.
+     */
+    public IndexRowCacheRegistry idxRowCacheRegistry() {
+        return idxRowCacheRegistry;
     }
 
     /**

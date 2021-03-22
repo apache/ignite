@@ -99,6 +99,13 @@ public class IndexRowImpl implements IndexRow {
         return cacheRow;
     }
 
+    /**
+     * @return Cache ID or {@code 0} if cache ID is not defined.
+     */
+    public int cacheId() {
+        return cacheDataRow().cacheId();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB("Row@");
