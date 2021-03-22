@@ -92,18 +92,18 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return null;
             }),
             (id, res, err) -> {
-            synchronized (mux) {
-                if (id.equals(rotateId)) {
-                    if (!err.isEmpty())
-                        rotateFut.onDone(F.first(err.values()));
-                    else
-                        rotateFut.onDone();
+                synchronized (mux) {
+                    if (id.equals(rotateId)) {
+                        if (!err.isEmpty())
+                            rotateFut.onDone(F.first(err.values()));
+                        else
+                            rotateFut.onDone();
 
-                    rotateFut = null;
+                        rotateFut = null;
 
-                    rotateId = null;
+                        rotateId = null;
+                    }
                 }
-            }
             });
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
@@ -255,7 +255,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If rotation failed.
      */
-    public synchronized IgniteInternalFuture<Serializable> rotateCollectStatistics() throws IgniteCheckedException {
+    public IgniteInternalFuture<Serializable> rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
