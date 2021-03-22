@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable MethodHasAsyncOverload
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Threading;
@@ -51,6 +52,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
         }
 
+        /// <summary>
+        /// Tests that local operation executes synchronously and completes on the same thread.
+        /// </summary>
         [Test]
         public async Task TestLocalOperationExecutesSynchronously()
         {
@@ -59,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var origThread = Thread.CurrentThread;
 
             await cache.PutAsync(key, key);
-            
+
             Assert.AreEqual(origThread.ManagedThreadId, Thread.CurrentThread.ManagedThreadId);
         }
     }
