@@ -23,7 +23,7 @@ from distutils.version import LooseVersion
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.utils.IgniteTestService import IgniteTestService
+from ignitetest.services.utils.ignite_test_service import IgniteTestService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 

@@ -25,6 +25,7 @@ from ignitetest.services.ignite_execution_exception import IgniteExecutionExcept
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
+# pylint: disable=R0901
 class IgniteApplicationService(IgniteAwareService):
     """
     The base class to build Ignite aware application written on java.

@@ -23,7 +23,7 @@ import traceback
 
 from ducktape.services.service import Service
 
-from ignitetest.services.utils.IgniteTestService import IgniteTestService
+from ignitetest.services.utils.ignite_test_service import IgniteTestService
 
 
 class BackgroundThreadService(Service, IgniteTestService, metaclass=ABCMeta):
