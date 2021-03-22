@@ -18,6 +18,7 @@
 // ReSharper disable MethodHasAsyncOverload
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Configuration;
@@ -77,17 +78,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = "client",
-                AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous
+                AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous,
+                ClientMode = true
             };
 
-            using (var client = Ignition.Start(cfg))
-            {
-                var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var client = Ignition.Start(cfg);
+            var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
-                await cache.PutAsync(1, 1);
+            await cache.PutAsync(1, 1);
 
-                StringAssert.StartsWith("striped", TestUtilsJni.GetJavaThreadName());
-            }
+            StringAssert.StartsWith("striped", TestUtilsJni.GetJavaThreadName());
+
+            Ignition.Stop(cfg.IgniteInstanceName, true);
         }
     }
 }

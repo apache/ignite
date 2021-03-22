@@ -743,6 +743,7 @@ public class IgniteConfiguration {
         warmupClos = cfg.getWarmupClosure();
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
+        asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
     }
 
     /**
