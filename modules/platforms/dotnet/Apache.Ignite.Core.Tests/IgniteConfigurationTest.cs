@@ -315,6 +315,7 @@ namespace Apache.Ignite.Core.Tests
                 CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
 
                 Assert.AreEqual(false, resCfg.JavaPeerClassLoadingEnabled);
+                Assert.AreEqual(AsyncContinuationExecutor.Custom, resCfg.AsyncContinuationExecutor);
             }
         }
 
