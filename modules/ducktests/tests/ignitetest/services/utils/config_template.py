@@ -43,8 +43,9 @@ class ConfigTemplate:
         Render configuration.
         """
         kwargs.update(self.default_params)
-        res = self.template.render(**kwargs)
-        return res
+        unfiltered = self.template.render(**kwargs)
+
+        return '\n'.join(filter(lambda line: line.strip(), unfiltered.split('\n')))
 
 
 class IgniteServerConfigTemplate(ConfigTemplate):
