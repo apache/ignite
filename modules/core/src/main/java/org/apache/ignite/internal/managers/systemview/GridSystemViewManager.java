@@ -245,7 +245,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param sysView System view.
      */
     private void registerView0(String name, SystemView<?> sysView) {
-        if (ctx.security().enabled())
+        if (ctx.security() != null && ctx.security().enabled())
             sysView = secureSystemView(sysView, ctx.security());
 
         systemViews.put(name, sysView);
