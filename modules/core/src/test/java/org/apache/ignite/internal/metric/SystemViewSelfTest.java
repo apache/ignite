@@ -35,6 +35,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -53,6 +57,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -69,6 +74,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -76,6 +82,10 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.systemview.view.AtomicLongView;
+import org.apache.ignite.spi.systemview.view.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.AtomicSequenceView;
+import org.apache.ignite.spi.systemview.view.AtomicStampedView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
@@ -99,6 +109,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
@@ -113,6 +124,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DEFAULT_DS_GROUP_NAME;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.LONGS_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.REFERENCES_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SEQUENCES_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -841,6 +857,275 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
         }
+    }
+
+    /** */
+    @Test
+    public void testAtomicSequence() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx g1 = startGrid(1)) {
+            IgniteAtomicSequence s1 = g0.atomicSequence("seq-1", 42, true);
+            IgniteAtomicSequence s2 = g0.atomicSequence("seq-2",
+                new AtomicConfiguration().setBackups(1).setGroupName("my-group"), 43, true);
+
+            s1.batchSize(42);
+
+            SystemView<AtomicSequenceView> seqs = g0.context().systemView().view(SEQUENCES_VIEW);
+
+            for (AtomicSequenceView s : seqs) {
+                if ("seq-1".equals(s.name())) {
+                    assertEquals(42, s.value());
+                    assertEquals(42, s.batchSize());
+                    assertEquals(DEFAULT_DS_GROUP_NAME, s.groupName());
+                    assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), s.groupId());
+
+                    long val = s1.addAndGet(42);
+
+                    assertEquals(val, s.value());
+                    assertFalse(s.removed());
+                }
+                else {
+                    assertEquals("seq-2", s.name());
+                    assertEquals(DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE, s.batchSize());
+                    assertEquals(43, s.value());
+                    assertEquals("my-group", s.groupName());
+                    assertEquals(CU.cacheId("my-group"), s.groupId());
+                    assertFalse(s.removed());
+
+                    s2.close();
+
+                    assertTrue(s.removed());
+                }
+            }
+
+            assertEquals(0, g1.context().systemView().view(SEQUENCES_VIEW).size());
+
+            g1.atomicSequence("seq-1", 42, true);
+
+            assertEquals(1, g1.context().systemView().view(SEQUENCES_VIEW).size());
+
+            AtomicSequenceView s = g1.context().systemView().<AtomicSequenceView>view(SEQUENCES_VIEW).iterator().next();
+
+            assertEquals(DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE + 42, s.value());
+            assertEquals(DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE, s.batchSize());
+            assertEquals(DEFAULT_DS_GROUP_NAME, s.groupName());
+            assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), s.groupId());
+            assertFalse(s.removed());
+
+            s1.close();
+
+            assertTrue(s.removed());
+        }
+    }
+
+    /** */
+    @Test
+    public void testAtomicLongs() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx g1 = startGrid(1)) {
+            IgniteAtomicLong l1 = g0.atomicLong("long-1", 42, true);
+            IgniteAtomicLong l2 = g0.atomicLong("long-2",
+                new AtomicConfiguration().setBackups(1).setGroupName("my-group"), 43, true);
+
+            SystemView<AtomicLongView> longs = g0.context().systemView().view(LONGS_VIEW);
+
+            for (AtomicLongView l : longs) {
+                if ("long-1".equals(l.name())) {
+                    assertEquals(42, l.value());
+                    assertEquals(DEFAULT_DS_GROUP_NAME, l.groupName());
+                    assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), l.groupId());
+
+                    long val = l1.addAndGet(42);
+
+                    assertEquals(val, l.value());
+                    assertFalse(l.removed());
+                }
+                else {
+                    assertEquals("long-2", l.name());
+                    assertEquals(43, l.value());
+                    assertEquals("my-group", l.groupName());
+                    assertEquals(CU.cacheId("my-group"), l.groupId());
+                    assertFalse(l.removed());
+
+                    l2.close();
+
+                    assertTrue(l.removed());
+                }
+            }
+
+            assertEquals(0, g1.context().systemView().view(LONGS_VIEW).size());
+
+            g1.atomicLong("long-1", 42, true);
+
+            assertEquals(1, g1.context().systemView().view(LONGS_VIEW).size());
+
+            AtomicLongView l = g1.context().systemView().<AtomicLongView>view(LONGS_VIEW).iterator().next();
+
+            assertEquals(84, l.value());
+            assertEquals(DEFAULT_DS_GROUP_NAME, l.groupName());
+            assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), l.groupId());
+            assertFalse(l.removed());
+
+            l1.close();
+
+            assertTrue(l.removed());
+        }
+    }
+
+    /** */
+    @Test
+    public void testAtomicReference() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx g1 = startGrid(1)) {
+            IgniteAtomicReference<String> l1 = g0.atomicReference("ref-1", "str1", true);
+            IgniteAtomicReference<Integer> l2 = g0.atomicReference("ref-2",
+                new AtomicConfiguration().setBackups(1).setGroupName("my-group"), 43, true);
+
+            SystemView<AtomicReferenceView> refs = g0.context().systemView().view(REFERENCES_VIEW);
+
+            for (AtomicReferenceView r : refs) {
+                if ("ref-1".equals(r.name())) {
+                    assertEquals("str1", r.value());
+                    assertEquals(DEFAULT_DS_GROUP_NAME, r.groupName());
+                    assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), r.groupId());
+
+                    l1.set("str2");
+
+                    assertEquals("str2", r.value());
+                    assertFalse(r.removed());
+                }
+                else {
+                    assertEquals("ref-2", r.name());
+                    assertEquals("43", r.value());
+                    assertEquals("my-group", r.groupName());
+                    assertEquals(CU.cacheId("my-group"), r.groupId());
+                    assertFalse(r.removed());
+
+                    l2.close();
+
+                    assertTrue(r.removed());
+                }
+            }
+
+            assertEquals(0, g1.context().systemView().view(REFERENCES_VIEW).size());
+
+            g1.atomicReference("ref-1", "str3", true);
+
+            assertEquals(1, g1.context().systemView().view(REFERENCES_VIEW).size());
+
+            AtomicReferenceView l = g1.context().systemView().<AtomicReferenceView>view(REFERENCES_VIEW).iterator().next();
+
+            assertEquals("str2", l.value());
+            assertEquals(DEFAULT_DS_GROUP_NAME, l.groupName());
+            assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), l.groupId());
+            assertFalse(l.removed());
+
+            l1.close();
+
+            assertTrue(l.removed());
+        }
+    }
+
+    /** */
+    @Test
+    public void testAtomicStamped() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx g1 = startGrid(1)) {
+            IgniteAtomicStamped<String, Integer> s1 = g0.atomicStamped("s-1", "str0", 1, true);
+            IgniteAtomicStamped<String, Integer> s2 = g0.atomicStamped("s-2",
+                new AtomicConfiguration().setBackups(1).setGroupName("my-group"), "str1", 43, true);
+
+            SystemView<AtomicStampedView> stamps = g0.context().systemView().view(STAMPED_VIEW);
+
+            for (AtomicStampedView s : stamps) {
+                if ("s-1".equals(s.name())) {
+                    assertEquals("str0", s.value());
+                    assertEquals("1", s.stamp());
+                    assertEquals(DEFAULT_DS_GROUP_NAME, s.groupName());
+                    assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), s.groupId());
+
+                    s1.set("str2", 2);
+
+                    assertEquals("str2", s.value());
+                    assertEquals("2", s.stamp());
+                    assertFalse(s.removed());
+                }
+                else {
+                    assertEquals("s-2", s.name());
+                    assertEquals("str1", s.value());
+                    assertEquals("43", s.stamp());
+                    assertEquals("my-group", s.groupName());
+                    assertEquals(CU.cacheId("my-group"), s.groupId());
+                    assertFalse(s.removed());
+
+                    s2.close();
+
+                    assertTrue(s.removed());
+                }
+            }
+
+            assertEquals(0, g1.context().systemView().view(STAMPED_VIEW).size());
+
+            g1.atomicStamped("s-1", "str3", 3, true);
+
+            assertEquals(1, g1.context().systemView().view(STAMPED_VIEW).size());
+
+            AtomicStampedView l = g1.context().systemView().<AtomicStampedView>view(STAMPED_VIEW).iterator().next();
+
+            assertEquals("str2", l.value());
+            assertEquals("2", l.stamp());
+            assertEquals(DEFAULT_DS_GROUP_NAME, l.groupName());
+            assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), l.groupId());
+            assertFalse(l.removed());
+
+            s1.close();
+
+            assertTrue(l.removed());
+        }
+    }
+
+
+    /** */
+    @Test
+    public void testQueue() throws Exception {
+/*
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx client1 = startClientGrid("client-1")) {
+
+            client1.queue("queue-1", 42, new CollectionConfiguration()
+                .setCollocated(true)
+                .setBackups(1)
+                .setGroupName("my-group"));
+            client1.queue("queue-2", 0, null);
+
+            SystemView<QueueView> queuesView = g0.context().systemView().view(QUEUES_VIEW);
+
+            assertEquals(2, queuesView.size());
+
+            for (QueueView q : queuesView) {
+                if ("queue-1".equals(q.name())) {
+                    assertNotNull(q.id());
+                    assertEquals("queue-1", q.name());
+                    assertEquals(42, q.capacity());
+                    assertTrue(q.bounded());
+                    assertTrue(q.collocated());
+                    assertFalse(q.removed());
+                    assertEquals("my-group", q.groupName());
+                    assertEquals(CU.cacheId("my-group"), q.groupId());
+                }
+                else {
+                    assertNotNull(q.id());
+                    assertEquals("queue-2", q.name());
+                    assertEquals(0, q.capacity());
+                    assertFalse(q.bounded());
+                    assertFalse(q.collocated());
+                    assertFalse(q.removed());
+                    assertEquals("my-group", q.groupName());
+                    assertEquals(CU.cacheId("my-group"), q.groupId());
+                }
+            }
+        }
+*/
     }
 
     /** */

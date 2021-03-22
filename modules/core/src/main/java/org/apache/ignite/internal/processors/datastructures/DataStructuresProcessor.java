@@ -61,8 +61,10 @@ import org.apache.ignite.internal.managers.systemview.walker.AtomicReferenceView
 import org.apache.ignite.internal.managers.systemview.walker.AtomicSequenceViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.AtomicStampedViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CountDownLatchViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.QueueViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ReentrantLockViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SemaphoreViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SetViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -78,6 +80,7 @@ import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateCollectionView;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -95,8 +98,10 @@ import org.apache.ignite.spi.systemview.view.AtomicReferenceView;
 import org.apache.ignite.spi.systemview.view.AtomicSequenceView;
 import org.apache.ignite.spi.systemview.view.AtomicStampedView;
 import org.apache.ignite.spi.systemview.view.CountDownLatchView;
+import org.apache.ignite.spi.systemview.view.QueueView;
 import org.apache.ignite.spi.systemview.view.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.SemaphoreView;
+import org.apache.ignite.spi.systemview.view.SetView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -108,12 +113,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
-import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_STAMPED;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.COUNT_DOWN_LATCH;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.QUEUE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SET;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -128,13 +133,67 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
 
     /** */
-    private static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
 
     /** */
     private static final String DS_CACHE_NAME_PREFIX = "datastructures_";
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** */
+    public static final String QUEUES_VIEW = metricName("ds", "queues");
+
+    /** */
+    public static final String SETS_VIEW = metricName("ds", "sets");
+
+    /** */
+    public static final String LOCKS_VIEW = metricName("ds", "reentrantlocks");
+
+    /** */
+    public static final String SEMAPHORES_VIEW = metricName("ds", "semaphores");
+
+    /** */
+    public static final String LATCHES_VIEW = metricName("ds", "countdownlatches");
+
+    /** */
+    public static final String STAMPED_VIEW = metricName("ds", "atomicstamped");
+
+    /** */
+    public static final String REFERENCES_VIEW = metricName("ds", "atomicreferences");
+
+    /** */
+    public static final String LONGS_VIEW = metricName("ds", "atomiclongs");
+
+    /** */
+    public static final String SEQUENCES_VIEW = metricName("ds", "atomicsequences");
+
+    /** */
+    private static final String QUEUES_VIEW_DESC = "Data structure queues";
+
+    /** */
+    private static final String SETS_VIEW_DESC = "Data structure sets";
+
+    /** */
+    private static final String LOCKS_VIEW_DESC = "Data structure reentrant locks";
+
+    /** */
+    private static final String SEMAPHORES_VIEW_DESC = "Data structure semaphores";
+
+    /** */
+    private static final String LATCHES_VIEW_DESC = "Data structure count down latches";
+
+    /** */
+    private static final String STAMPED_VIEW_DESC = "Data structure atomic stamped";
+
+    /** */
+    private static final String REFERENCES_VIEW_DESC = "Data structure atomic references";
+
+    /** */
+    private static final String LONGS_VIEW_DESC = "Data structure atomic longs";
+
+    /** */
+    private static final String SEQUENCES_VIEW_DESC = "Data structure atomic sequences";
 
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
     private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
@@ -206,59 +265,83 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             return;
 
         ctx.systemView().registerView(
-            "AtomicSequences",
-            "Atomic sequences",
+            SEQUENCES_VIEW,
+            SEQUENCES_VIEW_DESC,
             new AtomicSequenceViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
             AtomicSequenceView::new
         );
 
         ctx.systemView().registerView(
-            "AtomicLongs",
-            "Atomic longs",
+            LONGS_VIEW,
+            LONGS_VIEW_DESC,
             new AtomicLongViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteAtomicLong),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicLong),
             AtomicLongView::new
         );
 
         ctx.systemView().registerView(
-            "AtomicReferences",
-            "Atomic references",
+            REFERENCES_VIEW,
+            REFERENCES_VIEW_DESC,
             new AtomicReferenceViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteAtomicReference),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicReference),
             AtomicReferenceView::new
         );
 
         ctx.systemView().registerView(
-            "AtomicStamped",
-            "Atomic stamped",
+            STAMPED_VIEW,
+            STAMPED_VIEW_DESC,
             new AtomicStampedViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
             AtomicStampedView::new
         );
 
         ctx.systemView().registerView(
-            "CountDownLatches",
-            "Count down latches",
+            LATCHES_VIEW,
+            LATCHES_VIEW_DESC,
             new CountDownLatchViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
             CountDownLatchView::new
         );
 
         ctx.systemView().registerView(
-            "Semaphores",
-            "Semaphores",
+            SEMAPHORES_VIEW,
+            SEMAPHORES_VIEW_DESC,
             new SemaphoreViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteSemaphore),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteSemaphore),
             SemaphoreView::new
         );
 
         ctx.systemView().registerView(
-            "ReentrantLocks",
-            "Reentrant locks",
+            LOCKS_VIEW,
+            LOCKS_VIEW_DESC,
             new ReentrantLockViewWalker(),
-            F.view(dsMap.values(), v -> v instanceof IgniteLock),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteLock),
             ReentrantLockView::new
+        );
+
+        ctx.systemView().registerInnerCollectionView(
+            QUEUES_VIEW,
+            QUEUES_VIEW_DESC,
+            new QueueViewWalker(),
+            F.viewReadOnly(
+                ctx.cache().cacheDescriptors().values(),
+                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
+                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
+            cctx -> cctx.queues().values(),
+            (cctx, queue) -> new QueueView(queue)
+        );
+
+        ctx.systemView().registerInnerCollectionView(
+            SETS_VIEW,
+            SETS_VIEW_DESC,
+            new SetViewWalker(),
+            F.viewReadOnly(
+                ctx.cache().cacheDescriptors().values(),
+                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
+                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
+            cctx -> cctx.sets().values(),
+            (cctx, set) -> new SetView(set)
         );
 
         onKernalStart0();
@@ -911,7 +994,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 return new T2<>(stmp, retVal);
             }
-        }, cfg, name, ATOMIC_STAMPED, create, GridCacheAtomicStampedEx.class);
+        }, cfg, name, DataStructureType.ATOMIC_STAMPED, create, GridCacheAtomicStampedEx.class);
     }
 
     /**
@@ -922,7 +1005,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicStamped(final String name, final String grpName) throws IgniteCheckedException {
-        removeDataStructure(null, name, grpName, ATOMIC_STAMPED, null);
+        removeDataStructure(null, name, grpName, DataStructureType.ATOMIC_STAMPED, null);
     }
 
     /**

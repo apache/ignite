@@ -44,7 +44,7 @@ public class AtomicStampedView extends AbstractDataStructureView<GridCacheAtomic
      */
     @Order(1)
     public String value() {
-        return toStringSafe(ds.get());
+        return toStringSafe(ds.value());
     }
 
     /**
