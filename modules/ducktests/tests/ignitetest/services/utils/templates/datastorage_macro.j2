@@ -31,10 +31,7 @@
                         </list>
                     </property>
                 {% endif %}
-
-                {% if config.checkpoint_frequency %}
-                    <property name="checkpointFrequency" value="{{ config.checkpoint_frequency }}"/>
-                {% endif %}
+                <property name="walMode" value="{{ config.wal_mode }}"/>
             </bean>
         </property>
     {% endif %}

@@ -19,9 +19,7 @@ This module contains Cellular Affinity tests.
 import math
 import os
 from typing import List
-from ducktape import errors
 from ducktape.cluster.cluster import ClusterNode
-from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration, Affinity
 
@@ -33,11 +31,11 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATEST_2_8
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_10, LATEST_2_9, LATEST_2_8
 
 NUM_NODES_CELL = 4
 
-NUM_CELL = 2
+NUM_CELL = 1
 
 ATTRIBUTE = "CELL"
 
@@ -51,7 +49,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     # pylint: disable=R0914
     @cluster(num_nodes=(NUM_NODES_CELL * NUM_CELL) + 1)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_10), str(LATEST_2_9), str(LATEST_2_8))
     def two_phased_rebalancing_test(self, ignite_version):
         """
         Test case of two-phase rebalancing.
@@ -71,7 +69,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
         """
         config = IgniteConfiguration(version=IgniteVersion(ignite_version),
                                      data_storage=DataStorageConfiguration(
-                                         default=DataRegionConfiguration(persistent=True), checkpoint_frequency=30000),
+                                         wal_mode='NONE',
+                                         default=DataRegionConfiguration(persistent=True)),
                                      caches=[CacheConfiguration(
                                          name=CACHE_NAME, backups=2, affinity=Affinity(),
                                          indexed_types=['java.lang.Long', 'byte[]'])],
@@ -118,7 +117,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         node = cells[0].nodes[0]
 
-        await_cluster_idle(node)
+        control_utility.deactivate()  # flush dirty pages on disk
+        control_utility.activate()
 
         dump_1 = create_idle_dump_and_copy_to_log_dir(control_utility, node, cells[0].log_dir)
 
@@ -128,7 +128,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
         restart_with_clean_idx_node_on_cell_and_await_rebalance(cells, [0, 1])
         restart_with_clean_idx_node_on_cell_and_await_rebalance(cells, [2, 3])
 
-        await_cluster_idle(node)
+        control_utility.deactivate()  # flush dirty pages on disk
+        control_utility.activate()
 
         pds_after = self.get_pds_size(cells, "After rebalancing complete, PDS.")
 
@@ -193,18 +194,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
             self.logger.info(f'Host: {item[0]}, PDS {item[1]}mb')
 
         return res
-
-
-def await_cluster_idle(node: ClusterNode, timeout_sec=30):
-    """
-    Await Skipping checkpoint.
-    :param node ClusterNode.
-    :param timeout_sec Number of seconds to await event.
-    """
-    try:
-        IgniteAwareService.await_event_on_node('Skipping checkpoint', node, timeout_sec=timeout_sec)
-    except errors.TimeoutError:
-        pass
 
 
 def restart_with_clean_idx_node_on_cell_and_await_rebalance(cells: [IgniteService], idxs: [int]):

@@ -36,4 +36,4 @@ class DataStorageConfiguration(NamedTuple):
     """
     default: DataRegionConfiguration = DataRegionConfiguration()
     regions: list = []
-    checkpoint_frequency: int = None
+    wal_mode: str = "LOG_ONLY"
