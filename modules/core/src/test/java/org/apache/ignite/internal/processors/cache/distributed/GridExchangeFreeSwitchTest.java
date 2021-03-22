@@ -74,7 +74,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** Cache configuration closure. */
-    private IgniteClosure<String, CacheConfiguration<?,?>[]> cacheC;
+    private IgniteClosure<String, CacheConfiguration<?, ?>[]> cacheC;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -341,9 +341,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         String cacheName = "partitioned";
 
         try {
-            cacheC = new IgniteClosure<String, CacheConfiguration<?,?>[]>() {
-                @Override public CacheConfiguration<?,?>[] apply(String igniteInstanceName) {
-                    CacheConfiguration<?,?> ccfg = new CacheConfiguration<>();
+            cacheC = new IgniteClosure<String, CacheConfiguration<?, ?>[]>() {
+                @Override public CacheConfiguration<?, ?>[] apply(String igniteInstanceName) {
+                    CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>();
 
                     ccfg.setName(cacheName);
                     ccfg.setWriteSynchronizationMode(FULL_SYNC);

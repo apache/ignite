@@ -89,7 +89,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(QueryEntity qryEntity) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

@@ -425,7 +425,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         for (int i = 0; i < inBools.length; i++)
             assertTrue(Arrays.equals(inBools[i], outBools[i]));
 
-        int[] inInts = new int[] {1,2,3,4,5,6,7};
+        int[] inInts = new int[] {1, 2, 3, 4, 5, 6, 7};
 
         int[] outInts = unmarshal(marshal(inInts));
 
