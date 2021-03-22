@@ -345,6 +345,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
             writer.WriteBooleanNullable(_javaPeerClassLoadingEnabled);
+            writer.WriteIntNullable((int?) _asyncContinuationExecutor);
 
             if (SqlSchemas == null)
                 writer.WriteInt(0);
@@ -750,6 +751,7 @@ namespace Apache.Ignite.Core
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
             _javaPeerClassLoadingEnabled = r.ReadBooleanNullable();
+            _asyncContinuationExecutor = (AsyncContinuationExecutor?) r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
