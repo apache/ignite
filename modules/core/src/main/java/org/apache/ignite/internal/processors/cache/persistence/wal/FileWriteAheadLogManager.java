@@ -2042,6 +2042,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
+                if (dsCfg.isCdcEnabled())
+                    Files.createLink(cdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
+
                 if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
@@ -2050,9 +2053,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 segmentSize.put(absIdx, dstFile.length());
                 segmentAware.addCurrentWalArchiveSize(dstFile.length());
-
-                if (dsCfg.isCdcEnabled())
-                    Files.createLink(cdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
             }
             catch (IOException e) {
                 deleteArchiveFiles(dstFile, dstTmpFile);
