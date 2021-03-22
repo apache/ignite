@@ -162,59 +162,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param io Data page IO.
-     * @param pageAddr Data page address.
-     * @param itemId Row item Id.
-     * @param grp Cache group.
-     * @param sharedCtx Cache shared context.
-     * @param pageMem Page memory.
-     * @param rowData Required row data.
-     * @param skipVer Whether version read should be skipped.
-     * @throws IgniteCheckedException If failed.
-     */
-    public final void initFromDataPage(
-        DataPageIO io,
-        long pageAddr,
-        int itemId,
-        @Nullable CacheGroupContext grp,
-        GridCacheSharedContext<?, ?> sharedCtx,
-        PageMemory pageMem,
-        RowData rowData,
-        boolean skipVer
-    ) throws IgniteCheckedException {
-        // Group is null if try evict page, with persistence evictions should be disabled.
-        assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
-
-        CacheObjectContext coctx = grp != null ? grp.cacheObjectContext() : null;
-        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
-        int grpId = grp != null ? grp.groupId() : 0;
-        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
-
-        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem.pageSize(),
-            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
-
-        if (incomplete != null) {
-            // Initialize the remaining part of the large row from other pages.
-            long nextLink = incomplete.getNextLink();
-
-            if (nextLink != 0L) {
-                doInitFromLink(
-                    nextLink,
-                    sharedCtx,
-                    coctx,
-                    pageMem,
-                    grpId,
-                    statHolder,
-                    readCacheId,
-                    rowData,
-                    incomplete,
-                    skipVer
-                );
-            }
-        }
-    }
-
-    /**
      * @param link Link.
      * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.

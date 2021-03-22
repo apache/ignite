@@ -202,17 +202,18 @@ public abstract class AbstractDataPageIterator extends GridCloseableIteratorAdap
                             while (incomplete != null && (nextLink = incomplete.getNextLink()) != 0) {
                                 assert itemId(nextLink) == 0 : "Only one item is possible on the fragmented page: " + PageIdUtils.toDetailString(nextLink);
 
+                                long finalNextLink = nextLink;
                                 IncompleteObject<?> finalIncomplete = incomplete;
 
-                                incomplete = readFragmentPage(pageId(nextLink), addr -> {
-                                    assert flag(getPageId(addr)) == FLAG_DATA;
+                                incomplete = readFragmentPage(pageId(finalNextLink), nextAddr -> {
+                                    assert flag(getPageId(nextAddr)) == FLAG_DATA;
 
                                     try {
                                         IncompleteObject<?> incomplete0 = row.readIncomplete(finalIncomplete, sctx, coctx, pageSize, pageSize,
-                                            addr, 0, PageIO.getPageIO(T_DATA, PageIO.getVersion(pageAddr)),
+                                            nextAddr, 0, PageIO.getPageIO(T_DATA, PageIO.getVersion(pageAddr)),
                                             rowData, readCacheId, skipVer);
 
-                                        setBit(readPages, pageIndex(getPageId(addr)));
+                                        setBit(readPages, pageIndex(pageId(finalNextLink)));
 
                                         return incomplete0;
                                     }

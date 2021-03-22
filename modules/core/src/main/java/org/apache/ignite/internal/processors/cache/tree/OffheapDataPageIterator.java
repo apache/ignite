@@ -25,7 +25,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.AbstractDataPageIterator;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -48,16 +47,14 @@ public class OffheapDataPageIterator extends AbstractDataPageIterator {
     private final IoStatisticsHolder statHolder;
 
     /**
-     * @param sctx
-     * @param coctx
-     * @param pageMem
-     * @param pages
+     * @param sctx Shared context.
+     * @param pageMem Page memory.
+     * @param pages Pages count.
      * @param pageSize
-     * @param partId
+     * @param partId Partition id.
      */
     protected OffheapDataPageIterator(
         GridCacheSharedContext<?, ?> sctx,
-        CacheObjectContext coctx,
         CacheDataRowAdapter.RowData rowData,
         PageMemory pageMem,
         @Nullable CacheGroupContext gctx,
@@ -65,10 +62,13 @@ public class OffheapDataPageIterator extends AbstractDataPageIterator {
         int pageSize,
         int partId
     ) {
-        super(sctx, coctx, rowData,
+        super(sctx,
+            gctx == null ? null : gctx.cacheObjectContext(),
+            rowData,
             gctx == null || gctx.storeCacheIdInDataPage(),
             CacheDataRowStore.getSkipVersion(), pages, pageSize, partId);
 
+        // TODO add realPageSize param
         this.pageMem = pageMem;
 
         grpId = gctx == null ? 0 : gctx.groupId();
@@ -85,8 +85,10 @@ public class OffheapDataPageIterator extends AbstractDataPageIterator {
             long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
             try {
-                if (PageIO.getType(pageAddr) == T_DATA)
-                    reader.accept(pageAddr);
+                if (PageIO.getType(pageAddr) != T_DATA)
+                    return false;
+
+                reader.accept(pageAddr);
 
                 return true;
             }
