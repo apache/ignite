@@ -43,6 +43,11 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
         return CacheAtomicityMode.ATOMIC;
     }
 
+    /** {@inheritDoc} */
+    @Override protected int backups() {
+        return 0;
+    }
+
     /**
      * Tests future listen with default executor.
      *
