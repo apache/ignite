@@ -109,7 +109,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(@NotNull String name) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(PARTITIONED);

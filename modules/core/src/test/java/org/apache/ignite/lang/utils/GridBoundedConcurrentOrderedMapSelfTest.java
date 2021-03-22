@@ -35,7 +35,7 @@ public class GridBoundedConcurrentOrderedMapSelfTest extends GridCommonAbstractT
      */
     @Test
     public void testEvictionSingleElement() {
-        SortedMap<Integer,String> m = new GridBoundedConcurrentOrderedMap<>(1);
+        SortedMap<Integer, String> m = new GridBoundedConcurrentOrderedMap<>(1);
 
         m.put(0, "0");
 
@@ -56,7 +56,7 @@ public class GridBoundedConcurrentOrderedMapSelfTest extends GridCommonAbstractT
      */
     @Test
     public void testEvictionListener() {
-        GridBoundedConcurrentOrderedMap<Integer,String> m = new GridBoundedConcurrentOrderedMap<>(1);
+        GridBoundedConcurrentOrderedMap<Integer, String> m = new GridBoundedConcurrentOrderedMap<>(1);
 
         final AtomicInteger evicted = new AtomicInteger();
 

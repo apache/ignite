@@ -1308,7 +1308,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     boolean updated = false;
 
-                    Map<UUID,Integer> waiters = semState.getWaiters();
+                    Map<UUID, Integer> waiters = semState.getWaiters();
 
                     Integer permit = ((GridCacheSemaphoreState) val).getCount();
 
