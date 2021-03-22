@@ -109,13 +109,6 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
         return getRowCount();
     }
 
-    /**
-     * {@link SqlSystemView#getRowCountApproximation()} implementation without authorization.
-     */
-    protected long getRowCountApproximationNoAuth() {
-        return DEFAULT_ROW_COUNT_APPROXIMATION;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return false;
