@@ -42,10 +42,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 
+/** */
 public class WalDisableTest {
+    /** */
     private static final String CACHE_NAME = "MY_CACHE";
+
+    /** */
     private static final String CACHE_NAME_2 = "MY_CACHE_2";
 
+    /** */
     public static void main(String[] args) {
         LinkedList<Ignite> nodes = new LinkedList<>();
 
@@ -57,8 +62,7 @@ public class WalDisableTest {
         long testStart = System.currentTimeMillis();
 
         new Thread(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 Ignite client = Ignition.start(igniteCfg(false, "client"));
 
                 try {
@@ -70,7 +74,7 @@ public class WalDisableTest {
                         client.cluster().enableWal(CACHE_NAME);
                     }
                 } catch (IgniteException ex) {
-                    if(ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
+                    if (ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
                         System.out.println("TEST FAILED");
                         ex.printStackTrace(System.out);
                         System.exit(-1);
@@ -85,8 +89,7 @@ public class WalDisableTest {
         }).start();
 
         new Thread(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 int waitTime = 2 * 60_000;
 
                 try {

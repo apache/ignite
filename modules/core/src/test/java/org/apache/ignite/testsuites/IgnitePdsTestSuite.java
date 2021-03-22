@@ -135,7 +135,6 @@ public class IgnitePdsTestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, SegmentAwareTest.class, ignoredTests);
 
-
         GridTestUtils.addTestIfNeeded(suite, WalEnableDisableWithNodeShutdownTest.class, ignoredTests);
         return suite;
     }
