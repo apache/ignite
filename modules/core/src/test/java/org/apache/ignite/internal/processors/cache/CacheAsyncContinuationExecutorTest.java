@@ -48,6 +48,22 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
     }
 
     /**
+     * Gets the expected thread name prefix.
+     * @return Prefix.
+     */
+    protected String expectedThreadNamePrefix() {
+        return "ForkJoinPool.commonPool-worker";
+    }
+
+    /**
+     * Gets a value indicating whether continuation thread can execute cache operations.
+     * @return Value indicating whether continuation thread can execute cache operations.
+     */
+    protected boolean allowCacheOperationsInContinuation() {
+        return true;
+    }
+
+    /**
      * Tests future listen with default executor.
      *
      * This test would hang before {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
@@ -63,7 +79,11 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         cache.putAsync(key, 1).listen(f -> {
             listenThreadName.set(Thread.currentThread().getName());
-            cache.replace(key, 2);
+
+            if (allowCacheOperationsInContinuation()) {
+                // Check that cache operations do not deadlock.
+                cache.replace(key, 2);
+            }
 
             try {
                 barrier.await(5, TimeUnit.SECONDS);
@@ -73,8 +93,9 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
         });
 
         barrier.await(5, TimeUnit.SECONDS);
-        assertEquals(2, cache.get(key).intValue());
-        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith("ForkJoinPool.commonPool-worker"));
+
+        assertEquals(allowCacheOperationsInContinuation() ? 2 : 1, cache.get(key).intValue());
+        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith(expectedThreadNamePrefix()));
     }
 
     /**
