@@ -37,7 +37,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOKE;
-import static org.apache.ignite.plugin.security.SecurityPermission.SYSTEM_VIEW_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -71,8 +70,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
 
         exp.setServicePermissions(permSrvc);
 
-        exp.setSystemPermissions(
-            permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY, SYSTEM_VIEW_READ));
+        exp.setSystemPermissions(permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
 
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 
@@ -101,7 +99,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                     }
                 }, IgniteException.class,
                 "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                    "JOIN_AS_SERVER, SYSTEM_VIEW_], but you try TASK_EXECUTE"
+                    "JOIN_AS_SERVER], but you try TASK_EXECUTE"
         );
 
         assertThrows(log, new Callable<Object>() {
@@ -111,7 +109,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 }
             }, IgniteException.class,
             "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                "JOIN_AS_SERVER, SYSTEM_VIEW_], but you try SERVICE_INVOKE"
+                "JOIN_AS_SERVER], but you try SERVICE_INVOKE"
         );
 
         permsBuilder
@@ -128,8 +126,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
             .appendSystemPermissions(ADMIN_VIEW)
             .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE)
             .appendSystemPermissions(JOIN_AS_SERVER)
-            .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY)
-            .appendSystemPermissions(SYSTEM_VIEW_READ);
+            .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY);
 
         SecurityPermissionSet actual = permsBuilder.build();
 

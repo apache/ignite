@@ -57,7 +57,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_GROUP_NAME", first, last);
 
         if (nameCond.isEquality()) {
@@ -118,7 +118,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountNoAuth() {
+    @Override public long getRowCount() {
         return ctx.cache().cacheGroups().size();
     }
 }

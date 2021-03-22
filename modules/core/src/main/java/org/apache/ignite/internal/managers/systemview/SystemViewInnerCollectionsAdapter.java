@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -50,15 +49,13 @@ public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemVi
      * @param containers Container of data.
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function.
-     * @param security Security processor.
      */
     public SystemViewInnerCollectionsAdapter(String name, String desc,
         SystemViewRowAttributeWalker<R> walker,
         Iterable<C> containers,
         Function<C, Collection<D>> dataExtractor,
-        BiFunction<C, D, R> rowFunc,
-        IgniteSecurity security) {
-        super(name, desc, walker, security);
+        BiFunction<C, D, R> rowFunc) {
+        super(name, desc, walker);
 
         this.containers = containers;
         this.dataExtractor = dataExtractor;
@@ -66,7 +63,7 @@ public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemVi
     }
 
     /** {@inheritDoc} */
-    @Override public int sizeNoAuth() {
+    @Override public int size() {
         int sz = 0;
 
         for (C c : containers)
@@ -76,7 +73,7 @@ public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemVi
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<R> iteratorNoAuth() {
+    @NotNull @Override public Iterator<R> iterator() {
         return F.concat(F.iterator(containers,
                 c -> F.iterator(dataExtractor.apply(c).iterator(),
                     d -> rowFunc.apply(c, d), true), true));

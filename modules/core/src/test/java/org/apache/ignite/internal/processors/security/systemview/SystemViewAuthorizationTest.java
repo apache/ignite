@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.PART_STATES_VIEW;
-import static org.apache.ignite.plugin.security.SecurityPermission.SYSTEM_VIEW_READ;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -57,7 +57,7 @@ public class SystemViewAuthorizationTest extends AbstractSecurityTest {
     @Test
     public void testCanReadViewWhenPermitted() throws Exception {
         SecurityPermissionSet permSet = new SecurityPermissionSetBuilder()
-            .appendSystemPermissions(SYSTEM_VIEW_READ)
+            .appendSystemPermissions(ADMIN_VIEW)
             .build();
 
         IgniteEx server = startGrid("server", permSet, false);

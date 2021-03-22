@@ -31,9 +31,9 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_VIEWS_VIEW;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_VIEW;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
-import static org.apache.ignite.plugin.security.SecurityPermission.SYSTEM_VIEW_READ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -50,7 +50,7 @@ public class SqlSystemViewAuthorizationTest extends AbstractSecurityTest {
     @Test
     public void testCanReadViewWhenPermitted() throws Exception {
         SecurityPermissionSet permSet = new SecurityPermissionSetBuilder()
-            .appendSystemPermissions(SYSTEM_VIEW_READ)
+            .appendSystemPermissions(ADMIN_VIEW)
             .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_CREATE, CACHE_READ)
             .build();
 

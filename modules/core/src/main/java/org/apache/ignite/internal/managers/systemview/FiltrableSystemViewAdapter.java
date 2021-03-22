@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
@@ -44,11 +43,10 @@ public class FiltrableSystemViewAdapter<R, D> extends AbstractSystemView<R> impl
      * @param walker Walker.
      * @param dataSupplier Data supplier.
      * @param rowFunc Row function.
-     * @param security Security processor.
      */
     public FiltrableSystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker,
-        Function<Map<String, Object>, Iterable<D>> dataSupplier, Function<D, R> rowFunc, IgniteSecurity security) {
-        super(name, desc, walker, security);
+        Function<Map<String, Object>, Iterable<D>> dataSupplier, Function<D, R> rowFunc) {
+        super(name, desc, walker);
 
         A.notNull(dataSupplier, "dataSupplier");
 
@@ -58,8 +56,6 @@ public class FiltrableSystemViewAdapter<R, D> extends AbstractSystemView<R> impl
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator(Map<String, Object> filter) {
-        authorize();
-
         if (filter == null)
             filter = Collections.emptyMap();
 
@@ -67,12 +63,12 @@ public class FiltrableSystemViewAdapter<R, D> extends AbstractSystemView<R> impl
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<R> iteratorNoAuth() {
+    @NotNull @Override public Iterator<R> iterator() {
         return iterator(Collections.emptyMap());
     }
 
     /** {@inheritDoc} */
-    @Override public int sizeNoAuth() {
+    @Override public int size() {
         return F.size(dataSupplier.apply(Collections.emptyMap()).iterator());
     }
 }

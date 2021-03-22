@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
-
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.lang.IgniteUuid;
@@ -141,7 +140,7 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override protected Iterator<Row> getRowsNoAuth(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         Iterator<R> rows = viewIterator(first, last);
 
         return new Iterator<Row>() {
@@ -222,12 +221,12 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountNoAuth() {
+    @Override public long getRowCount() {
         return sysView.size();
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximationNoAuth() {
+    @Override public long getRowCountApproximation() {
         // getRowCount() method is not really fast, for some system views it's required to iterate over elements to
         // calculate size, so it's more safe to use constant here.
         return DEFAULT_ROW_COUNT_APPROXIMATION;
