@@ -70,7 +70,7 @@ public class IgniteRunner {
      *
      * @param args Empty or providing path to custom configuration file after marker parameter "--config".
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         ackBanner();
 
         ConfigurationModule confModule = new ConfigurationModule();
