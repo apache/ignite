@@ -35,7 +35,7 @@ from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_10, LAT
 
 NUM_NODES_CELL = 4
 
-NUM_CELL = 1
+NUM_CELL = 2
 
 ATTRIBUTE = "CELL"
 
@@ -138,8 +138,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
             assert pds_after[host] < pds_before[host], f'Host {host}: size after = {pds_after[host]}, ' \
                                                        f'size before = {pds_before[host]}.'
 
-        control_utility.validate_indexes()
         dump_2 = create_idle_dump_and_copy_to_log_dir(control_utility, node, cells[0].log_dir)
+        control_utility.validate_indexes()
 
         # Check data consistency.
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
