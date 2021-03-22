@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -65,6 +66,28 @@ namespace Apache.Ignite.Core.Tests.Cache
             await cache.PutAsync(key, key);
 
             Assert.AreEqual(origThread.ManagedThreadId, Thread.CurrentThread.ManagedThreadId);
+        }
+
+        /// <summary>
+        /// Tests that explicitly configured synchronous executor runs continuations on the striped pool.
+        /// </summary>
+        [Test]
+        public async Task TestSynchronousExecutorRunsContinuationsOnStripedPool()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "client",
+                AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous
+            };
+
+            using (var client = Ignition.Start(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+                await cache.PutAsync(1, 1);
+
+                StringAssert.StartsWith("striped", TestUtilsJni.GetJavaThreadName());
+            }
         }
     }
 }
