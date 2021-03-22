@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Optional;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +54,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
      * was introduced, or if we set {@link Runnable#run()} as the executor.
      */
     @Test
-    public void testListenDefaultConfig() throws Exception {
+    public void testRemoteOperationContinuesOnDefaultExecutor() throws Exception {
         final String key = getPrimaryKey(1);
 
         IgniteCache<String, Integer> cache = jcache(0);
@@ -76,6 +75,24 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
         barrier.await(5, TimeUnit.SECONDS);
         assertEquals(2, cache.get(key).intValue());
         assertTrue(listenThreadName.get(), listenThreadName.get().startsWith("ForkJoinPool.commonPool-worker"));
+    }
+
+    /**
+     * Tests that an operation on a local key executes synchronously, and listener is called immediately on the current
+     * thread.
+     */
+    @Test
+    public void testLocalOperationExecutesSynchronously() throws Exception {
+        final String key = getPrimaryKey(0);
+
+        IgniteCache<String, Integer> cache = jcache(0);
+        AtomicReference<String> listenThreadName = new AtomicReference<>("");
+
+        cache.putAsync(key, 1).listen(f -> {
+            listenThreadName.set(Thread.currentThread().getName());
+        });
+
+        assertEquals(listenThreadName.get(), Thread.currentThread().getName());
     }
 
     /**
