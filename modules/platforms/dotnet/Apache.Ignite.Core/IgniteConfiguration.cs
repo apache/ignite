@@ -221,6 +221,9 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _clientMode;
 
+        /** */
+        private AsyncContinuationExecutor? _asyncContinuationExecutor;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -1729,10 +1732,20 @@ namespace Apache.Ignite.Core
         /// and peer class loading in Java are two distinct and independent features.
         /// <para />
         /// </summary>
-        public bool JavaPeerClassLoadingEnabled 
+        public bool JavaPeerClassLoadingEnabled
         {
             get { return _javaPeerClassLoadingEnabled ?? default(bool); }
             set { _javaPeerClassLoadingEnabled = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the async continuation behavior.
+        /// See <see cref="Apache.Ignite.Core.Configuration.AsyncContinuationExecutor"/> members for more details.
+        /// </summary>
+        public AsyncContinuationExecutor AsyncContinuationExecutor
+        {
+            get { return _asyncContinuationExecutor ?? default(AsyncContinuationExecutor); }
+            set { _asyncContinuationExecutor = value; }
         }
     }
 }

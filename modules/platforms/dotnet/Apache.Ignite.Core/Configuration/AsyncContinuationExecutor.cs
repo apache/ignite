@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Executes async continuations on the thread pool (default).
         /// </summary>
-        ThreadPool,
+        ThreadPool = 0,
 
         /// <summary>
         /// Executes async continuations synchronously on the same thread that completes the previous operation.
@@ -48,6 +48,6 @@ namespace Apache.Ignite.Core.Configuration
         /// This mode can improve performance, because continuations do not have to be scheduled on another thread.
         /// However, special care is required to release striped threads as soon as possible.
         /// </summary>
-        UnsafeSynchronous
+        UnsafeSynchronous = 1
     }
 }
