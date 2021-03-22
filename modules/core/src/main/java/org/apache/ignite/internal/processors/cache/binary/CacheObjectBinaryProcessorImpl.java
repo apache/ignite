@@ -1001,13 +1001,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         try {
             ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-            BinaryMetadataFileStore binaryMetaFileStore = new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir);
-
-            binaryMetaFileStore.restoreMetadata();
+            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir)
+                .restoreMetadata();
 
             Collection<BinaryMetadata> metadata = F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
 
-            // Check the compatibility of the binary metadata files stored in the specified directory.
+            // Check the compatibility of the binary metadata.
             for (BinaryMetadata newMeta : metadata) {
                 BinaryMetadata oldMeta = binaryMetadata(newMeta.typeId());
 

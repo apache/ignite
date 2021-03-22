@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -173,7 +172,7 @@ public class SnapshotRestoreProcess {
                     return;
                 }
 
-                Set<UUID> dataNodes = new LinkedHashSet<>();
+                Set<UUID> dataNodes = new HashSet<>();
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f.result();
                 Map<Integer, String> reqGrpIds = cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
