@@ -158,19 +158,19 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSchemaCreate(String schemaName) {
+    @Override public synchronized void onSchemaCreated(String schemaName) {
         igniteSchemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
         rebuild();
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSchemaDrop(String schemaName) {
+    @Override public synchronized void onSchemaDropped(String schemaName) {
         igniteSchemas.remove(schemaName);
         rebuild();
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeCreate(
+    @Override public synchronized void onSqlTypeCreated(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo
@@ -187,6 +187,15 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         rebuild();
     }
 
+    /** {@inheritDoc} */
+    @Override public void onSqlTypeUpdated(
+        String schemaName,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo
+    ) {
+        onSqlTypeCreated(schemaName, typeDesc, cacheInfo);
+    }
+
     /** */
     private static Object affinityIdentity(CacheConfiguration<?,?> ccfg) {
         if (ccfg.getCacheMode() == CacheMode.PARTITIONED)
@@ -195,7 +204,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeDrop(
+    @Override public synchronized void onSqlTypeDropped(
         String schemaName,
         GridQueryTypeDescriptor typeDesc
     ) {
@@ -207,7 +216,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName,
+    @Override public synchronized void onIndexCreated(String schemaName, String tblName, String idxName,
         GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> gridIdx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
@@ -249,7 +258,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onIndexDrop(String schemaName, String tblName, String idxName) {
+    @Override public synchronized void onIndexDropped(String schemaName, String tblName, String idxName) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 

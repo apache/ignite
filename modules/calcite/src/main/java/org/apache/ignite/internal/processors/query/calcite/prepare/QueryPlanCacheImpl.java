@@ -96,37 +96,43 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public void onSchemaDrop(String schemaName) {
+    @Override public void onSchemaDropped(String schemaName) {
         clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
+    @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
         clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onIndexCreate(String schemaName, String tblName, String idxName,
+    @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
         GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
         clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {
+    @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
         clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onSchemaCreate(String schemaName) {
+    @Override public void onSchemaCreated(String schemaName) {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeCreate(
+    @Override public void onSqlTypeCreated(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo
     ) {
         // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSqlTypeUpdated(String schemaName, GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo) {
+        clear();
     }
 }
