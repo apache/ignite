@@ -66,20 +66,23 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
+    /** Synchronization mutex for start/stop collecting performance statistics operations. */
+    private final Object mux = new Object();
+
+    /** Performance statistics state listeners. */
+    private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
+
+    /** Rotate performance statistics process. */
+    private final DistributedProcess<Serializable, Serializable> rotateProc;
+
     /** Rotate performance statistics future. */
     @Nullable private GridFutureAdapter<Serializable> rotateFut;
 
     /** Process ID of the rotation of the performance statistics. */
     @Nullable private UUID rotateId;
 
-    /** Rotate performance statistics process. */
-    private final DistributedProcess<Serializable, Serializable> rotateProc;
-
-    /** Synchronization mutex for start/stop collecting performance statistics operations. */
-    private final Object mux = new Object();
-
-    /** Performance statistics state listeners. */
-    private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
+    /** Synchronization mutex for rotate collecting performance statistics operations. */
+    private final Object rotateMux = new Object();
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
@@ -92,7 +95,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return null;
             }),
             (id, res, err) -> {
-                synchronized (mux) {
+                synchronized (rotateMux) {
                     if (id.equals(rotateId)) {
                         if (!err.isEmpty())
                             rotateFut.onDone(F.first(err.values()));
@@ -262,7 +265,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        synchronized (mux) {
+        synchronized (rotateMux) {
             if (rotateFut != null)
                 throw new IgniteCheckedException("Rotation already in progress.");
 
