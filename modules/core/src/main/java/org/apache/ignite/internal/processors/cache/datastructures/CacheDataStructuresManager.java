@@ -44,6 +44,8 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.systemview.walker.QueueViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SetViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -69,6 +71,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.systemview.view.QueueView;
+import org.apache.ignite.spi.systemview.view.SetView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,6 +85,18 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
+
+    /** Queue system view name. */
+    private static final String QUEUES_VIEW = "queues";
+
+    /** Queue system view description. */
+    private static final String QUEUES_VIEW_DESC = "Queues";
+
+    /** Sets system view name. */
+    private static final String SETS_VIEW = "sets";
+
+    /** Sets system view description. */
+    private static final String SETS_VIEW_DESC = "Queues";
 
     /**
      *
@@ -145,6 +161,22 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         finally {
             initLatch.countDown();
         }
+
+        cctx.kernalContext().systemView().registerView(
+            QUEUES_VIEW,
+            QUEUES_VIEW_DESC,
+            new QueueViewWalker(),
+            queuesMap.values(),
+            QueueView::new
+        );
+
+        cctx.kernalContext().systemView().registerView(
+            SETS_VIEW,
+            SETS_VIEW_DESC,
+            new SetViewWalker(),
+            setsMap.values(),
+            SetView::new
+        );
     }
 
     /** {@inheritDoc} */

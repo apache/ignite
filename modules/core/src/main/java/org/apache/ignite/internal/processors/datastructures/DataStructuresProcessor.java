@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.systemview.view.DataStructureView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -99,6 +100,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SET;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -120,6 +122,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Data structures view name. */
+    private static final String DS_VIEW = metricName("data", "structures");
+
+    /** Data structures view description. */
+    private static final String DS_VIEW_DESC = "Data structures";
 
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
     private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
@@ -189,6 +197,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @Override public void onKernalStart(boolean active) {
         if (ctx.config().isDaemon() || !active)
             return;
+
+        ctx.systemView().registerView(
+            DS_VIEW,
+            DS_VIEW_DESC,
+            null,
+            dsMap.entrySet(),
+            DataStructureView::new
+        );
 
         onKernalStart0();
     }

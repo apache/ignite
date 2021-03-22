@@ -385,6 +385,16 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         return delegate.name();
     }
 
+    /** @return Group name for queue. */
+    public String groupName() {
+        return cctx.group().name();
+    }
+
+    /** @return Group id for queue. */
+    public int groupId() {
+        return cctx.group().groupId();
+    }
+
     /** {@inheritDoc} */
     @Override public boolean collocated() {
         return delegate.collocated();
