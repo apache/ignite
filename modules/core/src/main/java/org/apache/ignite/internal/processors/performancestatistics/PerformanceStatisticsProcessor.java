@@ -67,10 +67,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Rotate performance statistics future. */
-    @Nullable private volatile GridFutureAdapter<Serializable> rotateFut;
+    @Nullable private GridFutureAdapter<Serializable> rotateFut;
 
     /** Process ID of the rotation of the performance statistics. */
-    @Nullable private volatile UUID rotateId;
+    @Nullable private UUID rotateId;
 
     /** Rotate performance statistics process. */
     private final DistributedProcess<Serializable, Serializable> rotateProc;
