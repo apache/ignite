@@ -74,9 +74,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public async Task TestSynchronousExecutorRunsContinuationsOnStripedPool()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "client"))
             {
-                IgniteInstanceName = "client",
                 AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous,
                 ClientMode = true
             };
@@ -89,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 StringAssert.StartsWith("sys-stripe-", TestUtilsJni.GetJavaThreadName());
 
-                // Jump away from striped pool.
+                // Jump away from striped pool to avoid deadlock on node stop.
                 await Task.Yield();
             }
         }
