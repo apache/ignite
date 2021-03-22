@@ -22,16 +22,21 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PERFORMANCE_STATISTICS_ROTATE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.testframework.LogListener.matches;
@@ -41,7 +46,7 @@ import static org.apache.ignite.testframework.LogListener.matches;
  */
 public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
-    private static final int NODES_CNT = 2;
+    private static final int NODES_CNT = 3;
 
     /** Listener test logger. */
     private static ListeningTestLogger listeningLog;
@@ -52,6 +57,7 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
         cfg.setGridLogger(listeningLog);
+        cfg.setDiscoverySpi(new BlockTcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         return cfg;
     }
@@ -109,10 +115,28 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
     public void testRotateTwiceOnTheSameNode() throws Exception {
         startCollectStatistics();
 
+        CountDownLatch latche = new CountDownLatch(1);
+
+        BlockTcpDiscoverySpi spi = (BlockTcpDiscoverySpi)grid(0).context().discovery().getInjectedDiscoverySpi();
+
+        spi.setClosure((node, msg) -> {
+            if (msg instanceof InitMessage
+                && ((InitMessage<?>)msg).type() == PERFORMANCE_STATISTICS_ROTATE.ordinal()) {
+                try {
+                    latche.await();
+                }
+                catch (InterruptedException ignored) {}
+            }
+
+            return null;
+        });
+
         IgniteInternalFuture<Serializable> fut = grid(0).context().performanceStatistics().rotateCollectStatistics();
 
         assertThrows(log, () -> grid(0).context().performanceStatistics().rotateCollectStatistics(),
             IgniteCheckedException.class, "Rotation already in progress.");
+
+        latche.countDown();
 
         fut.get();
 

@@ -96,16 +96,15 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             }),
             (id, res, err) -> {
                 synchronized (rotateMux) {
-                    if (id.equals(rotateId)) {
-                        if (!err.isEmpty())
-                            rotateFut.onDone(F.first(err.values()));
-                        else
-                            rotateFut.onDone();
+                    if (!id.equals(rotateId))
+                        return;
 
-                        rotateFut = null;
+                    if (!err.isEmpty())
+                        rotateFut.onDone(F.first(err.values()));
+                    else
+                        rotateFut.onDone();
 
-                        rotateId = null;
-                    }
+                    rotateFut = null;
                 }
             });
 
@@ -348,17 +347,18 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         FilePerformanceStatisticsWriter oldWriter = null;
 
         synchronized (mux) {
-            if (writer != null) {
-                FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
+            if (writer == null)
+                return;
 
-                newWriter.start();
+            FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
 
-                oldWriter = writer;
+            newWriter.start();
 
-                writer = newWriter;
+            oldWriter = writer;
 
-                oldWriter.stop();
-            }
+            writer = newWriter;
+
+            oldWriter.stop();
         }
 
         if (oldWriter != null)
