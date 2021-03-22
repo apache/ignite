@@ -18,7 +18,6 @@
 // ReSharper disable MethodHasAsyncOverload
 namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Configuration;
@@ -82,14 +81,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ClientMode = true
             };
 
-            var client = Ignition.Start(cfg);
-            var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            using (var client = Ignition.Start(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
-            await cache.PutAsync(1, 1);
+                await cache.PutAsync(1, 1);
 
-            StringAssert.StartsWith("striped", TestUtilsJni.GetJavaThreadName());
+                StringAssert.StartsWith("sys-stripe-", TestUtilsJni.GetJavaThreadName());
 
-            Ignition.Stop(cfg.IgniteInstanceName, true);
+                // Jump away from striped pool.
+                await Task.Yield();
+            }
         }
     }
 }
