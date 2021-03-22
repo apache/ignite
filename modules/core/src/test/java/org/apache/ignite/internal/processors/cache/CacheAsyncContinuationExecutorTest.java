@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
 /**
- * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
+ * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}.
  */
 public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
@@ -49,22 +49,16 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
      * This test would hang before {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
      * was introduced, or if we set {@link Runnable#run()} as the executor.
      */
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testListenDefaultConfig() throws Exception {
-        Optional<String> keyOpt = IntStream.range(0, 1000)
-                .mapToObj(String::valueOf)
-                .filter(x -> belongs(x, 1))
-                .findFirst();
-
-        final String key = keyOpt.get();
+        final String key = getPrimaryKey(1);
 
         IgniteCache<String, Integer> cache = jcache(0);
         CyclicBarrier barrier = new CyclicBarrier(2);
-        AtomicReference<String> asyncThreadName = new AtomicReference<>("");
+        AtomicReference<String> listenThreadName = new AtomicReference<>("");
 
         cache.putAsync(key, 1).listen(f -> {
-            asyncThreadName.set(Thread.currentThread().getName());
+            listenThreadName.set(Thread.currentThread().getName());
             cache.replace(key, 2);
 
             try {
@@ -76,6 +70,20 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         barrier.await(5, TimeUnit.SECONDS);
         assertEquals(2, cache.get(key).intValue());
-        assertTrue(asyncThreadName.get(), asyncThreadName.get().startsWith("ForkJoinPool.commonPool-worker"));
+        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith("ForkJoinPool.commonPool-worker"));
+    }
+
+    /**
+     * Gets the primary key.
+     * @param nodeIdx Node index.
+     * @return Key.
+     */
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    private String getPrimaryKey(int nodeIdx) {
+        return IntStream.range(0, 1000)
+                .mapToObj(String::valueOf)
+                .filter(x -> belongs(x, nodeIdx))
+                .findFirst()
+                .get();
     }
 }
