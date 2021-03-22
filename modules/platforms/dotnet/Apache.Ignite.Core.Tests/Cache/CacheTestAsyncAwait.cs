@@ -88,6 +88,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 StringAssert.StartsWith("sys-stripe-", TestUtilsJni.GetJavaThreadName());
 
+                Assert.AreEqual(AsyncContinuationExecutor.UnsafeSynchronous,
+                    client.GetConfiguration().AsyncContinuationExecutor);
+
                 // Jump away from striped pool to avoid deadlock on node stop.
                 await Task.Yield();
             }
