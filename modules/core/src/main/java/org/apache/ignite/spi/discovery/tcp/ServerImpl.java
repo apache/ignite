@@ -912,14 +912,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     catch (IOException | IgniteCheckedException e) {
                         if (nodeId != null && !nodeAlive(nodeId)) {
-                            if (log.isDebugEnabled()) {
-                                log.warning("Failed to ping the node (has left or leaving topology): [nodeId=" +
-                                    nodeId + "]. Reason: " + e.getMessage(), e);
-                            }
-                            else {
-                                log.warning("Failed to ping the node (has left or leaving topology): [nodeId=" +
-                                    nodeId + "]. Reason: " + e.getMessage());
-                            }
+                            log.warning("Failed to ping node: [nodeId=" + nodeId + "]. Reason: " + e.getMessage());
 
                             fut.onDone((IgniteBiTuple<UUID, Boolean>)null);
 
