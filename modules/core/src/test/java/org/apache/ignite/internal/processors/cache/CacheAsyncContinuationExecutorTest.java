@@ -103,15 +103,13 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
      * thread.
      */
     @Test
-    public void testLocalOperationExecutesSynchronously() throws Exception {
+    public void testLocalOperationExecutesSynchronously() {
         final String key = getPrimaryKey(0);
 
         IgniteCache<String, Integer> cache = jcache(0);
         AtomicReference<String> listenThreadName = new AtomicReference<>("");
 
-        cache.putAsync(key, 1).listen(f -> {
-            listenThreadName.set(Thread.currentThread().getName());
-        });
+        cache.putAsync(key, 1).listen(f -> listenThreadName.set(Thread.currentThread().getName()));
 
         assertEquals(listenThreadName.get(), Thread.currentThread().getName());
     }
