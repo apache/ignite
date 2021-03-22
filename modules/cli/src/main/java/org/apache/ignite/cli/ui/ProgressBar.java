@@ -18,9 +18,8 @@
 package org.apache.ignite.cli.ui;
 
 import java.io.PrintWriter;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.concurrent.locks.LockSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Help.Ansi;
@@ -43,9 +42,6 @@ public class ProgressBar implements AutoCloseable {
 
     /** Target width of bar in symbols. */
     private final int targetBarWidth;
-
-    /** Execute. */
-    private ScheduledExecutorService exec;
 
     /**
      * Creates a new progress bar.
@@ -88,28 +84,10 @@ public class ProgressBar implements AutoCloseable {
         out.flush();
     }
 
-    /**
-     * Performs a single step every N milliseconds.
-     *
-     * @param interval Interval in milliseconds.
-     */
-    public void stepPeriodically(long interval) {
-        if (exec == null) {
-            exec = Executors.newSingleThreadScheduledExecutor();
-
-            exec.scheduleAtFixedRate(this::step, interval, interval, TimeUnit.MILLISECONDS);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
         while (curr < max) {
-            try {
-                Thread.sleep(10);
-            }
-            catch (InterruptedException ignored) {
-                break;
-            }
+            LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
 
             step();
         }

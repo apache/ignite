@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.ignite.cli.IgniteCLIException;
-import org.apache.ignite.cli.ui.ProgressBar;
 import org.apache.ignite.cli.builtins.module.ModuleRegistry;
+import org.apache.ignite.cli.ui.Spinner;
 import org.jline.terminal.Terminal;
 
 /**
@@ -54,9 +54,6 @@ public class NodeManager {
     /** Module registry. **/
     private final ModuleRegistry moduleRegistry;
 
-    /** System terminal. **/
-    private final Terminal terminal;
-
     /**
      * Creates node manager.
      *
@@ -66,7 +63,6 @@ public class NodeManager {
     @Inject
     public NodeManager(ModuleRegistry moduleRegistry, Terminal terminal) {
         this.moduleRegistry = moduleRegistry;
-        this.terminal = terminal;
     }
 
     /**
@@ -112,10 +108,9 @@ public class NodeManager {
 
             Process p = pb.start();
 
-            try (var bar = new ProgressBar(out, 100, terminal.getWidth())) {
-                bar.stepPeriodically(300);
+            try (var spinner = new Spinner(out, "Starting a new Ignite node")) {
 
-                if (!waitForStart("Apache Ignite started successfully!", logFile, NODE_START_TIMEOUT)) {
+                if (!waitForStart("Apache Ignite started successfully!", logFile, NODE_START_TIMEOUT, spinner)) {
                     p.destroyForcibly();
 
                     throw new IgniteCLIException("Node wasn't started during timeout period "
@@ -148,11 +143,13 @@ public class NodeManager {
     private static boolean waitForStart(
         String started,
         Path file,
-        Duration timeout
+        Duration timeout,
+        Spinner spinner
     ) throws IOException, InterruptedException {
         var start = System.currentTimeMillis();
 
         while ((System.currentTimeMillis() - start) < timeout.toMillis()) {
+            spinner.spin();
             LockSupport.parkNanos(LOG_FILE_POLL_INTERVAL.toNanos());
 
             var content = Files.readString(file);
@@ -212,7 +209,7 @@ public class NodeManager {
     }
 
     /**
-     * @param worksDir Ignite installation work dir.
+     * @param logDir Ignite installation work dir.
      * @param pidsDir Dir with nodes pids.
      * @return List of running nodes.
      */

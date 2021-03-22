@@ -74,8 +74,6 @@ public class NodeCommandSpec extends CategorySpec {
             PrintWriter out = spec.commandLine().getOut();
             ColorScheme cs = spec.commandLine().getColorScheme();
 
-            out.println("Starting a new Ignite node...");
-
             NodeManager.RunningNode node = nodeMgr.start(consistentId, ignitePaths.logDir,
                 ignitePaths.cliPidsDir(),
                 configPath,

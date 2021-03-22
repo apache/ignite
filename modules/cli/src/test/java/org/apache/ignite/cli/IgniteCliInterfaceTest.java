@@ -327,18 +327,22 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
             var exitCode = cli.execute(("node start " + nodeName + " --config conf.json").split(" "));
 
             Assertions.assertEquals(0, exitCode);
-            verify(nodeMgr).start(nodeName, ignitePaths.logDir, ignitePaths.cliPidsDir(), Path.of("conf.json"),
+
+            verify(nodeMgr).start(
+                nodeName,
+                ignitePaths.logDir,
+                ignitePaths.cliPidsDir(),
+                Path.of("conf.json"),
                 cli.getOut());
-            assertEquals("Starting a new Ignite node...\n\nNode is successfully started. To stop, type " +
-                    cli.getColorScheme().commandText("ignite node stop ") +
-                    cli.getColorScheme().parameterText(nodeName) + "\n\n" +
-                    "+---------------+---------+\n" +
-                    cli.getColorScheme().text("| @|bold Consistent ID|@ | node1   |\n") +
-                    "+---------------+---------+\n" +
-                    cli.getColorScheme().text("| @|bold PID|@           | 1       |\n") +
-                    "+---------------+---------+\n" +
-                    cli.getColorScheme().text("| @|bold Log File|@      | logfile |\n") +
-                    "+---------------+---------+\n",
+
+            assertEquals("\nNode is successfully started. To stop, type ignite node stop " + nodeName + "\n\n" +
+                "+---------------+---------+\n" +
+                "| Consistent ID | node1   |\n" +
+                "+---------------+---------+\n" +
+                "| PID           | 1       |\n" +
+                "+---------------+---------+\n" +
+                "| Log File      | logfile |\n" +
+                "+---------------+---------+\n",
                 out.toString());
         }
 
