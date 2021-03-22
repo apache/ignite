@@ -88,7 +88,7 @@ public class IdleVerifyUtility {
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                 buf.clear();
 
-                pageStore.read(pageId, buf, true,true);
+                pageStore.read(pageId, buf, true, true);
             }
         }
         catch (Throwable e) {

@@ -44,7 +44,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
  * <p>
  * User defined comparator should implement {@link Serializable} interface.
  */
-public class SortedEvictionPolicyFactory<K,V> extends AbstractEvictionPolicyFactory<SortedEvictionPolicy<K, V>> {
+public class SortedEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<SortedEvictionPolicy<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 

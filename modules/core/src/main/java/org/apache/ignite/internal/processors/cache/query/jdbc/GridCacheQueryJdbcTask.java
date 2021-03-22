@@ -294,7 +294,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
             assert futId != null;
 
-            ConcurrentMap<UUID,Cursor> m = ignite.cluster().nodeLocalMap();
+            ConcurrentMap<UUID, Cursor> m = ignite.cluster().nodeLocalMap();
 
             if (c == null)
                 c = m.get(futId);
@@ -350,7 +350,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
          * @return {@code true} If succeeded.
          */
         private boolean remove(UUID futId, Cursor c) {
-            if (ignite.cluster().<UUID,Cursor>nodeLocalMap().remove(futId, c)) {
+            if (ignite.cluster().<UUID, Cursor>nodeLocalMap().remove(futId, c)) {
                 c.cursor.close();
 
                 return true;
@@ -369,7 +369,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             SCHEDULER.schedule(new CAX() {
                 @Override public void applyx() {
                     for (;;) {
-                        Cursor c = ignite.cluster().<UUID,Cursor>nodeLocalMap().get(id);
+                        Cursor c = ignite.cluster().<UUID, Cursor>nodeLocalMap().get(id);
 
                         if (c == null)
                             break;

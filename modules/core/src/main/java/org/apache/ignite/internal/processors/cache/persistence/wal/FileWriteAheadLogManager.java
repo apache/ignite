@@ -1864,7 +1864,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 blockingSectionBegin();
 
                 try {
-                    segmentAware.awaitSegment(0);//wait for init at least one work segments.
+                    segmentAware.awaitSegment(0); //wait for init at least one work segments.
                 }
                 finally {
                     blockingSectionEnd();
