@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -35,9 +34,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -75,15 +72,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics process. */
     private final DistributedProcess<Serializable, Serializable> rotateProc;
 
-    /** Rotate performance statistics future. */
-    @Nullable private GridFutureAdapter<Serializable> rotateFut;
-
-    /** Process ID of the rotation of the performance statistics. */
-    @Nullable private UUID rotateId;
-
-    /** Synchronization mutex for rotate collecting performance statistics operations. */
-    private final Object rotateMux = new Object();
-
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
@@ -94,19 +82,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
                 return null;
             }),
-            (id, res, err) -> {
-                synchronized (rotateMux) {
-                    if (!id.equals(rotateId))
-                        return;
-
-                    if (!err.isEmpty())
-                        rotateFut.onDone(F.first(err.values()));
-                    else
-                        rotateFut.onDone();
-
-                    rotateFut = null;
-                }
-            });
+            (id, res, err) -> {});
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
@@ -257,25 +233,14 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If rotation failed.
      */
-    public IgniteInternalFuture<Serializable> rotateCollectStatistics() throws IgniteCheckedException {
+    public void rotateCollectStatistics() throws IgniteCheckedException {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         if (!enabled())
             throw new IgniteCheckedException("Performance statistics collection not started.");
 
-        synchronized (rotateMux) {
-            if (rotateFut != null)
-                throw new IgniteCheckedException("Rotation of performance statistics collection already in progress.");
-
-            rotateFut = new GridFutureAdapter<>();
-
-            rotateId = UUID.randomUUID();
-
-            rotateProc.start(rotateId, null);
-
-            return rotateFut;
-        }
+        rotateProc.start(UUID.randomUUID(), null);
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */

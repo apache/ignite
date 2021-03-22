@@ -28,11 +28,13 @@ import static org.apache.ignite.internal.commandline.performancestatistics.Perfo
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.START;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STATUS;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STOP;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.TIMEOUT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.statisticsFiles;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_DISABLED;
 import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_ENABLED;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests {@link CommandList#PERFORMANCE_STATISTICS} command. */
 public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -88,6 +90,17 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals("Rotated.", lastOperationResult);
+
+        waitForCondition(() -> {
+            try {
+                return statisticsFiles().size() == G.allGrids().size() * 2;
+            }
+            catch (Exception e) {
+                fail();
+
+                return false;
+            }
+            }, TIMEOUT);
 
         assertEquals(G.allGrids().size() * 2, statisticsFiles().size());
 

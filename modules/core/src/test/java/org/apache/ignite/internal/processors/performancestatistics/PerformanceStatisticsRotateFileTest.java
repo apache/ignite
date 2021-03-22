@@ -18,17 +18,13 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -43,7 +39,7 @@ import static org.apache.ignite.testframework.LogListener.matches;
  */
 public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
-    private static final int NODES_CNT = 3;
+    private static final int NODES_CNT = 2;
 
     /** Listener test logger. */
     private static ListeningTestLogger listeningLog;
@@ -105,29 +101,6 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
         stopCollectStatistics();
 
         checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testRotateTwiceOnTheSameNode() throws Exception {
-        startCollectStatistics();
-
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
-
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
-
-        IgniteInternalFuture<Serializable> fut = grid(0).context().performanceStatistics().rotateCollectStatistics();
-
-        assertThrows(log, () -> grid(0).context().performanceStatistics().rotateCollectStatistics(),
-            IgniteCheckedException.class, "Rotation of performance statistics collection already in progress.");
-
-        spi.stopBlock();
-
-        fut.get();
-
-        assertEquals(NODES_CNT * 2, statisticsFiles().size());
-
-        stopCollectStatistics();
     }
 
     /** Checks files and operations count. */
