@@ -17,52 +17,40 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
-import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheRemovable;
 
 /**
- * Data structure for a {@link SystemView}.
+ * {@link IgniteAtomicSequence} representation for a {@link SystemView}.
  *
- * @see Ignite#atomicLong(String, long, boolean)
- * @see Ignite#atomicLong(String, AtomicConfiguration, long, boolean)
- * @see Ignite#atomicReference(String, Object, boolean)
- * @see Ignite#atomicReference(String, AtomicConfiguration, Object, boolean)
  * @see Ignite#atomicSequence(String, long, boolean)
  * @see Ignite#atomicSequence(String, AtomicConfiguration, long, boolean)
- * @see Ignite#atomicStamped(String, Object, Object, boolean)
- * @see Ignite#atomicStamped(String, AtomicConfiguration, Object, Object, boolean)
- * @see Ignite#countDownLatch(String, int, boolean, boolean)
- * @see Ignite#semaphore(String, int, boolean, boolean)
- * @see Ignite#reentrantLock(String, boolean, boolean, boolean)
  */
-public class DataStructureView {
+public class AtomicSequenceView extends AbstractDataStructureView<GridCacheAtomicSequenceImpl> {
+    /** @param ds Data structure instance. */
+    public AtomicSequenceView(GridCacheRemovable ds) {
+        super((GridCacheAtomicSequenceImpl)ds);
+    }
+
     /**
-     * @param entry
+     * @return Value.
+     * @see IgniteAtomicSequence#get()
      */
-    public DataStructureView(Map.Entry<GridCacheInternalKey, GridCacheRemovable> entry) {
-
+    @Order(1)
+    public long value() {
+        return ds.get();
     }
 
-    public String name() {
-
-    }
-
-    public String type() {
-
-    }
-
-    public String groupName() {
-
-    }
-
-    public int groupId() {
-
-    }
-
-    public String options() {
-
+    /**
+     * @return Batch size.
+     * @see IgniteAtomicSequence#batchSize()
+     */
+    @Order(2)
+    public long batchSize() {
+        return ds.batchSize();
     }
 }

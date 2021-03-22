@@ -56,6 +56,13 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.AtomicLongViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.AtomicReferenceViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.AtomicSequenceViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.AtomicStampedViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.CountDownLatchViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ReentrantLockViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SemaphoreViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -74,6 +81,7 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -82,7 +90,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.systemview.view.DataStructureView;
+import org.apache.ignite.spi.systemview.view.AtomicLongView;
+import org.apache.ignite.spi.systemview.view.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.AtomicSequenceView;
+import org.apache.ignite.spi.systemview.view.AtomicStampedView;
+import org.apache.ignite.spi.systemview.view.CountDownLatchView;
+import org.apache.ignite.spi.systemview.view.ReentrantLockView;
+import org.apache.ignite.spi.systemview.view.SemaphoreView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -100,7 +114,6 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SET;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -122,12 +135,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
-
-    /** Data structures view name. */
-    private static final String DS_VIEW = metricName("data", "structures");
-
-    /** Data structures view description. */
-    private static final String DS_VIEW_DESC = "Data structures";
 
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
     private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
@@ -199,11 +206,59 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             return;
 
         ctx.systemView().registerView(
-            DS_VIEW,
-            DS_VIEW_DESC,
-            null,
-            dsMap.entrySet(),
-            DataStructureView::new
+            "AtomicSequences",
+            "Atomic sequences",
+            new AtomicSequenceViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
+            AtomicSequenceView::new
+        );
+
+        ctx.systemView().registerView(
+            "AtomicLongs",
+            "Atomic longs",
+            new AtomicLongViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteAtomicLong),
+            AtomicLongView::new
+        );
+
+        ctx.systemView().registerView(
+            "AtomicReferences",
+            "Atomic references",
+            new AtomicReferenceViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteAtomicReference),
+            AtomicReferenceView::new
+        );
+
+        ctx.systemView().registerView(
+            "AtomicStamped",
+            "Atomic stamped",
+            new AtomicStampedViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            AtomicStampedView::new
+        );
+
+        ctx.systemView().registerView(
+            "CountDownLatches",
+            "Count down latches",
+            new CountDownLatchViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            CountDownLatchView::new
+        );
+
+        ctx.systemView().registerView(
+            "Semaphores",
+            "Semaphores",
+            new SemaphoreViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteSemaphore),
+            SemaphoreView::new
+        );
+
+        ctx.systemView().registerView(
+            "ReentrantLocks",
+            "Reentrant locks",
+            new ReentrantLockViewWalker(),
+            F.view(dsMap.values(), v -> v instanceof IgniteLock),
+            ReentrantLockView::new
         );
 
         onKernalStart0();
