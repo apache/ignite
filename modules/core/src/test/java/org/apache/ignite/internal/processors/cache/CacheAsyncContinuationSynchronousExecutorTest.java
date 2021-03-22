@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 import java.util.concurrent.Executor;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)} with synchronous executor (old behavior).
