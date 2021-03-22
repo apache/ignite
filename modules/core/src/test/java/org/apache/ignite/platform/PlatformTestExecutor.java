@@ -17,8 +17,6 @@
 
 package org.apache.ignite.platform;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.concurrent.Executor;
 
 /**
@@ -26,7 +24,7 @@ import java.util.concurrent.Executor;
  */
 public class PlatformTestExecutor implements Executor {
     /** {@inheritDoc} */
-    @Override public void execute(@NotNull Runnable runnable) {
+    @Override public void execute(Runnable runnable) {
         runnable.run();
     }
 }
