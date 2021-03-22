@@ -45,7 +45,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteThreadPoolExecutorService;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -87,7 +87,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     private final Object mux = new Object();
 
     /** The executor for clearing jobs. */
-    private volatile IgniteThreadPoolExecutorService executor;
+    private volatile IgniteThreadPoolExecutor executor;
 
     /**
      * Callback on cache group start.
@@ -210,7 +210,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        executor = (IgniteThreadPoolExecutorService) cctx.kernalContext().getRebalanceExecutorService();
+        executor = (IgniteThreadPoolExecutor) cctx.kernalContext().getRebalanceExecutorService();
     }
 
     /** {@inheritDoc} */

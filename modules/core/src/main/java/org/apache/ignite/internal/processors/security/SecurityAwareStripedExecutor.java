@@ -34,15 +34,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class SecurityAwareStripedExecutor extends StripedExecutor {
     /** */
-    public static SecurityAwareHolder<StripedExecutor> holder(GridKernalContext ctx, StripedExecutor original) {
-        return new SecurityAwareHolder<StripedExecutor>(ctx, original) {
-            @Override protected StripedExecutor createSecurityAwareInstance() {
-                return new SecurityAwareStripedExecutor(ctx, original);
-            }
-        };
-    }
-
-    /** */
     private final GridKernalContext ctx;
 
     /** */

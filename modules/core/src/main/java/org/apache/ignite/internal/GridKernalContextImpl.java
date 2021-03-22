@@ -91,9 +91,6 @@ import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityAwareExecutorService;
-import org.apache.ignite.internal.processors.security.SecurityAwareHolder;
-import org.apache.ignite.internal.processors.security.SecurityAwareIgniteStripedThreadPoolExecutor;
-import org.apache.ignite.internal.processors.security.SecurityAwareIgniteThreadPoolExecutor;
 import org.apache.ignite.internal.processors.security.SecurityAwareStripedExecutor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
@@ -117,7 +114,6 @@ import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.apache.ignite.thread.IgniteThreadPoolExecutorService;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
@@ -345,67 +341,67 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> execSvc;
+    protected ExecutorService execSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> svcExecSvc;
+    protected ExecutorService svcExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> sysExecSvc;
+    protected ExecutorService sysExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<StripedExecutor> stripedExecSvc;
+    protected StripedExecutor stripedExecSvc;
 
     /** */
     @GridToStringExclude
-    private SecurityAwareHolder<ExecutorService> p2pExecSvc;
+    private ExecutorService p2pExecSvc;
 
     /** */
     @GridToStringExclude
-    private SecurityAwareHolder<ExecutorService> mgmtExecSvc;
+    private ExecutorService mgmtExecSvc;
 
     /** */
     @GridToStringExclude
-    private SecurityAwareHolder<StripedExecutor> dataStreamExecSvc;
+    private StripedExecutor dataStreamExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> restExecSvc;
+    protected ExecutorService restExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> affExecSvc;
+    protected ExecutorService affExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> idxExecSvc;
+    protected ExecutorService idxExecSvc;
 
     /** Thread pool for create/rebuild indexes. */
     @GridToStringExclude
-    private SecurityAwareHolder<ExecutorService> buildIdxExecSvc;
+    private ExecutorService buildIdxExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<IgniteStripedThreadPoolExecutor> callbackExecSvc;
+    protected IgniteStripedThreadPoolExecutor callbackExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> qryExecSvc;
+    protected ExecutorService qryExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<ExecutorService> schemaExecSvc;
+    protected ExecutorService schemaExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<IgniteThreadPoolExecutorService> rebalanceExecSvc;
+    protected ExecutorService rebalanceExecSvc;
 
     /** */
     @GridToStringExclude
-    protected SecurityAwareHolder<IgniteStripedThreadPoolExecutor> rebalanceStripedExecSvc;
+    protected IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
 
     /** */
     @GridToStringExclude
@@ -438,7 +434,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private IgniteEx grid;
 
     /** */
-    private SecurityAwareHolder<ExecutorService> utilityCachePool;
+    private ExecutorService utilityCachePool;
 
     /** */
     private IgniteConfiguration cfg;
@@ -549,23 +545,23 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.utilityCachePool = SecurityAwareExecutorService.holder(this, utilityCachePool);
-        this.execSvc = SecurityAwareExecutorService.holder(this, execSvc);
-        this.svcExecSvc = SecurityAwareExecutorService.holder(this, svcExecSvc);
-        this.sysExecSvc = SecurityAwareExecutorService.holder(this, sysExecSvc);
-        this.stripedExecSvc = SecurityAwareStripedExecutor.holder(this, stripedExecSvc);
-        this.p2pExecSvc = SecurityAwareExecutorService.holder(this, p2pExecSvc);
-        this.mgmtExecSvc = SecurityAwareExecutorService.holder(this, mgmtExecSvc);
-        this.dataStreamExecSvc = SecurityAwareStripedExecutor.holder(this, dataStreamExecSvc);
-        this.restExecSvc = SecurityAwareExecutorService.holder(this, restExecSvc);
-        this.affExecSvc = SecurityAwareExecutorService.holder(this, affExecSvc);
-        this.idxExecSvc = SecurityAwareExecutorService.holder(this, idxExecSvc);
-        this.buildIdxExecSvc = SecurityAwareExecutorService.holder(this, buildIdxExecSvc);
-        this.callbackExecSvc = SecurityAwareIgniteStripedThreadPoolExecutor.holder(this, callbackExecSvc);
-        this.qryExecSvc = SecurityAwareExecutorService.holder(this, qryExecSvc);
-        this.schemaExecSvc = SecurityAwareExecutorService.holder(this, schemaExecSvc);
-        this.rebalanceExecSvc = SecurityAwareIgniteThreadPoolExecutor.holder(this, (IgniteThreadPoolExecutorService)rebalanceExecSvc);
-        this.rebalanceStripedExecSvc = SecurityAwareIgniteStripedThreadPoolExecutor.holder(this, rebalanceStripedExecSvc);
+        this.utilityCachePool = utilityCachePool;
+        this.execSvc = execSvc;
+        this.svcExecSvc = svcExecSvc;
+        this.sysExecSvc = sysExecSvc;
+        this.stripedExecSvc = stripedExecSvc;
+        this.p2pExecSvc = p2pExecSvc;
+        this.mgmtExecSvc = mgmtExecSvc;
+        this.dataStreamExecSvc = dataStreamExecSvc;
+        this.restExecSvc = restExecSvc;
+        this.affExecSvc = affExecSvc;
+        this.idxExecSvc = idxExecSvc;
+        this.buildIdxExecSvc = buildIdxExecSvc;
+        this.callbackExecSvc = callbackExecSvc;
+        this.qryExecSvc = qryExecSvc;
+        this.schemaExecSvc = schemaExecSvc;
+        this.rebalanceExecSvc = rebalanceExecSvc;
+        this.rebalanceStripedExecSvc = rebalanceStripedExecSvc;
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
@@ -712,8 +708,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (comp instanceof IgniteAuthenticationProcessor)
             authProc = (IgniteAuthenticationProcessor)comp;
-        else if (comp instanceof IgniteSecurity)
+        else if (comp instanceof IgniteSecurity) {
             security = (IgniteSecurity)comp;
+
+            if (security.enabled())
+                wrapExecutors();
+        }
         else if (comp instanceof CompressionProcessor)
             compressProc = (CompressionProcessor)comp;
         else if (comp instanceof DiagnosticProcessor)
@@ -973,12 +973,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
-        return utilityCachePool.get();
+        return utilityCachePool;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
-        return callbackExecSvc.get();
+        return callbackExecSvc;
     }
 
     /** {@inheritDoc} */
@@ -1121,72 +1121,72 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public ExecutorService getExecutorService() {
-        return execSvc.get();
+        return execSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getServiceExecutorService() {
-        return svcExecSvc.get();
+        return svcExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getSystemExecutorService() {
-        return sysExecSvc.get();
+        return sysExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public StripedExecutor getStripedExecutorService() {
-        return stripedExecSvc.get();
+        return stripedExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getManagementExecutorService() {
-        return mgmtExecSvc.get();
+        return mgmtExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getPeerClassLoadingExecutorService() {
-        return p2pExecSvc.get();
+        return p2pExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public StripedExecutor getDataStreamerExecutorService() {
-        return dataStreamExecSvc.get();
+        return dataStreamExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
-        return restExecSvc.get();
+        return restExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getAffinityExecutorService() {
-        return affExecSvc.get();
+        return affExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public ExecutorService getIndexingExecutorService() {
-        return idxExecSvc.get();
+        return idxExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getQueryExecutorService() {
-        return qryExecSvc.get();
+        return qryExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getSchemaExecutorService() {
-        return schemaExecSvc.get();
+        return schemaExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService getRebalanceExecutorService() {
-        return rebalanceExecSvc.get();
+        return rebalanceExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService() {
-        return rebalanceStripedExecSvc.get();
+        return rebalanceStripedExecSvc;
     }
 
     /** {@inheritDoc} */
@@ -1320,11 +1320,50 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public ExecutorService buildIndexExecutorService() {
-        return buildIdxExecSvc.get();
+        return buildIdxExecSvc;
     }
 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
         return perfStatProc;
+    }
+
+    /**
+     * Wraps executors to security aware implementations.
+     */
+    private void wrapExecutors() {
+        utilityCachePool = wrapToSecurityAware(utilityCachePool);
+        execSvc = wrapToSecurityAware(execSvc);
+        svcExecSvc = wrapToSecurityAware(svcExecSvc);
+        sysExecSvc = wrapToSecurityAware(sysExecSvc);
+        p2pExecSvc = wrapToSecurityAware(p2pExecSvc);
+        mgmtExecSvc = wrapToSecurityAware(mgmtExecSvc);
+        restExecSvc = wrapToSecurityAware(restExecSvc);
+        affExecSvc = wrapToSecurityAware(affExecSvc);
+        idxExecSvc = wrapToSecurityAware(idxExecSvc);
+        qryExecSvc = wrapToSecurityAware(qryExecSvc);
+        schemaExecSvc = wrapToSecurityAware(schemaExecSvc);
+
+        if (customExecSvcs != null) {
+            Map<String, ExecutorService> res = new HashMap<>();
+
+            for (Map.Entry<String, ? extends ExecutorService> e : customExecSvcs.entrySet())
+                res.put(e.getKey(), wrapToSecurityAware(e.getValue()));
+
+            customExecSvcs = res;
+        }
+
+        stripedExecSvc = wrapToSecurityAware(stripedExecSvc);
+        dataStreamExecSvc = wrapToSecurityAware(dataStreamExecSvc);
+    }
+
+    /** */
+    private StripedExecutor wrapToSecurityAware(StripedExecutor original) {
+        return original != null ? new SecurityAwareStripedExecutor(this, original) : null;
+    }
+
+    /** */
+    private ExecutorService wrapToSecurityAware(ExecutorService original) {
+        return original != null ? new SecurityAwareExecutorService(this, original) : null;
     }
 }

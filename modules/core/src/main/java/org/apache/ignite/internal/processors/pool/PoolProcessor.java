@@ -29,7 +29,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.SecurityAwareExecutorService;
-import org.apache.ignite.internal.processors.security.SecurityAwareHolder;
 import org.apache.ignite.internal.processors.security.SecurityAwareIoPool;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +41,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     private final IoPool[] extPools = new IoPool[128];
 
     /** Custom named pools. */
-    private final Map<String, SecurityAwareHolder<? extends ExecutorService>> customExecs;
+    private final Map<String, ? extends ExecutorService> customExecs;
 
     /**
      * Constructor.
@@ -79,29 +78,15 @@ public class PoolProcessor extends GridProcessorAdapter {
                             "already used: " + id);
 
                     // 4. Wrap by a security aware version of IoPool:
-                    ex = new SecurityAwareIoPool(ctx, ex);
+                    if (ctx.security().enabled())
+                        ex = new SecurityAwareIoPool(ctx, ex);
 
                     extPools[id] = ex;
                 }
             }
         }
 
-        customExecs = convertToSecurityAwareHolder(ctx.customExecutors());
-    }
-
-    /**
-     *
-     */
-    private Map<String, SecurityAwareHolder<? extends ExecutorService>> convertToSecurityAwareHolder(
-        Map<String, ? extends ExecutorService> original) {
-        Map<String, SecurityAwareHolder<? extends ExecutorService>> res = new HashMap<>();
-
-        if (original != null) {
-            for (Map.Entry<String, ? extends ExecutorService> e : original.entrySet())
-                res.put(e.getKey(), SecurityAwareExecutorService.holder(ctx, e.getValue()));
-        }
-
-        return res;
+        customExecs = ctx.customExecutors();
     }
 
     /** {@inheritDoc} */
@@ -200,8 +185,11 @@ public class PoolProcessor extends GridProcessorAdapter {
     @Nullable public Executor customExecutor(String name) {
         assert name != null;
 
-        SecurityAwareHolder<? extends ExecutorService> holder = customExecs.get(name);
+        Executor exec = null;
 
-        return holder != null ? holder.get() : null;
+        if (customExecs != null)
+            exec = customExecs.get(name);
+
+        return exec;
     }
 }

@@ -304,12 +304,12 @@ public class CacheEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this cache event, if available. This property is available only for
-     * {@link EventType#EVT_CACHE_OBJECT_PUT}, {@link EventType#EVT_CACHE_OBJECT_REMOVED} and
-     * {@link EventType#EVT_CACHE_OBJECT_READ} cache events.
+     * Gets security subject ID initiated this cache event, if available. This property is not available for {@link
+     * EventType#EVT_CACHE_NODES_LEFT}, {@link EventType#EVT_CACHE_ENTRY_EVICTED} and {@link
+     * EventType#EVT_CACHE_OBJECT_EXPIRED} cache events.
      * <p>
-     * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated
-     * cache update or read.
+     * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated cache update or
+     * read.
      *
      * @return Subject ID.
      */

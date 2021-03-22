@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -340,10 +341,21 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 hasNewVal,
                 oldVal0,
                 hasOldVal,
-                securitySubjectId(cctx),
+                cacheEventSubjectId(type, cctx, evtNode),
                 cloClsName,
                 taskName));
         }
+    }
+
+    /** */
+    private UUID cacheEventSubjectId(int type, GridCacheContext<?, ?> cctx, ClusterNode evtNode) {
+        if (type != EventType.EVT_CACHE_NODES_LEFT && type != EventType.EVT_CACHE_ENTRY_EVICTED &&
+            type != EventType.EVT_CACHE_OBJECT_EXPIRED) {
+            return cctx.kernalContext().security().enabled() ? securitySubjectId(cctx)
+                : evtNode != null ? evtNode.id() : null;
+        }
+
+        return null;
     }
 
     /**

@@ -34,15 +34,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class SecurityAwareExecutorService implements ExecutorService {
     /** */
-    public static SecurityAwareHolder<ExecutorService> holder(GridKernalContext ctx, ExecutorService original) {
-        return new SecurityAwareHolder<ExecutorService>(ctx, original) {
-            @Override protected ExecutorService createSecurityAwareInstance() {
-                return new SecurityAwareExecutorService(ctx, original);
-            }
-        };
-    }
-
-    /** */
     private final GridKernalContext ctx;
 
     /** */

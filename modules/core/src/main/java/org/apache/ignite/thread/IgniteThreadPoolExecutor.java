@@ -28,7 +28,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements IgniteThreadPoolExecutorService {
+public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
     /**
      * Creates a new service with the given initial parameters.
      *
