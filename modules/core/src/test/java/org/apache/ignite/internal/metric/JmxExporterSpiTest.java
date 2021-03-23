@@ -78,6 +78,7 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
@@ -224,6 +225,27 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(cfg.getInitialSize(), dataRegionMBean.getAttribute("InitialSize"));
         assertEquals(cfg.getMaxSize(), dataRegionMBean.getAttribute("MaxSize"));
+    }
+
+    /** */
+    @Test
+    public void testTcpDiscoveryJmxMetrics() throws Exception {
+        DynamicMBean mBean = metricRegistry(ignite.name(), "io", "discovery");
+
+        assertEquals(10, mBean.getMBeanInfo().getAttributes().length);
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite.context().config().getDiscoverySpi();
+
+        assertEquals((int)spi.getNodesFailed(), mBean.getAttribute("FailedNodes"));
+        assertEquals(spi.getTotalProcessedMessages(), mBean.getAttribute("TotalProcessedMessages"));
+        assertEquals(spi.getCoordinatorSinceTimestamp(), mBean.getAttribute("CoordinatorSince"));
+        assertEquals((int)spi.getPendingMessagesRegistered(), mBean.getAttribute("PendingMessagesRegistered"));
+        assertEquals((int)spi.getNodesJoined(), mBean.getAttribute("JoinedNodes"));
+        assertEquals(ignite.context().discovery().topologyVersion(), mBean.getAttribute("CurrentTopologyVersion"));
+        assertEquals(spi.getTotalReceivedMessages(), mBean.getAttribute("TotalReceivedMessages"));
+        assertEquals(spi.getMessageWorkerQueueSize(), mBean.getAttribute("MessageWorkerQueueSize"));
+        assertEquals(spi.getCoordinator(), mBean.getAttribute("Coordinator"));
+        assertEquals((int)spi.getNodesLeft(), mBean.getAttribute("LeftNodes"));
     }
 
     /** */

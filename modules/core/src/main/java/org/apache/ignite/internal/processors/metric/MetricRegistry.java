@@ -49,6 +49,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
@@ -115,12 +116,17 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     }
 
     /**
-     * Register existing metrics in this group with the specified name.
+     * Register existing metrics in this group with the specified name. Note that the name of the metric must
+     * start with the name of the current registry it is registered into.
      *
      * @param metric Metric.
      */
     public void register(Metric metric) {
-        addMetric(metric.name(), metric);
+        String fullName = metric.name();
+
+        assert fullName.startsWith(regName);
+
+        addMetric(fullName.substring(regName.length() + SEPARATOR.length()), metric);
     }
 
     /**

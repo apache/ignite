@@ -57,6 +57,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -130,11 +131,13 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        AtomicLongMetric l = new AtomicLongMetric("rtest", "test");
+        String mName = "rtest";
+
+        AtomicLongMetric l = new AtomicLongMetric(metricName(mreg.name(), mName), "test");
 
         mreg.register(l);
 
-        assertEquals(l, mreg.findMetric("rtest"));
+        assertEquals(l, mreg.findMetric(mName));
 
         l.reset();
 
