@@ -411,11 +411,7 @@ public class IgniteCDC implements Runnable {
      */
     private static IgniteLogger logger(IgniteConfiguration cfg, String workDir) {
         try {
-            UUID appLogId = UUID.randomUUID();
-
-            IgniteLogger log = IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), appLogId, workDir);
-
-            log.info("App Log ID     -\t" + appLogId);
+            IgniteLogger log = IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), null, "cdc", workDir);
 
             return log;
         }
