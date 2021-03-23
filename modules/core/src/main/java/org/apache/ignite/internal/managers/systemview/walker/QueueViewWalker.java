@@ -33,11 +33,12 @@ public class QueueViewWalker implements SystemViewRowAttributeWalker<QueueView> 
         v.accept(0, "id", IgniteUuid.class);
         v.accept(1, "name", String.class);
         v.accept(2, "capacity", int.class);
-        v.accept(3, "groupName", String.class);
-        v.accept(4, "groupId", int.class);
-        v.accept(5, "bounded", boolean.class);
-        v.accept(6, "collocated", boolean.class);
-        v.accept(7, "removed", boolean.class);
+        v.accept(3, "size", int.class);
+        v.accept(4, "groupName", String.class);
+        v.accept(5, "groupId", int.class);
+        v.accept(6, "bounded", boolean.class);
+        v.accept(7, "collocated", boolean.class);
+        v.accept(8, "removed", boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -45,15 +46,16 @@ public class QueueViewWalker implements SystemViewRowAttributeWalker<QueueView> 
         v.accept(0, "id", IgniteUuid.class, row.id());
         v.accept(1, "name", String.class, row.name());
         v.acceptInt(2, "capacity", row.capacity());
-        v.accept(3, "groupName", String.class, row.groupName());
-        v.acceptInt(4, "groupId", row.groupId());
-        v.acceptBoolean(5, "bounded", row.bounded());
-        v.acceptBoolean(6, "collocated", row.collocated());
-        v.acceptBoolean(7, "removed", row.removed());
+        v.acceptInt(3, "size", row.size());
+        v.accept(4, "groupName", String.class, row.groupName());
+        v.acceptInt(5, "groupId", row.groupId());
+        v.acceptBoolean(6, "bounded", row.bounded());
+        v.acceptBoolean(7, "collocated", row.collocated());
+        v.acceptBoolean(8, "removed", row.removed());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 8;
+        return 9;
     }
 }

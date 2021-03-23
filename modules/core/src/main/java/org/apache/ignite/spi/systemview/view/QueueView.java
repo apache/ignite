@@ -53,14 +53,20 @@ public class QueueView {
         return queue.capacity();
     }
 
-    /** @return Cache group name where values for queue stored. */
+    /** @return Queue size. */
     @Order(3)
+    public int size() {
+        return queue.size();
+    }
+
+    /** @return Cache group name where values for queue stored. */
+    @Order(4)
     public String groupName() {
         return queue.groupName();
     }
 
     /** @return Cache group id where values for queue stored. */
-    @Order(4)
+    @Order(5)
     public int groupId() {
         return queue.groupId();
     }

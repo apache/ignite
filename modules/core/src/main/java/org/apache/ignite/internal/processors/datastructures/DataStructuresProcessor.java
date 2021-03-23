@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -325,10 +326,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             QUEUES_VIEW,
             QUEUES_VIEW_DESC,
             new QueueViewWalker(),
-            F.viewReadOnly(
+            new TransformCollectionView<>(
                 ctx.cache().cacheDescriptors().values(),
                 desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
-                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
+                desc -> true), //desc.cacheType() == CacheType.DATA_STRUCTURES),
             cctx -> cctx.queues().values(),
             (cctx, queue) -> new QueueView(queue)
         );

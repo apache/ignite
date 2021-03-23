@@ -44,6 +44,8 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.IgniteLock;
+import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
@@ -62,6 +64,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -101,6 +104,8 @@ import org.apache.ignite.spi.systemview.view.CountDownLatchView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
+import org.apache.ignite.spi.systemview.view.QueueView;
+import org.apache.ignite.spi.systemview.view.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
@@ -132,7 +137,9 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DEFAULT_DS_GROUP_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DEFAULT_VOLATILE_DS_GROUP_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.LATCHES_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.LOCKS_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.LONGS_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.QUEUES_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.REFERENCES_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SEMAPHORES_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SEQUENCES_VIEW;
@@ -1212,9 +1219,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertFalse(s.removed());
 
                     acquirePermitFut = runAsync(() -> {
-                        try {
-                            s1.acquire(2);
+                        s1.acquire(2);
 
+                        try {
                             Thread.sleep(getTestTimeout());
                         }
                         catch (InterruptedException e) {
@@ -1226,6 +1233,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     });
 
                     assertTrue(waitForCondition(() -> s.availablePermits() == 1, getTestTimeout()));
+                    assertTrue(s.hasQueuedThreads());
+                    assertEquals(1, s.queueLength());
                 }
                 else {
                     assertEquals(1, s.availablePermits());
@@ -1273,45 +1282,169 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testQueue() throws Exception {
-/*
+    public void testLocks() throws Exception {
         try (IgniteEx g0 = startGrid(0);
-             IgniteEx client1 = startClientGrid("client-1")) {
+             IgniteEx g1 = startGrid(1)) {
+            IgniteLock l1 = g0.reentrantLock("l1", false, true, true);
+            IgniteLock l2 = g0.reentrantLock("l2", true, false, true);
 
-            client1.queue("queue-1", 42, new CollectionConfiguration()
+            SystemView<ReentrantLockView> locks0 = g0.context().systemView().view(LOCKS_VIEW);
+            SystemView<ReentrantLockView> locks1 = g1.context().systemView().view(LOCKS_VIEW);
+
+            assertEquals(2, locks0.size());
+            assertEquals(0, locks1.size());
+
+            String grpName = DEFAULT_VOLATILE_DS_GROUP_NAME + "@" + VOLATILE_DATA_REGION_NAME;
+
+            IgniteInternalFuture<?> lockFut = null;
+
+            Runnable lockNSleep = () -> {
+                l1.lock();
+
+                try {
+                    Thread.sleep(getTestTimeout());
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                finally {
+                    l1.unlock();
+                }
+            };
+
+            for (ReentrantLockView l : locks0) {
+                if ("l1".equals(l.name())) {
+                    assertFalse(l.locked());
+                    assertFalse(l.hasQueuedThreads());
+                    assertFalse(l.failoverSafe());
+                    assertTrue(l.fair());
+                    assertFalse(l.broken());
+                    assertFalse(l.removed());
+
+                    lockFut = runAsync(lockNSleep);
+
+                    assertTrue(waitForCondition(l::locked, getTestTimeout()));
+                }
+                else {
+                    assertFalse(l.hasQueuedThreads());
+                    assertTrue(l.failoverSafe());
+                    assertFalse(l.fair());
+                    assertFalse(l.broken());
+                    assertFalse(l.removed());
+
+                    l2.close();
+
+                    assertTrue(l.removed());
+                }
+
+                assertEquals(grpName, l.groupName());
+                assertEquals(CU.cacheId(grpName), l.groupId());
+            }
+
+            IgniteLock l3 = g1.reentrantLock("l1", true, false, true);
+
+            assertEquals(1, locks1.size());
+
+            ReentrantLockView s = locks1.iterator().next();
+
+            assertTrue(s.locked());
+            assertFalse(s.hasQueuedThreads());
+            assertFalse(s.failoverSafe());
+            assertTrue(s.fair());
+            assertFalse(s.broken());
+            assertFalse(s.removed());
+
+            lockFut.cancel();
+
+            assertTrue(waitForCondition(() -> !s.locked(), getTestTimeout()));
+            assertFalse(s.hasQueuedThreads());
+
+            l3.close();
+
+            assertTrue(s.removed());
+
+            assertEquals(0, locks0.size());
+            assertEquals(0, locks1.size());
+        }
+    }
+
+    /** */
+    @Test
+    public void testQueue() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx g1 = startGrid(1)) {
+
+            IgniteQueue<String> q0 = g0.queue("queue-1", 42, new CollectionConfiguration()
                 .setCollocated(true)
                 .setBackups(1)
                 .setGroupName("my-group"));
-            client1.queue("queue-2", 0, null);
+            IgniteQueue<?> q1 = g0.queue("queue-2", 0, new CollectionConfiguration());
 
-            SystemView<QueueView> queuesView = g0.context().systemView().view(QUEUES_VIEW);
+            SystemView<QueueView> queues0 = g0.context().systemView().view(QUEUES_VIEW);
+            SystemView<QueueView> queues1 = g1.context().systemView().view(QUEUES_VIEW);
 
-            assertEquals(2, queuesView.size());
+            assertEquals(2, queues0.size());
+            assertEquals(0, queues1.size());
 
-            for (QueueView q : queuesView) {
+            for (QueueView q : queues0) {
                 if ("queue-1".equals(q.name())) {
                     assertNotNull(q.id());
                     assertEquals("queue-1", q.name());
                     assertEquals(42, q.capacity());
                     assertTrue(q.bounded());
                     assertTrue(q.collocated());
-                    assertFalse(q.removed());
                     assertEquals("my-group", q.groupName());
                     assertEquals(CU.cacheId("my-group"), q.groupId());
+                    assertFalse(q.removed());
+                    assertEquals(0, q.size());
+
+                    q0.add("first");
+
+                    assertEquals(1, q.size());
                 }
                 else {
                     assertNotNull(q.id());
                     assertEquals("queue-2", q.name());
-                    assertEquals(0, q.capacity());
+                    assertEquals(Integer.MAX_VALUE, q.capacity());
                     assertFalse(q.bounded());
                     assertFalse(q.collocated());
+                    assertEquals(DEFAULT_DS_GROUP_NAME, q.groupName());
+                    assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), q.groupId());
                     assertFalse(q.removed());
-                    assertEquals("my-group", q.groupName());
-                    assertEquals(CU.cacheId("my-group"), q.groupId());
+                    assertEquals(0, q.size());
+
+                    q1.close();
+
+                    assertTrue(waitForCondition(q::removed, getTestTimeout()));
                 }
             }
+
+            IgniteQueue<?> q2 = g1.queue("queue-1", 42, new CollectionConfiguration()
+                .setCollocated(true)
+                .setBackups(1)
+                .setGroupName("my-group"));
+
+            assertEquals(1, queues1.size());
+
+            QueueView q = queues1.iterator().next();
+
+            assertNotNull(q.id());
+            assertEquals("queue-1", q.name());
+            assertEquals(42, q.capacity());
+            assertTrue(q.bounded());
+            assertTrue(q.collocated());
+            assertEquals("my-group", q.groupName());
+            assertEquals(CU.cacheId("my-group"), q.groupId());
+            assertFalse(q.removed());
+            assertEquals(1, q.size());
+
+            q2.close();
+
+            assertTrue(waitForCondition(q::removed, getTestTimeout()));
+
+            assertEquals(0, queues0.size());
+            assertEquals(0, queues1.size());
         }
-*/
     }
 
     /** */
