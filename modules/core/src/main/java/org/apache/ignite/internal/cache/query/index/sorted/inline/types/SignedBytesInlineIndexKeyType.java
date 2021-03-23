@@ -25,4 +25,9 @@ public class SignedBytesInlineIndexKeyType extends BytesInlineIndexKeyType {
     public SignedBytesInlineIndexKeyType() {
         super(false);
     }
+
+    /** */
+    public SignedBytesInlineIndexKeyType(int type) {
+        super(type, false);
+    }
 }

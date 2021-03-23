@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
@@ -34,9 +30,6 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
     private final BytesInlineIndexKeyType delegate;
 
     /** */
-    private final JavaObjectKeySerializer serializer = IndexProcessor.serializer;
-
-    /** */
     public ObjectByteArrayInlineIndexKeyType(BytesInlineIndexKeyType delegate) {
         super(IndexKeyTypes.JAVA_OBJECT, (short) -1);
 
@@ -45,15 +38,10 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, JavaObjectIndexKey key, int maxSize) {
-        try {
-            byte[] b = serializer.serialize(key.key());
+        byte[] b = key.bytes();
 
-            // Signed or unsigned doesn't matter there.
-            return delegate.put0(pageAddr, off, new BytesIndexKey(b), maxSize);
-
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to serialize Java Object to byte array", e);
-        }
+        // Signed or unsigned doesn't matter there.
+        return delegate.put0(pageAddr, off, new BytesIndexKey(b), maxSize);
     }
 
     /** {@inheritDoc} */
@@ -65,27 +53,17 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, JavaObjectIndexKey key) {
-        try {
-            byte[] b = serializer.serialize(key.key());
+        byte[] b = key.bytesNoCopy();
 
-            // Signed or unsigned doesn't matter there.
-            return delegate.compare0(pageAddr, off, new BytesIndexKey(b));
-
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to serialize Java Object to byte array", e);
-        }
+        // Signed or unsigned doesn't matter there.
+        return delegate.compare0(pageAddr, off, new BytesIndexKey(b));
     }
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(JavaObjectIndexKey key) {
-        try {
-            byte[] b = serializer.serialize(key);
+        byte[] b = key.bytes();
 
-            // Signed or unsigned doesn't matter there.
-            return delegate.inlineSize0(new BytesIndexKey(b));
-
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to serialize Java Object to byte array", e);
-        }
+        // Signed or unsigned doesn't matter there.
+        return delegate.inlineSize0(new BytesIndexKey(b));
     }
 }

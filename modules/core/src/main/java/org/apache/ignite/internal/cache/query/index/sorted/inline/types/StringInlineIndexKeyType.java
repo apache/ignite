@@ -248,7 +248,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
      * @param limit Size limit.
      * @return byte[].
      */
-    static byte[] trimUTF8(byte[] bytes, int limit) {
+    public static byte[] trimUTF8(byte[] bytes, int limit) {
         if (bytes.length <= limit)
             return bytes;
 

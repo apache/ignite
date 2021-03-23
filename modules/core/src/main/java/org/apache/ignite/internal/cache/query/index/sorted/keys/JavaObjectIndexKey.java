@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /**
@@ -85,7 +86,24 @@ public abstract class JavaObjectIndexKey implements IndexKey {
     }
 
     /**
-     * @return Represents a Java Object as byte array.
+     * @return Cached byte array that represents a Java object.
      */
     public abstract byte[] bytesNoCopy();
+
+    /** Empty byte array. */
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
+    /**
+     * @return Byte array that represents a Java object.
+     */
+    public byte[] bytes() {
+        byte[] bytes = bytesNoCopy();
+
+        if (bytes == null)
+            return null;
+        else {
+            int len = bytes.length;
+            return len == 0 ? EMPTY_BYTES : Arrays.copyOf(bytes, len);
+        }
+    }
 }

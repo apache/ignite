@@ -68,10 +68,12 @@ public class InlineIndexKeyTypeRegistry {
     private static final SignedBytesInlineIndexKeyType signedBytesType = new SignedBytesInlineIndexKeyType();
 
     /** Object key type that maps for custom POJO. Inline stores a byte array representation of the object. */
-    private static final ObjectByteArrayInlineIndexKeyType bytesObjectType = new ObjectByteArrayInlineIndexKeyType(bytesType);
+    private static final ObjectByteArrayInlineIndexKeyType bytesObjectType =
+        new ObjectByteArrayInlineIndexKeyType(new BytesInlineIndexKeyType(IndexKeyTypes.JAVA_OBJECT));
 
     /** Object key type that maps for custom POJO. Inline stores a signed byte array representation of the object. */
-    private static final ObjectByteArrayInlineIndexKeyType signedBytesObjectType = new ObjectByteArrayInlineIndexKeyType(signedBytesType);
+    private static final ObjectByteArrayInlineIndexKeyType signedBytesObjectType =
+        new ObjectByteArrayInlineIndexKeyType(new SignedBytesInlineIndexKeyType(IndexKeyTypes.JAVA_OBJECT));
 
     static {
         register(IndexKeyTypes.BOOLEAN, new BooleanInlineIndexKeyType());
