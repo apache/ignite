@@ -214,6 +214,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         assertTrue(lsnr.stoped);
     }
 
+    /** */
     @Test
     public void testTwoGrids() throws Exception {
         IgniteEx ign1 = startGrid(0);
@@ -282,6 +283,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testOneOfConcurrentRunsFail() throws Exception {
         IgniteEx ign = startGrid(0);
@@ -314,6 +316,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testReReadIfNoCommit() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
