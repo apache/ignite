@@ -52,7 +52,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     private static final String TEST_CACHE_NAME = IndexTypesCompatibilityTest.class.getSimpleName();
 
     /** */
-    private static final int ROWS_CNT = 300;
+    private static final int ROWS_CNT = 100;
 
     /** */
     private static final String TABLE_PREFIX = "TABLE_";
