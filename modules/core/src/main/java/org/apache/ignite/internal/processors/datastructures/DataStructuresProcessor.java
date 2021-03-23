@@ -113,6 +113,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_STAMPED;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.COUNT_DOWN_LATCH;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.QUEUE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
@@ -300,7 +301,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             LATCHES_VIEW,
             LATCHES_VIEW_DESC,
             new CountDownLatchViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteCountDownLatch),
             CountDownLatchView::new
         );
 
@@ -994,7 +995,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 return new T2<>(stmp, retVal);
             }
-        }, cfg, name, DataStructureType.ATOMIC_STAMPED, create, GridCacheAtomicStampedEx.class);
+        }, cfg, name, ATOMIC_STAMPED, create, GridCacheAtomicStampedEx.class);
     }
 
     /**
@@ -1005,7 +1006,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicStamped(final String name, final String grpName) throws IgniteCheckedException {
-        removeDataStructure(null, name, grpName, DataStructureType.ATOMIC_STAMPED, null);
+        removeDataStructure(null, name, grpName, ATOMIC_STAMPED, null);
     }
 
     /**
