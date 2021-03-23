@@ -1571,157 +1571,99 @@ public class IgnitionEx {
      * Grid data container.
      */
     private static final class IgniteNamedInstance {
-        /**
-         * Map of registered MBeans.
-         */
+        /** Map of registered MBeans. */
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
 
-        /**
-         *
-         */
+        /** */
         private static final String[] EMPTY_STR_ARR = new String[0];
 
-        /**
-         * Grid name.
-         */
+        /** Grid name. */
         private final String name;
 
-        /**
-         * Grid instance.
-         */
+        /** Grid instance. */
         private volatile IgniteKernal grid;
 
-        /**
-         * Executor service.
-         */
+        /** Executor service. */
         private ThreadPoolExecutor execSvc;
 
-        /**
-         * Executor service for services.
-         */
+        /** Executor service for services. */
         private ThreadPoolExecutor svcExecSvc;
 
-        /**
-         * System executor service.
-         */
+        /** System executor service. */
         private ThreadPoolExecutor sysExecSvc;
 
-        /**
-         *
-         */
+        /** */
         private StripedExecutor stripedExecSvc;
 
-        /**
-         * Management executor service.
-         */
+        /** Management executor service. */
         private ThreadPoolExecutor mgmtExecSvc;
 
-        /**
-         * P2P executor service.
-         */
+        /** P2P executor service. */
         private ThreadPoolExecutor p2pExecSvc;
 
-        /**
-         * Data streamer executor service.
-         */
+        /** Data streamer executor service. */
         private StripedExecutor dataStreamerExecSvc;
 
-        /**
-         * REST requests executor service.
-         */
+        /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
 
-        /**
-         * Utility cache executor service.
-         */
+        /** Utility cache executor service. */
         private ThreadPoolExecutor utilityCacheExecSvc;
 
-        /**
-         * Affinity executor service.
-         */
+        /** Affinity executor service. */
         private ThreadPoolExecutor affExecSvc;
 
-        /**
-         * Indexing pool.
-         */
+        /** Indexing pool. */
         private ThreadPoolExecutor idxExecSvc;
 
-        /**
-         * Thread pool for create/rebuild indexes.
-         */
+        /** Thread pool for create/rebuild indexes. */
         private ThreadPoolExecutor buildIdxExecSvc;
 
-        /**
-         * Continuous query executor service.
-         */
+        /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
-        /**
-         * Query executor service.
-         */
+        /** Query executor service. */
         private ThreadPoolExecutor qryExecSvc;
 
-        /**
-         * Query executor service.
-         */
+        /** Query executor service. */
         private ThreadPoolExecutor schemaExecSvc;
 
-        /**
-         * Rebalance executor service.
-         */
+        /** Rebalance executor service. */
         private ThreadPoolExecutor rebalanceExecSvc;
 
-        /**
-         * Rebalance striped executor service.
-         */
+        /** Rebalance striped executor service. */
         private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
 
-        /**
-         * Executor service.
-         */
+        /** Executor service. */
         private Map<String, ThreadPoolExecutor> customExecSvcs;
 
-        /**
-         * Grid state.
-         */
+        /** Grid state. */
         private volatile IgniteState state = STOPPED;
 
-        /**
-         * Shutdown hook.
-         */
+        /** Shutdown hook. */
         private Thread shutdownHook;
 
-        /**
-         * Grid log.
-         */
+        /** Grid log. */
         private IgniteLogger log;
 
-        /**
-         * Start guard.
-         */
+        /** Start guard. */
         private final AtomicBoolean startGuard = new AtomicBoolean();
 
-        /**
-         * Start latch.
-         */
+        /** Start latch. */
         private final CountDownLatch startLatch = new CountDownLatch(1);
 
-        /**
-         * Raised if node is waiting graceful shutdown. Set to false to end wait.
-         */
+        /** Raised if node is waiting graceful shutdown. Set to false to end wait. */
         private volatile boolean delayedShutdown = false;
 
         /**
-         * Thread that starts this named instance. This field can be non-volatile since it makes sense only for thread
-         * where it was originally initialized.
+         * Thread that starts this named instance. This field can be non-volatile since
+         * it makes sense only for thread where it was originally initialized.
          */
         @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
         private Thread starterThread;
 
-        /**
-         *
-         */
+        /** */
         private boolean starterThreadInterrupted;
 
         /**
@@ -1932,8 +1874,8 @@ public class IgnitionEx {
                 },
                 IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
                     cfg.getSystemWorkerBlockedTimeout() != null
-                        ? cfg.getSystemWorkerBlockedTimeout()
-                        : cfg.getFailureDetectionTimeout()),
+                    ? cfg.getSystemWorkerBlockedTimeout()
+                    : cfg.getFailureDetectionTimeout()),
                 log);
 
             stripedExecSvc = new StripedExecutor(
@@ -2588,8 +2530,8 @@ public class IgnitionEx {
         }
 
         /**
-         * @param cfgLog  Configured logger.
-         * @param nodeId  Local node ID.
+         * @param cfgLog Configured logger.
+         * @param nodeId Local node ID.
          * @param workDir Work directory.
          * @return Initialized logger.
          * @throws IgniteCheckedException If failed.
