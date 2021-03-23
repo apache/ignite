@@ -104,6 +104,10 @@ public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileA
     /** Quiet flag. */
     private final boolean quiet;
 
+    /** Node ID. */
+    @GridToStringExclude
+    private UUID nodeId;
+
     /** Postfix. */
     @GridToStringExclude
     private String postfix;
@@ -501,16 +505,29 @@ public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileA
 
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
-        setPostfix(U.id8(nodeId));
+        A.notNull(nodeId, "nodeId");
+
+        postfix(nodeId, U.id8(nodeId));
+    }
+
+    /** */
+    private void postfix(UUID nodeId, String postfix) {
+        this.nodeId = nodeId;
+        this.postfix = postfix;
+
+        updateFilePath(new Log4jNodeIdFilePath(postfix));
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID getNodeId() {
+        return nodeId;
     }
 
     /** {@inheritDoc} */
     @Override public void setPostfix(String postfix) {
         A.notNull(postfix, "postfix");
 
-        this.postfix = postfix;
-
-        updateFilePath(new Log4jNodeIdFilePath(postfix));
+        postfix(nodeId, postfix);
     }
 
     /** {@inheritDoc} */

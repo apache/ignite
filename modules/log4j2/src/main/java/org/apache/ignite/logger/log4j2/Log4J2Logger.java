@@ -109,6 +109,10 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
     /** Quiet flag. */
     private final boolean quiet;
 
+    /** Node ID. */
+    @GridToStringExclude
+    private volatile UUID nodeId;
+
     /** Postfix. */
     @GridToStringExclude
     private volatile String postfix;
@@ -385,13 +389,13 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
 
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
-        setPostfix(U.id8(nodeId));
+        A.notNull(nodeId, "nodeId");
+
+        postfix(nodeId, U.id8(nodeId));
     }
 
-    /** {@inheritDoc} */
-    @Override public void setPostfix(String postfix) {
-        A.notNull(postfix, "nodeId");
-
+    private void postfix(UUID nodeId, String postfix) {
+        this.nodeId = nodeId;
         this.postfix = postfix;
 
         // Set postfix as system variable to be used at configuration.
@@ -413,6 +417,18 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
                 }
             });
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID getNodeId() {
+        return nodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setPostfix(String postfix) {
+        A.notNull(postfix, "nodeId");
+
+        postfix(null, postfix);
     }
 
     /** {@inheritDoc} */

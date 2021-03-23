@@ -126,6 +126,10 @@ public class JavaLogger implements IgniteLogger, LoggerPostfixAware {
 
     /** Node ID. */
     @GridToStringExclude
+    private volatile UUID nodeId;
+
+    /** Postfix. */
+    @GridToStringExclude
     private volatile String postfix;
 
     /**
@@ -366,13 +370,25 @@ public class JavaLogger implements IgniteLogger, LoggerPostfixAware {
 
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
-        setPostfix(U.id8(nodeId));
+        A.notNull(nodeId, "nodeId");
+
+        postfix(nodeId, U.id8(nodeId));
     }
 
     /** {@inheritDoc} */
     @Override public void setPostfix(String postfix) {
         A.notNull(postfix, "postfix");
 
+        postfix(null, postfix);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getPostfix() {
+        return postfix;
+    }
+
+    /** */
+    private void postfix(UUID nodeId, String postfix) {
         if (this.postfix != null)
             return;
 
@@ -382,6 +398,7 @@ public class JavaLogger implements IgniteLogger, LoggerPostfixAware {
                 return;
 
             this.postfix = postfix;
+            this.nodeId = nodeId;
         }
 
         JavaLoggerFileHandler fileHnd = findHandler(impl, JavaLoggerFileHandler.class);
@@ -398,8 +415,8 @@ public class JavaLogger implements IgniteLogger, LoggerPostfixAware {
     }
 
     /** {@inheritDoc} */
-    @Override public String getPostfix() {
-        return postfix;
+    @Override public UUID getNodeId() {
+        return nodeId;
     }
 
     /**
