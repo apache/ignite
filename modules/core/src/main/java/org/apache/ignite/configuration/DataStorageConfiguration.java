@@ -1026,6 +1026,7 @@ public class DataStorageConfiguration implements Serializable {
      * negative  value disables auto archiving.
      * @return current configuration instance for chaining
      */
+    @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
         this.walForceArchiveTimeout = walForceArchiveTimeout;
 
