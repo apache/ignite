@@ -65,10 +65,12 @@ def await_rebalance_start(ignite, timeout=1):
     """
     for node in ignite.nodes:
         try:
-            rebalance_start_time = get_event_time(node, "Starting rebalance routine \\[test-cache-", timeout=timeout)
-        except TimeoutError as error:
-            ignite.logger.error("Rebalance was not started on node '%s' in %d sec.: %s" %
-                                (node.name, timeout, str(error)))
+            rebalance_start_time = get_event_time(
+                ignite, node,
+                "Starting rebalance routine \\[test-cache-",
+                timeout=timeout)
+        except TimeoutError:
+            continue
         else:
             return node, rebalance_start_time
 
@@ -88,9 +90,10 @@ def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
 
     for cache_idx in range(cache_count):
         rebalance_complete_times.append(get_event_time(
+            ignite,
             node if node else ignite.nodes[0],
-            "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\"
-            "[grp=test-cache-%d" % (cache_idx + 1),
+            "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
+            ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
             timeout=timeout))
 
     return max(rebalance_complete_times)

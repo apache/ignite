@@ -243,7 +243,7 @@ class DiscoveryTest(IgniteTest):
 
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
-                logged_timestamps.append(get_event_time(survivor, node_failed_event_pattern(failed_id),
+                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
                                                         timeout=event_timeout_sec))
 
             self._check_failed_number(failed_nodes, survivor)
