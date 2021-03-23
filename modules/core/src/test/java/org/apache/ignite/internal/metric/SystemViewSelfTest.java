@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -109,6 +110,7 @@ import org.apache.ignite.spi.systemview.view.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SetView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -143,6 +145,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.REFERENCES_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SEMAPHORES_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SEQUENCES_VIEW;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SETS_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
@@ -877,6 +880,73 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void checkScanQueryView(IgniteEx client1, IgniteEx client2, SystemView<ScanQueryView> qrySysView)
+        throws Exception {
+        boolean res = waitForCondition(() -> qrySysView.size() > 1, 5_000);
+
+        assertTrue(res);
+
+        Consumer<ScanQueryView> cache1checker = view -> {
+            assertEquals(client1.localNode().id(), view.originNodeId());
+            assertTrue(view.queryId() != 0);
+            assertEquals("cache1", view.cacheName());
+            assertEquals(cacheId("cache1"), view.cacheId());
+            assertEquals(cacheGroupId("cache1", "group1"), view.cacheGroupId());
+            assertEquals("group1", view.cacheGroupName());
+            assertTrue(view.startTime() <= System.currentTimeMillis());
+            assertTrue(view.duration() >= 0);
+            assertFalse(view.canceled());
+            assertEquals(TEST_PREDICATE, view.filter());
+            assertFalse(view.local());
+            assertEquals(-1, view.partition());
+            assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.topology());
+            assertEquals(TEST_TRANSFORMER, view.transformer());
+            assertFalse(view.keepBinary());
+            assertNull(view.subjectId());
+            assertNull(view.taskName());
+            assertEquals(10, view.pageSize());
+        };
+
+        Consumer<ScanQueryView> cache2checker = view -> {
+            assertEquals(client2.localNode().id(), view.originNodeId());
+            assertTrue(view.queryId() != 0);
+            assertEquals("cache2", view.cacheName());
+            assertEquals(cacheId("cache2"), view.cacheId());
+            assertEquals(cacheGroupId("cache2", null), view.cacheGroupId());
+            assertEquals("cache2", view.cacheGroupName());
+            assertTrue(view.startTime() <= System.currentTimeMillis());
+            assertTrue(view.duration() >= 0);
+            assertFalse(view.canceled());
+            assertNull(view.filter());
+            assertFalse(view.local());
+            assertEquals(-1, view.partition());
+            assertEquals(toStringSafe(client2.context().discovery().topologyVersionEx()), view.topology());
+            assertNull(view.transformer());
+            assertTrue(view.keepBinary());
+            assertNull(view.subjectId());
+            assertNull(view.taskName());
+            assertEquals(20, view.pageSize());
+        };
+
+        boolean found1 = false;
+        boolean found2 = false;
+
+        for (ScanQueryView view : qrySysView) {
+            if ("cache2".equals(view.cacheName())) {
+                cache2checker.accept(view);
+                found1 = true;
+            }
+            else {
+                cache1checker.accept(view);
+                found2 = true;
+            }
+        }
+
+        assertTrue(found1 && found2);
+    }
+
+
+    /** */
     @Test
     public void testAtomicSequence() throws Exception {
         try (IgniteEx g0 = startGrid(0);
@@ -1448,69 +1518,76 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkScanQueryView(IgniteEx client1, IgniteEx client2, SystemView<ScanQueryView> qrySysView)
-        throws Exception {
-        boolean res = waitForCondition(() -> qrySysView.size() > 1, 5_000);
+    @Test
+    public void testSet() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+             IgniteEx g1 = startGrid(1)) {
 
-        assertTrue(res);
+            IgniteSet<String> s0 = g0.set("set-1", new CollectionConfiguration()
+                .setCollocated(true)
+                .setBackups(1)
+                .setGroupName("my-group"));
+            IgniteSet<?> s1 = g0.set("set-2", new CollectionConfiguration());
 
-        Consumer<ScanQueryView> cache1checker = view -> {
-            assertEquals(client1.localNode().id(), view.originNodeId());
-            assertTrue(view.queryId() != 0);
-            assertEquals("cache1", view.cacheName());
-            assertEquals(cacheId("cache1"), view.cacheId());
-            assertEquals(cacheGroupId("cache1", "group1"), view.cacheGroupId());
-            assertEquals("group1", view.cacheGroupName());
-            assertTrue(view.startTime() <= System.currentTimeMillis());
-            assertTrue(view.duration() >= 0);
-            assertFalse(view.canceled());
-            assertEquals(TEST_PREDICATE, view.filter());
-            assertFalse(view.local());
-            assertEquals(-1, view.partition());
-            assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.topology());
-            assertEquals(TEST_TRANSFORMER, view.transformer());
-            assertFalse(view.keepBinary());
-            assertNull(view.subjectId());
-            assertNull(view.taskName());
-            assertEquals(10, view.pageSize());
-        };
+            SystemView<SetView> sets0 = g0.context().systemView().view(SETS_VIEW);
+            SystemView<SetView> sets1 = g1.context().systemView().view(SETS_VIEW);
 
-        Consumer<ScanQueryView> cache2checker = view -> {
-            assertEquals(client2.localNode().id(), view.originNodeId());
-            assertTrue(view.queryId() != 0);
-            assertEquals("cache2", view.cacheName());
-            assertEquals(cacheId("cache2"), view.cacheId());
-            assertEquals(cacheGroupId("cache2", null), view.cacheGroupId());
-            assertEquals("cache2", view.cacheGroupName());
-            assertTrue(view.startTime() <= System.currentTimeMillis());
-            assertTrue(view.duration() >= 0);
-            assertFalse(view.canceled());
-            assertNull(view.filter());
-            assertFalse(view.local());
-            assertEquals(-1, view.partition());
-            assertEquals(toStringSafe(client2.context().discovery().topologyVersionEx()), view.topology());
-            assertNull(view.transformer());
-            assertTrue(view.keepBinary());
-            assertNull(view.subjectId());
-            assertNull(view.taskName());
-            assertEquals(20, view.pageSize());
-        };
+            assertEquals(2, sets0.size());
+            assertEquals(0, sets1.size());
 
-        boolean found1 = false;
-        boolean found2 = false;
+            for (SetView q : sets0) {
+                if ("set-1".equals(q.name())) {
+                    assertNotNull(q.id());
+                    assertEquals("set-1", q.name());
+                    assertTrue(q.collocated());
+                    assertEquals("my-group", q.groupName());
+                    assertEquals(CU.cacheId("my-group"), q.groupId());
+                    assertFalse(q.removed());
+                    assertEquals(0, q.size());
 
-        for (ScanQueryView view : qrySysView) {
-            if ("cache2".equals(view.cacheName())) {
-                cache2checker.accept(view);
-                found1 = true;
+                    s0.add("first");
+
+                    assertEquals(1, q.size());
+                }
+                else {
+                    assertNotNull(q.id());
+                    assertEquals("set-2", q.name());
+                    assertFalse(q.collocated());
+                    assertEquals(DEFAULT_DS_GROUP_NAME, q.groupName());
+                    assertEquals(CU.cacheId(DEFAULT_DS_GROUP_NAME), q.groupId());
+                    assertFalse(q.removed());
+                    assertEquals(0, q.size());
+
+                    s1.close();
+
+                    assertTrue(waitForCondition(q::removed, getTestTimeout()));
+                }
             }
-            else {
-                cache1checker.accept(view);
-                found2 = true;
-            }
+
+            IgniteSet<?> s2 = g1.set("set-1", new CollectionConfiguration()
+                .setCollocated(true)
+                .setBackups(1)
+                .setGroupName("my-group"));
+
+            assertEquals(1, sets1.size());
+
+            SetView s = sets1.iterator().next();
+
+            assertNotNull(s.id());
+            assertEquals("set-1", s.name());
+            assertTrue(s.collocated());
+            assertEquals("my-group", s.groupName());
+            assertEquals(CU.cacheId("my-group"), s.groupId());
+            assertFalse(s.removed());
+            assertEquals(1, s.size());
+
+            s2.close();
+
+            assertTrue(waitForCondition(s::removed, getTestTimeout()));
+
+            assertEquals(0, sets0.size());
+            assertEquals(0, sets1.size());
         }
-
-        assertTrue(found1 && found2);
     }
 
     /** */
