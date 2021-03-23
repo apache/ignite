@@ -31,9 +31,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 
 /** */
 public abstract class AbstractDataPageIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
     /** Page store partition id. */
     protected final int partId;
 

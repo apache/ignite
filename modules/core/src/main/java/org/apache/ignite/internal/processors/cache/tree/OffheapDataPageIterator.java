@@ -37,6 +37,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 
 /** */
 public class OffheapDataPageIterator extends AbstractDataPageIterator {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private final PageMemory pageMem;
 
