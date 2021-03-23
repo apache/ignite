@@ -22,8 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executor;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -73,7 +71,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
         this.ses = ses;
         this.ctx = ctx;
 
-        userFut = new ComputeFuture<>(this, ctx.getAsyncContinuationExecutor());
+        userFut = new ComputeFuture<>(this);
 
         log = ctx.log(ComputeTaskInternalFuture.class);
     }
@@ -263,10 +261,9 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
     private static class ComputeFuture<R> extends IgniteFutureImpl<R> implements ComputeTaskFuture<R> {
         /**
          * @param fut Future.
-         * @param defaultExecutor Default continuation executor.
          */
-        private ComputeFuture(ComputeTaskInternalFuture<R> fut, Executor defaultExecutor) {
-            super(fut, defaultExecutor);
+        private ComputeFuture(ComputeTaskInternalFuture<R> fut) {
+            super(fut);
         }
 
         /** {@inheritDoc} */
