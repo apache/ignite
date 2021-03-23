@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * The task for changing transaction timeout on partition map exchange.
  */
-public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class TxTimeoutOnPartitionMapExchangeChangeTask implements CachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final TxTimeoutOnPartitionMapExchangeChangeMessage msg;
 
@@ -32,9 +31,7 @@ public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePart
      *
      * @param msg Discovery message.
      */
-    public TxTimeoutOnPartitionMapExchangeChangeTask(UUID secSubjId, TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
-        super(secSubjId);
-
+    public TxTimeoutOnPartitionMapExchangeChangeTask(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
         assert msg != null;
         this.msg = msg;
     }

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -728,8 +729,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(securitySubjectId(cctx), evt.eventNode()));
-            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(securitySubjectId(cctx), evt.eventNode()));
+            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
+            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
         }
     }
 
@@ -1840,8 +1841,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsExchangeFuture fut;
 
         GridDhtPartitionsExchangeFuture old = exchFuts.addx(
-            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg,
-                securitySubjectId(cctx)));
+            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
 
         if (old != null) {
             fut = old;
@@ -2984,8 +2984,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private class ExchangeWorker extends GridWorker {
         /** Future queue. */
-        private final LinkedBlockingDeque<CachePartitionExchangeWorkerTask> futQ =
-            new LinkedBlockingDeque<>();
+        private final SecurityAwareCachePartitionExchangeWorkerTaskDeque futQ =
+            new SecurityAwareCachePartitionExchangeWorkerTaskDeque();
 
         /** */
         private AffinityTopologyVersion lastFutVer;
@@ -3012,7 +3012,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         void forceReassign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture fut) {
             if (!hasPendingExchange())
-                futQ.add(new RebalanceReassignExchangeTask(securitySubjectId(cctx), exchId, fut));
+                futQ.add(new RebalanceReassignExchangeTask(exchId, fut));
         }
 
         /**
@@ -3022,7 +3022,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
             GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-            futQ.add(new ForceRebalanceExchangeTask(securitySubjectId(cctx), exchId, fut));
+            futQ.add(new ForceRebalanceExchangeTask(exchId, fut));
 
             return fut;
         }
@@ -3032,7 +3032,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
             StopCachesOnClientReconnectExchangeTask task =
-                new StopCachesOnClientReconnectExchangeTask(securitySubjectId(cctx), caches);
+                new StopCachesOnClientReconnectExchangeTask(caches);
 
             futQ.add(task);
 
@@ -3044,7 +3044,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param grpId Group id.
          */
         void finishPreloading(AffinityTopologyVersion topVer, int grpId) {
-            futQ.add(new FinishPreloadingTask(securitySubjectId(cctx), topVer, grpId));
+            futQ.add(new FinishPreloadingTask(topVer, grpId));
         }
 
         /**
@@ -3274,14 +3274,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     blockingSectionBegin();
 
-                    task = futQ.poll(timeout, MILLISECONDS);
+                    UUID secSubId = null;
+                    T2<CachePartitionExchangeWorkerTask, UUID> t2 = futQ.poll(timeout, MILLISECONDS);
+
+                    if (t2 != null) {
+                        task = t2.getKey();
+
+                        secSubId = t2.getValue();
+                    }
 
                     blockingSectionEnd();
 
                     if (task == null)
                         continue; // Main while loop.
 
-                    try (OperationSecurityContext c = cctx.kernalContext().security().withContext(task.securitySubjectId())) {
+                    try (OperationSecurityContext c = cctx.kernalContext().security().withContext(secSubId)) {
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
 
@@ -3661,6 +3668,63 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
 
             return false;
+        }
+    }
+
+    /** */
+    private class SecurityAwareCachePartitionExchangeWorkerTaskDeque implements Iterable<CachePartitionExchangeWorkerTask> {
+        /** */
+        private final LinkedBlockingDeque<T2<CachePartitionExchangeWorkerTask, UUID>> deque =
+            new LinkedBlockingDeque<>();
+
+        /** */
+        public boolean offer(CachePartitionExchangeWorkerTask task) {
+            return deque.offer(new T2<>(task, securitySubjectId(cctx)));
+        }
+
+        /** */
+        public boolean add(CachePartitionExchangeWorkerTask task) {
+            return deque.add(new T2<>(task, securitySubjectId(cctx)));
+        }
+
+        /** */
+        public T2<CachePartitionExchangeWorkerTask, UUID> poll() {
+            return deque.poll();
+        }
+
+        /** */
+        public T2<CachePartitionExchangeWorkerTask, UUID> poll(long timeout, TimeUnit unit) throws InterruptedException {
+            return deque.poll(timeout, unit);
+        }
+
+        /** */
+        public boolean remove(Object o) {
+            return deque.remove(o);
+        }
+
+        /** */
+        public boolean isEmpty() {
+            return deque.isEmpty();
+        }
+
+        /** */
+        public int size() {
+            return deque.size();
+        }
+
+        /** */
+        @NotNull @Override public Iterator<CachePartitionExchangeWorkerTask> iterator() {
+            return new Iterator<CachePartitionExchangeWorkerTask>() {
+                private final Iterator<T2<CachePartitionExchangeWorkerTask, UUID>> it = deque.iterator();
+
+                @Override public boolean hasNext() {
+                    return it.hasNext();
+                }
+
+                @Override public CachePartitionExchangeWorkerTask next() {
+                    return it.next().getKey();
+                }
+            };
         }
     }
 

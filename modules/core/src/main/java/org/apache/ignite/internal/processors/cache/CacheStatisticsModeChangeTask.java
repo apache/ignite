@@ -17,22 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache statistics mode change task for exchange worker.
  */
-public class CacheStatisticsModeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class CacheStatisticsModeChangeTask implements CachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final CacheStatisticsModeChangeMessage msg;
 
     /**
      * @param msg Message.
      */
-    public CacheStatisticsModeChangeTask(UUID secSubjId, CacheStatisticsModeChangeMessage msg) {
-        super(secSubjId);
-
+    public CacheStatisticsModeChangeTask(CacheStatisticsModeChangeMessage msg) {
         assert msg != null;
 
         this.msg = msg;

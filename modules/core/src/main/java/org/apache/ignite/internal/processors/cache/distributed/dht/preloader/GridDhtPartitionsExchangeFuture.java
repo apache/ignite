@@ -283,9 +283,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Cache change requests. */
     private ExchangeActions exchActions;
 
-    /** Security subject id. */
-    private final UUID secSubjId;
-
     /** */
     private final IgniteLogger exchLog;
 
@@ -412,15 +409,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param exchId Exchange ID.
      * @param exchActions Cache change requests.
      * @param affChangeMsg Affinity change message.
-     * @param secSubjId Security subject id.
      */
     public GridDhtPartitionsExchangeFuture(
         GridCacheSharedContext cctx,
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
         ExchangeActions exchActions,
-        CacheAffinityChangeMessage affChangeMsg,
-        UUID secSubjId
+        CacheAffinityChangeMessage affChangeMsg
     ) {
         assert busyLock != null;
         assert exchId != null;
@@ -431,7 +426,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.busyLock = busyLock;
         this.exchId = exchId;
         this.exchActions = exchActions;
-        this.secSubjId = secSubjId;
         this.affChangeMsg = affChangeMsg;
         this.validator = new GridDhtPartitionsStateValidator(cctx);
         if (exchActions != null && exchActions.deactivate())
@@ -487,11 +481,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID securitySubjectId() {
-        return secSubjId;
     }
 
     /**

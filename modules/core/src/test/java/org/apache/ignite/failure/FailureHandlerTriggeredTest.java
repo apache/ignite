@@ -86,9 +86,9 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
             .setFailureHandler(hnd));
 
         grid0.getOrCreateCache(new CacheConfiguration<>()
-                .setName(DEFAULT_CACHE_NAME)
-                .setCacheMode(CacheMode.REPLICATED))
-            .put(1,1);
+            .setName(DEFAULT_CACHE_NAME)
+            .setCacheMode(CacheMode.REPLICATED))
+            .put(1, 1);
 
         grid0.cluster().baselineAutoAdjustEnabled(false);
 
@@ -115,7 +115,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
          * Default constructor.
          */
         ExchangeWorkerFailureTask() {
-            super(null, new SchemaAbstractDiscoveryMessage(null) {
+            super(new SchemaAbstractDiscoveryMessage(null) {
                 @Override public boolean exchange() {
                     return false;
                 }

@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node leave exchange worker task.
  */
-public class SchemaNodeLeaveExchangeWorkerTask extends AbstractCachePartitionExchangeWorkerTask {
+public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
     /** Node. */
     @GridToStringInclude
     private final ClusterNode node;
@@ -36,9 +35,7 @@ public class SchemaNodeLeaveExchangeWorkerTask extends AbstractCachePartitionExc
      *
      * @param node Node.
      */
-    public SchemaNodeLeaveExchangeWorkerTask(UUID secSubjId, ClusterNode node) {
-        super(secSubjId);
-
+    public SchemaNodeLeaveExchangeWorkerTask(ClusterNode node) {
         this.node = node;
     }
 
