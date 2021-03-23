@@ -66,10 +66,10 @@ public class CacheConsistencyViolationEvent<K, V> extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries that were affected by a cache operation.*/
-    final Map<UUID /*Node*/, Map<K,V>> originalEntries;
+    final Map<UUID /*Node*/, Map<K, V>> originalEntries;
 
     /** Collection of repaired entries. */
-    final Map<K,V> repairedEntries;
+    final Map<K, V> repairedEntries;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
