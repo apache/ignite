@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -55,9 +54,6 @@ public class WALRecordsConsumer<K, V> {
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
-
-    /** WAL Records filter. */
-    private static final IgnitePredicate<WALRecord> DATA_REC_FILTER = r -> r.type() == DATA_RECORD_V2;
 
     /** Operations filter. */
     private static final IgnitePredicate<? super DataEntry> OPS_FILTER = e -> {
@@ -129,7 +125,7 @@ public class WALRecordsConsumer<K, V> {
                 e.cacheId(),
                 e.expireTime()
             );
-        }, true, OPS_FILTER), true, DATA_REC_FILTER)));
+        }, true, OPS_FILTER), true)));
     }
 
     /**

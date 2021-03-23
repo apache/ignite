@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_PATH;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.NODE_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.UUID_STR_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
@@ -309,7 +310,8 @@ public class IgniteCDC implements Runnable {
             .binaryMetadataFileStoreDir(binaryMeta)
             .marshallerMappingFileStoreDir(marshaller)
             .keepBinary(keepBinary)
-            .filesOrDirs(segment.toFile());
+            .filesOrDirs(segment.toFile())
+            .addFilter((type, ptr) -> type == DATA_RECORD_V2);
 
         if (initState != null) {
             long segmentIdx = segmentIndex(segment);
