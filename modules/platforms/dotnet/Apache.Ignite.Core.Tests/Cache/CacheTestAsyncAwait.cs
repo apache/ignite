@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Replace(key, 2);
 
             Assert.AreEqual(2, cache.Get(key));
-            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
+            StringAssert.DoesNotContain("sys-stripe-", TestUtilsJni.GetJavaThreadName());
         }
 
         /// <summary>
