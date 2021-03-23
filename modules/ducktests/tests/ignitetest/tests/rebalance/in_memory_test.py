@@ -24,7 +24,8 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance import preload_data, await_rebalance_start, await_rebalance_complete
+from ignitetest.tests.rebalance import preload_data, await_rebalance_start, await_rebalance_complete, \
+    aggregate_rebalance_stats
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
@@ -73,6 +74,7 @@ class RebalanceInMemoryTest(IgniteTest):
                 default=DataRegionConfiguration(max_size=max(
                     cache_count * entry_count * entry_size * (backups + 1),
                     self.DEFAULT_DATA_REGION_SZ))),
+            metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
             rebalance_thread_pool_size=rebalance_thread_pool_size,
             rebalance_batch_size=rebalance_batch_size,
             rebalance_batches_prefetch_count=rebalance_batches_prefetch_count,
@@ -95,10 +97,22 @@ class RebalanceInMemoryTest(IgniteTest):
                                    num_nodes=1)
             ignite.start()
 
-        start_node_and_time = await_rebalance_start(ignite)
+        start_node, start_time = await_rebalance_start(ignite)
 
-        complete_time = await_rebalance_complete(ignite, start_node_and_time["node"], cache_count)
+        end_time = await_rebalance_complete(ignite, start_node, cache_count)
 
-        return {"Rebalanced in (sec)": (complete_time - start_node_and_time["time"]).total_seconds(),
-                "Preloaded in (sec)": preload_time,
-                "Preload speed (MB/sec)": int(cache_count * entry_count * entry_size / 1000 / preload_time) / 1000.0}
+        rebalance_nodes = ignite.nodes[:-1] if trigger_event else ignite.nodes
+
+        stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
+
+        def speed(d): return (int(stats.received_bytes / d * 1000 / 1024 / 1024) / 1000.0) if d else None
+
+        return {
+            "Rebalanced in (sec)": (end_time - start_time).total_seconds(),
+            "Rebalance nodes": len(rebalance_nodes),
+            "Rebalance speed (Total, MiB/sec)": speed((stats.end_time - stats.start_time).total_seconds()),
+            "Rebalance speed (Average per node, MiB/sec)": speed(stats.duration),
+            "Preloaded in (sec)": preload_time,
+            "Preload speed (MiB/sec)":
+                int(cache_count * entry_count * entry_size * 1000 / 1024 / 1024 / preload_time) / 1000.0
+        }

@@ -17,9 +17,7 @@
 This module contains class to start ignite cluster node.
 """
 
-import re
 import signal
-from datetime import datetime
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
@@ -83,5 +81,4 @@ def get_event_time(service, log_node, log_pattern, from_the_beginning=True, time
     _, stdout, _ = log_node.account.ssh_client.exec_command(
         "grep '%s' %s" % (log_pattern, log_node.log_file))
 
-    return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                             "[%Y-%m-%d %H:%M:%S,%f]")
+    return IgniteAwareService.event_time(log_pattern, log_node)
