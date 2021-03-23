@@ -130,45 +130,37 @@ public class SnapshotRestoreProcess {
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
     public IgniteFuture<Void> start(String snpName, Collection<String> cacheGrpNames) {
-        if (ctx.clientNode()) {
-            return new IgniteFinishedFutureImpl<>(
-                new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation."));
-        }
+        try {
+            if (ctx.clientNode())
+                throw new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation.");
 
-        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
-        if (clusterState.state() != ClusterState.ACTIVE || clusterState.transition())
-            return new IgniteFinishedFutureImpl<>(new IgniteException(OP_REJECT_MSG + "The cluster should be active."));
+            if (clusterState.state() != ClusterState.ACTIVE || clusterState.transition())
+                throw new IgniteException(OP_REJECT_MSG + "The cluster should be active.");
 
-        if (!clusterState.hasBaselineTopology()) {
-            return new IgniteFinishedFutureImpl<>(
-                new IgniteException(OP_REJECT_MSG + "The baseline topology is not configured for cluster."));
-        }
+            if (!clusterState.hasBaselineTopology())
+                throw new IgniteException(OP_REJECT_MSG + "The baseline topology is not configured for cluster.");
 
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP)) {
-            return new IgniteFinishedFutureImpl<>(
-                new IgniteException(OP_REJECT_MSG + "Not all nodes in the cluster support restore operation."));
-        }
+            if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP))
+                throw new IgniteException(OP_REJECT_MSG + "Not all nodes in the cluster support restore operation.");
 
-        IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
+            synchronized (snpOpMux) {
+                GridFutureAdapter<Void> fut0 = fut;
 
-        synchronized (snpOpMux) {
-            GridFutureAdapter<Void> fut0 = fut;
+                if (opCtx != null || (fut0 != null && !fut0.isDone()))
+                    throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-            if (opCtx != null || (fut0 != null && !fut0.isDone())) {
-                return new IgniteFinishedFutureImpl<>(
-                    new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed."));
+                if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
+                    throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
+
+                fut = new GridFutureAdapter<>();
             }
-
-            if (snpMgr.isSnapshotCreating()) {
-                return new IgniteFinishedFutureImpl<>(
-                    new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress."));
-            }
-
-            fut = new GridFutureAdapter<>();
+        } catch (IgniteException e) {
+            return new IgniteFinishedFutureImpl<>(e);
         }
 
-        snpMgr.collectSnapshotMetadata(snpName).listen(
+        ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
                     fut.onDone(f.error());
@@ -200,7 +192,7 @@ public class SnapshotRestoreProcess {
                     return;
                 }
 
-                snpMgr.runSnapshotVerfification(metas).listen(
+                ctx.cache().context().snapshotMgr().runSnapshotVerfification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
                             fut.onDone(f0.error());
