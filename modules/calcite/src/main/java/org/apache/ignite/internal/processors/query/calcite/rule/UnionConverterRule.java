@@ -19,45 +19,77 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
  */
-public class UnionConverterRule extends AbstractIgniteConverterRule<LogicalUnion> {
-    /** */
-    public static final RelOptRule INSTANCE = new UnionConverterRule();
+public class UnionConverterRule extends RelRule<UnionConverterRule.Config> {
+    /** Instance. */
+    public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
     /** */
-    public UnionConverterRule() {
-        super(LogicalUnion.class, "UnionConverterRule");
+    public UnionConverterRule(Config cfg) {
+        super(cfg);
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalUnion rel) {
-        RelOptCluster cluster = rel.getCluster();
+    @Override public void onMatch(RelOptRuleCall call) {
+        final LogicalUnion union = call.rel(0);
+
+        RelOptCluster cluster = union.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        List<RelNode> inputs = Commons.transform(rel.getInputs(), input -> convert(input, traits));
+        List<RelNode> inputs = Commons.transform(union.getInputs(), input -> convert(input, traits));
 
-        PhysicalNode res = new IgniteUnionAll(cluster, traits, inputs);
+        RelNode res = new IgniteUnionAll(cluster, traits, inputs);
 
-        if (!rel.all)
-            res = new IgniteHashAggregate(cluster, traits, res,
-                ImmutableBitSet.range(rel.getRowType().getFieldCount()), null, ImmutableList.of());
+        if (!union.all) {
+            final RelBuilder relBuilder = relBuilderFactory.create(union.getCluster(), null);
 
-        return res;
+            relBuilder
+                .push(res)
+                .aggregate(relBuilder.groupKey(ImmutableBitSet.range(union.getRowType().getFieldCount())));
+
+            res = convert(relBuilder.build(), union.getTraitSet());
+        }
+
+        call.transformTo(res);
+    }
+
+    /**
+     *
+     */
+    public interface Config extends RelRule.Config {
+        /** */
+        UnionConverterRule.Config DEFAULT = RelRule.Config.EMPTY
+            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+            .withDescription("UnionConverterRule")
+            .as(UnionConverterRule.Config.class)
+            .withOperandFor(LogicalUnion.class);
+
+        /** Defines an operand tree for the given classes. */
+        default UnionConverterRule.Config withOperandFor(Class<? extends LogicalUnion> union) {
+            return withOperandSupplier(
+                o0 -> o0.operand(union).anyInputs()
+            )
+                .as(UnionConverterRule.Config.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override default UnionConverterRule toRule() {
+            return new UnionConverterRule(this);
+        }
     }
 }

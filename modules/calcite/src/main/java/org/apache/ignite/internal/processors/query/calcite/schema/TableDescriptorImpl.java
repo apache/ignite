@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -36,6 +38,7 @@ import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -101,7 +104,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final int valField;
 
     /** */
-    private final int affField;
+    private final ImmutableIntList affFields;
 
     /** */
     private final ImmutableBitSet insertFields;
@@ -129,16 +132,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         int keyField = QueryUtils.KEY_COL;
         int valField = QueryUtils.VAL_COL;
-        int affField = QueryUtils.KEY_COL;
 
         for (String field : fields) {
-            if (Objects.equals(field, typeDesc.affinityKey()))
-                affField = descriptors.size();
-
             if (Objects.equals(field, typeDesc.keyFieldAlias())) {
-                if (typeDesc.affinityKey() == null)
-                    affField = descriptors.size();
-
                 keyField = descriptors.size();
 
                 virtualFields.set(0);
@@ -165,12 +161,27 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         for (ColumnDescriptor descriptor : descriptors)
             descriptorsMap.put(descriptor.name(), descriptor);
 
-        if (TypeUtils.isConvertableType(descriptors.get(affField).storageType()))
-            affField = -1;
+        List<Integer> affFields = new ArrayList<>();
+        if (!F.isEmpty(typeDesc.affinityKey()))
+            affFields.add(descriptorsMap.get(typeDesc.affinityKey()).fieldIndex());
+        else if (!F.isEmpty(typeDesc.keyFieldAlias()))
+            affFields.add(descriptorsMap.get(typeDesc.keyFieldAlias()).fieldIndex());
+        else {
+            affFields.addAll(
+                descriptors.stream()
+                    .filter(desc -> typeDesc.primaryKeyFields().contains(desc.name()))
+                    .map(ColumnDescriptor::fieldIndex)
+                    .collect(Collectors.toList())
+            );
+        }
+
+        if (affFields.stream().map(descriptors::get).map(ColumnDescriptor::storageType)
+            .anyMatch(TypeUtils::isConvertableType))
+            affFields.clear();
 
         this.keyField = keyField;
         this.valField = valField;
-        this.affField = affField;
+        this.affFields = ImmutableIntList.copyOf(affFields);
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
 
@@ -197,10 +208,10 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public IgniteDistribution distribution() {
         if (affinityIdentity == null)
             return IgniteDistributions.broadcast();
-        else if (affField == -1)
+        else if (affFields.isEmpty())
             return IgniteDistributions.random();
         else
-            return IgniteDistributions.affinity(affField, cacheInfo.cacheId(), affinityIdentity);
+            return IgniteDistributions.affinity(affFields, cacheInfo.cacheId(), affinityIdentity);
     }
 
     /** {@inheritDoc} */

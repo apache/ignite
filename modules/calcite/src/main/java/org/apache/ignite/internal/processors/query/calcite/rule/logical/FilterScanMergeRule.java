@@ -103,12 +103,6 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
-        T rel = call.rel(1);
-        return rel.condition() == null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalFilter filter = call.rel(0);
         T scan = call.rel(1);
@@ -118,6 +112,9 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         RexNode condition = filter.getCondition();
         RexNode remaining = null;
+
+        if (scan.condition() != null)
+            condition = RexUtil.composeConjunction(builder, F.asList(scan.condition(), condition));
 
         if (scan.projects() != null) {
             IgniteTypeFactory typeFactory = Commons.typeFactory(scan);

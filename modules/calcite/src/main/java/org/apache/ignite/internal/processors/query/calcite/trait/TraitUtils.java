@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -43,11 +44,11 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -64,7 +65,6 @@ import static java.util.Collections.singletonList;
 import static org.apache.calcite.plan.RelOptUtil.permutationPushDownProject;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.rel.core.Project.getPartialMapping;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
@@ -141,6 +141,11 @@ public class TraitUtils {
 
         if (fromTrait.satisfies(toTrait))
             return rel;
+
+        // right now we cannot create a multi-column affinity
+        // key object, thus this conversion is impossible
+        if (toTrait.function().affinity() && toTrait.getKeys().size() > 1)
+            return null;
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
@@ -365,7 +370,7 @@ public class TraitUtils {
         if (distribution.getType() != HASH_DISTRIBUTED)
             return distribution;
 
-        Mappings.TargetMapping mapping = getPartialMapping(inputRowType.getFieldCount(), projects);
+        Mappings.TargetMapping mapping = createProjectionMapping(inputRowType.getFieldCount(), projects);
 
         return distribution.apply(mapping);
     }
@@ -406,42 +411,6 @@ public class TraitUtils {
             .propagate(rel::deriveRewindability)
             .propagate(rel::deriveCorrelation)
             .nodes(rel::createNode);
-    }
-
-    /**
-     * Creates collations list with all permutation of specified keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    public static List<RelCollation> permute(List<Integer> keys) {
-        keys = new ArrayList<>(keys);
-
-        List<RelCollation> res = new ArrayList<>();
-
-        int[] indexes = new int[keys.size()];
-        Arrays.fill(indexes, 0);
-
-        res.add(RelCollations.of(ImmutableIntList.copyOf(keys)));
-
-        int i = 0;
-
-        while (i < keys.size()) {
-            if (indexes[i] < i) {
-                Collections.swap(keys, i % 2 == 0 ? 0 : indexes[i], i);
-
-                res.add(RelCollations.of(ImmutableIntList.copyOf(keys)));
-
-                indexes[i]++;
-                i = 0;
-            }
-            else {
-                indexes[i] = 0;
-                i++;
-            }
-        }
-
-        return res;
     }
 
     /**
@@ -487,6 +456,24 @@ public class TraitUtils {
         return RelCollations.of(
             keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
         );
+    }
+
+    /**
+     * Creates mapping from provided projects that maps a source column idx
+     * to idx in a row after applying projections.
+     *
+     * @param inputFieldCount Size of a source row.
+     * @param projects Projections.
+     */
+    private static Mappings.TargetMapping createProjectionMapping(int inputFieldCount, List<? extends RexNode> projects) {
+        Map<Integer, Integer> src2target = new HashMap<>();
+
+        for (Ord<RexNode> exp : Ord.<RexNode>zip(projects)) {
+            if (exp.e instanceof RexInputRef)
+                src2target.putIfAbsent(((RexInputRef) exp.e).getIndex(), exp.i);
+        }
+
+        return Mappings.target(src -> src2target.getOrDefault(src, -1), inputFieldCount, projects.size());
     }
 
     /** */

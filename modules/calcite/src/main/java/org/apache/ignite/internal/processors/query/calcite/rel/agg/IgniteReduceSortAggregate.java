@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,11 +34,14 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  *
  */
-public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
+public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase implements IgniteSortAggregateBase {
     /** Collation. */
     private final RelCollation collation;
 
@@ -80,7 +83,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
             groupSets,
             aggCalls,
             rowType,
-            collation
+            TraitUtils.collation(traitSet)
         );
     }
 
@@ -88,7 +91,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceSortAggregate(
             cluster,
-            getTraitSet(),
+            getTraitSet().replace(collation),
             sole(inputs),
             groupSet,
             groupSets,

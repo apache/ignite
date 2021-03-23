@@ -155,13 +155,18 @@ public enum PlannerPhase {
                     FilterScanMergeRule.INDEX_SCAN,
 
                     LogicalOrToUnionRule.INSTANCE,
+
                     CorrelatedNestedLoopJoinRule.INSTANCE,
+                    NestedLoopJoinConverterRule.INSTANCE,
+                    MergeJoinConverterRule.INSTANCE,
 
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
-                    HashAggregateConverterRule.INSTANCE,
-                    SortAggregateConverterRule.INSTANCE,
+                    HashAggregateConverterRule.SINGLE,
+                    HashAggregateConverterRule.MAP_REDUCE,
+                    SortAggregateConverterRule.SINGLE,
+                    SortAggregateConverterRule.MAP_REDUCE,
                     MergeJoinConverterRule.INSTANCE,
                     NestedLoopJoinConverterRule.INSTANCE,
                     ProjectConverterRule.INSTANCE,

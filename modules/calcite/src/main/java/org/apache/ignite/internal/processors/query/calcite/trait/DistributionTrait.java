@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.List;
 import java.util.Objects;
 import com.google.common.collect.Ordering;
 import org.apache.calcite.plan.RelMultipleTrait;
@@ -24,6 +25,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -150,35 +152,14 @@ public final class DistributionTrait implements IgniteDistribution {
         if (getType() != HASH_DISTRIBUTED)
             return this;
 
-        if (mapping.getTargetCount() < keys.size())
-            return IgniteDistributions.random();
-
-        int[] map = new int[mapping.getSourceCount()];
-        int[] res = new int[keys.size()];
-
-        for (int i = 0; i < keys.size(); i++)
-            map[keys.getInt(i)] = i + 1;
-
-        for (int i = 0, found = 0; i < mapping.getTargetCount(); i++) {
-            int source = mapping.getSourceOpt(i);
-
-            if (source == -1)
-                continue;
-
-            int keyPos = map[source] - 1;
-
-            if (keyPos == -1)
-                continue;
-
-            res[keyPos] = i;
-
-            if (++found == keys.size())
-                return IgniteDistributions.hash(ImmutableIntList.of(res), function);
-
-            map[source] = 0;
+        for (int key : keys) {
+            if (mapping.getTargetOpt(key) == -1)
+                return IgniteDistributions.random(); // Some distribution keys are not mapped => any.
         }
 
-        return IgniteDistributions.random();
+        List<Integer> res = Mappings.apply2((Mapping) mapping, keys);
+
+        return IgniteDistributions.hash(ImmutableIntList.copyOf(res), function);
     }
 
     /** {@inheritDoc} */

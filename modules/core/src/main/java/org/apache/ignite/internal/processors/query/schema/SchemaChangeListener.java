@@ -32,30 +32,40 @@ public interface SchemaChangeListener {
      *
      * @param schemaName Schema name.
      */
-    void onSchemaCreate(String schemaName);
+    void onSchemaCreated(String schemaName);
 
     /**
      * Callback method.
      *
      * @param schemaName Schema name.
      */
-    void onSchemaDrop(String schemaName);
+    void onSchemaDropped(String schemaName);
 
     /**
      * Callback method.
+     *
      * @param schemaName Schema name.
-     * @param typeDesc type descriptor.
+     * @param typeDesc Type descriptor.
      * @param cacheInfo Cache info.
      */
-    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?, ?> cacheInfo);
+    void onSqlTypeCreated(String schemaName, GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?, ?> cacheInfo);
 
     /**
      * Callback method.
      *
      * @param schemaName Schema name.
-     * @param typeDesc type descriptor.
+     * @param typeDesc Type descriptor.
+     * @param cacheInfo Cache info.
      */
-    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDesc);
+    void onSqlTypeUpdated(String schemaName, GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?, ?> cacheInfo);
+
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     * @param typeDesc Type descriptor.
+     */
+    void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDesc);
 
     /**
      * Callback on index creation.
@@ -66,7 +76,7 @@ public interface SchemaChangeListener {
      * @param idxDesc Index descriptor.
      * @param idx Index.
      */
-    void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> idx);
+    void onIndexCreated(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> idx);
 
     /**
      * Callback on index drop.
@@ -75,5 +85,5 @@ public interface SchemaChangeListener {
      * @param tblName Table name.
      * @param idxName Index name.
      */
-    void onIndexDrop(String schemaName, String tblName, String idxName);
+    void onIndexDropped(String schemaName, String tblName, String idxName);
 }

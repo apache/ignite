@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -1293,20 +1292,6 @@ public class GridH2Table extends TableBase {
      * Refreshes table stats if they are possibly outdated, must be called only in client mode.
      */
     private void refreshStatsIfNeededEx() {
-        boolean client = cacheInfo.cacheContext().kernalContext().clientNode();
-
-        GridQueryProcessor qryProc = cacheInfo.cacheContext().kernalContext().query();
-        boolean experimental = qryProc.useExperimentalEngine();
-
-        assert experimental;
-
-        if (!client) {
-            refreshStatsIfNeeded();
-
-            return;
-        }
-
-        // Update stats if total table size changed significantly since the last stats update.
         if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
             TableStatistics stats = tblStats;
 

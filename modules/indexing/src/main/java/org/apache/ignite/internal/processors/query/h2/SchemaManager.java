@@ -378,7 +378,7 @@ public class SchemaManager {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
                     dropTable(tbl);
-                    lsnr.onSqlTypeDrop(schemaName, tbl.type());
+                    lsnr.onSqlTypeDropped(schemaName, tbl.type());
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -444,7 +444,7 @@ public class SchemaManager {
      */
     private void createSchema0(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
-        lsnr.onSchemaCreate(schema);
+        lsnr.onSchemaCreated(schema);
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -560,7 +560,7 @@ public class SchemaManager {
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
 
-        lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo());
+        lsnr.onSqlTypeCreated(schemaName, tbl.type(), tbl.cacheInfo());
 
         registerSystemIndexes(h2Tbl, schemaName, tbl);
 
@@ -595,7 +595,7 @@ public class SchemaManager {
 
             QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
 
-            lsnr.onIndexCreate(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
+            lsnr.onIndexCreated(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
         }
     }
 
@@ -640,7 +640,7 @@ public class SchemaManager {
      */
     private void dropSchema(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
-        lsnr.onSchemaDrop(schema);
+        lsnr.onSchemaDropped(schema);
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -674,7 +674,7 @@ public class SchemaManager {
 
         GridQueryIndexDescriptor idxDesc = desc.type().indexes().get(h2Idx.getName());
 
-        lsnr.onIndexCreate(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
+        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
     }
 
     /**
@@ -726,7 +726,7 @@ public class SchemaManager {
             throw e;
         }
 
-        lsnr.onIndexCreate(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
+        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
     }
 
     /**
@@ -749,7 +749,7 @@ public class SchemaManager {
 
         connMgr.executeStatement(schemaName, sql);
 
-        lsnr.onIndexDrop(schemaName, tbl.getName(), idxName);
+        lsnr.onIndexDropped(schemaName, tbl.getName(), idxName);
     }
 
     /**
@@ -778,6 +778,8 @@ public class SchemaManager {
         }
 
         desc.table().addColumns(cols, ifColNotExists);
+
+        lsnr.onSqlTypeUpdated(schemaName, desc.type(), desc.table().cacheInfo());
     }
 
     /**
@@ -806,6 +808,8 @@ public class SchemaManager {
         }
 
         desc.table().dropColumns(cols, ifColExists);
+
+        lsnr.onSqlTypeUpdated(schemaName, desc.type(), desc.table().cacheInfo());
     }
 
     /**
@@ -905,27 +909,34 @@ public class SchemaManager {
     /** */
     private static final class NoOpSchemaChangeListener implements SchemaChangeListener {
         /** {@inheritDoc} */
-        @Override public void onSchemaCreate(String schemaName) {}
+        @Override public void onSchemaCreated(String schemaName) {}
 
         /** {@inheritDoc} */
-        @Override public void onSchemaDrop(String schemaName) {}
+        @Override public void onSchemaDropped(String schemaName) {}
 
         /** {@inheritDoc} */
-        @Override public void onIndexCreate(String schemaName, String tblName, String idxName,
+        @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
             GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {}
 
         /** {@inheritDoc} */
-        @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {}
+        @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {}
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeCreate(
+        @Override public void onSqlTypeCreated(
             String schemaName,
             GridQueryTypeDescriptor typeDesc,
             GridCacheContextInfo<?, ?> cacheInfo
         ) {}
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
+        @Override public void onSqlTypeUpdated(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
     }
 
     /** */
@@ -933,42 +944,54 @@ public class SchemaManager {
         /** */
         private final List<SchemaChangeListener> lsnrs;
 
+        /**
+         * @param lsnrs Lsnrs.
+         */
         private CompoundSchemaChangeListener(List<SchemaChangeListener> lsnrs) {
             this.lsnrs = lsnrs;
         }
 
         /** {@inheritDoc} */
-        @Override public void onSchemaCreate(String schemaName) {
-            lsnrs.forEach(lsnr -> lsnr.onSchemaCreate(schemaName));
+        @Override public void onSchemaCreated(String schemaName) {
+            lsnrs.forEach(lsnr -> lsnr.onSchemaCreated(schemaName));
         }
 
         /** {@inheritDoc} */
-        @Override public void onSchemaDrop(String schemaName) {
-            lsnrs.forEach(lsnr -> lsnr.onSchemaCreate(schemaName));
+        @Override public void onSchemaDropped(String schemaName) {
+            lsnrs.forEach(lsnr -> lsnr.onSchemaCreated(schemaName));
         }
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeCreate(
+        @Override public void onSqlTypeCreated(
             String schemaName,
             GridQueryTypeDescriptor typeDesc,
             GridCacheContextInfo<?, ?> cacheInfo
         ) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDesc, cacheInfo));
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreated(schemaName, typeDesc, cacheInfo));
         }
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor));
+        @Override public void onSqlTypeUpdated(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeUpdated(schemaName, typeDesc, cacheInfo));
         }
 
         /** {@inheritDoc} */
-        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
-            lsnrs.forEach(lsnr -> lsnr.onIndexCreate(schemaName, tblName, idxName, idxDesc, idx));
+        @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDropped(schemaName, typeDescriptor));
         }
 
         /** {@inheritDoc} */
-        @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {
-            lsnrs.forEach(lsnr -> lsnr.onIndexDrop(schemaName, tblName, idxName));
+        @Override public void onIndexCreated(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexCreated(schemaName, tblName, idxName, idxDesc, idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexDropped(schemaName, tblName, idxName));
         }
     }
 }
