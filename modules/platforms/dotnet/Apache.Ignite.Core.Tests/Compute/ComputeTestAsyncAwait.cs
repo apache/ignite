@@ -46,18 +46,5 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             StringAssert.StartsWith("Thread-", TestUtilsJni.GetJavaThreadName());
         }
-
-        /// <summary>
-        /// Tests that AffinityRunAsync continuation does not capture Ignite threads.
-        /// </summary>
-        [Test]
-        public async Task TestComputeAffinityRunAsyncContinuation()
-        {
-            var cache = Ignite.GetOrCreateCache<int, int>("c");
-
-            await Ignite.GetCompute().AffinityRunAsync(new[] {cache.Name}, 1, new ComputeAction());
-
-            StringAssert.StartsWith("ForkJoinPool.commonPool-worker-", TestUtilsJni.GetJavaThreadName());
-        }
     }
 }
