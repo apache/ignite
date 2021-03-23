@@ -100,6 +100,9 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
     /** Init routine latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
+    /**
+     * Default constructor
+     */
     public TcpDiscoveryAzureBlobStoreIpFinder() {
         setShared(true);
     }
@@ -115,7 +118,8 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
                     try {
                         if (!blobItem.isDeleted())
                             addrs.add(addrFromString(blobItem.getName()));
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         throw new IgniteSpiException("Failed to get content from the container: " + containerName, e);
                     }
                 });
@@ -147,7 +151,8 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
 
             try {
                 dataStream.close();
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw new IgniteSpiException(e.getMessage());
             }
         }
@@ -231,12 +236,13 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         return this;
     }
 
+    /**
+     * Initialize the IP finder
+     * @throws IgniteSpiException
+     */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
-            if (accountKey == null ||
-                    accountName == null ||
-                    containerName == null ||
-                    endPoint == null) {
+            if (accountKey == null || accountName == null || containerName == null || endPoint == null) {
                 throw new IgniteSpiException(
                         "One or more of the required parameters is not set [accountName=" +
                                 accountName + ", accountKey=" + accountKey + ", containerName=" +
@@ -271,7 +277,7 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         }
     }
 
-    /** TODO MOVE OUT
+    /**
      * Constructs a node address from bucket's key.
      *
      * @param key Bucket key.
@@ -279,6 +285,7 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
      * @throws IgniteSpiException In case of error.
      */
     private InetSocketAddress addrFromString(String key) throws IgniteSpiException {
+        //TODO: This needs to move out to a generic helper class
         String[] res = key.split("#");
 
         if (res.length != 2)
@@ -296,13 +303,14 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         return new InetSocketAddress(res[0], port);
     }
 
-    /** TODO: Move this out
+    /**
      * Constructs bucket's key from an address.
      *
      * @param addr Node address.
      * @return Bucket key.
      */
     private String keyFromAddr(InetSocketAddress addr) {
+        // TODO: This needs to move out to a generic helper class
         return addr.getAddress().getHostAddress() + "#" + addr.getPort();
     }
 
