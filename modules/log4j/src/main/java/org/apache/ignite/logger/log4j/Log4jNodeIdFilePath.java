@@ -18,7 +18,6 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
-import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
