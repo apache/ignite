@@ -144,9 +144,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                GridFutureAdapter<Void> fut0 = fut;
-
-                if (isRestoring() || (fut0 != null && !fut0.isDone()))
+                if (isRestoring())
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new GridFutureAdapter<>();
@@ -158,7 +156,7 @@ public class SnapshotRestoreProcess {
         ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
-                    fut.onDone(f.error());
+                    finishProcess(f.error());
 
                     return;
                 }
@@ -181,7 +179,7 @@ public class SnapshotRestoreProcess {
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    fut.onDone(new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
+                    finishProcess(new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
                         "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
 
                     return;
@@ -202,7 +200,7 @@ public class SnapshotRestoreProcess {
 
                             res.print(sb::append, true);
 
-                            fut.onDone(new IgniteException(sb.toString()));
+                            finishProcess(new IgniteException(sb.toString()));
 
                             return;
                         }
@@ -225,7 +223,7 @@ public class SnapshotRestoreProcess {
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        return opCtx != null;
+        return opCtx != null || fut != null;
     }
 
     /**
@@ -277,7 +275,7 @@ public class SnapshotRestoreProcess {
      *
      * @param err Error, if any.
      */
-    private void finishProcess(@Nullable Exception err) {
+    private void finishProcess(@Nullable Throwable err) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         String details = opCtx0 == null ? "" : " [reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']';
@@ -291,8 +289,11 @@ public class SnapshotRestoreProcess {
 
         GridFutureAdapter<Void> fut0 = fut;
 
-        if (fut0 != null)
-            fut0.onDone(null, err);
+        if (fut0 != null) {
+            fut = null;
+
+            ctx.getSystemExecutorService().submit(() -> fut0.onDone(null, err));
+        }
     }
 
     /**
@@ -496,7 +497,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If failed.
      */
     private SnapshotRestoreContext prepareContext(SnapshotRestoreRequest req) throws IgniteCheckedException {
-        if (isRestoring()) {
+        if (opCtx != null) {
             throw new IgniteCheckedException(OP_REJECT_MSG +
                 "The previous snapshot restore operation was not completed.");
         }
