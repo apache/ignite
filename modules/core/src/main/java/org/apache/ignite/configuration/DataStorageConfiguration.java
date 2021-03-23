@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -287,6 +288,10 @@ public class DataStorageConfiguration implements Serializable {
      * Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
      */
     private long walAutoArchiveAfterInactivity = -1;
+
+    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    @IgniteExperimental
+    private long walForceArchiveTimeout = -1;
 
     /**
      * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
@@ -1013,6 +1018,27 @@ public class DataStorageConfiguration implements Serializable {
      */
     public long getWalAutoArchiveAfterInactivity() {
         return walAutoArchiveAfterInactivity;
+    }
+
+    /**
+     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
+     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
+     * negative  value disables auto archiving.
+     * @return current configuration instance for chaining
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
+        this.walForceArchiveTimeout = walForceArchiveTimeout;
+
+        return this;
+    }
+
+    /**
+     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     */
+    @IgniteExperimental
+    public long getWalForceArchiveTimeout() {
+        return walForceArchiveTimeout;
     }
 
     /**
