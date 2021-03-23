@@ -298,6 +298,7 @@ docker_run() {
     must_do -v docker run --privileged \
         -d -t -h "${node}" --network ducknet ${expose_ports} \
         --memory=${docker_run_memory_limit} --memory-swappiness=1 \
+        --mount type=bind,source="${ignite_dir}/modules/ducktests/tests/certs",target=/opt/certs,consistency=delegated \
         --mount type=bind,source="${ignite_dir}",target=/opt/ignite-dev,consistency=delegated --name "${node}" -- "${image_name}"
 }
 
