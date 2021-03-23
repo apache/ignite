@@ -66,8 +66,9 @@ def await_rebalance_start(ignite, timeout=1):
     for node in ignite.nodes:
         try:
             rebalance_start_time = get_event_time(node, "Starting rebalance routine \\[test-cache-", timeout=timeout)
-        except TimeoutError as e:
-            ignite.logger.error("Rebalance was not started on node '%s' in %d sec.: %s" % (node.name, timeout, str(e)))
+        except TimeoutError as error:
+            ignite.logger.error("Rebalance was not started on node '%s' in %d sec.: %s" %
+                                (node.name, timeout, str(error)))
         else:
             return node, rebalance_start_time
 
@@ -113,13 +114,13 @@ def get_rebalance_metrics(node, cache_group):
         duration=(end_time - start_time).total_seconds() if start_time and end_time else 0)
 
 
-def to_datetime(ts):
+def to_datetime(timestamp):
     """
     Converts timestamp in millicesonds to datetime.
-    :param ts: Timestamp in milliseconds.
+    :param timestamp: Timestamp in milliseconds.
     :return: datetime constructed from timestamp or None if ts == -1.
     """
-    return None if ts == -1 else datetime.fromtimestamp(ts / 1000.0)
+    return None if timestamp == -1 else datetime.fromtimestamp(timestamp / 1000.0)
 
 
 class RebalanceMetrics(NamedTuple):
@@ -150,13 +151,13 @@ def aggregate_rebalance_stats(nodes, cache_count):
 
     for node in nodes:
         for cache_idx in range(cache_count):
-            m = get_rebalance_metrics(node, "test-cache-%d" % (cache_idx + 1))
-            received_bytes += m.received_bytes
-            if m.start_time is not None:
-                start_time = min(t for t in [start_time, m.start_time] if t is not None)
-            if m.end_time is not None:
-                end_time = max(t for t in [end_time, m.end_time] if t is not None)
-            duration += m.duration
+            metrics = get_rebalance_metrics(node, "test-cache-%d" % (cache_idx + 1))
+            received_bytes += metrics.received_bytes
+            if metrics.start_time is not None:
+                start_time = min(t for t in [start_time, metrics.start_time] if t is not None)
+            if metrics.end_time is not None:
+                end_time = max(t for t in [end_time, metrics.end_time] if t is not None)
+            duration += metrics.duration
 
     return RebalanceMetrics(
         received_bytes=received_bytes,
