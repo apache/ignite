@@ -17,9 +17,6 @@
 
 package org.apache.ignite.logger;
 
-import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 /**
  * Interface for Ignite file appenders to attach postfix to log file names.
  */
@@ -30,19 +27,4 @@ public interface LoggerPostfixAware extends LoggerNodeIdAware {
      * @param postfix Postfix.
      */
     public void setPostfix(String postfix);
-
-    /**
-     * @return postfix.
-     */
-    public String getPostfix();
-
-    /** {@inheritDoc} */
-    @Override public default void setNodeId(UUID nodeId) {
-        setPostfix(U.id8(nodeId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public default UUID getNodeId() {
-        return UUID.fromString(getPostfix());
-    }
 }

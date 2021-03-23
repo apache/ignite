@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -405,6 +406,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerPostfixAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void setNodeId(UUID nodeId) {
+        setPostfix(U.id8(nodeId));
+    }
+
+    /** {@inheritDoc} */
     @Override public void setPostfix(String postfix) {
         A.notNull(postfix, "postfix");
 
@@ -420,8 +426,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerPostfixAware {
     }
 
     /** {@inheritDoc} */
-    @Override public String getPostfix() {
-        return postfix;
+    @Override public UUID getNodeId() {
+        throw new UnsupportedOperationException("getNodeId");
     }
 
     /**

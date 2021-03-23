@@ -382,11 +382,6 @@ public class JavaLogger implements IgniteLogger, LoggerPostfixAware {
         postfix(null, postfix);
     }
 
-    /** {@inheritDoc} */
-    @Override public String getPostfix() {
-        return postfix;
-    }
-
     /** */
     private void postfix(UUID nodeId, String postfix) {
         if (this.postfix != null)

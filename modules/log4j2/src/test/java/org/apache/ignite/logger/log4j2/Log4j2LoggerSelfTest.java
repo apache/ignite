@@ -70,7 +70,9 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(xml.getPath()));
 
-        ((LoggerPostfixAware)log).setNodeId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        ((LoggerPostfixAware)log).setNodeId(id);
+        assertEquals(id, ((LoggerPostfixAware)log).getNodeId());
 
         checkLog(log);
     }
@@ -93,7 +95,9 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        ((LoggerPostfixAware)log).setNodeId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        ((LoggerPostfixAware)log).setNodeId(id);
+        assertEquals(id, ((LoggerPostfixAware)log).getNodeId());
 
         checkLog(log);
     }
@@ -110,7 +114,9 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
 
-        ((LoggerPostfixAware)log).setNodeId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        ((LoggerPostfixAware)log).setNodeId(id);
+        assertEquals(id, ((LoggerPostfixAware)log).getNodeId());
 
         checkLog(log);
     }

@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits.logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,6 +79,11 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
     }
 
     /** {@inheritDoc} */
+    @Override public void setNodeId(UUID nodeId) {
+        setPostfix(U.id8(nodeId));
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     @Override public synchronized void setPostfix(String postfix) {
         A.notNull(postfix, "postfix");
@@ -102,8 +108,8 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
     }
 
     /** {@inheritDoc} */
-    @Override public String getPostfix() {
-        return postfix;
+    @Override public synchronized UUID getNodeId() {
+        throw new UnsupportedOperationException("getNodeId");
     }
 
     /** {@inheritDoc} */

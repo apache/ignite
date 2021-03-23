@@ -431,11 +431,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
         postfix(null, postfix);
     }
 
-    /** {@inheritDoc} */
-    @Override public String getPostfix() {
-        return postfix;
-    }
-
     /**
      * Gets {@link IgniteLogger} wrapper around log4j logger for the given
      * category. If category is {@code null}, then root logger is returned. If

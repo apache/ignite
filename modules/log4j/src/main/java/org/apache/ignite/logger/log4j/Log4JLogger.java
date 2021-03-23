@@ -530,11 +530,6 @@ public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileA
         postfix(nodeId, postfix);
     }
 
-    /** {@inheritDoc} */
-    @Override public String getPostfix() {
-        return postfix;
-    }
-
     /**
      * Gets files for all registered file appenders.
      *
