@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerPostfixAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
@@ -81,7 +81,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
+public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
     /** */
     private static final String NODE_ID = "nodeId";
 
@@ -109,9 +109,9 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     /** Quiet flag. */
     private final boolean quiet;
 
-    /** Node ID. */
+    /** Postfix. */
     @GridToStringExclude
-    private volatile UUID nodeId;
+    private volatile String postfix;
 
     /**
      * Creates new logger with given implementation.
@@ -385,12 +385,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
+        setPostfix(U.id8(nodeId));
+    }
 
-        this.nodeId = nodeId;
+    /** {@inheritDoc} */
+    @Override public void setPostfix(String postfix) {
+        A.notNull(postfix, "nodeId");
 
-        // Set nodeId as system variable to be used at configuration.
-        System.setProperty(NODE_ID, U.id8(nodeId));
+        this.postfix = postfix;
+
+        // Set postfix as system variable to be used at configuration.
+        System.setProperty(NODE_ID, postfix);
 
         if (inited) {
             final LoggerContext ctx = impl.getContext();
@@ -411,8 +416,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID getNodeId() {
-        return nodeId;
+    @Override public String getPostfix() {
+        return postfix;
     }
 
     /**
