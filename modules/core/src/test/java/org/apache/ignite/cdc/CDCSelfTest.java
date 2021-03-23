@@ -72,7 +72,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
     @Parameterized.Parameters(name = "specificConsistentId={0}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{true}, {false},});
+        return Arrays.asList(new Object[][] {{true}, {false}});
     }
 
     /** Keys count. */
@@ -353,7 +353,12 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             @Override protected boolean commit() {
                 // Commiting on the half of the data.
-                int sz = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME)).size();
+                List<Integer> keys = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+
+                if (keys == null)
+                    return false;
+
+                int sz = keys.size();
 
                 if (sz >= KEYS_CNT / 2) {
                     expSz[0] = KEYS_CNT - sz;
