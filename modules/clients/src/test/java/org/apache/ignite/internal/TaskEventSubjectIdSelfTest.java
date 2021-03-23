@@ -40,13 +40,10 @@ import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -61,7 +58,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 /**
  * Tests for security subject ID in task events.
  */
-public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
+public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<TaskEvent> evts = new ArrayList<>();
 
@@ -75,16 +72,19 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
     private static GridClient client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String instanceName,
-        AbstractTestSecurityPluginProvider pluginProv) throws Exception {
-        return super.getConfiguration(instanceName, pluginProv)
-            .setConnectorConfiguration(new ConnectorConfiguration())
-            .setIncludeEventTypes(EventType.EVTS_ALL);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite g = startGridAllowAll(getTestIgniteInstanceName());
+        Ignite g = startGrid();
 
         g.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -100,9 +100,9 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
 
         nodeId = g.cluster().localNode().id();
 
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials("grid", "")))
-            .setServers(Collections.singleton("127.0.0.1:11211"));
+        GridClientConfiguration cfg = new GridClientConfiguration();
+
+        cfg.setServers(Collections.singleton("127.0.0.1:11211"));
 
         client = GridClientFactory.start(cfg);
     }
@@ -139,7 +139,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -148,7 +148,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -157,7 +157,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
@@ -195,7 +195,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -204,7 +204,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FAILED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
@@ -242,7 +242,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -251,7 +251,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_TIMEDOUT, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -260,7 +260,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FAILED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
@@ -291,7 +291,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -300,7 +300,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -309,14 +309,14 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }
 
     /**
      * Events for class tasks that was started from external clients should contain
-     * client subject id instead of the node where it was started. This test checks it.
+     * subject id if security enabled, otherwise null.
      *
      * @throws Exception If failed.
      */
@@ -339,7 +339,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -348,7 +348,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert it.hasNext();
 
@@ -357,7 +357,7 @@ public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertNull(evt.subjectId());
 
         assert !it.hasNext();
     }

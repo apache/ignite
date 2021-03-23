@@ -341,21 +341,16 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 hasNewVal,
                 oldVal0,
                 hasOldVal,
-                cacheEventSubjectId(type, cctx, evtNode),
+                cacheEventSubjectId(type, cctx),
                 cloClsName,
                 taskName));
         }
     }
 
     /** */
-    private UUID cacheEventSubjectId(int type, GridCacheContext<?, ?> cctx, ClusterNode evtNode) {
-        if (type != EventType.EVT_CACHE_NODES_LEFT && type != EventType.EVT_CACHE_ENTRY_EVICTED &&
-            type != EventType.EVT_CACHE_OBJECT_EXPIRED) {
-            return cctx.kernalContext().security().enabled() ? securitySubjectId(cctx)
-                : evtNode != null ? evtNode.id() : null;
-        }
-
-        return null;
+    private UUID cacheEventSubjectId(int type, GridCacheContext<?, ?> cctx) {
+        return type != EventType.EVT_CACHE_NODES_LEFT && type != EventType.EVT_CACHE_ENTRY_EVICTED &&
+            type != EventType.EVT_CACHE_OBJECT_EXPIRED ? securitySubjectId(cctx) : null;
     }
 
     /**

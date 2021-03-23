@@ -1562,7 +1562,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 ses.getTaskName(),
                 ses.getTaskClassName(),
                 internal,
-                ctx.security().enabled() ? subjId : ses.getTaskNodeId());
+                subjId);
 
             ctx.event().record(evt);
         }

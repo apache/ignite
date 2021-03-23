@@ -806,7 +806,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         taskCls == null ? null : taskCls.getSimpleName(),
                         "VisorManagementTask",
                         false,
-                        ctx.security().enabled() ? securitySubjectId(ctx) : ses.getTaskNodeId()
+                        securitySubjectId(ctx)
                     );
 
                     ctx.event().record(evt);
