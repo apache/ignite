@@ -15,44 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.view;
+package org.apache.ignite.spi.systemview.view.datastructures;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicStampedImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheRemovable;
-
-import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
- * {@link IgniteAtomicStamped} representation for a {@link SystemView}.
+ * {@link IgniteAtomicSequence} representation for a {@link SystemView}.
  *
- * @see Ignite#atomicStamped(String, Object, Object, boolean)
- * @see Ignite#atomicStamped(String, AtomicConfiguration, Object, Object, boolean)
+ * @see Ignite#atomicSequence(String, long, boolean)
+ * @see Ignite#atomicSequence(String, AtomicConfiguration, long, boolean)
  */
-public class AtomicStampedView extends AbstractDataStructureView<GridCacheAtomicStampedImpl> {
+public class AtomicSequenceView extends AbstractDataStructureView<GridCacheAtomicSequenceImpl> {
     /** @param ds Data structure instance. */
-    public AtomicStampedView(GridCacheRemovable ds) {
-        super((GridCacheAtomicStampedImpl)ds);
+    public AtomicSequenceView(GridCacheRemovable ds) {
+        super((GridCacheAtomicSequenceImpl)ds);
     }
 
     /**
      * @return Value.
-     * @see IgniteAtomicStamped#get()
+     * @see IgniteAtomicSequence#get()
      */
     @Order(1)
-    public String value() {
-        return toStringSafe(ds.value());
+    public long value() {
+        return ds.get();
     }
 
     /**
-     * @return Stamp.
-     * @see IgniteAtomicStamped#stamp()
+     * @return Batch size.
+     * @see IgniteAtomicSequence#batchSize()
      */
     @Order(2)
-    public String stamp() {
-        return toStringSafe(ds.stamp());
+    public long batchSize() {
+        return ds.batchSize();
     }
 }

@@ -94,15 +94,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.systemview.view.AtomicLongView;
-import org.apache.ignite.spi.systemview.view.AtomicReferenceView;
-import org.apache.ignite.spi.systemview.view.AtomicSequenceView;
-import org.apache.ignite.spi.systemview.view.AtomicStampedView;
-import org.apache.ignite.spi.systemview.view.CountDownLatchView;
-import org.apache.ignite.spi.systemview.view.QueueView;
-import org.apache.ignite.spi.systemview.view.ReentrantLockView;
-import org.apache.ignite.spi.systemview.view.SemaphoreView;
-import org.apache.ignite.spi.systemview.view.SetView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicLongView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicSequenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicStampedView;
+import org.apache.ignite.spi.systemview.view.datastructures.CountDownLatchView;
+import org.apache.ignite.spi.systemview.view.datastructures.QueueView;
+import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
+import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
+import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -329,7 +329,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             new TransformCollectionView<>(
                 ctx.cache().cacheDescriptors().values(),
                 desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
-                desc -> true), //desc.cacheType() == CacheType.DATA_STRUCTURES),
+                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
             cctx -> cctx.queues().values(),
             (cctx, queue) -> new QueueView(queue)
         );

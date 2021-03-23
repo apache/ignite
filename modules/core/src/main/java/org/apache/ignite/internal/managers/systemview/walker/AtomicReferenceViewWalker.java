@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
-import org.apache.ignite.spi.systemview.view.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 /**

@@ -89,10 +89,10 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.systemview.view.AtomicLongView;
-import org.apache.ignite.spi.systemview.view.AtomicReferenceView;
-import org.apache.ignite.spi.systemview.view.AtomicSequenceView;
-import org.apache.ignite.spi.systemview.view.AtomicStampedView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicLongView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicSequenceView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicStampedView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
@@ -101,16 +101,16 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
-import org.apache.ignite.spi.systemview.view.CountDownLatchView;
+import org.apache.ignite.spi.systemview.view.datastructures.CountDownLatchView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
-import org.apache.ignite.spi.systemview.view.QueueView;
-import org.apache.ignite.spi.systemview.view.ReentrantLockView;
+import org.apache.ignite.spi.systemview.view.datastructures.QueueView;
+import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
-import org.apache.ignite.spi.systemview.view.SemaphoreView;
+import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
-import org.apache.ignite.spi.systemview.view.SetView;
+import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -1281,7 +1281,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             for (SemaphoreView s : semaphores0) {
                 if ("s1".equals(s.name())) {
                     assertEquals(3, s.availablePermits());
-                    //assertEquals(3, s.permits());
                     assertFalse(s.hasQueuedThreads());
                     assertEquals(0, s.queueLength());
                     assertFalse(s.failoverSafe());
@@ -1308,7 +1307,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 }
                 else {
                     assertEquals(1, s.availablePermits());
-                    //assertEquals(1, s.permits());
                     assertFalse(s.hasQueuedThreads());
                     assertEquals(0, s.queueLength());
                     assertTrue(s.failoverSafe());
@@ -1331,7 +1329,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             SemaphoreView s = semaphores1.iterator().next();
 
             assertEquals(1, s.availablePermits());
-            //assertEquals(3, s.permits());
             assertTrue(s.hasQueuedThreads());
             assertEquals(1, s.queueLength());
             assertFalse(s.failoverSafe());
