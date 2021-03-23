@@ -31,7 +31,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_10, LATEST_2_9, LATEST_2_8
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST, LATEST_2_9
 
 NUM_NODES_CELL = 4
 
@@ -49,7 +49,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     # pylint: disable=R0914
     @cluster(num_nodes=(NUM_NODES_CELL * NUM_CELL) + 1)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_10), str(LATEST_2_9), str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST), str(LATEST_2_9))
     def two_phased_rebalancing_test(self, ignite_version):
         """
         Test case of two-phase rebalancing.
@@ -138,8 +138,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
             assert pds_after[host] < pds_before[host], f'Host {host}: size after = {pds_after[host]}, ' \
                                                        f'size before = {pds_before[host]}.'
 
-        dump_2 = create_idle_dump_and_copy_to_log_dir(control_utility, node, cells[0].log_dir)
         control_utility.validate_indexes()
+        dump_2 = create_idle_dump_and_copy_to_log_dir(control_utility, node, cells[0].log_dir)
 
         # Check data consistency.
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
@@ -155,21 +155,22 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells = []
 
-        first = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}=0'],
-                              startup_timeout_sec=180)
-        first.start()
+        first = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}=0'])
+        first.start_async()
+
+        cells.append(first)
 
         discovery_spi = from_ignite_cluster(first)
         config = config._replace(discovery_spi=discovery_spi)
 
-        cells.append(first)
-
         for i in range(1, num_cell):
-            cell = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}={i}'],
-                                 startup_timeout_sec=180,)
-            cell.start()
+            cell = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}={i}'])
+            cell.start_async()
 
             cells.append(cell)
+
+        for cell in cells:
+            cell.await_started()
 
         return cells
 
