@@ -17,9 +17,7 @@
 This module contains class to start ignite cluster node.
 """
 
-import re
 import signal
-from datetime import datetime
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
@@ -68,20 +66,18 @@ def node_failed_event_pattern(failed_node_id=None):
            ".\\{1,\\}\\(isClient\\|client\\)=false"
 
 
-def get_event_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
+def get_event_time(log_node, log_pattern, from_the_beginning=True, timeout=15):
     """
     Extracts event time from ignite log by pattern .
-    :param service: ducktape service (ignite service) responsible to search log.
     :param log_node: ducktape node to search ignite log on.
     :param log_pattern: pattern to search ignite log for.
     :param from_the_beginning: switches searching log from its beginning.
     :param timeout: timeout to wait for the patters in the log.
     """
-    service.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
+    IgniteAwareService.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
                                 backoff_sec=0.3)
 
     _, stdout, _ = log_node.account.ssh_client.exec_command(
         "grep '%s' %s" % (log_pattern, log_node.log_file))
 
-    return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                             "[%Y-%m-%d %H:%M:%S,%f]")
+    return IgniteAwareService.event_time(log_node, log_pattern)

@@ -48,9 +48,10 @@ def preload_data(context, config, backups, cache_count, entry_count, entry_size,
         startup_timeout_sec=timeout)
     app.run()
 
-    return (get_event_time(
-        app, app.nodes[0], "Marking as initialized") - get_event_time(
-        app, app.nodes[0], "Application params")).total_seconds()
+    app.await_started()
+    app.await_stopped()
+
+    return (app.get_finish_time() - app.get_init_time()).total_seconds()
 
 
 def await_rebalance_start(ignite, timeout=1):
@@ -64,12 +65,9 @@ def await_rebalance_start(ignite, timeout=1):
     """
     for node in ignite.nodes:
         try:
-            rebalance_start_time = get_event_time(
-                ignite, node,
-                "Starting rebalance routine \\[test-cache-",
-                timeout=timeout)
-        except TimeoutError:
-            continue
+            rebalance_start_time = get_event_time(node, "Starting rebalance routine \\[test-cache-", timeout=timeout)
+        except TimeoutError as e:
+            ignite.logger.error("Rebalance was not started on node '%s' in %d sec.: %s" % (node.name, timeout, str(e)))
         else:
             return node, rebalance_start_time
 
@@ -89,7 +87,6 @@ def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
 
     for cache_idx in range(cache_count):
         rebalance_complete_times.append(get_event_time(
-            ignite,
             node if node else ignite.nodes[0],
             "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\"
             "[grp=test-cache-%d" % (cache_idx + 1),

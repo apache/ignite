@@ -17,6 +17,7 @@
 This module contains the base class to build services aware of Ignite.
 """
 import os
+import re
 import signal
 import socket
 import sys
@@ -274,6 +275,36 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
+
+    @staticmethod
+    def event_time(log_node, log_pattern):
+        """
+        Gets the time of specific event message in a node's log file.
+        :param log_node: Ducktape node to searching log.
+        :param log_pattern: Pattern to search log for.
+        :return: Time of found log message matched to pattern or None if not found.
+        """
+        _, stdout, _ = log_node.account.ssh_client.exec_command(
+            "grep '%s' %s" % (log_pattern, log_node.log_file))
+
+        return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
+                                 "[%Y-%m-%d %H:%M:%S,%f]")
+
+    def first_event_time(self, evt_message):
+        """
+        Gets minimal time of the specific event from all nodes.
+        :param evt_message: Event message.
+        :return: Minimal event time.
+        """
+        return min(filter(lambda t: t is not None, map(lambda node: self.event_time(node, evt_message), self.nodes)))
+
+    def last_event_time(self, evt_message):
+        """
+        Gets maximal time of the specific event from all nodes.
+        :param evt_message: Event message.
+        :return: Maximal event time.
+        """
+        return max(filter(lambda t: t is not None, map(lambda node: self.event_time(node, evt_message), self.nodes)))
 
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """

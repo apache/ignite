@@ -38,6 +38,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int entryCnt = jsonNode.get("entryCount").asInt();
         int entrySize = jsonNode.get("entrySize").asInt();
 
+        markInitialized();
+
         for (int i = 1; i <= cacheCnt; i++) {
             // TODO https://issues.apache.org/jira/browse/IGNITE-14319
             IgniteCache<Integer, DataModel> cache = ignite.getOrCreateCache(
@@ -47,7 +49,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             generateCacheData(cache.getName(), entryCnt, entrySize);
         }
 
-        markSyncExecutionComplete();
+        markFinished();
     }
 
     /**
