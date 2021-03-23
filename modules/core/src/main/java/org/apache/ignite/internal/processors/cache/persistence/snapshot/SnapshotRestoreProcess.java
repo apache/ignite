@@ -90,9 +90,6 @@ public class SnapshotRestoreProcess {
     /** Cache group restore rollback phase. */
     private final DistributedProcess<UUID, Boolean> rollbackRestoreProc;
 
-    /** Mutex used to order cluster snapshot operation progress. */
-    private final Object snpOpMux;
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -104,11 +101,9 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
-     * @param snpOpMux Mutex used to order cluster snapshot operation progress.
      */
-    public SnapshotRestoreProcess(GridKernalContext ctx, Object snpOpMux) {
+    public SnapshotRestoreProcess(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.snpOpMux = snpOpMux;
 
         log = ctx.log(getClass());
 
@@ -145,14 +140,14 @@ public class SnapshotRestoreProcess {
             if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP))
                 throw new IgniteException(OP_REJECT_MSG + "Not all nodes in the cluster support restore operation.");
 
-            synchronized (snpOpMux) {
+            if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
+                throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
+
+            synchronized (this) {
                 GridFutureAdapter<Void> fut0 = fut;
 
-                if (opCtx != null || (fut0 != null && !fut0.isDone()))
+                if (isRestoring() || (fut0 != null && !fut0.isDone()))
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
-
-                if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
-                    throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
                 fut = new GridFutureAdapter<>();
             }
@@ -230,9 +225,7 @@ public class SnapshotRestoreProcess {
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        GridFutureAdapter<Void> fut0;
-
-        return opCtx != null || ((fut0 = fut) != null && !fut0.isDone());
+        return opCtx != null;
     }
 
     /**
@@ -503,7 +496,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If failed.
      */
     private SnapshotRestoreContext prepareContext(SnapshotRestoreRequest req) throws IgniteCheckedException {
-        if (opCtx != null) {
+        if (isRestoring()) {
             throw new IgniteCheckedException(OP_REJECT_MSG +
                 "The previous snapshot restore operation was not completed.");
         }
