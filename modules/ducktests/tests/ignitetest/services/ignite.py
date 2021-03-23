@@ -80,4 +80,4 @@ def get_event_time(log_node, log_pattern, from_the_beginning=True, timeout=15):
     _, stdout, _ = log_node.account.ssh_client.exec_command(
         "grep '%s' %s" % (log_pattern, log_node.log_file))
 
-    return IgniteAwareService.event_time(log_node, log_pattern)
+    return IgniteAwareService.event_time(log_pattern, log_node)

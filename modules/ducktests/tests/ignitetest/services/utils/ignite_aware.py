@@ -277,34 +277,29 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                      backoff_sec=backoff_sec)
 
     @staticmethod
-    def event_time(log_node, log_pattern):
+    def event_time(evt_message, node):
         """
         Gets the time of specific event message in a node's log file.
-        :param log_node: Ducktape node to searching log.
-        :param log_pattern: Pattern to search log for.
+        :param evt_message: Pattern to search log for.
+        :param node: Ducktape node to searching log.
         :return: Time of found log message matched to pattern or None if not found.
         """
-        _, stdout, _ = log_node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (log_pattern, log_node.log_file))
+        _, stdout, _ = node.account.ssh_client.exec_command(
+            "grep '%s' %s" % (evt_message, node.log_file))
 
-        return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                                 "[%Y-%m-%d %H:%M:%S,%f]")
+        match = re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8"))
 
-    def first_event_time(self, evt_message):
+        return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
+
+    def get_event_time(self, evt_message, selector=max):
         """
-        Gets minimal time of the specific event from all nodes.
+        Gets the time of the specific event from all nodes, using selector.
         :param evt_message: Event message.
+        :param selector: Selector function, default is max.
         :return: Minimal event time.
         """
-        return min(filter(lambda t: t is not None, map(lambda node: self.event_time(node, evt_message), self.nodes)))
-
-    def last_event_time(self, evt_message):
-        """
-        Gets maximal time of the specific event from all nodes.
-        :param evt_message: Event message.
-        :return: Maximal event time.
-        """
-        return max(filter(lambda t: t is not None, map(lambda node: self.event_time(node, evt_message), self.nodes)))
+        return selector(filter(lambda t: t is not None,
+                               map(lambda node: self.event_time(evt_message, node), self.nodes)), default=None)
 
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """

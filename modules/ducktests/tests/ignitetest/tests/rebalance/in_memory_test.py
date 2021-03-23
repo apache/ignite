@@ -103,7 +103,7 @@ class RebalanceInMemoryTest(IgniteTest):
 
         stats = aggregate_rebalance_stats(ignite.nodes[:-1] if trigger_event else ignite.nodes, cache_count)
 
-        def speed(d): (int(stats.received_bytes / d / 1000) / 1000.0) if d else None
+        def speed(d): return (int(stats.received_bytes / d / 1000) / 1000.0) if d else None
 
         return {
             "Rebalanced in (sec)": (end_time - start_time).total_seconds(),

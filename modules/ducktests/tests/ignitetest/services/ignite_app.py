@@ -71,19 +71,21 @@ class IgniteApplicationService(IgniteAwareService):
         except Exception:
             raise Exception("Java application execution failed.") from None
 
-    def get_init_time(self):
+    def get_init_time(self, selector=min):
         """
         Gets the time of application init event.
+        :param selector: Selector function, default is min.
         :return: Application initialization time.
         """
-        return self.first_event_time(self.APP_INIT_EVT_MSG)
+        return self.get_event_time(self.APP_INIT_EVT_MSG, selector=selector)
 
-    def get_finish_time(self):
+    def get_finish_time(self, selector=max):
         """
         Gets the time of application finish event.
+        :param selector: Selector function, default is max.
         :return: Application finish time.
         """
-        return self.last_event_time(self.APP_FINISH_EVT_MSG)
+        return self.get_event_time(self.APP_FINISH_EVT_MSG, selector=selector)
 
     def clean_node(self, node, **kwargs):
         if self.alive(node):
