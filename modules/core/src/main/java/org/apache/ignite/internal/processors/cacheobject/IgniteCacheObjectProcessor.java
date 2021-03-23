@@ -311,7 +311,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * Merge the binary metadata files stored in the specified directory.
      *
      * @param metadataDir Directory containing binary metadata files.
-     * @param stopChecker Prcoess interrupt checker.
+     * @param stopChecker Process interrupt checker.
      * @throws IgniteCheckedException If failed.
      */
     public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException;
