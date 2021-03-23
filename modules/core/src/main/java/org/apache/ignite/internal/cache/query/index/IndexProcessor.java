@@ -124,11 +124,6 @@ public class IndexProcessor extends GridProcessorAdapter {
         serializer = new JavaObjectKeySerializer(ctx.config());
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        serializer = null;
-    }
-
     /**
      * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
