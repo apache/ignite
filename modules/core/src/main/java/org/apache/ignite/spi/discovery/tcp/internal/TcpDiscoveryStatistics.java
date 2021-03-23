@@ -30,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * Statistics for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
  */
@@ -72,13 +75,14 @@ public class TcpDiscoveryStatistics {
 
     /** */
     public TcpDiscoveryStatistics() {
-        joinedNodesCnt = new IntMetricImpl("JoinedNodes", "Joined nodes count");
+        joinedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedNodes"), "Joined nodes count");
 
-        failedNodesCnt = new IntMetricImpl("FailedNodes", "Failed nodes count");
+        failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
 
-        leftNodesCnt = new IntMetricImpl("LeftNodes", "Left nodes count");
+        leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
 
-        pendingMsgsRegistered = new IntMetricImpl("PendingMessagesRegistered", "Pending messages registered count");
+        pendingMsgsRegistered = new IntMetricImpl(metricName(DISCO_METRICS, "PendingMessagesRegistered"),
+            "Pending messages registered count");
     }
 
     /**
