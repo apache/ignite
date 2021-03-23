@@ -485,7 +485,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         String testClsStrOf = GridToStringBuilder.toString(TestClass1.class, testCls);
 
-        String testClsStrOfR = testClsStrOf.replaceAll("... and 1 more","");
+        String testClsStrOfR = testClsStrOf.replaceAll("... and 1 more", "");
 
         info(testClsStr);
         info(testClsStrOf);

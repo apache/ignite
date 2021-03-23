@@ -190,7 +190,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      * @param c Cache.
      * @param client If it must be a client cache.
      */
-    private void assertClient(IgniteCache<?,?> c, boolean client) {
+    private void assertClient(IgniteCache<?, ?> c, boolean client) {
         assertTrue(((IgniteCacheProxy)c).context().affinityNode() == !client);
     }
 
@@ -228,7 +228,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
             int j = 0;
 
             for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
-                IgniteCache<?,?> cache = grid(i).cache(cacheName);
+                IgniteCache<?, ?> cache = grid(i).cache(cacheName);
 
                 assertClient(cache, false);
 
@@ -242,14 +242,14 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
         int j = 0;
 
         for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
-            IgniteCache<?,?> cache = grid(GRID_CNT - 1).cache(cacheName);
+            IgniteCache<?, ?> cache = grid(GRID_CNT - 1).cache(cacheName);
 
             assertClient(cache, true);
 
             assertEquals(cacheSize.get(j++).intValue(), cache.size());
         }
 
-        final IgniteCache<?,?> clientCache = grid(GRID_CNT - 1).cache("pu");
+        final IgniteCache<?, ?> clientCache = grid(GRID_CNT - 1).cache("pu");
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {

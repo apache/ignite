@@ -62,7 +62,7 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(op);
 
-        U.writeString(out,filePath);
+        U.writeString(out, filePath);
 
         U.writeCollection(out, nodeIds);
     }

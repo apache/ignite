@@ -577,7 +577,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
         );
 
-        cache.put(100,"200");
+        cache.put(100, "200");
 
         String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
             systemSchemaName() + ".SQL_QUERIES";
@@ -625,7 +625,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(1, cache.query(new SqlFieldsQuery(sql)).getAll().size());
 
-        cache.put(100,"200");
+        cache.put(100, "200");
 
         QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
 

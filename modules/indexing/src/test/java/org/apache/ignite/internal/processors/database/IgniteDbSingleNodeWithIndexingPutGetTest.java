@@ -80,13 +80,13 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
     public void testGroupIndexes2() {
         IgniteEx ig = grid(0);
 
-        IgniteCache<Integer,Abc> cache = ig.cache("abc");
+        IgniteCache<Integer, Abc> cache = ig.cache("abc");
 
         long cnt = 10_000;
 
-        Map<Integer,AtomicLong> as = new TreeMap<>();
-        Map<Integer,AtomicLong> bs = new TreeMap<>();
-        Map<Integer,AtomicLong> cs = new TreeMap<>();
+        Map<Integer, AtomicLong> as = new TreeMap<>();
+        Map<Integer, AtomicLong> bs = new TreeMap<>();
+        Map<Integer, AtomicLong> cs = new TreeMap<>();
 
         Random rnd = ThreadLocalRandom.current();
 
@@ -134,7 +134,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
      * @param cache Cache.
      * @param field Field name.
      */
-    private static void check(Map<Integer,AtomicLong> xs, IgniteCache<Integer,Abc> cache, String field) {
+    private static void check(Map<Integer, AtomicLong> xs, IgniteCache<Integer, Abc> cache, String field) {
         String qry = "select " + field + ", count(*) from Abc group by " + field + " order by " + field;
 
         List<List<?>> res = cache.query(new SqlFieldsQuery(qry)).getAll();
@@ -143,7 +143,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
         int i = 0;
 
-        for (Map.Entry<Integer,AtomicLong> entry : xs.entrySet()) {
+        for (Map.Entry<Integer, AtomicLong> entry : xs.entrySet()) {
 //            X.println("    " + field + ": " + entry);
 
             int key = entry.getKey();
@@ -167,7 +167,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
      * @param key Key.
      * @param inc Increment.
      */
-    private static void add(Map<Integer,AtomicLong> xs, int key, boolean inc) {
+    private static void add(Map<Integer, AtomicLong> xs, int key, boolean inc) {
         AtomicLong cntr = xs.get(key);
 
         if (cntr == null) {
