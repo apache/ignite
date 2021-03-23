@@ -3648,7 +3648,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets the continuation executor for Cache and Compute async APIs.
+     * Gets the continuation executor for cache async APIs.
      * <p />
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
      * <p />
@@ -3662,7 +3662,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets the continuation executor for Cache and Compute async APIs.
+     * Sets the continuation executor for cache async APIs.
      * <p />
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
      * <p />
