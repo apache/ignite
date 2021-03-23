@@ -75,9 +75,4 @@ public class SetView {
     public boolean removed() {
         return set.removed();
     }
-
-    /** @return If {@code true} then this set empty. */
-    public boolean isEmpty() {
-        return set.isEmpty();
-    }
 }

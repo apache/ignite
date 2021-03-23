@@ -45,18 +45,10 @@ public class SemaphoreView extends AbstractDataStructureView<GridCacheSemaphoreI
     }
 
     /**
-     * @return Maximum number of permits.
-     */
-    @Order(2)
-    public long permits() {
-        return -1; //TODO: fixme.
-    }
-
-    /**
      * @return {@code True} if there may be other threads waiting to acquire the lock.
      * @see IgniteSemaphore#hasQueuedThreads()
      */
-    @Order(3)
+    @Order(2)
     public boolean hasQueuedThreads() {
         return ds.hasQueuedThreads();
     }
@@ -65,7 +57,7 @@ public class SemaphoreView extends AbstractDataStructureView<GridCacheSemaphoreI
      * @return The estimated number of nodes waiting for this lock.
      * @see IgniteSemaphore#getQueueLength()
      */
-    @Order(4)
+    @Order(3)
     public int queueLength() {
         return ds.getQueueLength();
     }
@@ -74,7 +66,7 @@ public class SemaphoreView extends AbstractDataStructureView<GridCacheSemaphoreI
      * @return {@code True} if this semaphore is failover safe.
      * @see IgniteSemaphore#isFailoverSafe()
      */
-    @Order(5)
+    @Order(4)
     public boolean failoverSafe() {
         return ds.isFailoverSafe();
     }
@@ -83,7 +75,7 @@ public class SemaphoreView extends AbstractDataStructureView<GridCacheSemaphoreI
      * @return {@code True} if a node failed on this semaphore and {@link #failoverSafe} flag was set to {@code false}, {@code false} otherwise.
      * @see IgniteSemaphore#isBroken()
      */
-    @Order(6)
+    @Order(5)
     public boolean broken() {
         return ds.isBroken();
     }

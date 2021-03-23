@@ -36,8 +36,8 @@ public class ReentrantLockView extends AbstractDataStructureView<GridCacheLockIm
     }
 
     /**
-     * @return Number of permits available.
-     * @see IgniteLock#isLocked() ()
+     * @return {@code True} if locked.
+     * @see IgniteLock#isLocked()
      */
     @Order(1)
     public boolean locked() {
@@ -63,8 +63,8 @@ public class ReentrantLockView extends AbstractDataStructureView<GridCacheLockIm
     }
 
     /**
-     * @return {@code True} if a node failed on this semaphore and {@link #failoverSafe} flag was set to {@code false}, {@code false} otherwise.
-     * @see IgniteLock#isBroken()
+     * @return {@code True} if this lock is fair.
+     * @see IgniteLock#isFair()
      */
     @Order(4)
     public boolean fair() {
