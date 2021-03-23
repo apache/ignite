@@ -336,9 +336,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final AtomicLong lastRecordLoggedMs = new AtomicLong();
 
-    /**
-     *  Last rollover time.
-     */
+    /** Last rollover time. */
     private AtomicLong lastRolloverMs;
 
     /**
@@ -801,31 +799,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private void checkWalRolloverRequired() {
         if (walAutoArchiveAfterInactivity <= 0 && walForceArchiveTimeout <= 0)
-            return; // feature not configured, nothing to do
+            return; // feature not configured, nothing to do.
 
         final long lastRecMs = lastRecordLoggedMs.get();
 
         if (lastRecMs == 0)
-            return; //no records were logged to current segment, does not consider inactivity
+            return; //no records were logged to current segment, does not consider inactivity.
 
         if (walForceArchiveTimeout > 0) {
             final long lastRollover = lastRolloverMs.get();
             final long elapsedMs = U.currentTimeMillis() - lastRollover;
 
             if (elapsedMs < walForceArchiveTimeout)
-                return;
+                return; // not enough time elapsed since last rollover.
 
             if (!lastRolloverMs.compareAndSet(lastRollover, 0))
-                return; // record write occurred concurrently
+                return; // record write occurred concurrently.
         }
         else {
             final long elapsedMs = U.currentTimeMillis() - lastRecMs;
 
             if (elapsedMs <= walAutoArchiveAfterInactivity)
-                return; // not enough time elapsed since last write
+                return; // not enough time elapsed since last write.
 
             if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
-                return; // record write occurred concurrently
+                return; // record write occurred concurrently.
         }
 
         final FileWriteHandle handle = currentHandle();
