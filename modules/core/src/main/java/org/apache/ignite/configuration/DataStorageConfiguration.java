@@ -295,10 +295,13 @@ public class DataStorageConfiguration implements Serializable {
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
-    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
+    /**
+     * Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
+     */
     private long walAutoArchiveAfterInactivity = -1;
 
     /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
     /**
@@ -1081,6 +1084,7 @@ public class DataStorageConfiguration implements Serializable {
      * negative  value disables auto archiving.
      * @return current configuration instance for chaining
      */
+    @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
         this.walForceArchiveTimeout = walForceArchiveTimeout;
 
@@ -1090,6 +1094,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
      */
+    @IgniteExperimental
     public long getWalForceArchiveTimeout() {
         return walForceArchiveTimeout;
     }

@@ -879,7 +879,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         checkIo(io, page);
 
-        Function<ByteBuffer,List<Bytes>> getContents = (buf) -> {
+        Function<ByteBuffer, List<Bytes>> getContents = (buf) -> {
             try {
                 long addr = bufferAddress(buf);
 
@@ -1046,7 +1046,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) {
+        @Override public byte[] getLookupRow(BPlusTree<byte[], ?> tree, long pageAddr, int idx) {
             return PageUtils.getBytes(pageAddr, offset(idx), itemSize);
         }
     }
@@ -1075,7 +1075,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) {
+        @Override public byte[] getLookupRow(BPlusTree<byte[], ?> tree, long pageAddr, int idx) {
             return PageUtils.getBytes(pageAddr, offset(idx), itemSize);
         }
     }
