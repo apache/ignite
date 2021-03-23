@@ -207,7 +207,7 @@ public class KillCommand extends AbstractCommand<Object> {
         params.put("query_id", "Query identifier.");
 
         Command.usage(log, "Kill scan query by node id, cache name and query id:", KILL,
-            params, SCAN.toString(),"origin_node_id", "cache_name", "query_id");
+            params, SCAN.toString(), "origin_node_id", "cache_name", "query_id");
 
         params.clear();
         params.put("origin_node_id", "Originating node id.");

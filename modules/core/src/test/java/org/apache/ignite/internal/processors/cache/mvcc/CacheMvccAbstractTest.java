@@ -503,10 +503,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                                 else if (writeMode == WriteMode.DML) {
                                                     if (rmvd.equals(id1)) {
                                                         removeSql(cache, id1);
-                                                        updateSql(cache, id2,a1.val + a2.val, 1);
+                                                        updateSql(cache, id2, a1.val + a2.val, 1);
                                                     }
                                                     else {
-                                                        updateSql(cache, id1,a1.val + a2.val, 1);
+                                                        updateSql(cache, id1, a1.val + a2.val, 1);
                                                         removeSql(cache, id2);
                                                     }
                                                 }
@@ -1021,7 +1021,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 Integer readVal = readVals.get(range);
 
                                 if (readVal != null)
-                                    assertTrue("readVal=" + readVal + ", val=" + val + ", map=" + map,readVal <= val);
+                                    assertTrue("readVal=" + readVal + ", val=" + val + ", map=" + map, readVal <= val);
 
                                 readVals.put(range, val);
 

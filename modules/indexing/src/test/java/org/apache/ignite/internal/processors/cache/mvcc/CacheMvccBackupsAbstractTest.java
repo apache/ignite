@@ -303,9 +303,9 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
 
         awaitPartitionMapExchange();
 
-        IgniteCache<?,?> clientCache = client.cache(DEFAULT_CACHE_NAME);
-        IgniteCache<?,?> cache1 = node1.cache(DEFAULT_CACHE_NAME);
-        IgniteCache<?,?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache1 = node1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
 
         AtomicInteger keyGen = new AtomicInteger();
         Affinity affinity = affinity(clientCache);

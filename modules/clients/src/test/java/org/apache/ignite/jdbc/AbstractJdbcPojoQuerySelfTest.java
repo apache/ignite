@@ -52,7 +52,7 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setAtomicityMode(TRANSACTIONAL);

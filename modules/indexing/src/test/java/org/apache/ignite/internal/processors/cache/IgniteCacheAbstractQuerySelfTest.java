@@ -493,7 +493,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(1, 1);
         cache.put(2, 2);
 
-        QueryCursor<Cache.Entry<Integer,Integer>> qry =
+        QueryCursor<Cache.Entry<Integer, Integer>> qry =
             cache.query(new SqlQuery<Integer, Integer>(Integer.class, "_key between 2 and 1"));
 
         assertTrue(qry.getAll().isEmpty());
@@ -1324,7 +1324,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
 
-        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer,Integer>() {
+        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 assertNotNull(k);
                 assertNotNull(v);

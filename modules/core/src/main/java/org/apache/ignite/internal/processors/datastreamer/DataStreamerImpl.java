@@ -2457,7 +2457,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** */
-    private static final class SilentCompoundFuture<T,R> extends GridCompoundFuture<T,R> {
+    private static final class SilentCompoundFuture<T, R> extends GridCompoundFuture<T, R> {
        /** {@inheritDoc} */
         @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
             // no-op
