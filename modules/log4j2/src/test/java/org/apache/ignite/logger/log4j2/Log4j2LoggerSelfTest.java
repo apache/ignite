@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerPostfixAware;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -70,7 +70,9 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(xml.getPath()));
 
-        ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        ((LoggerPostfixAware)log).setNodeId(id);
+        assertEquals(id, ((LoggerPostfixAware)log).getNodeId());
 
         checkLog(log);
     }
@@ -93,7 +95,9 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        ((LoggerPostfixAware)log).setNodeId(id);
+        assertEquals(id, ((LoggerPostfixAware)log).getNodeId());
 
         checkLog(log);
     }
@@ -110,7 +114,9 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
 
-        ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        ((LoggerPostfixAware)log).setNodeId(id);
+        assertEquals(id, ((LoggerPostfixAware)log).getNodeId());
 
         checkLog(log);
     }
@@ -140,6 +146,10 @@ public class Log4j2LoggerSelfTest {
         new Log4J2Logger(LOG_PATH_TEST).setNodeId(id);
 
         assertEquals(U.id8(id), System.getProperty("nodeId"));
+
+        new Log4J2Logger(LOG_PATH_TEST).setPostfix("myapp");
+
+        assertEquals("myapp", System.getProperty("nodeId"));
     }
 
     /**
