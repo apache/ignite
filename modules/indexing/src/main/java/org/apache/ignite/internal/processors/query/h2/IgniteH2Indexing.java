@@ -2097,6 +2097,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
 
         // An internal feature for the ability to cancel index rebuilding.
+        // This behavior should be discussed in IGNITE-14321.
         SchemaIndexCacheFuture intlRebFut = new SchemaIndexCacheFuture(new SchemaIndexOperationCancellationToken());
         cancelIndexRebuildFuture(idxRebuildFuts.put(cctx.cacheId(), intlRebFut));
 

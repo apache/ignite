@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -192,10 +191,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                         locked = false;
                     }
 
-                    GridCacheAdapter cache = cctx.cache();
-
-                    if (cache != null)
-                        cache.metrics0().addIndexRebuildKeyProcessed(1);
+                    cctx.cache().metrics0().addIndexRebuildKeyProcessed(1);
 
                     if (locPart.state() == RENTING)
                         break;
@@ -229,20 +225,16 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             try {
                 checkCancelled();
 
-                GridCacheAdapter cache = cctx.cache();
+                GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                if (cache != null) {
-                    GridCacheEntryEx entry = cache.entryEx(key);
-
-                    try {
-                        entry.updateIndex(wrappedClo);
-                    }
-                    finally {
-                        entry.touch();
-                    }
-
-                    break;
+                try {
+                    entry.updateIndex(wrappedClo);
                 }
+                finally {
+                    entry.touch();
+                }
+
+                break;
             }
             catch (GridDhtInvalidPartitionException ignore) {
                 break;
@@ -269,7 +261,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @return {@code True} if necessary to stop rebuilding indexes.
      */
     private boolean stop() {
-        return stop.get() || cctx.kernalContext().isStopping() || cctx.cache() == null;
+        return stop.get() || cctx.kernalContext().isStopping();
     }
 
     /** {@inheritDoc} */
