@@ -90,6 +90,9 @@ public class SnapshotRestoreProcess {
     /** Cache group restore rollback phase. */
     private final DistributedProcess<UUID, Boolean> rollbackRestoreProc;
 
+    /** Mutex used to order cluster snapshot operation progress. */
+    private final Object snpOpMux;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -101,9 +104,11 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
+     * @param snpOpMux Mutex used to order cluster snapshot operation progress.
      */
-    public SnapshotRestoreProcess(GridKernalContext ctx) {
+    public SnapshotRestoreProcess(GridKernalContext ctx, Object snpOpMux) {
         this.ctx = ctx;
+        this.snpOpMux = snpOpMux;
 
         log = ctx.log(getClass());
 
@@ -147,17 +152,17 @@ public class SnapshotRestoreProcess {
 
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
-        if (snpMgr.isSnapshotCreating()) {
-            return new IgniteFinishedFutureImpl<>(
-                new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress."));
-        }
-
-        synchronized (this) {
+        synchronized (snpOpMux) {
             GridFutureAdapter<Void> fut0 = fut;
 
             if (opCtx != null || (fut0 != null && !fut0.isDone())) {
                 return new IgniteFinishedFutureImpl<>(
                     new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed."));
+            }
+
+            if (snpMgr.isSnapshotCreating()) {
+                return new IgniteFinishedFutureImpl<>(
+                    new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress."));
             }
 
             fut = new GridFutureAdapter<>();

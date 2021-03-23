@@ -320,7 +320,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
-        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
+        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, snpOpMux);
     }
 
     /**
@@ -1042,11 +1042,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
 
-            if (isRestoring()) {
-                throw new IgniteException("Snapshot operation has been rejected. " +
-                    "Cache group restore operation is currently in progress.");
-            }
-
             if (cctx.kernalContext().clientNode()) {
                 ClusterNode crd = U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null);
 
@@ -1073,6 +1068,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (localSnapshotNames().contains(name))
                     throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists on local node.");
+
+                if (isRestoring())
+                    throw new IgniteException("Snapshot operation has been rejected. Cache group restore operation is currently in progress.");
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
