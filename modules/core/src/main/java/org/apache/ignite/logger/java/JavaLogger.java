@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerPostfixAware;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.logging.Level.FINE;
@@ -95,7 +95,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
+public class JavaLogger implements IgniteLogger, LoggerPostfixAware {
     /** */
     public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
 
@@ -126,7 +126,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** Node ID. */
     @GridToStringExclude
-    private volatile UUID nodeId;
+    private volatile String postfix;
 
     /**
      * Creates new logger.
@@ -366,17 +366,22 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
+        setPostfix(U.id8(nodeId));
+    }
 
-        if (this.nodeId != null)
+    /** {@inheritDoc} */
+    @Override public void setPostfix(String postfix) {
+        A.notNull(postfix, "postfix");
+
+        if (this.postfix != null)
             return;
 
         synchronized (mux) {
             // Double check.
-            if (this.nodeId != null)
+            if (this.postfix != null)
                 return;
 
-            this.nodeId = nodeId;
+            this.postfix = postfix;
         }
 
         JavaLoggerFileHandler fileHnd = findHandler(impl, JavaLoggerFileHandler.class);
@@ -385,7 +390,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
             return;
 
         try {
-            fileHnd.nodeId(nodeId, workDir);
+            fileHnd.postfix(postfix, workDir);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);
@@ -393,8 +398,8 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID getNodeId() {
-        return nodeId;
+    @Override public String getPostfix() {
+        return postfix;
     }
 
     /**

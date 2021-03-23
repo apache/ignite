@@ -19,20 +19,19 @@ package org.apache.ignite.testframework.junits.logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerPostfixAware;
 import org.apache.log4j.Layout;
 import org.apache.log4j.RollingFileAppender;
 
 /**
  * Log4J {@link org.apache.log4j.RollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerNodeIdAware {
-    /** Node ID. */
-    private UUID nodeId;
+public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerPostfixAware {
+    /** Postfix. */
+    private String postfix;
 
     /** Basic log file name. */
     private String baseFileName;
@@ -80,16 +79,16 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    @Override public synchronized void setNodeId(UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
+    @Override public synchronized void setPostfix(String postfix) {
+        A.notNull(postfix, "postfix");
 
-        this.nodeId = nodeId;
+        this.postfix = postfix;
 
         if (fileName != null) { // fileName could be null if IGNITE_HOME is not defined.
             if (baseFileName == null)
                 baseFileName = fileName;
 
-            fileName = U.nodeIdLogFileName(nodeId, baseFileName);
+            fileName = U.nodeIdLogFileName(postfix, baseFileName);
         }
         else {
             String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
@@ -97,20 +96,20 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
             if (tmpDir != null) {
                 baseFileName = new File(tmpDir, "ignite.log").getAbsolutePath();
 
-                fileName = U.nodeIdLogFileName(nodeId, baseFileName);
+                fileName = U.nodeIdLogFileName(postfix, baseFileName);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized UUID getNodeId() {
-        return nodeId;
+    @Override public String getPostfix() {
+        return postfix;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
         throws IOException {
-        if (nodeId != null)
+        if (postfix != null)
             super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 }
