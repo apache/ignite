@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exchange task to handle node leave for WAL state manager.
  */
-public class WalStateNodeLeaveExchangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class WalStateNodeLeaveExchangeTask implements CachePartitionExchangeWorkerTask {
     /** Node that has left the grid. */
     private final ClusterNode node;
 
@@ -33,9 +32,7 @@ public class WalStateNodeLeaveExchangeTask extends AbstractCachePartitionExchang
      *
      * @param node Node that has left the grid.
      */
-    public WalStateNodeLeaveExchangeTask(UUID secSubjId, ClusterNode node) {
-        super(secSubjId);
-
+    public WalStateNodeLeaveExchangeTask(ClusterNode node) {
         assert node != null;
 
         this.node = node;
