@@ -697,6 +697,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         }
     }
 
+    /** */
+    public Marshaller marshaller() {
+        return marshaller;
+    }
+
     /**
      * Temporary storage internal
      */
