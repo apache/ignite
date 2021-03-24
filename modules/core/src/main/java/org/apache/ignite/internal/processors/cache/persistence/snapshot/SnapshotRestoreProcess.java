@@ -691,22 +691,28 @@ public class SnapshotRestoreProcess {
         if (F.isEmpty(opCtx0.dirs))
             return new GridFinishedFuture<>();
 
-        if (log.isInfoEnabled()) {
-            log.info("Performing local rollback routine for restored cache groups " +
-                "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
-        }
+        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
-        for (File cacheDir : opCtx0.dirs) {
-            if (!cacheDir.exists())
-                continue;
+        ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
+            if (log.isInfoEnabled()) {
+                log.info("Performing local rollback routine for restored cache groups " +
+                    "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
+            }
 
-            if (log.isInfoEnabled())
-                log.info("Cleaning up directory " + cacheDir);
+            for (File cacheDir : opCtx0.dirs) {
+                if (!cacheDir.exists())
+                    continue;
 
-            U.delete(cacheDir);
-        }
+                if (log.isInfoEnabled())
+                    log.info("Cleaning up directory " + cacheDir);
 
-        return new GridFinishedFuture<>(true);
+                U.delete(cacheDir);
+            }
+
+            retFut.onDone(true);
+        });
+
+        return retFut;
     }
 
     /**
