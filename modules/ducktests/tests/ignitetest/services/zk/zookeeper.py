@@ -172,5 +172,4 @@ class ZookeeperService(Service, PathAware):
 
     def clean_node(self, node, **kwargs):
         self.logger.info("Cleaning Zookeeper node %d on %s", self.idx(node), node.account.hostname)
-
         node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)

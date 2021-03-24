@@ -24,7 +24,6 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
-# pylint: disable=R0901
 class IgniteService(IgniteAwareService):
     """
     Ignite node service.
