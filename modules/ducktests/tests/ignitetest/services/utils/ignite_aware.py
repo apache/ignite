@@ -149,7 +149,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             return
 
         self.stop_async(**kwargs)
-        self.await_stopped()
+        self.await_stopped(**kwargs)
 
     # pylint: disable=W0613
     def await_stopped(self, **kwargs):

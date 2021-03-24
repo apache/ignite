@@ -49,7 +49,7 @@ class IgniteTest(Test):
         self.logger.debug("Killing all runned IgniteAwareServices to speed-up the tearing down.")
 
         for service in self.test_context.services._services.values():
-            if isinstance(service, IgniteAwareService):
+            if isinstance(service, IgniteAwareService) and not service.stopped:
                 try:
                     service.stop_async(force_stop=True)
                 except RemoteCommandError:
