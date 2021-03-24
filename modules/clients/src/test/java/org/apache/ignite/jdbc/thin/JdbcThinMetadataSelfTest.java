@@ -444,7 +444,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUP_PAGE_LISTS",
                 "SYS.DATA_REGION_PAGE_LISTS",
                 "SYS.PARTITION_STATES",
-                "SYS.BINARY_METADATA"
+                "SYS.BINARY_METADATA",
+                "SYS.DISTRIBUTED_METASTORAGE"
             ))
         );
     }
@@ -996,7 +997,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.BINARY_METADATA.TYPE_ID.null.10",
                 "SYS.BINARY_METADATA.IS_ENUM.null.1",
                 "SYS.BINARY_METADATA.FIELDS_COUNT.null.10",
-                "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647"
+                "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.VALUE.null.2147483647"
                 ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
