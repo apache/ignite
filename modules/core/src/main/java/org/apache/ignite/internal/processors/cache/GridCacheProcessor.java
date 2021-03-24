@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -543,7 +544,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grp Cache group.
      * @param destroy Group destroy flag.
      */
-    private void cleanup(CacheGroupContext grp, boolean destroy) {
+    private void cleanup(CacheGroupContext grp, boolean destroy, boolean touchMetrics) {
         CacheConfiguration cfg = grp.config();
 
         for (Object obj : grp.configuredUserObjects())
@@ -559,9 +560,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        boolean stat = caches.values().stream().anyMatch(c -> c.context().statisticsEnabled());
-
-        if (destroy && (stat || cfg.isStatisticsEnabled())) {
+        if (destroy && touchMetrics) {
             grp.metrics().remove();
 
             grp.removeIOStatistic();
@@ -781,8 +780,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 stopCache(cache, cancel, false);
         }
 
+        boolean stat = stoppedCaches.values().stream().anyMatch(c -> c.context().statisticsEnabled());
+
         for (CacheGroupContext grp : cacheGrps.values())
-            stopCacheGroup(grp.groupId(), false);
+            stopCacheGroup(grp.groupId(), false, stat);
     }
 
     /**
@@ -2081,7 +2082,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             prepareCacheStop(cctx.name(), false, clearDbObjects);
 
             if (!cctx.group().hasCaches())
-                stopCacheGroup(cctx.group().groupId(), false);
+                stopCacheGroup(cctx.group().groupId(), false, cctx.statisticsEnabled());
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
@@ -2782,6 +2783,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
                 .collect(groupingBy(action -> action.descriptor().groupId()));
 
+        Map<Integer, Boolean> grpMetricsToStop = new HashMap<>();
+
+        for (ExchangeActions.CacheActionData actData : exchActions.cacheStopRequests()) {
+            GridCacheContext<?, ?> cctx = sharedCtx.cacheContext(actData.descriptor().cacheId());
+
+            if (cctx != null)
+                grpMetricsToStop.compute(actData.descriptor().groupId(), (k, v) -> v == null ?
+                    cctx.statisticsEnabled() : v | cctx.statisticsEnabled());
+        }
+
         try {
             doInParallel(
                     parallelismLvl,
@@ -2842,7 +2853,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop)
-            stopCacheGroup(grp.get1().groupId(), grp.get2());
+            stopCacheGroup(grp.get1().groupId(), grp.get2(), grpMetricsToStop.get(grp.get1().groupId()));
 
         if (!sharedCtx.kernalContext().clientNode())
             sharedCtx.database().onCacheGroupsStopped(grpsToStop);
@@ -2946,23 +2957,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpId Group ID.
      * @param destroy Group destroy flag.
      */
-    private void stopCacheGroup(int grpId, boolean destroy) {
+    private void stopCacheGroup(int grpId, boolean destroy, boolean touchMetrics) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
 
         if (grp != null)
-            stopCacheGroup(grp, destroy);
+            stopCacheGroup(grp, destroy, touchMetrics);
     }
 
     /**
      * @param grp Cache group.
      * @param destroy Group destroy flag.
      */
-    private void stopCacheGroup(CacheGroupContext grp, boolean destroy) {
+    private void stopCacheGroup(CacheGroupContext grp, boolean destroy, boolean touchMetrics) {
         grp.stopGroup();
 
         U.stopLifecycleAware(log, grp.configuredUserObjects());
 
-        cleanup(grp, destroy);
+        cleanup(grp, destroy, touchMetrics);
     }
 
     /**
@@ -3264,6 +3275,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCachesOnClientReconnect(Collection<GridCacheAdapter> stoppedCaches) {
         assert ctx.discovery().localNode().isClient();
 
+        boolean stat = stoppedCaches.stream().anyMatch(c -> c.context().statisticsEnabled());
+
         for (GridCacheAdapter cache : stoppedCaches) {
             CacheGroupContext grp = cache.context().group();
 
@@ -3273,7 +3286,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.affinity().stopCacheOnReconnect(cache.context());
 
             if (!grp.hasCaches()) {
-                stopCacheGroup(grp, false);
+                stopCacheGroup(grp, false, stat);
 
                 sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
             }
