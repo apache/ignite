@@ -561,7 +561,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean stat = caches.values().stream().anyMatch(c -> c.context().statisticsEnabled());
 
-        if (destroy && stat) {
+        if (destroy && (stat || cfg.isStatisticsEnabled())) {
             grp.metrics().remove();
 
             grp.removeIOStatistic();
