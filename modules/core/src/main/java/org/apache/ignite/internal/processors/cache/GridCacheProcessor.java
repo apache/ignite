@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -543,6 +542,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param grp Cache group.
      * @param destroy Group destroy flag.
+     * @param touchMetrics Remove metrics flag.
      */
     private void cleanup(CacheGroupContext grp, boolean destroy, boolean touchMetrics) {
         CacheConfiguration cfg = grp.config();
@@ -2956,6 +2956,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param grpId Group ID.
      * @param destroy Group destroy flag.
+     * @param touchMetrics Remove metrics flag.
      */
     private void stopCacheGroup(int grpId, boolean destroy, boolean touchMetrics) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
@@ -2967,6 +2968,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param grp Cache group.
      * @param destroy Group destroy flag.
+     * @param touchMetrics Remove metrics flag.
      */
     private void stopCacheGroup(CacheGroupContext grp, boolean destroy, boolean touchMetrics) {
         grp.stopGroup();
