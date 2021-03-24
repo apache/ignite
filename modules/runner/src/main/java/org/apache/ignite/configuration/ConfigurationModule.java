@@ -23,7 +23,7 @@ import java.io.Reader;
  * Module is responsible for preparing configuration when module is started.
  *
  * Preparing configuration includes reading it from configuration file, parsing it and initializing
- * {@link Configurator} object.
+ * {@link ConfigurationRegistry} object.
  */
 public class ConfigurationModule {
 //    /** */

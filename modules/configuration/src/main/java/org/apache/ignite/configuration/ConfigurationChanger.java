@@ -217,6 +217,16 @@ public class ConfigurationChanger {
     }
 
     /** */
+    public SuperRoot mergedSuperRoot() {
+        SuperRoot mergedSuperRoot = new SuperRoot(rootKeys);
+
+        for (StorageRoots storageRoots : storagesRootsMap.values())
+            mergedSuperRoot.append(storageRoots.roots);
+
+        return mergedSuperRoot;
+    }
+
+    /** */
     private CompletableFuture<Void> change(SuperRoot changes, Class<? extends ConfigurationStorage> storageType) {
         ConfigurationStorage storage = storageInstances.get(storageType);
 

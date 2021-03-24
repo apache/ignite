@@ -95,6 +95,16 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
         return this;
     }
 
+    /**
+     * Deletes named list element.
+     *
+     * @param key Element's key.
+     */
+    public void forceDelete(String key) {
+        map.remove(key);
+    }
+
+    /** {@inheritDoc} */
     @Override public NamedListChange<N, N> create(String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(valConsumer, "valConsumer");
 
@@ -111,7 +121,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
     /** {@inheritDoc} */
     @Override public void construct(String key, ConfigurationSource src) {
         if (src == null)
-            map.remove(key);
+            map.put(key, null);
         else {
             N val = map.get(key);
 

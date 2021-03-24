@@ -17,8 +17,12 @@
 
 package org.apache.ignite.rest.configuration;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.Value;
+
+import static org.apache.ignite.rest.RestModule.DFLT_PORT;
 
 /**
  * Configuration schema for REST endpoint subtree.
@@ -26,10 +30,13 @@ import org.apache.ignite.configuration.annotation.Value;
 @ConfigurationRoot(rootName = "rest")
 public class RestConfigurationSchema {
     /** */
-    @Value
-    public int port;
+    @Min(1024)
+    @Max(0xFFFF)
+    @Value(hasDefault = true)
+    public final int port = DFLT_PORT;
 
     /** */
-    @Value
-    public int portRange;
+    @Min(0)
+    @Value(hasDefault = true)
+    public final int portRange = 0;
 }

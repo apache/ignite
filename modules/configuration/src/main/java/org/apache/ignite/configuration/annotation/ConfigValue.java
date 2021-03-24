@@ -40,8 +40,4 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 @Retention(SOURCE)
 @Documented
 public @interface ConfigValue {
-    /**
-     * @return The name of the configuration.
-     */
-    String value() default "";
 }

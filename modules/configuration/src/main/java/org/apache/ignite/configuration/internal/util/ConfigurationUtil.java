@@ -255,8 +255,16 @@ public class ConfigurationUtil {
 
                     assert val == null || val instanceof Map || val instanceof Serializable;
 
-                    if (val == null)
-                        node.construct(key, null);
+                    if (val == null) {
+                        if (node instanceof NamedListNode) {
+                            // Given that this particular method is applied to modify existing trees rather than
+                            // creating new trees, a "hack" is required in this place. "construct" is designed to create
+                            // "change" objects, thus it would just nullify named list element instead of deleting it.
+                            ((NamedListNode<?>)node).forceDelete(key);
+                        }
+                        else
+                            node.construct(key, null);
+                    }
                     else if (val instanceof Map)
                         node.construct(key, new InnerConfigurationSource((Map<String, ?>)val));
                     else {
@@ -595,7 +603,10 @@ public class ConfigurationUtil {
             for (String key : srcNode.namedListKeys()) {
                 InnerNode node = srcNode.get(key);
 
-                dstNode.construct(key, node == null ? null : new PatchInnerConfigurationSource(node));
+                if (node == null)
+                    ((NamedListNode<?>)dstNode).forceDelete(key); // Same as in fillFromPrefixMap.
+                else
+                    dstNode.construct(key, new PatchInnerConfigurationSource(node));
             }
         }
     }

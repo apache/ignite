@@ -19,8 +19,6 @@ package org.apache.ignite.rest.presentation.json;
 
 import java.util.Collections;
 import java.util.Map;
-import org.apache.ignite.configuration.Configurator;
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 
 /** */
@@ -29,11 +27,7 @@ public class JsonPresentation implements ConfigurationPresentation<String> {
     private final JsonConverter converter = new JsonConverter();
 
     /** */
-    private final Map<String, Configurator<? extends DynamicConfiguration<?, ?, ?>>> configsMap;
-
-    /** */
-    public JsonPresentation(Map<String, Configurator<? extends DynamicConfiguration<?, ?, ?>>> configsMap) {
-        this.configsMap = configsMap;
+    public JsonPresentation() {
     }
 
     /** {@inheritDoc} */
@@ -68,12 +62,6 @@ public class JsonPresentation implements ConfigurationPresentation<String> {
 
         if (root == null) {
             throw new IllegalArgumentException("Invalid request, no root in request: " + configUpdate);
-        }
-
-        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator = configsMap.get(root);
-
-        if (configurator == null) {
-            throw new IllegalArgumentException("Invalid request, configuration root not found: " + configUpdate);
         }
 
 //        Object updateObj = converter.convertFrom(configUpdate, root, configurator.getChangeType());

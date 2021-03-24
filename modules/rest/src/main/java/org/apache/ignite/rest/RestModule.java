@@ -17,6 +17,7 @@
 
 package org.apache.ignite.rest;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -29,13 +30,16 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.configuration.ConfigurationRegistry;
+import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.rest.configuration.RestConfiguration;
+import org.apache.ignite.rest.configuration.RestView;
 import org.apache.ignite.rest.netty.RestApiInitializer;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
+import org.apache.ignite.rest.presentation.json.JsonConverter;
 import org.apache.ignite.rest.presentation.json.JsonPresentation;
 import org.apache.ignite.rest.routes.Router;
 import org.slf4j.Logger;
@@ -50,7 +54,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
  */
 public class RestModule {
     /** */
-    private static final int DFLT_PORT = 10300;
+    public static final int DFLT_PORT = 10300;
 
     /** */
     private static final String CONF_URL = "/management/v1/configuration/";
@@ -76,7 +80,7 @@ public class RestModule {
     public void prepareStart(ConfigurationRegistry sysCfg, Reader moduleConfReader) {
         sysConf = sysCfg;
 
-        presentation = new JsonPresentation(Collections.emptyMap());
+        presentation = new JsonPresentation();
 
 //        FormatConverter converter = new JsonConverter();
 //
@@ -98,7 +102,11 @@ public class RestModule {
             .get(CONF_URL + ":" + PATH_PARAM, (req, resp) -> {
                 String cfgPath = req.queryParams().get(PATH_PARAM);
                 try {
-                    resp.json(presentation.representByPath(cfgPath));
+                    List<String> path = ConfigurationUtil.split(cfgPath);
+
+                    JsonElement json = sysConf.represent(path, JsonConverter.jsonVisitor());
+
+                    resp.json(json);
                 }
                 catch (IllegalArgumentException pathE) {
                     ErrorResult eRes = new ErrorResult("CONFIG_PATH_UNRECOGNIZED", pathE.getMessage());
@@ -149,14 +157,16 @@ public class RestModule {
 
     /** */
     private void startRestEndpoint(Router router) throws InterruptedException {
-        Integer desiredPort = sysConf.getConfiguration(RestConfiguration.KEY).port().value();
-        Integer portRange = sysConf.getConfiguration(RestConfiguration.KEY).portRange().value();
+        RestView restConfigurationView = sysConf.getConfiguration(RestConfiguration.KEY).value();
+
+        int desiredPort = restConfigurationView.port();
+        int portRange = restConfigurationView.portRange();
 
         int port = 0;
 
-        if (portRange == null || portRange == 0) {
+        if (portRange == 0) {
             try {
-                port = (desiredPort != null ? desiredPort : DFLT_PORT);
+                port = desiredPort;
             }
             catch (RuntimeException e) {
                 log.warn("Failed to start REST endpoint: ", e);
@@ -208,10 +218,5 @@ public class RestModule {
             bossGrp.shutdownGracefully();
             workerGrp.shutdownGracefully();
         }
-    }
-
-    /** */
-    public String configRootKey() {
-        return "rest";
     }
 }

@@ -63,6 +63,12 @@ public final class SuperRoot extends InnerNode {
     }
 
     /** */
+    public void append(SuperRoot otherRoot) {
+        //TODO IGNITE-14372 Revisit API of the super root.
+        roots.putAll(otherRoot.roots);
+    }
+
+    /** */
     public InnerNode getRoot(RootKey<?, ?> rootKey) {
         return roots.get(rootKey.key());
     }
