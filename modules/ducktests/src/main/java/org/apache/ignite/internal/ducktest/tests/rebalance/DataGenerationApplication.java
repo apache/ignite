@@ -37,6 +37,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int cacheCnt = jsonNode.get("cacheCount").asInt();
         int entryCnt = jsonNode.get("entryCount").asInt();
         int entrySize = jsonNode.get("entrySize").asInt();
+        int startKey = jsonNode.get("startKey").asInt();
 
         markInitialized();
 
@@ -46,7 +47,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
                     .setBackups(backups));
 
-            generateCacheData(cache.getName(), entryCnt, entrySize);
+            generateCacheData(cache.getName(), entryCnt, entrySize, startKey);
         }
 
         markFinished();
@@ -57,16 +58,16 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param entryCnt Entry count.
      * @param entrySize Entry size.
      */
-    private void generateCacheData(String cacheName, int entryCnt, int entrySize) {
+    private void generateCacheData(String cacheName, int entryCnt, int entrySize, int startKey) {
         int logStreamedEntriesQuant = (int)Math.pow(10, (int)Math.log10(entryCnt) - 1);
+
+        int streamed = 0;
 
         try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
             for (int i = 0, n = 0; i < entryCnt; i++) {
-                stmr.addData(i, new DataModel(entrySize));
+                stmr.addData(i + startKey, new DataModel(entrySize));
 
-                int streamed = i + 1;
-
-                if (streamed % logStreamedEntriesQuant == 0)
+                if (++streamed % logStreamedEntriesQuant == 0)
                     log.info("Streamed " + streamed + " entries into " + cacheName);
 
                 n += entrySize;
@@ -79,8 +80,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             }
         }
 
-        if (entryCnt % logStreamedEntriesQuant != 0)
-            log.info("Streamed " + entryCnt + " entries into " + cacheName);
+        if (streamed % logStreamedEntriesQuant != 0)
+            log.info("Streamed " + streamed + " entries into " + cacheName);
 
         log.info(cacheName + " data generated.");
     }

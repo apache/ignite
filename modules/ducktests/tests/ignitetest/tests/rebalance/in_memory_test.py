@@ -47,41 +47,42 @@ class RebalanceInMemoryTest(IgniteTest):
     Tests rebalance scenarios in in-memory mode.
     """
     NUM_NODES = 4
+    PRELOADER_COUNTS = [1]
     DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000],
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=PRELOADER_COUNTS,
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_join(self, ignite_version,
-                       backups, cache_count, entry_count, entry_size,
+                       backups, cache_count, entry_count, entry_size, preloaders,
                        thread_pool_size, batch_size, batches_prefetch_count, throttle):
         """
         Tests rebalance on node join.
         """
         return self.__run(ignite_version, TriggerEvent.NODE_JOIN,
-                          backups, cache_count, entry_count, entry_size,
+                          backups, cache_count, entry_count, entry_size, preloaders,
                           thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000],
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=PRELOADER_COUNTS,
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_left(self, ignite_version,
-                       backups, cache_count, entry_count, entry_size,
+                       backups, cache_count, entry_count, entry_size, preloaders,
                        thread_pool_size, batch_size, batches_prefetch_count, throttle):
         """
         Tests rebalance on node left.
         """
         return self.__run(ignite_version, TriggerEvent.NODE_LEFT,
-                          backups, cache_count, entry_count, entry_size,
+                          backups, cache_count, entry_count, entry_size, preloaders,
                           thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     def __run(self, ignite_version, trigger_event,
-              backups, cache_count, entry_count, entry_size,
+              backups, cache_count, entry_count, entry_size, preloaders,
               thread_pool_size, batch_size, batches_prefetch_count, throttle):
         """
         Test performs rebalance test which consists of following steps:
@@ -94,13 +95,14 @@ class RebalanceInMemoryTest(IgniteTest):
         :param cache_count: Cache count.
         :param entry_count: Cache entry count.
         :param entry_size: Cache entry size.
+        :param preloaders: Preload application nodes count.
         :param thread_pool_size: rebalanceThreadPoolSize config property.
         :param batch_size: rebalanceBatchSize config property.
         :param batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
         :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
-        node_count = len(self.test_context.cluster) - 1
+        node_count = len(self.test_context.cluster) - max(self.PRELOADER_COUNTS)
 
         node_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
@@ -121,7 +123,7 @@ class RebalanceInMemoryTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            backups, cache_count, entry_count, entry_size)
+            preloaders, backups, cache_count, entry_count, entry_size)
 
         if trigger_event:
             ignites.stop_node(ignites.nodes[node_count - 1])
