@@ -149,6 +149,12 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Check snapshot:
+    control.(sh|bat) --snapshot check snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 

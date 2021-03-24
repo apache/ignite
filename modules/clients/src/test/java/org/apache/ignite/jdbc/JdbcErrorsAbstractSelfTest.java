@@ -909,7 +909,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Cache store stub.
      */
-    protected class TestCacheStore extends CacheStoreAdapter<Object,Object> implements Serializable {
+    protected class TestCacheStore extends CacheStoreAdapter<Object, Object> implements Serializable {
         /** {@inheritDoc} */
         @Override public Object load(Object key) throws CacheLoaderException {
             return null;

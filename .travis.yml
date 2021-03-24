@@ -61,7 +61,7 @@ matrix:
       dist: trusty
       install: skip
       jdk: openjdk8
-      script: mvn test -Pcheck-test-suites -B -V
+      script: mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
       before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
       cache: { directories: [ $HOME/.m2/repository ] }
 

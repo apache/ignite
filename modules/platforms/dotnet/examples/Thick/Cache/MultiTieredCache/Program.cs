@@ -52,6 +52,10 @@ namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
 
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
+                if (ignite.GetCluster().GetNodes().Count > 1)
+                    throw new Exception("Extra nodes detected. " +
+                                        "ClientReconnect example should be run without external nodes.");
+
                 var cacheCfg = new CacheConfiguration
                 {
                     Name = CacheName,
@@ -76,7 +80,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
 
                     if (i%10 == 0)
                     {
-                        Console.WriteLine(">>> Cache entries created: {0}", i + 1);
+                        Console.WriteLine("\n>>> Cache entries created: {0}", i + 1);
 
                         PrintCacheMetrics(cache);
                     }
@@ -101,7 +105,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.MultiTieredCache
         {
             var metrics = cache.GetLocalMetrics();
 
-            Console.WriteLine("\n>>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}]",
+            Console.WriteLine(">>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}]",
                 cache.GetSize(CachePeekMode.All),
                 metrics.Size, metrics.OffHeapEntriesCount);
         }

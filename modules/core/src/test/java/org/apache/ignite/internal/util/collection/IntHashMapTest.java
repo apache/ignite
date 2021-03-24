@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.util.collection.IntHashMap.INITIAL_CAPACITY;
 import static org.apache.ignite.internal.util.collection.IntHashMap.MAXIMUM_CAPACITY;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -112,6 +113,32 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
     public void shouldReturnsRequiredTableSizeForCustomCapacity() {
         assertEquals(INITIAL_CAPACITY, IntHashMap.tableSize(1));
         assertEquals(MAXIMUM_CAPACITY, IntHashMap.tableSize(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Checking the correctness of {@link IntMap#computeIfAbsent}.
+     */
+    @Test
+    public void testComputeIfAbsent() {
+        IntHashMap<Object> map0 = new IntHashMap<>();
+
+        assertThrows(
+            null,
+            () -> map0.computeIfAbsent(0, null),
+            NullPointerException.class,
+            null
+        );
+
+        Map<Integer, Object> map1 = new HashMap<>();
+
+        assertEquals(map1.computeIfAbsent(0, i -> i + " 0"), map0.computeIfAbsent(0, i -> i + " 0"));
+        assertEquals(map1.computeIfAbsent(0, i -> i + " 1"), map0.computeIfAbsent(0, i -> i + " 1"));
+
+        assertEquals(map1.computeIfAbsent(1, i -> i + " 0"), map0.computeIfAbsent(1, i -> i + " 0"));
+        assertEquals(map1.computeIfAbsent(1, i -> i + " 1"), map0.computeIfAbsent(1, i -> i + " 1"));
+
+        assertEquals("0 0", map0.get(0));
+        assertEquals("1 0", map0.get(1));
     }
 
     /**

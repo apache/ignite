@@ -225,9 +225,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the single grid scenario.
         /// </summary>
         [Test]
-        public void TestSingleGrid()
+        public void TestSingleGrid([Values(false, true)] bool customMapper)
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(GetConfig(false, customMapper)))
             {
                 Test(ignite, ignite);
             }
@@ -237,23 +237,20 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the two grid scenario.
         /// </summary>
         [Test]
-        public void TestTwoGrids([Values(false, true)] bool clientMode)
+        public void TestTwoGrids([Values(false, true)] bool clientMode, [Values(false, true)] bool customMapper)
         {
-            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    IgniteInstanceName = "grid2",
-                    ClientMode = clientMode
-                };
+            var cfg1 = GetConfig(false, customMapper);
+            var cfg2 = GetConfig(clientMode, customMapper, "grid2");
 
-                using (var ignite2 = Ignition.Start(cfg))
+            using (var ignite1 = Ignition.Start(cfg1))
+            {
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
 
                 // Test twice to verify double registration.
-                using (var ignite2 = Ignition.Start(cfg))
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
@@ -471,6 +468,32 @@ namespace Apache.Ignite.Core.Tests.Binary
             var files = Directory.GetFiles(home, "*.classname*", SearchOption.AllDirectories);
 
             files.ToList().ForEach(File.Delete);
+        }
+
+        /// <summary>
+        /// Gets the config.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(bool client, bool customMapper, string name = null)
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = client,
+                IgniteInstanceName = name
+            };
+
+            if (customMapper)
+            {
+                cfg.BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper
+                    {
+                        NamespaceToLower = true,
+                        NamespacePrefix = "foo.bar."
+                    }
+                };
+            }
+
+            return cfg;
         }
 
         private interface ITest
