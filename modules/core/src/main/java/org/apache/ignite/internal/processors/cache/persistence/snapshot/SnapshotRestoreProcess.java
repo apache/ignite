@@ -46,12 +46,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -92,6 +94,9 @@ public class SnapshotRestoreProcess {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Busy lock. */
+    private final GridBusyLock busyLock = new GridBusyLock();
 
     /** The future to be completed when the cache restore process is complete. */
     private volatile GridFutureAdapter<Void> fut;
@@ -318,8 +323,24 @@ public class SnapshotRestoreProcess {
     public void stop(Exception reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 != null)
-            opCtx0.err.compareAndSet(null, reason);
+        if (opCtx0 == null)
+            return;
+
+        opCtx0.err.compareAndSet(null, reason);
+
+        busyLock.block();
+
+        try {
+            IgniteInternalFuture<?> stopFut = opCtx0.stopFut;
+
+            if (stopFut != null && !stopFut.isDone())
+                stopFut.get();
+
+        } catch (IgniteCheckedException ignore) {
+            // No-op.
+        } finally {
+            busyLock.unblock();
+        }
     }
 
     /**
@@ -369,6 +390,9 @@ public class SnapshotRestoreProcess {
 
             SnapshotRestoreContext opCtx0 = opCtx;
 
+            if (ctx.isStopping())
+                throw new NodeStoppingException("Node is stopping.");
+
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();
 
@@ -399,6 +423,8 @@ public class SnapshotRestoreProcess {
             };
 
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
+
+            opCtx0.stopFut = retFut;
 
             restoreAsync(opCtx0.snpName, opCtx0.dirs, updateMeta, stopChecker, errHnd).thenAccept(res -> {
                 Throwable err = opCtx.err.get();
@@ -447,11 +473,19 @@ public class SnapshotRestoreProcess {
             File binDir = binaryWorkDir(snapshotMgr.snapshotLocalDir(snpName).getAbsolutePath(), pdsFolderName);
 
             futs.add(CompletableFuture.runAsync(() -> {
+                if (!busyLock.enterBusy()) {
+                    errHnd.accept(new IgniteCheckedException("Node has been stopped or deactivated."));
+
+                    return;
+                }
+
                 try {
                     ctx.cacheObjects().updateMetadata(binDir, stopChecker);
                 }
                 catch (IgniteCheckedException e) {
                     errHnd.accept(e);
+                } finally {
+                    busyLock.leaveBusy();
                 }
             }, snapshotMgr.snapshotExecutorService()));
         }
@@ -467,20 +501,29 @@ public class SnapshotRestoreProcess {
                     if (stopChecker.getAsBoolean())
                         return;
 
-                    File target = new File(cacheDir, snpFile.getName());
+                    if (!busyLock.enterBusy()) {
+                        errHnd.accept(new IgniteCheckedException("Node has been stopped or deactivated."));
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("Copying file from the snapshot " +
-                            "[snapshot=" + snpName +
-                            ", src=" + snpFile +
-                            ", target=" + target + "]");
+                        return;
                     }
 
                     try {
+                        File target = new File(cacheDir, snpFile.getName());
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Copying file from the snapshot " +
+                                "[snapshot=" + snpName +
+                                ", src=" + snpFile +
+                                ", target=" + target + "]");
+                        }
+
                         Files.copy(snpFile.toPath(), target.toPath());
                     }
                     catch (IOException e) {
                         errHnd.accept(e);
+                    }
+                    finally {
+                        busyLock.leaveBusy();
                     }
                 }, ctx.cache().context().snapshotMgr().snapshotExecutorService()));
             }
@@ -693,23 +736,35 @@ public class SnapshotRestoreProcess {
 
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
+        opCtx0.stopFut = retFut;
+
         ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
-            if (log.isInfoEnabled()) {
-                log.info("Performing local rollback routine for restored cache groups " +
-                    "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
+            if (!busyLock.enterBusy()) {
+                retFut.onDone(new IgniteCheckedException("Node has been stopped or deactivated."));
+
+                return;
             }
 
-            for (File cacheDir : opCtx0.dirs) {
-                if (!cacheDir.exists())
-                    continue;
+            try {
+                if (log.isInfoEnabled()) {
+                    log.info("Performing local rollback routine for restored cache groups " +
+                        "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
+                }
 
-                if (log.isInfoEnabled())
-                    log.info("Cleaning up directory " + cacheDir);
+                for (File cacheDir : opCtx0.dirs) {
+                    if (!cacheDir.exists())
+                        continue;
 
-                U.delete(cacheDir);
+                    if (log.isInfoEnabled())
+                        log.info("Cleaning up directory " + cacheDir);
+
+                    U.delete(cacheDir);
+                }
+
+                retFut.onDone(true);
+            } finally {
+                busyLock.leaveBusy();
             }
-
-            retFut.onDone(true);
         });
 
         return retFut;
@@ -759,6 +814,9 @@ public class SnapshotRestoreProcess {
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
+
+        /** Graceful shutdown future. */
+        private volatile GridFutureAdapter<?> stopFut;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
