@@ -29,6 +29,7 @@ from threading import Thread
 
 from ducktape.utils.util import wait_until
 
+from ignitetest.services import FORCE_STOP
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec
@@ -74,7 +75,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.killed = False
+        self.stopped = False
 
     @property
     def version(self):
@@ -137,16 +138,20 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Stop in async way.
         """
+        assert not self.stopped, "Attempt to stop already stopped service using extended service API"
+
         super().stop(**kwargs)
 
-    def stop(self, **kwargs):
-        if not self.killed:
-            self.stop_async(**kwargs)
-            self.await_stopped()
-        else:
-            self.logger.debug("Skipping node stop since it already killed.")
+        self.stopped = True
 
-    def await_stopped(self):
+    def stop(self, **kwargs):
+        if self.stopped:
+            return
+
+        self.stop_async(**kwargs)
+        self.await_stopped()
+
+    def await_stopped(self, **kwargs):
         """
         Awaits stop finished.
         """
@@ -166,28 +171,16 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         pids = self.pids(node)
 
         for pid in pids:
-            node.account.signal(pid, signal.SIGTERM, allow_fail=False)
-
-    def kill(self):
-        self.logger.info("Killing IgniteAware(s) ...")
-
-        for node in self.nodes:
-            pids = self.pids(node)
-
-            for pid in pids:
-                node.account.signal(pid, signal.SIGKILL, allow_fail=False)
-
-        for node in self.nodes:
-            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
-                       err_msg="Node %s's remote processes failed to be killed in %d seconds" %
-                               (str(node.account), self.shutdown_timeout_sec))
-
-        self.killed = True
+            node.account.signal(pid, signal.SIGKILL if kwargs.get(FORCE_STOP, False) else signal.SIGTERM,
+                                allow_fail=False)
 
     def clean(self, **kwargs):
         self.__restore_iptables()
 
         super().clean(**kwargs)
+
+    def clean_node(self, node, **kwargs):
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def init_persistent(self, node):
         """

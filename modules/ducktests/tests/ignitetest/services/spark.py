@@ -23,13 +23,13 @@ from distutils.version import LooseVersion
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
-from ignitetest.services.utils.ignite_test_service import IgniteTestService
+from ignitetest.services import FORCE_STOP
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
 
 # pylint: disable=abstract-method
-class SparkService(Service, IgniteTestService, PathAware):
+class SparkService(Service, PathAware):
     """
     Start a spark node.
     """
@@ -115,21 +115,19 @@ class SparkService(Service, IgniteTestService, PathAware):
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
     def stop_node(self, node, **kwargs):
-        if node == self.nodes[0]:
-            node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-master.sh"))
+        if kwargs.get(FORCE_STOP, False):
+            node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
         else:
-            node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-slave.sh"))
+            if node == self.nodes[0]:
+                node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-master.sh"))
+            else:
+                node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-slave.sh"))
 
     def clean_node(self, node, **kwargs):
         """
         Clean spark persistence files
         """
-        node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
-
-    def kill(self):
-        for node in self.nodes:
-            node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
 
     def pids(self, node):
         """

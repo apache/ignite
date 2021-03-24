@@ -217,7 +217,7 @@ class CellularAffinity(IgniteTest):
             if s_type is StopType.SIGTERM:
                 failed_loader.stop_async()
             elif s_type is StopType.SIGKILL:
-                failed_loader.kill()
+                failed_loader.stop_async(force_stop=True)
             elif s_type is StopType.DROP_NETWORK:
                 failed_loader.drop_network()
 

@@ -21,8 +21,10 @@ from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
 
-
 # pylint: disable=W0223
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
+
+
 class IgniteTest(Test):
     """
     Basic ignite test.
@@ -44,15 +46,22 @@ class IgniteTest(Test):
 
     # pylint: disable=W0212
     def tearDown(self):
-        self.logger.debug("Killing all services to speed-up the tearing down.")
+        self.logger.debug("Killing all runned IgniteAwareServices to speed-up the tearing down.")
 
         for service in self.test_context.services._services.values():
-            try:
-                service.kill()
-            except RemoteCommandError:
-                pass  # Process may be already self-killed on segmentation.
+            if isinstance(service, IgniteAwareService):
+                try:
+                    service.stop_async(force_stop=True)
+                except RemoteCommandError:
+                    pass  # Process may be already self-killed on segmentation.
 
-        self.logger.debug("All services killed.")
+        self.logger.debug("All runned IgniteAwareServices killed.")
+
+        for service in self.test_context.services._services.values():
+            if isinstance(service, IgniteAwareService):
+                service.await_stopped(force_stop=True)
+
+        self.logger.debug("All IgniteAwareServices checked to be killed.")
 
         super().tearDown()
 
