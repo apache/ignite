@@ -19,7 +19,6 @@ package org.apache.ignite.spi.metric;
 
 import java.util.function.Predicate;
 import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Exporter of metric information to the external recipient.
@@ -29,6 +28,15 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * So after start SPI should respond to some incoming request.
  * HTTP servlet or JMX bean are good examples of expected implementations.
  *
+ * <p>
+ * Ignite provides the following {@code MetricExporterSpi} implementation:
+ * <ul>
+ * <li>{@link org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi}</li>
+ * <li>{@link org.apache.ignite.spi.metric.log.LogExporterSpi}</li>
+ * <li>{@code org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi}</li>
+ * <li>{@code org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi}</li>
+ * </ul>
+ *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
  * @see Metric
@@ -37,7 +45,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * @see IntMetric
  * @see LongMetric
  * @see ObjectMetric
- * @see JmxMetricExporterSpi
  */
 public interface MetricExporterSpi extends IgniteSpi {
     /**

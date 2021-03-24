@@ -139,12 +139,14 @@
       url: persistence/swap
     - title: Implementing Custom Cache Store
       url: persistence/custom-cache-store
-    - title: Cluster Snapshots
-      url: persistence/snapshots
+    - title: Configuring Snapshot Directory
+      url: persistence/snapshot-directory
     - title: Disk Compression
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+- title: Cluster Snapshots
+  url: snapshots/snapshots
 - title: Configuring Caches
   items:
     - title: Cache Configuration 
@@ -436,6 +438,8 @@
           url: monitoring-metrics/new-metrics
     - title: System Views
       url: monitoring-metrics/system-views
+    - title: Performance Statistics
+      url: monitoring-metrics/performance-statistics
     - title: Tracing
       url: monitoring-metrics/tracing
 - title: Working with Events
@@ -473,6 +477,8 @@
           url: security/tde
         - title: Master key rotation
           url: security/master-key-rotation
+        - title: Cache encryption key rotation
+          url: security/cache-encryption-key-rotation
     - title: Sandbox
       url: security/sandbox
 - title: Extensions and Integrations

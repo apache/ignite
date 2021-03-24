@@ -19,6 +19,8 @@
 
 #include <cassert>
 
+#include <fstream>
+
 #include <ignite/common/platform_utils.h>
 
 #include "test_utils.h"
@@ -135,5 +137,20 @@ namespace ignite_test
         std::string workDir = AppendPath(home, "work");
 
         ignite::common::DeletePath(workDir);
+    }
+
+    size_t GetLineOccurrencesInFile(const std::string& filePath, const std::string& line)
+    {
+        std::ifstream file(filePath.c_str());
+
+        size_t cnt = 0;
+        std::string current;
+        while (std::getline(file, current))
+        {
+            if (current.find(line) != std::string::npos)
+                ++cnt;
+        }
+
+        return cnt;
     }
 }

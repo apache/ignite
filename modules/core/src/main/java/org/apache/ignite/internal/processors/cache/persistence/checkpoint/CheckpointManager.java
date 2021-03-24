@@ -105,6 +105,7 @@ public class CheckpointManager {
      * @param longJvmPauseDetector Long JVM pause detector.
      * @param failureProcessor Failure processor.
      * @param cacheProcessor Cache processor.
+     * @param cpFreqDeviation Distributed checkpoint frequency deviation.
      * @throws IgniteCheckedException if fail.
      */
     public CheckpointManager(
@@ -124,7 +125,8 @@ public class CheckpointManager {
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
-        GridCacheProcessor cacheProcessor
+        GridCacheProcessor cacheProcessor,
+        Supplier<Integer> cpFreqDeviation
     ) throws IgniteCheckedException {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
@@ -189,7 +191,8 @@ public class CheckpointManager {
             checkpointWorkflow,
             checkpointPagesWriterFactory,
             persistenceCfg.getCheckpointFrequency(),
-            persistenceCfg.getCheckpointThreads()
+            persistenceCfg.getCheckpointThreads(),
+            cpFreqDeviation
         );
 
         checkpointer = checkpointerProvider.get();

@@ -18,7 +18,9 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.util.LinkedList;
 import java.util.List;
+import javax.cache.configuration.CompleteConfiguration;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -50,24 +52,26 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
     private static final String CACHE_NAME_2 = "MY_CACHE_2";
 
     /** */
-    private static final int CYCLES = 5;
+    private static final int CYCLES = 2;
 
     /** */
-    public static final int NODES = 3;
+    public static final int NODES = 4;
 
     /** */
     public static final int WAIT_MILLIS = 150;
 
     /**
-     * Checks whether a node may be down while WAL is disabled on cache.
+     * Checks whether a node may not be down while WAL is disabled on cache.
      *
      * Starts nodes with two caches configured. Activates cluster.
      *
-     * Repeats the following:
      * Remove first node.
      * Disable WAL on cache.
      * Bring back first node as new last.
      * Enable WAL on cache.
+     * Catch expected exception.
+     * Drop and recreate the cache.
+     * Check that new cache is valid and can enable/disable WAL.
      */
     @Test
     public void testDisableWhileNodeOffline() throws Exception {
@@ -104,14 +108,18 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
             }
             catch (IgniteException ex) {
                 if (ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
-                    log.error(ex.toString(), ex);
+                    log.warning("Expected exception thrown", ex);
 
-                    fail("WAL is in inconsistent state");
+                    recreateCacheCheckValid(client);
+
+                    return;
                 }
                 else
                     throw ex;
             }
         }
+
+        fail("Expected exception not thrown");
     }
 
     /**
@@ -119,12 +127,15 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
      *
      * Starts nodes with two caches configured. Activates cluster.
      *
-     * Repeats the following:
      * Disable WAL on cache.
      * Remove first node.
      * Enable WAL on cache.
      * Cleanup WAL by entering maintenance mode.
      * Bring back first node as new last.
+     * Disable WAL on cache.
+     * Catch expected exception.
+     * Drop and recreate the cache.
+     * Check that new cache is valid and can enable/disable WAL.
      */
     @Test
     public void testEnableWhileNodeOffline() throws Exception {
@@ -163,14 +174,18 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
             }
             catch (IgniteException ex) {
                 if (ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
-                    log.error(ex.toString(), ex);
+                    log.warning("Expected exception thrown", ex);
 
-                    fail("WAL is in inconsistent state");
+                    recreateCacheCheckValid(client);
+
+                    return;
                 }
                 else
                     throw ex;
             }
         }
+
+        fail("Expected exception not thrown");
     }
 
     /**
@@ -230,6 +245,30 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
                     throw ex;
             }
         }
+    }
+
+    /** */
+    private void recreateCacheCheckValid(Ignite client) {
+        IgniteCache c = client.cache(CACHE_NAME);
+
+        CacheConfiguration ccfg = new CacheConfiguration(
+            (CompleteConfiguration)c.getConfiguration(CacheConfiguration.class));
+
+        c.destroy();
+
+        c = client.createCache(ccfg);
+
+        assertTrue(client.cluster().isWalEnabled(CACHE_NAME));
+
+        c.put(1, "foo");
+
+        client.cluster().disableWal(CACHE_NAME);
+
+        c.put(2, "bar");
+
+        client.cluster().enableWal(CACHE_NAME);
+
+        c.put(1, "baz");
     }
 
     /** */

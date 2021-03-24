@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
@@ -301,6 +302,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         cctx.tm().checkEmptyTransactions(() ->
             String.format("Cache WAL mode cannot be changed within lock or transaction " +
                     "[cacheNames=%s, walEnabled=%s]", cacheNames, enabled));
+
+        LT.warn(log, "Cache WAL mode may only be changed on stable topology: see https://issues.apache.org/jira/browse/IGNITE-13976");
+        LT.warn(log, "  ^-- No nodes may leave or join cluster while changing WAL mode.");
+        LT.warn(log, "  ^-- All baseline nodes should be present.");
+        LT.warn(log, "  ^-- Failure to observe these conditions may cause cache to be stuck in inconsistent state.");
+        LT.warn(log, "  ^-- You may need to destroy affected cache if that happens.");
 
         return init(cacheNames, enabled);
     }

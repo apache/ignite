@@ -234,7 +234,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
             int grpId = (Integer)mock.getArguments()[0];
 
-            if (gridCtx.encryption().groupKey(grpId) == null)
+            if (gridCtx.encryption().getActiveKey(grpId) == null)
                 return pageSize;
 
             return pageSize

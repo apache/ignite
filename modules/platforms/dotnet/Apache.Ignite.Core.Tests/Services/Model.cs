@@ -16,7 +16,7 @@
  */
 
 // ReSharper disable once CheckNamespace
-namespace org.apache.ignite.platform.model
+namespace Apache.Ignite.Platform.Model
 {
     using System;
 
@@ -169,4 +169,24 @@ namespace org.apache.ignite.platform.model
         /** */
         public ParamValue[] Values { get; set; }
     }
+
+    /// <summary>
+    /// A class is a clone of Java class V1 with the same namespace.
+    /// </summary>
+    public class V1 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V2 with the same namespace.
+    /// </summary>
+    public class V2 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V3 with the same namespace.
+    /// </summary>
+    public class V3 { public String Name { get; set; } }
+
+    /// <summary>
+    /// A class is a clone of Java class V4 with the same namespace.
+    /// </summary>
+    public class V4 { public String Name { get; set; } }
 }

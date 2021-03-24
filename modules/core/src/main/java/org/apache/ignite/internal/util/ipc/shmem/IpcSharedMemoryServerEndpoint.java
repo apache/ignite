@@ -497,7 +497,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      * @throws IgniteCheckedException If invalid property name or value.
      */
     public void setupConfiguration(Map<String, String> endpointCfg) throws IgniteCheckedException {
-        for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
+        for (Map.Entry<String, String> e : endpointCfg.entrySet()) {
             try {
                 switch (e.getKey()) {
                     case "type":

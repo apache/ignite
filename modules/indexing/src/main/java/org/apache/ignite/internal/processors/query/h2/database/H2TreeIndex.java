@@ -153,7 +153,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     private final GridMessageListener msgLsnr;
 
     /** */
-    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
+    private final CIX2<ClusterNode, Message> locNodeHnd = new CIX2<ClusterNode, Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
             onMessage0(locNode.id(), msg);
         }
