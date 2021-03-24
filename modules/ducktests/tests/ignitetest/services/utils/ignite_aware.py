@@ -96,6 +96,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.update_ssl_config_with_globals()
         super().start(**kwargs)
 
+        self.stopped = False
+
     def start(self, **kwargs):
         self.start_async(**kwargs)
         self.await_started()
