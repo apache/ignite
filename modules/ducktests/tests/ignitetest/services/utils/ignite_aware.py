@@ -17,6 +17,7 @@
 This module contains the base class to build services aware of Ignite.
 """
 import os
+import re
 import signal
 import socket
 import sys
@@ -269,6 +270,31 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
+
+    @staticmethod
+    def event_time(evt_message, node):
+        """
+        Gets the time of specific event message in a node's log file.
+        :param evt_message: Pattern to search log for.
+        :param node: Ducktape node to searching log.
+        :return: Time of found log message matched to pattern or None if not found.
+        """
+        _, stdout, _ = node.account.ssh_client.exec_command(
+            "grep '%s' %s" % (evt_message, node.log_file))
+
+        match = re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8"))
+
+        return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
+
+    def get_event_time(self, evt_message, selector=max):
+        """
+        Gets the time of the specific event from all nodes, using selector.
+        :param evt_message: Event message.
+        :param selector: Selector function, default is max.
+        :return: Minimal event time.
+        """
+        return selector(filter(lambda t: t is not None,
+                               map(lambda node: self.event_time(evt_message, node), self.nodes)), default=None)
 
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """
