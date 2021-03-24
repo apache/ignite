@@ -559,7 +559,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (destroy) {
+        if (destroy && cfg.isStatisticsEnabled()) {
             grp.metrics().remove();
 
             grp.removeIOStatistic();
