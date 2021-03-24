@@ -17,28 +17,28 @@
 
 package org.apache.ignite.internal.processors.diagnostic;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import org.apache.ignite.Ignite;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE;
-import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
-import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
-import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_RAW_FILE;
-import static org.apache.ignite.internal.util.IgniteStopwatch.logTime;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Processor which contained helper methods for different diagnostic cases.
@@ -52,165 +52,114 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE,
             DFLT_DUMP_PAGE_LOCK_ON_FAILURE);
 
-    /** Time formatter for dump file name. */
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
-
     /** Folder name for store diagnostic info. **/
     public static final String DEFAULT_TARGET_FOLDER = "diagnostic";
-
-    /** File format. */
-    static final String FILE_FORMAT = ".txt";
-
-    /** Raw file format. */
-    static final String RAW_FILE_FORMAT = ".raw";
 
     /** Full path for store dubug info. */
     private final Path diagnosticPath;
 
-    /** */
-    private final PageHistoryDiagnoster pageHistoryDiagnoster;
-
     /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      */
     public DiagnosticProcessor(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx);
 
-        diagnosticPath = U.resolveWorkDirectory(ctx.config().getWorkDirectory(), DEFAULT_TARGET_FOLDER, false).toPath();
-
-        pageHistoryDiagnoster = new PageHistoryDiagnoster(ctx, this::diagnosticFile);
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        super.onKernalStart(active);
-
-        pageHistoryDiagnoster.onStart();
-    }
-
-    /**
-     * Dump all history caches of given page.
-     *
-     * @param builder Parameters of dumping.
-     * @throws IgniteCheckedException If scanning was failed.
-     */
-    public void dumpPageHistory(
-        @NotNull PageHistoryDiagnoster.DiagnosticPageBuilder builder
-    ) throws IgniteCheckedException {
-        logTime(log, "DiagnosticPageHistory", () -> pageHistoryDiagnoster.dumpPageHistory(builder));
+        diagnosticPath = U.resolveWorkDirectory(ctx.config().getWorkDirectory(), DEFAULT_TARGET_FOLDER, false)
+            .toPath();
     }
 
     /**
      * Print diagnostic info about failure occurred on {@code ignite} instance.
      * Failure details is contained in {@code failureCtx}.
      *
-     * @param ignite Ignite instance.
      * @param failureCtx Failure context.
      */
-    public void onFailure(Ignite ignite, FailureContext failureCtx) {
+    public void onFailure(FailureContext failureCtx) {
         // Dump data structures page locks.
         if (IGNITE_DUMP_PAGE_LOCK_ON_FAILURE)
             ctx.cache().context().diagnostic().pageLockTracker().dumpLocksToLog();
 
-        // If we have some corruption in data structure,
-        // we should scan WAL and print to log and save to file all pages related to corruption for
-        // future investigation.
-        if (X.hasCause(failureCtx.error(), CorruptedTreeException.class)) {
-            CorruptedTreeException corruptedTreeException = X.cause(failureCtx.error(), CorruptedTreeException.class);
+        CorruptedTreeException corruptedTreeE = X.cause(failureCtx.error(), CorruptedTreeException.class);
 
-            T2<Integer, Long>[] pageIds = corruptedTreeException.pages();
+        if (corruptedTreeE != null && !F.isEmpty(corruptedTreeE.pages())) {
+            File[] walDirs = walDirs(ctx);
 
-            try {
-                dumpPageHistory(
-                    new PageHistoryDiagnoster.DiagnosticPageBuilder()
-                        .pageIds(pageIds)
-                        .addAction(PRINT_TO_LOG)
-                        .addAction(PRINT_TO_FILE)
-                        .addAction(PRINT_TO_RAW_FILE)
-                );
+            if (F.isEmpty(walDirs)) {
+                if (log.isInfoEnabled())
+                    log.info("Skipping dump diagnostic info due to WAL not configured");
             }
-            catch (IgniteCheckedException e) {
-                SB sb = new SB();
-                sb.a("[");
+            else {
+                try {
+                    File corruptedPagesFile = corruptedPagesFile(diagnosticPath, corruptedTreeE.pages());
 
-                for (int i = 0; i < pageIds.length; i++)
-                    sb.a("(").a(pageIds[i].get1()).a(",").a(pageIds[i].get2()).a(")");
+                    String walDirsStr = Arrays.stream(walDirs).map(File::getAbsolutePath)
+                        .collect(joining(", ", "[", "]"));
 
-                sb.a("]");
+                    log.warning("An " + corruptedTreeE.getClass().getSimpleName() + " has occurred, to diagnose it " +
+                        "will need to postpone the directories " + walDirsStr + " before the node is restarted and " +
+                        "run the org.apache.ignite.development.utils.IgniteWalConverter with an additional argument " +
+                        "\"pages=" + corruptedPagesFile.getAbsolutePath() + "\"");
+                }
+                catch (Throwable t) {
+                    String pages = Arrays.stream(corruptedTreeE.pages())
+                        .map(t2 -> "(" + t2.get1() + ',' + t2.get2() + ')').collect(joining("", "[", "]"));
 
-                ignite.log().error(
-                    "Failed to dump diagnostic info on tree corruption. PageIds=" + sb, e);
+                    log.error("Failed to dump diagnostic info on tree corruption. PageIds=" + pages, t);
+                }
             }
         }
     }
 
     /**
-     * Resolve file to store diagnostic info.
+     * Creation and filling of a file with pages that can be corrupted.
+     * Pages are written on each line in format "grpId:pageId".
+     * File name format "corruptedPages_TIMESTAMP.txt".
      *
-     * @param customFile Custom file if customized.
-     * @param writeMode Diagnostic file write mode.
-     * @return File to store diagnostic info.
+     * @param dirPath Path to the directory where the file will be created.
+     * @param pages Pages that could be corrupted. Mapping: cache group id -> page id.
+     * @return Created and filled file.
+     * @throws IOException If an I/O error occurs.
      */
-    private File diagnosticFile(File customFile, DiagnosticFileWriteMode writeMode) {
-        if (customFile == null)
-            return finalizeFile(diagnosticPath, writeMode);
+    public static File corruptedPagesFile(Path dirPath, T2<Integer, Long>... pages) throws IOException {
+        dirPath.toFile().mkdirs();
 
-        if (customFile.isAbsolute())
-            return finalizeFile(customFile.toPath(), writeMode);
+        File f = dirPath.resolve("corruptedPages_" + U.currentTimeMillis() + ".txt").toFile();
 
-        return finalizeFile(diagnosticPath.resolve(customFile.toPath()), writeMode);
-    }
+        assert !f.exists();
 
-    /**
-     * @param diagnosticPath Path to diagnostic file.
-     * @param writeMode Diagnostic file write mode.
-     * @return File to store diagnostic info.
-     */
-    private static File finalizeFile(Path diagnosticPath, DiagnosticFileWriteMode writeMode) {
-        diagnosticPath.toFile().mkdirs();
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+            for (T2<Integer, Long> p : pages) {
+                bw.write(p.get1().toString() + ':' + p.get2().toString());
 
-        return diagnosticPath.resolve(LocalDateTime.now().format(TIME_FORMATTER) + getFileExtension(writeMode)).toFile();
-    }
+                bw.newLine();
+            }
 
-    /**
-     * Get file format for given write mode.
-     *
-     * @param writeMode Diagnostic file write mode.
-     * @return File extention with dot.
-     */
-    private static String getFileExtension(DiagnosticFileWriteMode writeMode) {
-        switch (writeMode) {
-            case HUMAN_READABLE:
-                return FILE_FORMAT;
-
-            case RAW:
-                return RAW_FILE_FORMAT;
-
-            default:
-                throw new IllegalArgumentException("writeMode=" + writeMode);
+            bw.flush();
         }
+
+        return f;
     }
 
     /**
-     * Possible action after WAL scanning.
+     * Getting the WAL directories.
+     *
+     * @param ctx Kernal context.
+     * @return WAL directories.
      */
-    public enum DiagnosticAction {
-        /** Print result to log. */
-        PRINT_TO_LOG,
-        /** Print result to file. */
-        PRINT_TO_FILE,
-        /** Print result to file in raw format. */
-        PRINT_TO_RAW_FILE
-    }
+    @Nullable static File[] walDirs(GridKernalContext ctx) {
+        IgniteWriteAheadLogManager walMgr = ctx.cache().context().wal();
 
-    /**
-     * Mode of diagnostic dump file.
-     */
-    public enum DiagnosticFileWriteMode {
-        /** Use humanly readable data representation. */
-        HUMAN_READABLE,
-        /** Use raw data format. */
-        RAW
+        if (walMgr instanceof FileWriteAheadLogManager) {
+            SegmentRouter sr = ((FileWriteAheadLogManager)walMgr).getSegmentRouter();
+
+            if (sr != null) {
+                File workDir = sr.getWalWorkDir();
+                return sr.hasArchive() ? F.asArray(workDir, sr.getWalArchiveDir()) : F.asArray(workDir);
+            }
+        }
+
+        return null;
     }
 }
