@@ -150,6 +150,7 @@
     <Compile Include="Cache\Query\QueryEntityMetadataRegistrationTest.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Binary\BinaryConfigurationRetrievalTest.cs" />
     <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTest.cs" />
     <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTestJavaOnlyServer.cs" />
     <Compile Include="Client\Cache\ContinuousQueryTest.cs" />
@@ -290,6 +291,7 @@
     <Compile Include="Services\Model.cs" />
     <Compile Include="Services\IJavaService.cs" />
     <Compile Include="Services\JavaServiceDynamicProxy.cs" />
+    <Compile Include="Services\PlatformTestService.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
@@ -438,6 +440,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Config\binary-custom-name-mapper.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\binary-custom-name-mapper2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\cache-attribute-node-filter.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

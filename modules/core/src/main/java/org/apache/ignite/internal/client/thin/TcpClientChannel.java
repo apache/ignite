@@ -508,7 +508,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 writer.writeString(pwd);
             }
 
-            writer.out().writeInt(0, writer.out().position() - 4);// actual size
+            writer.out().writeInt(0, writer.out().position() - 4); // actual size
 
             write(writer.out().arrayCopy(), writer.out().position());
         }

@@ -104,6 +104,23 @@ public interface ClientCache<K, V> {
     public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException;
 
     /**
+     * Determines if the {@link ClientCache} contains entries for the specified keys.
+     *
+     * @param keys Keys whose presence in this cache is to be tested.
+     * @return {@code True} if this cache contains a mapping for the specified keys.
+     */
+    public boolean containsKeys(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Determines if the {@link ClientCache} contains entries for the specified keys asynchronously.
+     *
+     * @param keys Keys whose presence in this cache is to be tested.
+     * @return Future representing pending completion of the operation.
+     * Future result is {@code true} if this map contains a mapping for the specified keys.
+     */
+    public IgniteClientFuture<Boolean> containsKeysAsync(Set<? extends K> keys) throws ClientException;
+
+    /**
      * @return The name of the cache.
      */
     public String getName();
@@ -524,7 +541,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return true;
      * } else {
@@ -543,7 +560,7 @@ public interface ClientCache<K, V> {
      * <p>
      * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
-     * if (!cache.containsKey(key)) {}
+     * if (!cache.containsKey(key)) {
      *   cache.put(key, value);
      *   return true;
      * } else {
@@ -559,6 +576,47 @@ public interface ClientCache<K, V> {
     public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException;
 
     /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (!cache.containsKey(key)) {
+     *   cache.put(key, value);
+     *   return null;
+     * } else {
+     *   return cache.get(key);
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return Value that is already associated with the specified key, or {@code null} if no value was associated
+     * with the specified key and a value was set.
+     */
+    public V getAndPutIfAbsent(K key, V val) throws ClientException;
+
+    /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (!cache.containsKey(key)) {
+     *   cache.put(key, value);
+     *   return null;
+     * } else {
+     *   return cache.get(key);
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return Future representing pending completion of the operation, which wraps the value that is already
+     * associated with the specified key, or {@code null} if no value was associated with the specified key and a
+     * value was set.
+     */
+    public IgniteClientFuture<V> getAndPutIfAbsentAsync(K key, V val) throws ClientException;
+
+    /**
      * Clears the contents of the cache.
      * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
      */
@@ -570,6 +628,32 @@ public interface ClientCache<K, V> {
      * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync() throws ClientException;
+
+    /**
+     * Clears entry with specified key from the cache.
+     * In contrast to {@link #remove(Object)}, this method does not notify event listeners and cache writers.
+     */
+    public void clear(K key) throws ClientException;
+
+    /**
+     * Clears entry with specified key from the cache asynchronously.
+     * In contrast to {@link #removeAsync(Object)}, this method does not notify event listeners and cache writers.
+     * @return Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> clearAsync(K key) throws ClientException;
+
+    /**
+     * Clears entries with specified keys from the cache.
+     * In contrast to {@link #removeAll(Set)}, this method does not notify event listeners and cache writers.
+     */
+    public void clearAll(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Clears entries with specified keys from the cache asynchronously.
+     * In contrast to {@link #removeAllAsync(Set)}, this method does not notify event listeners and cache writers.
+     * @return Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException;
 
     /**
      * Returns cache that will operate with binary objects.

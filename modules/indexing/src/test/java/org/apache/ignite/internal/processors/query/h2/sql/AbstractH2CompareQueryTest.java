@@ -77,7 +77,7 @@ public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonT
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(String name, CacheMode mode, Class<?> clsK, Class<?> clsV) {
-        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
@@ -350,8 +350,8 @@ public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonT
 
                 // X.println("Result size: " + rowsWithCnt1.size());
 
-                Iterator<Map.Entry<String,Integer>> iter1 = rowsWithCnt1.entrySet().iterator();
-                Iterator<Map.Entry<String,Integer>> iter2 = rowsWithCnt2.entrySet().iterator();
+                Iterator<Map.Entry<String, Integer>> iter1 = rowsWithCnt1.entrySet().iterator();
+                Iterator<Map.Entry<String, Integer>> iter2 = rowsWithCnt2.entrySet().iterator();
 
                 int uSize = rowsWithCnt1.size();
 

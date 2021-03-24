@@ -159,3 +159,22 @@ For example, when `direct-io` is used, and .NET code requires starting a child p
 move the process handling logic to Java side and invoke it with
 link:developers-guide/distributed-computing/distributed-computing[Compute] `ExecuteJavaTask` API.
 Alternatively, use Services API to call Java service from .NET.
+
+=== [[libcoreclr-not-found]] DllNotFoundException: Unable to load shared library 'libcoreclr.so' or one of its dependencies
+
+Occurs on .NET 5 in a single-file publish mode (e.g. `dotnet publish --self-contained true -r linux-x64 -p:PublishSingleFile=true`).
+
+==== Workaround
+
+Add the following code before starting the Ignite node:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+NativeLibrary.SetDllImportResolver(
+    typeof(Ignition).Assembly,
+    (lib, _, _) => lib == "libcoreclr.so" ? (IntPtr) (-1) : IntPtr.Zero);
+----
+--

@@ -94,7 +94,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3);
 
         try {
-            Map<Integer,Integer> map = F.asMap(1, 1, 2, 2, 3, 3);
+            Map<Integer, Integer> map = F.asMap(1, 1, 2, 2, 3, 3);
 
             for (Integer key : map.keySet()) {
                 info("Affinity nodes [key=" + key + ", nodes=" +

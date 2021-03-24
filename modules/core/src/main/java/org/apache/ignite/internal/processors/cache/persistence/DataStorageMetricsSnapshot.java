@@ -17,11 +17,19 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 public class DataStorageMetricsSnapshot implements DataStorageMetrics {
@@ -112,6 +120,12 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private long sparseStorageSize;
 
+    /** Total number of logged bytes into the WAL. */
+    private long walWrittenBytes;
+
+    /** Total size of the compressed segments in bytes. */
+    private long walCompressedBytes;
+
     /**
      * @param metrics Metrics.
      */
@@ -145,6 +159,8 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         totalAllocatedSize = metrics.getTotalAllocatedSize();
         storageSize = metrics.getStorageSize();
         sparseStorageSize = metrics.getSparseStorageSize();
+        walWrittenBytes = metrics.getWalWrittenBytes();
+        walCompressedBytes = metrics.getWalCompressedBytes();
     }
 
     /** {@inheritDoc} */
@@ -290,6 +306,16 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
         return sparseStorageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalWrittenBytes() {
+        return walWrittenBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalCompressedBytes() {
+        return walCompressedBytes;
     }
 
     /** {@inheritDoc} */

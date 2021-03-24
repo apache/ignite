@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +73,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanType;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -205,7 +205,7 @@ public class GridMapQueryExecutor {
     public void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
         int[] qryParts = req.queryPartitions();
 
-        final Map<UUID,int[]> partsMap = req.partitions();
+        final Map<UUID, int[]> partsMap = req.partitions();
 
         final int[] parts = qryParts == null ? (partsMap == null ? null : partsMap.get(ctx.localNodeId())) : qryParts;
 
@@ -237,32 +237,32 @@ public class GridMapQueryExecutor {
             Span span = MTC.span();
 
             ctx.closure().callLocal(
-                (Callable<Void>)() -> {
+                (GridPlainCallable<Void>)() -> {
                     try (TraceSurroundings ignored = MTC.supportContinual(span)) {
-                        onQueryRequest0(node,
-                            req.requestId(),
-                            segment,
-                            req.schemaName(),
-                            req.queries(),
-                            cacheIds,
-                            req.topologyVersion(),
-                            partsMap,
-                            parts,
-                            req.pageSize(),
-                            distributedJoins,
-                            enforceJoinOrder,
-                            false,
-                            timeout,
-                            params,
-                            lazy,
-                            req.mvccSnapshot(),
-                            dataPageScanEnabled,
-                            treatReplicatedAsPartitioned
-                        );
+                            onQueryRequest0(node,
+                                req.requestId(),
+                                segment,
+                                req.schemaName(),
+                                req.queries(),
+                                cacheIds,
+                                req.topologyVersion(),
+                                partsMap,
+                                parts,
+                                req.pageSize(),
+                                distributedJoins,
+                                enforceJoinOrder,
+                                false,
+                                timeout,
+                                params,
+                                lazy,
+                                req.mvccSnapshot(),
+                                dataPageScanEnabled,
+                                treatReplicatedAsPartitioned
+                            );
 
-                        return null;
-                    }
-                },
+                            return null;
+                        }
+                    },
                 QUERY_POOL);
         }
 

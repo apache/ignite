@@ -29,6 +29,13 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
+        /** Examples with undefined output order. */
+        private static readonly IReadOnlyCollection<string> UnorderedOutputExamples = new HashSet<string>
+        {
+            "Dml", "Ddl", "EntryProcessor", "Func", "Messaging", "QueryContinuous", "Task", "Sql", "Linq", "AtomicLong",
+            "ClientReconnect"
+        };
+
         /** All projects. */
         public static readonly Example[] AllProjects = GetExamples()
             .OrderBy(x => x.Name)
@@ -64,6 +71,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Whether this example disallows external nodes. */
         public bool DisallowsExternalNode { get; }
 
+        /** Whether the output of this example can be unordered (e.g. compute task execution order is not guaranteed. */
+        public bool UndefinedOutputOrder { get; }
+
         /// <summary>
         /// Initializes a new instance of <see cref="Example"/> class.
         /// </summary>
@@ -76,6 +86,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             RequiresExternalNode = sourceCode.Contains("ServerNode project");
             DisallowsExternalNode = sourceCode.Contains("without external node");
             IsClient = sourceCode.Contains("GetClientNodeConfiguration") && !DisallowsExternalNode;
+            UndefinedOutputOrder = UnorderedOutputExamples.Contains(name) ||
+                                   UnorderedOutputExamples.Contains(name.Replace("Thin", ""));
         }
 
         /// <summary>
@@ -125,8 +137,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var name = Path.GetFileNameWithoutExtension(projFile);
             var path = Path.GetDirectoryName(projFile);
-            var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
-
+            var asmFile = ExamplePaths.GetAssemblyPath(projFile);
             var sourceFile = Path.Combine(path, "Program.cs");
             var sourceCode = File.ReadAllText(sourceFile);
 
@@ -140,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var projFiles = Directory
                 .GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.EndsWith("Shared.csproj")).ToArray();
+                .Where(x => !x.EndsWith(ExamplePaths.SharedProjFileName)).ToArray();
 
             Assert.IsTrue(projFiles.Any());
 

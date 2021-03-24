@@ -936,7 +936,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                  MTC.support(cctx.kernalContext().tracing().create(CACHE_API_GET_MAP, span))) {
             MTC.span().addTag("topology.version", () -> Objects.toString(topVer));
 
-            cctx.closures().runLocalSafe(new Runnable() {
+            cctx.closures().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     // If topology changed reset collection of invalid nodes.
                     synchronized (this) {

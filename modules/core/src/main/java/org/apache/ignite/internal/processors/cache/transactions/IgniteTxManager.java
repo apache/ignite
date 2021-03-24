@@ -101,6 +101,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -2182,7 +2183,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         scheduleDumpTask(
             IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
             () -> cctx.kernalContext().closure().runLocalSafe(
-                () -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
+                (GridPlainRunnable)() -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
             longOpsDumpTimeout);
     }
 
@@ -3238,7 +3239,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * Transactions recovery initialization runnable.
      */
-    private final class TxRecoveryInitRunnable implements Runnable {
+    private final class TxRecoveryInitRunnable implements GridPlainRunnable {
         /** */
         private final ClusterNode node;
 

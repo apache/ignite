@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -291,7 +292,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        return ctx.closures().callLocalSafe(new Callable<Void>() {
+        return ctx.closures().callLocalSafe(new GridPlainCallable<Void>() {
             @Override public Void call() throws Exception {
                 removeAll();
 
@@ -355,7 +356,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean storeEnabled = ctx.readThrough();
 
-        return asyncOp(new Callable<Map<K, V>>() {
+        return asyncOp(new GridPlainCallable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
                 return getAllInternal(keys, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
             }
@@ -801,22 +802,21 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-            return asyncOp(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return updateAllInternal(op,
-                        keys,
-                        vals,
-                        invokeArgs,
-                        expiry,
-                        retval,
-                        rawRetval,
-                        filter,
-                        writeThrough,
-                        readThrough,
-                        keepBinary);
-                }
-            });
-        }
+        return asyncOp(new GridPlainCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return updateAllInternal(op,
+                    keys,
+                    vals,
+                    invokeArgs,
+                    expiry,
+                    retval,
+                    rawRetval,
+                    filter,
+                    writeThrough,
+                    readThrough,
+                    keepBinary);
+            }
+        });
     }
 
     /**
@@ -851,22 +851,21 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-            return asyncOp(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return updateAllInternal(DELETE,
-                        keys,
-                        null,
-                        null,
-                        expiryPlc,
-                        retval,
-                        rawRetval,
-                        filter,
-                        writeThrough,
-                        readThrough,
-                        keepBinary);
-                }
-            });
-        }
+        return asyncOp(new GridPlainCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return updateAllInternal(DELETE,
+                    keys,
+                    null,
+                    null,
+                    expiryPlc,
+                    retval,
+                    rawRetval,
+                    filter,
+                    writeThrough,
+                    readThrough,
+                    keepBinary);
+            }
+        });
     }
 
     /**

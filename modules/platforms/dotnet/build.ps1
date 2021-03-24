@@ -174,7 +174,7 @@ cd $PSScriptRoot
 
 
 # 2) Build .NET
-if ((!$skipDotNet) -and (!$skipNuGet)) {
+if (!($skipDotNet -and $skipNuGet)) {
     # Detect NuGet
     $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
@@ -302,13 +302,9 @@ if (!$skipNuGet) {
         }
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
-}
-
-# 4) Build Examples
-if ((!$skipDotNetCore) -and (!$skipExamples)) {
-    Exec "dotnet build .\examples\Apache.Ignite.Examples.sln"
-
-    if (!$skipNuGet) {
+    
+    # Examples template
+    if (!$skipExamples) {
         # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
         Copy-Item .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj $pwd
 
@@ -318,5 +314,10 @@ if ((!$skipDotNetCore) -and (!$skipExamples)) {
 
         echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
     }
+}
+
+# 4) Build Examples
+if ((!$skipDotNetCore) -and (!$skipExamples)) {
+    Exec "dotnet build .\examples\Apache.Ignite.Examples.sln"
 }
 
