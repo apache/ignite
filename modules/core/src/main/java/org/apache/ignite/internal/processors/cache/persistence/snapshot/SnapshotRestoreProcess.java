@@ -46,6 +46,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -98,6 +99,9 @@ public class SnapshotRestoreProcess {
 
     /** Snapshot restore operation context. */
     private volatile SnapshotRestoreContext opCtx;
+
+    /** Stopped flag. */
+    private volatile boolean stopped;
 
     /**
      * @param ctx Kernal context.
@@ -312,10 +316,26 @@ public class SnapshotRestoreProcess {
 
     /**
      * Abort the currently running restore procedure (if any).
+     */
+    public void stop() {
+        interrupt(new NodeStoppingException("Node is stopping."));
+
+        stopped = true;
+    }
+
+    /**
+     * Abort the currently running restore procedure (if any).
+     */
+    public void deactivate() {
+        interrupt(new IgniteCheckedException("The cluster has been deactivated."));
+    }
+
+    /**
+     * Abort the currently running restore procedure (if any).
      *
      * @param reason Interruption reason.
      */
-    public synchronized void stop(Exception reason) {
+    private synchronized void interrupt(Exception reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
@@ -353,7 +373,7 @@ public class SnapshotRestoreProcess {
      * @param req Request to prepare cache group restore from the snapshot.
      * @return Result future.
      */
-    private synchronized IgniteInternalFuture<ArrayList<StoredCacheData>> prepare(SnapshotRestoreRequest req) {
+    private IgniteInternalFuture<ArrayList<StoredCacheData>> prepare(SnapshotRestoreRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -378,56 +398,62 @@ public class SnapshotRestoreProcess {
             for (String grpName : req.groups())
                 ensureCacheAbsent(grpName);
 
-            opCtx = prepareContext(req);
+            synchronized (this) {
+                if (stopped)
+                    throw new NodeStoppingException("Node is stopping.");
 
-            SnapshotRestoreContext opCtx0 = opCtx;
+                opCtx = prepareContext(req);
 
-            if (opCtx0.dirs.isEmpty())
-                return new GridFinishedFuture<>();
+                SnapshotRestoreContext opCtx0 = opCtx;
 
-            // Ensure that shared cache groups has no conflicts.
-            for (StoredCacheData cfg : opCtx0.cfgs.values()) {
-                if (!F.isEmpty(cfg.config().getGroupName()))
-                    ensureCacheAbsent(cfg.config().getName());
-            }
+                if (opCtx0.dirs.isEmpty())
+                    return new GridFinishedFuture<>();
 
-            if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot restore operation [reqId=" + req.requestId() +
-                    ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
-            }
-
-            boolean updateMeta = ctx.localNodeId().equals(req.updateMetaNodeId());
-            Consumer<Exception> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
-            BooleanSupplier stopChecker = () -> {
-                if (opCtx.err.get() != null)
-                    return true;
-
-                if (Thread.currentThread().isInterrupted()) {
-                    errHnd.accept(new IgniteInterruptedCheckedException("Thread has been interrupted."));
-
-                    return true;
+                // Ensure that shared cache groups has no conflicts.
+                for (StoredCacheData cfg : opCtx0.cfgs.values()) {
+                    if (!F.isEmpty(cfg.config().getGroupName()))
+                        ensureCacheAbsent(cfg.config().getName());
                 }
 
-                return false;
-            };
+                if (log.isInfoEnabled()) {
+                    log.info("Starting local snapshot restore operation [reqId=" + req.requestId() +
+                        ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
+                }
 
-            GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
+                boolean updateMeta = ctx.localNodeId().equals(req.updateMetaNodeId());
+                Consumer<Exception> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
+                BooleanSupplier stopChecker = () -> {
+                    if (opCtx.err.get() != null)
+                        return true;
 
-            opCtx0.stopFut = retFut;
+                    if (Thread.currentThread().isInterrupted()) {
+                        errHnd.accept(new IgniteInterruptedCheckedException("Thread has been interrupted."));
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, updateMeta, stopChecker, errHnd).thenAccept(res -> {
-                Throwable err = opCtx.err.get();
+                        return true;
+                    }
 
-                if (err != null) {
-                    log.error("Unable to restore cache group(s) from the snapshot " +
-                        "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
+                    return false;
+                };
 
-                    retFut.onDone(err);
-                } else
-                    retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
-            });
+                GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
-            return retFut;
+                opCtx0.stopFut = retFut;
+
+                restoreAsync(opCtx0.snpName, opCtx0.dirs, updateMeta, stopChecker, errHnd).thenAccept(res -> {
+                    Throwable err = opCtx.err.get();
+
+                    if (err != null) {
+                        log.error("Unable to restore cache group(s) from the snapshot " +
+                            "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
+
+                        retFut.onDone(err);
+                    }
+                    else
+                        retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
+                });
+
+                return retFut;
+            }
         } catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
             log.error("Unable to restore cache group(s) from the snapshot " +
                 "[reqId=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
@@ -706,6 +732,9 @@ public class SnapshotRestoreProcess {
         if (F.isEmpty(opCtx0.dirs))
             return new GridFinishedFuture<>();
 
+        if (stopped)
+            return new GridFinishedFuture<>(new NodeStoppingException("Node is stopping."));
+
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
         opCtx0.stopFut = retFut;
@@ -742,6 +771,11 @@ public class SnapshotRestoreProcess {
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
+
+        for (Map.Entry<UUID, Exception> entry : errs.entrySet()) {
+            log.warning("Remote node was not able to perform rollback " +
+                "[nodeId=" + entry.getKey() + ", err=" + entry.getValue().getMessage() + ']');
+        }
 
         if (!res.keySet().containsAll(opCtx0.nodes)) {
             Set<UUID> leftNodes = new HashSet<>(opCtx0.nodes);

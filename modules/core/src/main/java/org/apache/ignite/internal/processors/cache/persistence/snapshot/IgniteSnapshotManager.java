@@ -431,7 +431,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         busyLock.block();
 
         try {
-            restoreCacheGrpProc.stop(new NodeStoppingException("Node is stopping."));
+            restoreCacheGrpProc.stop();
 
             // Try stop all snapshot processing if not yet.
             for (SnapshotFutureTask sctx : locSnpTasks.values())
@@ -467,7 +467,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        restoreCacheGrpProc.stop(new IgniteCheckedException("The cluster has been deactivated."));
+        restoreCacheGrpProc.deactivate();
     }
 
     /**
