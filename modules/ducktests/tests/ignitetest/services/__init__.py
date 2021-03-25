@@ -12,9 +12,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Services module.
-"""
-
-FORCE_STOP = 'force_stop'  # kwarg param name causes kill -9 on service stop.

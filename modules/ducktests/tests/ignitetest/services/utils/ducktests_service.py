@@ -25,6 +25,8 @@ from ducktape.services.service import Service
 class DucktestsService(Service, metaclass=ABCMeta):
     """DucktestsService provides common semantic for all services."""
 
+    FORCE_STOP = 'force_stop'  # kwarg param name causes kill -9 on service stop.
+
     def __init__(self, context, num_nodes=None, cluster_spec=None, **kwargs):
         super().__init__(context, num_nodes, cluster_spec, **kwargs)
 

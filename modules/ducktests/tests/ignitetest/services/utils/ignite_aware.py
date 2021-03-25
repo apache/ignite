@@ -29,9 +29,9 @@ from threading import Thread
 
 from ducktape.utils.util import wait_until
 
-from ignitetest.services import FORCE_STOP
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
+from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
@@ -144,7 +144,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
         # Waiting will happen on plain stop() call made by ducktape during same step.
-        if not kwargs.get(FORCE_STOP, False):
+        if not kwargs.get(DucktestsService.FORCE_STOP, False):
             self.await_stopped()
 
     # pylint: disable=W0613
@@ -168,7 +168,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         pids = self.pids(node)
 
         for pid in pids:
-            node.account.signal(pid, signal.SIGKILL if kwargs.get(FORCE_STOP, False) else signal.SIGTERM,
+            node.account.signal(pid,
+                                signal.SIGKILL if kwargs.get(DucktestsService.FORCE_STOP, False) else signal.SIGTERM,
                                 allow_fail=False)
 
     def clean(self, **kwargs):

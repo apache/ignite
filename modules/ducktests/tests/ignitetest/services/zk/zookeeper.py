@@ -22,7 +22,6 @@ from distutils.version import LooseVersion
 
 from ducktape.utils.util import wait_until
 
-from ignitetest.services import FORCE_STOP
 from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
@@ -168,7 +167,8 @@ class ZookeeperService(DucktestsService, PathAware):
     def stop_node(self, node, **kwargs):
         idx = self.idx(node)
         self.logger.info("Stopping %s node %d on %s" % (type(self).__name__, idx, node.account.hostname))
-        node.account.kill_process("zookeeper", clean_shutdown=not kwargs.get(FORCE_STOP, False), allow_fail=False)
+        node.account.kill_process("zookeeper", clean_shutdown=not kwargs.get(DucktestsService.FORCE_STOP, False),
+                                  allow_fail=False)
 
     def clean_node(self, node, **kwargs):
         super().clean_node(node, **kwargs)

@@ -22,7 +22,6 @@ from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services import FORCE_STOP
 # pylint: disable=abstract-method
 from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.log_utils import monitor_log
@@ -123,7 +122,7 @@ class SparkService(DucktestsService, PathAware):
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
     def stop_node(self, node, **kwargs):
-        if kwargs.get(FORCE_STOP, False):
+        if kwargs.get(DucktestsService.FORCE_STOP, False):
             node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
         else:
             if node == self.nodes[0]:
