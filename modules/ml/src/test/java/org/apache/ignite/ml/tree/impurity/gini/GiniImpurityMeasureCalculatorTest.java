@@ -65,18 +65,18 @@ public class GiniImpurityMeasureCalculatorTest {
         // Check Gini calculated for the first column.
         assertArrayEquals(new double[]{Double.NEGATIVE_INFINITY, 0, 1, 2, 3}, impurity[0].getX(), 1e-10);
         assertEquals(-2.500, impurity[0].getY()[0].impurity(), 1e-3);
-        assertEquals(-4.000, impurity[0].getY()[1].impurity(),1e-3);
-        assertEquals(-3.000, impurity[0].getY()[2].impurity(),1e-3);
-        assertEquals(-2.666, impurity[0].getY()[3].impurity(),1e-3);
-        assertEquals(-2.500, impurity[0].getY()[4].impurity(),1e-3);
+        assertEquals(-4.000, impurity[0].getY()[1].impurity(), 1e-3);
+        assertEquals(-3.000, impurity[0].getY()[2].impurity(), 1e-3);
+        assertEquals(-2.666, impurity[0].getY()[3].impurity(), 1e-3);
+        assertEquals(-2.500, impurity[0].getY()[4].impurity(), 1e-3);
 
         // Check Gini calculated for the second column.
         assertArrayEquals(new double[]{Double.NEGATIVE_INFINITY, 0, 1, 2, 3}, impurity[1].getX(), 1e-10);
-        assertEquals(-2.500, impurity[1].getY()[0].impurity(),1e-3);
-        assertEquals(-2.666, impurity[1].getY()[1].impurity(),1e-3);
-        assertEquals(-3.000, impurity[1].getY()[2].impurity(),1e-3);
-        assertEquals(-2.666, impurity[1].getY()[3].impurity(),1e-3);
-        assertEquals(-2.500, impurity[1].getY()[4].impurity(),1e-3);
+        assertEquals(-2.500, impurity[1].getY()[0].impurity(), 1e-3);
+        assertEquals(-2.666, impurity[1].getY()[1].impurity(), 1e-3);
+        assertEquals(-3.000, impurity[1].getY()[2].impurity(), 1e-3);
+        assertEquals(-2.666, impurity[1].getY()[3].impurity(), 1e-3);
+        assertEquals(-2.500, impurity[1].getY()[4].impurity(), 1e-3);
     }
 
     /** */
@@ -97,10 +97,10 @@ public class GiniImpurityMeasureCalculatorTest {
         // Check Gini calculated for the first column.
         assertArrayEquals(new double[]{Double.NEGATIVE_INFINITY, 0, 1, 2, 3}, impurity[0].getX(), 1e-10);
         assertEquals(-3.400, impurity[0].getY()[0].impurity(), 1e-3);
-        assertEquals(-5.000, impurity[0].getY()[1].impurity(),1e-3);
-        assertEquals(-4.000, impurity[0].getY()[2].impurity(),1e-3);
-        assertEquals(-3.500, impurity[0].getY()[3].impurity(),1e-3);
-        assertEquals(-3.400, impurity[0].getY()[4].impurity(),1e-3);
+        assertEquals(-5.000, impurity[0].getY()[1].impurity(), 1e-3);
+        assertEquals(-4.000, impurity[0].getY()[2].impurity(), 1e-3);
+        assertEquals(-3.500, impurity[0].getY()[3].impurity(), 1e-3);
+        assertEquals(-3.400, impurity[0].getY()[4].impurity(), 1e-3);
     }
 
     /** */

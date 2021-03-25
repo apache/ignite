@@ -45,6 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -57,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -87,7 +87,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /**
  *
  */
-class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements CheckpointListener {
+class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implements CheckpointListener {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -268,7 +268,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -389,19 +389,19 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
                 int grpId = e.getKey();
                 Set<Integer> grpParts = e.getValue();
 
-                GridDhtPartitionTopology top = cctx.cache().cacheGroup(grpId).topology();
+                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
                 Iterator<GridDhtLocalPartition> iter;
 
                 if (grpParts == null)
-                    iter = top.currentLocalPartitions().iterator();
+                    iter = gctx.topology().currentLocalPartitions().iterator();
                 else {
                     if (grpParts.contains(INDEX_PARTITION)) {
                         throw new IgniteCheckedException("Index partition cannot be included into snapshot if " +
                             " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
                     }
 
-                    iter = F.iterator(grpParts, top::localPartition, false);
+                    iter = F.iterator(grpParts, gctx.topology()::localPartition, false);
                 }
 
                 Set<Integer> owning = new HashSet<>();
@@ -420,6 +420,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
                         missed.add(part.id());
                 }
 
+                boolean affNode = gctx.nodeFilter() == null || gctx.nodeFilter().apply(cctx.localNode());
+
                 if (grpParts != null) {
                     // Partition has been provided for cache group, but some of them are not in OWNING state.
                     // Exit with an error.
@@ -437,7 +439,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
                             "Partitions which have different states skipped. Index partitions has also been skipped " +
                             "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + missed + ']');
                     }
-                    else if (missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
+                    else if (affNode && missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
                         owning.add(INDEX_PARTITION);
                 }
 
@@ -620,7 +622,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
         if (closeFut == null) {
             Throwable err0 = err.get();
 
-            closeFut = CompletableFuture.runAsync(() -> onDone(true, err0),
+            // Zero partitions haven't to be written on disk.
+            Set<GroupPartitionId> taken = partFileLengths.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+            closeFut = CompletableFuture.runAsync(() -> onDone(taken, err0),
                 cctx.kernalContext().getSystemExecutorService());
         }
 

@@ -139,12 +139,14 @@
       url: persistence/swap
     - title: Implementing Custom Cache Store
       url: persistence/custom-cache-store
-    - title: Cluster Snapshots
-      url: persistence/snapshots
+    - title: Configuring Snapshot Directory
+      url: persistence/snapshot-directory
     - title: Disk Compression
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+- title: Cluster Snapshots
+  url: snapshots/snapshots
 - title: Configuring Caches
   items:
     - title: Cache Configuration 

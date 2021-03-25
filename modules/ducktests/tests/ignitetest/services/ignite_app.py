@@ -31,6 +31,9 @@ class IgniteApplicationService(IgniteAwareService):
     """
 
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
+    APP_INIT_EVT_MSG = "IGNITE_APPLICATION_INITIALIZED"
+    APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
+    APP_BROKEN_EVT_MSG = "IGNITE_APPLICATION_BROKEN"
 
     # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
@@ -47,18 +50,18 @@ class IgniteApplicationService(IgniteAwareService):
     def await_started(self):
         super().await_started()
 
-        self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.startup_timeout_sec)
+        self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
 
     def await_stopped(self):
         super().await_stopped()
 
-        self.__check_status("IGNITE_APPLICATION_FINISHED")
+        self.__check_status(self.APP_FINISH_EVT_MSG)
 
     def __check_status(self, desired, timeout=1):
-        self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)
+        self.await_event("%s\\|%s" % (desired, self.APP_BROKEN_EVT_MSG), timeout, from_the_beginning=True)
 
         try:
-            self.await_event("IGNITE_APPLICATION_BROKEN", 1, from_the_beginning=True)
+            self.await_event(self.APP_BROKEN_EVT_MSG, 1, from_the_beginning=True)
             raise IgniteExecutionException("Java application execution failed. %s" % self.extract_result("ERROR"))
         except TimeoutError:
             pass
@@ -67,6 +70,22 @@ class IgniteApplicationService(IgniteAwareService):
             self.await_event(desired, 1, from_the_beginning=True)
         except Exception:
             raise Exception("Java application execution failed.") from None
+
+    def get_init_time(self, selector=min):
+        """
+        Gets the time of application init event.
+        :param selector: Selector function, default is min.
+        :return: Application initialization time.
+        """
+        return self.get_event_time(self.APP_INIT_EVT_MSG, selector=selector)
+
+    def get_finish_time(self, selector=max):
+        """
+        Gets the time of application finish event.
+        :param selector: Selector function, default is max.
+        :return: Application finish time.
+        """
+        return self.get_event_time(self.APP_FINISH_EVT_MSG, selector=selector)
 
     def clean_node(self, node, **kwargs):
         if self.alive(node):

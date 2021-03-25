@@ -46,7 +46,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
 
         IgniteCache<String, String> cacheP = ig1P.getOrCreateCache(cacheName);
 
-        cacheP.put("key","value");
+        cacheP.put("key", "value");
 
         stopAllPrimary();
 
