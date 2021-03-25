@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -50,7 +49,6 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
         cfg.setGridLogger(listeningLog);
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
     }
