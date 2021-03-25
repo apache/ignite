@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
 import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
@@ -395,7 +396,7 @@ public class GridNioServerWrapper {
 
             while (ses == null) { // Reconnection on handshake timeout.
                 if (stopping)
-                    throw new IgniteSpiException("Node is stopping.");
+                    throw new GridNioException("Failed to create session, server is stopped.");
 
                 if (isLocalNodeAddress(addr)) {
                     if (log.isDebugEnabled())
@@ -457,6 +458,9 @@ public class GridNioServerWrapper {
                     GridSslMeta sslMeta = null;
 
                     try {
+                        if (stopping)
+                            throw new GridNioException("Failed to create session, server is stopped.");
+
                         timeout = connTimeoutStgy.nextTimeout();
 
                         ch.socket().connect(addr, (int)timeout);
@@ -587,7 +591,7 @@ public class GridNioServerWrapper {
                     if (X.hasCause(e, "Too many open files", SocketException.class))
                         throw new IgniteTooManyOpenFilesException(e);
 
-                    // check if timeout occured in case of unrecoverable exception
+                    // check if timeout occurred in case of unrecoverable exception
                     if (connTimeoutStgy.checkTimeout()) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
                             "[node=" + node.id() + ", connTimeoutStgy=" + connTimeoutStgy +
@@ -758,26 +762,19 @@ public class GridNioServerWrapper {
     ) throws IgniteCheckedException {
         assert errs != null;
 
-        boolean commErrResolve = false;
+        if (!isRecoverableException(errs)
+            && !X.hasCause(errs, GridNioException.class))
+            throw errs;
 
         IgniteSpiContext ctx = stateProvider.getSpiContext();
 
-        if (isRecoverableException(errs) && ctx.communicationFailureResolveSupported()) {
-            commErrResolve = true;
-
+        if (ctx.communicationFailureResolveSupported())
             ctx.resolveCommunicationFailure(node, errs);
-        }
-
-        if (!commErrResolve && forcibleNodeKillEnabled) {
-            if (ctx.node(node.id()) != null
-                && node.isClient()
-                && !locNodeSupplier.get().isClient()
-                && isRecoverableException(errs)
-            ) {
-                CommunicationTcpUtils.failNode(node,
-                    ctx, errs, log);
-            }
-        }
+        else if (forcibleNodeKillEnabled
+            && ctx.node(node.id()) != null
+            && node.isClient()
+            && !locNodeSupplier.get().isClient())
+            CommunicationTcpUtils.failNode(node, ctx, errs, log);
 
         throw errs;
     }
