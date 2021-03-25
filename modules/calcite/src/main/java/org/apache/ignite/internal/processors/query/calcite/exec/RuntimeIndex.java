@@ -16,30 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.GridIndex;
-
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public interface RuntimeIndex<Row> extends GridIndex<Row>, AutoCloseable {
+public interface RuntimeIndex<Row> extends AutoCloseable {
     /**
      * Add row to index.
      */
     void push(Row r);
-
-    /**
-     * Return an iterable to scan index range from lower to upper bounds inclusive,
-     * filtered by {@code filter} predicate.
-     */
-    Iterable<Row> scan(
-        ExecutionContext<Row> ectx,
-        RelDataType rowType,
-        Predicate<Row> filter,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound
-    );
 }

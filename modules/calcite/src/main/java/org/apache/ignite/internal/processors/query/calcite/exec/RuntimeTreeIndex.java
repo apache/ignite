@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
+public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> {
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -87,7 +87,7 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
         rows.clear();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Override public GridCursor<Row> find(Row lower, Row upper, BPlusTree.TreeRowClosure<Row, Row> filterC) {
         assert filterC == null;
 

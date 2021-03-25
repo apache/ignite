@@ -17,28 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Comparator;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeIndex;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Index spool node.
  */
-public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** Scan. */
-    private final ScanNode<Row> scan;
-
+public abstract class AbstractIndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** Runtime index */
     private final RuntimeIndex<Row> idx;
+
+    /** Scan. */
+    private final ScanNode<Row> scan;
 
     /** */
     private int requested;
@@ -49,10 +41,10 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     /**
      * @param ctx Execution context.
      */
-    private IndexSpoolNode(
+    public AbstractIndexSpoolNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        RuntimeIndex<Row> idx,
+        RuntimeIndex idx,
         ScanNode<Row> scan
     ) {
         super(ctx, rowType);
@@ -155,50 +147,5 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     /** */
     private boolean indexReady() {
         return waiting == -1;
-    }
-
-    /** */
-    public static <Row> IndexSpoolNode<Row> createTreeSpool(
-        ExecutionContext<Row> ctx,
-        RelDataType rowType,
-        RelCollation collation,
-        Comparator<Row> comp,
-        Predicate<Row> filter,
-        Supplier<Row> lowerIdxBound,
-        Supplier<Row> upperIdxBound
-    ) {
-        RuntimeTreeIndex<Row> idx = new RuntimeTreeIndex<>(ctx, collation, comp);
-
-        ScanNode<Row> scan = new ScanNode<>(
-            ctx,
-            rowType,
-            idx.scan(
-                ctx,
-                rowType,
-                filter,
-                lowerIdxBound,
-                upperIdxBound
-            )
-        );
-
-        return new IndexSpoolNode<>(ctx, rowType, idx, scan);
-    }
-
-    /** */
-    public static <Row> IndexSpoolNode<Row> createHashSpool(
-        ExecutionContext<Row> ctx,
-        RelDataType rowType,
-        ImmutableBitSet keys,
-        Supplier<Row> searchRow
-    ) {
-        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys);
-
-        ScanNode<Row> scan = new ScanNode<>(
-            ctx,
-            rowType,
-            idx.scan(searchRow)
-        );
-
-        return new IndexSpoolNode<>(ctx, rowType, idx, scan);
     }
 }

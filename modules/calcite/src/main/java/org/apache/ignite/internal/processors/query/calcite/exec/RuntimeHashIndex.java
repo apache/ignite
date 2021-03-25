@@ -17,25 +17,21 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public class RuntimeHashIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
+public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -60,10 +56,8 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
         rows = new HashMap<>();
     }
 
-    /**
-     * Add row to index.
-     */
-    public void push(Row r) {
+    /** {@inheritDoc} */
+    @Override public void push(Row r) {
         List<Row> newEqRows = new ArrayList<>();
 
         List<Row> eqRows = rows.putIfAbsent(key(r), newEqRows);
@@ -79,27 +73,9 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
         rows.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCursor<Row> find(Row lower, Row upper, BPlusTree.TreeRowClosure<Row, Row> filterC) {
-        assert filterC == null;
-
-//        assert lower.equals(upper) :
-//            "Lower and upper bounds must be equal for hash index: [lower=" + lower + ", upper=" + upper + ']';
-
-        List<Row> eqRows = rows.get(key(lower));
-
-        return new Cursor(eqRows);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<Row> scan(
-        ExecutionContext<Row> ectx,
-        RelDataType rowType,
-        Predicate<Row> filter,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound
-    ) {
-        return new IndexScan(rowType, this, filter, lowerBound, upperBound);
+    /** */
+    public Iterable<Row> scan(Supplier<Row> searchRow) {
+        return new IndexScan(searchRow);
     }
 
     /** */
@@ -115,77 +91,30 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
     /**
      *
      */
-    private class Cursor implements GridCursor<Row> {
-        /** Iterator over rows with equal index keys. */
-        private final Iterator<Row> listIt;
+    private class IndexScan implements Iterable<Row>, AutoCloseable {
+        /** Search row. */
+        private final Supplier<Row> searchRow;
 
-        /** */
-        private Row row;
-
-        /** */
-        Cursor(List<Row> rows) {
-            listIt = rows == null ? null : rows.iterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            if (!hasNext())
-                return false;
-
-            next0();
-
-            return true;
-        }
-
-        /** */
-        private boolean hasNext() {
-            return listIt != null && listIt.hasNext();
-        }
-
-        /** */
-        private void next0() {
-            row = listIt.next();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() throws IgniteCheckedException {
-            return row;
-        }
-    }
-
-    /**
-     *
-     */
-    private class IndexScan extends AbstractIndexScan<Row, Row> {
         /**
-         * @param rowType Row type.
-         * @param idx Physical index.
-         * @param filter Additional filters.
-         * @param lowerBound Lower index scan bound.
-         * @param upperBound Upper index scan bound.
+         * @param searchRow Search row.
          */
-        IndexScan(
-            RelDataType rowType,
-            GridIndex<Row> idx,
-            Predicate<Row> filter,
-            Supplier<Row> lowerBound,
-            Supplier<Row> upperBound) {
-            super(RuntimeHashIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
+        IndexScan(Supplier<Row> searchRow) {
+            this.searchRow = searchRow;
         }
 
         /** {@inheritDoc} */
-        @Override protected Row row2indexRow(Row bound) {
-            return bound;
+        @Override public void close() throws Exception {
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override protected Row indexRow2Row(Row row) {
-            return row;
-        }
+        @NotNull @Override public Iterator<Row> iterator() {
+            List<Row> eqRows = rows.get(key(searchRow.get()));
 
-        /** */
-        @Override protected BPlusTree.TreeRowClosure<Row, Row> filterClosure() {
-            return null;
+            if (eqRows == null)
+                return Collections.emptyIterator();
+
+            return eqRows.iterator();
         }
     }
 }

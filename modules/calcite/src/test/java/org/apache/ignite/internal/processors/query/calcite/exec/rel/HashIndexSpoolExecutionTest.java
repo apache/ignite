@@ -25,10 +25,9 @@ import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.lang.GridTuple4;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -66,34 +65,26 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
 
         for (int size : sizes) {
             for (int eqCnt : eqCnts) {
-                // (filter, lower, upper, expected result size)
-                GridTuple4<Predicate<Object[]>, Object[], Object[], Integer>[] testBounds;
+                // (filter, search, expected result size)
+                GridTuple3<Predicate<Object[]>, Object[], Integer>[] testBounds;
 
                 if (size == 1) {
-                    testBounds = new GridTuple4[] {
-                        new GridTuple4(null, new Object[] {0, null, null}, new Object[] {0, null, null}, eqCnt)
+                    testBounds = new GridTuple3[] {
+                        new GridTuple3(null, new Object[] {0, null, null}, eqCnt)
                     };
                 }
                 else {
-                    testBounds = new GridTuple4[] {
-                        new GridTuple4(
+                    testBounds = new GridTuple3[] {
+                        new GridTuple3(
                             null,
-                            new Object[] {size / 2, null, null},
                             new Object[] {size / 2, null, null},
                             eqCnt
                         ),
-                        new GridTuple4(
+                        new GridTuple3(
                             null,
                             new Object[] {size / 2 + 1, null, null},
-                            new Object[] {size / 2 + 1, null, null},
                             eqCnt
-                        ),
-//                        new GridTuple4(
-//                            null,
-//                            new Object[] {size / 2 + 1, null, 0},
-//                            new Object[] {size / 2 + 1, null, 0},
-//                            1
-//                        )
+                        )
                     };
                 }
 
@@ -116,22 +107,14 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                     }
                 });
 
-                Object[] lower = new Object[3];
-                Object[] upper = new Object[3];
+                Object[] searchRow = new Object[3];
                 TestPredicate testFilter = new TestPredicate();
 
-                RuntimeHashIndex<Object[]> idx = new RuntimeHashIndex<>(
-                    ctx,
-                    ImmutableBitSet.of(0)
-                );
-
-                IndexSpoolNode<Object[]> spool = new IndexSpoolNode<>(
+                IndexSpoolNode<Object[]> spool = IndexSpoolNode.createHashSpool(
                     ctx,
                     rowType,
-                    idx,
-                    testFilter,
-                    () -> lower,
-                    () -> upper
+                    ImmutableBitSet.of(0),
+                    () -> searchRow
                 );
 
                 spool.register(Arrays.asList(scan));
@@ -139,13 +122,12 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                 RootRewindable<Object[]> root = new RootRewindable<>(ctx, rowType);
                 root.register(spool);
 
-                for (GridTuple4<Predicate<Object[]>, Object[], Object[], Integer> bound : testBounds) {
+                for (GridTuple3<Predicate<Object[]>, Object[], Integer> bound : testBounds) {
                     log.info("Check: bound=" + bound);
 
                     // Set up bounds
                     testFilter.delegate = bound.get1();
-                    System.arraycopy(bound.get2(), 0, lower, 0, lower.length);
-                    System.arraycopy(bound.get3(), 0, upper, 0, upper.length);
+                    System.arraycopy(bound.get2(), 0, searchRow, 0, searchRow.length);
 
                     int cnt = 0;
 
@@ -157,7 +139,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
 
                     assertEquals(
                         "Invalid result size",
-                        (int)bound.get4(),
+                        (int)bound.get3(),
                         cnt);
 
                     root.rewind();

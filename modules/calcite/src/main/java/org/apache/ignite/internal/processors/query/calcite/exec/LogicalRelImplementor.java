@@ -388,14 +388,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
         Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
 
-        RuntimeTreeIndex idx = new RuntimeTreeIndex<>(ctx, collation, expressionFactory.comparator(collation));
-
-        IndexSpoolNode<Row> node = new IndexSpoolNode<>(
+        IndexSpoolNode<Row> node = IndexSpoolNode.createTreeSpool(
             ctx,
             rel.getRowType(),
-            idx,
-//            collation,
-//            expressionFactory.comparator(collation),
+            collation,
+            expressionFactory.comparator(collation),
             filter,
             lower,
             upper
@@ -410,25 +407,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteHashIndexSpool rel) {
-        List<RexNode> lowerBound = rel.indexCondition().lowerBound();
-        List<RexNode> upperBound = rel.indexCondition().upperBound();
+        Supplier<Row> searchRow = expressionFactory.rowSource(rel.indexCondition().lowerBound());
 
-        Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
-
-        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
-        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
-
-        RuntimeHashIndex idx = new RuntimeHashIndex(ctx, ImmutableBitSet.of(rel.indexCondition().keys()));
-
-        IndexSpoolNode<Row> node = new IndexSpoolNode<>(
+        IndexSpoolNode<Row> node = IndexSpoolNode.createHashSpool(
             ctx,
             rel.getRowType(),
-            idx,
-//            collation,
-//            expressionFactory.comparator(collation),
-            filter,
-            lower,
-            upper
+            ImmutableBitSet.of(rel.indexCondition().keys()),
+            searchRow
         );
 
         Node<Row> input = visit(rel.getInput());
