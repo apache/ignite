@@ -131,7 +131,7 @@ class ClientTest(IgniteTest):
             if graceful_shutdown:
                 temp_clients.stop()
             else:
-                temp_clients.stop(force_stop=True)
+                temp_clients.kill()
 
             current_top_v += temp_client
 

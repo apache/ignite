@@ -43,5 +43,12 @@ class DucktestsService(Service, metaclass=ABCMeta):
 
         super().stop(**kwargs)
 
+    def kill(self):
+        """
+        Kills the service.
+
+        """
+        self.stop(force_stop=True)
+
     def clean_node(self, node, **kwargs):
         assert self.stopped

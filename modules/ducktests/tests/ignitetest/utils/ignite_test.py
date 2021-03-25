@@ -53,7 +53,7 @@ class IgniteTest(Test):
 
             if not service.stopped:
                 try:
-                    service.stop(force_stop=True)
+                    service.kill()
                 except RemoteCommandError:
                     pass  # Process may be already self-killed on segmentation.
 
