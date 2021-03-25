@@ -29,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -116,7 +118,12 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
         return new StopNodeFailureHandler();
     }
 
-    /** */
+    /**
+     * Check that if a corrupted page exists, an {@link CorruptedTreeException}
+     * will be thrown and a diagnostic file will be generated.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testCorruptedPage() throws Exception {
         IgniteEx srv = startGrid(0);
@@ -125,7 +132,7 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
 
         FileUtils.deleteDirectory(diagnosticDir);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -205,11 +212,8 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
 
         File[] txtFiles = diagnosticDir.listFiles((dir, name) -> name.endsWith(".txt"));
 
-        assertTrue(txtFiles != null && txtFiles.length == 1);
-
-        File[] rawFiles = diagnosticDir.listFiles((dir, name) -> name.endsWith(".raw"));
-
-        assertTrue(rawFiles != null && rawFiles.length == 1);
+        assertFalse(F.isEmpty(txtFiles));
+        assertEquals(1, txtFiles.length);
     }
 
     /** */
