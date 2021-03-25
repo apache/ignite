@@ -282,7 +282,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Throwable err0 = err;
 
         if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
-                (err0 == null || tx.needCheckBackup()))
+            (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {
@@ -349,8 +349,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
-        mapping.clientFirst(!topLocked && cctx.kernalContext().clientNode());
-
         if (isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Abandoning (re)map because future is done: " + this);
@@ -409,8 +407,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         boolean hasNearCache = false;
 
-        boolean clientFirst = !topLocked && cctx.kernalContext().clientNode();
-
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
@@ -424,9 +420,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 hasNearCache = true;
 
             if (cur != updated) {
-                if (cur == null)
-                    updated.clientFirst(clientFirst);
-
                 mappings.offer(updated);
 
                 updated.last(true);
@@ -678,8 +671,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         if (cur == null || !cur.primary().id().equals(primary.id()) ||
-            (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear()))
+            (primary.isLocal() && cur.hasNearCacheEntries() != cacheCtx.isNear())) {
+            boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
+
             cur = new GridDistributedTxMapping(primary);
+
+            cur.clientFirst(clientFirst);
+        }
 
         cur.add(entry);
 
