@@ -76,14 +76,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
-            req -> ctx.closure().callLocalSafe(() -> {
-                rotateWriter();
-
-                return null;
-            }),
-            (id, res, err) -> {});
-
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
@@ -117,6 +109,14 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
         });
+
+        rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
+            req -> ctx.closure().callLocalSafe(() -> {
+                rotateWriter();
+
+                return null;
+            }),
+            (id, res, err) -> {});
     }
 
     /** Registers state listener. */
