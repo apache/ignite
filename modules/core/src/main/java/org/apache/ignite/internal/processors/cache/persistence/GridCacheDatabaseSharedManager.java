@@ -2496,6 +2496,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 switch (rec.type()) {
                     case MVCC_DATA_RECORD:
                     case DATA_RECORD:
+                    case DATA_RECORD_V2:
                         checkpointReadLock();
 
                         try {
@@ -2635,8 +2636,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     case MVCC_DATA_RECORD:
                     case DATA_RECORD:
+                    case DATA_RECORD_V2:
                     case ENCRYPTED_DATA_RECORD:
                     case ENCRYPTED_DATA_RECORD_V2:
+                    case ENCRYPTED_DATA_RECORD_V3:
                         DataRecord dataRec = (DataRecord)rec;
 
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
