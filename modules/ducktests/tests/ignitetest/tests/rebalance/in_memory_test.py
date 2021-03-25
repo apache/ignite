@@ -65,9 +65,9 @@ class RebalanceInMemoryTest(IgniteTest):
         """
         Tests rebalance on node join.
         """
-        return self.do_test(ignite_version, TriggerEvent.NODE_JOIN,
-                            backups, cache_count, entry_count, entry_size,
-                            rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle)
+        return self.__run(ignite_version, TriggerEvent.NODE_JOIN,
+                          backups, cache_count, entry_count, entry_size,
+                          rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
@@ -81,14 +81,14 @@ class RebalanceInMemoryTest(IgniteTest):
         """
         Tests rebalance on node left.
         """
-        return self.do_test(ignite_version, TriggerEvent.NODE_LEFT,
-                            backups, cache_count, entry_count, entry_size,
-                            rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle)
+        return self.__run(ignite_version, TriggerEvent.NODE_LEFT,
+                          backups, cache_count, entry_count, entry_size,
+                          rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
-    def do_test(self, ignite_version, trigger_event,
-                backups, cache_count, entry_count, entry_size,
-                rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle):
+    def __run(self, ignite_version, trigger_event,
+              backups, cache_count, entry_count, entry_size,
+              rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle):
         """
         Test performs rebalance test which consists of following steps:
             * Start cluster.
