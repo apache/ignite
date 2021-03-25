@@ -945,7 +945,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertTrue(found1 && found2);
     }
 
-
     /** */
     @Test
     public void testAtomicSequence() throws Exception {
