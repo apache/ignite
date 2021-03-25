@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /**
  * Processor which contained helper methods for different diagnostic cases.
@@ -51,6 +54,9 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     private static final boolean IGNITE_DUMP_PAGE_LOCK_ON_FAILURE =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE,
             DFLT_DUMP_PAGE_LOCK_ON_FAILURE);
+
+    /** Time formatter for dump file name. */
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'_'HH-mm-ss_SSS");
 
     /** Folder name for store diagnostic info. **/
     public static final String DEFAULT_TARGET_FOLDER = "diagnostic";
@@ -97,10 +103,18 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
                     String walDirsStr = Arrays.stream(walDirs).map(File::getAbsolutePath)
                         .collect(joining(", ", "[", "]"));
 
-                    log.warning("An " + corruptedTreeE.getClass().getSimpleName() + " has occurred, to diagnose it " +
-                        "will need to postpone the directories " + walDirsStr + " before the node is restarted and " +
-                        "run the org.apache.ignite.development.utils.IgniteWalConverter with an additional argument " +
-                        "\"pages=" + corruptedPagesFile.getAbsolutePath() + "\"");
+                    String args = "walDir=" + walDirs[0].getAbsolutePath() + (walDirs.length == 1 ? "" :
+                        " walArchiveDir=" + walDirs[1].getAbsolutePath());
+
+                    if (ctx.config().getDataStorageConfiguration().getPageSize() != DFLT_PAGE_SIZE)
+                        args += " pageSize=" + ctx.config().getDataStorageConfiguration().getPageSize();
+
+                    args += " pages=" + corruptedPagesFile.getAbsolutePath();
+
+                    log.warning(corruptedTreeE.getClass().getSimpleName() + " has occurred. To diagnose it, " +
+                        "postpone the following directories until the node is restarted: " + walDirsStr + ". " +
+                        "Then, run the following command from ignite-dev-util module: java -cp <classpath> " +
+                        "org.apache.ignite.development.utils.IgniteWalConverter " + args);
                 }
                 catch (Throwable t) {
                     String pages = Arrays.stream(corruptedTreeE.pages())
@@ -125,7 +139,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     public static File corruptedPagesFile(Path dirPath, T2<Integer, Long>... pages) throws IOException {
         dirPath.toFile().mkdirs();
 
-        File f = dirPath.resolve("corruptedPages_" + U.currentTimeMillis() + ".txt").toFile();
+        File f = dirPath.resolve("corruptedPages_" + LocalDateTime.now().format(TIME_FORMATTER) + ".txt").toFile();
 
         assert !f.exists();
 
@@ -144,6 +158,9 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
 
     /**
      * Getting the WAL directories.
+     * Note:
+     * Index 0: WAL working directory.
+     * Index 1: WAL archive directory (may be absent).
      *
      * @param ctx Kernal context.
      * @return WAL directories.

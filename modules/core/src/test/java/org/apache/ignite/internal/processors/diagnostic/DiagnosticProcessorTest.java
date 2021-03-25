@@ -172,8 +172,8 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOutputDiagnosticCorruptedPagesInfo() throws Exception {
-        LogListener logLsnr = LogListener.matches("An CorruptedTreeException has occurred, to diagnose it will " +
-            "need to postpone the directories").build();
+        LogListener logLsnr = LogListener.matches("CorruptedTreeException has occurred. To diagnose it, postpone" +
+            " the following directories until the node is restarted:").build();
 
         IgniteEx n = startGrid(0,
             (Consumer<IgniteConfiguration>)cfg -> cfg.setGridLogger(new ListeningTestLogger(log, logLsnr)));
@@ -252,6 +252,6 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
      * @return Pattern.
      */
     private Pattern corruptedPagesFileNamePattern() {
-        return Pattern.compile("corruptedPages_\\d+\\.txt");
+        return Pattern.compile("corruptedPages_\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}_\\d{3}\\.txt");
     }
 }
