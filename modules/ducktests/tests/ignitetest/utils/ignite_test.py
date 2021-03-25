@@ -21,8 +21,8 @@ from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
 
+
 # pylint: disable=W0223
-from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
 class IgniteTest(Test):
@@ -49,11 +49,14 @@ class IgniteTest(Test):
 
         # pylint: disable=W0212
         for service in self.test_context.services._services.values():
-            if isinstance(service, IgniteAwareService) and not service.stopped:
+            if not service.stopped:
                 try:
-                    service.stop_async(force_stop=True)
+                    service.stop(force_stop=True)
                 except RemoteCommandError:
                     pass  # Process may be already self-killed on segmentation.
+
+            # This check is a cheap guarantee that each service support single-stop semantic.
+            assert service.stopped
 
         self.logger.debug("All runned IgniteAwareServices killed.")
 

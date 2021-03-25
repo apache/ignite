@@ -149,10 +149,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def stop(self, **kwargs):
         self.stop_async(**kwargs)
-        self.await_stopped(**kwargs)
+
+        # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
+        # Waiting will happen on plain stop() call made by ducktape during same step.
+        if not kwargs.get(FORCE_STOP, False):
+            self.await_stopped()
 
     # pylint: disable=W0613
-    def await_stopped(self, **kwargs):
+    def await_stopped(self):
         """
         Awaits stop finished.
         """
@@ -181,6 +185,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().clean(**kwargs)
 
     def clean_node(self, node, **kwargs):
+        assert self.stopped
+
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def init_persistent(self, node):

@@ -63,6 +63,8 @@ class ZookeeperService(Service, PathAware):
         self.start_timeout_sec = start_timeout_sec
         self.init_logs_attribute()
 
+        self.stopped = False
+
     @property
     def version(self):
         return self.settings.version
@@ -89,6 +91,8 @@ class ZookeeperService(Service, PathAware):
 
         for node in self.nodes:
             self.await_quorum(node, self.start_timeout_sec)
+
+        self.stopped = False
 
         self.logger.info("Zookeeper quorum is formed.")
 
@@ -165,11 +169,21 @@ class ZookeeperService(Service, PathAware):
         """
         return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
+    def stop(self, **kwargs):
+        if self.stopped:
+            return
+
+        self.stopped = True
+
+        super().stop(**kwargs)
+
     def stop_node(self, node, **kwargs):
         idx = self.idx(node)
         self.logger.info("Stopping %s node %d on %s" % (type(self).__name__, idx, node.account.hostname))
         node.account.kill_process("zookeeper", clean_shutdown=not kwargs.get(FORCE_STOP, False), allow_fail=False)
 
     def clean_node(self, node, **kwargs):
+        assert self.stopped
+
         self.logger.info("Cleaning Zookeeper node %d on %s", self.idx(node), node.account.hostname)
         node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)

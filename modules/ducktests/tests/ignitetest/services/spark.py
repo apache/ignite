@@ -45,6 +45,8 @@ class SparkService(Service, PathAware):
         self._version = version
         self.init_logs_attribute()
 
+        self.stopped = False
+
     @property
     def project(self):
         return "spark"
@@ -61,6 +63,8 @@ class SparkService(Service, PathAware):
         super().start(**kwargs)
 
         self.logger.info("Waiting for Spark to start...")
+
+        self.stopped = False
 
     def start_cmd(self, node):
         """
@@ -114,6 +118,14 @@ class SparkService(Service, PathAware):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
+    def stop(self, **kwargs):
+        if self.stopped:
+            return
+
+        self.stopped = True
+
+        super().stop(**kwargs)
+
     def stop_node(self, node, **kwargs):
         if kwargs.get(FORCE_STOP, False):
             node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
@@ -127,6 +139,8 @@ class SparkService(Service, PathAware):
         """
         Clean spark persistence files
         """
+        assert self.stopped
+
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def pids(self, node):

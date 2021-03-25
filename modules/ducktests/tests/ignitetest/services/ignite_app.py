@@ -21,7 +21,6 @@ import re
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
-from ignitetest.services import FORCE_STOP
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
@@ -53,11 +52,10 @@ class IgniteApplicationService(IgniteAwareService):
 
         self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
 
-    def await_stopped(self, **kwargs):
+    def await_stopped(self):
         super().await_stopped()
 
-        if not kwargs.get(FORCE_STOP, False):
-            self.__check_status(self.APP_FINISH_EVT_MSG)
+        self.__check_status(self.APP_FINISH_EVT_MSG)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|%s" % (desired, self.APP_BROKEN_EVT_MSG), timeout, from_the_beginning=True)
