@@ -326,7 +326,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             oldWriter.stop();
         }
 
-        if (oldWriter != null)
+        if (log.isInfoEnabled() && oldWriter != null)
             log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
     }
 
