@@ -21,10 +21,10 @@ import threading
 import traceback
 from abc import ABCMeta, abstractmethod
 
-from ducktape.services.service import Service
+from ignitetest.services.utils.ducktests_service import DucktestsService
 
 
-class BackgroundThreadService(Service, metaclass=ABCMeta):
+class BackgroundThreadService(DucktestsService, metaclass=ABCMeta):
     """BackgroundThreadService allow to start nodes simultaneously using pool of threads."""
 
     def __init__(self, context, num_nodes=None, cluster_spec=None, **kwargs):

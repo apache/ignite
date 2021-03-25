@@ -21,15 +21,15 @@ import os.path
 from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.services.service import Service
 
 from ignitetest.services import FORCE_STOP
+# pylint: disable=abstract-method
+from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
 
-# pylint: disable=abstract-method
-class SparkService(Service, PathAware):
+class SparkService(DucktestsService, PathAware):
     """
     Start a spark node.
     """
@@ -45,8 +45,6 @@ class SparkService(Service, PathAware):
         self._version = version
         self.init_logs_attribute()
 
-        self.stopped = False
-
     @property
     def project(self):
         return "spark"
@@ -59,12 +57,18 @@ class SparkService(Service, PathAware):
     def globals(self):
         return self.context.globals
 
+    @property
+    def config_file(self):
+        return None
+
+    @property
+    def log_config_file(self):
+        return None
+
     def start(self, **kwargs):
         super().start(**kwargs)
 
         self.logger.info("Waiting for Spark to start...")
-
-        self.stopped = False
 
     def start_cmd(self, node):
         """
@@ -118,14 +122,6 @@ class SparkService(Service, PathAware):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    def stop(self, **kwargs):
-        if self.stopped:
-            return
-
-        self.stopped = True
-
-        super().stop(**kwargs)
-
     def stop_node(self, node, **kwargs):
         if kwargs.get(FORCE_STOP, False):
             node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
@@ -139,7 +135,7 @@ class SparkService(Service, PathAware):
         """
         Clean spark persistence files
         """
-        assert self.stopped
+        super().clean_node(node, **kwargs)
 
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 

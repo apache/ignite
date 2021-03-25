@@ -20,10 +20,10 @@ This module contains classes and utilities to start zookeeper cluster for testin
 import os.path
 from distutils.version import LooseVersion
 
-from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 
 from ignitetest.services import FORCE_STOP
+from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
@@ -51,7 +51,7 @@ class ZookeeperSettings:
         assert self.tick_time <= self.min_session_timeout // 2, "'tick_time' must be <= 'min_session_timeout' / 2"
 
 
-class ZookeeperService(Service, PathAware):
+class ZookeeperService(DucktestsService, PathAware):
     """
     Zookeeper service.
     """
@@ -62,8 +62,6 @@ class ZookeeperService(Service, PathAware):
         self.settings = settings
         self.start_timeout_sec = start_timeout_sec
         self.init_logs_attribute()
-
-        self.stopped = False
 
     @property
     def version(self):
@@ -91,8 +89,6 @@ class ZookeeperService(Service, PathAware):
 
         for node in self.nodes:
             self.await_quorum(node, self.start_timeout_sec)
-
-        self.stopped = False
 
         self.logger.info("Zookeeper quorum is formed.")
 
@@ -169,21 +165,13 @@ class ZookeeperService(Service, PathAware):
         """
         return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
-    def stop(self, **kwargs):
-        if self.stopped:
-            return
-
-        self.stopped = True
-
-        super().stop(**kwargs)
-
     def stop_node(self, node, **kwargs):
         idx = self.idx(node)
         self.logger.info("Stopping %s node %d on %s" % (type(self).__name__, idx, node.account.hostname))
         node.account.kill_process("zookeeper", clean_shutdown=not kwargs.get(FORCE_STOP, False), allow_fail=False)
 
     def clean_node(self, node, **kwargs):
-        assert self.stopped
+        super().clean_node(node, **kwargs)
 
         self.logger.info("Cleaning Zookeeper node %d on %s", self.idx(node), node.account.hostname)
         node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)

@@ -75,7 +75,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.stopped = False
 
     @property
     def version(self):
@@ -95,8 +94,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         self.update_ssl_config_with_globals()
         super().start(**kwargs)
-
-        self.stopped = False
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
@@ -140,11 +137,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Stop in async way.
         """
-        if self.stopped:
-            return
-
-        self.stopped = True
-
         super().stop(**kwargs)
 
     def stop(self, **kwargs):
@@ -185,7 +177,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().clean(**kwargs)
 
     def clean_node(self, node, **kwargs):
-        assert self.stopped
+        super().clean_node(node, **kwargs)
 
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
