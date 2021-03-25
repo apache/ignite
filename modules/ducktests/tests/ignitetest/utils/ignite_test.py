@@ -44,10 +44,10 @@ class IgniteTest(Test):
         """
         return monotonic()
 
-    # pylint: disable=W0212
     def tearDown(self):
         self.logger.debug("Killing all runned IgniteAwareServices to speed-up the tearing down.")
 
+        # pylint: disable=W0212
         for service in self.test_context.services._services.values():
             if isinstance(service, IgniteAwareService) and not service.stopped:
                 try:
@@ -56,12 +56,6 @@ class IgniteTest(Test):
                     pass  # Process may be already self-killed on segmentation.
 
         self.logger.debug("All runned IgniteAwareServices killed.")
-
-        for service in self.test_context.services._services.values():
-            if isinstance(service, IgniteAwareService):
-                service.await_stopped(force_stop=True)
-
-        self.logger.debug("All IgniteAwareServices checked to be killed.")
 
         super().tearDown()
 

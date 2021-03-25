@@ -140,16 +140,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Stop in async way.
         """
-        assert not self.stopped, "Attempt to stop already stopped service using extended service API"
-
-        super().stop(**kwargs)
-
-        self.stopped = True
-
-    def stop(self, **kwargs):
         if self.stopped:
             return
 
+        self.stopped = True
+
+        super().stop(**kwargs)
+
+    def stop(self, **kwargs):
         self.stop_async(**kwargs)
         self.await_stopped(**kwargs)
 
