@@ -22,7 +22,10 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
  *
  * dv = (year << SHIFT_YEAR) | (month << SHIFT_MONTH) | day.
  */
-public class DateValueUtils {
+public class DateValueConstants {
+    /** Forbid instantiation of this class. Just hold constants there. */
+    private DateValueConstants() {}
+
     /** */
     private static final int SHIFT_YEAR = 9;
 

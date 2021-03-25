@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface SortedSegmentedIndex extends Index {
     /**
-     * Finds index rows by specified range in specifed tree segment. Range can be bound or unbound.
+     * Finds index rows by specified range in specified tree segment. Range can be bound or unbound.
      *
      * @param lower Nullable lower bound.
      * @param upper Nullable upper bound.

@@ -22,8 +22,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractDateInde
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MAX_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MIN_DATE_VALUE;
 
 /**
  * Inline index key implementation for inlining {@link AbstractDateIndexKey} values.

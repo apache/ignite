@@ -19,7 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateInlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants;
 
 /**
  * Abstract class for representing Date index key.
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValu
  * {@link DateInlineIndexKeyType} relies on this API to store an object in inline.
  */
 public abstract class AbstractDateIndexKey implements IndexKey {
-    /** @return a date value {@link DateValueUtils}. */
+    /** @return a date value {@link DateValueConstants}. */
     public abstract long dateValue();
 
     /** {@inheritDoc} */

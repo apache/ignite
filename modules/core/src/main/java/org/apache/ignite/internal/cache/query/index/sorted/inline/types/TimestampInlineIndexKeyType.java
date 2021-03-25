@@ -22,9 +22,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestam
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MIN_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.NANOS_PER_DAY;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MAX_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.NANOS_PER_DAY;
 
 /**
  * Inline index key implementation for inlining {@link AbstractTimestampIndexKey} values.

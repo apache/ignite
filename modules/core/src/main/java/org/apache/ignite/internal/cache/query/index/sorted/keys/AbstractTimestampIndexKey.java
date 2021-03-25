@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimestampInlineIndexKeyType;
 
 /**
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.Timestam
  * {@link TimestampInlineIndexKeyType} relies on this API to store an object in inline.
  */
 public abstract class AbstractTimestampIndexKey implements IndexKey {
-    /** @return a date value {@link DateValueUtils}. */
+    /** @return a date value {@link DateValueConstants}. */
     public abstract long dateValue();
 
     /** @return nanoseconds since midnight. */

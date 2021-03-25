@@ -182,7 +182,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
         private final InlineIndexRowHandler rowHnd;
 
         /** */
-        public BPlusInnerIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
+        private BPlusInnerIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
             super(io.getType(), io.getVersion(), io.canGetRow(), io.getItemSize());
             this.io = io;
             this.rowHnd = rowHnd;
@@ -226,7 +226,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
         private final InlineIndexRowHandler rowHnd;
 
         /** */
-        public BPlusLeafIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
+        private BPlusLeafIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
             super(io.getType(), io.getVersion(), io.getItemSize());
             this.io = io;
             this.rowHnd = rowHnd;

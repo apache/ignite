@@ -29,7 +29,7 @@ public class SingleCursor<T> implements GridCursor<T> {
     /** Value to return */
     private final T val;
 
-    /** Counter ot check wherther value is already got. */
+    /** Counter ot check whether value is already got. */
     private final AtomicInteger currIdx = new AtomicInteger(-1);
 
     /** */
@@ -43,7 +43,7 @@ public class SingleCursor<T> implements GridCursor<T> {
     }
 
     /**
-     * Note that this implimentation violates the contract of GridCusror. It must be "before first" but this implementation
+     * Note that this implementation violates the contract of GridCusror. It must be "before first" but this implementation
      * handles both cases: "before first" and "on first". Current implementation of SQL with H2 relies on this {@code null}
      * for queries like "select max(col) from table". This should be fixed for other SQL engines.
      *

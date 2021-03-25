@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IndexFactory {
     /**
-     * Creates index by specifed defition for specified cache.
+     * Creates index by specified definition for specified cache.
      *
      * @param cctx Cache context.
      * @param definition Index definition.

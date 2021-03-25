@@ -42,7 +42,6 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexRow> implements In
         super(type, ver, itemSize);
     }
 
-
     /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.link() != 0;
