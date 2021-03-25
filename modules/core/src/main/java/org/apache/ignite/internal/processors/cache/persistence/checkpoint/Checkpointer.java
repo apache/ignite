@@ -748,25 +748,33 @@ public class Checkpointer extends GridWorker {
         synchronized (this) {
             req = scheduledCp.getDestroyQueue().removeRequest(grpId, partId);
 
-            if (req == null) {
-                CheckpointProgressImpl cur = curCpProgress;
+            if (req != null) {
+                canceled = req.cancel();
 
-                if (cur != null)
-                    req = cur.getDestroyQueue().removeRequest(grpId, partId);
+                assert canceled;
             }
 
+            CheckpointProgressImpl cur = curCpProgress;
+
+            if (cur != null) {
+                req = cur.getDestroyQueue().removeRequest(grpId, partId);
+
+                if (req != null)
+                    canceled = req.cancel();
+            }
+        }
+
+        if (!canceled) {
             if (req != null)
-                canceled = req.cancel();
-        }
-
-        if (req != null) {
-            if (!canceled)
                 req.waitCompleted();
-            else if (log.isInfoEnabled())
-                log.info("Partition file destroy has cancelled [grpId=" + grpId + ", partId=" + partId + "]");
+
+            return false;
         }
 
-        return canceled;
+        if (log.isDebugEnabled())
+            log.debug("Partition file destroy has cancelled [grpId=" + grpId + ", partId=" + partId + "]");
+
+        return true;
     }
 
     /**

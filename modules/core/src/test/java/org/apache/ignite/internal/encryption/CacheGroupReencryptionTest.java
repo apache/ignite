@@ -746,6 +746,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         validateMetrics(node0, false);
         validateMetrics(node1, false);
 
+        forceCheckpoint();
+
         pageScanRate = DFLT_REENCRYPTION_RATE_MBPS;
 
         stopAllGrids();

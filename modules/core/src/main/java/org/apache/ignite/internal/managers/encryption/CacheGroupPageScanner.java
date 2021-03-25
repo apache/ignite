@@ -533,12 +533,15 @@ public class CacheGroupPageScanner implements CheckpointListener {
                     limiter.acquire(pagesCnt);
 
                     synchronized (this) {
-                        if (isDone() || evicted(partId))
+                        if (isDone())
                             return;
 
                         ctx.cache().context().database().checkpointReadLock();
 
                         try {
+                            if (evicted(partId))
+                                return;
+
                             off += scanPages(partId, off, pagesCnt);
                         }
                         finally {
