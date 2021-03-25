@@ -404,7 +404,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         assert res.error() != null;
 
         if (err == null)
-            err = new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
+            err = new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible)." + res.error().toString());
 
         Collection<KeyCacheObject> keys0 = res.failedKeys() != null ? res.failedKeys() : req.keys();
 
