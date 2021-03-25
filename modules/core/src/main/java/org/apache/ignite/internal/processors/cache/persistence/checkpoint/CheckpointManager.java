@@ -179,6 +179,7 @@ public class CheckpointManager {
         );
 
         checkpointerProvider = () -> new Checkpointer(
+            cacheProcessor.context().kernalContext().performanceStatistics(),
             igniteInstanceName,
             checkpointThreadName,
             workersRegistry,

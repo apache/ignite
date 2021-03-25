@@ -47,20 +47,15 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pmeRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
 /**
@@ -205,203 +200,325 @@ public class FilePerformanceStatisticsReader {
 
         OperationType opType = OperationType.of(opTypeByte);
 
-        if (cacheOperation(opType)) {
-            if (buf.remaining() < cacheRecordSize())
-                return false;
+        switch (opType) {
+            case CACHE_GET:
+            case CACHE_PUT:
+            case CACHE_REMOVE:
+            case CACHE_GET_AND_PUT:
+            case CACHE_GET_AND_REMOVE:
+            case CACHE_INVOKE:
+            case CACHE_LOCK:
+            case CACHE_GET_ALL:
+            case CACHE_PUT_ALL:
+            case CACHE_REMOVE_ALL:
+            case CACHE_INVOKE_ALL:
+                return deserializeCache(buf, nodeId, opType);
 
-            int cacheId = buf.getInt();
-            long startTime = buf.getLong();
-            long duration = buf.getLong();
+            case TX_COMMIT:
+            case TX_ROLLBACK:
+                return deserializeTx(buf, nodeId, opType);
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.cacheOperation(nodeId, opType, cacheId, startTime, duration);
+            case QUERY:
+                return deserializeQuery(buf, nodeId);
 
-            return true;
+            case QUERY_READS:
+                return deserializeQueryReads(buf, nodeId);
+
+            case TASK:
+                return deserializeTask(buf, nodeId);
+
+            case JOB:
+                return deserializeJob(buf, nodeId);
+
+            case CACHE_START:
+                return deserializeCacheStart(buf, nodeId);
+
+            case PME:
+                return deserializePME(buf);
+
+            case CHECKPOINT:
+                return deserializeCheckpoint(buf);
+
+            default:
+                throw new IgniteException("Unknown operation type id [typeId=" + opTypeByte + ']');
         }
-        else if (transactionOperation(opType)) {
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     * @param opType Op type.
+     */
+    private boolean deserializeCache(ByteBuffer buf, UUID nodeId, OperationType opType) {
+        if (buf.remaining() < cacheRecordSize())
+            return false;
+
+        int cacheId = buf.getInt();
+        long startTime = buf.getLong();
+        long duration = buf.getLong();
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.cacheOperation(nodeId, opType, cacheId, startTime, duration);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     * @param opType Op type.
+     */
+    private boolean deserializeTx(ByteBuffer buf, UUID nodeId, OperationType opType) {
+        if (buf.remaining() < 4)
+            return false;
+
+        int cacheIdsCnt = buf.getInt();
+
+        if (buf.remaining() < transactionRecordSize(cacheIdsCnt) - 4)
+            return false;
+
+        GridIntList cacheIds = new GridIntList(cacheIdsCnt);
+
+        for (int i = 0; i < cacheIdsCnt; i++)
+            cacheIds.add(buf.getInt());
+
+        long startTime = buf.getLong();
+        long duration = buf.getLong();
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.transaction(nodeId, cacheIds, startTime, duration, opType == TX_COMMIT);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     */
+    private boolean deserializeQuery(ByteBuffer buf, UUID nodeId) throws IOException {
+        if (buf.remaining() < 1)
+            return false;
+
+        boolean cached = buf.get() != 0;
+
+        String text;
+        int hash = 0;
+
+        if (cached) {
             if (buf.remaining() < 4)
                 return false;
 
-            int cacheIdsCnt = buf.getInt();
+            hash = buf.getInt();
 
-            if (buf.remaining() < transactionRecordSize(cacheIdsCnt) - 4)
+            text = knownStrs.get(hash);
+
+            if (buf.remaining() < queryRecordSize(0, true) - 1 - 4)
+                return false;
+        }
+        else {
+            if (buf.remaining() < 4)
                 return false;
 
-            GridIntList cacheIds = new GridIntList(cacheIdsCnt);
+            int textLen = buf.getInt();
 
-            for (int i = 0; i < cacheIdsCnt; i++)
-                cacheIds.add(buf.getInt());
-
-            long startTime = buf.getLong();
-            long duration = buf.getLong();
-
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.transaction(nodeId, cacheIds, startTime, duration, opType == TX_COMMIT);
-
-            return true;
-        }
-        else if (opType == QUERY) {
-            if (buf.remaining() < 1)
+            if (buf.remaining() < queryRecordSize(textLen, false) - 1 - 4)
                 return false;
 
-            boolean cached = buf.get() != 0;
-
-            String text;
-            int hash = 0;
-
-            if (cached) {
-                if (buf.remaining() < 4)
-                    return false;
-
-                hash = buf.getInt();
-
-                text = knownStrs.get(hash);
-
-                if (buf.remaining() < queryRecordSize(0, true) - 1 - 4)
-                    return false;
-            }
-            else {
-                if (buf.remaining() < 4)
-                    return false;
-
-                int textLen = buf.getInt();
-
-                if (buf.remaining() < queryRecordSize(textLen, false) - 1 - 4)
-                    return false;
-
-                text = readString(buf, textLen);
-            }
-
-            GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-            long id = buf.getLong();
-            long startTime = buf.getLong();
-            long duration = buf.getLong();
-            boolean success = buf.get() != 0;
-
-            if (text == null)
-                forwardRead(hash);
-
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.query(nodeId, queryType, text, id, startTime, duration, success);
-
-            return true;
+            text = readString(buf, textLen);
         }
-        else if (opType == QUERY_READS) {
-            if (buf.remaining() < queryReadsRecordSize())
+
+        GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
+        long id = buf.getLong();
+        long startTime = buf.getLong();
+        long duration = buf.getLong();
+        boolean success = buf.get() != 0;
+
+        if (text == null)
+            forwardRead(hash);
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.query(nodeId, qryType, text, id, startTime, duration, success);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     */
+    private boolean deserializeQueryReads(ByteBuffer buf, UUID nodeId) {
+        if (buf.remaining() < queryReadsRecordSize())
+            return false;
+
+        GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
+        UUID uuid = readUuid(buf);
+        long id = buf.getLong();
+        long logicalReads = buf.getLong();
+        long physicalReads = buf.getLong();
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.queryReads(nodeId, qryType, uuid, id, logicalReads, physicalReads);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     */
+    private boolean deserializeTask(ByteBuffer buf, UUID nodeId) throws IOException {
+        if (buf.remaining() < 1)
+            return false;
+
+        boolean cached = buf.get() != 0;
+
+        String taskName;
+        int hash = 0;
+
+        if (cached) {
+            if (buf.remaining() < 4)
                 return false;
 
-            GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-            UUID uuid = readUuid(buf);
-            long id = buf.getLong();
-            long logicalReads = buf.getLong();
-            long physicalReads = buf.getLong();
+            hash = buf.getInt();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.queryReads(nodeId, queryType, uuid, id, logicalReads, physicalReads);
+            taskName = knownStrs.get(hash);
 
-            return true;
+            if (buf.remaining() < taskRecordSize(0, true) - 1 - 4)
+                return false;
         }
-        else if (opType == TASK) {
-            if (buf.remaining() < 1)
+        else {
+            if (buf.remaining() < 4)
                 return false;
 
-            boolean cached = buf.get() != 0;
+            int nameLen = buf.getInt();
 
-            String taskName;
-            int hash = 0;
-
-            if (cached) {
-                if (buf.remaining() < 4)
-                    return false;
-
-                hash = buf.getInt();
-
-                taskName = knownStrs.get(hash);
-
-                if (buf.remaining() < taskRecordSize(0, true) - 1 - 4)
-                    return false;
-            }
-            else {
-                if (buf.remaining() < 4)
-                    return false;
-
-                int nameLen = buf.getInt();
-
-                if (buf.remaining() < taskRecordSize(nameLen, false) - 1 - 4)
-                    return false;
-
-                taskName = readString(buf, nameLen);
-            }
-
-            IgniteUuid sesId = readIgniteUuid(buf);
-            long startTime = buf.getLong();
-            long duration = buf.getLong();
-            int affPartId = buf.getInt();
-
-            if (taskName == null)
-                forwardRead(hash);
-
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
-
-            return true;
-        }
-        else if (opType == JOB) {
-            if (buf.remaining() < jobRecordSize())
+            if (buf.remaining() < taskRecordSize(nameLen, false) - 1 - 4)
                 return false;
 
-            IgniteUuid sesId = readIgniteUuid(buf);
-            long queuedTime = buf.getLong();
-            long startTime = buf.getLong();
-            long duration = buf.getLong();
-            boolean timedOut = buf.get() != 0;
-
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
-
-            return true;
+            taskName = readString(buf, nameLen);
         }
-        else if (opType == CACHE_START) {
-            if (buf.remaining() < 1)
+
+        IgniteUuid sesId = readIgniteUuid(buf);
+        long startTime = buf.getLong();
+        long duration = buf.getLong();
+        int affPartId = buf.getInt();
+
+        if (taskName == null)
+            forwardRead(hash);
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     */
+    private boolean deserializeJob(ByteBuffer buf, UUID nodeId) {
+        if (buf.remaining() < jobRecordSize())
+            return false;
+
+        IgniteUuid sesId = readIgniteUuid(buf);
+        long queuedTime = buf.getLong();
+        long startTime = buf.getLong();
+        long duration = buf.getLong();
+        boolean timedOut = buf.get() != 0;
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nodeId Node id.
+     */
+    private boolean deserializeCacheStart(ByteBuffer buf, UUID nodeId) {
+        if (buf.remaining() < 1)
+            return false;
+
+        boolean cached = buf.get() != 0;
+
+        String cacheName;
+        int hash = 0;
+
+        if (cached) {
+            if (buf.remaining() < 4)
                 return false;
 
-            boolean cached = buf.get() != 0;
+            hash = buf.getInt();
 
-            String cacheName;
-            int hash = 0;
+            cacheName = knownStrs.get(hash);
 
-            if (cached) {
-                if (buf.remaining() < 4)
-                    return false;
-
-                hash = buf.getInt();
-
-                cacheName = knownStrs.get(hash);
-
-                if (buf.remaining() < cacheStartRecordSize(0, true) - 1 - 4)
-                    return false;
-            }
-            else {
-                if (buf.remaining() < 4)
-                    return false;
-
-                int nameLen = buf.getInt();
-
-                if (buf.remaining() < cacheStartRecordSize(nameLen, false) - 1 - 4)
-                    return false;
-
-                cacheName = readString(buf, nameLen);
-            }
-
-            int cacheId = buf.getInt();
-
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.cacheStart(nodeId, cacheId, cacheName);
-
-            return true;
+            if (buf.remaining() < cacheStartRecordSize(0, true) - 1 - 4)
+                return false;
         }
-        else
-            throw new IgniteException("Unknown operation type id [typeId=" + opTypeByte + ']');
+        else {
+            if (buf.remaining() < 4)
+                return false;
+
+            int nameLen = buf.getInt();
+
+            if (buf.remaining() < cacheStartRecordSize(nameLen, false) - 1 - 4)
+                return false;
+
+            cacheName = readString(buf, nameLen);
+        }
+
+        int cacheId = buf.getInt();
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.cacheStart(nodeId, cacheId, cacheName);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    private boolean deserializePME(ByteBuffer buf) {
+        if (buf.remaining() < pmeRecordSize())
+            return false;
+
+        long startTime = buf.getLong();
+        long endTime = buf.getLong();
+        long startVer = buf.getLong();
+        long startVerMin = buf.getInt();
+        long resVer = buf.getLong();
+        long resVerMin = buf.getInt();
+        boolean rebalanced = buf.get() == (byte)1;
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.pme(startTime, endTime, startVer, startVerMin, resVer, resVerMin, rebalanced);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    private boolean deserializeCheckpoint(ByteBuffer buf) {
+        if (buf.remaining() < checkpointRecordSize())
+            return false;
+
+        boolean isStart = buf.get() == (byte)1;
+        long beforeLockDuration = buf.getLong();
+        long duration = buf.getLong();
+        long execDuration = buf.getLong();
+        long holdDuration = buf.getLong();
+        long fsyncDuration = buf.getLong();
+        long entryDuration = buf.getLong();
+        long pagesDuration = buf.getLong();
+        long pagesSize = buf.getLong();
+
+        for (PerformanceStatisticsHandler handler : curHnd)
+            handler.checkpoint(isStart, beforeLockDuration, duration, execDuration, holdDuration, fsyncDuration, entryDuration,
+                pagesDuration, pagesSize);
+
+        return true;
     }
 
     /** Turns on forward read mode. */

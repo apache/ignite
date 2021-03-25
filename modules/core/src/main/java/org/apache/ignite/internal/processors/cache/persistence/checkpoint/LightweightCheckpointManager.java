@@ -145,6 +145,7 @@ public class LightweightCheckpointManager {
         );
 
         checkpointerProvider = () -> new Checkpointer(
+            cacheProcessor.context().kernalContext().performanceStatistics(),
             igniteInstanceName,
             checkpointThreadName,
             workersRegistry,

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -180,6 +181,9 @@ public class Checkpointer extends GridWorker {
     /** For testing only. */
     private volatile boolean checkpointsEnabled = true;
 
+    /** Statistics processor. */
+    private final PerformanceStatisticsProcessor statisticsProc;
+
     /**
      * @param gridName Grid name.
      * @param name Thread name.
@@ -197,6 +201,7 @@ public class Checkpointer extends GridWorker {
      * @param cpFreqDeviation Deviation of checkpoint frequency.
      */
     Checkpointer(
+        PerformanceStatisticsProcessor statisticsProc,
         @Nullable String gridName,
         String name,
         WorkersRegistry workersRegistry,
@@ -213,6 +218,7 @@ public class Checkpointer extends GridWorker {
         Supplier<Integer> cpFreqDeviation
     ) {
         super(gridName, name, logger.apply(Checkpointer.class), workersRegistry);
+        this.statisticsProc = statisticsProc;
         this.pauseDetector = detector;
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
@@ -428,6 +434,9 @@ public class Checkpointer extends GridWorker {
             currentProgress().initCounters(chp.pagesSize);
 
             if (chp.hasDelta()) {
+                if (statisticsProc.enabled())
+                    writeStatistics(true, tracker, chp);
+
                 if (log.isInfoEnabled()) {
                     long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
 
@@ -481,6 +490,9 @@ public class Checkpointer extends GridWorker {
             tracker.onEnd();
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
+                if (statisticsProc.enabled())
+                    writeStatistics(false, tracker, chp);
+
                 if (log.isInfoEnabled()) {
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
                             "walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
@@ -971,5 +983,20 @@ public class Checkpointer extends GridWorker {
      */
     private boolean isShutdownNow() {
         return shutdownNow;
+    }
+
+    /**
+     * Writes checkpoint performance statistics.
+     */
+    private void writeStatistics(boolean isStart, CheckpointMetricsTracker tracker, Checkpoint chp) {
+        statisticsProc.checkpoint(isStart,
+            tracker.beforeLockDuration(),
+            tracker.lockWaitDuration(),
+            tracker.listenersExecuteDuration(),
+            tracker.lockHoldDuration(),
+            tracker.walCpRecordFsyncDuration(),
+            tracker.writeCheckpointEntryDuration(),
+            tracker.splitAndSortCpPagesDuration(),
+            chp.pagesSize);
     }
 }

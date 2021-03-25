@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -181,6 +182,35 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
         write(writer -> writer.job(sesId, queuedTime, startTime, duration, timedOut));
+    }
+
+    /**
+     * @param startTime Start time.
+     * @param endTime End time.
+     * @param startVer Start topology version.
+     * @param resVer Result topology version.
+     * @param rebalanced Rebalanced.
+     */
+    public void pme(long startTime, long endTime, AffinityTopologyVersion startVer, AffinityTopologyVersion resVer,
+        boolean rebalanced) {
+        write(writer -> writer.pme(startTime, endTime, startVer, resVer, rebalanced));
+    }
+
+    /**
+     * @param isStart Is start.
+     * @param beforeLockDuration Before lock duration.
+     * @param duration Duration.
+     * @param executeDuration Execute duration.
+     * @param holdDuration Hold duration.
+     * @param fsyncDuration Fsync duration.
+     * @param entryDuration Entry duration.
+     * @param pagesDuration Pages duration.
+     * @param pagesSize Pages size.
+     */
+    public void checkpoint(boolean isStart, long beforeLockDuration, long duration, long executeDuration, long holdDuration,
+        long fsyncDuration, long entryDuration, long pagesDuration, int pagesSize) {
+        write(writer -> writer.checkpoint(isStart, beforeLockDuration, duration, executeDuration, holdDuration, fsyncDuration,
+            entryDuration, pagesDuration, pagesSize));
     }
 
     /**

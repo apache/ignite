@@ -2449,6 +2449,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", wasRebalanced=" + wasRebalanced() + ']');
         }
 
+        if (cctx.kernalContext().performanceStatistics().enabled())
+            cctx.kernalContext().performanceStatistics().pme(initTime, System.currentTimeMillis(),
+                initialVersion(), res, rebalanced());
+
         assert res != null || err != null;
 
         if (res != null) {
