@@ -1129,8 +1129,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null,
             drHnd
         );
-
-        primary = true;
     }
 
     /**
