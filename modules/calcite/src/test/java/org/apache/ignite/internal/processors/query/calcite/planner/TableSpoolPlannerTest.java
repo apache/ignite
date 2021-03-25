@@ -127,7 +127,8 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
             "join t1 on t0.jid = t1.jid";
 
         RelNode phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");
+            "MergeJoinConverter", "NestedLoopJoinConverter",
+            "FilterSpoolMergeToHashIndexSpoolRule", "FilterSpoolMergeToSortIndexSpoolRule");
 
         assertNotNull(phys);
 

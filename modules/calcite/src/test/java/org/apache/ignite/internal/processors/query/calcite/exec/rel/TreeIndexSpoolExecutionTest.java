@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple4;
@@ -41,7 +42,7 @@ import org.junit.Test;
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class IndexSpoolExecutionTest extends AbstractExecutionTest {
+public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
@@ -132,11 +133,18 @@ public class IndexSpoolExecutionTest extends AbstractExecutionTest {
             Object[] upper = new Object[3];
             TestPredicate testFilter = new TestPredicate();
 
+            RuntimeTreeIndex idx = new RuntimeTreeIndex<>(
+                ctx,
+                RelCollations.of(ImmutableIntList.of(0)),
+                (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0
+            );
+
             IndexSpoolNode<Object[]> spool = new IndexSpoolNode<>(
                 ctx,
                 rowType,
-                RelCollations.of(ImmutableIntList.of(0)),
-                (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
+                idx,
+//                RelCollations.of(ImmutableIntList.of(0)),
+//                (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
                 testFilter,
                 () -> lower,
                 () -> upper

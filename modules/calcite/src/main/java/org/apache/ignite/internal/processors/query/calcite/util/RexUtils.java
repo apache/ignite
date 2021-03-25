@@ -417,16 +417,10 @@ public class RexUtils {
                     assert idxOpSupports(cond) : cond;
                 }
 
-                SqlOperator op = pred.getOperator();
+                if (pred.getOperator().kind != SqlKind.EQUALS)
+                    return new IndexConditions();
 
-                switch (op.kind) {
-                    case EQUALS:
-                        searchPreds.add(pred);
-                        break;
-
-                    default:
-                        return new IndexConditions();
-                }
+                searchPreds.add(pred);
             }
         }
 

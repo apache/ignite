@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -71,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
@@ -352,11 +352,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteHashIndexSpool rel) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
@@ -393,11 +388,44 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
         Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
 
+        RuntimeTreeIndex idx = new RuntimeTreeIndex<>(ctx, collation, expressionFactory.comparator(collation));
+
         IndexSpoolNode<Row> node = new IndexSpoolNode<>(
             ctx,
             rel.getRowType(),
-            collation,
-            expressionFactory.comparator(collation),
+            idx,
+//            collation,
+//            expressionFactory.comparator(collation),
+            filter,
+            lower,
+            upper
+        );
+
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteHashIndexSpool rel) {
+        List<RexNode> lowerBound = rel.indexCondition().lowerBound();
+        List<RexNode> upperBound = rel.indexCondition().upperBound();
+
+        Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
+
+        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
+        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
+
+        RuntimeHashIndex idx = new RuntimeHashIndex(ctx, ImmutableBitSet.of(rel.indexCondition().keys()));
+
+        IndexSpoolNode<Row> node = new IndexSpoolNode<>(
+            ctx,
+            rel.getRowType(),
+            idx,
+//            collation,
+//            expressionFactory.comparator(collation),
             filter,
             lower,
             upper

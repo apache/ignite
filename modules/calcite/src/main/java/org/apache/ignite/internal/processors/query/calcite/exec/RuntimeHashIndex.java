@@ -17,18 +17,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,12 +35,9 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
+public class RuntimeHashIndex<Row> implements RuntimeIndex<Row>, AutoCloseable {
     /** */
     protected final ExecutionContext<Row> ectx;
-
-    /** */
-    protected final Comparator<Row> comp;
 
     /** */
     private final ImmutableBitSet keys;
@@ -59,11 +50,9 @@ public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
      */
     public RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        ImmutableBitSet keys,
-        Comparator<Row> comp
+        ImmutableBitSet keys
     ) {
         this.ectx = ectx;
-        this.comp = comp;
 
         assert !F.isEmpty(keys);
 
@@ -77,7 +66,7 @@ public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
     public void push(Row r) {
         List<Row> newEqRows = new ArrayList<>();
 
-        List<Row> eqRows = rows.putIfAbsent(new GroupKey(null), newEqRows);
+        List<Row> eqRows = rows.putIfAbsent(key(r), newEqRows);
 
         if (eqRows != null)
             eqRows.add(r);
@@ -94,17 +83,16 @@ public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
     @Override public GridCursor<Row> find(Row lower, Row upper, BPlusTree.TreeRowClosure<Row, Row> filterC) {
         assert filterC == null;
 
-        assert lower.equals(upper) :
-            "Lower and upper bounds must be equal for hash index: [lower=" + lower + ", upper=" + upper + ']';
+//        assert lower.equals(upper) :
+//            "Lower and upper bounds must be equal for hash index: [lower=" + lower + ", upper=" + upper + ']';
 
-        return new Cursor(null);
+        List<Row> eqRows = rows.get(key(lower));
+
+        return new Cursor(eqRows);
     }
 
-    /**
-     * Return an iterable to scan index range from lower to upper bounds inclusive,
-     * filtered by {@code filter} predicate.
-     */
-    public Iterable<Row> scan(
+    /** {@inheritDoc} */
+    @Override public Iterable<Row> scan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         Predicate<Row> filter,
@@ -114,23 +102,29 @@ public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
         return new IndexScan(rowType, this, filter, lowerBound, upperBound);
     }
 
+    /** */
+    private GroupKey key(Row r) {
+        GroupKey.Builder b = GroupKey.builder(keys.cardinality());
+
+        for (Integer field : keys)
+            b.add(ectx.rowHandler().get(field, r));
+
+        return b.build();
+    }
+
     /**
      *
      */
     private class Cursor implements GridCursor<Row> {
-        /** Sub map iterator. */
-        private final Iterator<Map.Entry<Row, List<Row>>> mapIt;
-
         /** Iterator over rows with equal index keys. */
-        private Iterator<Row> listIt;
+        private final Iterator<Row> listIt;
 
         /** */
         private Row row;
 
         /** */
-        Cursor(SortedMap<Row, List<Row>> subMap) {
-            mapIt = subMap.entrySet().iterator();
-            listIt = null;
+        Cursor(List<Row> rows) {
+            listIt = rows == null ? null : rows.iterator();
         }
 
         /** {@inheritDoc} */
@@ -145,14 +139,11 @@ public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
 
         /** */
         private boolean hasNext() {
-            return listIt != null && listIt.hasNext() || mapIt.hasNext();
+            return listIt != null && listIt.hasNext();
         }
 
         /** */
         private void next0() {
-            if (listIt == null || !listIt.hasNext())
-                listIt = mapIt.next().getValue().iterator();
-
             row = listIt.next();
         }
 

@@ -167,6 +167,8 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
             "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
         );
 
+        System.out.println("+++ \n" + RelOptUtil.toString(phys));
+
         checkSplitAndSerialization(phys, publicSchema);
 
         IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
@@ -189,82 +191,6 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertTrue(((RexLiteral)uBound.get(0)).isNull());
         assertTrue(((RexLiteral)lBound.get(2)).isNull());
         assertTrue(((RexLiteral)lBound.get(3)).isNull());
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
-    }
-
-    /**
-     * Check equi-join on not colocated fields without indexes.
-     */
-    @Test
-    public void testSourceWithoutCollation() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        publicSchema.addTable(
-            "T0",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "T0", "hash");
-                }
-            }
-        );
-
-        publicSchema.addTable(
-            "T1",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "T1", "hash");
-                }
-            }
-        );
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
-
-        IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
-        );
-
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
-
-        checkSplitAndSerialization(phys, publicSchema);
-
-        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
-
-        assertNotNull("Invalid plan: " + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES), idxSpool);
-        assertTrue("Invalid plan: " + RelOptUtil.toString(phys), idxSpool.getInput() instanceof IgniteSort);
-
-        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
-
-        assertNotNull(lBound);
-        assertEquals(3, lBound.size());
-
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
-
-        assertNotNull(uBound);
-        assertEquals(3, uBound.size());
-
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
         assertTrue(uBound.get(1) instanceof RexFieldAccess);
     }
 }

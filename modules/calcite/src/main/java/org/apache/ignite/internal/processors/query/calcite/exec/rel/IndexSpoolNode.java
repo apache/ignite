@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeIndex;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -35,7 +33,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     private final ScanNode<Row> scan;
 
     /** Runtime index */
-    private final RuntimeTreeIndex<Row> idx;
+    private final RuntimeIndex<Row> idx;
 
     /** */
     private int requested;
@@ -49,15 +47,17 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     public IndexSpoolNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        RelCollation collation,
-        Comparator<Row> comp,
+        RuntimeIndex<Row> idx,
+//        RelCollation collation,
+//        Comparator<Row> comp,
         Predicate<Row> filter,
         Supplier<Row> lowerIdxBound,
         Supplier<Row> upperIdxBound
     ) {
         super(ctx, rowType);
 
-        idx = new RuntimeTreeIndex<>(ctx, collation, comp);
+        this.idx = idx;
+//        idx = new RuntimeTreeIndex<>(ctx, collation, comp);
 
         scan = new ScanNode<>(
             ctx,

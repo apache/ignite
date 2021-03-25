@@ -46,7 +46,7 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
      * CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
      */
     @Test
-    public void test() throws Exception {
+    public void testSingleKey() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -117,12 +117,9 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertTrue(uBound.get(1) instanceof RexFieldAccess);
     }
 
-    /**
-     * Check case when exists index (collation) isn't applied not for whole join condition
-     * but may be used by part of condition.
-     */
+    /** */
     @Test
-    public void testPartialIndexForCondition() throws Exception {
+    public void testMultipleKeys() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -166,32 +163,25 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToSortedIndexSpoolRule"
         );
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
+        IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
         List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
+        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
+
+        assertSame(lBound, uBound);
 
         assertNotNull(lBound);
         assertEquals(4, lBound.size());
 
         assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(((RexLiteral)lBound.get(3)).isNull());
         assertTrue(lBound.get(1) instanceof RexFieldAccess);
-
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
-
-        assertNotNull(uBound);
-        assertEquals(4, uBound.size());
-
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+        assertTrue(lBound.get(2) instanceof RexFieldAccess);
         assertTrue(((RexLiteral)lBound.get(3)).isNull());
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
     }
 
     /**
@@ -244,11 +234,12 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
-
-        assertTrue(idxSpool.getInput() instanceof IgniteSort);
+        IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
         List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
+        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
+
+        assertSame(lBound, uBound);
 
         assertNotNull(lBound);
         assertEquals(3, lBound.size());
@@ -256,14 +247,5 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertTrue(((RexLiteral)lBound.get(0)).isNull());
         assertTrue(((RexLiteral)lBound.get(2)).isNull());
         assertTrue(lBound.get(1) instanceof RexFieldAccess);
-
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
-
-        assertNotNull(uBound);
-        assertEquals(3, uBound.size());
-
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
     }
 }

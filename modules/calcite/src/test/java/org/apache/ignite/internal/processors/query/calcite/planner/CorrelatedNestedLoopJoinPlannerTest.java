@@ -86,8 +86,10 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
+            "MergeJoinConverter", "NestedLoopJoinConverter"
         );
+
+        System.out.println("+++ " + RelOptUtil.toString(phys));
 
         assertNotNull(phys);
 
