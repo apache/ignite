@@ -53,36 +53,36 @@ class RebalanceInMemoryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000],
-              rb_thread_pool_size=[None], rb_batch_size=[None], rb_batches_prefetch_count=[None], rb_throttle=[None])
+              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_join(self, ignite_version,
                        backups, cache_count, entry_count, entry_size,
-                       rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle):
+                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
         """
         Tests rebalance on node join.
         """
         return self.__run(ignite_version, TriggerEvent.NODE_JOIN,
                           backups, cache_count, entry_count, entry_size,
-                          rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle)
+                          thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000],
-              rb_thread_pool_size=[None], rb_batch_size=[None], rb_batches_prefetch_count=[None], rb_throttle=[None])
+              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_left(self, ignite_version,
                        backups, cache_count, entry_count, entry_size,
-                       rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle):
+                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
         """
         Tests rebalance on node left.
         """
         return self.__run(ignite_version, TriggerEvent.NODE_LEFT,
                           backups, cache_count, entry_count, entry_size,
-                          rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle)
+                          thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     def __run(self, ignite_version, trigger_event,
               backups, cache_count, entry_count, entry_size,
-              rb_thread_pool_size, rb_batch_size, rb_batches_prefetch_count, rb_throttle):
+              thread_pool_size, batch_size, batches_prefetch_count, throttle):
         """
         Test performs rebalance test which consists of following steps:
             * Start cluster.
@@ -94,10 +94,10 @@ class RebalanceInMemoryTest(IgniteTest):
         :param cache_count: Cache count.
         :param entry_count: Cache entry count.
         :param entry_size: Cache entry size.
-        :param rb_thread_pool_size: rebalanceThreadPoolSize config property.
-        :param rb_batch_size: rebalanceBatchSize config property.
-        :param rb_batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
-        :param rb_throttle: rebalanceThrottle config property.
+        :param thread_pool_size: rebalanceThreadPoolSize config property.
+        :param batch_size: rebalanceBatchSize config property.
+        :param batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
+        :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
         node_count = len(self.test_context.cluster) - 1
@@ -109,10 +109,10 @@ class RebalanceInMemoryTest(IgniteTest):
                     cache_count * entry_count * entry_size * (backups + 1),
                     self.DEFAULT_DATA_REGION_SZ))),
             metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
-            rebalance_thread_pool_size=rb_thread_pool_size,
-            rebalance_batch_size=rb_batch_size,
-            rebalance_batches_prefetch_count=rb_batches_prefetch_count,
-            rebalance_throttle=rb_throttle)
+            rebalance_thread_pool_size=thread_pool_size,
+            rebalance_batch_size=batch_size,
+            rebalance_batches_prefetch_count=batches_prefetch_count,
+            rebalance_throttle=throttle)
 
         ignites = IgniteService(self.test_context, config=node_config,
                                 num_nodes=node_count if trigger_event else node_count - 1)
