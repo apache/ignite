@@ -542,9 +542,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param grp Cache group.
      * @param destroy Group destroy flag.
-     * @param touchMetrics Remove metrics flag.
+     * @param updateMetrics Remove metrics flag.
      */
-    private void cleanup(CacheGroupContext grp, boolean destroy, boolean touchMetrics) {
+    private void cleanup(CacheGroupContext grp, boolean destroy, boolean updateMetrics) {
         CacheConfiguration cfg = grp.config();
 
         for (Object obj : grp.configuredUserObjects())
@@ -560,7 +560,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (destroy && touchMetrics) {
+        if (destroy && updateMetrics) {
             grp.metrics().remove();
 
             grp.removeIOStatistic();
@@ -2852,8 +2852,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteException(msg, e);
         }
 
-        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop)
-            stopCacheGroup(grp.get1().groupId(), grp.get2(), grpMetricsToStop.get(grp.get1().groupId()));
+        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop) {
+            Boolean stat = grpMetricsToStop.get(grp.get1().groupId());
+
+            stopCacheGroup(grp.get1().groupId(), grp.get2(), stat == null ? false : stat);
+        }
 
         if (!sharedCtx.kernalContext().clientNode())
             sharedCtx.database().onCacheGroupsStopped(grpsToStop);
@@ -2956,26 +2959,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param grpId Group ID.
      * @param destroy Group destroy flag.
-     * @param touchMetrics Remove metrics flag.
+     * @param updateMetrics Remove metrics flag.
      */
-    private void stopCacheGroup(int grpId, boolean destroy, boolean touchMetrics) {
+    private void stopCacheGroup(int grpId, boolean destroy, boolean updateMetrics) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
 
         if (grp != null)
-            stopCacheGroup(grp, destroy, touchMetrics);
+            stopCacheGroup(grp, destroy, updateMetrics);
     }
 
     /**
      * @param grp Cache group.
      * @param destroy Group destroy flag.
-     * @param touchMetrics Remove metrics flag.
+     * @param updateMetrics Remove metrics flag.
      */
-    private void stopCacheGroup(CacheGroupContext grp, boolean destroy, boolean touchMetrics) {
+    private void stopCacheGroup(CacheGroupContext grp, boolean destroy, boolean updateMetrics) {
         grp.stopGroup();
 
         U.stopLifecycleAware(log, grp.configuredUserObjects());
 
-        cleanup(grp, destroy, touchMetrics);
+        cleanup(grp, destroy, updateMetrics);
     }
 
     /**
