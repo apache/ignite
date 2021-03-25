@@ -46,7 +46,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
     private final Object appKey;
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -65,7 +65,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
      * @param cctx Cache context.
      * @param appKey Application key for reservation.
      */
-    public GridDhtPartitionsReservation(AffinityTopologyVersion topVer, GridCacheContext<?,?> cctx, Object appKey) {
+    public GridDhtPartitionsReservation(AffinityTopologyVersion topVer, GridCacheContext<?, ?> cctx, Object appKey) {
         assert topVer != null;
         assert cctx != null;
         assert appKey != null;

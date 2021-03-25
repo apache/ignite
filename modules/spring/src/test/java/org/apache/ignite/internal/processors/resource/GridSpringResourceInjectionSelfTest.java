@@ -300,7 +300,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, grid, NoSuchBeanDefinitionException.class,"No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
+        }, grid, NoSuchBeanDefinitionException.class, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
             ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
     }
 

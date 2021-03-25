@@ -302,7 +302,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
@@ -338,7 +338,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }

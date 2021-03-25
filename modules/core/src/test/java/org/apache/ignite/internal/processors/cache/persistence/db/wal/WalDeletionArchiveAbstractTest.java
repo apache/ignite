@@ -66,7 +66,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         dbCfg.setWalMode(walMode());
         dbCfg.setWalSegmentSize(512 * 1024);
-        dbCfg.setCheckpointFrequency(60 * 1000);//too high value for turn off frequency checkpoint.
+        dbCfg.setCheckpointFrequency(60 * 1000); //too high value for turn off frequency checkpoint.
         dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(100 * 1024 * 1024)
             .setPersistenceEnabled(true));
@@ -217,7 +217,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         File[] cpFiles = dbMgr.checkpointDirectory().listFiles();
 
-        assertTrue(cpFiles.length <= (checkpointCnt * 2 + 1));// starts & ends + node_start
+        assertTrue(cpFiles.length <= (checkpointCnt * 2 + 1)); // starts & ends + node_start
     }
 
     /**

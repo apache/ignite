@@ -48,7 +48,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -81,7 +81,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         final int KEYS_CNT = 3000;
         final int THREADS_CNT = 250;
 
-        final IgniteCache<Integer,Integer> c = startGrid().cache(DEFAULT_CACHE_NAME);
+        final IgniteCache<Integer, Integer> c = startGrid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEYS_CNT; i++) {
             c.put(i, i);

@@ -75,7 +75,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
      * @return Cache configuration for non binary marshaller tests.
      */
     private CacheConfiguration nonBinCacheConfig() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -91,7 +91,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
      * @return Cache configuration for binary marshaller tests.
      */
     final CacheConfiguration binaryCacheConfig() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

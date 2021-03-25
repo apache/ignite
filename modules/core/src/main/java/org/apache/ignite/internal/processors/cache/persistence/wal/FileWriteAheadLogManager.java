@@ -339,11 +339,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
-    /**
-     * Reference to the last added next archive timeout check object. Null if mode is not enabled. Should be cancelled
-     * at shutdown
-     */
-    @Nullable private volatile GridTimeoutObject nextAutoArchiveTimeoutObj;
+    /** Reference to the last added next timeout rollover object. */
+    @Nullable private TimeoutRollover timeoutRollover;
+
+    /** Timeout rollover mutex. */
+    @Nullable private final Object timeoutRolloverMux;
 
     /**
      * Listener invoked for each segment file IO initializer.
@@ -401,6 +401,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = mode == WALMode.FSYNC ? dsCfg.getFileIOFactory() : new RandomAccessFileIOFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
+
+        timeoutRolloverMux = walAutoArchiveAfterInactivity > 0 ? new Object() : null;
 
         double thresholdWalArchiveSizePercentage = IgniteSystemProperties.getDouble(
             IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
@@ -639,17 +641,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Method is called twice on deactivate and stop.
      * It shutdown workers but do not deallocate them to avoid duplication.
-     * */
+     */
     @Override protected void stop0(boolean cancel) {
         final GridTimeoutProcessor.CancelableTask schedule = backgroundFlushSchedule;
 
         if (schedule != null)
             schedule.close();
 
-        final GridTimeoutObject timeoutObj = nextAutoArchiveTimeoutObj;
-
-        if (timeoutObj != null)
-            cctx.time().removeTimeoutObject(timeoutObj);
+        stopAutoRollover();
 
         try {
             fileHandleManager.onDeactivate();
@@ -758,33 +757,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * does check of inactivity period and schedules new launch.
      */
     private void scheduleNextInactivityPeriodElapsedCheck() {
-        final long lastRecMs = lastRecordLoggedMs.get();
-        final long nextPossibleAutoArchive = (lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs) + walAutoArchiveAfterInactivity;
+        assert walAutoArchiveAfterInactivity > 0;
+        assert timeoutRolloverMux != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Schedule WAL rollover check at " + new Time(nextPossibleAutoArchive).toString());
+        synchronized (timeoutRolloverMux) {
+            long lastRecMs = lastRecordLoggedMs.get();
+            long nextEndTime = lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs + walAutoArchiveAfterInactivity;
 
-        nextAutoArchiveTimeoutObj = new GridTimeoutObject() {
-            private final IgniteUuid id = IgniteUuid.randomUuid();
-
-            @Override public IgniteUuid timeoutId() {
-                return id;
-            }
-
-            @Override public long endTime() {
-                return nextPossibleAutoArchive;
-            }
-
-            @Override public void onTimeout() {
-                if (log.isDebugEnabled())
-                    log.debug("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()).toString() + ")");
-
-                checkWalRolloverRequiredDuringInactivityPeriod();
-
-                scheduleNextInactivityPeriodElapsedCheck();
-            }
-        };
-        cctx.time().addTimeoutObject(nextAutoArchiveTimeoutObj);
+            cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
+        }
     }
 
     /** {@inheritDoc} */
@@ -1864,7 +1845,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 blockingSectionBegin();
 
                 try {
-                    segmentAware.awaitSegment(0);//wait for init at least one work segments.
+                    segmentAware.awaitSegment(0); //wait for init at least one work segments.
                 }
                 finally {
                     blockingSectionEnd();
@@ -3419,6 +3400,96 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     catch (IOException e) {
                         throw new StorageException("Failed to format WAL segment: " + fd.file().getAbsolutePath(), e);
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Timeout object for automatically rollover segments if the recording
+     * to the WAL was not more than or equal to {@link #walAutoArchiveAfterInactivity}.
+     */
+    private class TimeoutRollover implements GridTimeoutObject {
+        /** ID of timeout object. */
+        private final IgniteUuid id = IgniteUuid.randomUuid();
+
+        /** Timestamp for triggering. */
+        private final long endTime;
+
+        /** Cancel flag. */
+        private boolean cancel;
+
+        /**
+         * Constructor.
+         *
+         * @param endTime Timestamp for triggering.
+         */
+        private TimeoutRollover(long endTime) {
+            if (log.isDebugEnabled())
+                log.debug("Schedule WAL rollover check at " + new Time(endTime).toString());
+
+            this.endTime = endTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid timeoutId() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long endTime() {
+            return endTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            assert walAutoArchiveAfterInactivity > 0;
+            assert timeoutRolloverMux != null;
+
+            synchronized (timeoutRolloverMux) {
+                if (!cancel) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Checking if WAL rollover required (" +
+                            new Time(U.currentTimeMillis()).toString() + ")");
+                    }
+
+                    checkWalRolloverRequiredDuringInactivityPeriod();
+
+                    scheduleNextInactivityPeriodElapsedCheck();
+                }
+            }
+        }
+
+        /**
+         * Cancel auto rollover.
+         */
+        public void cancel() {
+            assert walAutoArchiveAfterInactivity > 0;
+            assert timeoutRolloverMux != null;
+
+            synchronized (timeoutRolloverMux) {
+                if (log.isDebugEnabled())
+                    log.debug("Auto rollover is canceled");
+
+                cancel = true;
+            }
+        }
+    }
+
+    /**
+     * Stop auto rollover.
+     */
+    private void stopAutoRollover() {
+        if (walAutoArchiveAfterInactivity > 0) {
+            assert timeoutRolloverMux != null;
+
+            synchronized (timeoutRolloverMux) {
+                TimeoutRollover timeoutRollover = this.timeoutRollover;
+
+                if (timeoutRollover != null) {
+                    timeoutRollover.cancel();
+
+                    cctx.time().removeTimeoutObject(timeoutRollover);
                 }
             }
         }
