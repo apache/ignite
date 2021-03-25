@@ -138,7 +138,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
             assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
-            assertTrue(entLatch.await(10_000,TimeUnit.MILLISECONDS));
+            assertTrue(entLatch.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;
@@ -156,7 +156,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
             assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
-            assertTrue(entLatch.await(10_000,TimeUnit.MILLISECONDS));
+            assertTrue(entLatch.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;

@@ -86,8 +86,8 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
             .setFailureHandler(hnd));
 
         grid0.getOrCreateCache(new CacheConfiguration<>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.REPLICATED))
+                .setName(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.REPLICATED))
             .put(1, 1);
 
         grid0.cluster().baselineAutoAdjustEnabled(false);

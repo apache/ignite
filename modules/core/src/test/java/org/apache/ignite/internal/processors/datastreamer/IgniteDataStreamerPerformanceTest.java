@@ -156,7 +156,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             t.start();
 
-            int threadNum = 2;//Runtime.getRuntime().availableProcessors();
+            int threadNum = 2; //Runtime.getRuntime().availableProcessors();
 
             multithreaded(new Callable<Object>() {
                 @SuppressWarnings("InfiniteLoopStatement")
