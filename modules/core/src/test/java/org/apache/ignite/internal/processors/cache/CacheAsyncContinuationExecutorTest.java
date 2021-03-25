@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
+// TODO: Add tests for chain methods. Make sure to test all listen and chain overloads.
 /**
  * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}.
  */
