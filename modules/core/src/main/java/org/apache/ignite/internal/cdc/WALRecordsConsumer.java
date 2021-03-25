@@ -32,6 +32,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -129,13 +130,6 @@ public class WALRecordsConsumer<K, V> {
     }
 
     /**
-     * @return Consumer ID.
-     */
-    public String id() {
-        return dataConsumer.id();
-    }
-
-    /**
      * Starts the consumer.
      *
      * @param configuration Ignite configuration.
@@ -145,7 +139,7 @@ public class WALRecordsConsumer<K, V> {
 
         dataConsumer.start(configuration, log);
 
-        log.info("DataChangeConsumer started[id=" + dataConsumer.id() + ']');
+        log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /**
@@ -155,11 +149,11 @@ public class WALRecordsConsumer<K, V> {
     public void stop() {
         dataConsumer.stop();
 
-        log.info("DataChangeConsumer stoped[id=" + dataConsumer.id() + ']');
+        log.info("WalRecordsConsumer stoped[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass().getSimpleName() + "[id=" + id() + ']';
+        return S.toString(WALRecordsConsumer.class, this);
     }
 }

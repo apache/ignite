@@ -189,7 +189,7 @@ public class IgniteCDC implements Runnable {
         cdcDir = findCDCDir(workDir(cfg));
 
         try (CDCFileLockHolder lock =
-                new CDCFileLockHolder(cdcDir.toString(), consumer::id, log)) {
+                new CDCFileLockHolder(cdcDir.toString(), () -> "cdc.lock", log)) {
             log.info("Trying to acquire file lock[lock=" + lock.lockPath() + ']');
 
             lock.tryLock(cdcCfg.getLockTimeout());
@@ -203,7 +203,7 @@ public class IgniteCDC implements Runnable {
                 log.info("--------------------------------");
             }
 
-            state = new CDCConsumerState(cdcDir.resolve(STATE_DIR), consumer.id());
+            state = new CDCConsumerState(cdcDir.resolve(STATE_DIR), "cdc-state.bin");
 
             initState = state.load();
 

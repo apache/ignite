@@ -43,11 +43,6 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public interface CaptureDataChangeConsumer<K, V> {
     /**
-     * @return Consumer ID.
-     */
-    String id();
-
-    /**
      * Starts the consumer.
      *
      * @param configuration Ignite configuration.

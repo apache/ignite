@@ -335,10 +335,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         final int[] expSz = {KEYS_CNT};
 
         TestCDCConsumer lsnr = new TestCDCConsumer() {
-            @Override public String id() {
-                return "half-consumer";
-            }
-
             @Override protected boolean commit() {
                 // Commiting on the half of the data.
                 List<Integer> keys = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
@@ -416,11 +412,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         /** */
         public boolean stoped;
-
-        /** {@inheritDoc} */
-        @Override public String id() {
-            return getClass().getName();
-        }
 
         /** {@inheritDoc} */
         @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
