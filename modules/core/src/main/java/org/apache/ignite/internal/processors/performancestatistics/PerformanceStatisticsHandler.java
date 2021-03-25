@@ -104,7 +104,7 @@ public interface PerformanceStatisticsHandler {
      * @param resVerMin Result topology version minor.
      * @param rebalanced {@code True} if cluster fully rebalanced.
      */
-    void pme(long startTime, long endTime, long startVer, long startVerMin, long resVer, long resVerMin,
+    boolean pme(long startTime, long endTime, long startVer, long startVerMin, long resVer, long resVerMin,
         boolean rebalanced);
 
     /**
@@ -118,6 +118,6 @@ public interface PerformanceStatisticsHandler {
      * @param pagesDuration Pages duration.
      * @param pagesSize Pages size.
      */
-    void checkpoint(boolean isStart, long beforeLockDuration, long duration, long execDuration, long holdDuration,
+    boolean checkpoint(boolean isStart, long beforeLockDuration, long duration, long execDuration, long holdDuration,
         long fsyncDuration, long entryDuration, long pagesDuration, long pagesSize);
 }

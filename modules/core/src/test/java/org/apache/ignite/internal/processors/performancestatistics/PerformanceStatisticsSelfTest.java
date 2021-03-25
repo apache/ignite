@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
@@ -30,6 +31,9 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridIntList;
@@ -37,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -110,15 +115,22 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setCheckpointFrequency(10 * 1000)
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         srv = startGrid(NODES_CNT - 1);
 
         IgniteEx client = startClientGrid(NODES_CNT);
+
+        srv.cluster().state(ClusterState.ACTIVE);
 
         node = clientType == SERVER ? srv : client;
 
@@ -314,5 +326,50 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         });
 
         assertEquals(1, txs.get());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testPME() throws Exception {
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
+
+        startGrid();
+
+        TimeUnit.SECONDS.sleep(60);
+        final boolean[] checked = new boolean[1];
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public boolean pme(long startTime, long endTime, long startVer, long startVerMin, long resVer,
+                long resVerMin, boolean rebalanced) {
+                return true;
+            }
+        });
+
+        assertTrue(checked[0]);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCheckpoint() throws Exception {
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
+
+        for (int i = 0; i < ENTRY_COUNT * 2; i++)
+            cache.put(i, i);
+
+        TimeUnit.SECONDS.sleep(60);
+        final boolean[] checked = new boolean[1];
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public boolean checkpoint(boolean isStart, long beforeLockDuration, long duration, long execDuration,
+                long holdDuration, long fsyncDuration, long entryDuration, long pagesDuration, long pagesSize) {
+                checked[0] = true;
+            }
+        });
+
+        assertTrue(checked[0]);
     }
 }
