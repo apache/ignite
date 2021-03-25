@@ -159,14 +159,14 @@ public class RexUtils {
     /**
      * Builds index conditions.
      */
-    public static IndexConditions buildIndexConditions(
+    public static IndexConditions buildSortedIndexConditions(
         RelOptCluster cluster,
         RelCollation collation,
         RexNode condition,
         RelDataType rowType,
         ImmutableBitSet requiredColumns
     ) {
-        if (condition == null || collation == null || collation.getFieldCollations().isEmpty())
+        if (condition == null)
             return new IndexConditions();
 
         condition = RexUtil.toCnf(builder(cluster), condition);
@@ -273,6 +273,166 @@ public class RexUtils {
             upper = null;
 
         return new IndexConditions(lower, upper, lowerBound, upperBound);
+    }
+
+    /**
+     * Builds index conditions.
+     */
+    public static IndexConditions buildSortedIndexConditions(
+        RelOptCluster cluster,
+        RexNode condition,
+        RelDataType rowType
+    ) {
+        if (condition == null)
+            return new IndexConditions();
+
+        condition = RexUtil.toCnf(builder(cluster), condition);
+
+        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
+
+        if (F.isEmpty(fieldsToPredicates))
+            return new IndexConditions();
+
+        List<RexNode> lower = new ArrayList<>();
+        List<RexNode> upper = new ArrayList<>();
+
+        for (int fldIdx : fieldsToPredicates.keySet()) {
+            RelFieldCollation fc = new RelFieldCollation(fldIdx);
+
+            int collFldIdx = fc.getFieldIndex();
+
+            List<RexCall> collFldPreds = fieldsToPredicates.get(collFldIdx);
+
+            if (F.isEmpty(collFldPreds))
+                break;
+
+            RexNode bestUpper = null;
+            RexNode bestLower = null;
+
+            for (RexCall pred : collFldPreds) {
+                if (U.assertionsEnabled()) {
+                    RexNode cond = RexUtil.removeCast(pred.operands.get(1));
+
+                    assert idxOpSupports(cond) : cond;
+                }
+
+                boolean lowerBoundBelow = true;
+                SqlOperator op = pred.getOperator();
+                switch (op.kind) {
+                    case EQUALS:
+                        bestUpper = pred;
+                        bestLower = pred;
+                        break;
+
+                    case LESS_THAN:
+                    case LESS_THAN_OR_EQUAL:
+                        lowerBoundBelow = !lowerBoundBelow;
+                        // Fall through.
+
+                    case GREATER_THAN:
+                    case GREATER_THAN_OR_EQUAL:
+                        if (lowerBoundBelow)
+                            bestLower = pred;
+                        else
+                            bestUpper = pred;
+                        break;
+
+                    default:
+                        throw new AssertionError("Unknown condition: " + op.kind);
+                }
+
+                if (bestUpper != null && bestLower != null)
+                    break; // We've found either "=" condition or both lower and upper.
+            }
+
+            if (bestLower == null && bestUpper == null)
+                break; // No bounds, so break the loop.
+
+            if (fldIdx > 0 && bestLower != bestUpper)
+                // Go behind the first index field only in the case of multiple "=" conditions on index fields.
+                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
+
+            if (bestLower != null && bestUpper != null) { // "x>5 AND x<10"
+                upper.add(bestUpper);
+                lower.add(bestLower);
+
+                if (bestLower != bestUpper)
+                    break;
+            }
+            else if (bestLower != null) { // "x>5"
+                lower.add(bestLower);
+
+                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
+            }
+            else { // "x<10"
+                upper.add(bestUpper);
+
+                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
+            }
+        }
+
+        List<RexNode> lowerBound = null;
+        List<RexNode> upperBound = null;
+
+        if (!F.isEmpty(lower))
+            lowerBound = asBound(cluster, lower, rowType, null);
+        else
+            lower = null;
+
+        if (!F.isEmpty(upper))
+            upperBound = asBound(cluster, upper, rowType, null);
+        else
+            upper = null;
+
+        return new IndexConditions(lower, upper, lowerBound, upperBound);
+    }
+
+    /**
+     * Builds index conditions.
+     */
+    public static IndexConditions buildHashIndexConditions(
+        RelOptCluster cluster,
+        RexNode condition,
+        RelDataType rowType
+    ) {
+        condition = RexUtil.toCnf(builder(cluster), condition);
+
+        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
+
+        if (F.isEmpty(fieldsToPredicates))
+            return new IndexConditions();
+
+        List<RexNode> searchPreds = new ArrayList<>();
+
+        for (int fldIdx : fieldsToPredicates.keySet()) {
+            List<RexCall> collFldPreds = fieldsToPredicates.get(fldIdx);
+
+            if (F.isEmpty(collFldPreds))
+                break;
+
+            for (RexCall pred : collFldPreds) {
+                if (U.assertionsEnabled()) {
+                    RexNode cond = RexUtil.removeCast(pred.operands.get(1));
+
+                    assert idxOpSupports(cond) : cond;
+                }
+
+                SqlOperator op = pred.getOperator();
+
+                switch (op.kind) {
+                    case EQUALS:
+                        searchPreds.add(pred);
+                        break;
+
+                    default:
+                        return new IndexConditions();
+                }
+            }
+        }
+
+        List<RexNode> searchRow = asBound(cluster, searchPreds, rowType, null);
+
+        return new IndexConditions(searchPreds, searchPreds, searchRow, searchRow);
     }
 
     /** */

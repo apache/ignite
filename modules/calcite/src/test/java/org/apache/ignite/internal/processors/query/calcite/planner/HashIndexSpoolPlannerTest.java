@@ -19,15 +19,17 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
 
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -38,8 +40,7 @@ import org.junit.Test;
 /**
  *
  */
-@SuppressWarnings({"FieldCanBeLocal"})
-public class IndexSpoolPlannerTest extends AbstractPlannerTest {
+public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
      * Check equi-join on not colocated fields.
      * CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
@@ -88,12 +89,14 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToSortedIndexSpoolRule"
         );
+
+        System.out.println("+++\n" + RelOptUtil.toString(phys));
 
         checkSplitAndSerialization(phys, publicSchema);
 
-        IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
+        IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
         List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
 

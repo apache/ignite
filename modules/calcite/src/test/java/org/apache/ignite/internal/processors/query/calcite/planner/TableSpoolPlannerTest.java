@@ -72,7 +72,7 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.jid = t1.jid";
+            "join t1 on t0.jid > t1.jid";
 
         RelNode phys = physicalPlan(sql, publicSchema,
             "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");

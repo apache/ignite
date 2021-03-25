@@ -114,21 +114,6 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCnt = mq.getRowCount(getInput());
-        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
-        double totalBytes = rowCnt * bytesPerRow;
-        double cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
-
-        if (idxCond.lowerCondition() != null)
-            cpuCost += Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
-
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
-
-        return costFactory.makeCost(rowCnt, cpuCost, 0, totalBytes, 0);
-    }
-
-    /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         return mq.getRowCount(getInput()) * mq.getSelectivity(this, null);
     }
@@ -146,5 +131,22 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
     /** */
     public RexNode condition() {
         return condition;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCnt = mq.getRowCount(getInput());
+        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double totalBytes = rowCnt * bytesPerRow;
+        double cpuCost;
+
+        if (idxCond.lowerCondition() != null)
+            cpuCost = Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
+        else
+            cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
+
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        return costFactory.makeCost(rowCnt, cpuCost, 0, totalBytes, 0);
     }
 }

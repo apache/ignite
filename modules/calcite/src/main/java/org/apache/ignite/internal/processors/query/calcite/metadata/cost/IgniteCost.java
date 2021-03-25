@@ -40,6 +40,9 @@ public class IgniteCost implements RelOptCost {
     /** Memory cost of a aggregate call. */
     public static final double AGG_CALL_MEM_COST = 5;
 
+    /** Cost of a lookup at the hash. */
+    public static final double HASH_LOOKUP_COST = 10;
+
     /**
      * With broadcast distribution each row will be sent to the each distination node,
      * thus the total bytes amount will be multiplies of the destination nodes count.

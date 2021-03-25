@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -452,7 +453,7 @@ public class TraitUtils {
      * @param keys The keys to create collation from.
      * @return New collation.
      */
-    public static RelCollation createCollation(List<Integer> keys) {
+    public static RelCollation createCollation(Collection<Integer> keys) {
         return RelCollations.of(
             keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
         );

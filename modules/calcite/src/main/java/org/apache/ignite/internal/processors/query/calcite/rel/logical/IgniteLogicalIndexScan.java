@@ -62,12 +62,16 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
                 collation = TraitUtils.projectCollation(collation, proj, rowType);
         }
 
-        IndexConditions idxCond = RexUtils.buildIndexConditions(
-            cluster,
-            collation,
-            cond,
-            tbl.getRowType(typeFactory),
-            requiredColumns);
+        IndexConditions idxCond = null;
+
+        if (collation != null && collation.getFieldCollations().isEmpty()) {
+            idxCond = RexUtils.buildSortedIndexConditions(
+                cluster,
+                collation,
+                cond,
+                tbl.getRowType(typeFactory),
+                requiredColumns);
+        }
 
         return new IgniteLogicalIndexScan(
             cluster,

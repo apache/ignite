@@ -77,7 +77,7 @@ public class RuntimeHashIndex<Row> implements GridIndex<Row>, AutoCloseable {
     public void push(Row r) {
         List<Row> newEqRows = new ArrayList<>();
 
-        List<Row> eqRows = rows.putIfAbsent(new GroupKey(), newEqRows);
+        List<Row> eqRows = rows.putIfAbsent(new GroupKey(null), newEqRows);
 
         if (eqRows != null)
             eqRows.add(r);

@@ -40,9 +40,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
  * and allow to lookup rows by specified bounds.
  */
 public class IgniteHashIndexSpool extends Spool implements IgniteRel {
-    /** */
-    private final ImmutableBitSet keys;
-
     /** Index condition. */
     private final IndexConditions idxCond;
 
@@ -54,7 +51,6 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
-        ImmutableBitSet keys,
         RexNode condition,
         IndexConditions idxCond
     ) {
@@ -65,7 +61,6 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
 
         this.idxCond = idxCond;
         this.condition = condition;
-        this.keys = keys;
     }
 
     /**
@@ -77,7 +72,6 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
         this(input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
-            input.getBitSet("keys"),
             input.getExpression("condition"),
             new IndexConditions(input)
         );
@@ -90,12 +84,12 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), keys, condition, idxCond);
+        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), condition, idxCond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteHashIndexSpool(getCluster(), traitSet, input, keys, condition, idxCond);
+        return new IgniteHashIndexSpool(getCluster(), traitSet, input, condition, idxCond);
     }
 
     /** {@inheritDoc} */
@@ -108,7 +102,6 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
         RelWriter writer = super.explainTerms(pw);
 
         writer.item("condition", condition);
-        writer.item("keys", keys);
 
         return idxCond.explainTerms(writer);
     }
@@ -116,12 +109,9 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCnt = mq.getRowCount(getInput());
-        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double bytesPerRow = (getRowType().getFieldCount() - indexCondition().keys().size()) * IgniteCost.AVERAGE_FIELD_SIZE;
         double totalBytes = rowCnt * bytesPerRow;
-        double cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
-
-        if (idxCond.lowerCondition() != null)
-            cpuCost += IgniteCost.ROW_COMPARISON_COST;
+        double cpuCost = IgniteCost.HASH_LOOKUP_COST;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
@@ -136,11 +126,6 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** */
     public IndexConditions indexCondition() {
         return idxCond;
-    }
-
-    /** */
-    public ImmutableBitSet keys() {
-        return keys;
     }
 
     /** */
