@@ -108,10 +108,6 @@ public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileA
     @GridToStringExclude
     private UUID nodeId;
 
-    /** Postfix. */
-    @GridToStringExclude
-    private String postfix;
-
     /**
      * Creates new logger and automatically detects if root logger already
      * has appenders configured. If it does not, the root logger will be
@@ -513,7 +509,6 @@ public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileA
     /** */
     private void postfix(UUID nodeId, String postfix) {
         this.nodeId = nodeId;
-        this.postfix = postfix;
 
         updateFilePath(new Log4jNodeIdFilePath(postfix));
     }

@@ -113,10 +113,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
     @GridToStringExclude
     private volatile UUID nodeId;
 
-    /** Postfix. */
-    @GridToStringExclude
-    private volatile String postfix;
-
     /**
      * Creates new logger with given implementation.
      *
@@ -396,7 +392,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
 
     private void postfix(UUID nodeId, String postfix) {
         this.nodeId = nodeId;
-        this.postfix = postfix;
 
         // Set postfix as system variable to be used at configuration.
         System.setProperty(NODE_ID, postfix);

@@ -194,8 +194,11 @@ public class IgniteCDC implements Runnable {
         log = logger(cfg, workDir(cfg));
         factory = new IgniteWalIteratorFactory(log);
 
-        if (!CU.isPersistenceEnabled(cfg))
+        if (!CU.isPersistenceEnabled(cfg)) {
+            log.error("Persistence disabled. IgniteCDC can't run!");
+
             throw new IllegalArgumentException("Persistence disabled. IgniteCDC can't run!");
+        }
 
         nodeDir = consistentId(cfg);
 
