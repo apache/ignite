@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import org.apache.ignite.internal.GridKernalContext;
+
 /**
  * The runnable executes the run method with a security context that was actual when the runnable was created.
  */
@@ -25,8 +27,8 @@ public class SecurityAwareRunnable extends SecurityAwareAdapter implements Runna
     private final Runnable original;
 
     /** */
-    public SecurityAwareRunnable(IgniteSecurity security, Runnable original) {
-        super(security);
+    public SecurityAwareRunnable(GridKernalContext ctx, Runnable original) {
+        super(ctx);
 
         this.original = original;
     }

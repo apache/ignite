@@ -40,12 +40,8 @@ public class SecurityAwareIoPool implements IoPool {
 
         executor = new Executor() {
             @Override public void execute(@NotNull Runnable cmd) {
-                Runnable r = cmd;
-
-                if (SecurityUtils.isAuthentificated(SecurityAwareIoPool.this.ctx))
-                    r = new SecurityAwareRunnable(SecurityAwareIoPool.this.ctx.security(), cmd);
-
-                SecurityAwareIoPool.this.original.executor().execute(r);
+                SecurityAwareIoPool.this.original.executor()
+                    .execute(new SecurityAwareRunnable(SecurityAwareIoPool.this.ctx, cmd));
             }
         };
     }

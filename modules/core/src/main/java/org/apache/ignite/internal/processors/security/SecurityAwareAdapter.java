@@ -17,22 +17,35 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.util.UUID;
+import org.apache.ignite.internal.GridKernalContext;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isAuthentificated;
+
 /** */
-public class SecurityAwareAdapter {
-    /** */
-    private final IgniteSecurity security;
+public abstract class SecurityAwareAdapter {
+    /** No op security context. */
+    private static final OperationSecurityContext NO_OP_SEC_CXT = new OperationSecurityContext() {
+        @Override public void close() {
+            // No-op.
+        }
+    };
 
     /** */
-    private final SecurityContext secCtx;
+    private final GridKernalContext ctx;
 
     /** */
-    public SecurityAwareAdapter(IgniteSecurity security) {
-        this.security = security;
-        secCtx = security.securityContext();
+    private final UUID secSubjId;
+
+    /** */
+    protected SecurityAwareAdapter(GridKernalContext ctx) {
+        this.ctx = ctx;
+
+        secSubjId = isAuthentificated(ctx) ? ctx.security().securityContext().subject().id() : null;
     }
 
     /** */
     protected OperationSecurityContext withContext() {
-        return security.withContext(secCtx);
+        return secSubjId != null ? ctx.security().withContext(secSubjId) : NO_OP_SEC_CXT;
     }
 }

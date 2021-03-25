@@ -39,6 +39,13 @@ public class OperationSecurityContext implements AutoCloseable {
         this.secCtx = secCtx;
     }
 
+    /** */
+    OperationSecurityContext() {
+        proc = null;
+        secCtx = null;
+    }
+
+
     /** {@inheritDoc} */
     @Override public void close() {
         proc.withContext(secCtx);

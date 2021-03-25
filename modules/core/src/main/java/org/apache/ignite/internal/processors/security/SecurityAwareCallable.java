@@ -17,18 +17,27 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
  * The callable executes the call method with a security context that was actual when the calleble was created.
  */
 public class SecurityAwareCallable<T> extends SecurityAwareAdapter implements Callable<T> {
+    /** */
+    public static <A> Collection<? extends Callable<A>> convertToSecurityAware(GridKernalContext ctx,
+        Collection<? extends Callable<A>> tasks) {
+        return tasks.stream().map(t -> new SecurityAwareCallable<>(ctx, t)).collect(Collectors.toList());
+    }
+
     /** Original callable. */
     private final Callable<T> original;
 
     /** */
-    public SecurityAwareCallable(IgniteSecurity security, Callable<T> original) {
-        super(security);
+    public SecurityAwareCallable(GridKernalContext ctx, Callable<T> original) {
+        super(ctx);
 
         this.original = original;
     }

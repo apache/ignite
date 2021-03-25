@@ -25,9 +25,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.security.SecurityAwareCallable.convertToSecurityAware;
 
 /**
  * Executes tasks with a security context that was in force when executor's method was called.
@@ -43,23 +44,6 @@ public class SecurityAwareExecutorService implements ExecutorService {
     public SecurityAwareExecutorService(GridKernalContext ctx, ExecutorService original) {
         this.ctx = ctx;
         this.original = original;
-    }
-
-    /** */
-    private Runnable convertToSecurityAware(Runnable cmd) {
-        return SecurityUtils.isAuthentificated(ctx) ? new SecurityAwareRunnable(ctx.security(), cmd) : cmd;
-    }
-
-    /** */
-    private <T> Callable<T> convertToSecurityAware(Callable<T> tsk) {
-        return SecurityUtils.isAuthentificated(ctx) ? new SecurityAwareCallable<>(ctx.security(), tsk) : tsk;
-    }
-
-    /** */
-    private <T> Collection<? extends Callable<T>> convertToSecurityAware(Collection<? extends Callable<T>> tasks) {
-        return SecurityUtils.isAuthentificated(ctx)
-            ? tasks.stream().map(t -> new SecurityAwareCallable<>(ctx.security(), t)).collect(Collectors.toList())
-            : tasks;
     }
 
     /** {@inheritDoc} */
@@ -89,45 +73,45 @@ public class SecurityAwareExecutorService implements ExecutorService {
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
-        return original.submit(convertToSecurityAware(task));
+        return original.submit(new SecurityAwareCallable<>(ctx, task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Runnable task, T res) {
-        return original.submit(convertToSecurityAware(task), res);
+        return original.submit(new SecurityAwareRunnable(ctx, task), res);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
-        return original.submit(convertToSecurityAware(task));
+        return original.submit(new SecurityAwareRunnable(ctx, task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(
         @NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return original.invokeAll(convertToSecurityAware(tasks));
+        return original.invokeAll(convertToSecurityAware(ctx, tasks));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException {
-        return original.invokeAll(convertToSecurityAware(tasks), timeout, unit);
+        return original.invokeAll(convertToSecurityAware(ctx, tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
-        return original.invokeAny(convertToSecurityAware(tasks));
+        return original.invokeAny(convertToSecurityAware(ctx, tasks));
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return original.invokeAny(convertToSecurityAware(tasks), timeout, unit);
+        return original.invokeAny(convertToSecurityAware(ctx, tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        original.execute(convertToSecurityAware(cmd));
+        original.execute(new SecurityAwareRunnable(ctx, cmd));
     }
 }
