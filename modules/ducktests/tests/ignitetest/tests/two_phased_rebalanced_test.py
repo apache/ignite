@@ -31,7 +31,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST, LATEST_2_9
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
 
 NUM_NODES_CELL = 4
 
@@ -49,7 +49,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     # pylint: disable=R0914
     @cluster(num_nodes=(NUM_NODES_CELL * NUM_CELL) + 1)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST), str(LATEST_2_9))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def two_phased_rebalancing_test(self, ignite_version):
         """
         Test case of two-phase rebalancing.
@@ -152,7 +152,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
         :param num_cell Number of cell.
         :return List of IgniteServices.
         """
-
         cells = []
 
         first = IgniteService(self.test_context, config, NUM_NODES_CELL, [f'-D{ATTRIBUTE}=0'])
@@ -181,7 +180,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
         :param msg Information message.
         :return dict with hostname -> pds size in megabytes.
         """
-
         res = {}
         for cell in cells:
             for node in cell.nodes:
