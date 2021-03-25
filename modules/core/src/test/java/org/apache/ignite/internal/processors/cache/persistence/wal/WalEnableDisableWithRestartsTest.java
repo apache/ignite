@@ -1,23 +1,5 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-package wal;
-
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -36,14 +18,13 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 
-/** */
-public class WalDisableTest {
+public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "MY_CACHE";
 
@@ -51,82 +32,91 @@ public class WalDisableTest {
     private static final String CACHE_NAME_2 = "MY_CACHE_2";
 
     /** */
-    public static void main(String[] args) {
+    private static final int CYCLES = 3;
+
+    /** */
+    public static final int NODES = 4;
+
+    /** */
+    private static volatile boolean shutdown = false;
+
+    /** */
+    private static volatile boolean failure = false;
+
+    /** */
+    @Test
+    public void test() throws Exception {
         LinkedList<Ignite> nodes = new LinkedList<>();
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NODES; i++)
             nodes.add(Ignition.start(igniteCfg(false, "server_" + i)));
-        }
+
         nodes.getFirst().active(true);
 
-        long testStart = System.currentTimeMillis();
+        Ignite client = Ignition.start(igniteCfg(true, "client"));
 
         new Thread(new Runnable() {
-            @Override public void run() {
-                Ignite client = Ignition.start(igniteCfg(false, "client"));
-
+            public void run() {
                 try {
-                    while (!Thread.interrupted()) {
+                    for (int i = 0; i < CYCLES; i++) {
+                        System.err.println("*** CYCLE " + i);
+
                         client.cluster().disableWal(CACHE_NAME);
 
-                        Thread.sleep(2_000);
+                        Thread.sleep(1_000);
 
                         client.cluster().enableWal(CACHE_NAME);
+
+                        Thread.sleep(1_000);
                     }
-                } catch (IgniteException ex) {
+                }
+                catch (IgniteException ex) {
                     if (ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
                         System.out.println("TEST FAILED");
+
                         ex.printStackTrace(System.out);
-                        System.exit(-1);
+
+                        failure = true;
                     }
-                    else
-                        ex.printStackTrace();
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ex) {
                     return;
+                }
+                catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+                finally {
+                    shutdown = true;
                 }
             }
         }).start();
 
-        new Thread(new Runnable() {
-            @Override public void run() {
-                int waitTime = 2 * 60_000;
+        while (!shutdown) {
+            Thread.sleep(1_000);
 
-                try {
-                    Thread.sleep(waitTime);
-                }
-                catch (InterruptedException e) {
+            Ignite ignite = nodes.removeFirst();
 
-                }
+            String consistentId = (String) ignite.cluster().localNode().consistentId();
 
-                System.exit(0);
-            }
-        });
+            ignite.close();
 
-        while (true) {
-            try {
-                Ignite ignite = nodes.removeFirst();
+            Thread.sleep(1_000);
 
-                String consistentId = (String)ignite.cluster().localNode().consistentId();
-
-                ignite.close();
-
-                Thread.sleep(1000);
-
-                nodes.add(startNodeWithMaintenance(consistentId));
-            }
-            catch (Exception ex) {
-                ex.printStackTrace();
-
-                System.exit(1);
-            }
+            nodes.add(startNodeWithMaintenance(consistentId));
         }
 
-        //Ignition.stopAll(true);
+        assertFalse(failure);
+    }
+
+    @After
+    public void cleanup() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
-    private static Ignite startNodeWithMaintenance(String consistentId) throws Exception {
+    private Ignite startNodeWithMaintenance(String consistentId) throws Exception {
         Ignite node;
 
         try {
@@ -166,27 +156,13 @@ public class WalDisableTest {
         return node;
     }
 
-    private static IgniteConfiguration igniteCfg(boolean client, String name) {
-        IgniteConfiguration igniteCfg = new IgniteConfiguration();
+    /** */
+    private IgniteConfiguration igniteCfg(boolean client, String name) throws Exception {
+        IgniteConfiguration igniteCfg = getConfiguration(name);
 
-        igniteCfg.setIgniteInstanceName(name);
         igniteCfg.setConsistentId(name);
 
         igniteCfg.setClientMode(client);
-
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-//        comm.setSharedMemoryPort(47800);
-
-        igniteCfg.setCommunicationSpi(comm);
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-        ipFinder.setAddresses(Arrays.asList("localhost:47500..47550"));
-
-        TcpDiscoverySpi tcpDiscoverySpi = new TcpDiscoverySpi();
-        tcpDiscoverySpi.setLocalPort(47500);
-
-        igniteCfg.setDiscoverySpi(tcpDiscoverySpi.setIpFinder(ipFinder));
 
         CacheConfiguration configuration = new CacheConfiguration(CACHE_NAME);
         configuration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -200,13 +176,9 @@ public class WalDisableTest {
 
         igniteCfg.setCacheConfiguration(configuration, configuration2);
 
-        igniteCfg
-                .setDataStorageConfiguration(
-                        new DataStorageConfiguration()
-                                .setDefaultDataRegionConfiguration(
-                                        new DataRegionConfiguration().setMaxSize(1 * 1024L * 1024 * 1024)
-                                                .setPersistenceEnabled(true)
-                                ));
+        igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(1 * 1024L * 1024 * 1024).setPersistenceEnabled(true)));
+
         return igniteCfg;
     }
 }
