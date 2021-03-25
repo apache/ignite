@@ -45,7 +45,7 @@ class IgniteTest(Test):
         return monotonic()
 
     def tearDown(self):
-        self.logger.debug("Killing all runned IgniteAwareServices to speed-up the tearing down.")
+        self.logger.debug("Killing all runned services to speed-up the tearing down.")
 
         # pylint: disable=W0212
         for service in self.test_context.services._services.values():
@@ -58,7 +58,7 @@ class IgniteTest(Test):
             # This check is a cheap guarantee that each service support single-stop semantic.
             assert service.stopped
 
-        self.logger.debug("All runned IgniteAwareServices killed.")
+        self.logger.debug("All runned services killed.")
 
         super().tearDown()
 
