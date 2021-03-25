@@ -57,7 +57,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     private final H2TreeIndex idx;
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final boolean ucast;

@@ -82,7 +82,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
                 ? new SqlFieldsQuery(sql)
-                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
+                : new SqlFieldsQueryEx(sql, stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
 
         qry.setSchema(schema)
                 .setPageSize(pageSize)

@@ -881,8 +881,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (addr.isUnresolved())
                             addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
 
-                        long tsNanos = System.nanoTime();
-
                         sock = spi.createSocket();
 
                         fut.sock = sock;
@@ -912,9 +910,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     catch (IOException | IgniteCheckedException e) {
                         if (nodeId != null && !nodeAlive(nodeId)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to ping the node (has left or leaving topology): [nodeId=" + nodeId +
-                                    ']');
+                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Node has left or is " +
+                                "leaving topology. Cause: " + e.getMessage());
 
                             fut.onDone((IgniteBiTuple<UUID, Boolean>)null);
 
@@ -928,17 +925,29 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         reconCnt++;
 
-                        if (!openedSock && reconCnt == 2)
-                            break;
+                        if (!openedSock && reconCnt == 2) {
+                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Was unable to open the " +
+                                "socket at all. Cause: " + e.getMessage());
 
-                        if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
                             break;
-                        else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount())
+                        }
+
+                        if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e)) {
+                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the timeout " +
+                                spi.failureDetectionTimeout() + "ms. Cause: " + e.getMessage());
+
                             break;
+                        }
+                        else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount()) {
+                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the reconnection " +
+                                "count " + spi.getReconnectCount() + ". Cause: " + e.getMessage());
+
+                            break;
+                        }
 
                         if (spi.isNodeStopping0()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Stop pinging node, because node is stopping: [rmtNodeId=" + nodeId + ']');
+                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Current node is " +
+                                "stopping. Cause: " + e.getMessage());
 
                             break;
                         }
@@ -946,8 +955,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         U.closeQuiet(sock);
                     }
-
-                    U.sleep(200);
                 }
             }
             catch (Throwable t) {
@@ -2216,10 +2223,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /**
      * Thread that cleans IP finder and keeps it in the correct state, unregistering
-     * addresses of the nodes that has left the topology.
+     * addresses of the nodes that has left the topology and re-registries missing addresses.
      * <p>
      * This thread should run only on coordinator node and will clean IP finder
      * if and only if {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * <p>
+     * Run with frequency {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi#ipFinderCleanFreq}
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**
@@ -6803,9 +6812,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?" +
                                 (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
-                                ") " +
-                                "[rmtAddr=" + rmtAddr +
-                                ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                                ") [rmtAddr=" + rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, "Unknown connection detected (is some other software connecting to " +
                             "this Ignite port?" +
@@ -7364,11 +7371,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     U.interrupt(clientMsgWrk.runner());
                 }
 
-                U.closeQuiet(sock);
+                U.close(sock, log);
 
                 if (log.isInfoEnabled())
                     log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
-                        ", rmtPort=" + sock.getPort());
+                        ", rmtPort=" + sock.getPort() + ", rmtNodeId=" + nodeId + ']');
 
                 if (isLocalNodeCoordinator() && !ring.hasRemoteServerNodes())
                     U.enhanceThreadName(msgWorkerThread, "crd");
@@ -7862,7 +7869,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     U.interrupt(runner());
 
-                    U.closeQuiet(sock);
+                    U.close(sock, log);
                 }
             }
         }

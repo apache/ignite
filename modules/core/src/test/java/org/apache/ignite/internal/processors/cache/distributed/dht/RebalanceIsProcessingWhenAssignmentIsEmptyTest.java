@@ -100,7 +100,7 @@ public class RebalanceIsProcessingWhenAssignmentIsEmptyTest extends GridCommonAb
          * @param nodes Nodes consistence ids.
          */
         public TestAffinity(String... nodes) {
-            super(false,2);
+            super(false, 2);
 
             this.nodeConsistentIds = nodes;
         }

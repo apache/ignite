@@ -22,10 +22,18 @@ Depending on your PHP configuration, you may need to additionally install/config
 
 == Installation
 
-The thin client can be installed from the zip archive:
+The PHP thin client is shipped as a Composer package and a zip archive. Use any of the methods to install the client in your environment.
 
-*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite binary package,window=_blank].
-*  Unpack the archive and navigate to the `{IGNITE_HOME}/platforms/php` folder.
+=== Using Composer
+
+include::includes/install-php-composer.adoc[]
+
+=== Using ZIP Archive
+
+The thin client can be installed from the zip archive available for download from the Apache Ignite website:
+
+*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite PHP Thin Client,window=_blank].
+*  Unpack the archive and navigate to the root folder.
 *  Use the command below to install the package.
 
 [source,shell]

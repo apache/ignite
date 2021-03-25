@@ -28,12 +28,6 @@ public class OracleDialect extends BasicJdbcDialect {
     /** */
     private static final long serialVersionUID = 0L;
 
-    private static final String MERGE_ON = "MERGE INTO %s t USING (SELECT %s FROM dual) v ON %s";
-
-    private static final String WHEN_MATCHED = " WHEN MATCHED THEN UPDATE SET %s";
-
-    private static final String WHEN_NOT_MATCHED = " WHEN NOT MATCHED THEN INSERT (%s) VALUES (%s)";
-
     /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;
@@ -65,24 +59,25 @@ public class OracleDialect extends BasicJdbcDialect {
             }
         }, "(", " AND ", ")");
 
-        String valuesCols = mkString(cols, new C1<String, String>() {
-            @Override public String apply(String col) {
-                return "v." + col;
-            }
-        }, "", ", ", "");
-
         String setCols = mkString(uniqCols, new C1<String, String>() {
             @Override public String apply(String col) {
                 return String.format("t.%s = v.%s", col, col);
             }
         }, "", ", ", "");
 
-        String resulting = String.format(MERGE_ON, fullTblName, selCols, match);
+        String valuesCols = mkString(cols, new C1<String, String>() {
+            @Override public String apply(String col) {
+                return "v." + col;
+            }
+        }, "", ", ", "");
 
-        String whenNotMatched = String.format(WHEN_NOT_MATCHED, colsLst, valuesCols);
+        String whenMatched = !uniqCols.isEmpty() ? String.format(" WHEN MATCHED THEN UPDATE SET %s", setCols) : "";
 
-        return resulting + (uniqCols.isEmpty() ? whenNotMatched :
-                String.format(WHEN_MATCHED, setCols) + whenNotMatched);
-
+        return String.format("MERGE INTO %s t" +
+            " USING (SELECT %s FROM dual) v" +
+            "  ON %s" +
+            "%s" +
+            " WHEN NOT MATCHED THEN" +
+            "  INSERT (%s) VALUES (%s)", fullTblName, selCols, match, whenMatched, colsLst, valuesCols);
     }
 }

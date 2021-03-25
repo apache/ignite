@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -29,6 +30,10 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -160,6 +165,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -192,6 +198,9 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -252,6 +261,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** MBean group for cache group metrics */
     private static final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
+
+    /**
+     * Initial timeout (in milliseconds) for output the progress of restoring partitions status.
+     * After the first output, the next ones will be output after value/5.
+     * It is recommended to change this property only in tests.
+     */
+    static long TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = TimeUnit.MINUTES.toMillis(5);
 
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
@@ -784,7 +800,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public List<GridCacheAdapter> blockGateways(Collection<Integer> cacheGrpIds) {
         List<GridCacheAdapter> affectedCaches = internalCaches().stream()
             .filter(cache -> cacheGrpIds.contains(cache.context().groupId()))
-            .collect(Collectors.toList());
+            .collect(toList());
 
         affectedCaches.forEach(cache -> {
             // Add proxy if it's not initialized.
@@ -1702,7 +1718,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
-            .collect(Collectors.toList());
+            .collect(toList());
 
         locJoinCtx.initCaches()
             .forEach(cacheDesc -> {
@@ -1748,7 +1764,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<StartCacheInfo> startCacheInfos = receivedCaches.stream()
             .filter(desc -> isLocalAffinity(desc.groupDescriptor().config()))
             .map(desc -> new StartCacheInfo(desc, null, exchTopVer, false))
-            .collect(Collectors.toList());
+            .collect(toList());
 
         prepareStartCaches(startCacheInfos);
 
@@ -1770,7 +1786,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     void prepareStartCaches(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
         prepareStartCaches(startCacheInfos, (data, operation) -> {
-            operation.apply(data);// PROXY
+            operation.apply(data); // PROXY
         });
     }
 
@@ -1876,7 +1892,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             List<StartCacheInfo> cacheInfosInOriginalOrder = startCacheInfos.stream()
                 .filter(successfullyPreparedCaches::contains)
-                .collect(Collectors.toList());
+                .collect(toList());
 
             for (StartCacheInfo startCacheInfo : cacheInfosInOriginalOrder) {
                 cacheStartFailHandler.handle(
@@ -2753,7 +2769,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<IgniteBiTuple<CacheGroupContext, Boolean>> grpsToStop = exchActions.cacheGroupsToStop().stream()
             .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
             .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
-            .collect(Collectors.toList());
+            .collect(toList());
 
         // Wait until all evictions are finished.
         grpsToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
@@ -2762,7 +2778,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             removeOffheapListenerAfterCheckpoint(grpsToStop);
 
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
-                .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
+                .collect(groupingBy(action -> action.descriptor().groupId()));
 
         try {
             doInParallel(
@@ -3552,12 +3568,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheNameClo = () -> cfgs.stream()
                     .map(StoredCacheData::config)
                     .map(CacheConfiguration::getName)
-                    .collect(Collectors.toList()).toString();
+                    .collect(toList()).toString();
 
                 cacheGrpNameClo = () -> cfgs.stream()
                     .map(StoredCacheData::config)
                     .map(CacheConfiguration::getGroupName)
-                    .collect(Collectors.toList()).toString();
+                    .collect(toList()).toString();
             }
         }
 
@@ -3583,11 +3599,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else {
                 cacheNameClo = () -> Stream.of(cfgs)
                     .map(CacheConfiguration::getName)
-                    .collect(Collectors.toList()).toString();
+                    .collect(toList()).toString();
 
                 cacheGrpNameClo = () -> Stream.of(cfgs)
                     .map(CacheConfiguration::getGroupName)
-                    .collect(Collectors.toList()).toString();
+                    .collect(toList()).toString();
             }
         }
 
@@ -3701,7 +3717,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart
     ) {
         return dynamicStartCachesByStoredConf(
-            ccfgList.stream().map(StoredCacheData::new).collect(Collectors.toList()),
+            ccfgList.stream().map(StoredCacheData::new).collect(toList()),
             failIfExists,
             checkThreadTx,
             disabledAfterStart,
@@ -3730,7 +3746,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 List<String> cacheNames = storedCacheDataList.stream()
                     .map(StoredCacheData::config)
                     .map(CacheConfiguration::getName)
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
                 return format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicStartCachesByStoredConf");
             });
@@ -3885,7 +3901,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         return dynamicChangeCaches(
             cacheNames.stream().map(cacheName -> createStopRequest(cacheName, false, null, destroy))
-                .collect(Collectors.toList())
+                .collect(toList())
         );
     }
 
@@ -4575,7 +4591,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return cachesInfo.registeredCaches().values()
             .stream()
             .filter(desc -> isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration()))
-            .collect(Collectors.toList());
+            .collect(toList());
     }
 
     /**
@@ -4585,7 +4601,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return cachesInfo.registeredCacheGroups().values()
             .stream()
             .filter(CacheGroupDescriptor::persistenceEnabled)
-            .collect(Collectors.toList());
+            .collect(toList());
     }
 
     /**
@@ -4616,16 +4632,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     public @Nullable DynamicCacheDescriptor cacheDescriptor(int cacheId) {
-        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors().values()) {
-            CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
-
-            assert ccfg != null : cacheDesc;
-
-            if (CU.cacheId(ccfg.getName()) == cacheId)
-                return cacheDesc;
-        }
-
-        return null;
+        return cachesInfo.registeredCachesById().get(cacheId);
     }
 
     /**
@@ -5321,7 +5328,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return IntStream.range(0, pagesList.bucketsCount())
                 .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
-                .collect(Collectors.toList());
+                .collect(toList());
         }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
     }
 
@@ -5461,13 +5468,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /**
+         * Restoring the state of partitions for cache groups.
+         *
          * @param forGroups Cache groups.
-         * @param partitionStates Partition states.
+         * @param partStates Partition states.
          * @throws IgniteCheckedException If failed.
          */
         private void restorePartitionStates(
             Collection<CacheGroupContext> forGroups,
-            Map<GroupPartitionId, Integer> partitionStates
+            Map<GroupPartitionId, Integer> partStates
         ) throws IgniteCheckedException {
             long startRestorePart = U.currentTimeMillis();
 
@@ -5482,12 +5491,42 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
 
+            AtomicReference<SortedSet<T3<Long, Long, GroupPartitionId>>> topPartRef = new AtomicReference<>();
+
+            long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
+
             for (CacheGroupContext grp : forGroups) {
                 sysPool.execute(() -> {
                     try {
-                        long processed = grp.offheap().restorePartitionStates(partitionStates);
+                        Map<Integer, Long> processed = grp.offheap().restorePartitionStates(partStates);
 
-                        totalProcessed.addAndGet(processed);
+                        totalProcessed.addAndGet(processed.size());
+
+                        if (log.isInfoEnabled()) {
+                            TreeSet<T3<Long, Long, GroupPartitionId>> top =
+                                new TreeSet<>(processedPartitionComparator());
+
+                            long ts = System.currentTimeMillis();
+
+                            for (Map.Entry<Integer, Long> e : processed.entrySet()) {
+                                top.add(new T3<>(e.getValue(), ts, new GroupPartitionId(grp.groupId(), e.getKey())));
+
+                                trimToSize(top, 5);
+                            }
+
+                            topPartRef.updateAndGet(top0 -> {
+                                if (top0 == null)
+                                    return top;
+
+                                for (T3<Long, Long, GroupPartitionId> t2 : top0) {
+                                    top.add(t2);
+
+                                    trimToSize(top, 5);
+                                }
+
+                                return top;
+                            });
+                        }
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         U.error(log, "Failed to restore partition state for " +
@@ -5506,9 +5545,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 });
             }
 
+            boolean printTop = false;
+
             try {
                 // Await completion restore state tasks in all stripes.
-                completionLatch.await();
+                if (!log.isInfoEnabled())
+                    completionLatch.await();
+                else {
+                    long timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
+
+                    while (!completionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
+                        if (log.isInfoEnabled()) {
+                            @Nullable SortedSet<T3<Long, Long, GroupPartitionId>> top = topPartRef.get();
+
+                            log.info("Restore partitions state progress [grpCnt=" +
+                                (forGroups.size() - completionLatch.getCount()) + '/' + forGroups.size() +
+                                ", partitionCnt=" + totalProcessed.get() + '/' + totalPart + (top == null ? "" :
+                                ", topProcessedPartitions=" + toStringTopProcessingPartitions(top, forGroups)) + ']');
+                        }
+
+                        timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS / 5;
+                        printTop = true;
+                    }
+                }
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);
@@ -5518,11 +5577,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (restoreStateError.get() != null)
                 throw restoreStateError.get();
 
-            if (log.isInfoEnabled())
+            if (log.isInfoEnabled()) {
+                SortedSet<T3<Long, Long, GroupPartitionId>> t = printTop ? topPartRef.get() : null;
+
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
                     ", partitionsProcessed=" + totalProcessed.get() +
-                    ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
+                    ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startRestorePart) +
+                    (t == null ? "" : ", topProcessedPartitions=" + toStringTopProcessingPartitions(t, forGroups)) +
+                    "]");
+            }
         }
 
         /**
@@ -5777,5 +5841,75 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public void removeNode(UUID nodeId) {
             DELEGATE.removeNode(nodeId);
         }
+    }
+
+    /**
+     * Creation of a string representation of the top (descending) partitions, the processing of which took the most time.
+     *
+     * @param top Top (ascending) processed partitions.
+     * @param groups Cache group contexts.
+     * @return String representation.
+     */
+    static String toStringTopProcessingPartitions(
+        SortedSet<T3<Long, Long, GroupPartitionId>> top,
+        Collection<CacheGroupContext> groups
+    ) {
+        if (top.isEmpty())
+            return "[]";
+
+        StringJoiner sj0 = new StringJoiner(", ", "[", "]");
+
+        TreeMap<Long, List<GroupPartitionId>> top0 = top.stream().collect(groupingBy(
+            T3::get1,
+            TreeMap::new,
+            mapping(T3::get3, toList())
+        ));
+
+        for (Map.Entry<Long, List<GroupPartitionId>> e0 : top0.descendingMap().entrySet()) {
+            Map<Integer, List<GroupPartitionId>> byCacheGrpId =
+                e0.getValue().stream().collect(groupingBy(GroupPartitionId::getGroupId));
+
+            StringJoiner sj1 = new StringJoiner(", ", "[", "]");
+
+            for (Map.Entry<Integer, List<GroupPartitionId>> e1 : byCacheGrpId.entrySet()) {
+                @Nullable CacheGroupContext grp =
+                    groups.stream().filter(g -> g.groupId() == e1.getKey()).findAny().orElse(null);
+
+                String parts = e1.getValue().stream().map(GroupPartitionId::getPartitionId).sorted()
+                    .map(p -> grp == null ? p.toString() : p + ":" + grp.topology().localPartition(p).fullSize())
+                    .collect(Collectors.joining(", ", "[", "]"));
+
+                sj1.add("[grp=" + (grp == null ? e1.getKey() : grp.cacheOrGroupName()) + ", part=" + parts + ']');
+            }
+
+            sj0.add("[time=" + U.humanReadableDuration(e0.getKey()) + ' ' + sj1.toString() + ']');
+        }
+
+        return sj0.toString();
+    }
+
+    /**
+     * Trimming the set to the required size.
+     * Removing items will be in ascending order.
+     *
+     * @param set Set.
+     * @param size Size.
+     */
+    static <E> void trimToSize(SortedSet<E> set, int size) {
+        while (set.size() > size)
+            set.remove(set.first());
+    }
+
+    /**
+     * Comparator of processed partitions.
+     * T3 -> 1 - duration, 2 - timestamp, 3 - partition of group.
+     * Sort order: duration -> timestamp -> partition of group.
+     *
+     * @return Comparator.
+     */
+    static Comparator<T3<Long, Long, GroupPartitionId>> processedPartitionComparator() {
+        Comparator<T3<Long, Long, GroupPartitionId>> comp = Comparator.comparing(T3::get1);
+
+        return comp.thenComparing(T3::get2).thenComparing(T3::get3);
     }
 }
