@@ -46,7 +46,7 @@ public class CaptureDataChangeConfiguration {
 
     /**
      * CDC application periodically scans {@link DataStorageConfiguration#getCdcPath()} folder to find new WAL segments.
-     * This timeout specify amount of time application waits between subsequent checks when no new files available.<br>
+     * This timeout specify amount of time application sleeps between subsequent checks when no new files available.<br>
      * Default is {@code 1000 ms}.
      */
     private long sleepBeforeCheckNewSegmentsTimeout = 1000;
@@ -66,7 +66,7 @@ public class CaptureDataChangeConfiguration {
      * @see IgniteConfiguration#getConsistentId()
      * @see IgniteConfiguration#setConsistentId(Serializable)
      */
-    private int nodeIndex = 0;
+    private int nodeIndex;
 
     /** @return CDC consumer. */
     public CaptureDataChangeConsumer<?, ?> getConsumer() {
@@ -108,18 +108,25 @@ public class CaptureDataChangeConfiguration {
         this.nodeIndex = nodeIndex;
     }
 
+    /** @return Amount of time to wait for lock acquisition. */
     public long getLockTimeout() {
         return lockTimeout;
     }
 
+    /** @param lockTimeout Amount of time to wait for lock acquisition. */
     public void setLockTimeout(long lockTimeout) {
         this.lockTimeout = lockTimeout;
     }
 
+    /** @return Amount of time application sleeps between subsequent checks when no new files available. */
     public long getSleepBeforeCheckNewSegmentsTimeout() {
         return sleepBeforeCheckNewSegmentsTimeout;
     }
 
+    /**
+     * @param sleepBeforeCheckNewSegmentsTimeout Amount of time application sleeps between subsequent checks when no new
+     *                                           files available.
+     */
     public void setSleepBeforeCheckNewSegmentsTimeout(long sleepBeforeCheckNewSegmentsTimeout) {
         this.sleepBeforeCheckNewSegmentsTimeout = sleepBeforeCheckNewSegmentsTimeout;
     }
