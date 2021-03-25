@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.pool;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.internal.processors.security.SecurityAwareExecutorService;
 import org.apache.ignite.internal.processors.security.SecurityAwareIoPool;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.Nullable;
