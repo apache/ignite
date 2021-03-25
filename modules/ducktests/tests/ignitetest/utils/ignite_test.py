@@ -51,11 +51,10 @@ class IgniteTest(Test):
         for service in self.test_context.services._services.values():
             assert isinstance(service, DucktestsService)
 
-            if not service.stopped:
-                try:
-                    service.kill()
-                except RemoteCommandError:
-                    pass  # Process may be already self-killed on segmentation.
+            try:
+                service.kill()
+            except RemoteCommandError:
+                pass  # Process may be already self-killed on segmentation.
 
             assert service.stopped
 
