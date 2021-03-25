@@ -103,8 +103,7 @@ public final class CommandLineStartup {
         CacheContinuousQueryEventBuffer.class,
         CacheContinuousQueryHandler.class,
         OffheapReadWriteLock.class,
-        TcpCommunicationConfiguration.class,
-        IgniteCDC.class
+        TcpCommunicationConfiguration.class
     ));
 
     static {

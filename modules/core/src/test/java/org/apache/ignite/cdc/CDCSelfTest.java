@@ -43,7 +43,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,7 +57,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
-@WithSystemProperty(key = IgniteCDC.IGNITE_CDC_KEEP_BINARY, value = "false")
 public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
@@ -118,7 +116,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-        IgniteCDC cdc = new IgniteCDC(cfg, lsnr);
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
 
         IgniteInternalFuture<?> fut;
 
@@ -168,7 +166,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-        IgniteCDC cdc = new IgniteCDC(cfg, lsnr);
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
 
         IgniteInternalFuture<?> runFut = runAsync(cdc);
 
@@ -232,55 +230,42 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        try {
-            System.setProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID, Objects.toString(ign1.localNode().consistentId()));
-            System.setProperty(IgniteCDC.IGNITE_CDC_NODE_IDX, "0");
+        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(lsnr1, Objects.toString(ign1.localNode().consistentId()), 0));
+        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(lsnr2, Objects.toString(ign2.localNode().consistentId()), 1));
 
-            IgniteCDC cdc1 = new IgniteCDC(cfg1, lsnr1);
+        IgniteInternalFuture<?> fut1 = runAsync(cdc1);
 
-            System.setProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID, Objects.toString(ign2.localNode().consistentId()));
-            System.setProperty(IgniteCDC.IGNITE_CDC_NODE_IDX, "1");
+        IgniteInternalFuture<?> fut2 = runAsync(cdc2);
 
-            IgniteCDC cdc2 = new IgniteCDC(cfg2, lsnr2);
+        addDataFut.get(getTestTimeout());
 
-            IgniteInternalFuture<?> fut1 = runAsync(cdc1);
+        addDataFut = runAsync(() -> addData(cache, KEYS_CNT, KEYS_CNT * 2));
 
-            IgniteInternalFuture<?> fut2 = runAsync(cdc2);
+        addDataFut.get(getTestTimeout());
 
-            addDataFut.get(getTestTimeout());
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr1, lsnr2));
 
-            addDataFut = runAsync(() -> addData(cache, KEYS_CNT, KEYS_CNT * 2));
+        assertFalse(lsnr1.stoped);
+        assertFalse(lsnr2.stoped);
 
-            addDataFut.get(getTestTimeout());
+        fut1.cancel();
+        fut2.cancel();
 
-            assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr1, lsnr2));
+        assertTrue(lsnr1.stoped);
+        assertTrue(lsnr2.stoped);
 
-            assertFalse(lsnr1.stoped);
-            assertFalse(lsnr2.stoped);
+        removeData(cache, 0, KEYS_CNT * 2);
 
-            fut1.cancel();
-            fut2.cancel();
+        IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
+        IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
 
-            assertTrue(lsnr1.stoped);
-            assertTrue(lsnr2.stoped);
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr1, lsnr2));
 
-            removeData(cache, 0, KEYS_CNT * 2);
+        rmvFut1.cancel();
+        rmvFut2.cancel();
 
-            IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
-            IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
-
-            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr1, lsnr2));
-
-            rmvFut1.cancel();
-            rmvFut2.cancel();
-
-            assertTrue(lsnr1.stoped);
-            assertTrue(lsnr2.stoped);
-        }
-        finally {
-            System.clearProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID);
-            System.clearProperty(IgniteCDC.IGNITE_CDC_NODE_IDX);
-        }
+        assertTrue(lsnr1.stoped);
+        assertTrue(lsnr2.stoped);
     }
 
     /** */
@@ -291,8 +276,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         TestCDCConsumer lsnr1 = new TestCDCConsumer();
         TestCDCConsumer lsnr2 = new TestCDCConsumer();
 
-        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), lsnr1));
-        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), lsnr2));
+        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(lsnr1)));
+        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(lsnr2)));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -336,7 +321,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            IgniteCDC cdc = new IgniteCDC(cfg, lsnr);
+            IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -373,7 +358,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteCDC cdc = new IgniteCDC(cfg, lsnr);
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -508,5 +493,25 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         public byte[] getPayload() {
             return payload;
         }
+    }
+
+    /** */
+    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer<?, ?> lsnr) {
+        return cdcConfig(lsnr, null, -1);
+    }
+
+    /** */
+    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer<?, ?> lsnr, String consistentId, int idx) {
+        CaptureDataChangeConfiguration cdcCfg = new CaptureDataChangeConfiguration();
+
+        cdcCfg.setConsumer(lsnr);
+        cdcCfg.setKeepBinary(false);
+
+        if (consistentId != null) {
+            cdcCfg.setAutoGeneratedConsistentId(UUID.fromString(consistentId));
+            cdcCfg.setNodeIndex(idx);
+        }
+
+        return cdcCfg;
     }
 }
