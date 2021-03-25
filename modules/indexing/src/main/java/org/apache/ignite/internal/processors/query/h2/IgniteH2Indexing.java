@@ -3302,7 +3302,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof SchemaIndexOperationCancellationException))
-                    log.warning("Error after canceling index rebuild", e);
+                    log.warning("Error after canceling index rebuild.", e);
             }
         }
     }

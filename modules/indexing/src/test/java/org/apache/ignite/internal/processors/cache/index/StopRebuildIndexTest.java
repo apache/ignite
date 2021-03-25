@@ -311,6 +311,7 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
      * Restart the rebuild of the indexes, checking that it completes gracefully.
      *
      * @param stopRebuildIndexes Stop index rebuild function.
+     * @param expThrowEx Expect an exception on index rebuild futures.
      * @throws Exception If failed.
      */
     private void stopRebuildIndexes(
@@ -380,7 +381,6 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
         IgniteEx n = startGrid(0);
 
         n.cluster().state(ACTIVE);
-        awaitPartitionMapExchange();
 
         for (int i = 0; i < keys; i++)
             n.cache(DEFAULT_CACHE_NAME).put(i, new Person(i, "p_" + i));

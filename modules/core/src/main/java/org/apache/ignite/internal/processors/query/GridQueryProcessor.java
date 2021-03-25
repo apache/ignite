@@ -2607,16 +2607,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     private QueryTypeDescriptorImpl type(String cacheName, CacheObject val) throws IgniteCheckedException {
-        CacheObjectContext coctx = cacheObjectContext(cacheName);
-
         QueryTypeIdKey id;
 
         boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
 
         if (binaryVal)
             id = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(val));
-        else
+        else {
+            CacheObjectContext coctx = cacheObjectContext(cacheName);
+
+            if (coctx == null)
+                throw new IgniteCheckedException("Object context for cache not found: " + cacheName);
+
             id = new QueryTypeIdKey(cacheName, val.value(coctx, false).getClass());
+        }
 
         return types.get(id);
     }

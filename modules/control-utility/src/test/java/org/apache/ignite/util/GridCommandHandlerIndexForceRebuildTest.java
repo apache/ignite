@@ -32,8 +32,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -51,6 +53,7 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlIndex;
@@ -390,15 +393,13 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 blockRebuildIdx.get(c).get(getTestTimeout());
             }
 
-            GridFutureAdapter<?> startDestroyFut = new GridFutureAdapter<>();
+            IgniteInternalFuture<Boolean> destroyCacheFut = n.context().cache()
+                .dynamicDestroyCache(cacheName2, false, true, false, null);
 
-            IgniteInternalFuture<?> destroyCacheFut = runAsync(() -> {
-                startDestroyFut.onDone();
+            SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
+            assertNotNull(intlRebIdxFut);
 
-                n.destroyCache(cacheName2);
-            });
-
-            startDestroyFut.get(getTestTimeout());
+            assertTrue(waitForCondition(intlRebIdxFut.cancelToken()::isCancelled, getTestTimeout()));
 
             stopLoad.set(true);
 
@@ -412,6 +413,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             assertContains(log, testOut.toString(), "no issues found.");
 
+            intlRebIdxFut.get(getTestTimeout());
             destroyCacheFut.get(getTestTimeout());
             putCacheFut.get(getTestTimeout());
         }
@@ -635,5 +637,20 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             return original.onDone(res, err);
         }
+    }
+
+    /**
+     * Getting internal index rebuild future for cache.
+     *
+     * @param n Node.
+     * @param cacheId Cache id.
+     * @return Internal index rebuild future.
+     */
+    @Nullable private SchemaIndexCacheFuture schemaIndexCacheFuture(IgniteEx n, int cacheId) {
+        GridQueryIndexing indexing = n.context().query().getIndexing();
+
+        Map<Integer, SchemaIndexCacheFuture> idxRebuildFuts = getFieldValue(indexing, "idxRebuildFuts");
+
+        return idxRebuildFuts.get(cacheId);
     }
 }
