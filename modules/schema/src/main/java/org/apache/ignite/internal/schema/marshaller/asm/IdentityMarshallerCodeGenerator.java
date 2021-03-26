@@ -28,7 +28,7 @@ import org.apache.ignite.internal.schema.marshaller.Serializer;
  */
 class IdentityMarshallerCodeGenerator implements MarshallerCodeGenerator {
     /** Object field access expression generator. */
-    private final TupleColumnAccessCodeGenerator columnAccessor;
+    private final ColumnAccessCodeGenerator columnAccessor;
 
     /** Target class. */
     private final Class<?> tClass;
@@ -37,9 +37,9 @@ class IdentityMarshallerCodeGenerator implements MarshallerCodeGenerator {
      * Constructor.
      *
      * @param tClass Target class.
-     * @param columnAccessor Tuple column code generator.
+     * @param columnAccessor Row column code generator.
      */
-    IdentityMarshallerCodeGenerator(Class<?> tClass, TupleColumnAccessCodeGenerator columnAccessor) {
+    IdentityMarshallerCodeGenerator(Class<?> tClass, ColumnAccessCodeGenerator columnAccessor) {
         this.tClass = tClass;
         this.columnAccessor = columnAccessor;
     }
@@ -65,9 +65,9 @@ class IdentityMarshallerCodeGenerator implements MarshallerCodeGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override public BytecodeNode unmarshallObject(ParameterizedType type, Variable tuple, Variable obj) {
+    @Override public BytecodeNode unmarshallObject(ParameterizedType type, Variable row, Variable obj) {
         return obj.set(
-            tuple.invoke(
+            row.invoke(
                 columnAccessor.readMethodName(),
                 columnAccessor.mappedType(),
                 BytecodeExpressions.constantInt(columnAccessor.columnIdx())

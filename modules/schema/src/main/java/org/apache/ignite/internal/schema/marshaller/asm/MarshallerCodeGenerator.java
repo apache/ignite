@@ -47,7 +47,7 @@ public interface MarshallerCodeGenerator {
 
     /**
      * @param serializerClass Serializer type
-     * @param asm Tuple assembler.
+     * @param asm Row assembler.
      * @param obj Target object variable.
      * @return Unmarshall object code.
      */
@@ -55,11 +55,11 @@ public interface MarshallerCodeGenerator {
 
     /**
      * @param serializerClass Serializer type
-     * @param tuple Tuple.
+     * @param row Row.
      * @param obj Result object variable.
      * @return Unmarshall object code.
      */
-    BytecodeNode unmarshallObject(ParameterizedType serializerClass, Variable tuple, Variable obj);
+    BytecodeNode unmarshallObject(ParameterizedType serializerClass, Variable row, Variable obj);
 
     /**
      * @param classDef Class definition.

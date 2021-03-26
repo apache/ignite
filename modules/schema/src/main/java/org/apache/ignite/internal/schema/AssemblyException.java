@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 /**
- * The exception is thrown when the tuple assembler encountered an unrecoverable error during the field encoding.
+ * The exception is thrown when the row assembler encountered an unrecoverable error during the field encoding.
  * After the exception is thrown, the assembler remains in an invalid state and should be discarded.
  */
 public class AssemblyException extends RuntimeException {

@@ -22,21 +22,21 @@ import java.util.UUID;
 
 /**
  * The class contains non-generic methods to read boxed and unboxed primitives based on the schema column types.
- * Any type conversions and coercions should be implemented outside of the tuple by the key-value or query runtime.
+ * Any type conversions and coercions should be implemented outside the row by the key-value or query runtime.
  * When a non-boxed primitive is read from a null column value, it is converted to the primitive type default value.
  */
-public abstract class Tuple {
+public abstract class Row {
     /** */
-    public static final int SCHEMA_VERSION_FIELD_SIZE = 2;
+    public static final int SCHEMA_VERSION_OFFSET = 0;
 
     /** */
-    public static final int FLAGS_FIELD_SIZE = 2;
+    public static final int FLAGS_FIELD_OFFSET = SCHEMA_VERSION_OFFSET + 2;
 
     /** */
-    public static final int KEY_HASH_FIELD_SIZE = 4;
+    public static final int KEY_HASH_FIELD_OFFSET = FLAGS_FIELD_OFFSET + 2;
 
     /** */
-    public static final int TUPLE_HEADER_SIZE = SCHEMA_VERSION_FIELD_SIZE + FLAGS_FIELD_SIZE + KEY_HASH_FIELD_SIZE;
+    public static final int KEY_CHUNK_OFFSET = KEY_HASH_FIELD_OFFSET + 4;
 
     /** */
     public static final int TOTAL_LEN_FIELD_SIZE = 4;
@@ -47,14 +47,36 @@ public abstract class Tuple {
     /** */
     public static final int VARLEN_COLUMN_OFFSET_FIELD_SIZE = 2;
 
-    /** Schema descriptor for which this tuple was created. */
+    /** */
+    public static final class RowFlags {
+        /** Tombstone flag. */
+        public static final int TOMBSTONE = 1;
+
+        /** Null-value flag. */
+        public static final int NULL_VALUE = 1 << 1;
+
+        /** Stub. */
+        private RowFlags() {
+        }
+    }
+
+    /** Schema descriptor for which this row was created. */
     private final SchemaDescriptor schema;
 
     /**
      * @param schema Schema instance.
      */
-    protected Tuple(SchemaDescriptor schema) {
+    protected Row(SchemaDescriptor schema) {
         this.schema = schema;
+    }
+
+    /**
+     * @return {@code True} if row has non-null value, {@code false} otherwise.
+     */
+    public boolean hasValue() {
+        short flags = readShort(FLAGS_FIELD_OFFSET);
+
+        return (flags & (RowFlags.NULL_VALUE | RowFlags.TOMBSTONE)) == 0;
     }
 
     /**
@@ -214,7 +236,7 @@ public abstract class Tuple {
 
     /**
      * Gets the column offset and length encoded into a single 8-byte value (4 least significant bytes encoding the
-     * offset from the beginning of the tuple and 4 most significant bytes encoding the field length for varlength
+     * offset from the beginning of the row and 4 most significant bytes encoding the field length for varlength
      * columns). The offset and length should be extracted using {@link #offset(long)} and {@link #length(long)}
      * methods.
      * Will also validate that the actual column type matches the requested column type, throwing
@@ -232,7 +254,7 @@ public abstract class Tuple {
         boolean keyCol = schema.keyColumn(colIdx);
         Columns cols = keyCol ? schema.keyColumns() : schema.valueColumns();
 
-        int off = TUPLE_HEADER_SIZE;
+        int off = KEY_CHUNK_OFFSET;
 
         if (!keyCol) {
             // Jump to the next chunk, the size of the first chunk is written at the chunk start.
@@ -257,9 +279,9 @@ public abstract class Tuple {
     }
 
     /**
-     * Checks the tuple's null map for the given column index in the chunk.
+     * Checks the row's null map for the given column index in the chunk.
      *
-     * @param baseOff Offset of the chunk start in the tuple.
+     * @param baseOff Offset of the chunk start in the row.
      * @param idx Offset of the column in the chunk.
      * @return {@code true} if the column value is {@code null}.
      */
@@ -276,10 +298,10 @@ public abstract class Tuple {
 
     /**
      * Utility method to extract the column offset from the {@link #findColumn(int, NativeTypeSpec)} result. The
-     * offset is calculated from the beginning of the tuple.
+     * offset is calculated from the beginning of the row.
      *
      * @param offLen {@code findColumn} invocation result.
-     * @return Column offset from the beginning of the tuple.
+     * @return Column offset from the beginning of the row.
      */
     private static int offset(long offLen) {
         return (int)offLen;
@@ -306,7 +328,7 @@ public abstract class Tuple {
      * @param cols Columns chunk.
      * @param baseOff Chunk base offset.
      * @param idx Column index in the chunk.
-     * @return Encoded offset (from the tuple start) and length of the column with the given index.
+     * @return Encoded offset (from the row start) and length of the column with the given index.
      */
     private long varlenColumnOffsetAndLength(Columns cols, int baseOff, int idx) {
         int nullMapOff = nullMapOffset(baseOff);
@@ -349,13 +371,13 @@ public abstract class Tuple {
     }
 
     /**
-     * Calculates the offset of the fixlen column with the given index in the tuple. It essentially folds the null map
+     * Calculates the offset of the fixlen column with the given index in the row. It essentially folds the null map
      * with the column lengths to calculate the size of non-null columns preceding the requested column.
      *
      * @param cols Columns chunk.
      * @param baseOff Chunk base offset.
      * @param idx Column index in the chunk.
-     * @return Encoded offset (from the tuple start) of the requested fixlen column.
+     * @return Encoded offset (from the row start) of the requested fixlen column.
      */
     int fixlenColumnOffset(Columns cols, int baseOff, int idx) {
         int nullMapOff = nullMapOffset(baseOff);
@@ -379,7 +401,7 @@ public abstract class Tuple {
 
     /**
      * @param baseOff Chunk base offset.
-     * @return Null map offset from the tuple start for the chunk with the given base.
+     * @return Null map offset from the row start for the chunk with the given base.
      */
     private int nullMapOffset(int baseOff) {
         int varlenTblSize = readShort(baseOff + TOTAL_LEN_FIELD_SIZE);
@@ -389,7 +411,7 @@ public abstract class Tuple {
 
     /**
      * @param baseOff Chunk base offset.
-     * @return Offset of the varlen table from the tuple start for the chunk with the given base.
+     * @return Offset of the varlen table from the row start for the chunk with the given base.
      */
     private int vartableOffset(int baseOff) {
         return baseOff + TOTAL_LEN_FIELD_SIZE + VARLEN_TABLE_SIZE_FIELD_SIZE;
@@ -426,4 +448,16 @@ public abstract class Tuple {
     /**
      */
     protected abstract byte[] readBytes(int off, int len);
+
+    /**
+     */
+    public abstract byte[] rowBytes();
+
+    /**
+     */
+    public abstract byte[] keyChunkBytes();
+
+    /**
+     */
+    public abstract byte[] valueChunkBytes();
 }

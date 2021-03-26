@@ -25,9 +25,9 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.Bitmask;
 import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.TestUtils;
-import org.apache.ignite.internal.schema.Tuple;
-import org.apache.ignite.internal.schema.TupleAssembler;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
 import org.apache.ignite.internal.util.Pair;
@@ -95,17 +95,17 @@ public class FieldAccessorTest {
             new Column("bytesCol", BYTES, false),
         };
 
-        final Pair<TupleAssembler, Tuple> mocks = createMocks();
+        final Pair<RowAssembler, Row> mocks = createMocks();
 
-        final TupleAssembler tupleAssembler = mocks.getFirst();
-        final Tuple tuple = mocks.getSecond();
+        final RowAssembler rowAssembler = mocks.getFirst();
+        final Row row = mocks.getSecond();
 
         final TestObject obj = TestObject.randomObject(rnd);
 
         for (int i = 0; i < cols.length; i++) {
             FieldAccessor accessor = FieldAccessor.create(TestObject.class, cols[i], i);
 
-            accessor.write(tupleAssembler, obj);
+            accessor.write(rowAssembler, obj);
         }
 
         final TestObject restoredObj = new TestObject();
@@ -113,7 +113,7 @@ public class FieldAccessorTest {
         for (int i = 0; i < cols.length; i++) {
             FieldAccessor accessor = FieldAccessor.create(TestObject.class, cols[i], i);
 
-            accessor.read(tuple, restoredObj);
+            accessor.read(row, restoredObj);
         }
 
         assertEquals(obj.pByteCol, restoredObj.pByteCol);
@@ -149,10 +149,10 @@ public class FieldAccessorTest {
             new Column("bytesCol", BYTES, true),
         };
 
-        final Pair<TupleAssembler, Tuple> mocks = createMocks();
+        final Pair<RowAssembler, Row> mocks = createMocks();
 
-        final TupleAssembler tupleAssembler = mocks.getFirst();
-        final Tuple tuple = mocks.getSecond();
+        final RowAssembler rowAssembler = mocks.getFirst();
+        final Row row = mocks.getSecond();
 
         final TestSimpleObject obj = new TestSimpleObject();
         obj.longCol = rnd.nextLong();
@@ -161,7 +161,7 @@ public class FieldAccessorTest {
         for (int i = 0; i < cols.length; i++) {
             FieldAccessor accessor = FieldAccessor.create(TestSimpleObject.class, cols[i], i);
 
-            accessor.write(tupleAssembler, obj);
+            accessor.write(rowAssembler, obj);
         }
 
         final TestSimpleObject restoredObj = new TestSimpleObject();
@@ -169,7 +169,7 @@ public class FieldAccessorTest {
         for (int i = 0; i < cols.length; i++) {
             FieldAccessor accessor = FieldAccessor.create(TestSimpleObject.class, cols[i], i);
 
-            accessor.read(tuple, restoredObj);
+            accessor.read(row, restoredObj);
         }
 
         assertEquals(obj.intCol, restoredObj.intCol);
@@ -191,7 +191,7 @@ public class FieldAccessorTest {
 
         assertEquals("Some string", accessor.value("Some string"));
 
-        final Pair<TupleAssembler, Tuple> mocks = createMocks();
+        final Pair<RowAssembler, Row> mocks = createMocks();
 
         accessor.write(mocks.getFirst(), "Other string");
         assertEquals("Other string", accessor.read(mocks.getSecond()));
@@ -209,7 +209,7 @@ public class FieldAccessorTest {
 
         assertEquals("Some string", accessor.value("Some string"));
 
-        final Pair<TupleAssembler, Tuple> mocks = createMocks();
+        final Pair<RowAssembler, Row> mocks = createMocks();
 
         assertThrows(
             SerializationException.class,
@@ -219,15 +219,15 @@ public class FieldAccessorTest {
     }
 
     /**
-     * Creates mock pair for {@link Tuple} and {@link TupleAssembler).
+     * Creates mock pair for {@link Row} and {@link RowAssembler ).
      *
      * @return Pair of mocks.
      */
-    private Pair<TupleAssembler, Tuple> createMocks() {
+    private Pair<RowAssembler, Row> createMocks() {
         final ArrayList<Object> vals = new ArrayList<>();
 
-        final TupleAssembler mockedAsm = Mockito.mock(TupleAssembler.class);
-        final Tuple mockedTuple = Mockito.mock(Tuple.class);
+        final RowAssembler mockedAsm = Mockito.mock(RowAssembler.class);
+        final Row mockedRow = Mockito.mock(Row.class);
 
         final Answer<Void> asmAnswer = new Answer<>() {
             @Override public Void answer(InvocationOnMock invocation) {
@@ -240,7 +240,7 @@ public class FieldAccessorTest {
             }
         };
 
-        final Answer<Object> tupleAnswer = new Answer<>() {
+        final Answer<Object> rowAnswer = new Answer<>() {
             @Override public Object answer(InvocationOnMock invocation) {
                 final int idx = invocation.getArgument(0, Integer.class);
 
@@ -261,25 +261,25 @@ public class FieldAccessorTest {
         Mockito.doAnswer(asmAnswer).when(mockedAsm).appendString(Mockito.anyString());
         Mockito.doAnswer(asmAnswer).when(mockedAsm).appendBytes(Mockito.any(byte[].class));
 
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).byteValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).byteValueBoxed(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).shortValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).shortValueBoxed(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).intValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).intValueBoxed(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).longValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).longValueBoxed(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).floatValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).floatValueBoxed(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).doubleValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).doubleValueBoxed(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).byteValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).byteValueBoxed(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).shortValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).shortValueBoxed(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).intValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).intValueBoxed(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).longValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).longValueBoxed(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).floatValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).floatValueBoxed(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).doubleValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).doubleValueBoxed(Mockito.anyInt());
 
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).uuidValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).bitmaskValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).stringValue(Mockito.anyInt());
-        Mockito.doAnswer(tupleAnswer).when(mockedTuple).bytesValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).uuidValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).bitmaskValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).stringValue(Mockito.anyInt());
+        Mockito.doAnswer(rowAnswer).when(mockedRow).bytesValue(Mockito.anyInt());
 
-        return new Pair<>(mockedAsm, mockedTuple);
+        return new Pair<>(mockedAsm, mockedRow);
     }
 
     /**

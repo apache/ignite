@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains schema description, tuple assembly and field accessor classes.
+ * Contains schema description, row assembly and field accessor classes.
  */
 package org.apache.ignite.internal.schema;

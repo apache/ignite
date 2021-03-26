@@ -25,8 +25,8 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
-import org.apache.ignite.internal.schema.Tuple;
-import org.apache.ignite.internal.schema.TupleAssembler;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
@@ -151,14 +151,14 @@ abstract class FieldAccessor {
     }
 
     /**
-     * Reads value object from tuple.
+     * Reads value object from row.
      *
      * @param reader Reader.
      * @param colIdx Column index.
      * @param mode Binary read mode.
      * @return Read value object.
      */
-    private static Object readRefValue(Tuple reader, int colIdx, BinaryMode mode) {
+    private static Object readRefValue(Row reader, int colIdx, BinaryMode mode) {
         assert reader != null;
         assert colIdx >= 0;
 
@@ -223,13 +223,13 @@ abstract class FieldAccessor {
     }
 
     /**
-     * Writes reference value to tuple.
+     * Writes reference value to row.
      *
      * @param val Value object.
      * @param writer Writer.
      * @param mode Write binary mode.
      */
-    private static void writeRefObject(Object val, TupleAssembler writer, BinaryMode mode) {
+    private static void writeRefObject(Object val, RowAssembler writer, BinaryMode mode) {
         assert writer != null;
 
         if (val == null) {
@@ -325,13 +325,13 @@ abstract class FieldAccessor {
     }
 
     /**
-     * Write object field value to tuple.
+     * Write object field value to row.
      *
-     * @param writer Tuple writer.
+     * @param writer Row writer.
      * @param obj Source object.
      * @throws SerializationException If failed.
      */
-    public void write(TupleAssembler writer, Object obj) throws SerializationException {
+    public void write(RowAssembler writer, Object obj) throws SerializationException {
         try {
             write0(writer, obj);
         }
@@ -341,21 +341,21 @@ abstract class FieldAccessor {
     }
 
     /**
-     * Write object field value to tuple.
+     * Write object field value to row.
      *
-     * @param writer Tuple writer.
+     * @param writer Row writer.
      * @param obj Source object.
      */
-    protected abstract void write0(TupleAssembler writer, Object obj) throws Exception;
+    protected abstract void write0(RowAssembler writer, Object obj) throws Exception;
 
     /**
-     * Reads value fom tuple to object field.
+     * Reads value fom row to object field.
      *
-     * @param reader Tuple reader.
+     * @param reader Row reader.
      * @param obj Target object.
      * @throws SerializationException If failed.
      */
-    public void read(Tuple reader, Object obj) throws SerializationException {
+    public void read(Row reader, Object obj) throws SerializationException {
         try {
             read0(reader, obj);
         }
@@ -365,21 +365,21 @@ abstract class FieldAccessor {
     }
 
     /**
-     * Reads value fom tuple to object field.
+     * Reads value fom row to object field.
      *
-     * @param reader Tuple reader.
+     * @param reader Row reader.
      * @param obj Target object.
      * @throws Exception If failed.
      */
-    protected abstract void read0(Tuple reader, Object obj) throws Exception;
+    protected abstract void read0(Row reader, Object obj) throws Exception;
 
     /**
      * Read value.
      *
-     * @param reader Tuple reader.
+     * @param reader Row reader.
      * @return Object.
      */
-    public Object read(Tuple reader) {
+    public Object read(Row reader) {
         throw new UnsupportedOperationException();
     }
 
@@ -408,17 +408,17 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             writeRefObject(obj, writer, mode);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             throw new UnsupportedOperationException("Called identity accessor for object field.");
         }
 
         /** {@inheritDoc} */
-        @Override public Object read(Tuple reader) {
+        @Override public Object read(Row reader) {
             return readRefValue(reader, colIdx, mode);
         }
 
@@ -443,14 +443,14 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             final byte val = (byte)varHandle.get(obj);
 
             writer.appendByte(val);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             final byte val = reader.byteValue(colIdx);
 
             varHandle.set(obj, val);
@@ -472,14 +472,14 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             final short val = (short)varHandle.get(obj);
 
             writer.appendShort(val);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             final short val = reader.shortValue(colIdx);
 
             varHandle.set(obj, val);
@@ -501,14 +501,14 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             final int val = (int)varHandle.get(obj);
 
             writer.appendInt(val);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             final int val = reader.intValue(colIdx);
 
             varHandle.set(obj, val);
@@ -530,14 +530,14 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             final long val = (long)varHandle.get(obj);
 
             writer.appendLong(val);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             final long val = reader.longValue(colIdx);
 
             varHandle.set(obj, val);
@@ -559,14 +559,14 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             final float val = (float)varHandle.get(obj);
 
             writer.appendFloat(val);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             final float val = reader.floatValue(colIdx);
 
             varHandle.set(obj, val);
@@ -588,14 +588,14 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             final double val = (double)varHandle.get(obj);
 
             writer.appendDouble(val);
         }
 
         /** {@inheritDoc} */
-        @Override protected void read0(Tuple reader, Object obj) {
+        @Override protected void read0(Row reader, Object obj) {
             final double val = reader.doubleValue(colIdx);
 
             varHandle.set(obj, val);
@@ -618,7 +618,7 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override protected void write0(TupleAssembler writer, Object obj) {
+        @Override protected void write0(RowAssembler writer, Object obj) {
             assert obj != null;
             assert writer != null;
 
@@ -634,7 +634,7 @@ abstract class FieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Tuple reader, Object obj) {
+        @Override public void read0(Row reader, Object obj) {
             Object val = readRefValue(reader, colIdx, mode);
 
             varHandle.set(obj, val);

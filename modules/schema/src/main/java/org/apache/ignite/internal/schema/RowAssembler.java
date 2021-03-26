@@ -24,17 +24,17 @@ import java.util.BitSet;
 import java.util.UUID;
 
 /**
- * Utility class to build tuples using column appending pattern. The external user of this class must consult
- * with the schema and provide the columns in strict internal column sort order during the tuple construction.
- * Additionally, the user of this class should pre-calculate the resulting tuple size when possible to avoid
- * unnecessary data copies. The assembler provides some utility methods to calculate the resulting tuple size
+ * Utility class to build rows using column appending pattern. The external user of this class must consult
+ * with the schema and provide the columns in strict internal column sort order during the row construction.
+ * Additionally, the user of this class should pre-calculate the resulting row size when possible to avoid
+ * unnecessary data copies. The assembler provides some utility methods to calculate the resulting row size
  * based on the number of null columns and size calculation for strings.
  *
- * @see #tupleSize(Columns, int, int, Columns, int, int)
- * @see #tupleChunkSize(Columns, int, int)
+ * @see #rowChunkSize(Columns, int, int, Columns, int, int)
+ * @see #rowChunkSize(Columns, int, int)
  * @see #utf8EncodedLength(CharSequence)
  */
-public class TupleAssembler {
+public class RowAssembler {
     /**
      *
      */
@@ -106,10 +106,10 @@ public class TupleAssembler {
      * @param cols Columns.
      * @param nonNullVarlenCols Number of non-null varlen columns in chunk.
      * @param nonNullVarlenSize Size of non-null varlen columns in chunk.
-     * @return Tuple's chunk size.
+     * @return Row's chunk size.
      */
-    public static int tupleChunkSize(Columns cols, int nonNullVarlenCols, int nonNullVarlenSize) {
-        int size = Tuple.TOTAL_LEN_FIELD_SIZE + Tuple.VARLEN_TABLE_SIZE_FIELD_SIZE +
+    public static int rowChunkSize(Columns cols, int nonNullVarlenCols, int nonNullVarlenSize) {
+        int size = Row.TOTAL_LEN_FIELD_SIZE + Row.VARLEN_TABLE_SIZE_FIELD_SIZE +
             varlenTableSize(nonNullVarlenCols) + cols.nullMapSize();
 
         for (int i = 0; i < cols.numberOfFixsizeColumns(); i++)
@@ -119,13 +119,13 @@ public class TupleAssembler {
     }
 
     /**
-     * @param schema Tuple schema.
-     * @param size Target tuple size. If the tuple size is known in advance, it should be provided upfront to avoid
+     * @param schema Row schema.
+     * @param size Target row size. If the row size is known in advance, it should be provided upfront to avoid
      * unnecessary arrays copy.
      * @param nonNullVarlenKeyCols Number of non-null varlen columns in key chunk.
      * @param nonNullVarlenValCols Number of non-null varlen columns in value chunk.
      */
-    public TupleAssembler(
+    public RowAssembler(
         SchemaDescriptor schema,
         int size,
         int nonNullVarlenKeyCols,
@@ -139,7 +139,7 @@ public class TupleAssembler {
 
         curCols = schema.keyColumns();
 
-        initOffsets(Tuple.TUPLE_HEADER_SIZE, nonNullVarlenKeyCols);
+        initOffsets(Row.KEY_CHUNK_OFFSET, nonNullVarlenKeyCols);
 
         buf.putShort(0, (short)schema.version());
     }
@@ -151,9 +151,9 @@ public class TupleAssembler {
      * @param valCols Value columns.
      * @param nonNullVarlenValCols Number of non-null varlen columns in value chunk.
      * @param nonNullVarlenValSize Size of non-null varlen columns in value chunk.
-     * @return Total tuple size.
+     * @return Total row size.
      */
-    public static int tupleSize(
+    public static int rowChunkSize(
         Columns keyCols,
         int nonNullVarlenKeyCols,
         int nonNullVarlenKeySize,
@@ -161,9 +161,9 @@ public class TupleAssembler {
         int nonNullVarlenValCols,
         int nonNullVarlenValSize
     ) {
-        return Tuple.TUPLE_HEADER_SIZE +
-            tupleChunkSize(keyCols, nonNullVarlenKeyCols, nonNullVarlenKeySize) +
-            tupleChunkSize(valCols, nonNullVarlenValCols, nonNullVarlenValSize);
+        return Row.KEY_CHUNK_OFFSET +
+            rowChunkSize(keyCols, nonNullVarlenKeyCols, nonNullVarlenKeySize) +
+            rowChunkSize(valCols, nonNullVarlenValCols, nonNullVarlenValSize);
     }
 
     /**
@@ -335,7 +335,7 @@ public class TupleAssembler {
     }
 
     /**
-     * @return Serialized tuple.
+     * @return Serialized row.
      */
     public byte[] build() {
         return buf.toArray();
@@ -444,9 +444,9 @@ public class TupleAssembler {
         curCol = 0;
         curVarlenTblEntry = 0;
 
-        buf.putShort(baseOff + Tuple.TOTAL_LEN_FIELD_SIZE, (short)nonNullVarlenCols);
+        buf.putShort(baseOff + Row.TOTAL_LEN_FIELD_SIZE, (short)nonNullVarlenCols);
 
-        varlenTblOff = baseOff + Tuple.TOTAL_LEN_FIELD_SIZE + Tuple.VARLEN_TABLE_SIZE_FIELD_SIZE;
+        varlenTblOff = baseOff + Row.TOTAL_LEN_FIELD_SIZE + Row.VARLEN_TABLE_SIZE_FIELD_SIZE;
         nullMapOff = varlenTblOff + varlenTableSize(nonNullVarlenCols);
         curOff = nullMapOff + curCols.nullMapSize();
     }

@@ -36,7 +36,7 @@ public class Bitmask extends NativeType {
     }
 
     /**
-     * Creates a bitmask type of size <code>bits</code>. In tuple will round up to the closest full byte.
+     * Creates a bitmask type of size <code>bits</code>. In row will round up to the closest full byte.
      *
      * @param bits The number of bits in the bitmask.
      */

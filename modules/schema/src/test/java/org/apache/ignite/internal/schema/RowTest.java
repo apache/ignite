@@ -37,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests tuple assembling and reading.
+ * Tests row assembling and reading.
  */
-public class TupleTest {
+public class RowTest {
     /** */
     private Random rnd;
 
@@ -223,11 +223,11 @@ public class TupleTest {
                 else if (type == NativeTypeSpec.STRING) {
                     if (schema.keyColumn(i)) {
                         nonNullVarLenKeyCols++;
-                        nonNullVarLenKeySize += TupleAssembler.utf8EncodedLength((CharSequence)vals[i]);
+                        nonNullVarLenKeySize += RowAssembler.utf8EncodedLength((CharSequence)vals[i]);
                     }
                     else {
                         nonNullVarLenValCols++;
-                        nonNullVarLenValSize += TupleAssembler.utf8EncodedLength((CharSequence)vals[i]);
+                        nonNullVarLenValSize += RowAssembler.utf8EncodedLength((CharSequence)vals[i]);
                     }
                 }
                 else
@@ -235,11 +235,11 @@ public class TupleTest {
             }
         }
 
-        int size = TupleAssembler.tupleSize(
+        int size = RowAssembler.rowChunkSize(
             schema.keyColumns(), nonNullVarLenKeyCols, nonNullVarLenKeySize,
             schema.valueColumns(), nonNullVarLenValCols, nonNullVarLenValSize);
 
-        TupleAssembler asm = new TupleAssembler(schema, size, nonNullVarLenKeyCols, nonNullVarLenValCols);
+        RowAssembler asm = new RowAssembler(schema, size, nonNullVarLenKeyCols, nonNullVarLenValCols);
 
         for (int i = 0; i < vals.length; i++) {
             if (vals[i] == null)
@@ -296,7 +296,7 @@ public class TupleTest {
 
         byte[] data = asm.build();
 
-        ByteBufferTuple tup = new ByteBufferTuple(schema, data);
+        ByteBufferRow tup = new ByteBufferRow(schema, data);
 
         for (int i = 0; i < vals.length; i++) {
             Column col = schema.column(i);

@@ -46,5 +46,6 @@
         <module>modules/rest</module>
         <module>modules/runner</module>
         <module>modules/schema</module>
+        <module>modules/table</module>
     </modules>
 </project>

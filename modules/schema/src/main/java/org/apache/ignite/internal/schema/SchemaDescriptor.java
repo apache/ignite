@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Full schema descriptor containing key columns chunk, value columns chunk, and schema version.
  */
@@ -30,6 +36,9 @@ public class SchemaDescriptor {
     /** Value columns in serialization order. */
     private final Columns valCols;
 
+    /** Mapping 'Column name' -> Column. */
+    private final Map<String, Column> colMap;
+
     /**
      * @param ver Schema version.
      * @param keyCols Key columns.
@@ -39,6 +48,11 @@ public class SchemaDescriptor {
         this.ver = ver;
         this.keyCols = new Columns(0, keyCols);
         this.valCols = new Columns(keyCols.length, valCols);
+
+        colMap = new HashMap<>(keyCols.length + valCols.length);
+
+        Arrays.stream(keyCols).forEach(c -> colMap.put(c.name(), c));
+        Arrays.stream(valCols).forEach(c -> colMap.put(c.name(), c));
     }
 
     /**
@@ -83,5 +97,13 @@ public class SchemaDescriptor {
      */
     public int length() {
         return keyCols.length() + valCols.length();
+    }
+
+    /**
+     * @param name Column name.
+     * @return Column.
+     */
+    public @Nullable Column column(@NotNull String name) {
+        return colMap.get(name);
     }
 }

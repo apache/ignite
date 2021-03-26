@@ -22,48 +22,48 @@ import java.util.UUID;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 
 /**
- * Tuple access code generator.
+ * Row access code generator.
  */
-public class TupleColumnAccessCodeGenerator {
+public class ColumnAccessCodeGenerator {
     /**
      * @param mode Binary mode.
      * @param colIdx Column index in schema.
-     * @return Tuple column access code generator.
+     * @return Row column access code generator.
      */
-    public static TupleColumnAccessCodeGenerator createAccessor(BinaryMode mode, int colIdx) {
+    public static ColumnAccessCodeGenerator createAccessor(BinaryMode mode, int colIdx) {
         switch (mode) {
             case P_BYTE:
-                return new TupleColumnAccessCodeGenerator("byteValue", "appendByte", byte.class, colIdx);
+                return new ColumnAccessCodeGenerator("byteValue", "appendByte", byte.class, colIdx);
             case P_SHORT:
-                return new TupleColumnAccessCodeGenerator("shortValue", "appendShort", short.class, colIdx);
+                return new ColumnAccessCodeGenerator("shortValue", "appendShort", short.class, colIdx);
             case P_INT:
-                return new TupleColumnAccessCodeGenerator("intValue", "appendInt", int.class, colIdx);
+                return new ColumnAccessCodeGenerator("intValue", "appendInt", int.class, colIdx);
             case P_LONG:
-                return new TupleColumnAccessCodeGenerator("longValue", "appendLong", long.class, colIdx);
+                return new ColumnAccessCodeGenerator("longValue", "appendLong", long.class, colIdx);
             case P_FLOAT:
-                return new TupleColumnAccessCodeGenerator("floatValue", "appendFloat", float.class, colIdx);
+                return new ColumnAccessCodeGenerator("floatValue", "appendFloat", float.class, colIdx);
             case P_DOUBLE:
-                return new TupleColumnAccessCodeGenerator("doubleValue", "appendDouble", double.class, colIdx);
+                return new ColumnAccessCodeGenerator("doubleValue", "appendDouble", double.class, colIdx);
             case BYTE:
-                return new TupleColumnAccessCodeGenerator("byteValueBoxed", "appendByte", Byte.class, byte.class, colIdx);
+                return new ColumnAccessCodeGenerator("byteValueBoxed", "appendByte", Byte.class, byte.class, colIdx);
             case SHORT:
-                return new TupleColumnAccessCodeGenerator("shortValueBoxed", "appendShort", Short.class, short.class, colIdx);
+                return new ColumnAccessCodeGenerator("shortValueBoxed", "appendShort", Short.class, short.class, colIdx);
             case INT:
-                return new TupleColumnAccessCodeGenerator("intValueBoxed", "appendInt", Integer.class, int.class, colIdx);
+                return new ColumnAccessCodeGenerator("intValueBoxed", "appendInt", Integer.class, int.class, colIdx);
             case LONG:
-                return new TupleColumnAccessCodeGenerator("longValueBoxed", "appendLong", Long.class, long.class, colIdx);
+                return new ColumnAccessCodeGenerator("longValueBoxed", "appendLong", Long.class, long.class, colIdx);
             case FLOAT:
-                return new TupleColumnAccessCodeGenerator("floatValueBoxed", "appendFloat", Float.class, float.class, colIdx);
+                return new ColumnAccessCodeGenerator("floatValueBoxed", "appendFloat", Float.class, float.class, colIdx);
             case DOUBLE:
-                return new TupleColumnAccessCodeGenerator("doubleValueBoxed", "appendDouble", Double.class, double.class, colIdx);
+                return new ColumnAccessCodeGenerator("doubleValueBoxed", "appendDouble", Double.class, double.class, colIdx);
             case STRING:
-                return new TupleColumnAccessCodeGenerator("stringValue", "appendString", String.class, colIdx);
+                return new ColumnAccessCodeGenerator("stringValue", "appendString", String.class, colIdx);
             case UUID:
-                return new TupleColumnAccessCodeGenerator("uuidValue", "appendUuid", UUID.class, colIdx);
+                return new ColumnAccessCodeGenerator("uuidValue", "appendUuid", UUID.class, colIdx);
             case BYTE_ARR:
-                return new TupleColumnAccessCodeGenerator("bytesValue", "appendBytes", byte[].class, colIdx);
+                return new ColumnAccessCodeGenerator("bytesValue", "appendBytes", byte[].class, colIdx);
             case BITSET:
-                return new TupleColumnAccessCodeGenerator("bitmaskValue", "appendBitmask", BitSet.class, colIdx);
+                return new ColumnAccessCodeGenerator("bitmaskValue", "appendBitmask", BitSet.class, colIdx);
         }
 
         throw new IllegalStateException("Unsupported binary mode: " + mode);
@@ -92,7 +92,7 @@ public class TupleColumnAccessCodeGenerator {
      * @param mappedType Mapped value type.
      * @param colIdx Column index in schema.
      */
-    TupleColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType, int colIdx) {
+    ColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType, int colIdx) {
         this(readMethodName, writeMethodName, mappedType, mappedType, colIdx);
     }
 
@@ -105,7 +105,7 @@ public class TupleColumnAccessCodeGenerator {
      * @param writeArgType Write method argument type.
      * @param colIdx Column index in schema.
      */
-    TupleColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType,
+    ColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType,
         Class<?> writeArgType, int colIdx) {
         this.readMethodName = readMethodName;
         this.writeMethodName = writeMethodName;

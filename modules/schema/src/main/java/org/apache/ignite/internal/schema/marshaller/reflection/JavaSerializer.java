@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.schema.marshaller.reflection;
 
 import org.apache.ignite.internal.schema.Columns;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.Tuple;
-import org.apache.ignite.internal.schema.TupleAssembler;
 import org.apache.ignite.internal.schema.marshaller.AbstractSerializer;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +61,7 @@ public class JavaSerializer extends AbstractSerializer {
 
     /** {@inheritDoc} */
     @Override protected byte[] serialize0(
-        TupleAssembler asm,
+        RowAssembler asm,
         Object key,
         @Nullable Object val
     ) throws SerializationException {
@@ -75,21 +75,21 @@ public class JavaSerializer extends AbstractSerializer {
     }
 
     /**
-     * Creates TupleAssebler for key-value pair.
+     * Creates {@link RowAssembler} for key-value pair.
      *
      * @param key Key object.
      * @param val Value object.
-     * @return Tuple assembler.
+     * @return Row assembler.
      */
-    @Override protected TupleAssembler createAssembler(Object key, Object val) {
+    @Override protected RowAssembler createAssembler(Object key, Object val) {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
 
-        int size = TupleAssembler.tupleSize(
+        int size = RowAssembler.rowChunkSize(
             schema.keyColumns(), keyStat.nonNullFields, keyStat.nonNullFieldsSize,
             schema.valueColumns(), valStat.nonNullFields, valStat.nonNullFieldsSize);
 
-        return new TupleAssembler(schema, size, keyStat.nonNullFields, valStat.nonNullFields);
+        return new RowAssembler(schema, size, keyStat.nonNullFields, valStat.nonNullFields);
     }
 
     /**
@@ -121,8 +121,8 @@ public class JavaSerializer extends AbstractSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object deserializeKey0(Tuple tuple) throws SerializationException {
-        final Object o = keyMarsh.readObject(tuple);
+    @Override protected Object deserializeKey0(Row row) throws SerializationException {
+        final Object o = keyMarsh.readObject(row);
 
         assert keyClass.isInstance(o);
 
@@ -130,8 +130,8 @@ public class JavaSerializer extends AbstractSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object deserializeValue0(Tuple tuple) throws SerializationException {
-        final Object o = valMarsh.readObject(tuple);
+    @Override protected Object deserializeValue0(Row row) throws SerializationException {
+        final Object o = valMarsh.readObject(row);
 
         assert o == null || valClass.isInstance(o);
 

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 /**
- * An exception thrown when an attempt to read an invalid type from a tuple is performed.
+ * An exception thrown when an attempt to read an invalid type from a row is performed.
  */
 public class InvalidTypeException extends IllegalArgumentException {
     /**

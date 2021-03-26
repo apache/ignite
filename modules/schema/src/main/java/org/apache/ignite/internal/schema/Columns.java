@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
- * A set of columns representing a key or a value chunk in tuple. Instance of Columns provides necessary machinery
- * to locate a column value in a concrete tuple.
+ * A set of columns representing a key or a value chunk in a row.
+ * Provides necessary machinery to locate a column value in a concrete row.
  */
 public class Columns {
     /** */

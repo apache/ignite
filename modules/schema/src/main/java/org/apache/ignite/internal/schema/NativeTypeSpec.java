@@ -23,7 +23,7 @@ package org.apache.ignite.internal.schema;
  * bitmask of size <code>n</code> bits or number of max n bytes are created using static methods.
  *
  * An instance of native type provides necessary indirection to read any field as an instance of
- * {@code java.lang.Object} to avoid switching inside the tuple methods.
+ * {@code java.lang.Object} to avoid switching inside the row methods.
  */
 public enum NativeTypeSpec {
     /**
@@ -31,7 +31,7 @@ public enum NativeTypeSpec {
      */
     BYTE("byte", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.byteValueBoxed(colIdx);
         }
     },
@@ -41,7 +41,7 @@ public enum NativeTypeSpec {
      */
     SHORT("short", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.shortValueBoxed(colIdx);
         }
     },
@@ -51,7 +51,7 @@ public enum NativeTypeSpec {
      */
     INTEGER("integer", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.intValueBoxed(colIdx);
         }
     },
@@ -61,7 +61,7 @@ public enum NativeTypeSpec {
      */
     LONG("long", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.longValueBoxed(colIdx);
         }
     },
@@ -71,7 +71,7 @@ public enum NativeTypeSpec {
      */
     FLOAT("float", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.floatValueBoxed(colIdx);
         }
     },
@@ -81,7 +81,7 @@ public enum NativeTypeSpec {
      */
     DOUBLE("double", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.doubleValueBoxed(colIdx);
         }
     },
@@ -91,7 +91,7 @@ public enum NativeTypeSpec {
      */
     UUID("uuid", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.uuidValue(colIdx);
         }
     },
@@ -101,7 +101,7 @@ public enum NativeTypeSpec {
      */
     STRING("string") {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.stringValue(colIdx);
         }
     },
@@ -111,7 +111,7 @@ public enum NativeTypeSpec {
      */
     BYTES("blob") {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.bytesValue(colIdx);
         }
     },
@@ -121,7 +121,7 @@ public enum NativeTypeSpec {
      */
     BITMASK("bitmask", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Tuple tup, int colIdx) {
+        @Override public Object objectValue(Row tup, int colIdx) {
             return tup.bitmaskValue(colIdx);
         }
     };
@@ -160,16 +160,16 @@ public enum NativeTypeSpec {
     }
 
     /**
-     * Indirection method for getting an Object representation of the given type from the tuple. This method
-     * does any type conversions and will throw an exception if tuple schema column type differs from this
+     * Indirection method for getting an Object representation of the given type from the rows. This method
+     * does no type conversions and will throw an exception if row column type differs from this
      * type.
      *
-     * @param tup Tuple to read the value from.
+     * @param row Row to read the value from.
      * @param colIdx Column index to read.
      * @return An Object representation of the value.
      * @throws InvalidTypeException If this native type differs from the actual type of {@code colIdx}.
      */
-    public abstract Object objectValue(Tuple tup, int colIdx) throws InvalidTypeException;
+    public abstract Object objectValue(Row row, int colIdx) throws InvalidTypeException;
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -26,8 +26,8 @@ import java.nio.charset.CoderResult;
 import java.util.Arrays;
 
 /**
- * A simple byte array wrapper to allow dynamic byte array expansion during the tuple construction. Grows exponentially
- * up to 1MB, then expands by 1 MB each time an expansion is required. Values are always written in LITTLE_ENDIAN
+ * A simple byte array wrapper to allow dynamic byte array expansion during the row construction. Grows exponentially
+ * up to 1 MB, then expands by 1 MB each time an expansion is required. Values are always written in LITTLE_ENDIAN
  * format.
  * <p>
  * Additionally, it tracks the high watermark of the values ever written to the buffer so that only written bytes are

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.schema.marshaller;
 
 import java.util.Objects;
-import org.apache.ignite.internal.schema.ByteBufferTuple;
+import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.Tuple;
-import org.apache.ignite.internal.schema.TupleAssembler;
 import org.apache.ignite.internal.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,66 +43,66 @@ public abstract class AbstractSerializer implements Serializer {
 
     /** {@inheritDoc} */
     @Override public byte[] serialize(Object key, Object val) throws SerializationException {
-        final TupleAssembler assembler = createAssembler(Objects.requireNonNull(key), val);
+        final RowAssembler assembler = createAssembler(Objects.requireNonNull(key), val);
 
         return serialize0(assembler, key, val);
     }
 
     /** {@inheritDoc} */
     @Override public <K> K deserializeKey(byte[] data) throws SerializationException {
-        final Tuple tuple = new ByteBufferTuple(schema, data);
+        final Row row = new ByteBufferRow(schema, data);
 
-        return (K)deserializeKey0(tuple);
+        return (K)deserializeKey0(row);
     }
 
     /** {@inheritDoc} */
     @Override public <V> V deserializeValue(byte[] data) throws SerializationException {
-        final Tuple tuple = new ByteBufferTuple(schema, data);
+        final Row row = new ByteBufferRow(schema, data);
 
-        return (V)deserializeValue0(tuple);
+        return (V)deserializeValue0(row);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> Pair<K, V> deserialize(byte[] data) throws SerializationException {
-        final Tuple tuple = new ByteBufferTuple(schema, data);
+        final Row row = new ByteBufferRow(schema, data);
 
-        return new Pair<>((K)deserializeKey0(tuple), (V)deserializeValue0(tuple));
+        return new Pair<>((K)deserializeKey0(row), (V)deserializeValue0(row));
     }
 
     /**
-     * Tuple assembler factory method.
+     * Row assembler factory method.
      *
      * @param key Key object.
      * @param val Value object.
      */
-    protected abstract TupleAssembler createAssembler(Object key, @Nullable Object val);
+    protected abstract RowAssembler createAssembler(Object key, @Nullable Object val);
 
     /**
      * Internal serialization method.
      *
-     * @param asm Tuple assembler.
+     * @param asm Row assembler.
      * @param key Key object.
      * @param val Value object.
      * @return Serialized pair.
      * @throws SerializationException If failed.
      */
-    protected abstract byte[] serialize0(TupleAssembler asm, Object key, Object val) throws SerializationException;
+    protected abstract byte[] serialize0(RowAssembler asm, Object key, Object val) throws SerializationException;
 
     /**
-     * Extract key object from tuple.
+     * Extract key object from row.
      *
-     * @param tuple Tuple.
+     * @param row Row.
      * @return Deserialized key object.
      * @throws SerializationException If failed.
      */
-    protected abstract Object deserializeKey0(Tuple tuple) throws SerializationException;
+    protected abstract Object deserializeKey0(Row row) throws SerializationException;
 
     /**
-     * Extract value object from tuple.
+     * Extract value object from row.
      *
-     * @param tuple Tuple.
+     * @param row Row.
      * @return Deserialized value object.
      * @throws SerializationException If failed.
      */
-    protected abstract Object deserializeValue0(Tuple tuple) throws SerializationException;
+    protected abstract Object deserializeValue0(Row row) throws SerializationException;
 }

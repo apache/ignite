@@ -10,7 +10,7 @@ We prohibit cyclic dependencies between modules in order to simplify JIGSAW migr
 
 Module Name | Description
 ----------- | -----------
-[api](api/README.md)|Ignite public API
+[api](api/README.md)|Ignite public API.
 [bytecode](bytecode/README.md)|Ignite Bytecode module.
 [cli](cli/README.md)|Ignite CLI implementation
 [cli-common](cli-common/README.md)|Shared interfaces definitions for pluggable CLIng
@@ -18,5 +18,6 @@ Module Name | Description
 [configuration-annotation-processor](configuration-annotation-processor/README.md)|Tooling for generating Ignite configuration model classes from configuration schema definition
 [network](network/README.md)|Networking module: group membership and message passi
 [rest](rest/README.md)|REST management endpoint bindings and command handlers
-[runner](runner/README.md)|Ignite server node runner. The module that wires up the Ignite components and handles node lifecycle
+[runner](runner/README.md)|Ignite server node runner. The module that wires up the Ignite components and handles node lifecycle.
 [schema](schema/README.md)|Ignite schema API implementation and schema management classes.
+[table](table/README.md)|Ignite table API implementation.

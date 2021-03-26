@@ -20,8 +20,8 @@ package org.apache.ignite.internal.schema.marshaller.reflection;
 import java.util.Objects;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
-import org.apache.ignite.internal.schema.Tuple;
-import org.apache.ignite.internal.schema.TupleAssembler;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
@@ -114,13 +114,13 @@ class Marshaller {
     }
 
     /**
-     * Reads object from tuple.
+     * Reads object from row.
      *
-     * @param reader Tuple reader.
+     * @param reader Row reader.
      * @return Object.
      * @throws SerializationException If failed.
      */
-    public Object readObject(Tuple reader) throws SerializationException {
+    public Object readObject(Row reader) throws SerializationException {
         if (isSimpleTypeMarshaller())
             return fieldAccessors[0].read(reader);
 
@@ -133,13 +133,13 @@ class Marshaller {
     }
 
     /**
-     * Write object to tuple.
+     * Write an object to row.
      *
      * @param obj Object.
-     * @param writer Tuple writer.
+     * @param writer Row writer.
      * @throws SerializationException If failed.
      */
-    public void writeObject(Object obj, TupleAssembler writer) throws SerializationException {
+    public void writeObject(Object obj, RowAssembler writer) throws SerializationException {
         for (int fldIdx = 0; fldIdx < fieldAccessors.length; fldIdx++)
             fieldAccessors[fldIdx].write(writer, obj);
     }

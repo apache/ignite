@@ -22,16 +22,16 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Heap byte buffer-based tuple.
+ * Heap byte buffer-based row.
  */
-public class ByteBufferTuple extends Tuple {
+public class ByteBufferRow extends Row {
     /** */
     private final ByteBuffer buf;
 
     /**
-     * @param arr Array representation of the tuple.
+     * @param arr Array representation of the row.
      */
-    public ByteBufferTuple(SchemaDescriptor sch, byte[] arr) {
+    public ByteBufferRow(SchemaDescriptor sch, byte[] arr) {
         super(sch);
 
         buf = ByteBuffer.wrap(arr);
@@ -87,5 +87,25 @@ public class ByteBufferTuple extends Tuple {
     /** {@inheritDoc} */
     @Override protected String readString(int off, int len) {
         return new String(buf.array(), off, len, StandardCharsets.UTF_8);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] rowBytes() {
+        return buf.array();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] keyChunkBytes() {
+        final int len = readInteger(KEY_CHUNK_OFFSET);
+
+        return readBytes(KEY_HASH_FIELD_OFFSET, len); // Includes key-hash.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] valueChunkBytes() {
+        int off = KEY_CHUNK_OFFSET + readInteger(KEY_CHUNK_OFFSET);
+        int len = readInteger(off);
+
+        return readBytes(off, len);
     }
 }

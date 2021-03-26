@@ -40,9 +40,9 @@ import jdk.jfr.Experimental;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.Tuple;
-import org.apache.ignite.internal.schema.TupleAssembler;
 import org.apache.ignite.internal.schema.marshaller.AbstractSerializer;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
@@ -190,7 +190,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
         if (mode == null)
             return new ObjectMarshallerCodeGenerator(columns, tClass, firstColIdx);
         else
-            return new IdentityMarshallerCodeGenerator(tClass, TupleColumnAccessCodeGenerator.createAccessor(mode, firstColIdx));
+            return new IdentityMarshallerCodeGenerator(tClass, ColumnAccessCodeGenerator.createAccessor(mode, firstColIdx));
     }
 
     /**
@@ -235,7 +235,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
         final MethodDefinition methodDef = classDef.declareMethod(
             EnumSet.of(Access.PROTECTED),
             "createAssembler",
-            ParameterizedType.type(TupleAssembler.class),
+            ParameterizedType.type(RowAssembler.class),
             Parameter.arg("key", Object.class),
             Parameter.arg("val", Object.class)
         );
@@ -299,9 +299,9 @@ public class AsmSerializerGenerator implements SerializerFactory {
             }
         }
 
-        body.append(BytecodeExpressions.newInstance(TupleAssembler.class,
+        body.append(BytecodeExpressions.newInstance(RowAssembler.class,
             methodDef.getThis().getField("schema", SchemaDescriptor.class),
-            BytecodeExpressions.invokeStatic(TupleAssembler.class, "tupleSize", int.class,
+            BytecodeExpressions.invokeStatic(RowAssembler.class, "rowChunkSize", int.class,
                 keyCols, varlenKeyCols, varlenKeyColsSize,
                 valCols, varlenValueCols, varlenValueColsSize),
             varlenKeyCols,
@@ -326,7 +326,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
             EnumSet.of(Access.PROTECTED),
             "serialize0",
             ParameterizedType.type(byte[].class),
-            Parameter.arg("asm", TupleAssembler.class),
+            Parameter.arg("asm", RowAssembler.class),
             Parameter.arg("key", Object.class),
             Parameter.arg("val", Object.class)
         ).addException(SerializationException.class);
@@ -380,7 +380,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
             EnumSet.of(Access.PROTECTED),
             "deserializeKey0",
             ParameterizedType.type(Object.class),
-            Parameter.arg("tuple", Tuple.class)
+            Parameter.arg("row", Row.class)
         ).addException(SerializationException.class);
 
         methodDef.declareAnnotation(Override.class);
@@ -392,7 +392,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
                 .invoke("create", Object.class)));
 
         methodDef.getBody()
-            .append(keyMarsh.unmarshallObject(classDef.getType(), methodDef.getScope().getVariable("tuple"), obj))
+            .append(keyMarsh.unmarshallObject(classDef.getType(), methodDef.getScope().getVariable("row"), obj))
             .append(obj)
             .retObject();
     }
@@ -408,7 +408,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
             EnumSet.of(Access.PROTECTED),
             "deserializeValue0",
             ParameterizedType.type(Object.class),
-            Parameter.arg("tuple", Tuple.class)
+            Parameter.arg("row", Row.class)
         ).addException(SerializationException.class);
 
         methodDef.declareAnnotation(Override.class);
@@ -420,7 +420,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
             block.append(obj.set(methodDef.getThis().getField("valFactory", ObjectFactory.class)
                 .invoke("create", Object.class)));
 
-        block.append(valMarsh.unmarshallObject(classDef.getType(), methodDef.getScope().getVariable("tuple"), obj))
+        block.append(valMarsh.unmarshallObject(classDef.getType(), methodDef.getScope().getVariable("row"), obj))
             .append(obj)
             .retObject();
 

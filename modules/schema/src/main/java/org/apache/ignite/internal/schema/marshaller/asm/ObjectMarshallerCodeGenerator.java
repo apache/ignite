@@ -48,7 +48,7 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
     private final Columns columns;
 
     /** Object field access expression generators. */
-    private final TupleColumnAccessCodeGenerator[] columnAccessors;
+    private final ColumnAccessCodeGenerator[] columnAccessors;
 
     ObjectMarshallerCodeGenerator(
         Columns columns,
@@ -57,13 +57,13 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
     ) {
         this.columns = columns;
         this.tClass = tClass;
-        columnAccessors = new TupleColumnAccessCodeGenerator[columns.length()];
+        columnAccessors = new ColumnAccessCodeGenerator[columns.length()];
 
         try {
             for (int i = 0; i < columns.length(); i++) {
                 final Field field = tClass.getDeclaredField(columns.column(i).name());
 
-                columnAccessors[i] = TupleColumnAccessCodeGenerator.createAccessor(MarshallerUtil.mode(field.getType()), i + firstColIdx);
+                columnAccessors[i] = ColumnAccessCodeGenerator.createAccessor(MarshallerUtil.mode(field.getType()), i + firstColIdx);
             }
         }
         catch (NoSuchFieldException ex) {
@@ -84,7 +84,7 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
     /** {@inheritDoc} */
     @Override public BytecodeNode getValue(ParameterizedType serializerClass, Variable obj,
         int i) {
-        final TupleColumnAccessCodeGenerator columnAccessor = columnAccessors[i];
+        final ColumnAccessCodeGenerator columnAccessor = columnAccessors[i];
 
         return BytecodeExpressions.getStatic(serializerClass, "FIELD_HANDLER_" + columnAccessor.columnIdx(), ParameterizedType.type(VarHandle.class))
             .invoke("get", columnAccessor.mappedType(), obj);
@@ -95,7 +95,7 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
         final BytecodeBlock block = new BytecodeBlock();
 
         for (int i = 0; i < columns.length(); i++) {
-            final TupleColumnAccessCodeGenerator columnAccessor = columnAccessors[i];
+            final ColumnAccessCodeGenerator columnAccessor = columnAccessors[i];
 
             final BytecodeExpression fld = BytecodeExpressions.getStatic(serializerClass, "FIELD_HANDLER_" + columnAccessor.columnIdx(), ParameterizedType.type(VarHandle.class))
                 .invoke("get", columnAccessor.mappedType(), obj);
@@ -120,13 +120,13 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override public BytecodeBlock unmarshallObject(ParameterizedType serializerClass, Variable tuple, Variable obj) {
+    @Override public BytecodeBlock unmarshallObject(ParameterizedType serializerClass, Variable row, Variable obj) {
         final BytecodeBlock block = new BytecodeBlock();
 
         for (int i = 0; i < columns.length(); i++) {
-            final TupleColumnAccessCodeGenerator columnAccessor = columnAccessors[i];
+            final ColumnAccessCodeGenerator columnAccessor = columnAccessors[i];
 
-            final BytecodeExpression val = tuple.invoke(
+            final BytecodeExpression val = row.invoke(
                 columnAccessor.readMethodName(),
                 columnAccessor.mappedType(),
                 BytecodeExpressions.constantInt(columnAccessor.columnIdx())

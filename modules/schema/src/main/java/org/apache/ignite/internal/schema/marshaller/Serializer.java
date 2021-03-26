@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.Pair;
  */
 public interface Serializer {
     /**
-     * Writes key-value pair to tuple.
+     * Writes key-value pair to row.
      *
      * @param key Key object.
      * @param val Value object.

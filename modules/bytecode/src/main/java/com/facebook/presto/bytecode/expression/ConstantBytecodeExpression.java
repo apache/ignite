@@ -54,7 +54,7 @@ class ConstantBytecodeExpression
         if (value instanceof ParameterizedType) {
             return ((ParameterizedType)value).getSimpleName() + ".class";
         }
-        // todo escape string
+        // escape string
         if (value instanceof String) {
             return "\"" + value + "\"";
         }

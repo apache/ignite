@@ -20,7 +20,7 @@ package org.apache.ignite.internal.schema.marshaller;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.NativeType;
-import org.apache.ignite.internal.schema.TupleAssembler;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.util.ObjectFactory;
 
 /**
@@ -40,7 +40,7 @@ public final class MarshallerUtil {
                 return ((byte[])val).length;
 
             case STRING:
-                return TupleAssembler.utf8EncodedLength((CharSequence)val);
+                return RowAssembler.utf8EncodedLength((CharSequence)val);
 
             default:
                 throw new IllegalStateException("Unsupported test varsize type: " + type);

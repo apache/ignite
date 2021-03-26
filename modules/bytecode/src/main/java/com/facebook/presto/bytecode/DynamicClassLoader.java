@@ -36,15 +36,6 @@ public class DynamicClassLoader
         this(parentClassLoader, Map.of());
     }
 
-    // TODO: this is a hack that should be removed
-    @Deprecated
-    public DynamicClassLoader(ClassLoader overrideClassLoader, ClassLoader parentClassLoader)
-    {
-        super(parentClassLoader);
-        this.callSiteBindings = Map.of();
-        this.overrideClassLoader = Optional.of(overrideClassLoader);
-    }
-
     public DynamicClassLoader(ClassLoader parentClassLoader, Map<Long, MethodHandle> callSiteBindings)
     {
         super(parentClassLoader);
