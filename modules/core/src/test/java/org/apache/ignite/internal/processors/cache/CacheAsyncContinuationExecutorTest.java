@@ -140,7 +140,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
             }
 
             try {
-                barrier.await(5, TimeUnit.SECONDS);
+                barrier.await(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -156,7 +156,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
         else
             fut.listen(clos);
 
-        barrier.await(5, TimeUnit.SECONDS);
+        barrier.await(10, TimeUnit.SECONDS);
 
         assertEquals(allowCacheOperationsInContinuation() ? 2 : 1, cache.get(key).intValue());
         assertTrue(listenThreadName.get(), listenThreadName.get().startsWith(expectedThreadNamePrefix()));
