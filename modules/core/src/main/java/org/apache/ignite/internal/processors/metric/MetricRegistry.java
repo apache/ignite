@@ -325,6 +325,8 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return Registered metric.
      */
     private <T extends Metric> T addMetric(String name, T metric) {
+        assert metric.name().startsWith(regName + SEPARATOR);
+
         T old = (T)metrics.putIfAbsent(name, metric);
 
         if (old != null)
