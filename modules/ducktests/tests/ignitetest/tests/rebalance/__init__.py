@@ -73,14 +73,22 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
 
 
 def __ranges__(preloaders, entry_count):
-    range_mark = float(entry_count) / preloaders
-    range_idx = 0
+    range_size = int(entry_count / preloaders)
+    extra_size = __extra__(entry_count % preloaders)
+    start_key = 0
 
-    while range_idx < preloaders:
-        start_key = round(range_mark * range_idx)
-        range_idx += 1
-        range_size = round(range_mark * range_idx) - start_key
-        yield start_key, range_size
+    while start_key < entry_count:
+        range_bound = start_key + range_size + next(extra_size)
+        yield start_key, range_bound - start_key
+        start_key = range_bound
+
+
+def __extra__(extra):
+    while True:
+        yield 1 if extra else 0
+
+        if extra:
+            extra -= 1
 
 
 def await_rebalance_start(ignite, timeout=1):
