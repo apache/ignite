@@ -649,11 +649,6 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 == null) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException("Context has not been created on server " +
-                "node during prepare operation [reqId=" + reqId + ", nodeId=" + ctx.localNodeId() + ']'));
-        }
-
         Throwable err = opCtx0.err.get();
 
         if (err != null)
@@ -770,12 +765,12 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return;
 
-        SnapshotRestoreContext opCtx0 = opCtx;
-
         for (Map.Entry<UUID, Exception> entry : errs.entrySet()) {
             log.warning("Remote node was not able to perform rollback " +
                 "[nodeId=" + entry.getKey() + ", err=" + entry.getValue().getMessage() + ']');
         }
+
+        SnapshotRestoreContext opCtx0 = opCtx;
 
         if (!res.keySet().containsAll(opCtx0.nodes)) {
             Set<UUID> leftNodes = new HashSet<>(opCtx0.nodes);
