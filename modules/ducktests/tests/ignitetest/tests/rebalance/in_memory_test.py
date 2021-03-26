@@ -18,7 +18,7 @@ Module contains in-memory rebalance tests.
 """
 from enum import IntEnum
 
-from ducktape.mark import defaults
+from ducktape.mark import defaults, matrix
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
@@ -52,8 +52,10 @@ class RebalanceInMemoryTest(IgniteTest):
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[5],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
+    @matrix(entry_count=[120_000_000], entry_size=[1000])
+    @matrix(entry_count=[2_400_000], entry_size=[50_000])
     def test_node_join(self, ignite_version,
                        backups, cache_count, entry_count, entry_size, preloaders,
                        thread_pool_size, batch_size, batches_prefetch_count, throttle):
@@ -67,8 +69,10 @@ class RebalanceInMemoryTest(IgniteTest):
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[5],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
+    @matrix(entry_count=[120_000_000], entry_size=[1000])
+    @matrix(entry_count=[2_400_000], entry_size=[50_000])
     def test_node_left(self, ignite_version,
                        backups, cache_count, entry_count, entry_size, preloaders,
                        thread_pool_size, batch_size, batches_prefetch_count, throttle):
