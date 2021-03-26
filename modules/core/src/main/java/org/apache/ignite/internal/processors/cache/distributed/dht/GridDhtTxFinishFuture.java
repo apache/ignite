@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -66,9 +65,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     implements GridCacheFuture<IgniteInternalTx>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Tracing span. */
-    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();

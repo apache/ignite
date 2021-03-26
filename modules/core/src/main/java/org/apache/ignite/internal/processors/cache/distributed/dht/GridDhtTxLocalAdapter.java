@@ -930,20 +930,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         return prepFut;
     }
 
-    /**
-     * @return Tracing span.
-     */
-    public Span span() {
-        return span;
-    }
-
-    /**
-     * @param span New tracing span.
-     */
-    public void span(Span span) {
-        this.span = span;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),

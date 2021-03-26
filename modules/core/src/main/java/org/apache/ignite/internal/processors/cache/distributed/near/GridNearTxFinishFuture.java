@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -82,9 +81,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /** All owners left grid message. */
     public static final String ALL_PARTITION_OWNERS_LEFT_GRID_MSG =
         "Failed to commit a transaction (all partition owners have left the grid, partition data has been lost)";
-
-    /** Tracing span. */
-    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();

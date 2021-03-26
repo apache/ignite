@@ -33,8 +33,14 @@ public enum Scope {
     /** Transactional scope. */
     TX((short)4),
 
+    /** Cache API write scope: put, remove, putAll, removeAll, putAsync, etc. */
+    CACHE_API_WRITE((short)5),
+
+    /** Cache API read scope: get, getAll, getAsync, getAllAsync. */
+    CACHE_API_READ((short)6),
+
     /** SQL query scope. */
-    SQL((short)5);
+    SQL((short)7);
 
     /** Scope index. */
     private final short idx;

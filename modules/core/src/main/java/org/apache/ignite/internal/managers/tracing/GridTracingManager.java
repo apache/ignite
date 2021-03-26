@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.tracing;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -192,7 +193,8 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
             generateSpan(
                 parentSpan,
                 spanType,
-                null));
+                null,
+                false));
     }
 
     /** {@inheritDoc} */
@@ -333,8 +335,18 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
     @Override public @NotNull Span create(
         @NotNull SpanType spanType,
         @Nullable Span parentSpan,
-        @Nullable String lb
+        @Nullable String lb,
+        boolean forceTracing
     ) {
+        if (forceTracing) {
+            return enrichWithLocalNodeParameters(
+                generateSpan(
+                    parentSpan,
+                    spanType,
+                    lb,
+                    forceTracing));
+        }
+
         // Optimization for noop spi.
         if (noop)
             return NoopSpan.INSTANCE;
@@ -350,7 +362,8 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
             generateSpan(
                 parentSpan,
                 spanType,
-                lb));
+                lb,
+                false));
     }
 
     /** {@inheritDoc} */
@@ -454,19 +467,30 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
      * Generates child span if it's possible due to parent/child included scopes, otherwise returns patent span as is.
      * @param parentSpan Parent span.
      * @param spanTypeToCreate Span type to create.
+     * @param forceTracing Trace given span regardless tracing configuration parameters.
      * @param lb Label.
      */
     @SuppressWarnings("unchecked")
     private @NotNull Span generateSpan(
         @Nullable Span parentSpan,
         @NotNull SpanType spanTypeToCreate,
-        @Nullable String lb
+        @Nullable String lb,
+        boolean forceTracing
     ) {
         if (parentSpan instanceof DeferredSpan)
             return create(spanTypeToCreate, ((DeferredSpan)parentSpan).serializedSpan());
 
         if (parentSpan == NoopSpan.INSTANCE || parentSpan == null) {
             if (spanTypeToCreate.rootSpan()) {
+                if (forceTracing) {
+                    return new SpanImpl(
+                        getSpi().create(
+                            spanTypeToCreate.spanName(),
+                            (SpiSpecificSpan)null),
+                        spanTypeToCreate,
+                        Collections.emptySet());
+                }
+
                 // Get tracing configuration.
                 TracingConfigurationParameters tracingConfigurationParameters = tracingConfiguration.get(
                     new TracingConfigurationCoordinates.Builder(spanTypeToCreate.scope()).withLabel(lb).build());

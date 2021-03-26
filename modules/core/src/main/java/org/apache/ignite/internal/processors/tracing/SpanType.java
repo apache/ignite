@@ -43,7 +43,7 @@ public enum SpanType {
     DISCOVERY_CUSTOM_EVENT(Scope.DISCOVERY, "discovery.custom.event", 6, true),
 
     /** Exchange future. */
-    EXCHANGE_FUTURE(Scope.DISCOVERY, "exchange.future", 7),
+    EXCHANGE_FUTURE(Scope.DISCOVERY, "exchange.future", 7, true),
 
     /** Affinity calculation. */
     AFFINITY_CALCULATION(Scope.DISCOVERY, "affinity.calculation", 8),
@@ -161,80 +161,162 @@ public enum SpanType {
     /** Custom job call. */
     CUSTOM_JOB_CALL(Scope.COMMUNICATION, "job.call", 45, true),
 
+    /** */
+    CACHE_API_UPDATE(Scope.CACHE_API_WRITE, "cache.api.update", 46, true),
+
+    /** */
+    CACHE_API_REMOVE(Scope.CACHE_API_WRITE, "cache.api.remove", 50, true),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_REQUEST(Scope.CACHE_API_WRITE,
+        "cache.api.near.process.atomic.update.request", 54, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_RESPONSE(Scope.CACHE_API_WRITE,
+        "cache.api.near.process.atomic.update.response", 55, false),
+
+    /** */
+    CACHE_API_DHT_PROCESS_ATOMIC_UPDATE_REQUEST(Scope.CACHE_API_WRITE,
+        "cache.api.dht.process.atomic.update.request", 56, false),
+
+    /** */
+    CACHE_API_DHT_PROCESS_ATOMIC_UPDATE_RESPONSE(Scope.CACHE_API_WRITE,
+        "cache.api.dht.process.atomic.update.response", 57, false),
+
+    /** */
+    CACHE_API_DHT_PROCESS_ATOMIC_NEAR_RESPONSE(Scope.CACHE_API_WRITE,
+        "cache.api.dht.process.atomic.near.response", 58, false),
+
+    /** */
+    CACHE_API_PROCESS_CHECK_UPDATE_REQUEST(Scope.CACHE_API_WRITE,
+        "cache.api.process.check.update.request", 59, false),
+
+    /** */
+    CACHE_API_DHT_PROCESS_ATOMIC_DEFERRED_UPDATE_RESPONSE(Scope.CACHE_API_WRITE,
+        "cache.api.dht.process.atomic.deferred.update.response", 60, false),
+
+    /** */
+    CACHE_API_DHT_UPDATE_FUTURE(Scope.CACHE_API_WRITE, "cache.api.dht.update.future", 61, false),
+
+    /** */
+    CACHE_API_UPDATE_MAP(Scope.CACHE_API_WRITE, "cache.api.update.map", 62, false),
+
+    /** */
+    CACHE_API_NEAR_UPDATE_FUTURE(Scope.CACHE_API_WRITE, "cache.api.near.update.future", 63, false),
+
+    /** */
+    CACHE_API_NEAR_UPDATE_PRIMARY_FAILED_RESPONSE(Scope.CACHE_API_WRITE,
+        "cache.api.near.atomic.primary.failed.response", 64, false),
+
+    /** */
+    CACHE_API_GET(Scope.CACHE_API_READ, "cache.api.get", 65, true),
+
+    /** */
+    CACHE_API_NEAR_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.near.get.future", 69, false),
+
+    /** */
+    CACHE_API_PARTITIONED_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.partitioned.get.future", 70, false),
+
+    /** */
+    CACHE_API_PARTITIONED_SINGLE_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.partitioned.single.get.future", 71, false),
+
+    /** */
+    CACHE_API_DHT_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.dht.get.future", 72, false),
+
+    /** */
+    CACHE_API_DHT_SINGLE_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.dht.single.get.future", 73, false),
+
+    /** */
+    CACHE_API_GET_MAP(Scope.CACHE_API_READ, "cache.api.get.map", 74, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_GET_REQUEST(Scope.CACHE_API_READ, "cache.api.near.atomic.get.request", 75, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_GET_RESPONSE(Scope.CACHE_API_READ, "cache.api.near.atomic.get.response", 76, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_REQUEST(Scope.CACHE_API_READ,
+        "cache.api.near.atomic.single.get.request", 77, false),
+
+    /** */
+    CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_RESPONSE(Scope.CACHE_API_READ,
+        "cache.api.near.atomic.single.get.response", 78, false),
+
     /** The overall execution of SQL query. */
-    SQL_QRY(Scope.SQL, "sql.query", 46, true),
+    SQL_QRY(Scope.SQL, "sql.query", 79, true),
 
     /** Opening SQL query cursor. */
-    SQL_CURSOR_OPEN(Scope.SQL, "sql.cursor.open", 47),
+    SQL_CURSOR_OPEN(Scope.SQL, "sql.cursor.open", 80),
 
     /** Closing SQL query cursor. */
-    SQL_CURSOR_CLOSE(Scope.SQL, "sql.cursor.close", 48),
+    SQL_CURSOR_CLOSE(Scope.SQL, "sql.cursor.close", 81),
 
     /** Cancellation SQL query cursor. */
-    SQL_CURSOR_CANCEL(Scope.SQL, "sql.cursor.cancel", 49),
+    SQL_CURSOR_CANCEL(Scope.SQL, "sql.cursor.cancel", 82),
 
     /** Parsing SQL query. */
-    SQL_QRY_PARSE(Scope.SQL, "sql.query.parse", 50),
+    SQL_QRY_PARSE(Scope.SQL, "sql.query.parse", 83),
 
     /** Processing SQL query execution request. */
-    SQL_QRY_EXEC_REQ(Scope.SQL, "sql.query.execute.request", 51),
+    SQL_QRY_EXEC_REQ(Scope.SQL, "sql.query.execute.request", 84),
 
     /** Processing SQL next result page request. */
-    SQL_NEXT_PAGE_REQ(Scope.SQL, "sql.next.page.request", 52),
+    SQL_NEXT_PAGE_REQ(Scope.SQL, "sql.next.page.request", 85),
 
     /** Processing mapped node response with requested SQL result page. */
-    SQL_PAGE_RESP(Scope.SQL, "sql.page.response", 53),
+    SQL_PAGE_RESP(Scope.SQL, "sql.page.response", 86),
 
     /** Execution SQL query by H2. */
-    SQL_QRY_EXECUTE(Scope.SQL, "sql.query.execute", 54),
+    SQL_QRY_EXECUTE(Scope.SQL, "sql.query.execute", 87),
 
     /** Reading rows from cursor and preparing result page. */
-    SQL_PAGE_PREPARE(Scope.SQL, "sql.page.prepare", 55),
+    SQL_PAGE_PREPARE(Scope.SQL, "sql.page.prepare", 88),
 
     /** Processing SQL query fail response. */
-    SQL_FAIL_RESP(Scope.SQL, "sql.fail.response", 56),
+    SQL_FAIL_RESP(Scope.SQL, "sql.fail.response", 89),
 
     /** Processing DML query request. */
-    SQL_DML_QRY_EXEC_REQ(Scope.SQL, "sql.dml.query.execute.request", 57),
+    SQL_DML_QRY_EXEC_REQ(Scope.SQL, "sql.dml.query.execute.request", 90),
 
     /** Processing DML query response. */
-    SQL_DML_QRY_RESP(Scope.SQL, "sql.dml.query.response", 58),
+    SQL_DML_QRY_RESP(Scope.SQL, "sql.dml.query.response", 91),
 
     /** Processing query cancellation request. */
-    SQL_QRY_CANCEL_REQ(Scope.SQL, "sql.query.cancel.request", 59),
+    SQL_QRY_CANCEL_REQ(Scope.SQL, "sql.query.cancel.request", 92),
 
     /** Opening cursor iterator. */
-    SQL_ITER_OPEN(Scope.SQL, "sql.iterator.open", 60),
+    SQL_ITER_OPEN(Scope.SQL, "sql.iterator.open", 93),
 
     /** Opening cursor iterator. */
-    SQL_ITER_CLOSE(Scope.SQL, "sql.iterator.close", 61),
+    SQL_ITER_CLOSE(Scope.SQL, "sql.iterator.close", 94),
 
     /** Fetching SQL query result page. */
-    SQL_PAGE_FETCH(Scope.SQL, "sql.page.fetch", 62),
+    SQL_PAGE_FETCH(Scope.SQL, "sql.page.fetch", 95),
 
     /** Waiting for SQL query results page to be received. */
-    SQL_PAGE_WAIT(Scope.SQL, "sql.page.wait", 63),
+    SQL_PAGE_WAIT(Scope.SQL, "sql.page.wait", 96),
 
     /** Processing SQL index range request. */
-    SQL_IDX_RANGE_REQ(Scope.SQL, "sql.index.range.request", 64),
+    SQL_IDX_RANGE_REQ(Scope.SQL, "sql.index.range.request", 97),
 
     /** Processing SQL index range response. */
-    SQL_IDX_RANGE_RESP(Scope.SQL, "sql.index.range.response", 65),
+    SQL_IDX_RANGE_RESP(Scope.SQL, "sql.index.range.response", 98),
 
     /** Execution of SQL DML query. */
-    SQL_DML_QRY_EXECUTE(Scope.SQL, "sql.dml.query.execute", 66),
+    SQL_DML_QRY_EXECUTE(Scope.SQL, "sql.dml.query.execute", 99),
 
     /** Execution of SQL command query which either DDL SQL queries or Ignite native SQL commands. */
-    SQL_CMD_QRY_EXECUTE(Scope.SQL, "sql.command.query.execute", 67),
+    SQL_CMD_QRY_EXECUTE(Scope.SQL, "sql.command.query.execute", 100),
 
     /** SQL query partitions reservation. */
-    SQL_PARTITIONS_RESERVE(Scope.SQL, "sql.partitions.reserve", 68),
+    SQL_PARTITIONS_RESERVE(Scope.SQL, "sql.partitions.reserve", 101),
 
     /** Update of cache as a result of the SQL DML query. */
-    SQL_CACHE_UPDATE(Scope.SQL, "sql.cache.update", 69),
+    SQL_CACHE_UPDATE(Scope.SQL, "sql.cache.update", 102),
 
     /** Processing of incoming batch. */
-    SQL_BATCH_PROCESS(Scope.SQL, "sql.batch.process", 70);
+    SQL_BATCH_PROCESS(Scope.SQL, "sql.batch.process", 103);
 
     /** Scope */
     private Scope scope;

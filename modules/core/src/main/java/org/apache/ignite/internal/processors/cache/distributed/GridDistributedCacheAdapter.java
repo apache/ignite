@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,6 +65,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
 
 /**
  * Distributed cache implementation.
@@ -222,45 +225,50 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         final boolean skipStore,
         final boolean keepBinary
     ) {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_REMOVE, () -> Objects.toString(cacheCfg.getName()));
 
-        if (!nodes.isEmpty()) {
-            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
+            Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
-            IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
-                new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null);
+            if (!nodes.isEmpty()) {
+                ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
-            rmvAll.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    try {
-                        boolean retry = !fut.get();
+                IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
+                    new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null);
 
-                        AffinityTopologyVersion topVer0 = ctx.affinity().affinityTopologyVersion();
+                rmvAll.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        try {
+                            boolean retry = !fut.get();
 
-                        if (topVer0.equals(topVer) && !retry)
+                            AffinityTopologyVersion topVer0 = ctx.affinity().affinityTopologyVersion();
+
+                            if (topVer0.equals(topVer) && !retry)
+                                opFut.onDone();
+                            else
+                                removeAllAsync(opFut, topVer0, skipStore, keepBinary);
+                        }
+                        catch (ClusterGroupEmptyCheckedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+
                             opFut.onDone();
-                        else
-                            removeAllAsync(opFut, topVer0, skipStore, keepBinary);
-                    }
-                    catch (ClusterGroupEmptyCheckedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+                        }
+                        catch (IgniteCheckedException e) {
+                            opFut.onDone(e);
+                        }
+                        catch (Error e) {
+                            opFut.onDone(e);
 
-                        opFut.onDone();
+                            throw e;
+                        }
                     }
-                    catch (IgniteCheckedException e) {
-                        opFut.onDone(e);
-                    }
-                    catch (Error e) {
-                        opFut.onDone(e);
-
-                        throw e;
-                    }
-                }
-            });
+                });
+            }
+            else
+                opFut.onDone();
         }
-        else
-            opFut.onDone();
     }
 
     /** {@inheritDoc} */

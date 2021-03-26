@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -61,9 +60,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter {
     /** */
     private static final long serialVersionUID = 4014479758215810181L;
-
-    /** Tracing span. */
-    private Span span;
 
     /**
      * @param cctx Context.

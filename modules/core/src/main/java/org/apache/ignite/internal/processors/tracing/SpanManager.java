@@ -57,12 +57,14 @@ public interface SpanManager {
      * @param spanType Type of span to create.
      * @param parentSpan Parent span.
      * @param lb Label.
+     * @param forceTracing Trace given span regardless tracing configuration parameters. Applicable only for root spans.
      * @return Created span.
      */
     @NotNull Span create(
         @NotNull SpanType spanType,
         @Nullable Span parentSpan,
-        @Nullable String lb);
+        @Nullable String lb,
+        boolean forceTracing);
 
     /**
      * Serializes span to byte array to send context over network.

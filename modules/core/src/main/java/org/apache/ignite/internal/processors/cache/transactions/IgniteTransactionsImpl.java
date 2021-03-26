@@ -168,7 +168,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     ) {
         cctx.kernalContext().gateway().readLock();
 
-        Span span = cctx.kernalContext().tracing().create(TX, null, lb);
+        Span span = cctx.kernalContext().tracing().create(
+            TX,
+            null,
+            lb,
+            tracingEnabled);
 
         MTC.supportInitial(span);
 
@@ -196,8 +200,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 true,
                 null,
                 txSize,
-                lb,
-                tracingEnabled
+                lb
             );
 
             assert tx != null;

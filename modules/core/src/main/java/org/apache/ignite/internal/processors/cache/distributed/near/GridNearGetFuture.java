@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,6 +56,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_MAP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_GET_FUTURE;
 
 /**
  *
@@ -125,23 +131,27 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param topVer Topology version.
      */
     public void init(@Nullable AffinityTopologyVersion topVer) {
-        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
+        try (TraceSurroundings ignored =
+                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(CACHE_API_NEAR_GET_FUTURE,
+                     MTC.span()))) {
+            AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
-        if (lockedTopVer != null) {
-            canRemap = false;
+            if (lockedTopVer != null) {
+                canRemap = false;
 
-            map(keys, Collections.emptyMap(), lockedTopVer);
+                map(keys, Collections.emptyMap(), lockedTopVer);
+            }
+            else {
+                AffinityTopologyVersion mapTopVer = topVer;
+
+                if (mapTopVer == null)
+                    mapTopVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+
+                map(keys, Collections.emptyMap(), mapTopVer);
+            }
+
+            markInitialized();
         }
-        else {
-            AffinityTopologyVersion mapTopVer = topVer;
-
-            if (mapTopVer == null)
-                mapTopVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
-
-            map(keys, Collections.emptyMap(), mapTopVer);
-        }
-
-        markInitialized();
     }
 
     /** {@inheritDoc} */
@@ -174,136 +184,141 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         AffinityTopologyVersion topVer
     ) {
-        Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
+        try (TraceSurroundings ignored =
+                MTC.support(cctx.kernalContext().tracing().create(CACHE_API_GET_MAP, span))) {
+            MTC.span().addTag("topology.version", () -> Objects.toString(topVer));
 
-        if (affNodes.isEmpty()) {
-            assert !cctx.affinityNode();
+            Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for near-only cache (all partition " +
-                "nodes left the grid)."));
+            if (affNodes.isEmpty()) {
+                assert !cctx.affinityNode();
 
-            return;
-        }
+                onDone(new ClusterTopologyServerNotFoundException(
+                    "Failed to map keys for near-only cache (all partition nodes left the grid)."));
 
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(affNodes.size());
-
-        Map<KeyCacheObject, GridNearCacheEntry> savedEntries = null;
-
-        {
-            boolean success = false;
-
-            try {
-                // Assign keys to primary nodes.
-                for (KeyCacheObject key : keys)
-                    savedEntries = map(key, topVer, mappings, mapped, savedEntries);
-
-                success = true;
+                return;
             }
-            finally {
-                // Exception has been thrown, must release reserved near entries.
-                if (!success) {
-                    GridCacheVersion obsolete = cctx.versions().next(topVer.topologyVersion());
 
-                    if (savedEntries != null) {
-                        for (GridNearCacheEntry reserved : savedEntries.values()) {
-                            reserved.releaseEviction();
+            Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(affNodes.size());
 
-                            if (reserved.markObsolete(obsolete))
-                                reserved.context().cache().removeEntry(reserved);
-                        }
-                    }
-                }
-            }
-        }
+            Map<KeyCacheObject, GridNearCacheEntry> savedEntries = null;
 
-        if (isDone())
-            return;
-
-        Map<KeyCacheObject, GridNearCacheEntry> saved =
-            savedEntries != null ? savedEntries : Collections.emptyMap();
-
-        int keysSize = keys.size();
-
-        // Create mini futures.
-        for (Map.Entry<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> entry : mappings.entrySet()) {
-            ClusterNode n = entry.getKey();
-
-            LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = entry.getValue();
-
-            assert !mappedKeys.isEmpty();
-
-            // If this is the primary or backup node for the keys.
-            if (n.isLocal()) {
-                GridDhtFuture<Collection<GridCacheEntryInfo>> fut = dht()
-                    .getDhtAsync(
-                        n.id(),
-                        -1,
-                        mappedKeys,
-                        false,
-                        readThrough,
-                        topVer,
-                        subjId,
-                        taskName == null ? 0 : taskName.hashCode(),
-                        expiryPlc,
-                        skipVals,
-                        recovery,
-                        null,
-                        null
-                    ); // TODO IGNITE-7371
-
-                Collection<Integer> invalidParts = fut.invalidPartitions();
-
-                if (!F.isEmpty(invalidParts)) {
-                    Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
-
-                    for (KeyCacheObject key : keys) {
-                        int part = cctx.affinity().partition(key);
-
-                        if (key != null && invalidParts.contains(part)) {
-                            addNodeAsInvalid(n, part, topVer);
-
-                            remapKeys.add(key);
-                        }
-                    }
-
-                    AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
-
-                    // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
-                }
-
-                // Add new future.
-                add(fut.chain(f -> {
-                    try {
-                        return loadEntries(n.id(), mappedKeys.keySet(), f.get(), saved, topVer);
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
-
-                        onDone(e);
-
-                        return Collections.emptyMap();
-                    }
-                }));
-            }
-            else {
-                registrateFutureInMvccManager(this);
-
-                MiniFuture miniFuture = new MiniFuture(n, mappedKeys, saved, topVer);
-
-                GridNearGetRequest req = miniFuture.createGetRequest(futId);
-
-                add(miniFuture); // Append new future.
+            {
+                boolean success = false;
 
                 try {
-                    cctx.io().send(n, req, cctx.ioPolicy());
+                    // Assign keys to primary nodes.
+                    for (KeyCacheObject key : keys)
+                        savedEntries = map(key, topVer, mappings, mapped, savedEntries);
+
+                    success = true;
                 }
-                catch (IgniteCheckedException e) {
-                    // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException)
-                        miniFuture.onNodeLeft((ClusterTopologyCheckedException)e);
-                    else
-                        miniFuture.onResult(e);
+                finally {
+                    // Exception has been thrown, must release reserved near entries.
+                    if (!success) {
+                        GridCacheVersion obsolete = cctx.versions().next(topVer.topologyVersion());
+
+                        if (savedEntries != null) {
+                            for (GridNearCacheEntry reserved : savedEntries.values()) {
+                                reserved.releaseEviction();
+
+                                if (reserved.markObsolete(obsolete))
+                                    reserved.context().cache().removeEntry(reserved);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (isDone())
+                return;
+
+            Map<KeyCacheObject, GridNearCacheEntry> saved =
+                savedEntries != null ? savedEntries : Collections.emptyMap();
+
+            int keysSize = keys.size();
+
+            // Create mini futures.
+            for (Map.Entry<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> entry : mappings.entrySet()) {
+                ClusterNode n = entry.getKey();
+
+                LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = entry.getValue();
+
+                assert !mappedKeys.isEmpty();
+
+                // If this is the primary or backup node for the keys.
+                if (n.isLocal()) {
+                    GridDhtFuture<Collection<GridCacheEntryInfo>> fut = dht()
+                        .getDhtAsync(
+                            n.id(),
+                            -1,
+                            mappedKeys,
+                            false,
+                            readThrough,
+                            topVer,
+                            subjId,
+                            taskName == null ? 0 : taskName.hashCode(),
+                            expiryPlc,
+                            skipVals,
+                            recovery,
+                            null,
+                            null
+                        ); // TODO IGNITE-7371
+
+                    Collection<Integer> invalidParts = fut.invalidPartitions();
+
+                    if (!F.isEmpty(invalidParts)) {
+                        Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
+
+                        for (KeyCacheObject key : keys) {
+                            int part = cctx.affinity().partition(key);
+
+                            if (key != null && invalidParts.contains(part)) {
+                                addNodeAsInvalid(n, part, topVer);
+
+                                remapKeys.add(key);
+                            }
+                        }
+
+                        AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
+
+                        // Remap recursively.
+                        map(remapKeys, mappings, updTopVer);
+                    }
+
+                    // Add new future.
+                    add(fut.chain(f -> {
+                        try {
+                            return loadEntries(n.id(), mappedKeys.keySet(), f.get(), saved, topVer);
+                        }
+                        catch (Exception e) {
+                            U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
+
+                            onDone(e);
+
+                            return Collections.emptyMap();
+                        }
+                    }));
+                }
+                else {
+                    registrateFutureInMvccManager(this);
+
+                    MiniFuture miniFuture = new MiniFuture(n, mappedKeys, saved, topVer);
+
+                    GridNearGetRequest req = miniFuture.createGetRequest(futId);
+
+                    add(miniFuture); // Append new future.
+
+                    try {
+                        cctx.io().send(n, req, cctx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        // Fail the whole thing.
+                        if (e instanceof ClusterTopologyCheckedException)
+                            miniFuture.onNodeLeft((ClusterTopologyCheckedException)e);
+                        else
+                            miniFuture.onResult(e);
+                    }
                 }
             }
         }

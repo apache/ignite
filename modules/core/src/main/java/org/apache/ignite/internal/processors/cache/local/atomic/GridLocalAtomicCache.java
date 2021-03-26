@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
@@ -81,6 +83,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 
 /**
  * Non-transactional local cache.
@@ -378,186 +383,195 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean skipVals,
         boolean needVer
     ) throws IgniteCheckedException {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        try (MTC.TraceSurroundings ignored2 =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_GET, MTC.span()))) {
 
-        if (F.isEmpty(keys))
-            return Collections.emptyMap();
+            MTC.span().addTagOrLog("cache", CACHE_API_GET, () -> Objects.toString(cacheCfg.getName()));
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
+            MTC.span().addTagOrLog("keys.count", CACHE_API_GET,
+                () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
+            ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        Map<K, V> vals = U.newHashMap(keys.size());
+            if (F.isEmpty(keys))
+                return Collections.emptyMap();
 
-        warnIfUnordered(keys, BulkOperation.GET);
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final IgniteCacheExpiryPolicy expiry = expiryPolicy(opCtx != null ? opCtx.expiry() : null);
+            UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
-        boolean success = true;
-        boolean readNoEntry = ctx.readNoEntry(expiry, false);
-        final boolean evt = !skipVals;
+            Map<K, V> vals = U.newHashMap(keys.size());
 
-        ctx.shared().database().checkpointReadLock();
+            warnIfUnordered(keys, BulkOperation.GET);
 
-        try {
-            for (K key : keys) {
-                if (key == null)
-                    throw new NullPointerException("Null key.");
+            final IgniteCacheExpiryPolicy expiry = expiryPolicy(opCtx != null ? opCtx.expiry() : null);
 
-                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+            boolean success = true;
+            boolean readNoEntry = ctx.readNoEntry(expiry, false);
+            final boolean evt = !skipVals;
 
-                boolean skipEntry = readNoEntry;
+            ctx.shared().database().checkpointReadLock();
 
-                if (readNoEntry) {
-                    CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
+            try {
+                for (K key : keys) {
+                    if (key == null)
+                        throw new NullPointerException("Null key.");
 
-                    if (row != null) {
-                        long expireTime = row.expireTime();
+                    KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
-                            ctx.addResult(vals,
-                                cacheKey,
-                                row.value(),
-                                skipVals,
-                                false,
-                                deserializeBinary,
-                                true,
-                                null,
-                                row.version(),
-                                0,
-                                0,
-                                needVer,
-                                null);
+                    boolean skipEntry = readNoEntry;
 
-                            if (ctx.statisticsEnabled() && !skipVals)
-                                metrics0().onRead(true);
+                    if (readNoEntry) {
+                        CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
 
-                            if (evt) {
-                                ctx.events().readEvent(cacheKey,
-                                    null,
-                                    null,
+                        if (row != null) {
+                            long expireTime = row.expireTime();
+
+                            if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                                ctx.addResult(vals,
+                                    cacheKey,
                                     row.value(),
-                                    subjId,
-                                    taskName,
-                                    !deserializeBinary);
+                                    skipVals,
+                                    false,
+                                    deserializeBinary,
+                                    true,
+                                    null,
+                                    row.version(),
+                                    0,
+                                    0,
+                                    needVer,
+                                    null);
+
+                                if (ctx.statisticsEnabled() && !skipVals)
+                                    metrics0().onRead(true);
+
+                                if (evt) {
+                                    ctx.events().readEvent(cacheKey,
+                                        null,
+                                        null,
+                                        row.value(),
+                                        subjId,
+                                        taskName,
+                                        !deserializeBinary);
+                                }
                             }
+                            else
+                                skipEntry = false;
                         }
                         else
-                            skipEntry = false;
+                            success = false;
                     }
-                    else
-                        success = false;
-                }
 
-                if (!skipEntry) {
-                    GridCacheEntryEx entry = null;
+                    if (!skipEntry) {
+                        GridCacheEntryEx entry = null;
 
-                    while (true) {
-                        try {
-                            entry = entryEx(cacheKey);
+                        while (true) {
+                            try {
+                                entry = entryEx(cacheKey);
 
-                            if (entry != null) {
-                                CacheObject v;
+                                if (entry != null) {
+                                    CacheObject v;
 
-                                if (needVer) {
-                                    EntryGetResult res = entry.innerGetVersioned(
-                                        null,
-                                        null,
-                                        /*update-metrics*/false,
-                                        /*event*/evt,
-                                        subjId,
-                                        null,
-                                        taskName,
-                                        expiry,
-                                        !deserializeBinary,
-                                        null);
-
-                                    if (res != null) {
-                                        ctx.addResult(
-                                            vals,
-                                            cacheKey,
-                                            res,
-                                            skipVals,
-                                            false,
-                                            deserializeBinary,
-                                            true,
-                                            needVer);
-                                    }
-                                    else
-                                        success = false;
-                                }
-                                else {
-                                    v = entry.innerGet(
-                                        null,
-                                        null,
-                                        /*read-through*/false,
-                                        /*update-metrics*/true,
-                                        /*event*/evt,
-                                        subjId,
-                                        null,
-                                        taskName,
-                                        expiry,
-                                        !deserializeBinary);
-
-                                    if (v != null) {
-                                        ctx.addResult(vals,
-                                            cacheKey,
-                                            v,
-                                            skipVals,
-                                            false,
-                                            deserializeBinary,
-                                            true,
+                                    if (needVer) {
+                                        EntryGetResult res = entry.innerGetVersioned(
                                             null,
-                                            0,
-                                            0,
+                                            null,
+                                            /*update-metrics*/false,
+                                            /*event*/evt,
+                                            subjId,
+                                            null,
+                                            taskName,
+                                            expiry,
+                                            !deserializeBinary,
                                             null);
+
+                                        if (res != null) {
+                                            ctx.addResult(
+                                                vals,
+                                                cacheKey,
+                                                res,
+                                                skipVals,
+                                                false,
+                                                deserializeBinary,
+                                                true,
+                                                needVer);
+                                        }
+                                        else
+                                            success = false;
                                     }
-                                    else
-                                        success = false;
+                                    else {
+                                        v = entry.innerGet(
+                                            null,
+                                            null,
+                                            /*read-through*/false,
+                                            /*update-metrics*/true,
+                                            /*event*/evt,
+                                            subjId,
+                                            null,
+                                            taskName,
+                                            expiry,
+                                            !deserializeBinary);
+
+                                        if (v != null) {
+                                            ctx.addResult(vals,
+                                                cacheKey,
+                                                v,
+                                                skipVals,
+                                                false,
+                                                deserializeBinary,
+                                                true,
+                                                null,
+                                                0,
+                                                0,
+                                                null);
+                                        }
+                                        else
+                                            success = false;
+                                    }
                                 }
+
+                                break; // While.
+                            }
+                            catch (GridCacheEntryRemovedException ignored) {
+                                // No-op, retry.
+                            }
+                            finally {
+                                if (entry != null)
+                                    entry.touch();
                             }
 
-                            break; // While.
+                            if (!success && storeEnabled)
+                                break;
                         }
-                        catch (GridCacheEntryRemovedException ignored) {
-                            // No-op, retry.
-                        }
-                        finally {
-                            if (entry != null)
-                                entry.touch();
-                        }
-
-                        if (!success && storeEnabled)
-                            break;
+                    }
+                    if (!success) {
+                        if (!storeEnabled && ctx.statisticsEnabled() && !skipVals)
+                            metrics0().onRead(false);
                     }
                 }
-                if (!success) {
-                    if (!storeEnabled && ctx.statisticsEnabled() && !skipVals)
-                        metrics0().onRead(false);
-                }
             }
-        }
-        finally {
-            ctx.shared().database().checkpointReadUnlock();
-        }
+            finally {
+                ctx.shared().database().checkpointReadUnlock();
+            }
 
-        if (success || !storeEnabled)
-            return vals;
+            if (success || !storeEnabled)
+                return vals;
 
-        return getAllAsync(
-            keys,
-            null,
-            opCtx == null || !opCtx.skipStore(),
-            false,
-            subjId,
-            taskName,
-            deserializeBinary,
-            opCtx != null && opCtx.recovery(),
-            false,
-            /*force primary*/false,
-            expiry,
-            skipVals,
-            needVer).get();
+            return getAllAsync(
+                keys,
+                null,
+                opCtx == null || !opCtx.skipStore(),
+                false,
+                subjId,
+                taskName,
+                deserializeBinary,
+                opCtx != null && opCtx.recovery(),
+                false,
+                /*force primary*/false,
+                expiry,
+                skipVals,
+                needVer).get();
+        }
     }
 
     /** {@inheritDoc} */
@@ -759,22 +773,34 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final boolean rawRetval,
         @Nullable final CacheEntryPredicate filter
     ) {
-        final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_UPDATE, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_UPDATE, () -> Objects.toString(cacheCfg.getName()));
 
-        final Collection<? extends K> keys =
-            map != null ? map.keySet() : invokeMap != null ? invokeMap.keySet() : null;
+            Map<? extends K, ? extends V> m = map;
+            MTC.span().addTagOrLog("keys.count", CACHE_API_UPDATE,
+                () -> m == null ? "0" : String.valueOf(m.size()));
 
-        final Collection<?> vals = map != null ? map.values() : invokeMap != null ? invokeMap.values() : null;
+            Map<? extends K, ? extends EntryProcessor> invokeM = invokeMap;
+            MTC.span().addTagOrLog("invoke.keys.count", CACHE_API_UPDATE,
+                () -> invokeM == null ? "0" : String.valueOf(invokeM.size()));
 
-        final boolean writeThrough = ctx.writeThrough();
+            final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
 
-        final boolean readThrough = ctx.readThrough();
+            final Collection<? extends K> keys =
+                map != null ? map.keySet() : invokeMap != null ? invokeMap.keySet() : null;
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
+            final Collection<?> vals = map != null ? map.values() : invokeMap != null ? invokeMap.values() : null;
 
-        final ExpiryPolicy expiry = expiryPerCall();
+            final boolean writeThrough = ctx.writeThrough();
 
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            final boolean readThrough = ctx.readThrough();
+
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            final ExpiryPolicy expiry = expiryPerCall();
+
+            final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
         return asyncOp(new GridPlainCallable<Object>() {
             @Override public Object call() throws Exception {
@@ -808,15 +834,22 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final boolean rawRetval,
         @Nullable final CacheEntryPredicate filter
     ) {
-        final boolean writeThrough = ctx.writeThrough();
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_REMOVE, () -> Objects.toString(cacheCfg.getName()));
 
-        final boolean readThrough = ctx.readThrough();
+            MTC.span().addTagOrLog("keys.count", CACHE_API_REMOVE,
+                () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        final ExpiryPolicy expiryPlc = expiryPerCall();
+            final boolean writeThrough = ctx.writeThrough();
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
+            final boolean readThrough = ctx.readThrough();
 
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            final ExpiryPolicy expiryPlc = expiryPerCall();
+
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
         return asyncOp(new GridPlainCallable<Object>() {
             @Override public Object call() throws Exception {
