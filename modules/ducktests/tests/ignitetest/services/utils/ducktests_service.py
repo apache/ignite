@@ -48,7 +48,6 @@ class DucktestsService(Service, metaclass=ABCMeta):
     def kill(self):
         """
         Kills the service.
-
         """
         self.stop(force_stop=True)
 

@@ -147,7 +147,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         if not kwargs.get(DucktestsService.FORCE_STOP, False):
             self.await_stopped()
 
-    # pylint: disable=W0613
     def await_stopped(self):
         """
         Awaits stop finished.
