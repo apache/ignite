@@ -780,10 +780,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 stopCache(cache, cancel, false);
         }
 
-        boolean stat = stoppedCaches.values().stream().anyMatch(c -> c.context().statisticsEnabled());
+        boolean removeMetrics = stoppedCaches.values().stream().anyMatch(c -> c.context().statisticsEnabled());
 
         for (CacheGroupContext grp : cacheGrps.values())
-            stopCacheGroup(grp.groupId(), false, stat);
+            stopCacheGroup(grp.groupId(), false, removeMetrics);
     }
 
     /**
@@ -2854,9 +2854,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop) {
-            Boolean stat = grpMetricsToStop.get(grp.get1().groupId());
+            Boolean removeMetrics = grpMetricsToStop.get(grp.get1().groupId());
 
-            stopCacheGroup(grp.get1().groupId(), grp.get2(), stat == null ? false : stat);
+            stopCacheGroup(grp.get1().groupId(), grp.get2(), removeMetrics == null ? false : removeMetrics);
         }
 
         if (!sharedCtx.kernalContext().clientNode())
@@ -3281,7 +3281,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCachesOnClientReconnect(Collection<GridCacheAdapter> stoppedCaches) {
         assert ctx.discovery().localNode().isClient();
 
-        boolean stat = stoppedCaches.stream().anyMatch(c -> c.context().statisticsEnabled());
+        boolean removeMetrics = stoppedCaches.stream().anyMatch(c -> c.context().statisticsEnabled());
 
         for (GridCacheAdapter cache : stoppedCaches) {
             CacheGroupContext grp = cache.context().group();
@@ -3292,7 +3292,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.affinity().stopCacheOnReconnect(cache.context());
 
             if (!grp.hasCaches()) {
-                stopCacheGroup(grp, false, stat);
+                stopCacheGroup(grp, false, removeMetrics);
 
                 sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
             }
