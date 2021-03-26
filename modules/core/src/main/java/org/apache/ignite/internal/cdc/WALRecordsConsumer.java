@@ -31,14 +31,18 @@ import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Transform {@link DataEntry} to {@link ChangeEvent} and sends it to {@link CaptureDataChangeConsumer}.
@@ -133,18 +137,20 @@ public class WALRecordsConsumer<K, V> {
      * Starts the consumer.
      *
      * @param configuration Ignite configuration.
+     * @param mmgr Metric manager.
+     * @param log Log.
      */
-    public void start(IgniteConfiguration configuration, IgniteLogger log) {
+    public void start(IgniteConfiguration configuration, GridMetricManager mmgr, IgniteLogger log) {
         this.log = log;
 
-        dataConsumer.start(configuration, log);
+        dataConsumer.start(configuration, mmgr.registry("cdc"), log);
 
         log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(IgniteConfiguration, IgniteLogger)}.
+     * This methods can be invoked only after {@link #start(IgniteConfiguration, GridMetricManager, IgniteLogger)}.
      */
     public void stop() {
         dataConsumer.stop();

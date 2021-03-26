@@ -40,6 +40,7 @@ import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -47,6 +48,11 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,6 +63,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.NODE_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.UUID_STR_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * CDC(Capture Data Change) application.
@@ -115,6 +122,24 @@ public class IgniteCDC implements Runnable {
 
     /** Events consumer. */
     private final WALRecordsConsumer<?, ?> consumer;
+
+    /** Last time when new segment found. */
+    private AtomicLongMetric segmentTime;
+
+    /** Last new segment index. */
+    private AtomicLongMetric segmentIndex;
+
+    /** Last commit time. */
+    private AtomicLongMetric commitTime;
+
+    /** Index of last commited state. */
+    private AtomicLongMetric commitedIndex;
+
+    /** Offset of last commited state. */
+    private IntMetricImpl commitedOffset;
+
+    /** Metric registry. */
+    private GridMetricManager mmgr;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -207,10 +232,15 @@ public class IgniteCDC implements Runnable {
 
             initState = state.load();
 
-            if (initState != null && log.isInfoEnabled())
-                log.info("Loaded initial state[state=" + initState + ']');
+            if (initState != null) {
+                if (log.isInfoEnabled())
+                    log.info("Loaded initial state[state=" + initState + ']');
 
-            consumer.start(cfg, log);
+                commitedIndex.value(initState.index());
+                commitedOffset.value(initState.fileOffset());
+            }
+
+            consumer.start(cfg, mmgr, log);
 
             try {
                 Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
@@ -226,6 +256,9 @@ public class IgniteCDC implements Runnable {
                         assert lastSgmnt[0] == -1 || nextSgmnt - lastSgmnt[0] == 1;
 
                         lastSgmnt[0] = nextSgmnt;
+
+                        segmentIndex.value(lastSgmnt[0]);
+                        segmentTime.value(System.currentTimeMillis());
 
                         readSegment(segment);
 
@@ -246,7 +279,7 @@ public class IgniteCDC implements Runnable {
     }
 
     /** Searches required directories. */
-    private void init() throws IOException {
+    private void init() throws IOException, IgniteCheckedException {
         String workDir = workDir(cfg);
         String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
@@ -260,6 +293,20 @@ public class IgniteCDC implements Runnable {
             log.debug("Using BinaryMeta directory[dir=" + binaryMeta + ']');
             log.debug("Using Marshaller directory[dir=" + marshaller + ']');
         }
+
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
+
+        mmgr = kctx.metric();
+
+        MetricRegistry mreg = mmgr.registry(metricName("cdc", "internals"));
+
+        mreg.longMetric("StartTime", "Application start time").value(System.currentTimeMillis());
+
+        segmentTime = mreg.longMetric("LastSegmentTime", "Time last WAL segment was detected");
+        segmentIndex = mreg.longMetric("LastSegmentIndex", "Last index of WAL segment detected");
+        commitTime = mreg.longMetric("LastCommitTime", "List time state written to the disk");
+        commitedIndex = mreg.longMetric("LastCommitIndex", "Index of segment where placed last commited offset");
+        commitedOffset = mreg.intMetric("LastCommitOffset", "Offset in last commited segment");
     }
 
     /** Reads all available records from segment. */
@@ -307,7 +354,13 @@ public class IgniteCDC implements Runnable {
                 if (commit) {
                     assert it.lastRead().isPresent();
 
-                    state.save(it.lastRead().get());
+                    WALPointer ptr = it.lastRead().get();
+
+                    state.save(ptr);
+
+                    commitTime.value(System.currentTimeMillis());
+                    commitedIndex.value(ptr.index());
+                    commitedOffset.value(ptr.fileOffset());
 
                     // Can delete after new file state save.
                     if (!prevSegments.isEmpty()) {

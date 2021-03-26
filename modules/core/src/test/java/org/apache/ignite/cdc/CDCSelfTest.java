@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -414,7 +415,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         public boolean stoped;
 
         /** {@inheritDoc} */
-        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+        @Override public void start(IgniteConfiguration configuration, MetricRegistry mreg, IgniteLogger log) {
             stoped = false;
         }
 
