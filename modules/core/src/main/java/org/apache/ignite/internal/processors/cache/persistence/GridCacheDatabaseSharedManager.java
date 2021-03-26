@@ -2906,9 +2906,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
-        checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+        return checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**
