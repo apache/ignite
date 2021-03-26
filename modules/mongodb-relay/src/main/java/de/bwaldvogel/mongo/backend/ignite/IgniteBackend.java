@@ -78,7 +78,9 @@ public class IgniteBackend extends AbstractMongoBackend {
     @Override
     public void close() {
         log.info("closing {}", this);
-        mvStore.close();
+        if(mvStore!=null)
+        	mvStore.close();
+        mvStore = null;
     }
 
     public boolean isInMemory() {

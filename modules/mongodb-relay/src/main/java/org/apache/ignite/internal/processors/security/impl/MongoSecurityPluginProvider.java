@@ -22,8 +22,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.AbstractSecurityPluginProvider;
+import org.apache.ignite.internal.processors.mongo.MongoServerPluginProvider;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+
 import static org.apache.ignite.plugin.security.SecurityPermission.*;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -31,7 +32,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 /** 
  * 基于Mongodb的用户权限系统
  **/
-public class MongoSecurityPluginProvider extends AbstractSecurityPluginProvider {
+public class MongoSecurityPluginProvider extends MongoServerPluginProvider {
     /** root Login. */
     private  String login;
 

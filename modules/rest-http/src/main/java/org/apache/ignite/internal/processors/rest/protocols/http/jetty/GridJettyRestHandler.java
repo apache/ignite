@@ -152,6 +152,10 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** Mapper from Java object to JSON. */
     private final ObjectMapper jsonMapper;
+    
+    private final String contextPath;
+    
+    public int index = 0;
 
     /** */
     private final boolean getAllAsArray = IgniteSystemProperties.getBoolean(IGNITE_REST_GETALL_AS_ARRAY);
@@ -171,6 +175,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         this.authChecker = authChecker;
         this.log = ctx.log(getClass());
         this.jsonMapper = new GridJettyObjectMapper(ctx);
+        this.contextPath = ctx.igniteInstanceName()==null || ctx.igniteInstanceName().isEmpty() ? null: "/"+ctx.igniteInstanceName();
 
         // Init default page and favicon.
         try {
@@ -365,11 +370,20 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
-        if (target.startsWith("/ignite")) {
-            processRequest(target, srvReq, res);
-
-            req.setHandled(true);
+        
+        if(this.contextPath!=null && index==0 && target.equals("/ignite")) {
+        	 processRequest(target, srvReq, res);
+             req.setHandled(true);
         }
+        else if (this.contextPath!=null && target.startsWith(this.contextPath)) {        	
+            processRequest(target, srvReq, res);
+            req.setHandled(true);
+           
+        }       
+        else if (this.contextPath==null && target.startsWith("/ignite")) {        	
+            processRequest(target, srvReq, res);
+            req.setHandled(true);
+        }       
         else if (target.startsWith("/favicon.ico")) {
             if (favicon == null) {
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);

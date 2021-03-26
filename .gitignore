@@ -1,4 +1,5 @@
 *.log
+*.log.gz
 /out/
 /work/
 */build/

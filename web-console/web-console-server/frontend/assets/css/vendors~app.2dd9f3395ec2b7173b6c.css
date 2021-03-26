@@ -1,0 +1,3090 @@
+.gridster{position:relative;margin:auto;height:0}.gridster>ul{margin:0;list-style:none;padding:0}.gridster-item{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;list-style:none;z-index:2;position:absolute;display:none}.gridster-loaded{-webkit-transition:height .3s;-moz-transition:height .3s;-o-transition:height .3s;transition:height .3s}.gridster-loaded .gridster-item{display:block;position:absolute;-webkit-transition:opacity .3s,left .3s,top .3s,width .3s,height .3s;-moz-transition:opacity .3s,left .3s,top .3s,width .3s,height .3s;-o-transition:opacity .3s,left .3s,top .3s,width .3s,height .3s;transition:opacity .3s,left .3s,top .3s,width .3s,height .3s;-webkit-transition-delay:50ms;-moz-transition-delay:50ms;-o-transition-delay:50ms;transition-delay:50ms}.gridster-loaded .gridster-preview-holder{display:none;z-index:1;position:absolute;background-color:#ddd;border-color:#fff;opacity:.2}.gridster-loaded .gridster-item.gridster-item-moving,.gridster-loaded .gridster-preview-holder{-webkit-transition:none;-moz-transition:none;-o-transition:none;transition:none}.gridster-mobile{height:auto !important}.gridster-mobile .gridster-item{height:auto;position:static;float:none}.gridster-item.ng-leave.ng-leave-active{opacity:0}.gridster-item.ng-enter{opacity:1}.gridster-item-moving{z-index:3}.gridster-item-resizable-handler{position:absolute;font-size:1px;display:block;z-index:5}.handle-se{cursor:se-resize;width:0;height:0;right:1px;bottom:1px;border-style:solid;border-width:0 0 12px 12px;border-color:transparent}.handle-ne{cursor:ne-resize;width:12px;height:12px;right:1px;top:1px}.handle-nw{cursor:nw-resize;width:12px;height:12px;left:1px;top:1px}.handle-sw{cursor:sw-resize;width:12px;height:12px;left:1px;bottom:1px}.handle-e{cursor:e-resize;width:12px;bottom:0;right:1px;top:0}.handle-s{cursor:s-resize;height:12px;right:0;bottom:1px;left:0}.handle-n{cursor:n-resize;height:12px;right:0;top:1px;left:0}.handle-w{cursor:w-resize;width:12px;left:1px;top:0;bottom:0}.gridster .gridster-item:hover .gridster-box{border:1.5px solid #B3B2B3}.gridster .gridster-item:hover .handle-se{border-color:transparent transparent #ccc}
+[treecontrol] {
+    /* prevent user selection */
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    /* default */
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    font-size:13px;
+    color: #555;
+    text-decoration: none;
+}
+
+[treecontrol] ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: none;
+    overflow: hidden;
+}
+
+[treecontrol] li {
+    position: relative;
+    padding: 0 0 0 20px;
+    line-height: 20px;
+}
+
+[treecontrol] li.tree-expanded i.tree-leaf-head, [treecontrol] li.tree-collapsed i.tree-leaf-head {display:none;}
+[treecontrol] li.tree-expanded i.tree-branch-head, [treecontrol] li.tree-collapsed i.tree-branch-head {display:inline;}
+[treecontrol] li.tree-leaf i.tree-branch-head {display:none;}
+[treecontrol] li.tree-leaf i.tree-leaf-head {display:inline;}
+
+[treecontrol] li i {
+    cursor: pointer;
+}
+
+[treecontrol] li .tree-label {
+    cursor: pointer;
+    display: inline;
+}
+
+
+[treecontrol].tree-classic li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder.8d53f199737f9468ce3f0d9ffbc09b6c.png) no-repeat;
+}
+
+[treecontrol].tree-classic li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder-closed.c6eb14a83edb6eeeb4bb854fb38baa43.png) no-repeat;
+}
+
+[treecontrol].tree-classic li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    background: url(/assets/images/file.ce49c7d76cffcbb193fc63eee293948b.png) no-repeat;
+}
+
+[treecontrol].tree-classic li .tree-selected {
+    background-color: #aaddff;
+    font-weight: bold;
+}
+
+
+[treecontrol].tree-light li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-opened-2.8414eb25a75888fc034fa1b3dd5faa98.png) no-repeat;
+}
+
+[treecontrol].tree-light li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-closed-2.3475b97c2815ad65a8b6adb4d9cc6f39.png) no-repeat;
+}
+
+[treecontrol].tree-light li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    width: 16px; height: 16px;
+    background: none no-repeat;
+}
+
+[treecontrol].tree-light li .tree-selected {
+    font-weight: bold;
+}
+
+
+[treecontrol].tree-dark li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-opened-light.a94e50b2e48f4a6834a96c8b4c63b907.png) no-repeat;
+}
+
+[treecontrol].tree-dark li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-closed-light.ebbb20fe926b944ac24912efcc3d39ff.png) no-repeat;
+}
+
+[treecontrol].tree-dark li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    width: 16px; height: 16px;
+    background: none no-repeat;
+}
+
+[treecontrol].tree-dark li .tree-selected {
+    font-weight: bold;
+}
+
+[treecontrol].tree-dark {
+    color: #ddd;
+}
+
+[treecontrol].tree-boot {
+    color: #428bca;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+[treecontrol].tree-boot > ul > li {
+    padding: 0;
+}
+
+[treecontrol].tree-boot li > .tree-label {
+    display: block;
+    padding: 3px 0;
+    border-radius: 4px;
+}
+
+[treecontrol].tree-boot i.tree-branch-head,
+[treecontrol].tree-boot i.tree-leaf-head {
+    float: left;
+    height: 16px;
+    margin: 5px;
+}
+
+[treecontrol].tree-boot li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder.8d53f199737f9468ce3f0d9ffbc09b6c.png) no-repeat;
+}
+
+[treecontrol].tree-boot li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder-closed.c6eb14a83edb6eeeb4bb854fb38baa43.png) no-repeat;
+}
+
+[treecontrol].tree-boot li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    background: url(/assets/images/file.ce49c7d76cffcbb193fc63eee293948b.png) no-repeat;
+}
+
+[treecontrol].tree-boot .tree-label.tree-selected,
+[treecontrol].tree-boot .tree-label.tree-selected:hover {
+    color: #fff;
+    background-color: #428bca;
+}
+
+[treecontrol].tree-boot .tree-label:hover {
+    background-color: #eee;
+}
+
+treecontrol {
+    /* prevent user selection */
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    /* default */
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    font-size:13px;
+    color: #555;
+    text-decoration: none;
+}
+
+treecontrol ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: none;
+    overflow: hidden;
+}
+
+treecontrol li {
+    position: relative;
+    padding: 0 0 0 20px;
+    line-height: 20px;
+}
+
+treecontrol li.tree-expanded i.tree-leaf-head, treecontrol li.tree-collapsed i.tree-leaf-head {display:none;}
+treecontrol li.tree-expanded i.tree-branch-head, treecontrol li.tree-collapsed i.tree-branch-head {display:inline;}
+treecontrol li.tree-leaf i.tree-branch-head {display:none;}
+treecontrol li.tree-leaf i.tree-leaf-head {display:inline;}
+
+treecontrol li i.tree-branch-head {
+    cursor: pointer;
+}
+
+treecontrol li .tree-label {
+    cursor: pointer;
+    display: inline;
+}
+
+treecontrol li .tree-unselectable {
+    cursor: not-allowed;
+}
+
+treecontrol.tree-classic li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder.8d53f199737f9468ce3f0d9ffbc09b6c.png) no-repeat;
+}
+
+treecontrol.tree-classic li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder-closed.c6eb14a83edb6eeeb4bb854fb38baa43.png) no-repeat;
+}
+
+treecontrol.tree-classic li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    background: url(/assets/images/file.ce49c7d76cffcbb193fc63eee293948b.png) no-repeat;
+}
+
+treecontrol.tree-classic li .tree-selected {
+    background-color: #aaddff;
+    font-weight: bold;
+}
+
+treecontrol.tree-classic li .tree-unselectable {
+    color: #ddd;
+}
+
+treecontrol.tree-light li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-opened-2.8414eb25a75888fc034fa1b3dd5faa98.png) no-repeat;
+}
+
+treecontrol.tree-light li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-closed-2.3475b97c2815ad65a8b6adb4d9cc6f39.png) no-repeat;
+}
+
+treecontrol.tree-light li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    width: 16px; height: 16px;
+    background: none no-repeat;
+}
+
+treecontrol.tree-light li .tree-selected {
+    font-weight: bold;
+}
+
+treecontrol.tree-light li .tree-unselectable {
+    color: #ddd;
+}
+
+treecontrol.tree-dark li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-opened-light.a94e50b2e48f4a6834a96c8b4c63b907.png) no-repeat;
+}
+
+treecontrol.tree-dark li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/node-closed-light.ebbb20fe926b944ac24912efcc3d39ff.png) no-repeat;
+}
+
+treecontrol.tree-dark li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    width: 16px; height: 16px;
+    background: none no-repeat;
+}
+
+treecontrol.tree-dark li .tree-selected {
+    font-weight: bold;
+}
+
+treecontrol.tree-dark li .tree-unselectable {
+    color: #777;
+}
+
+treecontrol.tree-dark {
+    color: #ddd;
+}
+
+treecontrol.tree-boot {
+    color: #428bca;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+treecontrol.tree-boot > ul > li {
+    padding: 0;
+}
+
+treecontrol.tree-boot li > .tree-label {
+    display: block;
+    padding: 3px 0;
+    border-radius: 4px;
+}
+
+treecontrol.tree-boot i.tree-branch-head,
+treecontrol.tree-boot i.tree-leaf-head {
+    float: left;
+    height: 16px;
+    margin: 5px;
+}
+
+treecontrol.tree-boot li.tree-expanded i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder.8d53f199737f9468ce3f0d9ffbc09b6c.png) no-repeat;
+}
+
+treecontrol.tree-boot li.tree-collapsed i.tree-branch-head {
+    padding: 1px 10px;
+    background: url(/assets/images/folder-closed.c6eb14a83edb6eeeb4bb854fb38baa43.png) no-repeat;
+}
+
+treecontrol.tree-boot li.tree-leaf i.tree-leaf-head {
+    padding: 1px 10px;
+    background: url(/assets/images/file.ce49c7d76cffcbb193fc63eee293948b.png) no-repeat;
+}
+
+treecontrol.tree-boot .tree-label.tree-selected,
+treecontrol.tree-boot .tree-label.tree-selected:hover {
+    color: #fff;
+    background-color: #428bca;
+}
+
+treecontrol.tree-boot .tree-label:hover {
+    background-color: #eee;
+}
+
+/*!
+ * ui-grid - v4.6.1 - 2018-07-04
+ * Copyright (c) 2018 ; License: MIT 
+ */
+@media screen and (max-width: 767px) {
+}
+@media (min-width: 768px) {
+}
+.ui-grid {
+  border: 1px solid #d4d4d4;
+  box-sizing: content-box;
+  -webkit-border-radius: 0px;
+  -moz-border-radius: 0px;
+  border-radius: 0px;
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+}
+.ui-grid-vertical-bar {
+  position: absolute;
+  right: 0;
+  width: 0;
+}
+.ui-grid-header-cell:not(:last-child) .ui-grid-vertical-bar,
+.ui-grid-cell:not(:last-child) .ui-grid-vertical-bar {
+  width: 1px;
+}
+.ui-grid-scrollbar-placeholder {
+  background-color: transparent;
+}
+.ui-grid-header-cell:not(:last-child) .ui-grid-vertical-bar {
+  background-color: #d4d4d4;
+}
+.ui-grid-cell:not(:last-child) .ui-grid-vertical-bar {
+  background-color: #d4d4d4;
+}
+.ui-grid-header-cell:last-child .ui-grid-vertical-bar {
+  right: -1px;
+  width: 1px;
+  background-color: #d4d4d4;
+}
+.ui-grid-clearfix:before,
+.ui-grid-clearfix:after {
+  content: "";
+  display: table;
+}
+.ui-grid-clearfix:after {
+  clear: both;
+}
+.ui-grid-invisible {
+  visibility: hidden;
+}
+.ui-grid-contents-wrapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+.ui-grid-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+.ui-grid-icon-button {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+.clickable {
+  cursor: pointer;
+}
+.ui-grid-top-panel-background {
+  background-color: #f3f3f3;
+}
+.ui-grid-header {
+  border-bottom: 1px solid #d4d4d4;
+  box-sizing: border-box;
+}
+.ui-grid-top-panel {
+  position: relative;
+  overflow: hidden;
+  font-weight: bold;
+  background-color: #f3f3f3;
+  -webkit-border-top-right-radius: -1px;
+  -webkit-border-bottom-right-radius: 0;
+  -webkit-border-bottom-left-radius: 0;
+  -webkit-border-top-left-radius: -1px;
+  -moz-border-radius-topright: -1px;
+  -moz-border-radius-bottomright: 0;
+  -moz-border-radius-bottomleft: 0;
+  -moz-border-radius-topleft: -1px;
+  border-top-right-radius: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: -1px;
+  -moz-background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+}
+.ui-grid-header-viewport {
+  overflow: hidden;
+}
+.ui-grid-header-canvas:before,
+.ui-grid-header-canvas:after {
+  content: "";
+  display: table;
+  line-height: 0;
+}
+.ui-grid-header-canvas:after {
+  clear: both;
+}
+.ui-grid-header-cell-wrapper {
+  position: relative;
+  display: table;
+  box-sizing: border-box;
+  height: 100%;
+}
+.ui-grid-header-cell-row {
+  display: table-row;
+}
+.ui-grid-header-cell {
+  position: relative;
+  box-sizing: border-box;
+  background-color: inherit;
+  border-right: 1px solid;
+  border-color: #d4d4d4;
+  display: table-cell;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  width: 0;
+}
+.ui-grid-header-cell:last-child {
+  border-right: 0;
+}
+.ui-grid-header-cell .sortable {
+  cursor: pointer;
+}
+.ui-grid-header-cell .ui-grid-sort-priority-number {
+  margin-left: -8px;
+}
+.ui-grid-header .ui-grid-vertical-bar {
+  top: 0;
+  bottom: 0;
+}
+.ui-grid-column-menu-button {
+  position: absolute;
+  right: 1px;
+  top: 0;
+}
+.ui-grid-column-menu-button .ui-grid-icon-angle-down {
+  vertical-align: sub;
+}
+.ui-grid-header-cell-last-col .ui-grid-cell-contents,
+.ui-grid-header-cell-last-col .ui-grid-filter-container,
+.ui-grid-header-cell-last-col .ui-grid-column-menu-button,
+.ui-grid-header-cell-last-col + .ui-grid-column-resizer.right {
+  margin-right: 13px;
+}
+.ui-grid-render-container-right .ui-grid-header-cell-last-col .ui-grid-cell-contents,
+.ui-grid-render-container-right .ui-grid-header-cell-last-col .ui-grid-filter-container,
+.ui-grid-render-container-right .ui-grid-header-cell-last-col .ui-grid-column-menu-button,
+.ui-grid-render-container-right .ui-grid-header-cell-last-col + .ui-grid-column-resizer.right {
+  margin-right: 28px;
+}
+.ui-grid-column-menu {
+  position: absolute;
+}
+/* Slide up/down animations */
+.ui-grid-column-menu .ui-grid-menu .ui-grid-menu-mid.ng-hide-add,
+.ui-grid-column-menu .ui-grid-menu .ui-grid-menu-mid.ng-hide-remove {
+  -webkit-transition: all 0.04s linear;
+  -moz-transition: all 0.04s linear;
+  -o-transition: all 0.04s linear;
+  transition: all 0.04s linear;
+  display: block !important;
+}
+.ui-grid-column-menu .ui-grid-menu .ui-grid-menu-mid.ng-hide-add.ng-hide-add-active,
+.ui-grid-column-menu .ui-grid-menu .ui-grid-menu-mid.ng-hide-remove {
+  -webkit-transform: translateY(-100%);
+  -moz-transform: translateY(-100%);
+  -o-transform: translateY(-100%);
+  -ms-transform: translateY(-100%);
+  transform: translateY(-100%);
+}
+.ui-grid-column-menu .ui-grid-menu .ui-grid-menu-mid.ng-hide-add,
+.ui-grid-column-menu .ui-grid-menu .ui-grid-menu-mid.ng-hide-remove.ng-hide-remove-active {
+  -webkit-transform: translateY(0);
+  -moz-transform: translateY(0);
+  -o-transform: translateY(0);
+  -ms-transform: translateY(0);
+  transform: translateY(0);
+}
+/* Slide up/down animations */
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid.ng-hide-add,
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid.ng-hide-remove {
+  -webkit-transition: all 0.04s linear;
+  -moz-transition: all 0.04s linear;
+  -o-transition: all 0.04s linear;
+  transition: all 0.04s linear;
+  display: block !important;
+}
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid.ng-hide-add.ng-hide-add-active,
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid.ng-hide-remove {
+  -webkit-transform: translateY(-100%);
+  -moz-transform: translateY(-100%);
+  -o-transform: translateY(-100%);
+  -ms-transform: translateY(-100%);
+  transform: translateY(-100%);
+}
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid.ng-hide-add,
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid.ng-hide-remove.ng-hide-remove-active {
+  -webkit-transform: translateY(0);
+  -moz-transform: translateY(0);
+  -o-transform: translateY(0);
+  -ms-transform: translateY(0);
+  transform: translateY(0);
+}
+.ui-grid-filter-container {
+  padding: 4px 10px;
+  position: relative;
+}
+.ui-grid-filter-container .ui-grid-filter-button {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+}
+.ui-grid-filter-container .ui-grid-filter-button [class^="ui-grid-icon"] {
+  position: absolute;
+  top: 50%;
+  line-height: 32px;
+  margin-top: -16px;
+  right: 10px;
+  opacity: 0.66;
+}
+.ui-grid-filter-container .ui-grid-filter-button [class^="ui-grid-icon"]:hover {
+  opacity: 1;
+}
+.ui-grid-filter-container .ui-grid-filter-button-select {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+}
+.ui-grid-filter-container .ui-grid-filter-button-select [class^="ui-grid-icon"] {
+  position: absolute;
+  top: 50%;
+  line-height: 32px;
+  margin-top: -16px;
+  right: 0px;
+  opacity: 0.66;
+}
+.ui-grid-filter-container .ui-grid-filter-button-select [class^="ui-grid-icon"]:hover {
+  opacity: 1;
+}
+input[type="text"].ui-grid-filter-input {
+  box-sizing: border-box;
+  padding: 0 18px 0 0;
+  margin: 0;
+  width: 100%;
+  border: 1px solid #d4d4d4;
+  -webkit-border-top-right-radius: 0px;
+  -webkit-border-bottom-right-radius: 0;
+  -webkit-border-bottom-left-radius: 0;
+  -webkit-border-top-left-radius: 0;
+  -moz-border-radius-topright: 0px;
+  -moz-border-radius-bottomright: 0;
+  -moz-border-radius-bottomleft: 0;
+  -moz-border-radius-topleft: 0;
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
+  -moz-background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+}
+input[type="text"].ui-grid-filter-input:hover {
+  border: 1px solid #d4d4d4;
+}
+select.ui-grid-filter-select {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  width: 90%;
+  border: 1px solid #d4d4d4;
+  -webkit-border-top-right-radius: 0px;
+  -webkit-border-bottom-right-radius: 0;
+  -webkit-border-bottom-left-radius: 0;
+  -webkit-border-top-left-radius: 0;
+  -moz-border-radius-topright: 0px;
+  -moz-border-radius-bottomright: 0;
+  -moz-border-radius-bottomleft: 0;
+  -moz-border-radius-topleft: 0;
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
+  -moz-background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+}
+select.ui-grid-filter-select:hover {
+  border: 1px solid #d4d4d4;
+}
+.ui-grid-filter-cancel-button-hidden select.ui-grid-filter-select {
+  width: 100%;
+}
+.ui-grid-render-container {
+  position: inherit;
+  -webkit-border-top-right-radius: 0;
+  -webkit-border-bottom-right-radius: 0px;
+  -webkit-border-bottom-left-radius: 0px;
+  -webkit-border-top-left-radius: 0;
+  -moz-border-radius-topright: 0;
+  -moz-border-radius-bottomright: 0px;
+  -moz-border-radius-bottomleft: 0px;
+  -moz-border-radius-topleft: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  border-top-left-radius: 0;
+  -moz-background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+}
+.ui-grid-render-container:focus {
+  outline: none;
+}
+.ui-grid-viewport {
+  min-height: 20px;
+  position: relative;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+.ui-grid-viewport:focus {
+  outline: none !important;
+}
+.ui-grid-canvas {
+  position: relative;
+  padding-top: 1px;
+}
+.ui-grid-row {
+  clear: both;
+}
+.ui-grid-row:nth-child(odd) .ui-grid-cell {
+  background-color: #fdfdfd;
+}
+.ui-grid-row:nth-child(even) .ui-grid-cell {
+  background-color: #f3f3f3;
+}
+.ui-grid-row:last-child .ui-grid-cell {
+  border-bottom-color: #d4d4d4;
+  border-bottom-style: solid;
+}
+.ui-grid-row:hover > [ui-grid-row] > .ui-grid-cell:hover .ui-grid-cell,
+.ui-grid-row:nth-child(odd):hover .ui-grid-cell,
+.ui-grid-row:nth-child(even):hover .ui-grid-cell {
+  background-color: #d5eaee;
+}
+.ui-grid-no-row-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 10%;
+  background-color: #f3f3f3;
+  -webkit-border-top-right-radius: 0px;
+  -webkit-border-bottom-right-radius: 0;
+  -webkit-border-bottom-left-radius: 0;
+  -webkit-border-top-left-radius: 0;
+  -moz-border-radius-topright: 0px;
+  -moz-border-radius-bottomright: 0;
+  -moz-border-radius-bottomleft: 0;
+  -moz-border-radius-topleft: 0;
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
+  -moz-background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  border: 1px solid #d4d4d4;
+  font-size: 2em;
+  text-align: center;
+}
+.ui-grid-no-row-overlay > * {
+  position: absolute;
+  display: table;
+  margin: auto 0;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  opacity: 0.66;
+}
+.ui-grid-cell {
+  overflow: hidden;
+  float: left;
+  background-color: inherit;
+  border-right: 1px solid;
+  border-color: #d4d4d4;
+  box-sizing: border-box;
+}
+.ui-grid-cell:last-child {
+  border-right: 0;
+}
+.ui-grid-cell-contents {
+  padding: 5px;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  white-space: nowrap;
+  -ms-text-overflow: ellipsis;
+  -o-text-overflow: ellipsis;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  height: 100%;
+}
+.ui-grid-cell-contents-hidden {
+  visibility: hidden;
+  width: 0;
+  height: 0;
+  display: none;
+}
+.ui-grid-row .ui-grid-cell.ui-grid-row-header-cell {
+  background-color: #F0F0EE;
+  border-bottom: solid 1px #d4d4d4;
+}
+.ui-grid-cell-empty {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+.ui-grid-footer-info {
+  padding: 5px 10px;
+}
+.ui-grid-footer-panel-background {
+  background-color: #f3f3f3;
+}
+.ui-grid-footer-panel {
+  position: relative;
+  border-bottom: 1px solid #d4d4d4;
+  border-top: 1px solid #d4d4d4;
+  overflow: hidden;
+  font-weight: bold;
+  background-color: #f3f3f3;
+  -webkit-border-top-right-radius: -1px;
+  -webkit-border-bottom-right-radius: 0;
+  -webkit-border-bottom-left-radius: 0;
+  -webkit-border-top-left-radius: -1px;
+  -moz-border-radius-topright: -1px;
+  -moz-border-radius-bottomright: 0;
+  -moz-border-radius-bottomleft: 0;
+  -moz-border-radius-topleft: -1px;
+  border-top-right-radius: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: -1px;
+  -moz-background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+}
+.ui-grid-grid-footer {
+  float: left;
+  width: 100%;
+}
+.ui-grid-footer-viewport,
+.ui-grid-footer-canvas {
+  display: flex;
+  flex: 1 1 auto;
+  height: 100%;
+}
+.ui-grid-footer-viewport {
+  overflow: hidden;
+}
+.ui-grid-footer-canvas {
+  position: relative;
+}
+.ui-grid-footer-canvas:before,
+.ui-grid-footer-canvas:after {
+  content: "";
+  display: table;
+  line-height: 0;
+}
+.ui-grid-footer-canvas:after {
+  clear: both;
+}
+.ui-grid-footer-cell-wrapper {
+  position: relative;
+  display: table;
+  box-sizing: border-box;
+  height: 100%;
+}
+.ui-grid-footer-cell-row {
+  display: table-row;
+}
+.ui-grid-footer-cell {
+  overflow: hidden;
+  background-color: inherit;
+  border-right: 1px solid;
+  border-color: #d4d4d4;
+  box-sizing: border-box;
+  display: table-cell;
+}
+.ui-grid-footer-cell:last-child {
+  border-right: 0;
+}
+.ui-grid-menu-button {
+  z-index: 2;
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: #f3f3f3;
+  border: 0;
+  border-left: 1px solid #d4d4d4;
+  border-bottom: 1px solid #d4d4d4;
+  cursor: pointer;
+  height: 32px;
+  font-weight: normal;
+}
+.ui-grid-menu-button .ui-grid-icon-container {
+  margin-top: 5px;
+  margin-left: 2px;
+}
+.ui-grid-menu-button .ui-grid-menu {
+  right: 0;
+}
+.ui-grid-menu-button .ui-grid-menu .ui-grid-menu-mid {
+  overflow: scroll;
+}
+.ui-grid-menu {
+  overflow: hidden;
+  max-width: 320px;
+  z-index: 2;
+  position: absolute;
+  right: 100%;
+  padding: 0 10px 20px 10px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.ui-grid-menu-item {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-grid-menu .ui-grid-menu-inner {
+  background: #fff;
+  border: 1px solid #d4d4d4;
+  position: relative;
+  white-space: nowrap;
+  -webkit-border-radius: 0px;
+  -moz-border-radius: 0px;
+  border-radius: 0px;
+}
+.ui-grid-menu .ui-grid-menu-inner ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+.ui-grid-menu .ui-grid-menu-inner ul li {
+  padding: 0;
+}
+.ui-grid-menu .ui-grid-menu-inner ul li .ui-grid-menu-item {
+  color: #000;
+  min-width: 100%;
+  padding: 8px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+.ui-grid-menu .ui-grid-menu-inner ul li button.ui-grid-menu-item {
+  cursor: pointer;
+}
+.ui-grid-menu .ui-grid-menu-inner ul li button.ui-grid-menu-item:hover,
+.ui-grid-menu .ui-grid-menu-inner ul li button.ui-grid-menu-item:focus {
+  background-color: #b3c4c7;
+}
+.ui-grid-menu .ui-grid-menu-inner ul li button.ui-grid-menu-item.ui-grid-menu-item-active {
+  background-color: #9cb2b6;
+}
+.ui-grid-menu .ui-grid-menu-inner ul li:not(:last-child) > .ui-grid-menu-item {
+  border-bottom: 1px solid #d4d4d4;
+}
+.ui-grid-sortarrow {
+  right: 5px;
+  position: absolute;
+  width: 20px;
+  top: 0;
+  bottom: 0;
+  background-position: center;
+}
+.ui-grid-sortarrow.down {
+  -webkit-transform: rotate(180deg);
+  -moz-transform: rotate(180deg);
+  -o-transform: rotate(180deg);
+  -ms-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+@font-face {
+  font-family: 'ui-grid';
+  src: url(/assets/fonts/ui-grid.eot);
+  src: url(/assets/fonts/ui-grid.eot#iefix) format('embedded-opentype'), url(/assets/fonts/ui-grid.woff) format('woff'), url(/assets/fonts/ui-grid.ttf) format('truetype'), url(/assets/fonts/ui-grid.svg?#ui-grid) format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+/* Chrome hack: SVG is rendered more smooth in Windozze. 100% magic, uncomment if you need it. */
+/* Note, that will break hinting! In other OS-es font will be not as sharp as it could be */
+/*
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: 'ui-grid';
+    src: url('@{font-path}ui-grid.svg?12312827#ui-grid') format('svg');
+  }
+}
+*/
+[class^="ui-grid-icon"]:before,
+[class*=" ui-grid-icon"]:before {
+  font-family: "ui-grid";
+  font-style: normal;
+  font-weight: normal;
+  speak: none;
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: .2em;
+  text-align: center;
+  /* opacity: .8; */
+  /* For safety - reset parent styles, that can break glyph codes*/
+  font-variant: normal;
+  text-transform: none;
+  /* fix buttons height, for twitter bootstrap */
+  line-height: 1em;
+  /* Animation center compensation - margins should be symmetric */
+  /* remove if not needed */
+  margin-left: .2em;
+  /* you can be more comfortable with increased icons size */
+  /* font-size: 120%; */
+  /* Uncomment for 3D effect */
+  /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+}
+.ui-grid-icon-blank::before {
+  width: 1em;
+  content: ' ';
+}
+.ui-grid-icon-plus-squared:before {
+  content: '\C350';
+}
+.ui-grid-icon-minus-squared:before {
+  content: '\C351';
+}
+.ui-grid-icon-search:before {
+  content: '\C352';
+}
+.ui-grid-icon-cancel:before {
+  content: '\C353';
+}
+.ui-grid-icon-info-circled:before {
+  content: '\C354';
+}
+.ui-grid-icon-lock:before {
+  content: '\C355';
+}
+.ui-grid-icon-lock-open:before {
+  content: '\C356';
+}
+.ui-grid-icon-pencil:before {
+  content: '\C357';
+}
+.ui-grid-icon-down-dir:before {
+  content: '\C358';
+}
+.ui-grid-icon-up-dir:before {
+  content: '\C359';
+}
+.ui-grid-icon-left-dir:before {
+  content: '\C35A';
+}
+.ui-grid-icon-right-dir:before {
+  content: '\C35B';
+}
+.ui-grid-icon-left-open:before {
+  content: '\C35C';
+}
+.ui-grid-icon-right-open:before {
+  content: '\C35D';
+}
+.ui-grid-icon-angle-down:before {
+  content: '\C35E';
+}
+.ui-grid-icon-filter:before {
+  content: '\C35F';
+}
+.ui-grid-icon-sort-alt-up:before {
+  content: '\C360';
+}
+.ui-grid-icon-sort-alt-down:before {
+  content: '\C361';
+}
+.ui-grid-icon-ok:before {
+  content: '\C362';
+}
+.ui-grid-icon-menu:before {
+  content: '\C363';
+}
+.ui-grid-icon-indent-left:before {
+  content: '\E800';
+}
+.ui-grid-icon-indent-right:before {
+  content: '\E801';
+}
+.ui-grid-icon-spin5:before {
+  content: '\EA61';
+}
+/*
+* RTL Styles
+*/
+.ui-grid[dir=rtl] .ui-grid-header-cell,
+.ui-grid[dir=rtl] .ui-grid-footer-cell,
+.ui-grid[dir=rtl] .ui-grid-cell {
+  float: right !important;
+}
+.ui-grid[dir=rtl] .ui-grid-column-menu-button {
+  position: absolute;
+  left: 1px;
+  top: 0;
+  right: inherit;
+}
+.ui-grid[dir=rtl] .ui-grid-cell:first-child,
+.ui-grid[dir=rtl] .ui-grid-header-cell:first-child,
+.ui-grid[dir=rtl] .ui-grid-footer-cell:first-child {
+  border-right: 0;
+}
+.ui-grid[dir=rtl] .ui-grid-cell:last-child,
+.ui-grid[dir=rtl] .ui-grid-header-cell:last-child {
+  border-right: 1px solid #d4d4d4;
+  border-left: 0;
+}
+.ui-grid[dir=rtl] .ui-grid-header-cell:first-child .ui-grid-vertical-bar,
+.ui-grid[dir=rtl] .ui-grid-footer-cell:first-child .ui-grid-vertical-bar,
+.ui-grid[dir=rtl] .ui-grid-cell:first-child .ui-grid-vertical-bar {
+  width: 0;
+}
+.ui-grid[dir=rtl] .ui-grid-menu-button {
+  z-index: 2;
+  position: absolute;
+  left: 0;
+  right: auto;
+  background: #f3f3f3;
+  border: 1px solid #d4d4d4;
+  cursor: pointer;
+  min-height: 27px;
+  font-weight: normal;
+}
+.ui-grid[dir=rtl] .ui-grid-menu-button .ui-grid-menu {
+  left: 0;
+  right: auto;
+}
+.ui-grid[dir=rtl] .ui-grid-filter-container .ui-grid-filter-button {
+  right: initial;
+  left: 0;
+}
+.ui-grid[dir=rtl] .ui-grid-filter-container .ui-grid-filter-button [class^="ui-grid-icon"] {
+  right: initial;
+  left: 10px;
+}
+/*
+   Animation example, for spinners
+*/
+.ui-grid-animate-spin {
+  -moz-animation: ui-grid-spin 2s infinite linear;
+  -o-animation: ui-grid-spin 2s infinite linear;
+  -webkit-animation: ui-grid-spin 2s infinite linear;
+  animation: ui-grid-spin 2s infinite linear;
+  display: inline-block;
+}
+@-moz-keyframes ui-grid-spin {
+  0% {
+    -moz-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -moz-transform: rotate(359deg);
+    -o-transform: rotate(359deg);
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+@-webkit-keyframes ui-grid-spin {
+  0% {
+    -moz-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -moz-transform: rotate(359deg);
+    -o-transform: rotate(359deg);
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+@-o-keyframes ui-grid-spin {
+  0% {
+    -moz-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -moz-transform: rotate(359deg);
+    -o-transform: rotate(359deg);
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+@-ms-keyframes ui-grid-spin {
+  0% {
+    -moz-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -moz-transform: rotate(359deg);
+    -o-transform: rotate(359deg);
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+@keyframes ui-grid-spin {
+  0% {
+    -moz-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -moz-transform: rotate(359deg);
+    -o-transform: rotate(359deg);
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+/*---------------------------------------------------
+    LESS Elements 0.9
+  ---------------------------------------------------
+    A set of useful LESS mixins
+    More info at: http://lesselements.com
+  ---------------------------------------------------*/
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+@media screen and (max-width: 767px) {
+}
+@media (min-width: 768px) {
+}
+.ui-grid-cell-focus {
+  outline: 0;
+  background-color: #b3c4c7;
+}
+.ui-grid-focuser {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+.ui-grid-focuser:focus {
+  border-color: #66afe9;
+  outline: 0;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+}
+.ui-grid-offscreen {
+  display: block;
+  position: absolute;
+  left: -10000px;
+  top: -10000px;
+  clip: rect(0px, 0px, 0px, 0px);
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-cell input {
+  border-radius: inherit;
+  padding: 0;
+  width: 100%;
+  color: inherit;
+  height: auto;
+  font: inherit;
+  outline: none;
+}
+.ui-grid-cell input:focus {
+  color: inherit;
+  outline: none;
+}
+.ui-grid-cell input[type="checkbox"] {
+  margin: 9px 0 0 6px;
+  width: auto;
+}
+.ui-grid-cell input.ng-invalid {
+  border: 1px solid #fc8f8f;
+}
+.ui-grid-cell input.ng-valid {
+  border: 1px solid #d4d4d4;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-viewport .ui-grid-empty-base-layer-container {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.expandableRow .ui-grid-row:nth-child(odd) .ui-grid-cell {
+  background-color: #fdfdfd;
+}
+.expandableRow .ui-grid-row:nth-child(even) .ui-grid-cell {
+  background-color: #f3f3f3;
+}
+.ui-grid-cell.ui-grid-disable-selection.ui-grid-row-header-cell {
+  pointer-events: none;
+}
+.ui-grid-expandable-buttons-cell i {
+  pointer-events: all;
+}
+.scrollFiller {
+  float: left;
+  border: 1px solid #d4d4d4;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-tree-header-row {
+  font-weight: bold !important;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.movingColumn {
+  position: absolute;
+  top: 0;
+  border: 1px solid #d4d4d4;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.2);
+}
+.movingColumn .ui-grid-icon-angle-down {
+  display: none;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/*---------------------------------------------------
+    LESS Elements 0.9
+  ---------------------------------------------------
+    A set of useful LESS mixins
+    More info at: http://lesselements.com
+  ---------------------------------------------------*/
+@media screen and (max-width: 767px) {
+}
+@media (min-width: 768px) {
+}
+.ui-grid-pager-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  box-sizing: content-box;
+}
+.ui-grid-pager-container {
+  float: left;
+}
+.ui-grid-pager-control {
+  padding: 5px 0;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  margin-right: 10px;
+  margin-left: 10px;
+  min-width: 135px;
+  float: left;
+}
+.ui-grid-pager-control button,
+.ui-grid-pager-control span,
+.ui-grid-pager-control input {
+  margin-right: 4px;
+}
+.ui-grid-pager-control button {
+  height: 25px;
+  min-width: 26px;
+  display: inline-block;
+  margin-bottom: 0;
+  font-weight: normal;
+  text-align: center;
+  vertical-align: middle;
+  touch-action: manipulation;
+  cursor: pointer;
+  background-image: none;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  border-radius: 4px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  color: #eee;
+  background-color: #f3f3f3;
+  border-color: #ccc;
+}
+.ui-grid-pager-control button:focus,
+.ui-grid-pager-control button:active:focus,
+.ui-grid-pager-control button.active:focus,
+.ui-grid-pager-control button.focus,
+.ui-grid-pager-control button:active.focus,
+.ui-grid-pager-control button.active.focus {
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
+.ui-grid-pager-control button:hover,
+.ui-grid-pager-control button:focus,
+.ui-grid-pager-control button.focus {
+  color: #333;
+  text-decoration: none;
+}
+.ui-grid-pager-control button:active,
+.ui-grid-pager-control button.active {
+  outline: 0;
+  background-image: none;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+}
+.ui-grid-pager-control button.disabled,
+.ui-grid-pager-control button[disabled],
+fieldset[disabled] .ui-grid-pager-control button {
+  cursor: not-allowed;
+  opacity: 0.65;
+  filter: alpha(opacity=65);
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+a.ui-grid-pager-control button.disabled,
+fieldset[disabled] a.ui-grid-pager-control button {
+  pointer-events: none;
+}
+.ui-grid-pager-control button:focus,
+.ui-grid-pager-control button.focus {
+  color: #eee;
+  background-color: #dadada;
+  border-color: #8c8c8c;
+}
+.ui-grid-pager-control button:hover {
+  color: #eee;
+  background-color: #dadada;
+  border-color: #adadad;
+}
+.ui-grid-pager-control button:active,
+.ui-grid-pager-control button.active,
+.open > .dropdown-toggle.ui-grid-pager-control button {
+  color: #eee;
+  background-color: #dadada;
+  border-color: #adadad;
+}
+.ui-grid-pager-control button:active:hover,
+.ui-grid-pager-control button.active:hover,
+.open > .dropdown-toggle.ui-grid-pager-control button:hover,
+.ui-grid-pager-control button:active:focus,
+.ui-grid-pager-control button.active:focus,
+.open > .dropdown-toggle.ui-grid-pager-control button:focus,
+.ui-grid-pager-control button:active.focus,
+.ui-grid-pager-control button.active.focus,
+.open > .dropdown-toggle.ui-grid-pager-control button.focus {
+  color: #eee;
+  background-color: #c8c8c8;
+  border-color: #8c8c8c;
+}
+.ui-grid-pager-control button:active,
+.ui-grid-pager-control button.active,
+.open > .dropdown-toggle.ui-grid-pager-control button {
+  background-image: none;
+}
+.ui-grid-pager-control button.disabled:hover,
+.ui-grid-pager-control button[disabled]:hover,
+fieldset[disabled] .ui-grid-pager-control button:hover,
+.ui-grid-pager-control button.disabled:focus,
+.ui-grid-pager-control button[disabled]:focus,
+fieldset[disabled] .ui-grid-pager-control button:focus,
+.ui-grid-pager-control button.disabled.focus,
+.ui-grid-pager-control button[disabled].focus,
+fieldset[disabled] .ui-grid-pager-control button.focus {
+  background-color: #f3f3f3;
+  border-color: #ccc;
+}
+.ui-grid-pager-control button .badge {
+  color: #f3f3f3;
+  background-color: #eee;
+}
+.ui-grid-pager-control input {
+  display: block;
+  width: 100%;
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #555555;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+  -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+  transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+  height: 30px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+  display: inline;
+  height: 26px;
+  width: 50px;
+  vertical-align: top;
+}
+.ui-grid-pager-control input:focus {
+  border-color: #66afe9;
+  outline: 0;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+}
+.ui-grid-pager-control input::-moz-placeholder {
+  color: #999;
+  opacity: 1;
+}
+.ui-grid-pager-control input:-ms-input-placeholder {
+  color: #999;
+}
+.ui-grid-pager-control input::-webkit-input-placeholder {
+  color: #999;
+}
+.ui-grid-pager-control input::-ms-expand {
+  border: 0;
+  background-color: transparent;
+}
+.ui-grid-pager-control input[disabled],
+.ui-grid-pager-control input[readonly],
+fieldset[disabled] .ui-grid-pager-control input {
+  background-color: #eeeeee;
+  opacity: 1;
+}
+.ui-grid-pager-control input[disabled],
+fieldset[disabled] .ui-grid-pager-control input {
+  cursor: not-allowed;
+}
+textarea.ui-grid-pager-control input {
+  height: auto;
+}
+select.ui-grid-pager-control input {
+  height: 30px;
+  line-height: 30px;
+}
+textarea.ui-grid-pager-control input,
+select[multiple].ui-grid-pager-control input {
+  height: auto;
+}
+.ui-grid-pager-control .ui-grid-pager-max-pages-number {
+  vertical-align: bottom;
+}
+.ui-grid-pager-control .ui-grid-pager-max-pages-number > * {
+  vertical-align: bottom;
+}
+.ui-grid-pager-control .ui-grid-pager-max-pages-number abbr {
+  border-bottom: none;
+  text-decoration: none;
+}
+.ui-grid-pager-control .first-bar {
+  width: 10px;
+  border-left: 2px solid #4d4d4d;
+  margin-top: -6px;
+  height: 12px;
+  margin-left: -3px;
+}
+.ui-grid-pager-control .first-bar-rtl {
+  width: 10px;
+  border-left: 2px solid #4d4d4d;
+  margin-top: -6px;
+  height: 12px;
+  margin-right: -7px;
+}
+.ui-grid-pager-control .first-triangle {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 8.7px 5px 0;
+  border-color: transparent #4d4d4d transparent transparent;
+  margin-left: 2px;
+}
+.ui-grid-pager-control .next-triangle {
+  margin-left: 1px;
+}
+.ui-grid-pager-control .prev-triangle {
+  margin-left: 0;
+}
+.ui-grid-pager-control .last-triangle {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8.7px;
+  border-color: transparent transparent transparent #4d4d4d;
+  margin-left: -1px;
+}
+.ui-grid-pager-control .last-bar {
+  width: 10px;
+  border-left: 2px solid #4d4d4d;
+  margin-top: -6px;
+  height: 12px;
+  margin-left: 1px;
+}
+.ui-grid-pager-control .last-bar-rtl {
+  width: 10px;
+  border-left: 2px solid #4d4d4d;
+  margin-top: -6px;
+  height: 12px;
+  margin-right: -11px;
+}
+.ui-grid-pager-row-count-picker {
+  float: left;
+  padding: 5px 10px;
+}
+.ui-grid-pager-row-count-picker select {
+  display: block;
+  width: 100%;
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #555555;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+  -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+  transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+  height: 30px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+  height: 25px;
+  width: 67px;
+  display: inline;
+  vertical-align: middle;
+}
+.ui-grid-pager-row-count-picker select:focus {
+  border-color: #66afe9;
+  outline: 0;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+}
+.ui-grid-pager-row-count-picker select::-moz-placeholder {
+  color: #999;
+  opacity: 1;
+}
+.ui-grid-pager-row-count-picker select:-ms-input-placeholder {
+  color: #999;
+}
+.ui-grid-pager-row-count-picker select::-webkit-input-placeholder {
+  color: #999;
+}
+.ui-grid-pager-row-count-picker select::-ms-expand {
+  border: 0;
+  background-color: transparent;
+}
+.ui-grid-pager-row-count-picker select[disabled],
+.ui-grid-pager-row-count-picker select[readonly],
+fieldset[disabled] .ui-grid-pager-row-count-picker select {
+  background-color: #eeeeee;
+  opacity: 1;
+}
+.ui-grid-pager-row-count-picker select[disabled],
+fieldset[disabled] .ui-grid-pager-row-count-picker select {
+  cursor: not-allowed;
+}
+textarea.ui-grid-pager-row-count-picker select {
+  height: auto;
+}
+select.ui-grid-pager-row-count-picker select {
+  height: 30px;
+  line-height: 30px;
+}
+textarea.ui-grid-pager-row-count-picker select,
+select[multiple].ui-grid-pager-row-count-picker select {
+  height: auto;
+}
+.ui-grid-pager-row-count-picker .ui-grid-pager-row-count-label {
+  margin-top: 3px;
+}
+.ui-grid-pager-count-container {
+  float: right;
+  margin-top: 4px;
+  min-width: 50px;
+}
+.ui-grid-pager-count-container .ui-grid-pager-count {
+  margin-right: 10px;
+  margin-left: 10px;
+  float: right;
+}
+.ui-grid-pager-count-container .ui-grid-pager-count abbr {
+  border-bottom: none;
+  text-decoration: none;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-pinned-container {
+  position: absolute;
+  display: inline;
+  top: 0;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left {
+  float: left;
+  left: 0;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-right {
+  float: right;
+  right: 0;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:last-child {
+  box-sizing: border-box;
+  border-right: 1px solid;
+  border-width: 1px;
+  border-right-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child {
+  box-sizing: border-box;
+  border-right: 1px solid;
+  border-width: 1px;
+  border-right-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:not(:last-child) .ui-grid-vertical-bar,
+.ui-grid-pinned-container .ui-grid-cell:not(:last-child) .ui-grid-vertical-bar {
+  width: 1px;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:not(:last-child) .ui-grid-vertical-bar {
+  background-color: #d4d4d4;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:not(:last-child) .ui-grid-vertical-bar {
+  background-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:last-child .ui-grid-vertical-bar {
+  right: -1px;
+  width: 1px;
+  background-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-right .ui-grid-header-cell:first-child {
+  box-sizing: border-box;
+  border-left: 1px solid;
+  border-width: 1px;
+  border-left-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-right .ui-grid-cell:first-child {
+  box-sizing: border-box;
+  border-left: 1px solid;
+  border-width: 1px;
+  border-left-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-right .ui-grid-header-cell:not(:first-child) .ui-grid-vertical-bar,
+.ui-grid-pinned-container .ui-grid-cell:not(:first-child) .ui-grid-vertical-bar {
+  width: 1px;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-right .ui-grid-header-cell:not(:first-child) .ui-grid-vertical-bar {
+  background-color: #d4d4d4;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-right .ui-grid-cell:not(:last-child) .ui-grid-vertical-bar {
+  background-color: #aeaeae;
+}
+.ui-grid-pinned-container.ui-grid-pinned-container-first .ui-grid-header-cell:first-child .ui-grid-vertical-bar {
+  left: -1px;
+  width: 1px;
+  background-color: #aeaeae;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-column-resizer {
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  position: absolute;
+  cursor: col-resize;
+}
+.ui-grid-column-resizer.left {
+  left: 0;
+}
+.ui-grid-column-resizer.right {
+  right: 0;
+}
+.ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+  border-right: 1px solid #d4d4d4;
+}
+.ui-grid[dir=rtl] .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+  border-right: 0;
+}
+.ui-grid[dir=rtl] .ui-grid-header-cell:last-child .ui-grid-column-resizer.left {
+  border-left: 1px solid #d4d4d4;
+}
+.ui-grid.column-resizing {
+  cursor: col-resize;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.ui-grid.column-resizing .ui-grid-resize-overlay {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  background-color: #aeaeae;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-row-saving .ui-grid-cell {
+  color: #848484 !important;
+}
+.ui-grid-row-dirty .ui-grid-cell {
+  color: #610B38;
+}
+.ui-grid-row-error .ui-grid-cell {
+  color: #FF0000 !important;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-row.ui-grid-row-selected > [ui-grid-row] > .ui-grid-cell {
+  background-color: #C9DDE1;
+}
+.ui-grid-disable-selection {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+.ui-grid-selection-row-header-buttons {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
+}
+.ui-grid-selection-row-header-buttons::before {
+  opacity: 0.1;
+}
+.ui-grid-selection-row-header-buttons.ui-grid-row-selected::before,
+.ui-grid-selection-row-header-buttons.ui-grid-all-selected::before {
+  opacity: 1;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-tree-row-header-buttons.ui-grid-tree-header {
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-tree-header-row {
+  font-weight: bold !important;
+}
+.ui-grid-tree-header-row .ui-grid-cell.ui-grid-disable-selection.ui-grid-row-header-cell {
+  pointer-events: all;
+}
+
+/* This file contains variable declarations (do not remove this line) */
+/*-- VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+/**
+* @section Grid styles
+*/
+/**
+* @section Header styles
+*/
+/** @description Colors for header gradient */
+/**
+* @section Grid body styles
+*/
+/** @description Colors used for row alternation */
+/**
+* @section Grid Menu colors
+*/
+/**
+* @section Sort arrow colors
+*/
+/**
+* @section Scrollbar styles
+*/
+/**
+* @section font library path
+*/
+/*-- END VARIABLES (DO NOT REMOVE THESE COMMENTS) --*/
+.ui-grid-cell-contents.invalid {
+  border: 1px solid #fc8f8f;
+}
+
+/* nvd3 version 1.8.6 (https://github.com/novus/nvd3) 2017-08-23 */
+.nvd3 .nv-axis {
+    pointer-events:none;
+    opacity: 1;
+}
+
+.nvd3 .nv-axis path {
+    fill: none;
+    stroke: #000;
+    stroke-opacity: .75;
+    shape-rendering: crispEdges;
+}
+
+.nvd3 .nv-axis path.domain {
+    stroke-opacity: .75;
+}
+
+.nvd3 .nv-axis.nv-x path.domain {
+    stroke-opacity: 0;
+}
+
+.nvd3 .nv-axis line {
+    fill: none;
+    stroke: #e5e5e5;
+    shape-rendering: crispEdges;
+}
+
+.nvd3 .nv-axis .zero line,
+    /*this selector may not be necessary*/ .nvd3 .nv-axis line.zero {
+    stroke-opacity: .75;
+}
+
+.nvd3 .nv-axis .nv-axisMaxMin text {
+    font-weight: bold;
+}
+
+.nvd3 .x  .nv-axis .nv-axisMaxMin text,
+.nvd3 .x2 .nv-axis .nv-axisMaxMin text,
+.nvd3 .x3 .nv-axis .nv-axisMaxMin text {
+    text-anchor: middle;
+}
+
+.nvd3 .nv-axis.nv-disabled {
+    opacity: 0;
+}
+
+.nvd3 .nv-bars rect {
+    fill-opacity: .75;
+
+    transition: fill-opacity 250ms linear;
+}
+
+.nvd3 .nv-bars rect.hover {
+    fill-opacity: 1;
+}
+
+.nvd3 .nv-bars .hover rect {
+    fill: lightblue;
+}
+
+.nvd3 .nv-bars text {
+    fill: rgba(0,0,0,0);
+}
+
+.nvd3 .nv-bars .hover text {
+    fill: rgba(0,0,0,1);
+}
+
+.nvd3 .nv-multibar .nv-groups rect,
+.nvd3 .nv-multibarHorizontal .nv-groups rect,
+.nvd3 .nv-discretebar .nv-groups rect {
+    stroke-opacity: 0;
+
+    transition: fill-opacity 250ms linear;
+}
+
+.nvd3 .nv-multibar .nv-groups rect:hover,
+.nvd3 .nv-multibarHorizontal .nv-groups rect:hover,
+.nvd3 .nv-candlestickBar .nv-ticks rect:hover,
+.nvd3 .nv-discretebar .nv-groups rect:hover {
+    fill-opacity: 1;
+}
+
+.nvd3 .nv-discretebar .nv-groups text,
+.nvd3 .nv-multibarHorizontal .nv-groups text {
+    font-weight: bold;
+    fill: rgba(0,0,0,1);
+    stroke: rgba(0,0,0,0);
+}
+
+/* boxplot CSS */
+.nvd3 .nv-boxplot circle {
+  fill-opacity: 0.5;
+}
+
+.nvd3 .nv-boxplot circle:hover {
+  fill-opacity: 1;
+}
+
+.nvd3 .nv-boxplot rect:hover {
+  fill-opacity: 1;
+}
+
+.nvd3 line.nv-boxplot-median {
+  stroke: black;
+}
+
+.nv-boxplot-tick:hover {
+  stroke-width: 2.5px;
+}
+/* bullet */
+.nvd3.nv-bullet { font: 10px sans-serif; }
+.nvd3.nv-bullet .nv-measure { fill-opacity: .8; }
+.nvd3.nv-bullet .nv-measure:hover { fill-opacity: 1; }
+.nvd3.nv-bullet .nv-marker { stroke: #000; stroke-width: 2px; }
+.nvd3.nv-bullet .nv-markerTriangle { stroke: #000; fill: #fff; stroke-width: 1.5px; }
+.nvd3.nv-bullet .nv-markerLine { stroke: #000; stroke-width: 1.5px; }
+.nvd3.nv-bullet .nv-tick line { stroke: #666; stroke-width: .5px; }
+.nvd3.nv-bullet .nv-range.nv-s0 { fill: #eee; }
+.nvd3.nv-bullet .nv-range.nv-s1 { fill: #ddd; }
+.nvd3.nv-bullet .nv-range.nv-s2 { fill: #ccc; }
+.nvd3.nv-bullet .nv-title { font-size: 14px; font-weight: bold; }
+.nvd3.nv-bullet .nv-subtitle { fill: #999; }
+
+.nvd3.nv-bullet .nv-range {
+    fill: #bababa;
+    fill-opacity: .4;
+}
+
+.nvd3.nv-bullet .nv-range:hover {
+    fill-opacity: .7;
+}
+
+.nvd3.nv-candlestickBar .nv-ticks .nv-tick {
+    stroke-width: 1px;
+}
+
+.nvd3.nv-candlestickBar .nv-ticks .nv-tick.hover {
+    stroke-width: 2px;
+}
+
+.nvd3.nv-candlestickBar .nv-ticks .nv-tick.positive rect {
+    stroke: #2ca02c;
+    fill: #2ca02c;
+}
+
+.nvd3.nv-candlestickBar .nv-ticks .nv-tick.negative rect {
+    stroke: #d62728;
+    fill: #d62728;
+}
+
+.with-transitions .nv-candlestickBar .nv-ticks .nv-tick {
+    transition: stroke-width 250ms linear, stroke-opacity 250ms linear;
+}
+
+.nvd3.nv-candlestickBar .nv-ticks line {
+    stroke: #333;
+}
+
+.nv-force-node {
+    stroke: #fff;
+    stroke-width: 1.5px;
+}
+
+.nv-force-link {
+    stroke: #999;
+    stroke-opacity: .6;
+}
+
+.nv-force-node text {
+    stroke-width: 0px;
+}
+
+.nvd3 .nv-legend .nv-disabled rect {
+    /*fill-opacity: 0;*/
+}
+
+.nvd3 .nv-check-box .nv-box {
+    fill-opacity:0;
+    stroke-width:2;
+}
+
+.nvd3 .nv-check-box .nv-check {
+    fill-opacity:0;
+    stroke-width:4;
+}
+
+.nvd3 .nv-series.nv-disabled .nv-check-box .nv-check {
+    fill-opacity:0;
+    stroke-opacity:0;
+}
+
+.nvd3 .nv-controlsWrap .nv-legend .nv-check-box .nv-check {
+    opacity: 0;
+}
+
+/* line plus bar */
+.nvd3.nv-linePlusBar .nv-bar rect {
+    fill-opacity: .75;
+}
+
+.nvd3.nv-linePlusBar .nv-bar rect:hover {
+    fill-opacity: 1;
+}
+.nvd3 .nv-groups path.nv-line {
+    fill: none;
+}
+
+.nvd3 .nv-groups path.nv-area {
+    stroke: none;
+}
+
+.nvd3.nv-line .nvd3.nv-scatter .nv-groups .nv-point {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+
+.nvd3.nv-scatter.nv-single-point .nv-groups .nv-point {
+    fill-opacity: .5 !important;
+    stroke-opacity: .5 !important;
+}
+
+
+.with-transitions .nvd3 .nv-groups .nv-point {
+    transition: stroke-width 250ms linear, stroke-opacity 250ms linear;
+}
+
+.nvd3.nv-scatter .nv-groups .nv-point.hover,
+.nvd3 .nv-groups .nv-point.hover {
+    stroke-width: 7px;
+    fill-opacity: .95 !important;
+    stroke-opacity: .95 !important;
+}
+
+
+.nvd3 .nv-point-paths path {
+    stroke: #aaa;
+    stroke-opacity: 0;
+    fill: #eee;
+    fill-opacity: 0;
+}
+
+
+.nvd3 .nv-indexLine {
+    cursor: ew-resize;
+}
+
+/********************
+ * SVG CSS
+ */
+
+/********************
+  Default CSS for an svg element nvd3 used
+*/
+svg.nvd3-svg {
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+    display: block;
+    width:100%;
+    height:100%;
+}
+
+/********************
+  Box shadow and border radius styling
+*/
+.nvtooltip.with-3d-shadow, .with-3d-shadow .nvtooltip {
+    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    border-radius: 5px;
+}
+
+
+.nvd3 text {
+    font: normal 12px Arial, sans-serif;
+}
+
+.nvd3 .title {
+    font: bold 14px Arial, sans-serif;
+}
+
+.nvd3 .nv-background {
+    fill: white;
+    fill-opacity: 0;
+}
+
+.nvd3.nv-noData {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+
+/**********
+*  Brush
+*/
+
+.nv-brush .extent {
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+}
+
+.nv-brush .resize path {
+    fill: #eee;
+    stroke: #666;
+}
+
+
+/**********
+*  Legend
+*/
+
+.nvd3 .nv-legend .nv-series {
+    cursor: pointer;
+}
+
+.nvd3 .nv-legend .nv-disabled circle {
+    fill-opacity: 0;
+}
+
+/* focus */
+.nvd3 .nv-brush .extent {
+    fill-opacity: 0 !important;
+}
+
+.nvd3 .nv-brushBackground rect {
+    stroke: #000;
+    stroke-width: .4;
+    fill: #fff;
+    fill-opacity: .7;
+}
+
+/**********
+*  Print
+*/
+
+@media print {
+    .nvd3 text {
+        stroke-width: 0;
+        fill-opacity: 1;
+    }
+}
+
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick {
+    stroke-width: 1px;
+}
+
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick.hover {
+    stroke-width: 2px;
+}
+
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick.positive {
+    stroke: #2ca02c;
+}
+
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick.negative {
+    stroke: #d62728;
+}
+
+
+.nvd3 .background path {
+    fill: none;
+    stroke: #EEE;
+    stroke-opacity: .4;
+    shape-rendering: crispEdges;
+}
+
+.nvd3 .foreground path {
+    fill: none;
+    stroke-opacity: .7;
+}
+
+.nvd3 .nv-parallelCoordinates-brush .extent {
+    fill: #fff;
+    fill-opacity: .6;
+    stroke: gray;
+    shape-rendering: crispEdges;
+}
+
+.nvd3 .nv-parallelCoordinates .hover  {
+    fill-opacity: 1;
+	stroke-width: 3px;
+}
+
+
+.nvd3 .missingValuesline line {
+  fill: none;
+  stroke: black;
+  stroke-width: 1;
+  stroke-opacity: 1;
+  stroke-dasharray: 5, 5;
+}
+
+.nvd3.nv-pie path {
+    stroke-opacity: 0;
+    transition: fill-opacity 250ms linear, stroke-width 250ms linear, stroke-opacity 250ms linear;
+}
+
+.nvd3.nv-pie .nv-pie-title {
+    font-size: 24px;
+    fill: rgba(19, 196, 249, 0.59);
+}
+
+.nvd3.nv-pie .nv-slice text {
+    stroke: #000;
+    stroke-width: 0;
+}
+
+.nvd3.nv-pie path {
+    stroke: #fff;
+    stroke-width: 1px;
+    stroke-opacity: 1;
+}
+
+.nvd3.nv-pie path {
+    fill-opacity: .7;
+}
+
+.nvd3.nv-pie .hover path {
+    fill-opacity: 1;
+}
+
+.nvd3.nv-pie .nv-label {
+    pointer-events: none;
+}
+
+.nvd3.nv-pie .nv-label rect {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+
+/* scatter */
+.nvd3 .nv-groups .nv-point.hover {
+    stroke-width: 20px;
+    stroke-opacity: .5;
+}
+
+.nvd3 .nv-scatter .nv-point.hover {
+    fill-opacity: 1;
+}
+
+.nv-noninteractive {
+    pointer-events: none;
+}
+
+.nv-distx, .nv-disty {
+    pointer-events: none;
+}
+
+/* sparkline */
+.nvd3.nv-sparkline path {
+    fill: none;
+}
+
+.nvd3.nv-sparklineplus g.nv-hoverValue {
+    pointer-events: none;
+}
+
+.nvd3.nv-sparklineplus .nv-hoverValue line {
+    stroke: #333;
+    stroke-width: 1.5px;
+}
+
+.nvd3.nv-sparklineplus,
+.nvd3.nv-sparklineplus g {
+    pointer-events: all;
+}
+
+.nvd3 .nv-hoverArea {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+
+.nvd3.nv-sparklineplus .nv-xValue,
+.nvd3.nv-sparklineplus .nv-yValue {
+    stroke-width: 0;
+    font-size: .9em;
+    font-weight: normal;
+}
+
+.nvd3.nv-sparklineplus .nv-yValue {
+    stroke: #f66;
+}
+
+.nvd3.nv-sparklineplus .nv-maxValue {
+    stroke: #2ca02c;
+    fill: #2ca02c;
+}
+
+.nvd3.nv-sparklineplus .nv-minValue {
+    stroke: #d62728;
+    fill: #d62728;
+}
+
+.nvd3.nv-sparklineplus .nv-currentValue {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+/* stacked area */
+.nvd3.nv-stackedarea path.nv-area {
+    fill-opacity: .7;
+    stroke-opacity: 0;
+    transition: fill-opacity 250ms linear, stroke-opacity 250ms linear;
+}
+
+.nvd3.nv-stackedarea path.nv-area.hover {
+    fill-opacity: .9;
+}
+
+
+.nvd3.nv-stackedarea .nv-groups .nv-point {
+    stroke-opacity: 0;
+    fill-opacity: 0;
+}
+
+.nvtooltip {
+    position: absolute;
+    background-color: rgba(255,255,255,1.0);
+    color: rgba(0,0,0,1.0);
+    padding: 1px;
+    border: 1px solid rgba(0,0,0,.2);
+    z-index: 10000;
+    display: block;
+
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    text-align: left;
+    pointer-events: none;
+
+    white-space: nowrap;
+
+    -webkit-user-select: none;
+
+       -moz-user-select: none;
+
+        -ms-user-select: none;
+
+            user-select: none;
+}
+
+.nvtooltip {
+    background: rgba(255,255,255, 0.8);
+    border: 1px solid rgba(0,0,0,0.5);
+    border-radius: 4px;
+}
+
+/*Give tooltips that old fade in transition by
+    putting a "with-transitions" class on the container div.
+*/
+.nvtooltip.with-transitions, .with-transitions .nvtooltip {
+    transition: opacity 50ms linear;
+
+    transition-delay: 200ms;
+}
+
+.nvtooltip.x-nvtooltip,
+.nvtooltip.y-nvtooltip {
+    padding: 8px;
+}
+
+.nvtooltip h3 {
+    margin: 0;
+    padding: 4px 14px;
+    line-height: 18px;
+    font-weight: normal;
+    background-color: rgba(247,247,247,0.75);
+    color: rgba(0,0,0,1.0);
+    text-align: center;
+
+    border-bottom: 1px solid #ebebeb;
+
+    border-radius: 5px 5px 0 0;
+}
+
+.nvtooltip p {
+    margin: 0;
+    padding: 5px 14px;
+    text-align: center;
+}
+
+.nvtooltip span {
+    display: inline-block;
+    margin: 2px 0;
+}
+
+.nvtooltip table {
+    margin: 6px;
+    border-spacing:0;
+}
+
+
+.nvtooltip table td {
+    padding: 2px 9px 2px 0;
+    vertical-align: middle;
+}
+
+.nvtooltip table td.key {
+    font-weight: normal;
+}
+
+.nvtooltip table td.key.total {
+    font-weight: bold;
+}
+
+.nvtooltip table td.value {
+    text-align: right;
+    font-weight: bold;
+}
+
+.nvtooltip table td.percent {
+    color: darkgray;
+}
+
+.nvtooltip table tr.highlight td {
+    padding: 1px 9px 1px 0;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-top-style: solid;
+    border-top-width: 1px;
+}
+
+.nvtooltip table td.legend-color-guide div {
+    width: 8px;
+    height: 8px;
+    vertical-align: middle;
+}
+
+.nvtooltip table td.legend-color-guide div {
+    width: 12px;
+    height: 12px;
+    border: 1px solid #999;
+}
+
+.nvtooltip .footer {
+    padding: 3px;
+    text-align: center;
+}
+
+.nvtooltip-pending-removal {
+    pointer-events: none;
+    display: none;
+}
+
+
+/****
+Interactive Layer
+*/
+.nvd3 .nv-interactiveGuideLine {
+    pointer-events:none;
+}
+
+.nvd3 line.nv-guideline {
+    stroke: #ccc;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-thin-webfont.eot);
+  src: url(/assets/fonts/roboto-thin-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-thin-webfont.woff) format('woff'), url(/assets/fonts/roboto-thin-webfont.ttf) format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-thinitalic-webfont.eot);
+  src: url(/assets/fonts/roboto-thinitalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-thinitalic-webfont.woff) format('woff'), url(/assets/fonts/roboto-thinitalic-webfont.ttf) format('truetype');
+  font-weight: 100;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-light-webfont.eot);
+  src: url(/assets/fonts/roboto-light-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-light-webfont.woff) format('woff'), url(/assets/fonts/roboto-light-webfont.ttf) format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-lightitalic-webfont.eot);
+  src: url(/assets/fonts/roboto-lightitalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-lightitalic-webfont.woff) format('woff'), url(/assets/fonts/roboto-lightitalic-webfont.ttf) format('truetype');
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-regular-webfont.eot);
+  src: url(/assets/fonts/roboto-regular-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-regular-webfont.woff) format('woff'), url(/assets/fonts/roboto-regular-webfont.ttf) format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-italic-webfont.eot);
+  src: url(/assets/fonts/roboto-italic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-italic-webfont.woff) format('woff'), url(/assets/fonts/roboto-italic-webfont.ttf) format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-medium-webfont.eot);
+  src: url(/assets/fonts/roboto-medium-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-medium-webfont.woff) format('woff'), url(/assets/fonts/roboto-medium-webfont.ttf) format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-mediumitalic-webfont.eot);
+  src: url(/assets/fonts/roboto-mediumitalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-mediumitalic-webfont.woff) format('woff'), url(/assets/fonts/roboto-mediumitalic-webfont.ttf) format('truetype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-bold-webfont.eot);
+  src: url(/assets/fonts/roboto-bold-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-bold-webfont.woff) format('woff'), url(/assets/fonts/roboto-bold-webfont.ttf) format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-bolditalic-webfont.eot);
+  src: url(/assets/fonts/roboto-bolditalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-bolditalic-webfont.woff) format('woff'), url(/assets/fonts/roboto-bolditalic-webfont.ttf) format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-black-webfont.eot);
+  src: url(/assets/fonts/roboto-black-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-black-webfont.woff) format('woff'), url(/assets/fonts/roboto-black-webfont.ttf) format('truetype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url(/assets/fonts/roboto-blackitalic-webfont.eot);
+  src: url(/assets/fonts/roboto-blackitalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/roboto-blackitalic-webfont.woff) format('woff'), url(/assets/fonts/roboto-blackitalic-webfont.ttf) format('truetype');
+  font-weight: 900;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto_condensed";
+  src: url(/assets/fonts/robotocondensed-light-webfont.eot);
+  src: url(/assets/fonts/robotocondensed-light-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotocondensed-light-webfont.woff) format('woff'), url(/assets/fonts/robotocondensed-light-webfont.ttf) format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto_condensed";
+  src: url(/assets/fonts/robotocondensed-lightitalic-webfont.eot);
+  src: url(/assets/fonts/robotocondensed-lightitalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotocondensed-lightitalic-webfont.woff) format('woff'), url(/assets/fonts/robotocondensed-lightitalic-webfont.ttf) format('truetype');
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto_condensed";
+  src: url(/assets/fonts/robotocondensed-regular-webfont.eot);
+  src: url(/assets/fonts/robotocondensed-regular-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotocondensed-regular-webfont.woff) format('woff'), url(/assets/fonts/robotocondensed-regular-webfont.ttf) format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto_condensed";
+  src: url(/assets/fonts/robotocondensed-italic-webfont.eot);
+  src: url(/assets/fonts/robotocondensed-italic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotocondensed-italic-webfont.woff) format('woff'), url(/assets/fonts/robotocondensed-italic-webfont.ttf) format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto_condensed";
+  src: url(/assets/fonts/robotocondensed-bold-webfont.eot);
+  src: url(/assets/fonts/robotocondensed-bold-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotocondensed-bold-webfont.woff) format('woff'), url(/assets/fonts/robotocondensed-bold-webfont.ttf) format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto_condensed";
+  src: url(/assets/fonts/robotocondensed-bolditalic-webfont.eot);
+  src: url(/assets/fonts/robotocondensed-bolditalic-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotocondensed-bolditalic-webfont.woff) format('woff'), url(/assets/fonts/robotocondensed-bolditalic-webfont.ttf) format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto_slab";
+  src: url(/assets/fonts/robotoslab-thin-webfont.eot);
+  src: url(/assets/fonts/robotoslab-thin-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotoslab-thin-webfont.woff) format('woff'), url(/assets/fonts/robotoslab-thin-webfont.ttf) format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto_slab";
+  src: url(/assets/fonts/robotoslab-light-webfont.eot);
+  src: url(/assets/fonts/robotoslab-light-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotoslab-light-webfont.woff) format('woff'), url(/assets/fonts/robotoslab-light-webfont.ttf) format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto_slab";
+  src: url(/assets/fonts/robotoslab-regular-webfont.eot);
+  src: url(/assets/fonts/robotoslab-regular-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotoslab-regular-webfont.woff) format('woff'), url(/assets/fonts/robotoslab-regular-webfont.ttf) format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto_slab";
+  src: url(/assets/fonts/robotoslab-bold-webfont.eot);
+  src: url(/assets/fonts/robotoslab-bold-webfont.eot?#iefix) format('embedded-opentype'), url(/assets/fonts/robotoslab-bold-webfont.woff) format('woff'), url(/assets/fonts/robotoslab-bold-webfont.ttf) format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+

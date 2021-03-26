@@ -29,9 +29,13 @@ path[0]为模式或者cacheName
 path[1]为TypeName
 
 
+
 /drupal/content_faq/_all?q=view2
 
 意思是在drupal模式里面的content_faq表里列出view2的结果，功能是为了在后端配置视图。
+
+因为未来cache和table是一对一关系，可以直接使用cacheName搜索
+/drupal/_search?q="keyword"
 
 
 支持以json的方式访问ignite rest api。

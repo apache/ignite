@@ -7,3 +7,6 @@ _class 为type
 _id    为key
 
 使用lucene作为index
+
+
+当ignite的instance name 为mongo时，不需要配置MongoPluginConfiguration，使用默认设置即可启动mongo协议。

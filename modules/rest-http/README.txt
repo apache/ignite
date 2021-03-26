@@ -31,3 +31,8 @@ interested in):
     </dependencies>
     ...
 </project>
+
+ChangeLog
+--------------------------------
+- 通过在webapp下面部署应用，额外部署了一个es webapp，可以提供扩展服务
+- 一个jvm只有一个jetty server，通过contextPath定位rest服务

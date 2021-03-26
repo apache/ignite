@@ -1,0 +1,40 @@
+parser: '@typescript-eslint/parser'
+
+plugins:
+    - '@typescript-eslint'
+
+env:
+    es6: true
+    browser: true
+    mocha: true
+parserOptions:
+    sourceType: module
+    ecmaFeatures:
+        arrowFunctions: true
+        blockBindings: true
+        classes: true
+        defaultParams: true
+        destructuring: true
+        module: true
+        objectLiteralComputedProperties: true
+        objectLiteralShorthandMethods: true
+        objectLiteralShorthandProperties: true
+        spread: true
+        templateStrings: true
+        experimentalObjectRestSpread: true
+
+globals:
+    _: true
+    $: true
+    d3: true
+    io: true
+    window: true
+    global: true
+    angular: true
+    saveAs: true
+    process: true
+    require: true
+
+rules:
+    arrow-parens: [1, "always"]
+    
