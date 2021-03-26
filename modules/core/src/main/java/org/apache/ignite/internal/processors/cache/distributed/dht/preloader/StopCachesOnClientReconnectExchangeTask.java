@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -33,16 +34,25 @@ public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<V
     @GridToStringInclude
     private final Collection<GridCacheAdapter> stoppedCaches;
 
+    /** Security subject id. */
+    private final UUID secSubjId;
+
     /**
      * @param stoppedCaches Collection of stopped caches.
      */
-    public StopCachesOnClientReconnectExchangeTask(Collection<GridCacheAdapter> stoppedCaches) {
+    public StopCachesOnClientReconnectExchangeTask(UUID secSubjId, Collection<GridCacheAdapter> stoppedCaches) {
+        this.secSubjId = secSubjId;
         this.stoppedCaches = stoppedCaches;
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID securitySubjectId() {
+        return secSubjId;
     }
 
     /**

@@ -115,7 +115,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
          * Default constructor.
          */
         ExchangeWorkerFailureTask() {
-            super(new SchemaAbstractDiscoveryMessage(null) {
+            super(null, new SchemaAbstractDiscoveryMessage(null) {
                 @Override public boolean exchange() {
                     return false;
                 }
