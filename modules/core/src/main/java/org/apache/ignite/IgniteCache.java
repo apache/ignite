@@ -1136,55 +1136,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<Long> ttlAsync(K key);
 
     /**
-     * Set the TTL of the specified key using the default policy for the cache.
-     *
-     * @param key
-     */
-    public void setTtl(K key);
-
-    /**
-     * Set the TTL of the specified key.
-     *
-     * @param key
-     * @param ttl
-     */
-    public void setTtl(K key, long ttl);
-
-    /**
-     * Set the TTL of the specified key using the supplied policy.
-     *
-     * @param key
-     * @param ttlPolicy
-     */
-    public void setTtl(K key, ExpiryPolicy ttlPolicy);
-
-    /**
-     * Set the TTL of the specified key using the default policy for the cache.
-     *
-     * @param key
-     * @return Future indicating completion of operation.
-     */
-    public IgniteFuture<Void> setTtlAsync(K key);
-
-    /**
-     * Set the TTL of the specified key.
-     *
-     * @param key
-     * @param ttl
-     * @return Future indicating completion of operation.
-     */
-    public IgniteFuture<Void> setTtlAsync(K key, long ttl);
-
-    /**
-     * Set the TTL of the specified key using the supplied policy.
-     *
-     * @param key
-     * @param ttlPolicy
-     * @return Future indicating completion of operation.
-     */
-    public IgniteFuture<Void> setTtlAsync(K key, ExpiryPolicy ttlPolicy);
-
-    /**
      * {@inheritDoc}
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to

@@ -1113,54 +1113,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Long> ttlAsync(K key);
 
     /**
-     * Set the TTL of the specified key using the default policy for the cache.
-     *
-     * @param key
-     */
-    public void setTtl(K key);
-
-    /**
-     * Set the TTL of the specified key.
-     *
-     * @param key
-     * @param ttl
-     */
-    public void setTtl(K key, long ttl);
-
-    /**
-     * Set the TTL of the specified key using the supplied policy.
-     *
-     * @param key
-     * @param ttlPolicy
-     */
-    public void setTtl(K key, ExpiryPolicy ttlPolicy);
-
-    /**
-     * Set the TTL of the specified key using the default policy for the cache.
-     *
-     * @param key
-     */
-    public IgniteInternalFuture<Void> setTtlAsync(K key);
-
-    /**
-     * Set the TTL of the specified key.
-     *
-     * @param key
-     * @param ttl
-     * @return Future indication completion of operation.
-     */
-    public IgniteInternalFuture<Void> setTtlAsync(K key, long ttl);
-
-    /**
-     * Set the TTL of the specified key using the supplied policy.
-     *
-     * @param key
-     * @param ttlPolicy
-     * @return Future indication completion of operation.
-     */
-    public IgniteInternalFuture<Void> setTtlAsync(K key, ExpiryPolicy ttlPolicy);
-
-    /**
      * Removes given key mapping from cache.
      * <p>
      * This method will return {@code true} if remove did occur, which means that all optionally

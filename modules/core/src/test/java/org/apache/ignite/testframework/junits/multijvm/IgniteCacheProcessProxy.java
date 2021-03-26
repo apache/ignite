@@ -484,26 +484,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.callAsync(new TTLTask<>(cacheName, isAsync, key));
     }
 
-    /** {@inheritDoc}*/
-    @Override public void setTtl(K key, long ttl) {
-        compute.call(new SetTTLTask<>(cacheName, isAsync, key, ttl));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setTtl(K key, ExpiryPolicy ttlPolicy) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> setTtlAsync(K key, long ttl) {
-        return compute.callAsync(new SetTTLTask<>(cacheName, isAsync, key, ttl));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> setTtlAsync(K key, ExpiryPolicy ttlPolicy) {
-        return null;
-    }
-
     /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
         compute.call(new RemoveAllKeysTask<>(cacheName, isAsync, keys));
@@ -1589,34 +1569,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          */
         @Override public Long call() throws Exception {
             return cache().ttl(key);
-        }
-    }
-
-    private static class SetTTLTask<K> extends CacheTaskAdapter<K, Long, Void> {
-        private final K key;
-        private final long ttl;
-
-        /**
-         *
-         * @param cacheName
-         * @param async
-         * @param key
-         */
-        public SetTTLTask(String cacheName, boolean async, K key, long ttl) {
-            super(cacheName, async, null);
-            this.key = key;
-            this.ttl = ttl;
-        }
-
-        /**
-         * Computes a result, or throws an exception if unable to do so.
-         *
-         * @return computed result
-         * @throws Exception if unable to compute a result
-         */
-        @Override public Void call() throws Exception {
-            cache().setTtl(key, ttl);
-            return null;
         }
     }
 

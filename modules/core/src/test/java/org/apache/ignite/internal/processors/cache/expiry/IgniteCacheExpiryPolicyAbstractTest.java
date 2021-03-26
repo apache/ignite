@@ -1246,21 +1246,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cache.destroy();
     }
 
-    @Test
-    public void testTtlSetMethods() throws Exception {
-        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 2));
-
-        disableEagerTtl = true;
-
-        startGridsMultiThreaded(gridCount());
-
-        IgniteCache<Integer, Object> cache = jcache();
-
-        // TODO: some tests
-
-        cache.destroy();
-    }
-
     /**
      * @return Test keys.
      * @throws Exception If failed.
