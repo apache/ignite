@@ -124,9 +124,11 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     public void register(Metric metric) {
         String fullName = metric.name();
 
-        assert fullName.startsWith(regName);
+        String mregPrefix = regName + SEPARATOR;
 
-        addMetric(fullName.substring(regName.length() + SEPARATOR.length()), metric);
+        assert fullName.startsWith(mregPrefix);
+
+        addMetric(fullName.substring(mregPrefix.length()), metric);
     }
 
     /**
