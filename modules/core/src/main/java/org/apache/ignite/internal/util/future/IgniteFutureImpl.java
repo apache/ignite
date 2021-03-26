@@ -130,8 +130,8 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         if (exec != null)
             return fut.chain(clos, exec);
 
-        if (defaultExecutor != null)
-            return fut.chain(clos, exec);
+        if (defaultExecutor != null && !fut.isDone())
+            return fut.chain(clos, defaultExecutor);
 
         return fut.chain(clos);
     }
