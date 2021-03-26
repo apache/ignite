@@ -26,6 +26,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.junit.Test;
 
 // TODO: Add tests for chain methods. Make sure to test all listen and chain overloads.
@@ -104,13 +105,33 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
      * thread.
      */
     @Test
-    public void testLocalOperationExecutesSynchronously() {
+    public void testLocalOperationListenerExecutesSynchronously() {
         final String key = getPrimaryKey(0);
 
         IgniteCache<String, Integer> cache = jcache(0);
         AtomicReference<String> listenThreadName = new AtomicReference<>("");
 
         cache.putAsync(key, 1).listen(f -> listenThreadName.set(Thread.currentThread().getName()));
+
+        assertEquals(listenThreadName.get(), Thread.currentThread().getName());
+    }
+
+    /**
+     * Tests that an operation on a local key executes synchronously, and chain is called immediately on the current
+     * thread.
+     */
+    @Test
+    public void testLocalOperationChainExecutesSynchronously() {
+        final String key = getPrimaryKey(0);
+
+        IgniteCache<String, Integer> cache = jcache(0);
+        AtomicReference<String> listenThreadName = new AtomicReference<>("");
+
+        cache.putAsync(key, 1).chain(f -> {
+            listenThreadName.set(Thread.currentThread().getName());
+
+            return new IgniteFinishedFutureImpl<>();
+        });
 
         assertEquals(listenThreadName.get(), Thread.currentThread().getName());
     }
