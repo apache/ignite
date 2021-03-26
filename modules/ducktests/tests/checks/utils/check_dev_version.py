@@ -13,11 +13,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=missing-module-docstring
-# This determines the version of ignitetest that can be published to PyPi and installed with pip
-#
-# Note that in development, this version name can't follow Ignite's convention of having a trailing "-SNAPSHOT"
-# due to python version naming restrictions, which are enforced by python packaging tools
-# (see  https://www.python.org/dev/peps/pep-0440/)
-#
-__version__ = '2.11.0-SNAPSHOT'
+"""
+Checks DEV_BRANCH version.
+"""
+
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
+from ignitetest import __version__
+
+
+# pylint: disable=no-self-use
+class CheckDevVersion:
+    """
+    Checks developer version.
+    """
+    def check_dev_version(self):
+        """"
+        Check developer version.
+        """
+        dev = IgniteVersion('dev')
+
+        assert DEV_BRANCH == dev
+        assert DEV_BRANCH.version == dev.version
+
+        index = __version__.find('-')
+
+        if index > 0:
+            ver = IgniteVersion(__version__[:index])
+
+            assert dev > ver
+            assert dev.version > ver.version
+
+        assert dev.is_dev
+
+        assert str(dev) == 'dev'
+
+        assert dev > LATEST
+        assert dev.version > LATEST.version
