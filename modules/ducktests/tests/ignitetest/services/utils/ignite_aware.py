@@ -139,7 +139,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().stop(force_stop, **kwargs)
 
     def stop(self, force_stop=False, **kwargs):
-        self.stop_async(**kwargs)
+        self.stop_async(force_stop, **kwargs)
 
         # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
         # Waiting will happen on plain stop() call made by ducktape during same step.
