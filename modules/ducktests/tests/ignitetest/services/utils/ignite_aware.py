@@ -31,7 +31,6 @@ from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
@@ -133,18 +132,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         ignite_jmx_mixin(node, self.spec, self.pids(node))
 
-    def stop_async(self, **kwargs):
+    def stop_async(self, force_stop=False, **kwargs):
         """
         Stop in async way.
         """
-        super().stop(**kwargs)
+        super().stop(force_stop, **kwargs)
 
-    def stop(self, **kwargs):
+    def stop(self, force_stop=False, **kwargs):
         self.stop_async(**kwargs)
 
         # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
         # Waiting will happen on plain stop() call made by ducktape during same step.
-        if not kwargs.get(DucktestsService.FORCE_STOP, False):
+        if not force_stop:
             self.await_stopped()
 
     def await_stopped(self):
@@ -163,13 +162,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                        err_msg="Node %s's remote processes failed to stop in %d seconds" %
                                (str(node.account), self.shutdown_timeout_sec))
 
-    def stop_node(self, node, **kwargs):
+    def stop_node(self, node, force_stop=False, **kwargs):
         pids = self.pids(node)
 
         for pid in pids:
-            node.account.signal(pid,
-                                signal.SIGKILL if kwargs.get(DucktestsService.FORCE_STOP, False) else signal.SIGTERM,
-                                allow_fail=False)
+            node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
 
     def clean(self, **kwargs):
         self.__restore_iptables()

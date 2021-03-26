@@ -164,11 +164,10 @@ class ZookeeperService(DucktestsService, PathAware):
         """
         return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
-    def stop_node(self, node, **kwargs):
+    def stop_node(self, node, force_stop=False, **kwargs):
         idx = self.idx(node)
         self.logger.info("Stopping %s node %d on %s" % (type(self).__name__, idx, node.account.hostname))
-        node.account.kill_process("zookeeper", clean_shutdown=not kwargs.get(DucktestsService.FORCE_STOP, False),
-                                  allow_fail=False)
+        node.account.kill_process("zookeeper", clean_shutdown=not force_stop, allow_fail=False)
 
     def clean_node(self, node, **kwargs):
         super().clean_node(node, **kwargs)

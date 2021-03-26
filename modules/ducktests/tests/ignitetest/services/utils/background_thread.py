@@ -86,7 +86,7 @@ class BackgroundThreadService(DucktestsService, metaclass=ABCMeta):
 
         self._propagate_exceptions()
 
-    def stop(self, **kwargs):
+    def stop(self, force_stop=False, **kwargs):
         alive_workers = sum(1 for worker in self.worker_threads.values() if worker.is_alive())
         if alive_workers > 0:
             self.logger.debug(
@@ -94,7 +94,7 @@ class BackgroundThreadService(DucktestsService, metaclass=ABCMeta):
 
             self.logger.debug("%s" % str(self.worker_threads))
 
-        super().stop(**kwargs)
+        super().stop(force_stop, **kwargs)
 
         self._propagate_exceptions()
 

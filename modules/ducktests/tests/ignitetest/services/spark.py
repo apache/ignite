@@ -121,8 +121,8 @@ class SparkService(DucktestsService, PathAware):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    def stop_node(self, node, **kwargs):
-        if kwargs.get(DucktestsService.FORCE_STOP, False):
+    def stop_node(self, node, force_stop=False, **kwargs):
+        if force_stop:
             node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
         else:
             if node == self.nodes[0]:
