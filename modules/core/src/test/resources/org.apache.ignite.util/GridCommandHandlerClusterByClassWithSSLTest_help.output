@@ -263,6 +263,9 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Stop collecting performance statistics in the cluster:
     control.(sh|bat) --performance-statistics stop
 
+  Rotate collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics rotate
+
   Get status of collecting performance statistics in the cluster:
     control.(sh|bat) --performance-statistics status
 
