@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -33,34 +32,39 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Relational operator that returns the sorted contents of a table
  * and allow to lookup rows by specified bounds.
  */
 public class IgniteHashIndexSpool extends Spool implements IgniteRel {
-    /** Index condition. */
-    private final IndexConditions idxCond;
+    /** Search row. */
+    private final List<RexNode> searchRow;
 
-    /** Filters. */
-    protected final RexNode condition;
+    /** Search row. */
+    private final ImmutableBitSet keys;
+
+    /** Condition (used to calculate selectivity). */
+    private final RexNode cond;
 
     /** */
     public IgniteHashIndexSpool(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
-        RexNode condition,
-        IndexConditions idxCond
+        List<RexNode> searchRow,
+        RexNode cond
     ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
 
-        assert Objects.nonNull(idxCond);
-        assert Objects.nonNull(condition);
+        assert !F.isEmpty(searchRow);
 
-        this.idxCond = idxCond;
-        this.condition = condition;
+        this.searchRow = searchRow;
+        this.cond = cond;
+
+        keys = ImmutableBitSet.of(RexUtils.notNullKeys(searchRow));
     }
 
     /**
@@ -72,8 +76,8 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
         this(input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
-            input.getExpression("condition"),
-            new IndexConditions(input)
+            input.getExpressionList("searchRow"),
+            null
         );
     }
 
@@ -84,12 +88,12 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), condition, idxCond);
+        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), searchRow, cond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteHashIndexSpool(getCluster(), traitSet, input, condition, idxCond);
+        return new IgniteHashIndexSpool(getCluster(), traitSet, input, searchRow, cond);
     }
 
     /** {@inheritDoc} */
@@ -101,15 +105,13 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
-        writer.item("condition", condition);
-
-        return idxCond.explainTerms(writer);
+        return writer.item("searchRow", searchRow);
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCnt = mq.getRowCount(getInput());
-        double bytesPerRow = (getRowType().getFieldCount() - indexCondition().keys().size()) * IgniteCost.AVERAGE_FIELD_SIZE;
+        double bytesPerRow = (getRowType().getFieldCount() - keys.cardinality()) * IgniteCost.AVERAGE_FIELD_SIZE;
         double totalBytes = rowCnt * bytesPerRow;
         double cpuCost = IgniteCost.HASH_LOOKUP_COST;
 
@@ -124,12 +126,17 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     }
 
     /** */
-    public IndexConditions indexCondition() {
-        return idxCond;
+    public List<RexNode> searchRow() {
+        return searchRow;
+    }
+
+    /** */
+    public ImmutableBitSet keys() {
+        return keys;
     }
 
     /** */
     public RexNode condition() {
-        return condition;
+        return cond;
     }
 }

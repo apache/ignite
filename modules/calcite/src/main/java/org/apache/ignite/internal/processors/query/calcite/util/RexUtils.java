@@ -390,7 +390,7 @@ public class RexUtils {
     /**
      * Builds index conditions.
      */
-    public static IndexConditions buildHashIndexConditions(
+    public static List<RexNode> buildHashSearchRow(
         RelOptCluster cluster,
         RexNode condition,
         RelDataType rowType
@@ -400,7 +400,7 @@ public class RexUtils {
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
 
         if (F.isEmpty(fieldsToPredicates))
-            return new IndexConditions();
+            return null;
 
         List<RexNode> searchPreds = new ArrayList<>();
 
@@ -418,15 +418,13 @@ public class RexUtils {
                 }
 
                 if (pred.getOperator().kind != SqlKind.EQUALS)
-                    return new IndexConditions();
+                    return null;
 
                 searchPreds.add(pred);
             }
         }
 
-        List<RexNode> searchRow = asBound(cluster, searchPreds, rowType, null);
-
-        return new IndexConditions(searchPreds, searchPreds, searchRow, searchRow);
+        return asBound(cluster, searchPreds, rowType, null);
     }
 
     /** */
@@ -620,6 +618,21 @@ public class RexUtils {
             return Collections.emptySet();
 
         return extractCorrelationIds(Collections.singletonList(node));
+    }
+
+    /** */
+    public static Set<Integer> notNullKeys(List<RexNode> row) {
+        if (F.isEmpty(row))
+            return Collections.emptySet();
+
+        Set<Integer> keys = new HashSet<>();
+
+        for (int i = 0; i < row.size(); ++i ) {
+            if (isNotNull(row.get(i)))
+                keys.add(i);
+        }
+
+        return keys;
     }
 
     /** */

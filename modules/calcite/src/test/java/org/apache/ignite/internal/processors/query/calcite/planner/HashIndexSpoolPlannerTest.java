@@ -98,23 +98,14 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
-        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
+        List<RexNode> searchRow = idxSpool.searchRow();
 
-        assertNotNull(lBound);
-        assertEquals(3, lBound.size());
+        assertNotNull(searchRow);
+        assertEquals(3, searchRow.size());
 
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
-
-        assertNotNull(uBound);
-        assertEquals(3, uBound.size());
-
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
+        assertTrue(((RexLiteral)searchRow.get(0)).isNull());
+        assertTrue(((RexLiteral)searchRow.get(2)).isNull());
+        assertTrue(searchRow.get(1) instanceof RexFieldAccess);
     }
 
     /** */
@@ -170,18 +161,15 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
-        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
+        List<RexNode> searcRow = idxSpool.searchRow();
 
-        assertSame(lBound, uBound);
+        assertNotNull(searcRow);
+        assertEquals(4, searcRow.size());
 
-        assertNotNull(lBound);
-        assertEquals(4, lBound.size());
-
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-        assertTrue(lBound.get(2) instanceof RexFieldAccess);
-        assertTrue(((RexLiteral)lBound.get(3)).isNull());
+        assertTrue(((RexLiteral)searcRow.get(0)).isNull());
+        assertTrue(searcRow.get(1) instanceof RexFieldAccess);
+        assertTrue(searcRow.get(2) instanceof RexFieldAccess);
+        assertTrue(((RexLiteral)searcRow.get(3)).isNull());
     }
 
     /**
@@ -236,16 +224,13 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
-        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
+        List<RexNode> searchRow = idxSpool.searchRow();
 
-        assertSame(lBound, uBound);
+        assertNotNull(searchRow);
+        assertEquals(3, searchRow.size());
 
-        assertNotNull(lBound);
-        assertEquals(3, lBound.size());
-
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
+        assertTrue(((RexLiteral)searchRow.get(0)).isNull());
+        assertTrue(((RexLiteral)searchRow.get(2)).isNull());
+        assertTrue(searchRow.get(1) instanceof RexFieldAccess);
     }
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.List;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -30,15 +28,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
-import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -69,21 +64,21 @@ public class FilterSpoolMergeToHashIndexSpoolRule extends RelRule<FilterSpoolMer
 
         RelNode input = spool.getInput();
 
-        IndexConditions idxCond = RexUtils.buildHashIndexConditions(
+        List<RexNode> searchRow = RexUtils.buildHashSearchRow(
             cluster,
             filter.getCondition(),
             spool.getRowType()
         );
 
-        if (F.isEmpty(idxCond.lowerCondition()))
+        if (F.isEmpty(searchRow))
             return;
 
         RelNode res = new IgniteHashIndexSpool(
             cluster,
             trait.replace(RelCollations.EMPTY),
             input,
-            filter.getCondition(),
-            idxCond
+            searchRow,
+            filter.getCondition()
         );
 
         call.transformTo(res);
