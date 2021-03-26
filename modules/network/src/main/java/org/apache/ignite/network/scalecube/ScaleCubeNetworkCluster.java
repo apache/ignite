@@ -90,7 +90,7 @@ public class ScaleCubeNetworkCluster implements NetworkCluster {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> CompletableFuture<R> sendWithResponse(NetworkMember member, Object msg, long timeout) {
+    @Override public CompletableFuture<?> sendWithResponse(NetworkMember member, Object msg, long timeout) {
         return cluster.requestResponse(memberResolver.resolveMember(member), fromData(msg))
             .timeout(ofMillis(timeout)).toFuture().thenApply(m -> m.data());
     }

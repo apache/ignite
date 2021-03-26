@@ -64,15 +64,14 @@ public interface NetworkCluster {
 
     /**
      * Sends asynchronously a message with same guarantees as for {@link #send(NetworkMember, Object)} and
-     * returns a response (RPC style).
+     * returns a response.
      *
      * @param member Network member which should receive the message.
      * @param msg A message.
      * @param timeout Waiting for response timeout in milliseconds.
-     * @param <R> Expected response type.
-     * @return A future holding the response or error if the expected response was not received.
+     * @return A future holding the response, which can be of any type.
      */
-    <R> CompletableFuture<R> sendWithResponse(NetworkMember member, Object msg, long timeout);
+    CompletableFuture<?> sendWithResponse(NetworkMember member, Object msg, long timeout);
 
     /**
      * Add provider which allows to get configured handlers for different cluster events(ex. received message).

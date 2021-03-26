@@ -42,6 +42,7 @@
         <module>modules/configuration-annotation-processor</module>
         <module>modules/core</module>
         <module>modules/network</module>
+        <module>modules/raft-client</module>
         <module>modules/rest</module>
         <module>modules/runner</module>
         <module>modules/schema</module>
