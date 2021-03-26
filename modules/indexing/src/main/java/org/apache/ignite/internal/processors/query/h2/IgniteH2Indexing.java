@@ -2096,10 +2096,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // To avoid possible data race.
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
 
-        // An internal feature for the ability to cancel index rebuilding.
+        // An internal future for the ability to cancel index rebuilding.
         // This behavior should be discussed in IGNITE-14321.
-        SchemaIndexCacheFuture intlRebFut = new SchemaIndexCacheFuture(new SchemaIndexOperationCancellationToken());
-        cancelIndexRebuildFuture(idxRebuildFuts.put(cctx.cacheId(), intlRebFut));
+        SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(new SchemaIndexOperationCancellationToken());
+        cancelIndexRebuildFuture(idxRebuildFuts.put(cctx.cacheId(), intRebFut));
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
@@ -2118,11 +2118,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             outRebuildCacheIdxFut.onDone(err);
 
-            idxRebuildFuts.remove(cctx.cacheId(), intlRebFut);
-            intlRebFut.onDone(err);
+            idxRebuildFuts.remove(cctx.cacheId(), intRebFut);
+            intRebFut.onDone(err);
         });
 
-        rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut, intlRebFut.cancelToken());
+        rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut, intRebFut.cancelToken());
 
         return outRebuildCacheIdxFut;
     }
