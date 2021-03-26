@@ -78,6 +78,7 @@ def __ranges__(preloaders, entry_count):
     start_key = 0
 
     while start_key < entry_count:
+        # pylint: disable=stop-iteration-return
         range_bound = start_key + range_size + next(extra_size)
         yield start_key, range_bound - start_key
         start_key = range_bound

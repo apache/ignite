@@ -47,13 +47,12 @@ class RebalanceInMemoryTest(IgniteTest):
     Tests rebalance scenarios in in-memory mode.
     """
     NUM_NODES = 4
-    PRELOADER_COUNTS = [1]
     DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=PRELOADER_COUNTS,
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_join(self, ignite_version,
                        backups, cache_count, entry_count, entry_size, preloaders,
@@ -68,7 +67,7 @@ class RebalanceInMemoryTest(IgniteTest):
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=PRELOADER_COUNTS,
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_left(self, ignite_version,
                        backups, cache_count, entry_count, entry_size, preloaders,
@@ -102,7 +101,7 @@ class RebalanceInMemoryTest(IgniteTest):
         :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
-        node_count = len(self.test_context.cluster) - max(self.PRELOADER_COUNTS)
+        node_count = len(self.test_context.cluster) - preloaders
 
         node_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
@@ -150,6 +149,5 @@ class RebalanceInMemoryTest(IgniteTest):
             "Rebalance speed (Total, MiB/sec)": speed((stats.end_time - stats.start_time).total_seconds()),
             "Rebalance speed (Average per node, MiB/sec)": speed(stats.duration),
             "Preloaded in (sec)": preload_time,
-            "Preload speed (MiB/sec)":
-                int(cache_count * entry_count * entry_size * 1000 / 1024 / 1024 / preload_time) / 1000.0
+            "Preloaded data size (MiB)": round(cache_count * entry_count * entry_size / (1024 * 1024), 3)
         }
