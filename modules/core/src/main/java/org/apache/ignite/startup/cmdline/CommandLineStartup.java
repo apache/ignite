@@ -42,7 +42,6 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
-import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
