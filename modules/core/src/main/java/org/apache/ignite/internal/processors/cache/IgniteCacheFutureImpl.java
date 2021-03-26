@@ -44,12 +44,12 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, null), defaultExecutor);
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, defaultExecutor), null);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
-        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, exec), defaultExecutor);
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, exec), null);
     }
 
     /** {@inheritDoc} */

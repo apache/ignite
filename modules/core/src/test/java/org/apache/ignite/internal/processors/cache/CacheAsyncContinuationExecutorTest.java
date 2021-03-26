@@ -27,9 +27,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.Test;
 
-// TODO: Add tests for chain methods. Make sure to test all listen and chain overloads.
 /**
  * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}.
  */
@@ -67,37 +68,18 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
     /**
      * Tests future listen with default executor.
-     *
-     * This test would hang before {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
-     * was introduced, or if we set {@link Runnable#run()} as the executor.
      */
     @Test
-    public void testRemoteOperationContinuesOnDefaultExecutor() throws Exception {
-        final String key = getPrimaryKey(1);
+    public void testRemoteOperationListenContinuesOnDefaultExecutor() throws Exception {
+        testRemoteOperationContinuesOnDefaultExecutor(false);
+    }
 
-        IgniteCache<String, Integer> cache = jcache(0);
-        CyclicBarrier barrier = new CyclicBarrier(2);
-        AtomicReference<String> listenThreadName = new AtomicReference<>("");
-
-        cache.putAsync(key, 1).listen(f -> {
-            listenThreadName.set(Thread.currentThread().getName());
-
-            if (allowCacheOperationsInContinuation()) {
-                // Check that cache operations do not deadlock.
-                cache.replace(key, 2);
-            }
-
-            try {
-                barrier.await(5, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-
-        barrier.await(5, TimeUnit.SECONDS);
-
-        assertEquals(allowCacheOperationsInContinuation() ? 2 : 1, cache.get(key).intValue());
-        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith(expectedThreadNamePrefix()));
+    /**
+     * Tests future chain with default executor.
+     */
+    @Test
+    public void testRemoteOperationChainContinuesOnDefaultExecutor() throws Exception {
+        testRemoteOperationContinuesOnDefaultExecutor(true);
     }
 
     /**
@@ -113,7 +95,7 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
         cache.putAsync(key, 1).listen(f -> listenThreadName.set(Thread.currentThread().getName()));
 
-        assertEquals(listenThreadName.get(), Thread.currentThread().getName());
+        assertEquals(Thread.currentThread().getName(), listenThreadName.get());
     }
 
     /**
@@ -133,7 +115,51 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
             return new IgniteFinishedFutureImpl<>();
         });
 
-        assertEquals(listenThreadName.get(), Thread.currentThread().getName());
+        assertEquals(Thread.currentThread().getName(), listenThreadName.get());
+    }
+
+    /**
+     * Tests future chain / listen with default executor.
+     *
+     * This test would hang before {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}
+     * was introduced, or if we set {@link Runnable#run()} as the executor.
+     */
+    private void testRemoteOperationContinuesOnDefaultExecutor(boolean chain) throws Exception {
+        final String key = getPrimaryKey(1);
+
+        IgniteCache<String, Integer> cache = jcache(0);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        AtomicReference<String> listenThreadName = new AtomicReference<>("");
+
+        IgniteInClosure<IgniteFuture<Void>> clos = f -> {
+            listenThreadName.set(Thread.currentThread().getName());
+
+            if (allowCacheOperationsInContinuation()) {
+                // Check that cache operations do not deadlock.
+                cache.replace(key, 2);
+            }
+
+            try {
+                barrier.await(5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        };
+
+        IgniteFuture<Void> fut = cache.putAsync(key, 1);
+
+        if (chain)
+            fut.chain(f -> {
+                clos.apply(f);
+                return new IgniteFinishedFutureImpl<>();
+            });
+        else
+            fut.listen(clos);
+
+        barrier.await(5, TimeUnit.SECONDS);
+
+        assertEquals(allowCacheOperationsInContinuation() ? 2 : 1, cache.get(key).intValue());
+        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith(expectedThreadNamePrefix()));
     }
 
     /**
