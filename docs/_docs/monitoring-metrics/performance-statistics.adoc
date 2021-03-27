@@ -25,7 +25,10 @@ link:#building-the-report[build] the performance report.
 
 == Collecting Statistics
 
-link:#jmx[JMX interface] is used to start and stop statistics collecting.
+You can use the following tools to start and stop statistics collecting:
+
+* link:#jmx[JMX interface]
+* link:#control-script[Control Script]
 
 Each node collects performance statistics in a binary file. This file is placed under
 the `Ignite_work_directory/perf_stat/` directory. The name mask is `node-{nodeId}-{index}.prf`.
@@ -46,9 +49,9 @@ corresponding index. See the examples below:
 == Building the Report
 
 Ignite provides a tool to generate the report from performance statistics files. The tool is published in the
-ignite-extensions repository:
-https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[performance-statistics-ext,
-windows="_blank"].
+https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[ignite-extensions,
+windows="_blank"] repository as link:extensions-and-integrations/performance-statistics[performance-statistics-ext]
+module.
 
 Follow these steps to build the performance report:
 
@@ -82,6 +85,22 @@ You can manage the performance statistics collection via the `PerformanceStatist
 |stop() | Stop collecting performance statistics in the cluster.
 |started() | True if performance statistics collection is started.
 |===
+
+=== Control Script
+
+Ignite ships the link:tools/control-script[Control Script] that supports performance statistics commands listed below:
+
+[source,shell]
+----
+# Start collecting performance statistics in the cluster:
+control.(sh|bat) --performance-statistics start
+
+# Stop collecting performance statistics in the cluster:
+control.(sh|bat) --performance-statistics stop
+
+# Get status of collecting performance statistics in the cluster:
+control.(sh|bat) --performance-statistics status
+----
 
 === System properties
 
