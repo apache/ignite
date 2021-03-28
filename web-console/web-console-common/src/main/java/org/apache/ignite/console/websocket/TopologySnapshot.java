@@ -128,7 +128,7 @@ public class TopologySnapshot {
         gridgain = allHasAttribute(srvs, GRIDGAIN_PLUGIN, true);
         ultimate = allHasAttribute(srvs, ULTIMATE_CLUSTER, true);
 
-        //supportedFeatures = supportedFeatures(nodes);
+        supportedFeatures = supportedFeatures(nodes);
         clusterVer = clusterVersion(nodes);
 
         this.nodes = nodeMap(nodes);
@@ -249,7 +249,7 @@ public class TopologySnapshot {
                 Map<String, Object> attrs = node.getAttributes();
 
                 Boolean client = attribute(attrs, ATTR_CLIENT_MODE);
-
+                if(client==null) client = false;
                 Collection<String> nodeAddrs = client
                     ? splitAddresses(attribute(attrs, ATTR_IPS))
                     : node.getTcpAddresses();
@@ -325,7 +325,7 @@ public class TopologySnapshot {
      */
     private Collection<GridClientNodeBean> forServers(Collection<GridClientNodeBean> nodes) {
         return nodes.stream()
-            .filter(n -> !(Boolean)n.getAttributes().get(ATTR_CLIENT_MODE))
+            .filter(n -> n.getAttributes().get(ATTR_CLIENT_MODE)==null || !(Boolean)n.getAttributes().get(ATTR_CLIENT_MODE))
             .collect(toList());
     }
 

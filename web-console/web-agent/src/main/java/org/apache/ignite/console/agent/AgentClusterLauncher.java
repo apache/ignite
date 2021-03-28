@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,13 +43,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.handlers.ClusterHandler;
-import org.apache.ignite.console.demo.service.DemoCachesLoadService;
-import org.apache.ignite.console.demo.service.DemoComputeLoadService;
-import org.apache.ignite.console.demo.service.DemoRandomCacheLoadService;
-import org.apache.ignite.console.demo.service.DemoServiceClusterSingleton;
-import org.apache.ignite.console.demo.service.DemoServiceKeyAffinity;
-import org.apache.ignite.console.demo.service.DemoServiceMultipleInstances;
-import org.apache.ignite.console.demo.service.DemoServiceNodeSingleton;
+import org.apache.ignite.console.agent.service.ClusterLoadDataService;
+import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
+
 import org.apache.ignite.console.discovery.IsolatedCommunicationSpi;
 import org.apache.ignite.console.discovery.IsolatedDiscoverySpi;
 import org.apache.ignite.console.json.JsonObject;
@@ -229,18 +226,21 @@ public class AgentClusterLauncher {
      * @param services Distributed services on the grid.
      */
     public static void deployServices(IgniteServices services) {
-       
+    	
+        services.deployClusterSingleton("serviceList", new ClusterAgentServiceList());
+        services.deployClusterSingleton("loadDataService", new ClusterLoadDataService());
+        
+        //String cacheName = "default";
+        //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
     }
 
     /** */
-    public static String getNodeUrl(Ignite ignite) {
-    	 ClusterNode node = ignite.cluster().localNode();
+    public static String registerNodeUrl(Ignite ignite) {
+    	 ClusterNode node = ignite.cluster().localNode();    	 
 
          Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
 
          if (jettyAddrs == null) {
-         	ignite.close();
-
              throw new IgniteException("Cluster: Failed to start Jetty REST server on embedded node");
          }
 
@@ -255,7 +255,8 @@ public class AgentClusterLauncher {
 
          String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
 
-         ClusterHandler.registerNodeURL(ignite.cluster().localNode().id().toString(),nodeUrl);
+         ClusterHandler.registerNodeUrl(ignite.cluster().localNode().id().toString(),nodeUrl);
+         
          return nodeUrl;
     }
 
@@ -374,13 +375,16 @@ public class AgentClusterLauncher {
 			U.mkdirs(new File(work));
 			
 			byte[] zip = Base64.decodeBase64(base64.substring(prefix.length()));
-			File workDir = new File(work, fileName+".zip");
-			
+			File zipFile = new File(work, fileName+".zip");
+			String descDir = work + "/" + fileName;
 			
 			try {
-				FileOutputStream writer = new FileOutputStream(workDir);
+				FileOutputStream writer = new FileOutputStream(zipFile);
 				writer.write(zip);
 				writer.close();
+				
+				AgentUtils.unZip(zipFile, descDir);
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

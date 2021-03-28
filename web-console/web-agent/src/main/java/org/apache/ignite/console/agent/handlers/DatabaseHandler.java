@@ -26,13 +26,16 @@ import java.nio.channels.AsynchronousCloseException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -54,6 +57,8 @@ import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -282,6 +287,36 @@ public class DatabaseHandler{
         return conn;
     }
 
+
+	public Collection<GridClientCacheBean> schemas(DBInfo info) {
+		if(info==null)
+			return Collections.EMPTY_LIST; 
+		try (Connection conn = dbMetaReader.connect(null,info.driverCls,info.jdbcUrl,info.jdbcProp)) {
+            String catalog = conn.getCatalog();
+
+            if (catalog == null) {
+                String jdbcUrl = info.jdbcUrl;
+
+                String[] parts = jdbcUrl.split("[/:=]");
+
+                catalog = parts.length > 0 ? parts[parts.length - 1] : "NONE";
+            }
+
+            Collection<String> schemas = dbMetaReader.schemas(conn, true);
+            Collection<GridClientCacheBean> caches = new ArrayList<>();
+            schemas.forEach((name)->{    
+            	GridClientCacheBean cache = new GridClientCacheBean(name,GridClientCacheMode.LOCAL,name);
+            	caches.add(cache);
+            });
+            return caches;
+           
+        }
+		catch(Exception e) {
+			e.printStackTrace();
+			return Collections.EMPTY_LIST;
+		}
+	}
+	
     public boolean isDBCluster(String clusterId) {
 		return clusterId!=null && databaseListener.isDBCluster(clusterId);
 	}
@@ -296,21 +331,57 @@ public class DatabaseHandler{
      * @return Topology snapshot for demo cluster.
      */
     List<TopologySnapshot> topologySnapshot() {        
-        List<TopologySnapshot> tops = new LinkedList<>();
-        TopologySnapshot top;
-
+        List<TopologySnapshot> tops = new LinkedList<>();        
+        String deactivedCluster = null;
         for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
-        	top = new TopologySnapshot();
-            
-            top.setClusterVersion(VER_STR);
-            top.setId(ent.getValue().clusterId);
-            top.setName(ent.getValue().jdbcUrl);
-            top.setDemo(false); 
-            top.setActive(true);
-            
-            tops.add(top);
+        	DBInfo info = ent.getValue();
+        	try {
+	        	if(ent.getValue().top==null) {
+		        	List<GridClientNodeBean> nodes = new ArrayList<>();
+		        	GridClientNodeBean node = new GridClientNodeBean();
+		        	node.setNodeId(UUID.fromString(info.clusterId));
+		        	node.setConsistentId(info.clusterId);
+		        	node.setAttributes((Map)info.jdbcProp);
+		        	node.setTcpAddresses(Arrays.asList(info.jdbcUrl));
+		        	node.setTcpPort(0);
+		        	Collection<GridClientCacheBean> schemas = schemas(info);
+		        	node.setCaches(schemas);		        	
+		        	nodes.add(node);
+		        	TopologySnapshot top = new TopologySnapshot(nodes);
+		            
+		            top.setClusterVersion(VER_STR);
+		            top.setId(info.clusterId);
+		            top.setName(info.jdbcUrl);
+		            top.setDemo(false); 
+		            top.setActive(true);
+		            if(schemas.isEmpty()) {
+		            	top.setActive(false);
+		            	deactivedCluster = info.clusterId;
+		            }
+		           
+		            info.top = top;
+	        	} 
+	        	else {
+	        		Collection<GridClientCacheBean> schemas = schemas(info);
+	        		if(schemas.isEmpty()) {
+		            	info.top.setActive(false);
+		            	deactivedCluster = info.clusterId;
+		            }
+	        	}
+	            
+	            tops.add(info.top);
+	            
+        	}
+        	catch(Exception e) {
+        		e.printStackTrace();
+        	}
 
         }       
+        
+        if(deactivedCluster!=null) {
+        	databaseListener.clusters.remove(deactivedCluster);
+        }
+        
         return tops;
     }
 }

@@ -44,8 +44,8 @@ public interface WebSocketEvents {
     /** 停止一个集群grid */
     public static final String AGENT_STOP_CLUSTER = "agent:stopCluster";
     
-    /** 查看一个集群grid的状态 */
-    public static final String AGENT_STATUS_CLUSTER = "agent:statusCluster";
+    /** 调用集群grid的服务 */
+    public static final String AGENT_CALL_CLUSTER_SERVICE = "agent:callClusterService";
 
     /** */
     public static final String ADMIN_ANNOUNCEMENT = "admin:announcement";

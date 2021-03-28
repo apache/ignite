@@ -511,8 +511,8 @@ export default class AgentManager {
         return this._sendToAgent('agent:stopCluster',cluster);
     }
     
-    statusCluster(cluster) {
-        return this._sendToAgent('agent:statusCluster',cluster);
+    callClusterService(cluster,serviceName,payload) {
+        return this._sendToAgent('agent:callClusterService',{id:cluster.id,name:cluster.name,serviceName:serviceName,args:payload});
     }
     
     /**

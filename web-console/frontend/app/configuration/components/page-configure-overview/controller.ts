@@ -122,6 +122,16 @@ export default class PageConfigureOverviewController {
                 enableFiltering: false,
                 type: 'number',
                 width: 95
+            },
+            {
+                name: 'status',
+                displayName: 'Status',
+                field: 'status',
+                cellClass: 'ui-grid-number-cell',
+                cellTemplate: cellTemplate('base.configuration.edit.basic.models'),
+                enableFiltering: false,
+                type: 'string',
+                width: 95
             }
         ];
 

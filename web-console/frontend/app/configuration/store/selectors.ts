@@ -111,8 +111,7 @@ export default class ConfigSelectors {
 
     selectShortCachesValue = () => (state$) => state$.pipe(this.selectShortCaches(), selectValues);
 
-    selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
-
+    
     selectCacheToEdit = (cacheID) => (state$) => state$.pipe(
         this.selectCache(cacheID),
         distinctUntilChanged(),

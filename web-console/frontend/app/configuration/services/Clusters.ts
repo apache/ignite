@@ -28,8 +28,7 @@ const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
 };
 
 export default class Clusters {
-    static $inject = ['$http', 'JDBC_LINKS'];
-    status = 'created'
+    static $inject = ['$http', 'JDBC_LINKS'];    
 
     discoveries: Menu<DiscoveryKinds> = [
         {value: 'Vm', label: 'Static IPs'},
@@ -203,6 +202,7 @@ export default class Clusters {
         return {
             id: cluster.id,
             name: cluster.name,
+            status: cluster.status,
             discovery: cluster.discovery.kind,
             cachesCount: (cluster.caches || []).length,
             modelsCount: (cluster.models || []).length

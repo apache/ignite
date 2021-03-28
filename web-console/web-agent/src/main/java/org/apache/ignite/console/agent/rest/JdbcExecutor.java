@@ -138,7 +138,7 @@ public class JdbcExecutor implements AutoCloseable {
                     JSONObject caches = new JSONObject();
             		
                     for (String schema: schemas) {                    
-                    	caches.put(schema,clusterId);
+                    	caches.put(schema,schema);
                     }
                     result.put("caches", caches);
                     result.put("groups", Lists.newArrayList());
@@ -225,7 +225,7 @@ public class JdbcExecutor implements AutoCloseable {
             	else {
             		return null;
             	}
-            	
+            	res.put("error", (String)null);
             	res.put("id", "~"+clusterId);
         		res.put("finished",true);
 

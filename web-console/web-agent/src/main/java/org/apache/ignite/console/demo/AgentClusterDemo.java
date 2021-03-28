@@ -256,7 +256,7 @@ public class AgentClusterDemo {
 
                             throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
                         }
-                        demoUrl = AgentClusterLauncher.getNodeUrl(ignite);
+                        demoUrl = AgentClusterLauncher.registerNodeUrl(ignite);
                         
                         initLatch.countDown();
                     }

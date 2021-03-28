@@ -17,10 +17,17 @@
 
 package org.apache.ignite.console.agent.handlers;
 
+import java.sql.Connection;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.ignite.console.agent.db.DbSchema;
+import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 
@@ -31,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class DatabaseListener {
 
 	/** Index of alive node URI. */
-	final public Map<String, DBInfo> clusters = U.newHashMap(2);
+	final public Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
 
 	/**
 	 * add@byron 保存当前的关系数据库连接信息
@@ -41,6 +48,7 @@ public class DatabaseListener {
 		public String driverCls;
 		public String jdbcUrl;
 		public Properties jdbcProp;
+		public TopologySnapshot top;
 
 		public DBInfo(String clusterId, String currentDriverCls, String currentJdbcUrl) {
 			super();
@@ -141,5 +149,5 @@ public class DatabaseListener {
 	
 	public void clear() {
 		clusters.clear();
-	}
+	}	
 }

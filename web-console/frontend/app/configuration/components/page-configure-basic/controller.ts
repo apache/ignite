@@ -62,15 +62,7 @@ export default class PageConfigureBasicController {
         private $scope: ng.IScope
     ) {}
 
-    ngAfterContentInit(clusterID){
-        this.AgentManager.statusCluster({id:clusterID}).then((msg) => {  
-            if(!msg.message){
-               this.$scope.status = msg.status;               
-               this.Clusters.status = msg.status;
-            }            
-            this.$scope.message = msg.message;
-        });     
-    }
+    
     
     $onDestroy() {
         this.subscription.unsubscribe();
@@ -139,7 +131,9 @@ export default class PageConfigureBasicController {
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
-        );        
+        );       
+        
+        this.serviceList = {'status':{ name:'status',description:'get cluster last status'}};
         
         this.subscription = merge(
             this.shortCaches$.pipe(
@@ -158,7 +152,7 @@ export default class PageConfigureBasicController {
                 if (get(v, 'id') !== get(this.clonedCluster, 'id')) this.clonedCluster = cloneDeep(v);
                 this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);   
                 
-                this.ngAfterContentInit(this.clonedCluster['id']);           
+                this.servceList = Object.assign({},this.callService('serviceList'));      
                 
             }))
         ).subscribe();
@@ -227,7 +221,7 @@ export default class PageConfigureBasicController {
                 if(!msg.message){
                    this.$scope.status = msg.status;
                    this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
-                   this.Clusters.status = msg.status;
+                   this.clonedCluster.status = msg.status;
                 }            
                 this.$scope.message = msg.message;
  
@@ -243,10 +237,27 @@ export default class PageConfigureBasicController {
     	    if(!msg.message){
                this.$scope.status = msg.status;
                this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
-               this.Clusters.status = msg.status;
+               this.clonedCluster.status = msg.status;
             }            
             this.$scope.message = msg.message;
         });        
+    }
+    
+    callService(serviceName,args) {
+        this.AgentManager.callClusterService(this.clonedCluster,serviceName,args).then((data) => {  
+            this.$scope.status = data.status;               
+            this.clonedCluster.status = data.status;
+            if(data.result){
+                return data.result;
+            }    
+            else if(data.message){
+                this.$scope.message = data.message;
+            }  
+            return {}
+        })   
+       .catch((e) => {
+            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+        });
     }
 
     isStoped() {
@@ -259,12 +270,12 @@ export default class PageConfigureBasicController {
             .catch(() => {});
     }
     confirmAndRestart() {
-        return this.Confirm.confirm('Are you sure you want to restart current cluster? Current status:' + this.Clusters.status)
+        return this.Confirm.confirm('Are you sure you want to restart current cluster? Current status:' + this.clonedCluster.status)
             .then(() => this.restart())
             .catch(() => {});
     }
     confirmAndStop() {
-        return this.Confirm.confirm('Are you sure you want to stop current cluster?  Current status:' + this.Clusters.status)
+        return this.Confirm.confirm('Are you sure you want to stop current cluster?  Current status:' + this.clonedCluster.status)
             .then(() => this.stop())
             .catch(() => {});
     }

@@ -51,6 +51,7 @@ import org.apache.ignite.console.agent.AgentClusterLauncher;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.rest.RestResult;
+import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.apache.ignite.services.Service;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
@@ -374,11 +376,13 @@ public class WebSocketRouter implements AutoCloseable {
 		try {
 			
 			if(!json.getBoolean("demo",false) && base64!=null && base64.startsWith(prefix)) {	
-				// 启动一个独立的node
+				// 启动一个独立的node，jvm内部的node之间相互隔离
 				Ignite ignite = AgentClusterLauncher.trySingleStart(json);
 				
 				if(ignite!=null) {
-					AgentClusterLauncher.getNodeUrl(ignite);
+					AgentClusterLauncher.registerNodeUrl(ignite);
+					
+					AgentClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
 		        	stat.put("status", "started");
 				}
 				else {
@@ -387,7 +391,7 @@ public class WebSocketRouter implements AutoCloseable {
 				
 			}
 			else {
-			
+			   // 启动一个共享型的node，jvm内部的grid node会组成集群
 				IgniteConfiguration cfg = new IgniteConfiguration();
 				cfg.setIgniteInstanceName(clusterName);
 				cfg.setConsistentId(clusterId);
@@ -400,12 +404,8 @@ public class WebSocketRouter implements AutoCloseable {
 		        	// 启动一个节点，最后再部署服务
 		        	Ignite ignite = AgentClusterLauncher.tryStart(cfg);
 		        	if(ignite!=null) {
-		        		/**
-			        	Set<String> urls = new HashSet<>(this.clusterHnd.cfg.nodeURIs());
-			        	urls.add(AgentClusterLauncher.getNodeUrl(ignite));
-			        	this.clusterHnd.cfg.nodeURIs(new ArrayList<>(urls));
-			        	*/
-			        	AgentClusterLauncher.getNodeUrl(ignite);
+		        		
+			        	AgentClusterLauncher.registerNodeUrl(ignite);
 			        	
 			        	AgentClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
 		        	}
@@ -445,19 +445,21 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * @param tok Token to revoke.
      */
-    private Map<String,Object> processClusterStatus(String msg) {
+    private Map<String,Object> processCallClusterService(String msg) {
         log.info("Cluster status msg has been revoked: " + msg);
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(msg);
         String nodeId = json.getString("id");
+        String serviceName = json.getString("serviceName","");
         String clusterName = null;
         stat.put("status", "stoped");
+        Ignite ignite = null;
         if(json.getString("name",null)!=null) {
         	clusterName = Utils.escapeFileName(json.getString("name"));
     	}
         if(nodeId!=null) {        	
         	try {
-	    		Ignition.ignite(UUID.fromString(nodeId));	    		
+        		ignite = Ignition.ignite(UUID.fromString(nodeId));	    		
 	    		stat.put("status", "started");
 	    		clusterName = null;
     		}
@@ -467,7 +469,7 @@ public class WebSocketRouter implements AutoCloseable {
         }
         if(clusterName!=null) {
         	try {
-	    		Ignition.ignite(clusterName);	    		
+        		ignite = Ignition.ignite(clusterName);	    		
 	    		stat.put("status", "started");
     		}
 	    	catch(IgniteIllegalStateException e) {	    		
@@ -475,6 +477,22 @@ public class WebSocketRouter implements AutoCloseable {
 	    	}
     	}
         
+        if(ignite!=null && !serviceName.isEmpty()) {
+        	ClusterAgentService agentSeervice = ignite.services().serviceProxy(serviceName,ClusterAgentService.class,false);
+        	if(agentSeervice!=null) {
+        		try {        			
+	        		Map<String,? extends Object> result = agentSeervice.call(json);
+	        		stat.put("result", result);
+        		}
+        		catch(Exception e) {
+        			stat.put("message", e.getMessage());
+        			stat.put("errorType", e.getClass().getSimpleName());
+        		}
+        	}
+        	else {
+        		stat.put("message", "service not found");
+        	}
+        }
         return stat;
     }
 
@@ -515,8 +533,8 @@ public class WebSocketRouter implements AutoCloseable {
                 	send(ses, evt.response(msgRet));
                 	break;
                 	
-                case AGENT_STATUS_CLUSTER:
-                	msgRet = processClusterStatus(evt.getPayload());
+                case AGENT_CALL_CLUSTER_SERVICE:
+                	msgRet = processCallClusterService(evt.getPayload());
                 	send(ses, evt.response(msgRet));
                 	break;
 

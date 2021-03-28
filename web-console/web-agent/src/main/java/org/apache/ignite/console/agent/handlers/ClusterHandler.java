@@ -58,7 +58,7 @@ public class ClusterHandler extends AbstractClusterHandler {
         clusterUrlMap.put("",cfg.nodeURIs());
     }
     
-    public static void registerNodeURL(String clusterId,String url) {
+    public static void registerNodeUrl(String clusterId,String url) {
     	List<String> urls = clusterUrlMap.get(clusterId);
     	if(urls==null) {
     		urls = new ArrayList<>(1);
