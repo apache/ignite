@@ -1028,7 +1028,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        if (err == null && !req.restoredCache()) {
+        if (err == null && !req.internal()) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
             if (snapshotMgr.isRestoring(cacheName, ccfg.getGroupName())) {

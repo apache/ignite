@@ -3757,7 +3757,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param restored Flag indicating that the cache was started after restoring from a snapshot.
+     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @param topNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
      *                 when starting the cache(s), the whole procedure is rolled back.
      * @return Future that will be completed when all caches are deployed.
@@ -3768,7 +3768,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean disabledAfterStart,
         IgniteUuid restartId,
-        boolean restored,
+        boolean internal,
         @Nullable Set<UUID> topNodes
     ) {
         if (checkThreadTx) {
@@ -3805,7 +3805,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.queryEntities(),
                     ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
                     ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null,
-                    restored);
+                    internal);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -5089,7 +5089,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
      * @param masterKeyDigest Master key digest.
-     * @param restored Flag indicating that the cache was started after restoring from a snapshot.
+     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -5107,7 +5107,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
         @Nullable byte[] masterKeyDigest,
-        boolean restored
+        boolean internal
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -5125,7 +5125,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.restartId(restartId);
 
-        req.restoredCache(restored);
+        req.internal(internal);
 
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);

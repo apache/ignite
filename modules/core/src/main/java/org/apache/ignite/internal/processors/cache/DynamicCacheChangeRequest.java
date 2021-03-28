@@ -107,8 +107,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
-    /** Flag indicating that the cache was started after restoring from a snapshot. */
-    private boolean restoredCache;
+    /** Flag indicating that the cache was started internally and not by the user. */
+    private boolean internal;
 
     /**
      * @param reqId Unique request ID.
@@ -484,17 +484,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @param restoredCache Flag indicating that the cache was started after restoring from a snapshot.
+     * @param internal Flag indicating that the cache was started internally and not by the user.
      */
-    public void restoredCache(boolean restoredCache) {
-        this.restoredCache = restoredCache;
+    public void internal(boolean internal) {
+        this.internal = internal;
     }
 
     /**
-     * @return Flag indicating that the cache was started after restoring from a snapshot.
+     * @return Flag indicating that the cache was started internally and not by the user.
      */
-    public boolean restoredCache() {
-        return restoredCache;
+    public boolean internal() {
+        return internal;
     }
 
     /**
