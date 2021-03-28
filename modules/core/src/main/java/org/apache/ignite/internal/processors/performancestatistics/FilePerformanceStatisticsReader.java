@@ -52,7 +52,6 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pmeRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
@@ -232,9 +231,6 @@ public class FilePerformanceStatisticsReader {
 
             case CACHE_START:
                 return deserializeCacheStart(buf, nodeId);
-
-            case PME:
-                return deserializePME(buf);
 
             case CHECKPOINT:
                 return deserializeCheckpoint(buf);
@@ -479,32 +475,12 @@ public class FilePerformanceStatisticsReader {
     /**
      * @param buf Buffer.
      */
-    private boolean deserializePME(ByteBuffer buf) {
-        if (buf.remaining() < pmeRecordSize())
-            return false;
-
-        long startTime = buf.getLong();
-        long endTime = buf.getLong();
-        long startVer = buf.getLong();
-        long startVerMin = buf.getInt();
-        long resVer = buf.getLong();
-        long resVerMin = buf.getInt();
-        boolean rebalanced = buf.get() == (byte)1;
-
-        for (PerformanceStatisticsHandler handler : curHnd)
-            handler.pme(startTime, endTime, startVer, startVerMin, resVer, resVerMin, rebalanced);
-
-        return true;
-    }
-
-    /**
-     * @param buf Buffer.
-     */
     private boolean deserializeCheckpoint(ByteBuffer buf) {
         if (buf.remaining() < checkpointRecordSize())
             return false;
 
-        boolean isStart = buf.get() == (byte)1;
+        long startTime = buf.getLong();
+        long totalDuration = buf.getLong();
         long beforeLockDuration = buf.getLong();
         long duration = buf.getLong();
         long execDuration = buf.getLong();
@@ -515,7 +491,7 @@ public class FilePerformanceStatisticsReader {
         long pagesSize = buf.getLong();
 
         for (PerformanceStatisticsHandler handler : curHnd)
-            handler.checkpoint(isStart, beforeLockDuration, duration, execDuration, holdDuration, fsyncDuration, entryDuration,
+            handler.checkpoint(startTime, totalDuration, beforeLockDuration, duration, execDuration, holdDuration, fsyncDuration, entryDuration,
                 pagesDuration, pagesSize);
 
         return true;

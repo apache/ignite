@@ -81,13 +81,7 @@ public enum OperationType {
     /** Cache start. */
     CACHE_START(17),
 
-    /** Partitiom Map Exchange. */
-    PME(18),
-
-    /** Cache start. */
-    REBALANCE(19),
-
-    /** Cache start. */
+    /** Checkpoint. */
     CHECKPOINT(20);
 
     /** Cache operations. */
@@ -192,18 +186,8 @@ public enum OperationType {
         return 24 + 8 + 8 + 8 + 1;
     }
 
-    /** @return PME record size. */
-    public static int pmeRecordSize() {
-        return 8 + 8 + 8 + 4 + 8 + 4 + 1;
-    }
-
-    /** @return Rebalance record size. */
-    public static int rebalanceRecordSize() {
-        return 1 + 8;
-    }
-
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return 1 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8;
+        return 8 * 10;
     }
 }

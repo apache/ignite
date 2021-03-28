@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -54,10 +53,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SI
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PME;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.REBALANCE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -65,10 +62,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pmeRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.rebalanceRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
@@ -139,9 +134,6 @@ public class FilePerformanceStatisticsWriter {
     /** Count of cached strings. */
     private volatile int knownStrsSz;
 
-    /** Rebalance before. */
-    private final AtomicBoolean rebalanceBefore;
-
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
@@ -158,8 +150,6 @@ public class FilePerformanceStatisticsWriter {
         ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
 
         fileWriter = new FileWriter(ctx, log);
-
-        rebalanceBefore = new AtomicBoolean();
     }
 
     /** Starts collecting performance statistics. */
@@ -322,37 +312,10 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param startTime Start time in milliseconds.
-     * @param endTime End time in milliseconds.
-     */
-    public void pme(long startTime, long endTime, AffinityTopologyVersion startVer, AffinityTopologyVersion resVer,
-        boolean rebalanced) {
-        doWrite(PME, pmeRecordSize(), buf -> {
-            buf.putLong(startTime);
-            buf.putLong(endTime);
-            buf.putLong(startVer.topologyVersion());
-            buf.putInt(startVer.minorTopologyVersion());
-            buf.putLong(resVer.topologyVersion());
-            buf.putInt(resVer.minorTopologyVersion());
-            buf.put(rebalanced ? (byte)1 : 0);
-        });
-    }
-
-    /**
-     * @param rebalanced {@code True} if cluster is rebalanced.
-     */
-    public void rebalance(boolean rebalanced) {
-        if (rebalanceBefore.compareAndSet(!rebalanced, rebalanced))
-            doWrite(REBALANCE, rebalanceRecordSize(), buf -> {
-                buf.put(rebalanced ? (byte)1 : 0);
-                buf.putLong(System.currentTimeMillis());
-            });
-    }
-
-    /**
-     * @param isStart Session id.
+     * @param startTime Start checkpoint time.
+     * @param totalDuration Total duration.
      * @param beforeLockDuration Time job spent on waiting queue.
-     * @param duration Job execution time.
+     * @param lockWaitDuration Job execution time.
      * @param execDuration Job execution time.
      * @param holdDuration Job execution time.
      * @param fsyncDuration Job execution time.
@@ -360,12 +323,14 @@ public class FilePerformanceStatisticsWriter {
      * @param pagesDuration Job execution time.
      * @param pagesSize Job execution time.
      */
-    public void checkpoint(boolean isStart, long beforeLockDuration, long duration, long execDuration, long holdDuration,
-        long fsyncDuration, long entryDuration, long pagesDuration, int pagesSize) {
+    public void checkpoint(long startTime, long totalDuration, long beforeLockDuration, long lockWaitDuration,
+        long execDuration, long holdDuration, long fsyncDuration, long entryDuration, long pagesDuration, int pagesSize)
+    {
         doWrite(CHECKPOINT, checkpointRecordSize(), buf -> {
-            buf.put(isStart ? (byte)1 : 0);
+            buf.putLong(startTime);
+            buf.putLong(totalDuration);
             buf.putLong(beforeLockDuration);
-            buf.putLong(duration);
+            buf.putLong(lockWaitDuration);
             buf.putLong(execDuration);
             buf.putLong(holdDuration);
             buf.putLong(fsyncDuration);

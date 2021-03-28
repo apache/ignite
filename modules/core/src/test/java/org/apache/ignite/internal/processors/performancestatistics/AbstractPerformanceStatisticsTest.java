@@ -180,13 +180,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public boolean pme(long startTime, long endTime, long startVer, long startVerMin, long resVer,
-            long resVerMin, boolean rebalanced) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean checkpoint(boolean isStart, long beforeLockDuration, long duration, long execDuration,
+        @Override public void checkpoint(long startTime, long totalDuration, long beforeLockDuration, long duration, long execDuration,
             long holdDuration, long fsyncDuration, long entryDuration, long pagesDuration, long pagesSize) {
             // No-op.
         }

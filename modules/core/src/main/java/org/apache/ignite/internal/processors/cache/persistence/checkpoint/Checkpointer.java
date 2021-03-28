@@ -434,9 +434,6 @@ public class Checkpointer extends GridWorker {
             currentProgress().initCounters(chp.pagesSize);
 
             if (chp.hasDelta()) {
-                if (statisticsProc.enabled())
-                    writeStatistics(true, tracker, chp);
-
                 if (log.isInfoEnabled()) {
                     long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
 
@@ -491,7 +488,7 @@ public class Checkpointer extends GridWorker {
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                 if (statisticsProc.enabled())
-                    writeStatistics(false, tracker, chp);
+                    writeStatistics(tracker, chp);
 
                 if (log.isInfoEnabled()) {
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
@@ -988,8 +985,10 @@ public class Checkpointer extends GridWorker {
     /**
      * Writes checkpoint performance statistics.
      */
-    private void writeStatistics(boolean isStart, CheckpointMetricsTracker tracker, Checkpoint chp) {
-        statisticsProc.checkpoint(isStart,
+    private void writeStatistics(CheckpointMetricsTracker tracker, Checkpoint chp) {
+        statisticsProc.checkpoint(
+            tracker.checkpointStartTime(),
+            tracker.totalDuration(),
             tracker.beforeLockDuration(),
             tracker.lockWaitDuration(),
             tracker.listenersExecuteDuration(),

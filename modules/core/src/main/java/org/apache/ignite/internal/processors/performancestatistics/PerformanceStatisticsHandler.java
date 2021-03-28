@@ -96,19 +96,8 @@ public interface PerformanceStatisticsHandler {
     void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
 
     /**
-     * @param startTime Start time.
-     * @param endTime End time.
-     * @param startVer Start topology version.
-     * @param startVerMin Start topology version minor.
-     * @param resVer Result topology version.
-     * @param resVerMin Result topology version minor.
-     * @param rebalanced {@code True} if cluster fully rebalanced.
-     */
-    boolean pme(long startTime, long endTime, long startVer, long startVerMin, long resVer, long resVerMin,
-        boolean rebalanced);
-
-    /**
-     * @param isStart Is start.
+     * @param startTime Start checkpoint time.
+     * @param totalDuration Total duration.
      * @param beforeLockDuration Before lock duration.
      * @param duration Duration.
      * @param execDuration Execute duration.
@@ -118,6 +107,6 @@ public interface PerformanceStatisticsHandler {
      * @param pagesDuration Pages duration.
      * @param pagesSize Pages size.
      */
-    boolean checkpoint(boolean isStart, long beforeLockDuration, long duration, long execDuration, long holdDuration,
-        long fsyncDuration, long entryDuration, long pagesDuration, long pagesSize);
+    void checkpoint(long startTime, long totalDuration, long beforeLockDuration, long duration, long execDuration,
+        long holdDuration, long fsyncDuration, long entryDuration, long pagesDuration, long pagesSize);
 }
