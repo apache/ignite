@@ -1005,14 +1005,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
                 msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
                     U.marshal(spi.marshaller(), evt));
-            else if (((CustomMessageWrapper)evt).delegate() instanceof DynamicCacheChangeBatch) {
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
-
-                System.err.println("!!!msg DynamicCacheChangeBatch " + ((DynamicCacheChangeBatch)((CustomMessageWrapper)evt).delegate()));
-
-                msg.topologyVersion(ring.allNodes().size());
-            }
             else
                 msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
                     U.marshal(spi.marshaller(), evt));
@@ -1132,7 +1124,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // TODO IGNITE-11272
                 FutureTask<Void> fut = msgWorker.addTask(new FutureTask<Void>() {
                     @Override protected Void body() {
-                        System.err.println("!!! pendingCustomMsgs.clear " + pendingCustomMsgs.size());
                         pendingCustomMsgs.clear();
                         msgWorker.pendingMsgs.reset(null, null, null);
                         msgWorker.next = null;
@@ -3095,9 +3086,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Message has been added to a worker's queue: " + msg);
             }
-
-            if (queue.size() > 2048)
-                throw new AssertionError("pending me !!");
         }
 
         /** */
@@ -5124,7 +5112,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean topChanged = ring.add(node);
 
                 if (topChanged) {
-                    assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
+                    assert !node.visible() : "AdSystem.err.println(\"!!!msded visible node [node=" + node + ", locNode=" + locNode + ']';
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
@@ -6249,24 +6237,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty && !na;
 
-                try {
-                    @Nullable CustomMessageWrapper msgObj = (CustomMessageWrapper)msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                    if (msgObj != null) {
-
-                        if (msgObj.delegate() instanceof DynamicCacheChangeBatch) {
-                            System.err.println("!!!add : " + msgObj.delegate());
-                            new Exception().printStackTrace();
-                        }
-
-/*                                if (msgObj.delegate() instanceof DistributedMetaStorageUpdateMessage)
-                                    pr = false;*/
-                    }
-                }
-                catch (Throwable throwable) {
-                    throwable.printStackTrace();
-                }
-
                 if (delayMsg) {
                     if (log.isDebugEnabled()) {
                         synchronized (mux) {
@@ -6276,27 +6246,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     synchronized (mux) {
-                        boolean pr = true;
-                        if (msg.verified()) {
+                        if (msg.verified())
                             pendingCustomMsgs.add(msg);
-
-                            try {
-                                @Nullable CustomMessageWrapper msgObj = (CustomMessageWrapper)msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
-
-                                if (msgObj != null) {
-                                    System.err.println("!!!add pending: " + msgObj.delegate());
-
-                                if (msgObj.delegate() instanceof DynamicCacheChangeBatch)
-                                    new Exception().printStackTrace();
-
-/*                                if (msgObj.delegate() instanceof DistributedMetaStorageUpdateMessage)
-                                    pr = false;*/
-                                }
-                            }
-                            catch (Throwable throwable) {
-                                throwable.printStackTrace();
-                            }
-                        }
                     }
 
                     return;

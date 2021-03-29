@@ -120,7 +120,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
-
         startClientGridsMultiThreaded(SRVS, CLIENTS);
     }
 
