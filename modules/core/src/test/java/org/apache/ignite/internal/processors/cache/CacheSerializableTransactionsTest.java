@@ -2607,10 +2607,10 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkNoReadLockConflict(final Ignite ignite,
-         String readCacheName,
-         String writeCacheName,
-         final boolean entry,
-         final AtomicInteger putKey) throws Exception {
+        String readCacheName,
+        String writeCacheName,
+        final boolean entry,
+        final AtomicInteger putKey) throws Exception {
         final int THREADS = 64;
 
         final IgniteCache<Integer, Integer> readCache = ignite.cache(readCacheName);
@@ -2824,7 +2824,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
     @Test
     public void testReadWriteTransactionsNoDeadlock() throws Exception {
         checkReadWriteTransactionsNoDeadlock(false);
@@ -2833,7 +2832,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
     @Test
     public void testReadWriteTransactionsNoDeadlockMultinode() throws Exception {
         checkReadWriteTransactionsNoDeadlock(true);
@@ -2844,8 +2842,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkReadWriteTransactionsNoDeadlock(final boolean multiNode) throws Exception {
-        //fail("https://issues.apache.org/jira/browse/IGNITE-9226");
-
         final Ignite ignite0 = ignite(0);
 
         for (final CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
@@ -4912,7 +4908,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            System.err.println("!!!destroy caches");
             destroyCache(cacheName);
         }
     }
