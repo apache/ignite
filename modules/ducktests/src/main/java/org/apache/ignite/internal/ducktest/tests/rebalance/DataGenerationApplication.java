@@ -36,8 +36,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int backups = jsonNode.get("backups").asInt();
         int cacheCnt = jsonNode.get("cacheCount").asInt();
         int entrySize = jsonNode.get("entrySize").asInt();
-        int fromKey = jsonNode.get("fromKey").asInt();
-        int toKey = jsonNode.get("toKey").asInt();
+        int from = jsonNode.get("from").asInt();
+        int to = jsonNode.get("to").asInt();
 
         markInitialized();
 
@@ -47,7 +47,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
                     .setBackups(backups));
 
-            generateCacheData(cache.getName(), entrySize, fromKey, toKey);
+            generateCacheData(cache.getName(), entrySize, from, to);
         }
 
         markFinished();
@@ -56,29 +56,29 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     /**
      * @param cacheName Cache name.
      * @param entrySize Entry size.
-     * @param fromKey From key.
-     * @param toKey To key.
+     * @param from From key.
+     * @param to To key.
      */
-    private void generateCacheData(String cacheName, int entrySize, int fromKey, int toKey) {
-        int logStreamedEntriesQuant = (int)Math.pow(10, (int)Math.log10(toKey - fromKey) - 1);
-        int flushEachIter = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
+    private void generateCacheData(String cacheName, int entrySize, int from, int to) {
+        int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
+        int logEach = (to - from) / 10;
 
         try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
-            for (int i = fromKey; i < toKey; i++) {
+            for (int i = from; i < to; i++) {
                 stmr.addData(i, new DataModel(entrySize));
 
-                if ((i - fromKey + 1) % logStreamedEntriesQuant == 0)
-                    log.info("Streamed " + (i - fromKey + 1) + " entries into " + cacheName);
+                if ((i - from + 1) % logEach == 0)
+                    log.info("Streamed " + (i - from + 1) + " entries into " + cacheName);
 
-                if (i % flushEachIter == 0)
+                if (i % flushEach == 0)
                     stmr.flush();
             }
         }
 
-        if ((toKey - fromKey) % logStreamedEntriesQuant != 0)
-            log.info("Streamed " + (toKey - fromKey) + " entries into " + cacheName);
+        if ((to - from) % logEach != 0)
+            log.info("Streamed " + (to - from) + " entries into " + cacheName);
 
-        log.info(cacheName + " data generated.");
+        log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
     }
 
     /**

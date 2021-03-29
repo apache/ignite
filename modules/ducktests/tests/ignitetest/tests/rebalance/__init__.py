@@ -48,7 +48,7 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
 
     apps = []
 
-    def start_app(from_key, to_key):
+    def start_app(from_, to_):
         app0 = IgniteApplicationService(
             context,
             config=config,
@@ -57,8 +57,8 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
                 "backups": backups,
                 "cacheCount": cache_count,
                 "entrySize": entry_size,
-                "fromKey": from_key,
-                "toKey": to_key
+                "from": from_,
+                "to": to_
             },
             shutdown_timeout_sec=timeout)
         app0.start_async()
