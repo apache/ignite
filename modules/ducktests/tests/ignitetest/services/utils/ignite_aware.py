@@ -31,17 +31,15 @@ from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
-from ignitetest.utils.enum import constructible
-
-
+from ignitetest.services.utils.path import IgnitePathAware
 # pylint: disable=too-many-public-methods
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_SERVER_ALIAS, \
     IGNITE_CLIENT_ALIAS
+from ignitetest.utils.enum import constructible
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
@@ -76,7 +74,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.killed = False
 
     @property
     def version(self):
@@ -135,18 +132,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         ignite_jmx_mixin(node, self.spec, self.pids(node))
 
-    def stop_async(self, **kwargs):
+    def stop_async(self, force_stop=False, **kwargs):
         """
         Stop in async way.
         """
-        super().stop(**kwargs)
+        super().stop(force_stop, **kwargs)
 
-    def stop(self, **kwargs):
-        if not self.killed:
-            self.stop_async(**kwargs)
+    def stop(self, force_stop=False, **kwargs):
+        self.stop_async(force_stop, **kwargs)
+
+        # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
+        # Waiting will happen on plain stop() call made by ducktape during same step.
+        if not force_stop:
             self.await_stopped()
-        else:
-            self.logger.debug("Skipping node stop since it already killed.")
 
     def await_stopped(self):
         """
@@ -164,35 +162,21 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                        err_msg="Node %s's remote processes failed to stop in %d seconds" %
                                (str(node.account), self.shutdown_timeout_sec))
 
-    def stop_node(self, node, **kwargs):
+    def stop_node(self, node, force_stop=False, **kwargs):
         pids = self.pids(node)
 
         for pid in pids:
-            node.account.signal(pid, signal.SIGTERM, allow_fail=False)
-
-    def kill(self):
-        """
-        Kills nodes.
-        """
-        self.logger.info("Killing IgniteAware(s) ...")
-
-        for node in self.nodes:
-            pids = self.pids(node)
-
-            for pid in pids:
-                node.account.signal(pid, signal.SIGKILL, allow_fail=False)
-
-        for node in self.nodes:
-            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
-                       err_msg="Node %s's remote processes failed to be killed in %d seconds" %
-                               (str(node.account), self.shutdown_timeout_sec))
-
-        self.killed = True
+            node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
 
     def clean(self, **kwargs):
         self.__restore_iptables()
 
         super().clean(**kwargs)
+
+    def clean_node(self, node, **kwargs):
+        super().clean_node(node, **kwargs)
+
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def init_persistent(self, node):
         """
