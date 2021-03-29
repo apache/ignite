@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -3261,7 +3260,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false, false);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -5131,10 +5130,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     processMessageFailedNodes(msg);
 
-                    TcpDiscoveryCustomEventMessage msg0;
-
-                    while ((msg0 = pollPendingCustomMessage()) != null)
-                        processCustomMessage(msg0, true, true);
+                    checkPendingCustomMessages();
                 }
 
                 if (log.isDebugEnabled())
@@ -6220,33 +6216,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification, boolean na) {
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
                 assert ring.minimumNodeVersion() != null : ring;
 
-                boolean joiningEmpty;
-
-                synchronized (mux) {
-                    joiningEmpty = joiningNodes.isEmpty();
-                }
-
-                boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty && !na;
-
-                if (delayMsg) {
-                    if (log.isDebugEnabled()) {
-                        synchronized (mux) {
-                            log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
-                                ", joiningNodes=" + joiningNodes + ']');
-                        }
-                    }
-
-                    synchronized (mux) {
-                        if (msg.verified())
-                            pendingCustomMsgs.add(msg);
-                    }
-
+                if (posponeUndeliveredMessages(msg))
                     return;
-                }
 
                 if (!msg.verified()) {
                     msg.verify(getLocalNodeId());
@@ -6264,7 +6239,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             registerPendingMessage(msg);
 
-                            processCustomMessage(msg, waitForNotification, false);
+                            processCustomMessage(msg, waitForNotification);
                         }
                     }
 
@@ -6292,7 +6267,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
-                                processCustomMessage(ackMsg, waitForNotification, false);
+                                processCustomMessage(ackMsg, waitForNotification);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -6328,6 +6303,41 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
             }
+        }
+
+        /**
+         * If node is in the progress of being added we must store and resend undelivered messages.
+         *
+         * @param msg Message to send.
+         * @return {@code true} If message was appended to pending queue.
+         */
+        private boolean posponeUndeliveredMessages(TcpDiscoveryCustomEventMessage msg) {
+            boolean joiningEmpty;
+
+            synchronized (mux) {
+                joiningEmpty = joiningNodes.isEmpty();
+            }
+
+            boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
+
+            if (delayMsg) {
+                if (log.isDebugEnabled()) {
+                    synchronized (mux) {
+                        log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
+                            ", joiningNodes=" + joiningNodes + ']');
+                    }
+                }
+
+                if (msg.verified()) {
+                    synchronized (mux) {
+                        pendingCustomMsgs.add(msg);
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /**
@@ -6395,7 +6405,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomMessage()) != null)
-                    processCustomMessage(msg, true, false);
+                    processCustomMessage(msg, true);
             }
         }
 
