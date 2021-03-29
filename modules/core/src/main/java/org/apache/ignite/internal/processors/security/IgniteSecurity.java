@@ -134,9 +134,7 @@ public interface IgniteSecurity {
      * @param opts User options.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void createUser(String login, UserOptions opts) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
+    public void createUser(String login, UserOptions opts) throws IgniteCheckedException;
 
     /**
      * Alters specified options of user with the specified login.
@@ -145,9 +143,7 @@ public interface IgniteSecurity {
      * @param opts User options.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void alterUser(String login, UserOptions opts) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
+    public void alterUser(String login, UserOptions opts) throws IgniteCheckedException;
 
     /**
      * Drops user with the specified login.
@@ -155,7 +151,5 @@ public interface IgniteSecurity {
      * @param login Login of the user to be dropped.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void dropUser(String login) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
+    public void dropUser(String login) throws IgniteCheckedException;
 }

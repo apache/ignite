@@ -370,7 +370,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                 assertEquals("test" + usrIdx, secCtx0.subject().login());
             }
 
-            SecurityContext secCtz = authenticate(grid(i),"ignite", "new_passwd");
+            SecurityContext secCtz = authenticate(grid(i), "ignite", "new_passwd");
 
             assertNotNull(secCtz);
             assertEquals("ignite", secCtxDflt.subject().login());
@@ -392,7 +392,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         startClientGrid(CLI_NODE);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
-            SecurityContext secCtx = authenticate(grid(i),"ignite", "ignite");
+            SecurityContext secCtx = authenticate(grid(i), "ignite", "ignite");
 
             assertNotNull(secCtx);
             assertEquals("ignite", secCtx.subject().login());
@@ -442,7 +442,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     private void checkAddUpdateRemoveUser(IgniteEx createNode, IgniteEx authNode) throws Exception {
         createUser(createNode, secCtxDflt, "test", "test");
 
-        SecurityContext newSecCtx = authenticate(authNode,"test", "test");
+        SecurityContext newSecCtx = authenticate(authNode, "test", "test");
 
         assertNotNull(newSecCtx);
         assertEquals("test", newSecCtx.subject().login());
