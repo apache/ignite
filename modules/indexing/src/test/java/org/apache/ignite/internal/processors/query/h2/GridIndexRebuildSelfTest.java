@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -395,7 +396,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         @Override protected void rebuildIndexesFromHash0(
             GridCacheContext cctx,
             SchemaIndexCacheVisitorClosure clo,
-            GridFutureAdapter<Void> rebuildIdxFut
+            GridFutureAdapter<Void> rebuildIdxFut,
+            SchemaIndexOperationCancellationToken cancel
         ) {
             if (!firstRbld) {
                 try {
@@ -419,7 +421,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 });
             }
 
-            super.rebuildIndexesFromHash0(cctx, clo, rebuildIdxFut);
+            super.rebuildIndexesFromHash0(cctx, clo, rebuildIdxFut, cancel);
         }
     }
 }
