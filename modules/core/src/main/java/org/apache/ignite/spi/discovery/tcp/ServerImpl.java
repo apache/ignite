@@ -55,11 +55,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
@@ -84,7 +82,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -4902,8 +4899,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             worker.addMessage(msg);
         }
 
-        GridSpinBusyLock nodeJoined = new GridSpinBusyLock();
-
         /**
          * Processes node added message.
          *
@@ -5112,7 +5107,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean topChanged = ring.add(node);
 
                 if (topChanged) {
-                    assert !node.visible() : "AdSystem.err.println(\"!!!msded visible node [node=" + node + ", locNode=" + locNode + ']';
+                    assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
@@ -6272,8 +6267,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             processCustomMessage(msg, waitForNotification, false);
                         }
                     }
-                    else
-                        System.err.println("!!! pendingMsgs.procCustomMsgs miss " + msg);
 
                     msg.message(null, msg.messageBytes());
                 }
