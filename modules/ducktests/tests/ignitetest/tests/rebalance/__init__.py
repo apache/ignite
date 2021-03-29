@@ -48,7 +48,7 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
 
     apps = []
 
-    for start_key, range_size in __ranges__(preloaders, entry_count):
+    def start_app(from_key, to_key):
         app0 = IgniteApplicationService(
             context,
             config=config,
@@ -56,40 +56,31 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
             params={
                 "backups": backups,
                 "cacheCount": cache_count,
-                "entryCount": range_size,
                 "entrySize": entry_size,
-                "startKey": start_key
+                "fromKey": from_key,
+                "toKey": to_key
             },
             shutdown_timeout_sec=timeout)
         app0.start_async()
 
         apps.append(app0)
 
+    count = int(entry_count / preloaders)
+    _from = 0
+    _to = 0
+
+    for _ in range(preloaders - 1):
+        _from = _to
+        _to += count
+        start_app(_from, _to)
+
+    start_app(_to, entry_count)
+
     for app1 in apps:
         app1.await_stopped()
 
     return (max(map(lambda app: app.get_finish_time(), apps)) -
             min(map(lambda app: app.get_init_time(), apps))).total_seconds()
-
-
-def __ranges__(preloaders, entry_count):
-    range_size = int(entry_count / preloaders)
-    extra_size = __extra__(entry_count % preloaders)
-    start_key = 0
-
-    while start_key < entry_count:
-        # pylint: disable=stop-iteration-return
-        range_bound = start_key + range_size + next(extra_size)
-        yield start_key, range_bound - start_key
-        start_key = range_bound
-
-
-def __extra__(extra):
-    while True:
-        yield 1 if extra else 0
-
-        if extra:
-            extra -= 1
 
 
 def await_rebalance_start(ignite, timeout=1):
