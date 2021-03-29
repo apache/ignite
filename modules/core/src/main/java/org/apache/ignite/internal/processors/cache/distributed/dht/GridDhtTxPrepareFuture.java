@@ -941,7 +941,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 res.completedVersions(versPair.get1(), versPair.get2());
             }
 
-            res.pending(localDhtPendingVersions(tx.writeEntries(), min));
+            // Pending versions are required for near caches only.
+            if (req.near())
+                res.pending(localDhtPendingVersions(tx.writeEntries(), min));
 
             tx.implicitSingleResult(ret);
         }
@@ -1768,15 +1770,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @param baseVer Base version.
      * @return Collection of pending candidates versions.
      */
-    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<IgniteTxEntry> entries,
-        GridCacheVersion baseVer) {
-        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
+    private Collection<GridCacheVersion> localDhtPendingVersions(
+        Iterable<IgniteTxEntry> entries,
+        GridCacheVersion baseVer
+    ) {
+        Collection<GridCacheVersion> lessPending = null;
 
         for (IgniteTxEntry entry : entries) {
             try {
                 for (GridCacheMvccCandidate cand : entry.cached().localCandidates()) {
-                    if (cand.version().isLess(baseVer))
+                    if (cand.version().isLess(baseVer)) {
+                        if (lessPending == null)
+                            lessPending = new GridLeanSet<>(5);
+
                         lessPending.add(cand.version());
+                    }
                 }
             }
             catch (GridCacheEntryRemovedException ignored) {
