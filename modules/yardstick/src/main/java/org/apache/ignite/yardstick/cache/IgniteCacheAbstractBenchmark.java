@@ -203,7 +203,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
      * Preload data before benchmarking.
      */
     protected void preload() {
-        IgniteSemaphore semaphore = ignite().semaphore("preloadSemaphore",1,true,true);
+        IgniteSemaphore semaphore = ignite().semaphore("preloadSemaphore", 1, true, true);
 
         semaphore.acquire();
 

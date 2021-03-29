@@ -653,7 +653,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             while (!fut.isDone()) {
                 int nextKeys = keys + 10;
 
-                for (;keys < nextKeys; keys++)
+                for (; keys < nextKeys; keys++)
                     cache.put(keys, keys);
             }
 

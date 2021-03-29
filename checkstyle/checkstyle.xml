@@ -98,6 +98,14 @@
         </module>
 
         <!--
+            Checks that there is whitespace after a token.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#WhitespaceAfter
+        -->
+        <module name="WhitespaceAfter">
+            <property name="tokens" value="COMMA, SEMI"/>
+        </module>
+
+        <!--
             Checks that there is no whitespace before a token.
             See: https://checkstyle.sourceforge.io/config_whitespace.html#NoWhitespaceBefore
         -->

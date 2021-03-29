@@ -137,7 +137,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @return The list of cache groups ids which were included into snapshot.
+     * @return The list of cache group IDs which were included into the snapshot globally.
      */
     public List<Integer> cacheGroupIds() {
         return grpIds;
@@ -151,7 +151,8 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @return Map of cache group partitions from which snapshot has been taken on local node.
+     * @return Map of cache group partitions from which snapshot has been taken on the local node (which is actually
+     * saved on the local node because some of them may be skipped due to cache node filter).
      */
     public Map<Integer, Set<Integer>> partitions() {
         return locParts;

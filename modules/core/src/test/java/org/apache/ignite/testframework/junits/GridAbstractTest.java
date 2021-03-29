@@ -732,7 +732,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void cleanUpTestEnviroment() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        U.quietAndInfo(log(), ">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
         printJvmMemoryStatistic();
 
         try {
@@ -1300,7 +1300,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        return startRemoteGrid(igniteInstanceName, cfg, ctx,true);
+        return startRemoteGrid(igniteInstanceName, cfg, ctx, true);
     }
 
     /**
@@ -2430,7 +2430,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             if (t != null) {
                 if (t instanceof AssumptionViolatedException)
-                    U.quietAndInfo(log,"Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
+                    U.quietAndInfo(log, "Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
                 else {
                     U.error(log, "Test failed [test=" + testDescription() +
                         ", duration=" + (System.currentTimeMillis() - ts) + "]", t);

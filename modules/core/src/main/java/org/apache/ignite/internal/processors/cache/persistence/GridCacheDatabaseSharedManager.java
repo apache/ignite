@@ -591,7 +591,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         List<DataRegionConfiguration> regionConfs = new ArrayList<>();
 
-        DataStorageConfiguration dataConf = memCfg;//not do the changes in-place it's better to make the copy of memCfg.
+        DataStorageConfiguration dataConf = memCfg; //not do the changes in-place it's better to make the copy of memCfg.
 
         regionConfs.add(dataConf.getDefaultDataRegionConfiguration());
 
@@ -1212,7 +1212,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker = null;
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            wrapMetricsMemoryProvider(memProvider, memMetrics),
+            wrapMetricsPersistentMemoryProvider(memProvider, memMetrics),
             calculateFragmentSizes(
                 memCfg.getConcurrencyLevel(),
                 cacheSize,
@@ -1253,7 +1253,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param memMetrics Memory metrics.
      * @return Wrapped memory provider.
      */
-    @Override protected DirectMemoryProvider wrapMetricsMemoryProvider(
+    private DirectMemoryProvider wrapMetricsPersistentMemoryProvider(
         final DirectMemoryProvider memoryProvider0,
         final DataRegionMetricsImpl memMetrics
     ) {
@@ -2906,9 +2906,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
-        checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+        return checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**
