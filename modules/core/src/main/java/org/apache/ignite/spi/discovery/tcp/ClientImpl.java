@@ -1483,10 +1483,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (unacked != null) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to get acknowledge for message, will try to reconnect " +
-                                    "[msg=" + unacked +
-                                    (spi.failureDetectionTimeoutEnabled() ?
-                                        ", failureDetectionTimeout=" + spi.failureDetectionTimeout() :
-                                        ", timeout=" + spi.getAckTimeout()) + ']');
+                                "[msg=" + unacked +
+                                (spi.failureDetectionTimeoutEnabled() ?
+                                    ", failureDetectionTimeout=" + spi.failureDetectionTimeout() :
+                                    ", timeout=" + spi.getAckTimeout()) + ']');
 
                             throw new IOException("Failed to get acknowledge for message: " + unacked);
                         }
@@ -2148,8 +2148,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 final int joinCnt0 = joinCnt;
 
                 executorService.schedule(() -> {
-                    queue.add(new JoinTimeout(joinCnt0));
-                }, spi.joinTimeout, MILLISECONDS);
+                        queue.add(new JoinTimeout(joinCnt0));
+                    }, spi.joinTimeout, MILLISECONDS);
             }
 
             sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());
@@ -2194,8 +2194,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 tracing.messages().finishProcessing((TraceableMessage) msg);
 
             if (spi.ensured(msg)
-                && state == CONNECTED
-                && !(msg instanceof TcpDiscoveryClientReconnectMessage))
+                    && state == CONNECTED
+                    && !(msg instanceof TcpDiscoveryClientReconnectMessage))
                 lastMsgId = msg.id();
         }
 

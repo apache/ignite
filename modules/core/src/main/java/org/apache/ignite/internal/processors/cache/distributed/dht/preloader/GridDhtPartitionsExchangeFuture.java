@@ -2244,7 +2244,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return Message.
      */
     private GridDhtPartitionsFullMessage createPartitionsMessage(boolean compress,
-          boolean newCntrMap) {
+        boolean newCntrMap) {
         GridCacheVersion last = lastVer.get();
 
         GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(

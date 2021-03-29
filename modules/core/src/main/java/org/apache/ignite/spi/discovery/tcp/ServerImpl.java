@@ -5121,11 +5121,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg.client())
                     node.clientAliveTime(spi.clientFailureDetectionTimeout());
 
-                //nodeJoined.block();
-
                 boolean topChanged = ring.add(node);
-
-                //nodeJoined.unblock();
 
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
@@ -6454,12 +6450,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
-                //nodeJoined.block();
-
                 while ((msg = pollPendingCustomMessage()) != null)
                     processCustomMessage(msg, true, false);
-
-                //nodeJoined.unblock();
             }
         }
 
