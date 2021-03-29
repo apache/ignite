@@ -96,17 +96,24 @@ public interface PerformanceStatisticsHandler {
     void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
 
     /**
-     * @param startTime Start checkpoint time.
-     * @param totalDuration Total duration.
      * @param beforeLockDuration Before lock duration.
-     * @param duration Duration.
-     * @param execDuration Execute duration.
-     * @param holdDuration Hold duration.
+     * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecDuration Listeners execute duration.
+     * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
+     * @param pagesWriteDuration Pages write duration.
      * @param fsyncDuration Fsync duration.
-     * @param entryDuration Entry duration.
-     * @param pagesDuration Pages duration.
+     * @param walCpRecordFsyncDuration Wal cp record fsync duration.
+     * @param writeCheckpointEntryDuration Write checkpoint entry duration.
+     * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param totalDuration Total duration.
+     * @param checkpointStartTime Checkpoint start time.
      * @param pagesSize Pages size.
+     * @param dataPagesWritten Data pages written.
+     * @param cowPagesWritten Cow pages written.
      */
-    void checkpoint(long startTime, long totalDuration, long beforeLockDuration, long duration, long execDuration,
-        long holdDuration, long fsyncDuration, long entryDuration, long pagesDuration, long pagesSize);
+    void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration, long markDuration,
+        long lockHoldDuration, long pagesWriteDuration, long fsyncDuration, long walCpRecordFsyncDuration,
+        long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
+        long checkpointStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten);
 }

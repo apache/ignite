@@ -312,31 +312,43 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param startTime Start checkpoint time.
+     * @param beforeLockDuration Before lock duration.
+     * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecDuration Listeners execute duration.
+     * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
+     * @param pagesWriteDuration Pages write duration.
+     * @param fsyncDuration Fsync duration.
+     * @param walCpRecordFsyncDuration Wal cp record fsync duration.
+     * @param writeCheckpointEntryDuration Write checkpoint entry duration.
+     * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
      * @param totalDuration Total duration.
-     * @param beforeLockDuration Time job spent on waiting queue.
-     * @param lockWaitDuration Job execution time.
-     * @param execDuration Job execution time.
-     * @param holdDuration Job execution time.
-     * @param fsyncDuration Job execution time.
-     * @param entryDuration Job execution time.
-     * @param pagesDuration Job execution time.
-     * @param pagesSize Job execution time.
+     * @param checkpointStartTime Checkpoint start time.
+     * @param pagesSize Pages size.
+     * @param dataPagesWritten Data pages written.
+     * @param cowPagesWritten Cow pages written.
      */
-    public void checkpoint(long startTime, long totalDuration, long beforeLockDuration, long lockWaitDuration,
-        long execDuration, long holdDuration, long fsyncDuration, long entryDuration, long pagesDuration, int pagesSize)
+    public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
+        long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
+        long walCpRecordFsyncDuration, long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration,
+        long totalDuration, long checkpointStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
     {
         doWrite(CHECKPOINT, checkpointRecordSize(), buf -> {
-            buf.putLong(startTime);
-            buf.putLong(totalDuration);
             buf.putLong(beforeLockDuration);
             buf.putLong(lockWaitDuration);
-            buf.putLong(execDuration);
-            buf.putLong(holdDuration);
+            buf.putLong(listenersExecDuration);
+            buf.putLong(markDuration);
+            buf.putLong(lockHoldDuration);
+            buf.putLong(pagesWriteDuration);
             buf.putLong(fsyncDuration);
-            buf.putLong(entryDuration);
-            buf.putLong(pagesDuration);
-            buf.putLong(pagesSize);
+            buf.putLong(walCpRecordFsyncDuration);
+            buf.putLong(writeCheckpointEntryDuration);
+            buf.putLong(splitAndSortCpPagesDuration);
+            buf.putLong(totalDuration);
+            buf.putLong(checkpointStartTime);
+            buf.putInt(pagesSize);
+            buf.putInt(dataPagesWritten);
+            buf.putInt(cowPagesWritten);
         });
     }
 

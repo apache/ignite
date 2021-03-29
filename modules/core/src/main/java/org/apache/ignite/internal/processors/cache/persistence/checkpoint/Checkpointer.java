@@ -488,7 +488,7 @@ public class Checkpointer extends GridWorker {
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                 if (statisticsProc.enabled())
-                    writeStatistics(tracker, chp);
+                    writeStatistics(chp, tracker);
 
                 if (log.isInfoEnabled()) {
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
@@ -985,17 +985,22 @@ public class Checkpointer extends GridWorker {
     /**
      * Writes checkpoint performance statistics.
      */
-    private void writeStatistics(CheckpointMetricsTracker tracker, Checkpoint chp) {
+    private void writeStatistics(Checkpoint chp, CheckpointMetricsTracker tracker) {
         statisticsProc.checkpoint(
-            tracker.checkpointStartTime(),
-            tracker.totalDuration(),
             tracker.beforeLockDuration(),
             tracker.lockWaitDuration(),
             tracker.listenersExecuteDuration(),
+            tracker.markDuration(),
             tracker.lockHoldDuration(),
+            tracker.pagesWriteDuration(),
+            tracker.fsyncDuration(),
             tracker.walCpRecordFsyncDuration(),
             tracker.writeCheckpointEntryDuration(),
             tracker.splitAndSortCpPagesDuration(),
-            chp.pagesSize);
+            tracker.totalDuration(),
+            tracker.checkpointStartTime(),
+            chp.pagesSize,
+            tracker.dataPagesWritten(),
+            tracker.cowPagesWritten());
     }
 }

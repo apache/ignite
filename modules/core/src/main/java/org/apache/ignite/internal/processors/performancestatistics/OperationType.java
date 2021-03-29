@@ -188,6 +188,6 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return 8 * 10;
+        return (8 * 12) + (4 * 3);
     }
 }

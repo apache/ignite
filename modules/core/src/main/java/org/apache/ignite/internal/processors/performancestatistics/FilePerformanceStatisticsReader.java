@@ -479,20 +479,27 @@ public class FilePerformanceStatisticsReader {
         if (buf.remaining() < checkpointRecordSize())
             return false;
 
-        long startTime = buf.getLong();
-        long totalDuration = buf.getLong();
         long beforeLockDuration = buf.getLong();
-        long duration = buf.getLong();
-        long execDuration = buf.getLong();
-        long holdDuration = buf.getLong();
+        long lockWaitDuration = buf.getLong();
+        long listenersExecDuration = buf.getLong();
+        long markDuration = buf.getLong();
+        long lockHoldDuration = buf.getLong();
+        long pagesWriteDuration = buf.getLong();
         long fsyncDuration = buf.getLong();
-        long entryDuration = buf.getLong();
-        long pagesDuration = buf.getLong();
-        long pagesSize = buf.getLong();
+        long walCpRecordFsyncDuration = buf.getLong();
+        long writeCheckpointEntryDuration = buf.getLong();
+        long splitAndSortCpPagesDuration = buf.getLong();
+        long totalDuration = buf.getLong();
+        long checkpointStartTime = buf.getLong();
+        int pagesSize = buf.getInt();
+        int dataPagesWritten = buf.getInt();
+        int cowPagesWritten = buf.getInt();
 
         for (PerformanceStatisticsHandler handler : curHnd)
-            handler.checkpoint(startTime, totalDuration, beforeLockDuration, duration, execDuration, holdDuration, fsyncDuration, entryDuration,
-                pagesDuration, pagesSize);
+            handler.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
+                lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration,
+                writeCheckpointEntryDuration, splitAndSortCpPagesDuration, totalDuration, checkpointStartTime,
+                pagesSize, dataPagesWritten, cowPagesWritten);
 
         return true;
     }
