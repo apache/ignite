@@ -21,17 +21,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -40,17 +33,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -58,13 +44,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean blockMsgs;
-
-    /** */
-    private volatile boolean blockNodeAddedMsgs;
-
-    private static CountDownLatch cdl = new CountDownLatch(1);
-
-    private static CountDownLatch cdl1 = new CountDownLatch(1);
 
     /** */
     private Set<TcpDiscoveryAbstractMessage> receivedEnsuredMsgs;
@@ -92,15 +71,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
             disco = new ListeningDiscoverySpi();
         else if (igniteInstanceName.startsWith("receiver"))
             disco = new DyingThreadDiscoverySpi();
-        else if (igniteInstanceName.startsWith("hang"))
-            disco = new HangNodeAddedDiscoverySpi();
-        else if (igniteInstanceName.startsWith("lcoord"))
-            disco = new CoordDiscoverySpi();
         else
             disco = new TcpDiscoverySpi();
-
-        if (igniteInstanceName.startsWith("client"))
-            cfg.setClientMode(true);
 
         disco.setIpFinder(sharedStaticIpFinder);
         cfg.setDiscoverySpi(disco);
@@ -162,82 +134,6 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
             }, 10000));
-    }
-
-    private static CountDownLatch lastCdl = new CountDownLatch(3);
-
-    private static CountDownLatch cdlJoining = new CountDownLatch(1);
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void test0() throws Exception {
-        final TreeMap<Object, Object> map = new TreeMap<>();
-        for (int i=0; i < 1000; i++)
-            map.put(i, i);
-
-        Ignite coord = startGrid("lcoord");
-        CoordDiscoverySpi coordDiscoSpi = ((CoordDiscoverySpi)coord.configuration().getDiscoverySpi());
-
-        IgniteEx node = startGrid("node1");
-
-        Ignite client = startGrid("client");
-
-        TcpDiscoverySpi cliDisco = (TcpDiscoverySpi)client.configuration().getDiscoverySpi();
-
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("cache0");
-
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-        client.createCache(ccfg);
-
-        IgniteInternalFuture<IgniteEx> fut = GridTestUtils.runAsync(() -> startGrid("hang123"));
-
-        lastCdl.await();
-
-        blockNodeAddedMsgs = true;
-
-        System.err.println("!!!!start destr");
-
-        client.destroyCache(ccfg.getName());
-
-/*        for (int i=0; i < 100; ++i) {
-            //sendDummyCustomMessage(cliDisco, IgniteUuid.randomUuid());
-            //client.destroyCache("cache0" + i);
-            DistributedMetaStorageUpdateMessage dm = new DistributedMetaStorageUpdateMessage(UUID.randomUUID(), IgniteUuid.randomUuid().toString(), new byte[0]);
-            cliDisco.sendCustomEvent(new CustomMessageWrapper(dm));
-        }*/
-
-        cdl.await();
-
-        //cdlJoining.countDown();
-
-/*        cache.put(1, 1);
-
-        assertEquals(1, cache.get(1));*/
-
-        blockNodeAddedMsgs = false;
-
-        node.createCache(ccfg);
-
-        IgniteCache<Object, Object> cache = client.cache(ccfg.getName());
-
-        doInTransaction(node, OPTIMISTIC, SERIALIZABLE, new Callable<Void>() {
-            @Override public Void call() {
-
-                cache.putAll(map);
-
-                return null;
-            }
-        });
-
-        System.err.println("!!!!start get");
-
-        for (int i = 0; i < 100; ++i)
-            assertEquals(1, cache.get(1));
     }
 
     /**
@@ -380,96 +276,6 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
             long timeout) throws IOException {
             if (!blockMsgs)
                 super.writeToSocket(msg, sock, res, timeout);
-        }
-    }
-
-    private class CoordDiscoverySpi extends TcpDiscoverySpi {
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                if (msg.verified()) {
-                    lastCdl.countDown();
-                    System.err.println("node TcpDiscoveryNodeAddedMessage3");
-                }
-            }
-            else if (msg.toString().contains("DynamicCacheChangeBatch"))
-                System.err.println("node DynamicCacheChangeBatch: " + msg);
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-    }
-
-    /** */
-    private class HangNodeAddedDiscoverySpi extends TcpDiscoverySpi {
-        Runnable sup;
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                if (blockNodeAddedMsgs) {
-                    TcpDiscoveryNodeAddFinishedMessage msg0 = (TcpDiscoveryNodeAddFinishedMessage) msg;
-                    System.err.println("!!! catch1");
-                    cdl.countDown();
-
-                    super.writeToSocket(sock, msg, data, timeout);
-                }
-            }
-            else
-                super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                if (blockNodeAddedMsgs) {
-                    TcpDiscoveryNodeAddFinishedMessage msg0 = (TcpDiscoveryNodeAddFinishedMessage) msg;
-                    System.err.println("!!! catch2");
-                    cdl.countDown();
-
-                    super.writeToSocket(sock, msg, timeout);
-                }
-            }
-            else
-                super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                if (blockNodeAddedMsgs) {
-                    TcpDiscoveryNodeAddFinishedMessage msg0 = (TcpDiscoveryNodeAddFinishedMessage) msg;
-                    System.err.println("!!! catch3");
-                    cdl.countDown();
-
-                    super.writeToSocket(sock, out, msg, timeout);
-                }
-            }
-            else
-                super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                if (blockNodeAddedMsgs) {
-                    TcpDiscoveryNodeAddFinishedMessage msg0 = (TcpDiscoveryNodeAddFinishedMessage) msg;
-                    System.err.println("!!! catch4");
-                    cdl.countDown();
-
-                    super.writeToSocket(msg, sock, res, timeout);
-                }
-            }
-            else
-                super.writeToSocket(msg, sock, res, timeout);
-        }
-
-        TcpDiscoveryImpl discovery() {
-            return impl;
         }
     }
 
