@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -34,10 +33,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Tests that caches could not be accessed before activation.
+ * Tests that cluster name could not be accessed before system cache initialized.
  */
-public class CacheReadBeforeActivationTest extends GridCommonAbstractTest {
-    /** Activation latch.*/
+public class ClusterNameBeforeActivation extends GridCommonAbstractTest {
+    /** Activation latch. */
     private CountDownLatch latch;
 
     /** {@inheritDoc} */
@@ -50,18 +49,17 @@ public class CacheReadBeforeActivationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that reading from the utility system cache waits until activation finished.
-     * Scenario:
-     *  <ul>
-     *      <li>Start a server node.</li>
-     *      <li>Start a client node with the plugin provider delaying activation.</li>
-     *      <li>Run a job on the client node that reads from the utility cache.</li>
-     *  </ul>
+     * Tests that getting the cluster name cache waits until system cache started. Scenario:
+     * <ul>
+     *     <li>Start a server node.</li>
+     *     <li>Start a client node with the plugin provider delaying activation and system cache initalization.</li>
+     *     <li>Run a job on the client node that gets the cluster name.</li>
+     * </ul>
      *
      * @throws Exception If failed.
      */
     @Test
-    public void readUtilityCacheBeforeActivationFinished() throws Exception {
+    public void testGetClusterNameBeforeSystemCacheStarted() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         latch = new CountDownLatch(1);
@@ -70,12 +68,13 @@ public class CacheReadBeforeActivationTest extends GridCommonAbstractTest {
 
         latch.await(1, TimeUnit.MINUTES);
 
-        // try to access the utility cache before activation finished and starting exchange on the client node.
-        ignite.compute(ignite.cluster().forClients()).call(new IgniteCallable<Object>() {
-            @Override public Object call() throws Exception {
-                return ((IgniteEx)Ignition.localIgnite()).context().cache().utilityCache().get("1");
+        String clusterName = ignite.compute(ignite.cluster().forClients()).call(new IgniteCallable<String>() {
+            @Override public String call() throws Exception {
+                return ((IgniteEx)Ignition.localIgnite()).context().cluster().clusterName();
             }
         });
+
+        assertNotNull(clusterName);
     }
 
     /**
@@ -93,10 +92,11 @@ public class CacheReadBeforeActivationTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-            if (latch != null)
+            if (latch != null) {
                 latch.countDown();
 
-            U.sleep(2_000);
+                U.sleep(2_000);
+            }
         }
 
         /** {@inheritDoc} */
