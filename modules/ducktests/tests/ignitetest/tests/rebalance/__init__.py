@@ -28,11 +28,12 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 
 
 # pylint: disable=too-many-arguments
-def preload_data(context, config, backups, cache_count, entry_count, entry_size, timeout=3600):
+def preload_data(context, config, preloaders, backups, cache_count, entry_count, entry_size, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
     :param config: Ignite configuration.
+    :param preloaders: Preload client nodes count.
     :param backups: Cache backups count.
     :param cache_count: Cache count.
     :param entry_count: Cache entry count.
@@ -40,18 +41,46 @@ def preload_data(context, config, backups, cache_count, entry_count, entry_size,
     :param timeout: Timeout in seconds for application finished.
     :return: Time taken for data preloading.
     """
-    app = IgniteApplicationService(
-        context,
-        config=config,
-        java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
-        params={"backups": backups, "cacheCount": cache_count, "entryCount": entry_count, "entrySize": entry_size},
-        startup_timeout_sec=timeout)
-    app.run()
+    assert preloaders > 0
+    assert cache_count > 0
+    assert entry_count > 0
+    assert entry_size > 0
 
-    app.await_started()
-    app.await_stopped()
+    apps = []
 
-    return (app.get_finish_time() - app.get_init_time()).total_seconds()
+    def start_app(from_, to_):
+        app0 = IgniteApplicationService(
+            context,
+            config=config,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            params={
+                "backups": backups,
+                "cacheCount": cache_count,
+                "entrySize": entry_size,
+                "from": from_,
+                "to": to_
+            },
+            shutdown_timeout_sec=timeout)
+        app0.start_async()
+
+        apps.append(app0)
+
+    count = int(entry_count / preloaders)
+    _from = 0
+    _to = 0
+
+    for _ in range(preloaders - 1):
+        _from = _to
+        _to += count
+        start_app(_from, _to)
+
+    start_app(_to, entry_count)
+
+    for app1 in apps:
+        app1.await_stopped()
+
+    return (max(map(lambda app: app.get_finish_time(), apps)) -
+            min(map(lambda app: app.get_init_time(), apps))).total_seconds()
 
 
 def await_rebalance_start(ignite, timeout=1):
