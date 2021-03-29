@@ -59,7 +59,7 @@ class DiscoveryTestConfig(NamedTuple):
     sequential_failure: bool = False
     with_zk: bool = False
     disable_conn_recovery: bool = False
-    net_part: IgniteAwareService.NetPart = IgniteService.NetPart.ALL
+    net_part: IgniteAwareService.NetPart = IgniteService.NetPart.INPUT
 
 
 # pylint: disable=W0223, no-member
@@ -75,7 +75,7 @@ class DiscoveryTest(IgniteTest):
     GLOBAL_DETECTION_TIMEOUT = "failure_detection_timeout"
 
     # Default maximum numbers of containers to utilize for the test.
-    MAX_CONTAINERS = 12
+    MAX_CONTAINERS = 9
 
     ZOOKEEPER_NODES = 3
 
@@ -92,8 +92,8 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[False, True],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
+    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[True],
+            net_part=[IgniteService.NetPart.INPUT],
             load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, disable_conn_recovery: bool,
                                            net_part: IgniteService.NetPart):
@@ -109,7 +109,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT], disable_conn_recovery=[False, True])
+            net_part=[IgniteService.NetPart.INPUT], disable_conn_recovery=[True])
     def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, disable_conn_recovery: bool,
                                          net_part: IgniteService.NetPart):
         """
@@ -125,7 +125,7 @@ class DiscoveryTest(IgniteTest):
     @ignore_if(lambda version, globals: version == V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
+    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -139,7 +139,7 @@ class DiscoveryTest(IgniteTest):
     @ignore_if(lambda version, globals: version == V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
+    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
