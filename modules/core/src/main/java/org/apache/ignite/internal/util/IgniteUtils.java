@@ -8830,7 +8830,7 @@ public abstract class IgniteUtils {
      *
      * @param postfix Postfix.
      * @param fileName File name.
-     * @return File name with node ID.
+     * @return File name with prefix.
      */
     @SuppressWarnings("IfMayBeConditional")
     public static String logFileName(String postfix, String fileName) {
