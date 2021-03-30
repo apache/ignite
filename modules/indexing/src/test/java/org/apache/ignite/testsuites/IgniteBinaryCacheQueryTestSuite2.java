@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.LazyOnDmlTest;
 import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
 import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.ReducerRowsBufferTest;
+import org.apache.ignite.internal.processors.query.SensitiveInformationForLongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptTxCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
@@ -183,6 +184,7 @@ import org.junit.runners.Suite;
     LocalQueryLazyTest.class,
 
     LongRunningQueryTest.class,
+    SensitiveInformationForLongRunningQueryTest.class,
 
     SqlStatisticsUserQueriesFastTest.class,
     SqlStatisticsUserQueriesLongTest.class,
