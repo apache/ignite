@@ -23,7 +23,7 @@ link:#print-statistics[print statistics] from collected files.
 
 == Building the Report
 
-Ignite provides a tool to generate the report from performance statistics files.
+Ignite provides a tool to generate the report from the performance statistics files.
 
 Follow these steps to build the performance report:
 
