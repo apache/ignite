@@ -17,7 +17,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  */
 
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryAzureBlobStoreIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteAzureTestSuite;
 

@@ -290,7 +290,7 @@ tab:XML[]
   <property name="discoverySpi">
     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
       <property name="ipFinder">
-        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.azure.TcpDiscoveryAzureBlobStoreIpFinderSelfTest">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.azure.TcpDiscoveryAzureBlobStoreIpFinder">
           <property name="accountName" ref="YOUR_AZURE_BLOB_STORAGE_ACCOUNT_NAME"/>
           <property name="accountKey" value="YOUR_AZURE_BLOB_STORAGE_ACCOUNT_KEY"/>
           <property name="endPoint" value="YOUR_END_POINT"/>

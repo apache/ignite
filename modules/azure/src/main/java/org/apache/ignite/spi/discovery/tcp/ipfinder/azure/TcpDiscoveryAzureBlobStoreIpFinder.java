@@ -1,4 +1,4 @@
-package org.apache.ignite.spi.discovery.tcp.ipfinder;
+package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -67,7 +68,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Default object's content. */
-    private static final ByteArrayInputStream OBJECT_CONTENT = new ByteArrayInputStream(new byte[0]);
+    private static final byte[] OBJECT_CONTENT = new byte[0];
 
     /** Grid logger. */
     @LoggerResource
@@ -137,11 +138,12 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
             String key = keyFromAddr(addr);
 
             BlockBlobClient blobClient = blobContainerClient.getBlobClient(key).getBlockBlobClient();
-            InputStream dataStream = new ByteArrayInputStream(OBJECT_CONTENT.readAllBytes());
+            InputStream dataStream = new ByteArrayInputStream(OBJECT_CONTENT);
 
             try {
-                blobClient.upload(dataStream, OBJECT_CONTENT.readAllBytes().length);
-            } catch (BlobStorageException e) {
+                blobClient.upload(dataStream, OBJECT_CONTENT.length);
+            }
+            catch (BlobStorageException e) {
                 // If the blob already exists, ignore
                 if (!(e.getStatusCode() == 409)) {
                     throw new IgniteSpiException("Failed to upload blob with exception " +
