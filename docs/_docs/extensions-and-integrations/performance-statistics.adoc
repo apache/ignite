@@ -89,7 +89,7 @@ performance-statistics-tool/print-statistics.sh --help
 ----
 --
 
-Example of output:
+See the output example below:
 
     {"op":"CACHE_GET","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":-1809642915,"startTime":1616837094237,"duration":64992213}
     {"op":"CACHE_PUT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":-1809642915,"startTime":1616837094237,"duration":879869}
