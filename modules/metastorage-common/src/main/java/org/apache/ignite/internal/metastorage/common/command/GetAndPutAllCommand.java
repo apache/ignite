@@ -17,40 +17,44 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import java.util.Map;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get and put all command for {@link MetaStorageCommandListener} that inserts or updates entries
+ * Get and put all command for MetaStorageCommandListener that inserts or updates entries
  * with given keys and given values and retrieves a previous entries for given keys.
  */
 public final class GetAndPutAllCommand implements WriteCommand {
     /** Keys. */
-    @NotNull private final List<Key> keys;
+    @NotNull private final List<byte[]> keys;
 
     /** Values. */
     @NotNull private final List<byte[]> vals;
 
     /**
-     * @param keys Keys.
      * @param vals Values.
      */
-    public GetAndPutAllCommand(@NotNull List<Key> keys, @NotNull List<byte[]> vals) {
-        assert keys instanceof Serializable;
-        assert vals instanceof Serializable;
+    public GetAndPutAllCommand(@NotNull Map<ByteArray, byte[]> vals) {
+        int size = vals.size();
 
-        this.keys = keys;
-        this.vals = vals;
+        this.keys = new ArrayList<>(size);
+        this.vals = new ArrayList<>(size);
+
+        for (Map.Entry<ByteArray, byte[]> e : vals.entrySet()) {
+            this.keys.add(e.getKey().bytes());
+
+            this.vals.add(e.getValue());
+        }
     }
 
     /**
      * @return Keys.
      */
-    public @NotNull List<Key> keys() {
+    public @NotNull List<byte[]> keys() {
         return keys;
     }
 

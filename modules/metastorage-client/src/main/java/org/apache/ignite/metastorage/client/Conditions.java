@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
+
+import org.apache.ignite.lang.ByteArray;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This class contains fabric methods which produce conditions needed for conditional multi update functionality
@@ -24,47 +27,46 @@ package org.apache.ignite.metastorage.common;
  * @see Condition
  */
 public final class Conditions {
-
-    /** Key. */
-    private Key key;
-
-    /**
-     * Creates new condition for entry with concrete key.
-     *
-     * @param key Key
-     */
-    private Conditions(Key key) {
-        this.key = key;
-    }
-
     /**
      * Creates condition on entry revision.
      *
+     * @param key Identifies an entry which condition will be applied to. Can't be {@code null}.
      * @return Condition on entry revision.
      * @see Condition.RevisionCondition
      */
-    public Condition.RevisionCondition revision() {
-        return new Condition.RevisionCondition(key);
+    public static Condition.RevisionCondition revision(@NotNull ByteArray key) {
+        return new Condition.RevisionCondition(key.bytes());
     }
 
     /**
      * Creates condition on entry value.
      *
+     * @param key Identifies an entry which condition will be applied to. Can't be {@code null}.
      * @return Condition on entry value.
      * @see Condition.ValueCondition
      */
-    public Condition.ValueCondition value() {
-        return new Condition.ValueCondition(key);
+    public static Condition.ValueCondition value(@NotNull ByteArray key) {
+        return new Condition.ValueCondition(key.bytes());
     }
 
     /**
-     * Creates key-based condition.
+     * Creates condition on entry existence.
      *
-     * @param key Key of condition.
-     * @return Key-based condition instance.
+     * @param key Identifies an entry which condition will be applied to. Can't be {@code null}.
+     * @return Condition on entry existence.
      */
-    public static Conditions key(Key key) {
-        return new Conditions(key);
+    public static Condition exists(@NotNull ByteArray key) {
+        return new Condition.ExistenceCondition(key.bytes()).exists();
+    }
+
+    /**
+     * Creates condition on entry not existence.
+     *
+     * @param key Identifies an entry which condition will be applied to. Can't be {@code null}.
+     * @return Condition on entry not existence.
+     */
+    public static Condition notExists(@NotNull ByteArray key) {
+        return new Condition.ExistenceCondition(key.bytes()).notExists();
     }
 
     /**

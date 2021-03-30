@@ -33,11 +33,11 @@ import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.metastorage.common.Conditions;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.Operations;
-import org.apache.ignite.metastorage.common.WatchEvent;
-import org.apache.ignite.metastorage.common.WatchListener;
+import org.apache.ignite.metastorage.client.Conditions;
+import org.apache.ignite.metastorage.client.EntryEvent;
+import org.apache.ignite.metastorage.client.Operations;
+import org.apache.ignite.metastorage.client.WatchEvent;
+import org.apache.ignite.metastorage.client.WatchListener;
 import org.apache.ignite.network.ClusterNode;
 import org.jetbrains.annotations.NotNull;
 
@@ -85,9 +85,9 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
         this.baselineMgr = baselineMgr;
         this.vaultMgr = vaultMgr;
 
-        metaStorageMgr.registerWatchByPrefix(new Key(INTERNAL_PREFIX), new WatchListener() {
-            @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> events) {
-                for (WatchEvent evt : events) {
+        metaStorageMgr.registerWatchByPrefix(new ByteArray(INTERNAL_PREFIX), new WatchListener() {
+            @Override public boolean onUpdate(@NotNull WatchEvent watchEvt) {
+                for (EntryEvent evt : watchEvt.entryEvents()) {
                     String tabIdVal = evt.newEntry().key().toString().substring(INTERNAL_PREFIX.length());
 
                     UUID tblId = UUID.fromString(tabIdVal);
@@ -112,7 +112,7 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
             }
 
             @Override public void onError(@NotNull Throwable e) {
-                LOG.error("Metastorage listener issue", e);
+                LOG.error("Meta storage listener issue", e);
             }
         });
     }
@@ -127,17 +127,15 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
         return vaultMgr
             .get(ByteArray.fromString(INTERNAL_PREFIX + tblId))
             .thenCompose(entry -> {
-                TableConfiguration tblConfig = configurationMgr
-                    .configurationRegistry()
-                    .getConfiguration(TablesConfiguration.KEY)
-                    .tables()
-                    .get(new String(entry.value(), StandardCharsets.UTF_8));
 
-                var key = new Key(INTERNAL_PREFIX + tblId);
+                            TableConfiguration tblConfig = configurationMgr.configurationRegistry()
+                                    .getConfiguration(TablesConfiguration.KEY).tables().get(new String(entry.value(), StandardCharsets.UTF_8));
+
+                var key = new ByteArray(INTERNAL_PREFIX + tblId);
 
                 // TODO: https://issues.apache.org/jira/browse/IGNITE-14716 Need to support baseline changes.
                 return metaStorageMgr.invoke(
-                    Conditions.key(key).value().eq(null),
+                    Conditions.notExists(key),
                     Operations.put(key, ByteUtils.toBytes(
                         RendezvousAffinityFunction.assignPartitions(
                             baselineMgr.nodes(),
@@ -157,10 +155,10 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
      * @return A future which will complete when assignment is removed.
      */
     public CompletableFuture<Boolean> removeAssignment(UUID tblId) {
-        var key = new Key(INTERNAL_PREFIX + tblId);
+        var key = new ByteArray(INTERNAL_PREFIX + tblId);
 
         return metaStorageMgr.invoke(
-            Conditions.key(key).value().ne(null),
+            Conditions.exists(key),
             Operations.remove(key),
             Operations.noop());
     }

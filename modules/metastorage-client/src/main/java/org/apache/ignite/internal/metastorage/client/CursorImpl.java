@@ -20,13 +20,14 @@ package org.apache.ignite.internal.metastorage.client;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import org.apache.ignite.internal.metastorage.common.command.cursor.CursorCloseCommand;
 import org.apache.ignite.internal.metastorage.common.command.cursor.CursorHasNextCommand;
 import org.apache.ignite.internal.metastorage.common.command.cursor.CursorNextCommand;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.metastorage.common.Cursor;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,49 +40,31 @@ public class CursorImpl<T> implements Cursor<T> {
     private static final IgniteLogger LOG = IgniteLogger.forClass(CursorImpl.class);
 
     /** Future that runs meta storage service operation that provides cursor. */
-    private CompletableFuture<IgniteUuid> initOp;
+    private final CompletableFuture<IgniteUuid> initOp;
 
     /** Meta storage raft group service. */
-    private RaftGroupService metaStorageRaftGrpSvc;
+    private final RaftGroupService metaStorageRaftGrpSvc;
+
+    /** */
+    private final Iterator<T> it;
+
+    /** */
+    private final Function<Object, T> fn;
 
     /**
      * @param metaStorageRaftGrpSvc Meta storage raft group service.
      * @param initOp Future that runs meta storage service operation that provides cursor.
      */
-    CursorImpl(RaftGroupService metaStorageRaftGrpSvc, CompletableFuture<IgniteUuid> initOp) {
+    CursorImpl(RaftGroupService metaStorageRaftGrpSvc, CompletableFuture<IgniteUuid> initOp, Function<Object, T> fn) {
         this.metaStorageRaftGrpSvc = metaStorageRaftGrpSvc;
         this.initOp = initOp;
+        this.it = new InnerIterator();
+        this.fn = fn;
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<T> iterator() {
-        return new Iterator<>() {
-            /** {@inheritDoc} */
-            @Override public boolean hasNext() {
-                try {
-                    return initOp.thenCompose(
-                        cursorId -> metaStorageRaftGrpSvc.<Boolean>run(new CursorHasNextCommand(cursorId))).get();
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    LOG.error("Unable to evaluate cursor hasNext command", e);
-
-                    throw new IgniteInternalException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public T next() {
-                try {
-                    return initOp.thenCompose(
-                        cursorId -> metaStorageRaftGrpSvc.<T>run(new CursorNextCommand(cursorId))).get();
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    LOG.error("Unable to evaluate cursor hasNext command", e);
-
-                    throw new IgniteInternalException(e);
-                }
-            }
-        };
+        return it;
     }
 
     /** {@inheritDoc} */
@@ -94,6 +77,45 @@ public class CursorImpl<T> implements Cursor<T> {
             LOG.error("Unable to evaluate cursor close command", e);
 
             throw new IgniteInternalException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNext() {
+        return it.hasNext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public T next() {
+        return it.next();
+    }
+
+    /** */
+    private class InnerIterator implements Iterator<T> {
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            try {
+                return initOp.thenCompose(
+                        cursorId -> metaStorageRaftGrpSvc.<Boolean>run(new CursorHasNextCommand(cursorId))).get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                LOG.error("Unable to evaluate cursor hasNext command", e);
+
+                throw new IgniteInternalException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public T next() {
+            try {
+                return initOp.thenCompose(
+                        cursorId -> metaStorageRaftGrpSvc.run(new CursorNextCommand(cursorId))).thenApply(fn).get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                LOG.error("Unable to evaluate cursor hasNext command", e);
+
+                throw new IgniteInternalException(e);
+            }
         }
     }
 }

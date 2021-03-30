@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.WatchEvent;
-import org.apache.ignite.metastorage.common.WatchListener;
+import org.apache.ignite.metastorage.client.EntryEvent;
+import org.apache.ignite.metastorage.client.WatchEvent;
+import org.apache.ignite.metastorage.client.WatchListener;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -44,7 +46,7 @@ public class WatchAggregator {
     private final Map<Long, Watch> watches = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** Simple auto increment id for internal watches. */
-    private AtomicLong idCntr = new AtomicLong(0);
+    private final AtomicLong idCntr = new AtomicLong(0);
 
     /**
      * Adds new watch with simple exact criterion.
@@ -53,7 +55,7 @@ public class WatchAggregator {
      * @param lsnr Listener which will be executed on watch event.
      * @return id of registered watch. Can be used for remove watch from later.
      */
-    public long add(Key key, WatchListener lsnr) {
+    public long add(ByteArray key, WatchListener lsnr) {
         var watch = new Watch(new KeyCriterion.ExactCriterion(key), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
@@ -67,7 +69,7 @@ public class WatchAggregator {
      * @param lsnr Listener which will be executed on watch event.
      * @return id of registered watch. Can be used for remove watch from later.
      */
-    public long addPrefix(Key key, WatchListener lsnr) {
+    public long addPrefix(ByteArray key, WatchListener lsnr) {
         var watch = new Watch(new KeyCriterion.PrefixCriterion(key), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
@@ -81,7 +83,7 @@ public class WatchAggregator {
      * @param lsnr Listener which will be executed on watch event.
      * @return id of registered watch. Can be used for remove watch from later.
      */
-    public long add(Collection<Key> keys, WatchListener lsnr) {
+    public long add(Collection<ByteArray> keys, WatchListener lsnr) {
         var watch = new Watch(new KeyCriterion.CollectionCriterion(keys), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
@@ -96,7 +98,7 @@ public class WatchAggregator {
      * @param lsnr Listener which will be executed on watch event.
      * @return id of registered watch. Can be used for remove watch from later.
      */
-    public long add(Key from, Key to, WatchListener lsnr) {
+    public long add(ByteArray from, ByteArray to, WatchListener lsnr) {
         var watch = new Watch(new KeyCriterion.RangeCriterion(from, to), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
@@ -128,7 +130,10 @@ public class WatchAggregator {
      * @param saveRevisionAct action to commit keys-revision pair to persistent store for processed keys.
      * @return result aggregated watch.
      */
-    public Optional<AggregatedWatch> watch(long revision, BiConsumer<Collection<IgniteBiTuple<Key, byte[]>>, Long> saveRevisionAct) {
+    public Optional<AggregatedWatch> watch(
+            long revision,
+            BiConsumer<Collection<IgniteBiTuple<ByteArray, byte[]>>, Long> saveRevisionAct
+    ) {
         synchronized (watches) {
             if (watches.isEmpty())
                 return Optional.empty();
@@ -145,8 +150,8 @@ public class WatchAggregator {
     // TODO: IGNITE-14667 We can do it better than infer range always
     private KeyCriterion inferGeneralCriteria() {
         return new KeyCriterion.RangeCriterion(
-            watches.values().stream().map(w -> w.keyCriterion().toRange().getKey()).min(Key::compareTo).get(),
-            watches.values().stream().map(w -> w.keyCriterion().toRange().getValue()).max(Key::compareTo).get()
+            watches.values().stream().map(w -> w.keyCriterion().toRange().getKey()).min(ByteArray::compareTo).get(),
+            watches.values().stream().map(w -> w.keyCriterion().toRange().getValue()).max(ByteArray::compareTo).get()
         );
     }
 
@@ -156,7 +161,7 @@ public class WatchAggregator {
      * @param storeRevision action to commit keys-revision pair to persistent store for processed keys.
      * @return watch listener, which will dispatch events to appropriate watches.
      */
-    private WatchListener watchListener(BiConsumer<Collection<IgniteBiTuple<Key, byte[]>>, Long> storeRevision) {
+    private WatchListener watchListener(BiConsumer<Collection<IgniteBiTuple<ByteArray, byte[]>>, Long> storeRevision) {
         // Copy watches to separate collection, because all changes on the WatchAggregator watches
         // shouldn't be propagated to listener watches immediately.
         // WatchAggregator will be redeployed with new watches if needed instead.
@@ -164,22 +169,22 @@ public class WatchAggregator {
 
         return new WatchListener() {
 
-            @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> evts) {
+            @Override public boolean onUpdate(@NotNull WatchEvent evt) {
                 var watchIt = cpWatches.entrySet().iterator();
                 Collection<Long> toCancel = new ArrayList<>();
 
                 while (watchIt.hasNext()) {
                     Map.Entry<Long, WatchAggregator.Watch> entry = watchIt.next();
                     WatchAggregator.Watch watch = entry.getValue();
-                    var filteredEvts = new ArrayList<WatchEvent>();
+                    var filteredEvts = new ArrayList<EntryEvent>();
 
-                    for (WatchEvent evt : evts) {
-                        if (watch.keyCriterion().contains(evt.oldEntry().key()))
-                            filteredEvts.add(evt);
+                    for (EntryEvent entryEvt : evt.entryEvents()) {
+                        if (watch.keyCriterion().contains(entryEvt.oldEntry().key()))
+                            filteredEvts.add(entryEvt);
                     }
 
                     if (!filteredEvts.isEmpty()) {
-                        if (!watch.listener().onUpdate(filteredEvts)) {
+                        if (!watch.listener().onUpdate(new WatchEvent(filteredEvts))) {
                             watchIt.remove();
 
                             toCancel.add(entry.getKey());
@@ -193,11 +198,11 @@ public class WatchAggregator {
                     cancelAll(toCancel);
 
                 var revision = 0L;
-                var entries = new ArrayList<IgniteBiTuple<Key, byte[]>>();
-                for (WatchEvent evt: evts) {
-                    revision = evt.newEntry().revision();
+                var entries = new ArrayList<IgniteBiTuple<ByteArray, byte[]>>();
+                for (EntryEvent entryEvt: evt.entryEvents()) {
+                    revision = entryEvt.newEntry().revision();
 
-                    entries.add(new IgniteBiTuple<>(evt.newEntry().key(), evt.newEntry().value()));
+                    entries.add(new IgniteBiTuple<>(entryEvt.newEntry().key(), entryEvt.newEntry().value()));
                 }
 
                 storeRevision.accept(entries, revision);

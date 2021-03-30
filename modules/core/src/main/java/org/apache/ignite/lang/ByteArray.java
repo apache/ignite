@@ -22,21 +22,32 @@ import java.util.Arrays;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A class for handling byte array.
+ * A class wraps {@code byte[]} which provides {@link Object#equals}, {@link Object#hashCode} and
+ * lexicographical comparison implementation.
  */
 public final class ByteArray implements Comparable<ByteArray> {
-    /** Byte-wise representation of the {@code ByteArray}. */
+    /** Wrapped byte array. */
     @NotNull
     private final byte[] arr;
 
     /**
-     * Constructs {@code ByteArray} instance from the given byte array. <em>Note:</em> copy of the given byte array will not be
+     * Constructs {@code ByteArray} instance from the given byte array.
+     * <em>Note:</em> copy of the given byte array will not be
      * created in order to avoid redundant memory consumption.
      *
      * @param arr Byte array. Can't be {@code null}.
      */
     public ByteArray(@NotNull byte[] arr) {
         this.arr = arr;
+    }
+
+    /**
+     * Constructs {@code ByteArray} instance from the given string.
+     *
+     * @param s The string key representation. Can't be {@code null}.
+     */
+    public ByteArray(@NotNull String s) {
+        this(s.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

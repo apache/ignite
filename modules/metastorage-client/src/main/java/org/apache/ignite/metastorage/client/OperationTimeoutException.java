@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
 
 /**
  * Thrown when an operation is not executed within a specified time period. Usually in such cases the operation

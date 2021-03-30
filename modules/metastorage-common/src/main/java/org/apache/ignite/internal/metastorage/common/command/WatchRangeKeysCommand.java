@@ -17,30 +17,28 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Watch command for {@link MetaStorageCommandListener} that subscribes on meta storage updates matching the parameters.
+ * Watch command for MetaStorageCommandListener that subscribes on meta storage updates matching the parameters.
  */
 public final class WatchRangeKeysCommand implements WriteCommand {
     /** Start key of range (inclusive). Couldn't be {@code null}. */
-    @Nullable private final Key keyFrom;
+    @Nullable private final byte[] keyFrom;
 
     /** End key of range (exclusive). Could be {@code null}. */
-    @Nullable private final Key keyTo;
+    @Nullable private final byte[] keyTo;
 
     /** Start revision inclusive. {@code 0} - all revisions. */
-    @NotNull private final Long revision;
+    private final long revision;
 
     /**
      * @param keyFrom Start key of range (inclusive).
      * @param keyTo End key of range (exclusive).
      */
-    public WatchRangeKeysCommand(@Nullable Key keyFrom, @Nullable Key keyTo) {
+    public WatchRangeKeysCommand(@Nullable ByteArray keyFrom, @Nullable ByteArray keyTo) {
         this(keyFrom, keyTo, 0L);
     }
 
@@ -50,33 +48,33 @@ public final class WatchRangeKeysCommand implements WriteCommand {
      * @param revision Start revision inclusive. {@code 0} - all revisions.
      */
     public WatchRangeKeysCommand(
-        @Nullable Key keyFrom,
-        @Nullable Key keyTo,
-        @NotNull Long revision
+        @Nullable ByteArray keyFrom,
+        @Nullable ByteArray keyTo,
+        long revision
     ) {
-        this.keyFrom = keyFrom;
-        this.keyTo = keyTo;
+        this.keyFrom = keyFrom == null ? null : keyFrom.bytes();
+        this.keyTo = keyTo == null ? null : keyTo.bytes();
         this.revision = revision;
     }
 
     /**
      * @return Start key of range (inclusive). Couldn't be {@code null}.
      */
-    public @Nullable Key keyFrom() {
+    public @Nullable byte[] keyFrom() {
         return keyFrom;
     }
 
     /**
      * @return End key of range (exclusive). Could be {@code null}.
      */
-    public @Nullable Key keyTo() {
+    public @Nullable byte[] keyTo() {
         return keyTo;
     }
 
     /**
      * @return Start revision inclusive. {@code 0} - all revisions.
      */
-    public @NotNull Long revision() {
+    public long revision() {
         return revision;
     }
 }

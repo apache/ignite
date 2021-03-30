@@ -19,10 +19,10 @@ package org.apache.ignite.internal.metastorage;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
@@ -30,8 +30,11 @@ import java.util.stream.Collectors;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.internal.metastorage.client.MetaStorageServiceImpl;
+import org.apache.ignite.internal.metastorage.server.SimpleInMemoryKeyValueStorage;
+import org.apache.ignite.internal.metastorage.server.raft.MetaStorageCommandListener;
 import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
 import org.apache.ignite.internal.raft.Loza;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -39,16 +42,12 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metastorage.client.MetaStorageService;
-import org.apache.ignite.metastorage.common.CompactedException;
-import org.apache.ignite.metastorage.common.Condition;
-import org.apache.ignite.metastorage.common.Cursor;
-import org.apache.ignite.metastorage.common.Entry;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.KeyValueStorageImpl;
-import org.apache.ignite.metastorage.common.Operation;
-import org.apache.ignite.metastorage.common.OperationTimeoutException;
-import org.apache.ignite.metastorage.common.WatchListener;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.metastorage.client.CompactedException;
+import org.apache.ignite.metastorage.client.Condition;
+import org.apache.ignite.metastorage.client.Entry;
+import org.apache.ignite.metastorage.client.Operation;
+import org.apache.ignite.metastorage.client.OperationTimeoutException;
+import org.apache.ignite.metastorage.client.WatchListener;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
@@ -131,16 +130,18 @@ public class MetaStorageManager {
             clusterNode -> Arrays.asList(metastorageNodes).contains(clusterNode.name());
 
         if (hasMetastorage(locNodeName, metastorageNodes)) {
+
             this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
                     raftMgr.startRaftGroup(
                         METASTORAGE_RAFT_GROUP_NAME,
                         clusterNetSvc.topologyService().allMembers().stream().filter(
                             metaStorageNodesContainsLocPred).
                             collect(Collectors.toList()),
-                        new MetaStorageCommandListener(new KeyValueStorageImpl())
+                        new MetaStorageCommandListener(new SimpleInMemoryKeyValueStorage())
                     )
                 )
             );
+
         }
         else if (metastorageNodes.length > 0) {
             this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
@@ -202,7 +203,7 @@ public class MetaStorageManager {
      * subscription
      */
     public synchronized CompletableFuture<Long> registerWatch(
-        @Nullable Key key,
+        @Nullable ByteArray key,
         @NotNull WatchListener lsnr
     ) {
         return waitForReDeploy(watchAggregator.add(key, lsnr));
@@ -217,7 +218,7 @@ public class MetaStorageManager {
      * subscription
      */
     public synchronized CompletableFuture<Long> registerWatchByPrefix(
-        @Nullable Key key,
+        @Nullable ByteArray key,
         @NotNull WatchListener lsnr
     ) {
         return waitForReDeploy(watchAggregator.addPrefix(key, lsnr));
@@ -232,7 +233,7 @@ public class MetaStorageManager {
      * subscription
      */
     public synchronized CompletableFuture<Long> registerWatch(
-        @NotNull Collection<Key> keys,
+        @NotNull Collection<ByteArray> keys,
         @NotNull WatchListener lsnr
     ) {
         return waitForReDeploy(watchAggregator.add(keys, lsnr));
@@ -247,8 +248,8 @@ public class MetaStorageManager {
      * @return future with id of registered watch.
      */
     public synchronized CompletableFuture<Long> registerWatch(
-        @NotNull Key from,
-        @NotNull Key to,
+        @NotNull ByteArray from,
+        @NotNull ByteArray to,
         @NotNull WatchListener lsnr
     ) {
         return waitForReDeploy(watchAggregator.add(from, to, lsnr));
@@ -269,132 +270,120 @@ public class MetaStorageManager {
     }
 
     /**
-     * @see MetaStorageService#get(Key)
+     * @see MetaStorageService#get(ByteArray)
      */
-    public @NotNull CompletableFuture<Entry> get(@NotNull Key key) {
+    public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key) {
         return metaStorageSvcFut.thenCompose(svc -> svc.get(key));
     }
 
     /**
-     * @see MetaStorageService#get(Key, long)
+     * @see MetaStorageService#get(ByteArray, long)
      */
-    public @NotNull CompletableFuture<Entry> get(@NotNull Key key, long revUpperBound) {
+    public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key, long revUpperBound) {
         return metaStorageSvcFut.thenCompose(svc -> svc.get(key, revUpperBound));
     }
 
     /**
-     * @see MetaStorageService#getAll(Collection)
+     * @see MetaStorageService#getAll(Set)
      */
-    public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys) {
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys) {
         return metaStorageSvcFut.thenCompose(svc -> svc.getAll(keys));
     }
 
     /**
-     * @see MetaStorageService#getAll(Collection, long)
+     * @see MetaStorageService#getAll(Set, long)
      */
-    public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys, long revUpperBound) {
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys, long revUpperBound) {
         return metaStorageSvcFut.thenCompose(svc -> svc.getAll(keys, revUpperBound));
     }
 
     /**
-     * @see MetaStorageService#put(Key, byte[])
+     * @see MetaStorageService#put(ByteArray, byte[])
      */
-    public @NotNull CompletableFuture<Void> put(@NotNull Key key, byte[] val) {
+    public @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, byte[] val) {
         return metaStorageSvcFut.thenCompose(svc -> svc.put(key, val));
     }
 
     /**
-     * @see MetaStorageService#getAndPut(Key, byte[])
+     * @see MetaStorageService#getAndPut(ByteArray, byte[])
      */
-    public @NotNull CompletableFuture<Entry> getAndPut(@NotNull Key key, byte[] val) {
+    public @NotNull CompletableFuture<Entry> getAndPut(@NotNull ByteArray key, byte[] val) {
         return metaStorageSvcFut.thenCompose(svc -> svc.getAndPut(key, val));
     }
 
     /**
      * @see MetaStorageService#putAll(Map)
      */
-    public @NotNull CompletableFuture<Void> putAll(@NotNull Map<Key, byte[]> vals) {
+    public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         return metaStorageSvcFut.thenCompose(svc -> svc.putAll(vals));
     }
 
     /**
      * @see MetaStorageService#getAndPutAll(Map)
      */
-    public @NotNull CompletableFuture<Map<Key, Entry>> getAndPutAll(@NotNull Map<Key, byte[]> vals) {
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndPutAll(@NotNull Map<ByteArray, byte[]> vals) {
         return metaStorageSvcFut.thenCompose(svc -> svc.getAndPutAll(vals));
     }
 
     /**
-     * @see MetaStorageService#remove(Key)
+     * @see MetaStorageService#remove(ByteArray)
      */
-    public @NotNull CompletableFuture<Void> remove(@NotNull Key key) {
+    public @NotNull CompletableFuture<Void> remove(@NotNull ByteArray key) {
         return metaStorageSvcFut.thenCompose(svc -> svc.remove(key));
     }
 
     /**
-     * @see MetaStorageService#getAndRemove(Key)
+     * @see MetaStorageService#getAndRemove(ByteArray)
      */
-    public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull Key key) {
+    public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull ByteArray key) {
         return metaStorageSvcFut.thenCompose(svc -> svc.getAndRemove(key));
     }
 
     /**
-     * @see MetaStorageService#removeAll(Collection)
+     * @see MetaStorageService#removeAll(Set)
      */
-    public @NotNull CompletableFuture<Void> removeAll(@NotNull Collection<Key> keys) {
+    public @NotNull CompletableFuture<Void> removeAll(@NotNull Set<ByteArray> keys) {
         return metaStorageSvcFut.thenCompose(svc -> svc.removeAll(keys));
     }
 
     /**
-     * @see MetaStorageService#getAndRemoveAll(Collection)
+     * @see MetaStorageService#getAndRemoveAll(Set)
      */
-    public @NotNull CompletableFuture<Map<Key, Entry>> getAndRemoveAll(@NotNull Collection<Key> keys) {
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndRemoveAll(@NotNull Set<ByteArray> keys) {
         return metaStorageSvcFut.thenCompose(svc -> svc.getAndRemoveAll(keys));
     }
 
     /**
      * Invoke with single success/failure operation.
      *
-     * @see MetaStorageService#invoke(Condition, Collection, Collection)
+     * @see MetaStorageService#invoke(Condition, Operation, Operation)
      */
     public @NotNull CompletableFuture<Boolean> invoke(
         @NotNull Condition cond,
         @NotNull Operation success,
         @NotNull Operation failure
-    ) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, Collections.singletonList(success), Collections.singletonList(failure)));
-    }
-
-    /**
-     * @see MetaStorageService#invoke(Condition, Collection, Collection)
-     */
-    public @NotNull CompletableFuture<Boolean> invoke(
-        @NotNull Condition cond,
-        @NotNull Collection<Operation> success,
-        @NotNull Collection<Operation> failure
     ) {
         return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, success, failure));
     }
 
     /**
-     * @see MetaStorageService#getAndInvoke(Key, Condition, Operation, Operation)
+     * @see MetaStorageService#invoke(Condition, Collection, Collection)
      */
-    public @NotNull CompletableFuture<Entry> getAndInvoke(
-        @NotNull Key key,
-        @NotNull Condition cond,
-        @NotNull Operation success,
-        @NotNull Operation failure
+    public @NotNull CompletableFuture<Boolean> invoke(
+            @NotNull Condition cond,
+            @NotNull Collection<Operation> success,
+            @NotNull Collection<Operation> failure
     ) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAndInvoke(key, cond, success, failure));
+        return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, success, failure));
     }
 
     /**
-     * @see MetaStorageService#range(Key, Key, long)
+     * @see MetaStorageService#range(ByteArray, ByteArray, long)
      */
-    public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo, long revUpperBound) {
+    public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) {
         return new CursorWrapper<>(
-            metaStorageSvcFut,
-            metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo, revUpperBound))
+                metaStorageSvcFut,
+                metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo, revUpperBound))
         );
     }
 
@@ -408,10 +397,10 @@ public class MetaStorageManager {
      * @return Cursor built upon entries corresponding to the given range and applied revision.
      * @throws OperationTimeoutException If the operation is timed out.
      * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
-     * @see Key
+     * @see ByteArray
      * @see Entry
      */
-    public @NotNull Cursor<Entry> rangeWithAppliedRevision(@NotNull Key keyFrom, @Nullable Key keyTo) {
+    public @NotNull Cursor<Entry> rangeWithAppliedRevision(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         return new CursorWrapper<>(
             metaStorageSvcFut,
             metaStorageSvcFut.thenApply(svc -> {
@@ -426,9 +415,9 @@ public class MetaStorageManager {
     }
 
     /**
-     * @see MetaStorageService#range(Key, Key)
+     * @see MetaStorageService#range(ByteArray, ByteArray)
      */
-    public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo) {
+    public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         return new CursorWrapper<>(
             metaStorageSvcFut,
             metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo))
@@ -484,13 +473,10 @@ public class MetaStorageManager {
      * @param revision associated revision.
      * @return future, which will be completed when store action finished.
      */
-    private CompletableFuture<Void> storeEntries(Collection<IgniteBiTuple<Key, byte[]>> entries, long revision) {
+    private CompletableFuture<Void> storeEntries(Collection<IgniteBiTuple<ByteArray, byte[]>> entries, long revision) {
         try {
             return vaultMgr.putAll(entries.stream().collect(
-                Collectors.toMap(
-                    e -> ByteArray.fromString(e.getKey().toString()),
-                    IgniteBiTuple::getValue)),
-                revision);
+                Collectors.toMap(e -> e.getKey(), IgniteBiTuple::getValue)), revision);
         }
         catch (IgniteInternalCheckedException e) {
             throw new IgniteInternalException("Couldn't put entries with considered revision.", e);
@@ -563,6 +549,8 @@ public class MetaStorageManager {
         /** Inner iterator future. */
         private final CompletableFuture<Iterator<T>> innerIterFut;
 
+        private final InnerIterator it = new InnerIterator();
+
         /**
          * @param metaStorageSvcFut Meta storage service future.
          * @param innerCursorFut Inner cursor future.
@@ -592,27 +580,38 @@ public class MetaStorageManager {
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<T> iterator() {
-            return new Iterator<>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    try {
-                        return innerIterFut.thenApply(Iterator::hasNext).get();
-                    }
-                    catch (InterruptedException | ExecutionException e) {
-                        throw new IgniteInternalException(e);
-                    }
-                }
+            return it;
+        }
 
-                /** {@inheritDoc} */
-                @Override public T next() {
-                    try {
-                        return innerIterFut.thenApply(Iterator::next).get();
-                    }
-                    catch (InterruptedException | ExecutionException e) {
-                        throw new IgniteInternalException(e);
-                    }
+        @Override
+        public boolean hasNext() {
+            return it.hasNext();
+        }
+
+        @Override
+        public T next() {
+            return it.next();
+        }
+
+        private class InnerIterator implements Iterator<T> {
+            @Override public boolean hasNext() {
+                try {
+                    return innerIterFut.thenApply(Iterator::hasNext).get();
                 }
-            };
+                catch (InterruptedException | ExecutionException e) {
+                    throw new IgniteInternalException(e);
+                }
+            }
+
+            /** {@inheritDoc} */
+            @Override public T next() {
+                try {
+                    return innerIterFut.thenApply(Iterator::next).get();
+                }
+                catch (InterruptedException | ExecutionException e) {
+                    throw new IgniteInternalException(e);
+                }
+            }
         }
     }
 }

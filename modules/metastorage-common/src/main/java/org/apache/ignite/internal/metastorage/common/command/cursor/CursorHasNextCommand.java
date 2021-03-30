@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.metastorage.common.command.cursor;
 
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Cursor {@code hasNext} command for {@link MetaStorageCommandListener} that checks whether next element is available.
+ * Cursor {@code hasNext} command for MetaStorageCommandListener that checks whether next element is available.
  */
 public class CursorHasNextCommand implements ReadCommand {
     /** Cursor id. */

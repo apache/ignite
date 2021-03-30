@@ -17,38 +17,61 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import java.io.Serializable;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Put all command for {@link MetaStorageCommandListener} that inserts or updates entries
+ * Put all command for MetaStorageCommandListener that inserts or updates entries
  * with given keys and given values.
  */
 public final class PutAllCommand implements WriteCommand {
-    /** The map of keys and corresponding values. Couldn't be {@code null} or empty. */
-    @NotNull private final Map<Key, byte[]> vals;
+    /** List of keys. */
+    private final List<byte[]> keys;
+
+    /** List of values. */
+    private final List<byte[]> vals;
 
     /**
      * @param vals he map of keys and corresponding values. Couldn't be {@code null} or empty.
      */
-    public PutAllCommand(@NotNull Map<Key, byte[]> vals) {
+    public PutAllCommand(@NotNull Map<ByteArray, byte[]> vals) {
         assert !vals.isEmpty();
 
-        if (vals instanceof Serializable)
-            this.vals = vals;
-        else
-            this.vals = new HashMap<>(vals);
+        int size = vals.size();
+
+        this.keys = new ArrayList<>(size);
+
+        this.vals = new ArrayList<>(size);
+
+        for (Map.Entry<ByteArray, byte[]> e : vals.entrySet()) {
+            byte[] key = e.getKey().bytes();
+
+            byte[] val = e.getValue();
+
+            assert key != null : "Key could not be null.";
+            assert val != null : "Value could not be null.";
+
+            this.keys.add(key);
+
+            this.vals.add(val);
+        }
     }
 
     /**
-     * @return The map of keys and corresponding values. Couldn't be  or empty.
+     * @return Entries values.
      */
-    public @NotNull Map<Key, byte[]> values() {
+    public @NotNull List<byte[]> keys() {
+        return keys;
+    }
+
+    /**
+     * @return Entries values.
+     */
+    public @NotNull List<byte[]> values() {
         return vals;
     }
 }

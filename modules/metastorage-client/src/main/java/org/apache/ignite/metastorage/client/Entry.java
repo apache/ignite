@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
 
+import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +35,7 @@ public interface Entry {
      *
      * @return The key.
      */
-    @NotNull Key key();
+    @NotNull ByteArray key();
 
     /**
      * Returns a value. Could be {@code null} for empty entry.
@@ -56,4 +57,18 @@ public interface Entry {
      * @return Update counter.
      */
     long updateCounter();
+
+    /**
+     * Returns value which denotes whether entry is empty or not.
+     *
+     * @return {@code True} if entry is empty, otherwise - {@code false}.
+     */
+    boolean empty();
+
+    /**
+     * Returns value which denotes whether entry is tombstone or not.
+     *
+     * @return {@code True} if entry is tombstone, otherwise - {@code false}.
+     */
+    boolean tombstone();
 }

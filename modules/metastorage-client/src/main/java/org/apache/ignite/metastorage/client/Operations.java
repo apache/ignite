@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
+
+import org.apache.ignite.lang.ByteArray;
 
 /**
  * This class contains fabric methods which produce operations needed for conditional multi update functionality
@@ -30,20 +32,22 @@ public final class Operations {
     /**
      * Creates operation of type <i>remove</i>. This type of operation removes entry.
      *
+     * @param key Identifies an entry which operation will be applied to.
      * @return Operation of type <i>remove</i>.
      */
-    public static Operation remove(Key key) {
-        return new Operation(new Operation.RemoveOp(key));
+    public static Operation remove(ByteArray key) {
+        return new Operation(new Operation.RemoveOp(key.bytes()));
     }
 
     /**
      * Creates operation of type <i>put</i>. This type of operation inserts or updates value of entry.
      *
+     * @param key Identifies an entry which operation will be applied to.
      * @param value Value.
      * @return Operation of type <i>put</i>.
      */
-    public static Operation put(Key key, byte[] value) {
-        return new Operation(new Operation.PutOp(key, value));
+    public static Operation put(ByteArray key, byte[] value) {
+        return new Operation(new Operation.PutOp(key.bytes(), value));
     }
 
     /**

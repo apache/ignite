@@ -15,90 +15,111 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.metastorage.common;
+package org.apache.ignite.internal.metastorage.client;
 
-import java.io.Serializable;
 import java.util.Arrays;
-import org.apache.ignite.metastorage.common.Entry;
-import org.apache.ignite.metastorage.common.Key;
+import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.metastorage.client.Entry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-// TODO: IGNITE-14389 Tmp, used instead of real Entry implementation. Should be removed.
 /**
- * Dummy entry implementation.
+ * Meta storage entry.
  */
-public final class DummyEntry implements Entry, Serializable {
+public final class EntryImpl implements Entry {
     /** Key. */
-    @NotNull private Key key;
+    @NotNull
+    private final ByteArray key;
 
     /** Value. */
-    @Nullable private byte[] val;
+    @Nullable
+    private final byte[] val;
 
     /** Revision. */
-    private long revision;
+    private final long rev;
 
     /** Update counter. */
-    private long updateCntr;
+    private final long updCntr;
 
     /**
+     * Construct entry with given paramteters.
      *
      * @param key Key.
      * @param val Value.
-     * @param revision Revision.
-     * @param updateCntr Update counter.
+     * @param rev Revision.
+     * @param updCntr Update counter.
      */
-    public DummyEntry(@NotNull Key key, @Nullable byte[] val, long revision, long updateCntr) {
+    EntryImpl(@NotNull ByteArray key, @Nullable byte[] val, long rev, long updCntr) {
         this.key = key;
         this.val = val;
-        this.revision = revision;
-        this.updateCntr = updateCntr;
+        this.rev = rev;
+        this.updCntr = updCntr;
     }
 
-    /** {@inheritDoc} */
-    @Override public @NotNull Key key() {
+    /** {@inheritDoc} */    @NotNull
+    @Override public ByteArray key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable byte[] value() {
+    @Nullable
+    @Override public byte[] value() {
         return val;
     }
 
     /** {@inheritDoc} */
     @Override public long revision() {
-        return revision;
+        return rev;
     }
 
     /** {@inheritDoc} */
     @Override public long updateCounter() {
-        return updateCntr;
+        return updCntr;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean tombstone() {
+        return val == null && rev > 0 && updCntr > 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean empty() {
+        return val == null && rev == 0 && updCntr == 0;
+    }
+
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DummyEntry entry = (DummyEntry)o;
+        EntryImpl entry = (EntryImpl)o;
 
-        if (revision != entry.revision)
+        if (rev != entry.rev)
             return false;
-        if (updateCntr != entry.updateCntr)
+
+        if (updCntr != entry.updCntr)
             return false;
+
         if (!key.equals(entry.key))
             return false;
+
         return Arrays.equals(val, entry.val);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = key.hashCode();
+
         res = 31 * res + Arrays.hashCode(val);
-        res = 31 * res + (int)(revision ^ (revision >>> 32));
-        res = 31 * res + (int)(updateCntr ^ (updateCntr >>> 32));
+
+        res = 31 * res + (int)(rev ^ (rev >>> 32));
+
+        res = 31 * res + (int)(updCntr ^ (updCntr >>> 32));
+
         return res;
     }
 }

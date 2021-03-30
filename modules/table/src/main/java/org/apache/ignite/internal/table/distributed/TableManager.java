@@ -50,10 +50,10 @@ import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
 import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.metastorage.common.Conditions;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.Operations;
+import org.apache.ignite.metastorage.client.Conditions;
+import org.apache.ignite.metastorage.client.Operations;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.table.Table;
@@ -208,9 +208,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 UUID tblId = new UUID(revision, 0L);
 
                 if (hasMetastorageLocally) {
-                    var key = new Key(INTERNAL_PREFIX + tblId);
+                    var key = new ByteArray(INTERNAL_PREFIX + tblId);
                     futs.add(metaStorageMgr.invoke(
-                        Conditions.key(key).value().eq(null),
+                        Conditions.notExists(key),
                         Operations.put(key, tableView.name().getBytes(StandardCharsets.UTF_8)),
                         Operations.noop())
                         .thenCompose(res -> schemaMgr.initSchemaForTable(tblId, tableView.name()))
@@ -276,12 +276,12 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 UUID tblId = t.internalTable().tableId();
 
                 if (hasMetastorageLocally) {
-                    var key = new Key(INTERNAL_PREFIX + tblId);
+                    var key = new ByteArray(INTERNAL_PREFIX + tblId);
 
                     futs.add(affMgr.removeAssignment(tblId)
                         .thenCompose(res -> schemaMgr.unregisterSchemas(tblId))
                         .thenCompose(res ->
-                            metaStorageMgr.invoke(Conditions.key(key).value().ne(null),
+                            metaStorageMgr.invoke(Conditions.exists(key),
                                 Operations.remove(key),
                                 Operations.noop())));
                 }

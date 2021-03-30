@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;

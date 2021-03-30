@@ -17,31 +17,30 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Range command for {@link MetaStorageCommandListener} that retrieves entries for the given
+ * Range command for MetaStorageCommandListener that retrieves entries for the given
  * key range in lexicographic order. Entries will be filtered out by upper bound of given revision number.
  */
 public final class RangeCommand implements WriteCommand {
     /** Start key of range (inclusive). Couldn't be {@code null}. */
-    @NotNull private final Key keyFrom;
+    @NotNull private final byte[] keyFrom;
 
     /** End key of range (exclusive). Could be {@code null}. */
-    @Nullable private final Key keyTo;
+    @Nullable private final byte[] keyTo;
 
     /** The upper bound for entry revision. {@code -1} means latest revision. */
-    @NotNull private final Long revUpperBound;
+    @NotNull private final long revUpperBound;
 
     /**
      * @param keyFrom Start key of range (inclusive).
      * @param keyTo End key of range (exclusive).
      */
-    public RangeCommand(@NotNull Key keyFrom, @Nullable Key keyTo) {
+    public RangeCommand(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         this(keyFrom, keyTo, -1L);
     }
 
@@ -51,33 +50,33 @@ public final class RangeCommand implements WriteCommand {
      * @param revUpperBound The upper bound for entry revision. {@code -1} means latest revision.
      */
     public RangeCommand(
-        @NotNull Key keyFrom,
-        @Nullable Key keyTo,
-        @NotNull Long revUpperBound
+        @NotNull ByteArray keyFrom,
+        @Nullable ByteArray keyTo,
+        long revUpperBound
     ) {
-        this.keyFrom = keyFrom;
-        this.keyTo = keyTo;
+        this.keyFrom = keyFrom.bytes();
+        this.keyTo = keyTo == null ? null : keyTo.bytes();
         this.revUpperBound = revUpperBound;
     }
 
     /**
      * @return Start key of range (inclusive). Couldn't be {@code null}.
      */
-    public @NotNull Key keyFrom() {
+    public @NotNull byte[] keyFrom() {
         return keyFrom;
     }
 
     /**
      * @return End key of range (exclusive). Could be {@code null}.
      */
-    public @Nullable Key keyTo() {
+    public @Nullable byte[] keyTo() {
         return keyTo;
     }
 
     /**
      * @return The upper bound for entry revision. Means latest revision.
      */
-    public @NotNull Long revUpperBound() {
+    public @NotNull long revUpperBound() {
         return revUpperBound;
     }
 }

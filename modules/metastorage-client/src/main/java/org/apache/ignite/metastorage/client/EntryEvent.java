@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
 
 import java.io.Serializable;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Watch event which can be processed by {@link WatchListener}.
+ * Represent an update event for particular key and entry.
  */
-public final class WatchEvent implements Serializable {
-    /** Old (previous) entry */
+public final class EntryEvent implements Serializable {
+    /** Old (previous) entry. */
     @NotNull private final Entry oldEntry;
 
     /** New (updated) entry. */
@@ -34,9 +34,9 @@ public final class WatchEvent implements Serializable {
      * Constructs an event with given old and new entries.
      *
      * @param oldEntry Old entry.
-     * @param newEntry New entry/
+     * @param newEntry New entry.
      */
-    public WatchEvent(@NotNull Entry oldEntry, @NotNull Entry newEntry) {
+    public EntryEvent(Entry oldEntry, Entry newEntry) {
         this.oldEntry = oldEntry;
         this.newEntry = newEntry;
     }
@@ -46,7 +46,8 @@ public final class WatchEvent implements Serializable {
      *
      * @return Old entry.
      */
-    public @NotNull Entry oldEntry() {
+    @NotNull
+    public Entry oldEntry() {
         return oldEntry;
     }
 
@@ -55,7 +56,8 @@ public final class WatchEvent implements Serializable {
      *
      * @return New entry.
      */
-    public @NotNull Entry newEntry() {
+    @NotNull
+    public Entry newEntry() {
         return newEntry;
     }
 
@@ -63,20 +65,24 @@ public final class WatchEvent implements Serializable {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
-        WatchEvent that = (WatchEvent)o;
+        EntryEvent that = (EntryEvent)o;
 
         if (!oldEntry.equals(that.oldEntry))
             return false;
+
         return newEntry.equals(that.newEntry);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = oldEntry.hashCode();
+
         res = 31 * res + newEntry.hashCode();
+
         return res;
     }
 }

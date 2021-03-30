@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Put command for {@link MetaStorageCommandListener} that inserts or updates an entry
+ * Put command for MetaStorageCommandListener that inserts or updates an entry
  * with the given key and the given value and retrieves a previous entry for the given key.
  */
 public final class PutCommand implements WriteCommand {
     /** The key. Couldn't be {@code null}. */
-    @NotNull private final Key key;
+    @NotNull private final byte[] key;
 
     /** The value. Couldn't be {@code null}. */
     @NotNull private final byte[] val;
@@ -37,15 +36,15 @@ public final class PutCommand implements WriteCommand {
      * @param key The key. Couldn't be {@code null}.
      * @param val The value. Couldn't be {@code null}.
      */
-    public PutCommand(@NotNull Key key, @NotNull byte[] val) {
-        this.key = key;
+    public PutCommand(@NotNull ByteArray key, @NotNull byte[] val) {
+        this.key = key.bytes();
         this.val = val;
     }
 
     /**
      * @return The key. Couldn't be {@code null}.
      */
-    public @NotNull Key key() {
+    public @NotNull byte[] key() {
         return key;
     }
 

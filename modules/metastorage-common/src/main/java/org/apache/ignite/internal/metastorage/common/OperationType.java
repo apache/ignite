@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.internal.metastorage.common;
 
 /**
- * Closeable cursor.
- *
- * @param <T>
+ * Defines possible operation types.
  */
-//TODO: Should be replaced by common entity from org.ignite.lang or org.ignite.core package.
-public interface Cursor<T> extends Iterable<T>, AutoCloseable {
+public enum OperationType {
+    /** No-op operation. */
+    NO_OP,
+
+    /** Put (insert/replace) operation. */
+    PUT,
+
+    /** Remove operation. */
+    REMOVE
 }

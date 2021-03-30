@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.metastorage.client;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -26,11 +26,11 @@ public interface WatchListener {
     /**
      * The method will be called on each meta storage update.
      *
-     * @param events A single event or a batch. The batch always contains updates for specific revision.
+     * @param evt A single event or a batch. The batch always contains updates for specific revision.
      * @return {@code True} if listener must continue event handling. If returns {@code false} then the listener and
      * corresponding watch will be unregistered.
      */
-    boolean onUpdate(@NotNull Iterable<WatchEvent> events);
+    boolean onUpdate(@NotNull WatchEvent evt);
 
     /**
      * The method will be called in case of an error occurred. The listener and corresponding watch will be

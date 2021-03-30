@@ -55,12 +55,12 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-api</artifactId>
+            <artifactId>ignite-metastorage-server</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-vault</artifactId>
+            <artifactId>ignite-api</artifactId>
         </dependency>
 
         <dependency>

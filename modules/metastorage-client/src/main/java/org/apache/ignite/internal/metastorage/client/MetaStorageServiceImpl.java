@@ -19,37 +19,44 @@ package org.apache.ignite.internal.metastorage.client;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import org.apache.ignite.internal.metastorage.common.OperationType;
+import org.apache.ignite.internal.metastorage.common.command.ConditionInfo;
 import org.apache.ignite.internal.metastorage.common.command.GetAllCommand;
 import org.apache.ignite.internal.metastorage.common.command.GetAndPutAllCommand;
 import org.apache.ignite.internal.metastorage.common.command.GetAndPutCommand;
 import org.apache.ignite.internal.metastorage.common.command.GetAndRemoveAllCommand;
 import org.apache.ignite.internal.metastorage.common.command.GetAndRemoveCommand;
 import org.apache.ignite.internal.metastorage.common.command.GetCommand;
+import org.apache.ignite.internal.metastorage.common.command.InvokeCommand;
+import org.apache.ignite.internal.metastorage.common.command.MultipleEntryResponse;
+import org.apache.ignite.internal.metastorage.common.command.OperationInfo;
 import org.apache.ignite.internal.metastorage.common.command.PutAllCommand;
 import org.apache.ignite.internal.metastorage.common.command.PutCommand;
 import org.apache.ignite.internal.metastorage.common.command.RangeCommand;
 import org.apache.ignite.internal.metastorage.common.command.RemoveAllCommand;
 import org.apache.ignite.internal.metastorage.common.command.RemoveCommand;
+import org.apache.ignite.internal.metastorage.common.command.SingleEntryResponse;
 import org.apache.ignite.internal.metastorage.common.command.WatchExactKeysCommand;
 import org.apache.ignite.internal.metastorage.common.command.WatchRangeKeysCommand;
+import org.apache.ignite.internal.util.Cursor;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metastorage.client.Condition;
+import org.apache.ignite.metastorage.client.Entry;
+import org.apache.ignite.metastorage.client.EntryEvent;
 import org.apache.ignite.metastorage.client.MetaStorageService;
-import org.apache.ignite.metastorage.common.Condition;
-import org.apache.ignite.metastorage.common.Cursor;
-import org.apache.ignite.metastorage.common.Entry;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.Operation;
-import org.apache.ignite.metastorage.common.WatchEvent;
-import org.apache.ignite.metastorage.common.WatchListener;
+import org.apache.ignite.metastorage.client.Operation;
+import org.apache.ignite.metastorage.client.WatchEvent;
+import org.apache.ignite.metastorage.client.WatchListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,111 +84,117 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> get(@NotNull Key key) {
-        return metaStorageRaftGrpSvc.run(new GetCommand(key));
+    @Override public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key) {
+        return metaStorageRaftGrpSvc.run(new GetCommand(key)).thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> get(@NotNull Key key, long revUpperBound) {
-        return metaStorageRaftGrpSvc.run(new GetCommand(key, revUpperBound));
+    @Override public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key, long revUpperBound) {
+        return metaStorageRaftGrpSvc.run(new GetCommand(key, revUpperBound))
+                .thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys) {
-        return metaStorageRaftGrpSvc.<Collection<Entry>>run(new GetAllCommand(keys)).
-            thenApply(entries -> entries.stream().collect(Collectors.toMap(Entry::key, Function.identity())));
+    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys) {
+        return metaStorageRaftGrpSvc.run(new GetAllCommand(keys))
+                .thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys, long revUpperBound) {
-        return metaStorageRaftGrpSvc.<Collection<Entry>>run(new GetAllCommand(keys, revUpperBound)).
-            thenApply(entries -> entries.stream().collect(Collectors.toMap(Entry::key, Function.identity())));
+    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys, long revUpperBound) {
+        return metaStorageRaftGrpSvc.run(new GetAllCommand(keys, revUpperBound)).
+                thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> put(@NotNull Key key, @NotNull byte[] value) {
+    @Override public @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] value) {
         return metaStorageRaftGrpSvc.run(new PutCommand(key, value));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> getAndPut(@NotNull Key key, @NotNull byte[] value) {
-        return metaStorageRaftGrpSvc.run(new GetAndPutCommand(key, value));
+    @Override public @NotNull CompletableFuture<Entry> getAndPut(@NotNull ByteArray key, @NotNull byte[] value) {
+        return metaStorageRaftGrpSvc.run(new GetAndPutCommand(key, value))
+                .thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> putAll(@NotNull Map<Key, byte[]> vals) {
+    @Override public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         return metaStorageRaftGrpSvc.run(new PutAllCommand(vals));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAndPutAll(@NotNull Map<Key, byte[]> vals) {
-        List<Key> keys = new ArrayList<>();
-        List<byte[]> values = new ArrayList<>();
-
-        vals.forEach((key, value) -> {
-            keys.add(key);
-            values.add(value);
-        });
-
-        return metaStorageRaftGrpSvc.<Collection<Entry>>run(new GetAndPutAllCommand(keys, values)).
-            thenApply(entries -> entries.stream().collect(Collectors.toMap(Entry::key, Function.identity())));
+    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndPutAll(@NotNull Map<ByteArray, byte[]> vals) {
+        return metaStorageRaftGrpSvc.run(new GetAndPutAllCommand(vals)).
+            thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> remove(@NotNull Key key) {
+    @Override public @NotNull CompletableFuture<Void> remove(@NotNull ByteArray key) {
         return metaStorageRaftGrpSvc.run(new RemoveCommand(key));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull Key key) {
-        return metaStorageRaftGrpSvc.run(new GetAndRemoveCommand(key));
+    @Override public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull ByteArray key) {
+        return metaStorageRaftGrpSvc.run(new GetAndRemoveCommand(key))
+                .thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> removeAll(@NotNull Collection<Key> keys) {
+    @Override public @NotNull CompletableFuture<Void> removeAll(@NotNull Set<ByteArray> keys) {
         return metaStorageRaftGrpSvc.run(new RemoveAllCommand(keys));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAndRemoveAll(@NotNull Collection<Key> keys) {
-        return metaStorageRaftGrpSvc.<Collection<Entry>>run(new GetAndRemoveAllCommand(keys)).
-            thenApply(entries -> entries.stream().collect(Collectors.toMap(Entry::key, Function.identity())));
+    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndRemoveAll(@NotNull Set<ByteArray> keys) {
+        return metaStorageRaftGrpSvc.run(new GetAndRemoveAllCommand(keys)).
+            thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
-    // TODO: IGNITE-14389 Implement.
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> invoke(@NotNull Condition condition,
-        @NotNull Collection<Operation> success, @NotNull Collection<Operation> failure) {
-        return null;
-    }
-
-    // TODO: IGNITE-14389 Either implement or remove this method.
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> getAndInvoke(@NotNull Key key, @NotNull Condition condition,
-        @NotNull Operation success, @NotNull Operation failure) {
-        return null;
+    @Override public @NotNull CompletableFuture<Boolean> invoke(
+            @NotNull Condition condition,
+            @NotNull Operation success,
+            @NotNull Operation failure
+    ) {
+        return invoke(condition, List.of(success), List.of(failure));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo, long revUpperBound) {
+    @Override public @NotNull CompletableFuture<Boolean> invoke(
+            @NotNull Condition condition,
+            @NotNull Collection<Operation> success,
+            @NotNull Collection<Operation> failure
+    ) {
+        ConditionInfo cond = toConditionInfo(condition);
+
+        List<OperationInfo> successOps = toOperationInfos(success);
+
+        List<OperationInfo> failureOps = toOperationInfos(failure);
+
+        return metaStorageRaftGrpSvc.run(new InvokeCommand(cond, successOps, failureOps));
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) {
         return new CursorImpl<>(
-            metaStorageRaftGrpSvc,
-            metaStorageRaftGrpSvc.run(new RangeCommand(keyFrom, keyTo, revUpperBound))
+                metaStorageRaftGrpSvc,
+                metaStorageRaftGrpSvc.run(new RangeCommand(keyFrom, keyTo, revUpperBound)),
+                MetaStorageServiceImpl::singleEntryResult
         );
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo) {
+    @Override public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         return new CursorImpl<>(
-            metaStorageRaftGrpSvc,
-            metaStorageRaftGrpSvc.run(new RangeCommand(keyFrom, keyTo))
+                metaStorageRaftGrpSvc,
+                metaStorageRaftGrpSvc.run(new RangeCommand(keyFrom, keyTo)),
+                MetaStorageServiceImpl::singleEntryResult
         );
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<IgniteUuid> watch(
-        @Nullable Key keyFrom,
-        @Nullable Key keyTo,
+        @Nullable ByteArray keyFrom,
+        @Nullable ByteArray keyTo,
         long revision,
         @NotNull WatchListener lsnr
     ) {
@@ -191,7 +204,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         watchRes.thenAccept(
             watchId -> watchProcessor.addWatch(
                 watchId,
-                new CursorImpl<>(metaStorageRaftGrpSvc, watchRes),
+                new CursorImpl<>(metaStorageRaftGrpSvc, watchRes, MetaStorageServiceImpl::watchResponse),
                 lsnr
             )
         );
@@ -201,7 +214,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<IgniteUuid> watch(
-        @NotNull Key key,
+        @NotNull ByteArray key,
         long revision,
         @NotNull WatchListener lsnr
     ) {
@@ -210,7 +223,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<IgniteUuid> watch(
-        @NotNull Collection<Key> keys,
+        @NotNull Set<ByteArray> keys,
         long revision,
         @NotNull WatchListener lsnr
     ) {
@@ -220,7 +233,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         watchRes.thenAccept(
             watchId -> watchProcessor.addWatch(
                 watchId,
-                new CursorImpl<>(metaStorageRaftGrpSvc, watchRes),
+                new CursorImpl<>(metaStorageRaftGrpSvc, watchRes, MetaStorageServiceImpl::watchResponse),
                 lsnr
             )
         );
@@ -233,10 +246,110 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         return CompletableFuture.runAsync(() -> watchProcessor.stopWatch(id));
     }
 
-    // TODO: IGNITE-14389 Implement.
+    // TODO: IGNITE-14734 Implement.
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> compact() {
         return null;
+    }
+
+    /** */
+    private static List<OperationInfo> toOperationInfos(Collection<Operation> ops) {
+        List<OperationInfo> res = new ArrayList<>(ops.size());
+
+        for (Operation op : ops) {
+            OperationInfo info = null;
+
+            if (op.type() == OperationType.NO_OP)
+                info = new OperationInfo(null, null, OperationType.NO_OP);
+            else if (op.type() == OperationType.REMOVE)
+                info = new OperationInfo(((Operation.RemoveOp)op.inner()).key(), null, OperationType.REMOVE);
+            else if (op.type() == OperationType.PUT) {
+                Operation.PutOp inner = (Operation.PutOp)op.inner();
+
+                info = new OperationInfo(inner.key(), inner.value(), OperationType.PUT);
+            }
+            else
+                assert false : "Unknown operation type " + op.type();
+
+            res.add(info);
+        }
+
+        return res;
+    }
+
+    /** */
+    private static ConditionInfo toConditionInfo(@NotNull Condition condition) {
+        ConditionInfo cnd = null;
+
+        Object obj = condition.inner();
+
+        if (obj instanceof Condition.ExistenceCondition) {
+            Condition.ExistenceCondition inner = (Condition.ExistenceCondition)obj;
+
+            cnd = new ConditionInfo(inner.key(), inner.type(), null, 0);
+        }
+        else if (obj instanceof Condition.RevisionCondition) {
+            Condition.RevisionCondition inner = (Condition.RevisionCondition)obj;
+
+            cnd = new ConditionInfo(inner.key(), inner.type(), null, inner.revision());
+        }
+        else if (obj instanceof Condition.ValueCondition) {
+            Condition.ValueCondition inner = (Condition.ValueCondition)obj;
+
+            cnd = new ConditionInfo(inner.key(), inner.type(), inner.value(), 0);
+        }
+        else
+            assert false : "Unknown condition type: " + obj.getClass().getSimpleName();
+
+        return cnd;
+    }
+
+    /** */
+    private static Map<ByteArray, Entry> multipleEntryResult(Object obj) {
+        MultipleEntryResponse resp = (MultipleEntryResponse) obj;
+
+        Map<ByteArray, Entry> res = new HashMap<>();
+
+        for (SingleEntryResponse e : resp.entries()) {
+            ByteArray key = new ByteArray(e.key());
+
+            res.put(key, new EntryImpl(key, e.value(), e.revision(), e.updateCounter()));
+        }
+
+        return res;
+    }
+
+    /** */
+    private static Entry singleEntryResult(Object obj) {
+        SingleEntryResponse resp = (SingleEntryResponse) obj;
+
+        return new EntryImpl(new ByteArray(resp.key()), resp.value(), resp.revision(), resp.updateCounter());
+    }
+
+    /** */
+    private static WatchEvent watchResponse(Object obj) {
+        MultipleEntryResponse resp = (MultipleEntryResponse) obj;
+
+        List<EntryEvent> evts = new ArrayList<>(resp.entries().size() / 2);
+
+        Entry o = null;
+        Entry n;
+
+        for (int i = 0; i < resp.entries().size(); i++) {
+            SingleEntryResponse s = resp.entries().get(i);
+
+            EntryImpl e = new EntryImpl(new ByteArray(s.key()), s.value(), s.revision(), s.updateCounter());
+
+            if (i % 2 == 0)
+                o = e;
+            else {
+                n = e;
+
+                evts.add(new EntryEvent(o, n));
+            }
+        }
+
+        return new WatchEvent(evts);
     }
 
     // TODO: IGNITE-14691 Temporally solution that should be removed after implementing reactive watches.
@@ -247,7 +360,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
         /**
          * Starts exclusive thread per watch that implement watch pulling logic and
-         * calls {@link WatchListener#onUpdate(Iterable)}} or {@link WatchListener#onError(Throwable)}.
+         * calls {@link WatchListener#onUpdate(WatchEvent)}} or {@link WatchListener#onError(Throwable)}.
          *
          * @param watchId Watch id.
          * @param cursor Watch Cursor.
@@ -272,6 +385,10 @@ public class MetaStorageServiceImpl implements MetaStorageService {
                 (k, v) -> {
                     CompletableFuture.runAsync(v::interrupt).thenRun(() -> {
                         try {
+                            v.stop = true;
+
+                            Thread.sleep(100);
+
                             v.cursor.close();
                         }
                         catch (InterruptedException e) {
@@ -289,6 +406,9 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
         /** Watcher thread, uses pulling logic in order to retrieve watch notifications from server */
         private final class Watcher extends Thread {
+            /** */
+            private volatile boolean stop = false;
+
             /** Watch event cursor. */
             private Cursor<WatchEvent> cursor;
 
@@ -309,13 +429,9 @@ public class MetaStorageServiceImpl implements MetaStorageService {
              * in the while(true) loop. Collects watch events with same revision and fires either onUpdate or onError().
              */
             @Override public void run() {
-                long rev = -1;
-
-                List<WatchEvent> sameRevisionEvts = new ArrayList<>();
-
                 Iterator<WatchEvent> watchEvtsIter = cursor.iterator();
 
-                while (true) {
+                while (!stop) {
                     try {
                         if (watchEvtsIter.hasNext()) {
                             WatchEvent watchEvt = null;
@@ -329,19 +445,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
                             assert watchEvt != null;
 
-                            if (watchEvt.newEntry().revision() == rev)
-                                sameRevisionEvts.add(watchEvt);
-                            else {
-                                rev = watchEvt.newEntry().revision();
-
-                                if (!sameRevisionEvts.isEmpty()) {
-                                    lsnr.onUpdate(sameRevisionEvts);
-
-                                    sameRevisionEvts.clear();
-                                }
-
-                                sameRevisionEvts.add(watchEvt);
-                            }
+                            lsnr.onUpdate(watchEvt);
                         }
                         else
                             Thread.sleep(10);

@@ -74,5 +74,11 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-metastorage-server</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

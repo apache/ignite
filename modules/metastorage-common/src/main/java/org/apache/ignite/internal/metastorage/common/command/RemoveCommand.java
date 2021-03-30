@@ -17,29 +17,28 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Remove command for {@link MetaStorageCommandListener} that removes an entry for the given key.
+ * Remove command for MetaStorageCommandListener that removes an entry for the given key.
  */
 public final class RemoveCommand implements WriteCommand {
     /** The key. Couldn't be {@code null}. */
-    @NotNull private final Key key;
+    @NotNull private final byte[] key;
 
     /**
      * @param key he key. Couldn't be {@code null}.
      */
-    public RemoveCommand(@NotNull Key key) {
-        this.key = key;
+    public RemoveCommand(@NotNull ByteArray key) {
+        this.key = key.bytes();
     }
 
     /**
      * @return The key. Couldn't be {@code null}.
      */
-    public @NotNull Key key() {
+    public @NotNull byte[] key() {
         return key;
     }
 }

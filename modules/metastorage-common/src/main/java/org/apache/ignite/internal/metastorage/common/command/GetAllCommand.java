@@ -17,37 +17,35 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import java.util.List;
+import java.util.Set;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Get all command for {@link MetaStorageCommandListener} that retrieves entries
+ * Get all command for MetaStorageCommandListener that retrieves entries
  * for given keys and the revision upper bound, if latter is present.
  */
 public final class GetAllCommand implements ReadCommand {
-    /** The collection of keys. */
-    @NotNull private final Collection<Key> keys;
+    /** The list of keys. */
+    @NotNull private final List<byte[]> keys;
 
     /** The upper bound for entry revisions. Must be positive. */
-    @Nullable private Long revUpperBound;
+    private long revUpperBound;
 
     /**
      * @param keys The collection of keys. Couldn't be {@code null} or empty. Collection elements couldn't be {@code
      * null}.
      */
-    public GetAllCommand(@NotNull Collection<Key> keys) {
+    public GetAllCommand(@NotNull Set<ByteArray> keys) {
         assert !keys.isEmpty();
 
-        if (keys instanceof Serializable)
-            this.keys = keys;
-        else
-            this.keys = new ArrayList<>(keys);
+        this.keys = new ArrayList<>(keys.size());
+
+        for (ByteArray key : keys)
+            this.keys.add(key.bytes());
     }
 
     /**
@@ -55,7 +53,7 @@ public final class GetAllCommand implements ReadCommand {
      * null}.
      * @param revUpperBound The upper bound for entry revisions. Must be positive.
      */
-    public GetAllCommand(@NotNull Collection<Key> keys, @NotNull Long revUpperBound) {
+    public GetAllCommand(@NotNull Set<ByteArray> keys, long revUpperBound) {
         this(keys);
 
         assert revUpperBound > 0;
@@ -64,16 +62,16 @@ public final class GetAllCommand implements ReadCommand {
     }
 
     /**
-     * @return The collection of keys.
+     * @return The list of keys.
      */
-    public @NotNull Collection<Key> keys() {
+    public @NotNull List<byte[]> keys() {
         return keys;
     }
 
     /**
      * @return The upper bound for entry revisions. Must be positive.
      */
-    public @Nullable Long revision() {
+    public long revision() {
         return revUpperBound;
     }
 }

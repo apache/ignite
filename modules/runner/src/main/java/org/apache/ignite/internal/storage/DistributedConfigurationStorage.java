@@ -35,39 +35,41 @@ import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.util.ByteUtils;
+import org.apache.ignite.internal.util.Cursor;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.metastorage.common.Conditions;
-import org.apache.ignite.metastorage.common.Cursor;
-import org.apache.ignite.metastorage.common.Entry;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.Operation;
-import org.apache.ignite.metastorage.common.Operations;
-import org.apache.ignite.metastorage.common.WatchEvent;
-import org.apache.ignite.metastorage.common.WatchListener;
+import org.apache.ignite.metastorage.client.Conditions;
+import org.apache.ignite.metastorage.client.Entry;
+import org.apache.ignite.metastorage.client.EntryEvent;
+import org.apache.ignite.metastorage.client.Operation;
+import org.apache.ignite.metastorage.client.Operations;
+import org.apache.ignite.metastorage.client.WatchEvent;
+import org.apache.ignite.metastorage.client.WatchListener;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Distributed configuration storage.
  */
 public class DistributedConfigurationStorage implements ConfigurationStorage {
-    /** Prefix that we add to configuration keys to distinguish them in metastorage. Must end with dot. */
+    /** Prefix that we add to configuration keys to distinguish them in meta storage. Must end with dot. */
     private static final String DISTRIBUTED_PREFIX = "dst-cfg.";
 
     /** Logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(DistributedConfigurationStorage.class);
 
     /**
-     * Key for CAS-ing configuration keys to metastorage. This key is expected to be the first key in lexicographical
+     * Key for CAS-ing configuration keys to meta storage. This key is expected to be the first key in lexicographical
      * order of distributed configuration keys.
      */
-    private static final Key MASTER_KEY = new Key(DISTRIBUTED_PREFIX);
+    private static final ByteArray MASTER_KEY = new ByteArray(DISTRIBUTED_PREFIX);
 
     /**
      * This key is expected to be the last key in lexicographical order of distributed configuration keys. It is
-     * possible because keys are in lexicographical order in metastorage and adding {@code (char)('.' + 1)} to the end
+     * possible because keys are in lexicographical order in meta storage and adding {@code (char)('.' + 1)} to the end
      * will produce all keys with prefix {@link DistributedConfigurationStorage#DISTRIBUTED_PREFIX}
      */
-    private static final Key DST_KEYS_END_RANGE = new Key(DISTRIBUTED_PREFIX.substring(0, DISTRIBUTED_PREFIX.length() - 1) + (char)('.' + 1));
+    private static final ByteArray DST_KEYS_END_RANGE =
+            new ByteArray(DISTRIBUTED_PREFIX.substring(0, DISTRIBUTED_PREFIX.length() - 1) + (char)('.' + 1));
 
     /** Id of watch that is responsible for configuration update. */
     private CompletableFuture<Long> watchId;
@@ -76,10 +78,10 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     private final MetaStorageManager metaStorageMgr;
 
     /** Change listeners. */
-    private List<ConfigurationStorageListener> listeners = new CopyOnWriteArrayList<>();
+    private final List<ConfigurationStorageListener> listeners = new CopyOnWriteArrayList<>();
 
-    /** Storage version. It stores actual metastorage revision, that is applied to configuration manager. */
-    private AtomicLong ver = new AtomicLong(0L);
+    /** Storage version. It stores actual meta storage revision, that is applied to configuration manager. */
+    private final AtomicLong ver = new AtomicLong(0L);
 
     /**
      * Constructor.
@@ -141,7 +143,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
         HashSet<Operation> operations = new HashSet<>();
 
         for (Map.Entry<String, Serializable> entry : newValues.entrySet()) {
-            Key key = new Key(DISTRIBUTED_PREFIX + entry.getKey());
+            ByteArray key = new ByteArray(DISTRIBUTED_PREFIX + entry.getKey());
 
             if (entry.getValue() != null)
                 // TODO: investigate overhead when serialize int, long, double, boolean, string, arrays of above
@@ -154,7 +156,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
         operations.add(Operations.put(MASTER_KEY, ByteUtils.longToBytes(sentVersion)));
 
         return metaStorageMgr.invoke(
-            Conditions.key(MASTER_KEY).revision().eq(ver.get()),
+            Conditions.revision(MASTER_KEY).eq(ver.get()),
             operations,
             Collections.singleton(Operations.noop()));
     }
@@ -167,14 +169,14 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
             // TODO: registerWatchByPrefix could throw OperationTimeoutException and CompactedException and we should
             // TODO: properly handle such cases https://issues.apache.org/jira/browse/IGNITE-14604
             watchId = metaStorageMgr.registerWatchByPrefix(MASTER_KEY, new WatchListener() {
-                @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> events) {
+                @Override public boolean onUpdate(@NotNull WatchEvent events) {
                     HashMap<String, Serializable> data = new HashMap<>();
 
                     long maxRevision = 0L;
 
                     Entry entryForMasterKey = null;
 
-                    for (WatchEvent event : events) {
+                    for (EntryEvent event : events.entryEvents()) {
                         Entry e = event.newEntry();
 
                         if (!e.key().equals(MASTER_KEY)) {
@@ -187,7 +189,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
                             entryForMasterKey = e;
                     }
 
-                    // Contract of metastorage ensures that all updates of one revision will come in one batch.
+                    // Contract of meta storage ensures that all updates of one revision will come in one batch.
                     // Also masterKey should be updated every time when we update cfg.
                     // That means that masterKey update must be included in the batch.
                     assert entryForMasterKey != null;
@@ -206,7 +208,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
                 @Override public void onError(@NotNull Throwable e) {
                     // TODO: need to handle this case and there should some mechanism for registering new watch as far as
                     // TODO: onError unregisters failed watch https://issues.apache.org/jira/browse/IGNITE-14604
-                    LOG.error("Metastorage listener issue", e);
+                    LOG.error("Meta storage listener issue", e);
                 }
             });
         }
@@ -245,11 +247,11 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     }
 
     /**
-     * Method that returns all distributed configuration keys from metastorage filtered out by the current applied
+     * Method that returns all distributed configuration keys from meta storage filtered out by the current applied
      * revision as an upper bound. Applied revision is a revision of the last successful vault update.
      * <p>
-     * This is possible to distinguish cfg keys from metastorage because we add special prefix {@link
-     * DistributedConfigurationStorage#DISTRIBUTED_PREFIX} to all configuration keys that we put to metastorage.
+     * This is possible to distinguish cfg keys from meta storage because we add special prefix {@link
+     * DistributedConfigurationStorage#DISTRIBUTED_PREFIX} to all configuration keys that we put to meta storage.
      *
      * @return Cursor built upon all distributed configuration entries.
      */

@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.metastorage.common.command.cursor;
 
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Cursor {@code next} command for {@link MetaStorageCommandListener} that returns next element and moves cursor.
+ * Cursor {@code next} command for MetaStorageCommandListener that returns next element and moves cursor.
  */
 public class CursorNextCommand implements WriteCommand {
     /** Cursor id. */

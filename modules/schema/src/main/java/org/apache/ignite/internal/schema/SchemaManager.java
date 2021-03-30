@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,16 +42,16 @@ import org.apache.ignite.internal.schema.event.SchemaEventParameters;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryException;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
 import org.apache.ignite.internal.util.ByteUtils;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.metastorage.common.Conditions;
-import org.apache.ignite.metastorage.common.Cursor;
-import org.apache.ignite.metastorage.common.Entry;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.Operations;
-import org.apache.ignite.metastorage.common.WatchEvent;
-import org.apache.ignite.metastorage.common.WatchListener;
+import org.apache.ignite.metastorage.client.Conditions;
+import org.apache.ignite.metastorage.client.Entry;
+import org.apache.ignite.metastorage.client.EntryEvent;
+import org.apache.ignite.metastorage.client.Operations;
+import org.apache.ignite.metastorage.client.WatchEvent;
+import org.apache.ignite.metastorage.client.WatchListener;
 import org.apache.ignite.schema.PrimaryIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -106,9 +107,9 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
         this.metaStorageMgr = metaStorageMgr;
         this.vaultMgr = vaultMgr;
 
-        metaStorageMgr.registerWatchByPrefix(new Key(INTERNAL_PREFIX), new WatchListener() {
-            @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> events) {
-                for (WatchEvent evt : events) {
+        metaStorageMgr.registerWatchByPrefix(new ByteArray(INTERNAL_PREFIX), new WatchListener() {
+            @Override public boolean onUpdate(@NotNull WatchEvent events) {
+                for (EntryEvent evt : events.entryEvents()) {
                     String keyTail = evt.newEntry().key().toString().substring(INTERNAL_PREFIX.length() - 1);
 
                     int verPos = keyTail.indexOf(INTERNAL_VER_SUFFIX);
@@ -120,9 +121,9 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
 
                         assert reg != null : "Table schema was not initialized or table has been dropped: " + tblId;
 
-                        if (evt.oldEntry() == null)
+                        if (evt.oldEntry().empty() || evt.oldEntry().tombstone())
                             onEvent(SchemaEvent.INITIALIZED, new SchemaEventParameters(tblId, reg), null);
-                        else if (evt.newEntry() == null) {
+                        else if (evt.newEntry().empty() || evt.newEntry().tombstone()) {
                             schemaRegs.remove(tblId);
 
                             onEvent(SchemaEvent.DROPPED, new SchemaEventParameters(tblId, null), null);
@@ -138,10 +139,13 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                         if (reg == null)
                             schemaRegs.put(tblId, (reg = new SchemaRegistryImpl(v -> tableSchema(tblId, v))));
 
-                        if (evt.oldEntry() == null)
+                        if (evt.oldEntry().empty() || evt.oldEntry().tombstone())
                             reg.onSchemaRegistered((SchemaDescriptor)ByteUtils.fromBytes(evt.newEntry().value()));
-                        else if (evt.newEntry() == null)
-                            reg.onSchemaDropped(Integer.parseInt(keyTail.substring(verPos + INTERNAL_VER_SUFFIX.length())));
+                        else if (evt.newEntry().empty() || evt.newEntry().tombstone()) {
+                            int ver = Integer.parseInt(keyTail.substring(verPos + INTERNAL_VER_SUFFIX.length()));
+
+                            reg.onSchemaDropped(ver);
+                        }
                         else
                             throw new SchemaRegistryException("Schema of concrete version can't be changed.");
                     }
@@ -173,13 +177,13 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
 
                 final int schemaVer = 1;
 
-                final Key lastVerKey = new Key(INTERNAL_PREFIX + tblId);
-                final Key schemaKey = new Key(INTERNAL_PREFIX + tblId + INTERNAL_VER_SUFFIX + schemaVer);
+                final ByteArray lastVerKey = new ByteArray(INTERNAL_PREFIX + tblId);
+                final ByteArray schemaKey = new ByteArray(INTERNAL_PREFIX + tblId + INTERNAL_VER_SUFFIX + schemaVer);
 
                 final SchemaDescriptor desc = createSchemaDescriptor(schemaVer, tblConfig);
 
                 return metaStorageMgr.invoke(
-                    Conditions.key(lastVerKey).value().eq(entry.value()), // Won't to rewrite if the version goes ahead.
+                    Conditions.value(lastVerKey).eq(entry.value()), // Won't to rewrite if the version goes ahead.
                     List.of(
                         //TODO: IGNITE-14679 Serialize schema.
                         Operations.put(schemaKey, ByteUtils.toBytes(desc)),
@@ -314,12 +318,13 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
      * @return Future which will complete when all versions of schema will be unregistered.
      */
     public CompletableFuture<Boolean> unregisterSchemas(UUID tableId) {
-        CompletableFuture<Void> fut = metaStorageMgr.remove(new Key(INTERNAL_PREFIX + tableId));
+        CompletableFuture<Void> fut = metaStorageMgr.remove(new ByteArray(INTERNAL_PREFIX + tableId));
 
         String schemaPrefix = INTERNAL_PREFIX + tableId + INTERNAL_VER_SUFFIX;
 
-        List<Key> keys = new ArrayList<>();
-        try (Cursor<Entry> cursor = metaStorageMgr.range(new Key(schemaPrefix), null)) {
+        Set<ByteArray> keys = new HashSet<>();
+
+        try (Cursor<Entry> cursor = metaStorageMgr.range(new ByteArray(schemaPrefix), null)) {
             cursor.forEach(entry -> keys.add(entry.key()));
         }
         catch (Exception e) {

@@ -17,38 +17,35 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import java.util.List;
+import java.util.Set;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get and remove all command for {@link MetaStorageCommandListener} that removes entries
+ * Get and remove all command for MetaStorageCommandListener that removes entries
  * for given keys and retrieves previous entries.
  */
 public final class GetAndRemoveAllCommand implements WriteCommand {
     /** The keys collection. Couldn't be {@code null}. */
-    @NotNull private final Collection<Key> keys;
+    @NotNull private final List<byte[]> keys;
 
     /**
      * @param keys The keys collection. Couldn't be {@code null}.
      */
-    public GetAndRemoveAllCommand(@NotNull Collection<Key> keys) {
-        assert !keys.isEmpty();
+    public GetAndRemoveAllCommand(@NotNull Set<ByteArray> keys) {
+        this.keys = new ArrayList<>(keys.size());
 
-        if (keys instanceof Serializable)
-            this.keys = keys;
-        else
-            this.keys = new ArrayList<>(keys);
+        for (ByteArray key : keys)
+            this.keys.add(key.bytes());
     }
 
     /**
      * @return The keys collection. Couldn't be {@code null}.
      */
-    public @NotNull Collection<Key> keys() {
+    public @NotNull List<byte[]> keys() {
         return keys;
     }
 }

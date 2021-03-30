@@ -20,8 +20,8 @@ package org.apache.ignite.internal.metastorage.watch;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.metastorage.common.Key;
 
 /**
  * Filter for listen key's changes on metastore.
@@ -32,38 +32,38 @@ public interface KeyCriterion {
      *
      * @return Ignite tuple with first key as start of range and second as the end.
      */
-    public IgniteBiTuple<Key, Key> toRange();
+    public IgniteBiTuple<ByteArray, ByteArray> toRange();
 
     /**
      * Check if this key criterion contains the key.
      *
      * @return true if criterion contains the key, false otherwise.
      */
-    public boolean contains(Key key);
+    public boolean contains(ByteArray key);
 
     /**
      * Simple criterion which contains exactly one key.
      */
     static class ExactCriterion implements KeyCriterion {
         /** The key of criterion. */
-        private final Key key;
+        private final ByteArray key;
 
         /**
          * Creates the instance of exact criterion.
          *
          * @param key Instance of the reference key.
          */
-        public ExactCriterion(Key key) {
+        public ExactCriterion(ByteArray key) {
             this.key = key;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Key, Key> toRange() {
+        @Override public IgniteBiTuple<ByteArray, ByteArray> toRange() {
             return new IgniteBiTuple<>(key, key);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(Key key) {
+        @Override public boolean contains(ByteArray key) {
             return this.key.equals(key);
         }
 
@@ -74,10 +74,10 @@ public interface KeyCriterion {
      */
     static class RangeCriterion implements KeyCriterion {
         /** Start of the range. */
-        private final Key from;
+        private final ByteArray from;
 
         /** End of the range (exclusive). */
-        private final Key to;
+        private final ByteArray to;
 
         /**
          * Creates the instance of range criterion.
@@ -85,18 +85,18 @@ public interface KeyCriterion {
          * @param from Start of the range.
          * @param to End of the range (exclusive).
          */
-        public RangeCriterion(Key from, Key to) {
+        public RangeCriterion(ByteArray from, ByteArray to) {
             this.from = from;
             this.to = to;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Key, Key> toRange() {
+        @Override public IgniteBiTuple<ByteArray, ByteArray> toRange() {
             return new IgniteBiTuple<>(from, to);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(Key key) {
+        @Override public boolean contains(ByteArray key) {
             return key.compareTo(from) >= 0 && key.compareTo(to) < 0;
         }
     }
@@ -106,24 +106,24 @@ public interface KeyCriterion {
      */
     static class CollectionCriterion implements KeyCriterion {
         /** Collection of keys. */
-        private final Collection<Key> keys;
+        private final Collection<ByteArray> keys;
 
         /**
          * Creates the instance of collection criterion.
          *
          * @param keys Collection of keys.
          */
-        public CollectionCriterion(Collection<Key> keys) {
+        public CollectionCriterion(Collection<ByteArray> keys) {
             this.keys = keys;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Key, Key> toRange() {
+        @Override public IgniteBiTuple<ByteArray, ByteArray> toRange() {
             return new IgniteBiTuple<>(Collections.min(keys), Collections.max(keys));
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(Key key) {
+        @Override public boolean contains(ByteArray key) {
             return keys.contains(key);
         }
     }
@@ -133,29 +133,31 @@ public interface KeyCriterion {
      */
     static class PrefixCriterion implements KeyCriterion {
         /** Prefix of the key. */
-        private final Key prefixKey;
+        private final ByteArray prefixKey;
 
         /**
          * Creates the instance of prefix key criterion.
          *
          * @param prefixKey Prefix of the key.
          */
-        public PrefixCriterion(Key prefixKey) {
+        public PrefixCriterion(ByteArray prefixKey) {
             this.prefixKey = prefixKey;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Key, Key> toRange() {
+        @Override public IgniteBiTuple<ByteArray, ByteArray> toRange() {
             var bytes = Arrays.copyOf(prefixKey.bytes(), prefixKey.bytes().length);
+
             if (bytes[bytes.length - 1] != Byte.MAX_VALUE)
                 bytes[bytes.length - 1]++;
             else
                 bytes = Arrays.copyOf(bytes, bytes.length + 1);
-            return new IgniteBiTuple<>(prefixKey, new Key(bytes));
+
+            return new IgniteBiTuple<>(prefixKey, new ByteArray(bytes));
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(Key key) {
+        @Override public boolean contains(ByteArray key) {
             return key.compareTo(prefixKey) >= 0 && key.compareTo(toRange().getValue()) < 0;
         }
     }

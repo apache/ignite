@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.metastorage.common.command.cursor;
 
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Cursor close command for {@link MetaStorageCommandListener} that closes cursor with given id.
+ * Cursor close command for MetaStorageCommandListener that closes cursor with given id.
  */
 public class CursorCloseCommand implements WriteCommand {
     /** Cursor id. */

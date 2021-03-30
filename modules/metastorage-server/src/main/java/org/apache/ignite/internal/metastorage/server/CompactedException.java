@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.common;
+package org.apache.ignite.internal.metastorage.server;
 
 /**
  * Thrown when a requested operation on meta storage could not be performed because target revisions were removed

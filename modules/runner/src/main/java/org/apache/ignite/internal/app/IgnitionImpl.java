@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
 import org.apache.ignite.configuration.RootKey;
@@ -192,9 +191,7 @@ public class IgnitionImpl implements Ignition {
     private static void ackBanner() {
         String ver = IgniteProperties.get(VER_KEY);
 
-        String banner = Arrays
-            .stream(BANNER)
-            .collect(Collectors.joining("\n"));
+        String banner = String.join("\n", BANNER);
 
         LOG.info(banner + '\n' + " ".repeat(22) + "Apache Ignite ver. " + ver + '\n');
     }

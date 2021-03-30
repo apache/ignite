@@ -17,36 +17,34 @@
 
 package org.apache.ignite.internal.metastorage.common.command;
 
-import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Get command for {@link MetaStorageCommandListener} that retrieves an entry
+ * Get command for MetaStorageCommandListener that retrieves an entry
  * for the given key and the revision upper bound, if latter is present.
  */
 public final class GetCommand implements ReadCommand {
     /** Key. */
-    @NotNull private final Key key;
+    @NotNull private final byte[] key;
 
     /** The upper bound for entry revisions. Must be positive. */
-    @Nullable private Long revUpperBound;
+    private long revUpperBound;
 
     /**
      * @param key Key. Couldn't be {@code null}.
      */
-    public GetCommand(@NotNull Key key) {
-        this.key = key;
+    public GetCommand(@NotNull ByteArray key) {
+        this.key = key.bytes();
     }
 
     /**
      * @param key Key. Couldn't be {@code null}.
      * @param revUpperBound The upper bound for entry revisions. Must be positive.
      */
-    public GetCommand(@NotNull Key key, @NotNull Long revUpperBound) {
-        this.key = key;
+    public GetCommand(@NotNull ByteArray key, long revUpperBound) {
+        this.key = key.bytes();
 
         assert revUpperBound > 0;
 
@@ -56,14 +54,14 @@ public final class GetCommand implements ReadCommand {
     /**
      * @return Key.
      */
-    public @NotNull Key key() {
+    public @NotNull byte[] key() {
         return key;
     }
 
     /**
      * @return The upper bound for entry revisions, or {@code null} if wasn't specified.
      */
-    public @Nullable Long revision() {
+    public long revision() {
         return revUpperBound;
     }
 }
