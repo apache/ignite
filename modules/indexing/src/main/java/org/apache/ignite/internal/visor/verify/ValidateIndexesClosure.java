@@ -986,7 +986,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
      * @param locPart Local partition.
      * @return Cache size representation object.
      */
-    private CacheSize calcCacheSize(CacheGroupContext grpCtx,GridDhtLocalPartition locPart) {
+    private CacheSize calcCacheSize(CacheGroupContext grpCtx, GridDhtLocalPartition locPart) {
         try {
             if (validateCtx.isCancelled())
                 return new CacheSize(null, emptyMap());

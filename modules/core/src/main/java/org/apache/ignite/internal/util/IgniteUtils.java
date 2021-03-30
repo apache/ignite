@@ -11448,7 +11448,7 @@ public abstract class IgniteUtils {
     /**
      * The batch of tasks with a batch index in global array.
      */
-    private static class Batch<T,R> {
+    private static class Batch<T, R> {
         /** List tasks. */
         private final List<T> tasks;
 

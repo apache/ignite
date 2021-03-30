@@ -83,7 +83,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

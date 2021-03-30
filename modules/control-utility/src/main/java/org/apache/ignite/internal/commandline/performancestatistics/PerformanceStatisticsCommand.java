@@ -31,6 +31,7 @@ import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 
 import static org.apache.ignite.internal.commandline.CommandList.PERFORMANCE_STATISTICS;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.ROTATE;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.START;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STATUS;
 import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STOP;
@@ -91,6 +92,9 @@ public class PerformanceStatisticsCommand extends AbstractCommand<Object> {
 
         Command.usage(log, "Stop collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, STOP.toString());
+
+        Command.usage(log, "Rotate collecting performance statistics in the cluster:",
+            PERFORMANCE_STATISTICS, ROTATE.toString());
 
         Command.usage(log, "Get status of collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, STATUS.toString());
