@@ -17,7 +17,6 @@
 This package contains rebalance tests.
 """
 
-from datetime import datetime
 from typing import NamedTuple
 
 # pylint: disable=W0622
@@ -136,23 +135,15 @@ def get_rebalance_metrics(node, cache_group):
     :return: RebalanceMetrics instance.
     """
     mbean = node.jmx_client().find_mbean('.*group=cacheGroups.*name="%s"' % cache_group)
-    start_time = to_datetime(int(next(mbean.RebalancingStartTime)))
-    end_time = to_datetime(int(next(mbean.RebalancingEndTime)))
+    start_time = int(next(mbean.RebalancingStartTime))
+    end_time = int(next(mbean.RebalancingEndTime))
 
     return RebalanceMetrics(
         received_bytes=int(next(mbean.RebalancingReceivedBytes)),
         start_time=start_time,
         end_time=end_time,
-        duration=(end_time - start_time).total_seconds() if start_time and end_time else 0)
-
-
-def to_datetime(timestamp):
-    """
-    Converts timestamp in millicesonds to datetime.
-    :param timestamp: Timestamp in milliseconds.
-    :return: datetime constructed from timestamp or None if ts == -1.
-    """
-    return None if timestamp == -1 else datetime.fromtimestamp(timestamp / 1000.0)
+        duration=(end_time - start_time) if start_time != -1 and end_time != -1 else 0,
+        node=node.name)
 
 
 class RebalanceMetrics(NamedTuple):
@@ -160,39 +151,46 @@ class RebalanceMetrics(NamedTuple):
     Rebalance metrics
     """
     received_bytes: int = 0
-    start_time: datetime = None
-    end_time: datetime = None
-    duration: float = 0
+    start_time: int = 0
+    end_time: int = 0
+    duration: int = 0
+    node: str = None
 
 
 def aggregate_rebalance_stats(nodes, cache_count):
     """
-    Aggregates rebalance stats for specified nodes and cache count:
-    received_bytes -> sum(all of received_bytes)
-    start_time -> min(all of start_time)
-    end_time -> max(all of end_time)
-    duration -> sum(all of duration)
+    Aggregates rebalance stats for specified nodes and cache count.
     :param nodes: Nodes list.
     :param cache_count: Cache count.
-    :return: RebalanceMetrics instance with aggregated values.
+    :return: Aggregated rebalance stats dictionary.
     """
-    received_bytes = 0
-    start_time = None
-    end_time = None
-    duration = 0
+    def __stats(cache_idx):
+        cache_name = "test-cache-%d" % (cache_idx + 1)
 
-    for node in nodes:
-        for cache_idx in range(cache_count):
-            metrics = get_rebalance_metrics(node, "test-cache-%d" % (cache_idx + 1))
-            received_bytes += metrics.received_bytes
-            if metrics.start_time is not None:
-                start_time = min(t for t in [start_time, metrics.start_time] if t is not None)
-            if metrics.end_time is not None:
-                end_time = max(t for t in [end_time, metrics.end_time] if t is not None)
-            duration += metrics.duration
+        stats = {
+            "cache": cache_name,
+            "start_time": {},
+            "end_time": {},
+            "duration": {},
+            "received_bytes": {}
+        }
 
-    return RebalanceMetrics(
-        received_bytes=received_bytes,
-        start_time=start_time,
-        end_time=end_time,
-        duration=duration)
+        metrics = list(map(lambda node: get_rebalance_metrics(node, cache_name), nodes))
+
+        def __key(tup):
+            return tup[1]
+
+        stats["start_time"]["min"] = min(map(lambda item: (item.node, item.start_time), metrics), key=__key)
+        stats["start_time"]["max"] = max(map(lambda item: (item.node, item.start_time), metrics), key=__key)
+        stats["end_time"]["min"] = min(map(lambda item: (item.node, item.end_time), metrics), key=__key)
+        stats["end_time"]["max"] = max(map(lambda item: (item.node, item.end_time), metrics), key=__key)
+        stats["duration"]["min"] = min(map(lambda item: (item.node, item.duration), metrics), key=__key)
+        stats["duration"]["max"] = max(map(lambda item: (item.node, item.duration), metrics), key=__key)
+        stats["duration"]["sum"] = sum(map(lambda item: item.duration, metrics))
+        stats["received_bytes"]["min"] = min(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
+        stats["received_bytes"]["max"] = max(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
+        stats["received_bytes"]["sum"] = sum(map(lambda item: item.received_bytes, metrics))
+
+        return stats
+
+    return list(map(__stats, range(cache_count)))
