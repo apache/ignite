@@ -8826,7 +8826,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Attaches node ID to log file name.
+     * Attaches prefix to log file name.
      *
      * @param postfix Postfix.
      * @param fileName File name.
