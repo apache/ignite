@@ -543,7 +543,7 @@
           url: extensions-and-integrations/cassandra/ddl-generator
     - title: PHP PDO
       url: extensions-and-integrations/php-pdo
-    - title: Performance statistics
+    - title: Performance Statistics
       url: extensions-and-integrations/performance-statistics
 - title: Plugins
   url: plugins
