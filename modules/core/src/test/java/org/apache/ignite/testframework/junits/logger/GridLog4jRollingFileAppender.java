@@ -94,7 +94,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
             if (baseFileName == null)
                 baseFileName = fileName;
 
-            fileName = U.nodeIdLogFileName(postfix, baseFileName);
+            fileName = U.logFileName(postfix, baseFileName);
         }
         else {
             String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
@@ -102,7 +102,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
             if (tmpDir != null) {
                 baseFileName = new File(tmpDir, "ignite.log").getAbsolutePath();
 
-                fileName = U.nodeIdLogFileName(postfix, baseFileName);
+                fileName = U.logFileName(postfix, baseFileName);
             }
         }
     }

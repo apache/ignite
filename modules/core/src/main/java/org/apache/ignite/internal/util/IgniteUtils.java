@@ -8833,7 +8833,7 @@ public abstract class IgniteUtils {
      * @return File name with node ID.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public static String nodeIdLogFileName(String postfix, String fileName) {
+    public static String logFileName(String postfix, String fileName) {
         assert postfix != null;
         assert fileName != null;
 

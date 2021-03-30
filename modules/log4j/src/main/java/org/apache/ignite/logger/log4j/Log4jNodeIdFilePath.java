@@ -45,15 +45,15 @@ class Log4jNodeIdFilePath implements IgniteClosure<String, String> {
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
         if (!F.isEmpty(U.IGNITE_LOG_DIR))
-            return U.nodeIdLogFileName(postfix, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
+            return U.logFileName(postfix, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
 
         if (oldPath != null) // fileName could be null if IGNITE_HOME is not defined.
-            return U.nodeIdLogFileName(postfix, oldPath);
+            return U.logFileName(postfix, oldPath);
 
         String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
 
         if (tmpDir != null)
-            return U.nodeIdLogFileName(postfix, new File(tmpDir, "ignite.log").getAbsolutePath());
+            return U.logFileName(postfix, new File(tmpDir, "ignite.log").getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
 
