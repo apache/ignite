@@ -119,9 +119,9 @@ public class H2QueryInfo {
             .append(", schema=").append(schema);
 
         msgSb.append(", sql='")
-            .append(sql);
+            .append(H2Utils.sensitiveData(() -> sql));
 
-        msgSb.append("', plan=").append(stmt.getPlanSQL());
+        msgSb.append("', plan=").append(H2Utils.sensitiveData(stmt::getPlanSQL));
 
         printInfo(msgSb);
 

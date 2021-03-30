@@ -41,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
+
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -71,6 +73,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -159,6 +162,9 @@ public class H2Utils {
             return null;
         }
     };
+
+    /** Message appears instead of sensitive data. */
+    public static final String SENSITIVE_DATA_MSG = "Data hidden due to IGNITE_SENSITIVE_DATA_LOGGING flag";
 
     /**
      * @param c1 First column.
@@ -1049,6 +1055,15 @@ public class H2Utils {
         }
 
         return keyCols.toArray(new IndexColumn[0]);
+    }
+
+
+    /**
+     * @param s Supplier of the original sensitive data.
+     * @return Original string or hidden.
+     */
+    public static String sensitiveData(Supplier<String> s) {
+        return GridToStringBuilder.includeSensitive() ? s.get() : SENSITIVE_DATA_MSG;
     }
 
     /**
