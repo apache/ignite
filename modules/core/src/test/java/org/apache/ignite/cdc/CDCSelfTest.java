@@ -26,7 +26,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -178,6 +180,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         addData(cache, 0, KEYS_CNT);
         addData(txCache, 0, KEYS_CNT);
 
+        CountDownLatch latch = new CountDownLatch(2);
+
         IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
                 assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
@@ -187,12 +191,18 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(lsnr.stoped);
 
+                latch.countDown();
+                latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
                 cdc.run();
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         });
+
+        latch.countDown();
+        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         addData(cache, KEYS_CNT, KEYS_CNT * 2);
         addData(txCache, KEYS_CNT, KEYS_CNT * 2);
@@ -207,7 +217,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
 
-        //flacky here!
         assertTrue(lsnr.stoped);
     }
 
@@ -410,7 +419,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
         /** */
-        public boolean stoped;
+        public volatile boolean stoped;
 
         /** {@inheritDoc} */
         @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
@@ -419,6 +428,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void stop() {
+            System.out.println("TestCDCConsumer.stop");
             stoped = true;
         }
 

@@ -136,7 +136,8 @@ public class IgniteCDC implements Runnable {
     public IgniteCDC(IgniteConfiguration cfg, CaptureDataChangeConfiguration cdcCfg) {
         this.cfg = new IgniteConfiguration(cfg);
         this.cdcCfg = cdcCfg;
-        this.consumer = new WALRecordsConsumer<>(cdcCfg.getConsumer());
+
+        consumer = new WALRecordsConsumer<>(cdcCfg.getConsumer());
 
         String workDir = workDir(cfg);
 
@@ -324,7 +325,12 @@ public class IgniteCDC implements Runnable {
         prevSegments.add(segment);
     }
 
-    /** */
+    /**
+     * Try locks CDC directory.
+     *
+     * @param dbStoreDirWithSubdirectory Root PDS directory.
+     * @return Lock or null if lock failed.
+     */
     private CDCFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
         if (!dbStoreDirWithSubdirectory.exists()) {
             log.warning(dbStoreDirWithSubdirectory + " not exists.");
