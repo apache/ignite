@@ -935,10 +935,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.state() == PREPARED /* recovery may be needed */
-                // (primary (not on originating) or backup) || (primary on originating).
-                && (tx.dht() || (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped()))
-                && tx.transactionNodes().containsKey(node.id()) /* one of tx's primaries is failed */) {
+            if (// (primary (not on originating) or backup) || (primary on originating).
+                (tx.dht() || (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped()))
+                // One of tx's primaries is failed.
+                && tx.transactionNodes()!= null && tx.transactionNodes().containsKey(node.id())) {
                 assert needWaitTransaction(tx, topVer);
 
                 res.add(tx.finishFuture());
