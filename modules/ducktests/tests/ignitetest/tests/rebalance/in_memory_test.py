@@ -132,16 +132,15 @@ class RebalanceInMemoryTest(IgniteTest):
                                    num_nodes=1)
             ignite.start()
 
-        start_node, start_time = await_rebalance_start(ignite)
+        start_node, _ = await_rebalance_start(ignite)
 
-        end_time = await_rebalance_complete(ignite, start_node, cache_count)
+        await_rebalance_complete(ignite, start_node, cache_count)
 
         rebalance_nodes = ignite.nodes[:-1] if trigger_event else ignite.nodes
 
         stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
 
         return {
-            "rebalance_time": int((end_time - start_time).total_seconds() * 1000),
             "rebalance_nodes": len(rebalance_nodes),
             "rebalance_stats": stats,
             "preload_time": int(preload_time * 1000),
