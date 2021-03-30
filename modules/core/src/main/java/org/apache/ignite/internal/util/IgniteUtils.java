@@ -8826,11 +8826,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Attaches prefix to log file name.
+     * Attaches postfix to log file name.
      *
      * @param postfix Postfix.
      * @param fileName File name.
-     * @return File name with prefix.
+     * @return File name with postfix.
      */
     @SuppressWarnings("IfMayBeConditional")
     public static String logFileName(String postfix, String fileName) {
