@@ -17,7 +17,6 @@
 This package contains rebalance tests.
 """
 
-from datetime import datetime
 from typing import NamedTuple
 
 # pylint: disable=W0622
@@ -136,24 +135,15 @@ def get_rebalance_metrics(node, cache_group):
     :return: RebalanceMetrics instance.
     """
     mbean = node.jmx_client().find_mbean('.*group=cacheGroups.*name="%s"' % cache_group)
-    start_time = to_datetime(int(next(mbean.RebalancingStartTime)))
-    end_time = to_datetime(int(next(mbean.RebalancingEndTime)))
+    start_time = int(next(mbean.RebalancingStartTime))
+    end_time = int(next(mbean.RebalancingEndTime))
 
     return RebalanceMetrics(
         received_bytes=int(next(mbean.RebalancingReceivedBytes)),
         start_time=start_time,
         end_time=end_time,
-        duration=int((end_time - start_time).total_seconds() * 1000) if start_time and end_time else 0,
+        duration=(end_time - start_time) if start_time != -1 and end_time != -1 else 0,
         node=node.name)
-
-
-def to_datetime(timestamp):
-    """
-    Converts timestamp in millicesonds to datetime.
-    :param timestamp: Timestamp in milliseconds.
-    :return: datetime constructed from timestamp or None if ts == -1.
-    """
-    return None if timestamp == -1 else datetime.fromtimestamp(timestamp / 1000.0)
 
 
 class RebalanceMetrics(NamedTuple):
@@ -161,8 +151,8 @@ class RebalanceMetrics(NamedTuple):
     Rebalance metrics
     """
     received_bytes: int = 0
-    start_time: datetime = None
-    end_time: datetime = None
+    start_time: int = 0
+    end_time: int = 0
     duration: int = 0
     node: str = None
 
