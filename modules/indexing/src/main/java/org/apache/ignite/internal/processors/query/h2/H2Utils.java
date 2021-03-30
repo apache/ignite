@@ -1057,7 +1057,6 @@ public class H2Utils {
         return keyCols.toArray(new IndexColumn[0]);
     }
 
-
     /**
      * @param s Supplier of the original sensitive data.
      * @return Original string or hidden.
