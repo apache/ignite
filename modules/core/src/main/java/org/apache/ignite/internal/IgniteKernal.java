@@ -1251,7 +1251,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
                 startProcessor(new IgniteAuthenticationProcessor(ctx));
-                startProcessor(new PerformanceStatisticsProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
@@ -1268,6 +1267,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+                startProcessor(new PerformanceStatisticsProcessor(ctx));
 
                 startTimer.finishGlobalStage("Start processors");
 

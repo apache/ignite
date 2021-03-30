@@ -82,7 +82,7 @@ public enum OperationType {
     CACHE_START(17),
 
     /** Checkpoint. */
-    CHECKPOINT(20);
+    CHECKPOINT(18);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,

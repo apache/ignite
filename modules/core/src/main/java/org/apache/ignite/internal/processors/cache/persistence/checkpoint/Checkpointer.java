@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -181,9 +180,6 @@ public class Checkpointer extends GridWorker {
     /** For testing only. */
     private volatile boolean checkpointsEnabled = true;
 
-    /** Statistics processor. */
-    private final PerformanceStatisticsProcessor statisticsProc;
-
     /**
      * @param gridName Grid name.
      * @param name Thread name.
@@ -201,7 +197,6 @@ public class Checkpointer extends GridWorker {
      * @param cpFreqDeviation Deviation of checkpoint frequency.
      */
     Checkpointer(
-        PerformanceStatisticsProcessor statisticsProc,
         @Nullable String gridName,
         String name,
         WorkersRegistry workersRegistry,
@@ -218,7 +213,6 @@ public class Checkpointer extends GridWorker {
         Supplier<Integer> cpFreqDeviation
     ) {
         super(gridName, name, logger.apply(Checkpointer.class), workersRegistry);
-        this.statisticsProc = statisticsProc;
         this.pauseDetector = detector;
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
@@ -487,7 +481,7 @@ public class Checkpointer extends GridWorker {
             tracker.onEnd();
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
-                if (statisticsProc.enabled())
+                if (cacheProcessor.context().kernalContext().performanceStatistics().enabled())
                     writeStatistics(chp, tracker);
 
                 if (log.isInfoEnabled()) {
@@ -986,7 +980,7 @@ public class Checkpointer extends GridWorker {
      * Writes checkpoint performance statistics.
      */
     private void writeStatistics(Checkpoint chp, CheckpointMetricsTracker tracker) {
-        statisticsProc.checkpoint(
+        cacheProcessor.context().kernalContext().performanceStatistics().checkpoint(
             tracker.beforeLockDuration(),
             tracker.lockWaitDuration(),
             tracker.listenersExecuteDuration(),
