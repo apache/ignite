@@ -3259,8 +3259,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryDiscardMessage)
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
+            else if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                checkPendingCustomMessages();
+
+                processCustomMessage((TcpDiscoveryCustomEventMessage) msg, false, false);
+            }
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -5129,8 +5132,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     processMessageFailedNodes(msg);
-
-                    checkPendingCustomMessages();
                 }
 
                 if (log.isDebugEnabled())
@@ -5438,6 +5439,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+
+            checkPendingCustomMessages();
         }
 
         /**
@@ -6216,11 +6219,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification, boolean force) {
             if (isLocalNodeCoordinator()) {
-                assert ring.minimumNodeVersion() != null : ring;
-
-                if (posponeUndeliveredMessages(msg))
+                if (posponeUndeliveredMessages(msg, force))
                     return;
 
                 if (!msg.verified()) {
@@ -6239,7 +6240,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             registerPendingMessage(msg);
 
-                            processCustomMessage(msg, waitForNotification);
+                            processCustomMessage(msg, waitForNotification, true);
                         }
                     }
 
@@ -6267,7 +6268,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
-                                processCustomMessage(ackMsg, waitForNotification);
+                                processCustomMessage(ackMsg, waitForNotification, true);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -6311,7 +6312,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to send.
          * @return {@code true} If message was appended to pending queue.
          */
-        private boolean posponeUndeliveredMessages(TcpDiscoveryCustomEventMessage msg) {
+        private boolean posponeUndeliveredMessages(TcpDiscoveryCustomEventMessage msg, boolean force) {
             boolean joiningEmpty;
 
             synchronized (mux) {
@@ -6328,13 +6329,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (msg.verified()) {
+                //if (msg.verified() || force) {
                     synchronized (mux) {
                         pendingCustomMsgs.add(msg);
                     }
-                }
-
-                return true;
+                    return true;
+                //}
             }
 
             return false;
@@ -6405,7 +6405,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomMessage()) != null)
-                    processCustomMessage(msg, true);
+                    processCustomMessage(msg, true, false);
             }
         }
 
