@@ -75,7 +75,7 @@ performance-statistics-tool/print-statistics.sh path_to_files
 ----
 --
 
-where `path_to_files` is a path to performance statistics file or files directory.
+Note that `path_to_files` is a path to the performance statistics file or files directory.
 
 The script provides the ability to filter operations by operation's type, time, or cache. For more details run the
 help command:
