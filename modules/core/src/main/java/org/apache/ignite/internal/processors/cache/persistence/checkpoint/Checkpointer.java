@@ -742,31 +742,42 @@ public class Checkpointer extends GridWorker {
     /**
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
         PartitionDestroyRequest req;
+        boolean canceled = false;
 
         synchronized (this) {
-            req = scheduledCp.getDestroyQueue().cancelDestroy(grpId, partId);
+            req = scheduledCp.getDestroyQueue().removeRequest(grpId, partId);
+
+            if (req != null) {
+                canceled = req.cancel();
+
+                assert canceled;
+            }
+
+            CheckpointProgressImpl cur = curCpProgress;
+
+            if (cur != null) {
+                req = cur.getDestroyQueue().removeRequest(grpId, partId);
+
+                if (req != null)
+                    canceled = req.cancel();
+            }
         }
 
-        if (req != null)
-            req.waitCompleted();
+        if (!canceled) {
+            if (req != null)
+                req.waitCompleted();
 
-        CheckpointProgressImpl cur;
-
-        synchronized (this) {
-            cur = curCpProgress;
-
-            if (cur != null)
-                req = cur.getDestroyQueue().cancelDestroy(grpId, partId);
+            return false;
         }
 
-        if (req != null)
-            req.waitCompleted();
-
-        if (req != null && log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("Partition file destroy has cancelled [grpId=" + grpId + ", partId=" + partId + "]");
+
+        return true;
     }
 
     /**

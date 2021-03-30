@@ -104,6 +104,9 @@ public class FilePerformanceStatisticsWriter {
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
+    /** Performance statistics file. */
+    private final File file;
+
     /** Performance statistics file I/O. */
     private final FileIO fileIo;
 
@@ -138,7 +141,7 @@ public class FilePerformanceStatisticsWriter {
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
 
-        File file = resolveStatisticsFile(ctx);
+        file = resolveStatisticsFile(ctx);
 
         fileIo = fileIoFactory.create(file);
 
@@ -309,6 +312,11 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(duration);
             buf.put(timedOut ? (byte)1 : 0);
         });
+    }
+
+    /** @return Performance statistics file. */
+    File file() {
+        return file;
     }
 
     /**
