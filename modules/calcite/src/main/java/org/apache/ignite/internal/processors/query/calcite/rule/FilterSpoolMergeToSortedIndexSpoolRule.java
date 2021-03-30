@@ -62,23 +62,13 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
 
         RelNode input = spool.getInput();
 
-        IndexConditions idxCond;
-        if (TraitUtils.collation(input).isDefault()) {
-            idxCond = RexUtils.buildSortedIndexConditions(
-                cluster,
-                filter.getCondition(),
-                spool.getRowType()
-            );
-        }
-        else {
-            idxCond = RexUtils.buildSortedIndexConditions(
+        IndexConditions idxCond = RexUtils.buildSortedIndexConditions(
                 cluster,
                 TraitUtils.collation(input),
                 filter.getCondition(),
                 spool.getRowType(),
                 null
-            );
-        }
+        );
 
         if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
             return;

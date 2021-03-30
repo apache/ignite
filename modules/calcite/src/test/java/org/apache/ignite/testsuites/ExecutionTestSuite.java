@@ -22,11 +22,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTes
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateSingleGroupExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashIndexSpoolExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.TreeIndexSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.TreeIndexSpoolExecutionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
