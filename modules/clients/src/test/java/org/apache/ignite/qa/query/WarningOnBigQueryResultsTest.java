@@ -41,7 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
 /**
  * Tests for log print for long running query.
  */
-@WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "plain")
+@WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
 public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTest {
     /** JDBC thin URL. */
     private static final String JDBC_THIN_URL = "jdbc:ignite:thin://127.0.0.1:" + CLI_PORT;
