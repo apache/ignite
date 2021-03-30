@@ -141,9 +141,9 @@ class RebalanceInMemoryTest(IgniteTest):
         stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
 
         return {
-            "Rebalanced in (ms)": int((end_time - start_time).total_seconds() * 1000),
-            "Rebalance nodes": len(rebalance_nodes),
-            "Rebalance stats": stats,
-            "Preloaded in (ms)": int(preload_time * 1000),
-            "Preloaded data size (bytes)": cache_count * entry_count * entry_size
+            "rebalance_time": int((end_time - start_time).total_seconds() * 1000),
+            "rebalance_nodes": len(rebalance_nodes),
+            "rebalance_stats": stats,
+            "preload_time": int(preload_time * 1000),
+            "preloaded_bytes": cache_count * entry_count * entry_size
         }

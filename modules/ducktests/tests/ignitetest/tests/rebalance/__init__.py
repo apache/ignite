@@ -168,11 +168,11 @@ def aggregate_rebalance_stats(nodes, cache_count):
         cache_name = "test-cache-%d" % (cache_idx + 1)
 
         stats = {
-            "Cache": cache_name,
-            "Start time": {},
-            "End time": {},
-            "Duration": {},
-            "Received bytes": {}
+            "cache": cache_name,
+            "start_time": {},
+            "end_time": {},
+            "duration": {},
+            "received_bytes": {}
         }
 
         metrics = list(map(lambda node: get_rebalance_metrics(node, cache_name), nodes))
@@ -180,16 +180,16 @@ def aggregate_rebalance_stats(nodes, cache_count):
         def __key(tup):
             return tup[1]
 
-        stats["Start time"]["min"] = min(map(lambda item: (item.node, item.start_time), metrics), key=__key)
-        stats["Start time"]["max"] = max(map(lambda item: (item.node, item.start_time), metrics), key=__key)
-        stats["End time"]["min"] = min(map(lambda item: (item.node, item.end_time), metrics), key=__key)
-        stats["End time"]["max"] = max(map(lambda item: (item.node, item.end_time), metrics), key=__key)
-        stats["Duration"]["min"] = min(map(lambda item: (item.node, item.duration), metrics), key=__key)
-        stats["Duration"]["max"] = max(map(lambda item: (item.node, item.duration), metrics), key=__key)
-        stats["Duration"]["sum"] = sum(map(lambda item: item.duration, metrics))
-        stats["Received bytes"]["min"] = min(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
-        stats["Received bytes"]["max"] = max(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
-        stats["Received bytes"]["sum"] = sum(map(lambda item: item.received_bytes, metrics))
+        stats["start_time"]["min"] = min(map(lambda item: (item.node, item.start_time), metrics), key=__key)
+        stats["start_time"]["max"] = max(map(lambda item: (item.node, item.start_time), metrics), key=__key)
+        stats["end_time"]["min"] = min(map(lambda item: (item.node, item.end_time), metrics), key=__key)
+        stats["end_time"]["max"] = max(map(lambda item: (item.node, item.end_time), metrics), key=__key)
+        stats["duration"]["min"] = min(map(lambda item: (item.node, item.duration), metrics), key=__key)
+        stats["duration"]["max"] = max(map(lambda item: (item.node, item.duration), metrics), key=__key)
+        stats["duration"]["sum"] = sum(map(lambda item: item.duration, metrics))
+        stats["received_bytes"]["min"] = min(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
+        stats["received_bytes"]["max"] = max(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
+        stats["received_bytes"]["sum"] = sum(map(lambda item: item.received_bytes, metrics))
 
         return stats
 
