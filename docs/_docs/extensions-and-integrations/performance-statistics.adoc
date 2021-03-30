@@ -19,7 +19,7 @@
 Ignite provides link:monitoring-metrics/performance-statistics[a built-in tool for cluster profiling.]
 
 The extension provides utilities to link:#building-the-report[create the report] and
-link:#print-statistics[print statistics] from collected files.
+link:#print-statistics[print statistics] from the collected files.
 
 == Building the Report
 
