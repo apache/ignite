@@ -200,9 +200,10 @@ public class AgentLauncher {
         }
         catch (Throwable ignored) {
             // No-op.
+        	ignored.printStackTrace();
         }
 
         // Force exit because of known issue with Jetty: HTTP client does not shutdown its threads.
-        System.exit(0);
+        //-System.exit(0);
     }
 }

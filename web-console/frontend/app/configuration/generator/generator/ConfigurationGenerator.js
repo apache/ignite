@@ -118,11 +118,7 @@ export default class IgniteConfigurationGenerator {
 
         this.clusterRebalance(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
-        this.clusterSsl(cluster, available, cfg);
-
-        // Deprecated in ignite 2.0
-        if (available(['1.0.0', '2.0.0']))
-            this.clusterSwap(cluster, cfg);
+        this.clusterSsl(cluster, available, cfg);        
 
         this.clusterPools(cluster, available, cfg);
         this.clusterTime(cluster, available, cfg);
@@ -138,7 +134,14 @@ export default class IgniteConfigurationGenerator {
         return DFLT_DIALECTS[dialect] || 'Unknown database: ' + (dialect || 'Choose JDBC dialect');
     }
 
+    // use jndi datasource
     static dataSourceBean(id, dialect, available, storeDeps, implementationVersion) {
+    	let dsBean = new Bean('org.springframework.jndi.JndiObjectFactoryBean', id, {'jndiName':'java:jdbc/'+id});
+    	dsBean.stringProperty("jndiName");    	
+    	return dsBean;
+    }
+    // use datasource pool
+    static dataSourceBeanNative(id, dialect, available, storeDeps, implementationVersion) {
         let dsBean;
 
         switch (dialect) {
@@ -155,7 +158,7 @@ export default class IgniteConfigurationGenerator {
 
                 break;
 
-            case 'DB2':
+            case '@DB2':
                 dsBean = new Bean('com.ibm.db2.jcc.DB2DataSource', id, {})
                     .property('serverName', `${id}.jdbc.server_name`, 'YOUR_DATABASE_SERVER_NAME')
                     .propertyInt('portNumber', `${id}.jdbc.port_number`, 'YOUR_JDBC_PORT_NUMBER')
@@ -194,6 +197,8 @@ export default class IgniteConfigurationGenerator {
 
                 break;
             default:
+            	dsBean = new Bean('com.mchange.v2.c3p0.ComboPooledDataSource', id, {})
+            		.property('jdbcUrl', `${id}.jdbc.url`, 'jdbc:your_database');
         }
 
         if (dsBean) {

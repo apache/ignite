@@ -115,7 +115,7 @@ export class IgniteWebConsoleModule {
 
     constructor(router: UIRouter, translate: TranslateService) {
         translate.setTranslation('en', defaultLanguage);
-        translate.use('en');
+        translate.use('zh-CN');
         states(translate).subscribe((s) => router.stateRegistry.register(s));
     }
 

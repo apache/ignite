@@ -441,7 +441,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param name Cache name.
      */
     public CacheConfiguration(String name) {
-        this.name = name;
+        // modify@byron
+        this.setName(name);
     }
 
     /**
@@ -590,7 +591,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setName(String name) {
         this.name = name;
-
+        //add@byron
+        int pos = name.lastIndexOf('.');
+        if(pos>0 && this.sqlSchema!=null) {
+        	this.sqlSchema = name.substring(pos);
+        }
         return this;
     }
 
@@ -1893,10 +1898,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
         if (sqlSchema != null) {
             A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+            this.sqlSchema = sqlSchema;
         }
-
-        this.sqlSchema = sqlSchema;
-
+        else { //add@byron use default sqlSchema
+        	this.setName(this.getName());
+        }
         return this;
     }
 

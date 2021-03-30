@@ -123,8 +123,10 @@ export default class PageConfigureOverviewController {
                 name: 'status',
                 displayName: 'Status',
                 field: 'status',
-                cellClass: 'ui-grid-number-cell',
-                cellTemplate: cellTemplate('base.console.edit.basic.models'),
+                cellClass: 'ui-grid-number-cell',                
+                cellTemplate: `
+                    <div class="ui-grid-cell-contents">{{ row.entity.status }}</div>
+                `,
                 enableFiltering: false,
                 type: 'string',
                 width: 95

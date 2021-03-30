@@ -192,7 +192,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     protected JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
 
     /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
-    private boolean sqlEscapeAll;
+    private boolean sqlEscapeAll = true; //modify@byron
 
     /**
      * Get field value from object for use as query parameter.

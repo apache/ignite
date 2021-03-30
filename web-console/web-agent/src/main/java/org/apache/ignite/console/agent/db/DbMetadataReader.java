@@ -21,6 +21,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.sql.Driver;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -76,6 +77,23 @@ public class DbMetadataReader {
         }
     }
 
+
+    /**
+     * Get current of Catalog from database.
+     *
+     * @param conn Connection to database.
+     * @param importSamples If {@code true} include sample schemas.
+     * @return List of schema names.
+     * @throws SQLException If schemas loading failed.
+     */
+    public String catalog(Connection conn) throws SQLException  {
+    	ResultSet result = conn.getMetaData().getCatalogs();
+        if(result.next()){
+        	return result.getString(1);
+        }
+        return null;
+    }
+    
     /**
      * Get list of schemas from database.
      *

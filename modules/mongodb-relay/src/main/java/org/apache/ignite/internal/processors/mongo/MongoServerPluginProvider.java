@@ -97,7 +97,7 @@ public class MongoServerPluginProvider implements PluginProvider {
                  }
              }
          }
-         if(cfg == null && ignite.name().equalsIgnoreCase("mongo")) {
+         if(cfg == null) {
         	 cfg = new MongoPluginConfiguration();
          }
          boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();

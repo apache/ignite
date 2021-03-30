@@ -14,7 +14,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
 
-public class ClusterLoadDataService implements ClusterAgentService {
+public class ClusterClearDataService implements ClusterAgentService {
    
 	 /** Ignite instance. */
     @IgniteInstanceResource
@@ -24,13 +24,12 @@ public class ClusterLoadDataService implements ClusterAgentService {
 	public Map<String, ? extends Object> call(Map<String,Object> payload) {
 		Map<String,Object> result = new HashMap<>();
 		int count = 0;
-		JsonObject args = new JsonObject((Map)payload.get("args"));
+		JsonObject args = (JsonObject)payload.get("args");
 		String cacheId = null;
 		JsonArray selectCaches = args.getJsonArray("caches");
-		if(args.get("cache")!=null && args.getString("id")!=null ) {
+		if(args.get("cache")!=null) {
 			cacheId = args.getJsonObject("cache").getString("id");
-		}
-		
+		}		
 		List<String> message = new ArrayList<>();
 		for(String cache: ignite.cacheNames()) {
 			try {
@@ -45,7 +44,7 @@ public class ClusterLoadDataService implements ClusterAgentService {
 						continue;
 					}
 				}				
-				igcache.loadCache(null);
+				igcache.clear();
 				count++;
 			}
 			catch(Exception e) {
@@ -59,6 +58,6 @@ public class ClusterLoadDataService implements ClusterAgentService {
 	}
 
 	public String toString() {
-		return "load data to cluster";
+		return "clear cache data to cluster";
 	}
 }

@@ -250,9 +250,15 @@ public class DatabaseHandler{
      */
     private Connection connect(JsonObject args) throws SQLException {
         String jdbcUrl = args.getString("jdbcUrl", "");
-
-        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl))
-            return AgentMetadataDemo.testDrive();
+        
+        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
+        	Connection demoConn = AgentMetadataDemo.testDrive();
+        	if(demoConn!=null) {
+        		this.databaseListener.addDB(args,demoConn);
+        	}
+            return demoConn;
+        }
+        
 
         String jdbcDriverJarPath = args.getString("jdbcDriverJar", "");
 
@@ -273,6 +279,12 @@ public class DatabaseHandler{
         Properties jdbcInfo = new Properties();
 
         jdbcInfo.putAll((Map)args.get("info"));
+        
+        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
+        	String jndiName= String.format("java:jdbc/dsH2");     		
+        	databaseListener.dataSourceManager.bindDataSource(jndiName, jdbcUrl, jdbcInfo);
+            return AgentMetadataDemo.testDrive();
+        }
 
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
@@ -282,7 +294,7 @@ public class DatabaseHandler{
 
         Connection conn = dbMetaReader.connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
         
-        this.databaseListener.addDB(args);
+        this.databaseListener.addDB(args,conn);
         
         return conn;
     }
@@ -378,7 +390,7 @@ public class DatabaseHandler{
 
         }       
         
-        if(deactivedCluster!=null) {
+        if(deactivedCluster!=null && databaseListener.clusters.size()>10) {
         	databaseListener.clusters.remove(deactivedCluster);
         }
         

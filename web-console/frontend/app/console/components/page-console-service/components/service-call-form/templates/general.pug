@@ -141,14 +141,6 @@ panel-collapsible(opened=`::true` ng-form=form)
                     tip: 'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
                           Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor'
                 })
-            .pc-form-grid-col-60(ng-show=`${model}.cacheMode === 'PARTITIONED' && ${model}.atomicityMode === 'TRANSACTIONAL'`)
-                +form-field__checkbox({
-                    label: 'Invalidate near cache',
-                    model: `${model}.isInvalidate`,
-                    name: '"isInvalidate"',
-                    tip: 'Invalidation flag for near cache entries in transaction<br/>\
-                          If set then values will be invalidated (nullified) upon commit in near cache'
-                })
+           
 
-        .pca-form-column-6
-            +preview-xml-java(model, 'cacheGeneral')
+        

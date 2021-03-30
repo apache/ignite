@@ -372,6 +372,9 @@ public class WebSocketRouter implements AutoCloseable {
         String base64 = json.getString("blob");
         String prefix = "data:application/octet-stream;base64,";
         String clusterId = json.getString("id");
+        if(DEMO_CLUSTER_ID.equals(clusterId)) {
+        	json.add("demo", true);
+        }
         String clusterName = Utils.escapeFileName(json.getString("name"));
 		try {
 			
@@ -463,7 +466,8 @@ public class WebSocketRouter implements AutoCloseable {
 	    		stat.put("status", "started");
 	    		clusterName = null;
     		}
-	    	catch(IgniteIllegalStateException e) {	    		
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.put("message", e.getMessage());
 	    		stat.put("status", "stoped");
 	    	}
         }
@@ -472,7 +476,8 @@ public class WebSocketRouter implements AutoCloseable {
         		ignite = Ignition.ignite(clusterName);	    		
 	    		stat.put("status", "started");
     		}
-	    	catch(IgniteIllegalStateException e) {	    		
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.put("message", e.getMessage());
 	    		stat.put("status", "stoped");
 	    	}
     	}

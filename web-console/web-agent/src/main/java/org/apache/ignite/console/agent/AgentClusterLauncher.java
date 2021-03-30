@@ -45,7 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.handlers.ClusterHandler;
 import org.apache.ignite.console.agent.service.ClusterLoadDataService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
-
+import org.apache.ignite.console.agent.service.ClusterClearDataService;
 import org.apache.ignite.console.discovery.IsolatedCommunicationSpi;
 import org.apache.ignite.console.discovery.IsolatedDiscoverySpi;
 import org.apache.ignite.console.json.JsonObject;
@@ -90,7 +90,7 @@ public class AgentClusterLauncher {
     /** */
     private static final AtomicBoolean initGuard = new AtomicBoolean();
 
-    private final static AtomicInteger basePort = new AtomicInteger(50700);
+    private final static AtomicInteger basePort = new AtomicInteger(20700);
 
     /** */
     private static final int WAL_SEGMENTS = 5;
@@ -227,8 +227,9 @@ public class AgentClusterLauncher {
      */
     public static void deployServices(IgniteServices services) {
     	
-        services.deployClusterSingleton("serviceList", new ClusterAgentServiceList());
-        services.deployClusterSingleton("loadDataService", new ClusterLoadDataService());
+        services.deployNodeSingleton("serviceList", new ClusterAgentServiceList());
+        services.deployNodeSingleton("loadDataService", new ClusterLoadDataService());
+        services.deployNodeSingleton("clearDataService", new ClusterClearDataService());
         
         //String cacheName = "default";
         //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
@@ -376,7 +377,7 @@ public class AgentClusterLauncher {
 			
 			byte[] zip = Base64.decodeBase64(base64.substring(prefix.length()));
 			File zipFile = new File(work, fileName+".zip");
-			String descDir = work + "/" + fileName;
+			String descDir = work + fileName+"/";
 			
 			try {
 				FileOutputStream writer = new FileOutputStream(zipFile);

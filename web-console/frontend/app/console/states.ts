@@ -127,17 +127,17 @@ function registerStates($stateProvider) {
             title: 'Service Console'
         }
     })
-    .state('base.console.edit.service.cache', {
-        url: `/{cacheID}`,
+    .state('base.console.edit.service.select', {
+        url: `/{serviceID}`,
         permission: 'configuration',
         resolve: {
             _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
-                const {clusterID, cacheID} = $transition$.params();
+                const {clusterID, serviceID} = $transition$.params();
 
-                if (cacheID === 'new')
+                if (serviceID === 'new')
                     return Promise.resolve();
 
-                return etp('LOAD_CACHE', {cacheID});
+                return etp('LOAD_CACHE', {serviceID,cacheID:serviceID});
             }]
         },
         data: {

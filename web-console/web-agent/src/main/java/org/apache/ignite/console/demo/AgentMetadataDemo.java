@@ -97,7 +97,7 @@ public class AgentMetadataDemo {
                 throw new SQLException("Failed to start demo for metadata", e);
             }
         }
-
+       
         return DriverManager.getConnection("jdbc:h2:mem:demo-db;DB_CLOSE_DELAY=-1", "sa", "");
     }
 }

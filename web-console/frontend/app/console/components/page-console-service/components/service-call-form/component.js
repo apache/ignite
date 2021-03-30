@@ -24,6 +24,6 @@ export default {
         cache: '<',
         caches: '<',
         models: '<',
-        onSave: '&'
+        onCall: '&'
     }
 };

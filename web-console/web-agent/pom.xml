@@ -145,6 +145,12 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.44</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${java7.hikaricp.version}</version>
+        </dependency>
 
       
     </dependencies>

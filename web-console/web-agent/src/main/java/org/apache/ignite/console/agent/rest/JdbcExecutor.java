@@ -33,6 +33,8 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import javax.sql.DataSource;
+
 import com.beust.jcommander.internal.Lists;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -129,9 +131,17 @@ public class JdbcExecutor implements AutoCloseable {
     	int  urlsCnt = 1;
         for (int i = 0;  i < urlsCnt; i++) { 
             try {            	
+            	
+            	DataSource ds = dbListener.getDataSource(jdbcUrl);
+            	if(ds!=null) {
+            		conn = ds.getConnection();
+            	}
+            	else {
+            		conn = metadataReader.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
+            	}
             	JSONObject res;
             	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
-            		conn = metadataReader.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
+            		
             		Collection<String> schemas = metadataReader.schemas(conn,importSamples);
             		res = new JSONObject();
                     JSONObject result = new JSONObject();
@@ -144,10 +154,10 @@ public class JdbcExecutor implements AutoCloseable {
                     result.put("groups", Lists.newArrayList());
                     result.put("protocolVersion", 1);
                     res.put("result", result);
-                    conn.close();
+                   
             	}
             	else if("metadata".equals(cmd)) {
-            		conn = metadataReader.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
+            		
             		List<String> schemas = new ArrayList<>(2);
             		String schema = (String)params.get("p4");
             		if(!StringUtil.isEmpty(schema)) {
@@ -208,11 +218,11 @@ public class JdbcExecutor implements AutoCloseable {
                     	//caches.put("valClasses",fields);
                     	
                     }
-                    conn.close();
+                    
                     return RestResult.success(arr.toString(), (String)args.get("token"));
             	}
             	else if("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(p2)){
-            		conn = metadataReader.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
+            		
             		String schema = (String)params.get("p4");
             		if(!StringUtil.isEmpty(schema)) {
             			conn.setSchema(schema);
@@ -220,7 +230,7 @@ public class JdbcExecutor implements AutoCloseable {
             		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("p5"));
             	
             		res = exec.executeSqlVisor(0,(String)params.get("p1"));
-            		conn.close();
+            		
             	}
             	else {
             		return null;
@@ -247,6 +257,16 @@ public class JdbcExecutor implements AutoCloseable {
 				LT.warn(log, "Failed connect to db [url=" + nodeUrl + "] "+e.getMessage());
 				return RestResult.fail(STATUS_FAILED, e.getClass().getName() + ": " + e.getMessage());
 			}
+            finally {
+            	if(conn!=null) {
+            		try {
+						conn.close();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+            	}
+            }
         }
         
         

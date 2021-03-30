@@ -44,6 +44,7 @@ import servicesModule from './services';
 
 // Data
 import messagesEn from '../i18n/messages.en.json';
+import messagesCn from '../i18n/messages.zh-CN.json';
 import i18n from './data/i18n';
 
 // Directives.
@@ -307,6 +308,9 @@ export default angular
             $translateProvider.translations('en', messagesEn);
             $translateProvider.translations('en', i18n);
             $translateProvider.preferredLanguage('en');
+            
+            $translateProvider.translations('zh-CN', messagesCn);
+            $translateProvider.translations('zh-CN', i18n);
 
             // Set up the states.
             $stateProvider

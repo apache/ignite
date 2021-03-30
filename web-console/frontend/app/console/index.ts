@@ -32,6 +32,7 @@ import effects from './store/effects';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
 import Models from './services/Models';
+import Services from './services/Services';
 
 import pageConsole from './components/page-configure';
 import pageConsoleBasic from './components/page-configure-basic';
@@ -161,7 +162,8 @@ export default angular
     .service('ConfigureState', ConfigureState)    
     .service('Clusters', Clusters)
     .service('Caches', Caches) 
-    .service('Models', Models)    
-    .directive('pcIsInCollection', isInCollection)    
-    .directive('igniteUiAceTabs', uiAceTabs)
+    .service('Models', Models) 
+    .service('Services', Services)       
+    //.directive('pcIsInCollection', isInCollection)    
+    //.directive('igniteUiAceTabs', uiAceTabs)
     ;

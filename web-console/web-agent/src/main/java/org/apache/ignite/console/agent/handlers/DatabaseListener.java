@@ -18,6 +18,8 @@
 package org.apache.ignite.console.agent.handlers;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +28,10 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+
+import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +45,7 @@ public class DatabaseListener {
 
 	/** Index of alive node URI. */
 	final public Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
-
+	final public DataSourceManager dataSourceManager = new DataSourceManager();
 	/**
 	 * add@byron 保存当前的关系数据库连接信息
 	 */
@@ -47,6 +53,7 @@ public class DatabaseListener {
 		public final String clusterId;
 		public String driverCls;
 		public String jdbcUrl;
+		public String jndiName;
 		public Properties jdbcProp;
 		public TopologySnapshot top;
 
@@ -66,7 +73,7 @@ public class DatabaseListener {
 		}
 	}
 
-	public DBInfo addDB(Map<String, Object> args) throws IllegalArgumentException {
+	public DBInfo addDB(Map<String, Object> args,Connection conn) throws IllegalArgumentException {
 		String driverPath = null;
 
 		String url = args.get("jdbcUrl").toString();
@@ -97,9 +104,25 @@ public class DatabaseListener {
 
 		String clusterId = UUID.randomUUID().toString();
 		DBInfo dbInfo = new DBInfo(clusterId, driverCls, url, info);
-
+		
 		clusters.put(clusterId, dbInfo);
-
+		if(conn!=null) {
+			try {
+				String dbProductName = conn.getMetaData().getDatabaseProductName();
+				ResultSet result = conn.getMetaData().getCatalogs();
+				String catalog = "";
+				if(result.next()){
+					catalog = result.getString(1);
+				}
+				
+				dbInfo.jndiName= String.format("java:jdbc/ds%s_%s",dbProductName,catalog.replaceAll("_", "").replace('-','_'));
+				
+				dataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo.jdbcUrl, info);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		return dbInfo;
 	}
 
@@ -150,4 +173,12 @@ public class DatabaseListener {
 	public void clear() {
 		clusters.clear();
 	}	
+	
+	public DataSource getDataSource(String jdbcUrl) {
+		try {
+			return dataSourceManager.getDataSource(jdbcUrl);
+		} catch (SQLException e) {
+			return null;
+		}
+	}
 }

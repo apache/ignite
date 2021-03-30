@@ -23,20 +23,24 @@ import LegacyConfirmFactory from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
 import Caches from '../../../../services/Caches';
 import FormUtilsFactory from 'app/services/FormUtils.service';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 
 export default class ServiceEditFormController {
     modelsMenu: Menu<string>;
 
-    onSave: ng.ICompiledExpression;
+    onCall: ng.ICompiledExpression;
+    
+    clusterId: string;
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils'];
+    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils', 'AgentManager'];
 
     constructor(
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
         private IgniteVersion: Version,
         private $scope: ng.IScope,
         private Caches: Caches,
-        private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>,
+        private AgentManager: AgentManager
     ) {}
 
     $onInit() {
@@ -49,8 +53,7 @@ export default class ServiceEditFormController {
                 {value: null, label: 'Default'}
             ];
 
-            if (this.available(['1.0.0', '2.0.0']))
-                this.$scope.affinityFunction.splice(1, 0, {value: 'Fair', label: 'Fair'});
+            
 
             if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
                 && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
@@ -79,8 +82,9 @@ export default class ServiceEditFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Save', icon: 'checkmark', click: () => this.save()},
-            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+            {text: 'Load Data', icon: 'checkmark', click: () => this.confirmAndLoad()},
+            {text: 'Load Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},
+            {text: 'Clear Data', icon: 'checkmark', click: () => this.confirmAndClear()}
         ];
     }
 
@@ -106,17 +110,47 @@ export default class ServiceEditFormController {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
     }
 
-    save(download) {
-        if (this.$scope.ui.inputForm.$invalid)
-            return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        this.onSave({$event: {cache: cloneDeep(this.clonedCache), download}});
+    loadData(updated:boolean) {        
+        let serviceName = 'loadDataService';
+        return this.callServiceForCache(serviceName,{updated});
+    }
+    
+    clearData(){
+        let serviceName = 'clearDataService';
+        return this.callServiceForCache(serviceName);
+    }
+    
+    callServiceForCache(serviceName:string,params) {
+        let args = this.onCall({$event: {cache: this.clonedCache}});
+        let clusterId = args['id'];
+        params = Object.assign(args,params);
+        this.AgentManager.callClusterService({id: clusterId},serviceName,params).then((data) => {  
+            this.$scope.status = data.status; 
+            if(data.result){
+                return data.result;
+            }    
+            else if(data.message){
+                this.$scope.message = data.message;
+            }  
+            return {}
+        })   
+       .catch((e) => {
+            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+        });
     }
 
     reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
 
-    confirmAndReset() {
-        return this.IgniteConfirm.confirm('Are you sure you want to undo all changes for current cache?')
-        .then(this.reset);
+    confirmAndClear() {
+        return this.IgniteConfirm.confirm('Are you sure you want to clear all data for current cache?')
+        .then(() => { this.clearData(); } );
+    }
+    
+    confirmAndLoad(updated:boolean) {        
+        if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
+            return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
+        return this.IgniteConfirm.confirm('Are you sure you want to load all data for current cache?')
+        .then( () => { this.loadData(updated); } );
     }
 
     clearImplementationVersion(storeFactory) {

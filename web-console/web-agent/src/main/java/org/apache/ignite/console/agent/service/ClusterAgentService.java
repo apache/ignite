@@ -25,7 +25,11 @@ public interface ClusterAgentService extends Service {
 	default void init(ServiceContext ctx) throws Exception {
 		JsonObject info = new JsonObject();
 		info.add("name", ctx.name());
+		// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
+		info.add("mode", "NodeSingleton"); 
 		info.add("description", this.toString());
+		info.add("cacheName", ctx.cacheName());
+		info.add("affinityKey", ctx.affinityKey());
 		serviceList.put(ctx.name(), info);
 	}
 	

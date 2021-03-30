@@ -237,14 +237,14 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>test-compile</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration >
                             <outputDirectory>target/libs</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <excludeTransitive>false</excludeTransitive>
+                            <!-- <includeScope>runtime</includeScope> -->
+                            <!-- <excludeTransitive>false</excludeTransitive> -->
                         </configuration>
                     </execution>
                 </executions>
