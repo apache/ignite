@@ -36,14 +36,10 @@ Follow these steps to build the performance report:
 
 2.  Run the script from the release package of the tool:
 
-[tabs]
---
-tab:Unix[]
 [source,shell]
 ----
 performance-statistics-tool/build-report.sh path_to_files
 ----
---
 
 The performance report is created in the new directory under the performance statistics files:
 `path_to_files/report_yyyy-MM-dd_HH-mm-ss/`.
@@ -51,14 +47,10 @@ Open `report_yyyy-MM-dd_HH-mm-ss/index.html` in the browser to see the report.
 
 For more details run the help command:
 
-[tabs]
---
-tab:Unix[]
 [source,shell]
 ----
 performance-statistics-tool/build-report.sh --help
 ----
---
 
 == Print Statistics
 
@@ -66,28 +58,20 @@ Ignite provides a tool to print statistics to a console or to a file in JSON for
 
 Run the script from the release package of the tool to print statistics:
 
-[tabs]
---
-tab:Unix[]
 [source,shell]
 ----
 performance-statistics-tool/print-statistics.sh path_to_files
 ----
---
 
 Note that `path_to_files` is a path to the performance statistics file or files directory.
 
 The script provides the ability to filter operations by operation's type, time, or cache. For more details run the
 help command:
 
-[tabs]
---
-tab:Unix[]
 [source,shell]
 ----
 performance-statistics-tool/print-statistics.sh --help
 ----
---
 
 See the output example below:
 
