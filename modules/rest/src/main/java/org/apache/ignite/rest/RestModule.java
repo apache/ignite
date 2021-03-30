@@ -28,7 +28,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -77,17 +76,11 @@ public class RestModule {
     }
 
     /** */
-    public void prepareStart(ConfigurationRegistry sysCfg, Reader moduleConfReader) {
+    public void prepareStart(ConfigurationRegistry sysCfg) {
         sysConf = sysCfg;
+        sysCfg.registerRootKey(RestConfiguration.KEY);
 
         presentation = new JsonPresentation();
-
-//        FormatConverter converter = new JsonConverter();
-//
-//        Configurator<RestConfigurationImpl> restConf = Configurator.create(RestConfigurationImpl::new,
-//            converter.convertFrom(moduleConfReader, "rest", InitRest.class));
-//
-//        sysConfig.registerConfigurator(restConf);
     }
 
     /**

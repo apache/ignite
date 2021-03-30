@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.ConfigurationModule;
@@ -103,9 +102,9 @@ public class IgniteRunner {
                 bldr.append(str);
             }
 
-            restModule.prepareStart(confModule.configurationRegistry(), new StringReader(bldr.toString()));
+            restModule.prepareStart(confModule.configurationRegistry());
 
-            confModule.bootstrap(new StringReader(bldr.toString()));
+            confModule.bootstrap(bldr.toString());
         }
         finally {
             if (confReader != null)

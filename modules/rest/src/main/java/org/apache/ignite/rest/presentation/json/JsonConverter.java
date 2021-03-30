@@ -151,7 +151,7 @@ public class JsonConverter implements FormatConverter {
     /** */
     public static ConfigurationSource jsonSource(JsonElement jsonElement) {
         //TODO IGNITE-14372 Finish this implementation.
-        return null;
+        return new JsonObjectConfigurationSource(new ArrayList<>(), jsonElement.getAsJsonObject());
     }
 
     private static class JsonObjectConfigurationSource implements ConfigurationSource {
@@ -174,8 +174,6 @@ public class JsonConverter implements FormatConverter {
             for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
                 String key = entry.getKey();
 
-                path.add(key);
-
                 JsonElement jsonElement = entry.getValue();
 
                 try {
@@ -197,8 +195,6 @@ public class JsonConverter implements FormatConverter {
                 catch (NoSuchElementException e) {
                     throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
                 }
-
-                path.remove(path.size() - 1);
             }
         }
     }
@@ -216,6 +212,9 @@ public class JsonConverter implements FormatConverter {
         @Override public <T> T unwrap(Class<T> clazz) {
             if (clazz.isArray() != jsonLeaf.isJsonArray())
                 throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+
+            if (!clazz.isArray())
+                return unwrap(jsonLeaf.getAsJsonPrimitive(), clazz);
 
             return null;
         }

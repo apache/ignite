@@ -17,7 +17,13 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Reader;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import org.apache.ignite.configuration.extended.LocalConfiguration;
+import org.apache.ignite.rest.configuration.InMemoryConfigurationStorage;
+import org.apache.ignite.rest.presentation.json.JsonConverter;
 
 /**
  * Module is responsible for preparing configuration when module is started.
@@ -25,21 +31,34 @@ import java.io.Reader;
  * Preparing configuration includes reading it from configuration file, parsing it and initializing
  * {@link ConfigurationRegistry} object.
  */
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class ConfigurationModule {
-//    /** */
-//    private Configurator<LocalConfigurationImpl> localConfigurator;
+    /** */
+    private LocalConfiguration localConfigurator;
 
     /** */
     private final ConfigurationRegistry confRegistry = new ConfigurationRegistry();
 
-    /** */
-    public void bootstrap(Reader confReader) {
-//        FormatConverter converter = new JsonConverter();
-//
-//        Configurator<LocalConfigurationImpl> configurator =
-//            Configurator.create(LocalConfigurationImpl::new, converter.convertFrom(confReader, "local", InitLocal.class));
-//
-//        confRegistry.registerConfigurator(configurator);
+    /**
+     * @param jsonStr
+     */
+    public void bootstrap(String jsonStr) throws InterruptedException {
+        confRegistry.registerRootKey(LocalConfiguration.KEY);
+
+        InMemoryConfigurationStorage storage = new InMemoryConfigurationStorage();
+
+        confRegistry.registerStorage(storage);
+
+        JsonObject jsonCfg = JsonParser.parseString(jsonStr).getAsJsonObject();
+
+        try {
+            confRegistry.change(Collections.emptyList(), JsonConverter.jsonSource(jsonCfg), storage).get();
+        }
+        catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
+        }
+
+        localConfigurator = confRegistry.getConfiguration(LocalConfiguration.KEY);
     }
 
     /** */

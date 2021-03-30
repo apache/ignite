@@ -109,8 +109,8 @@ public class ConfigurationRegistry {
     }
 
     /** */
-    public CompletableFuture<?> change(List<String> path, ConfigurationSource changesSource) {
-        throw new UnsupportedOperationException("IGNITE-14372 Not implemented yet.");
+    public CompletableFuture<?> change(List<String> path, ConfigurationSource changesSource, ConfigurationStorage storage) {
+        return changer.changeX(path, changesSource, storage);
     }
 
     /**
