@@ -251,6 +251,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         boolean securityEnabled = ctx.security().enabled() || ctx.config().isAuthenticationEnabled();
 
+        SecurityContext secCtx0 = null;
+
         if (securityEnabled) {
             Session ses;
 
@@ -273,7 +275,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 log.debug("Next clientId and sessionToken were extracted according to request: " +
                     "[clientId=" + req.clientId() + ", sesTok=" + Arrays.toString(req.sessionToken()) + "]");
 
-            SecurityContext secCtx0 = ses.secCtx;
+            secCtx0 = ses.secCtx;
 
             try {
                 if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
@@ -297,7 +299,11 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         GridRestCommandHandler hnd = handlers.get(req.command());
 
-        IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> res;
+
+        try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+            res = hnd == null ? null : hnd.handleAsync(req);
+        }
 
         if (res == null)
             return new GridFinishedFuture<>(
@@ -388,7 +394,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
                 // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
-                if (ctx.security().enabled() && req.command() != AUTHENTICATE && req.credentials() == null)
+                if ((ctx.security().enabled() || ctx.config().isAuthenticationEnabled()) && req.command() != AUTHENTICATE && req.credentials() == null)
                     throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
 
                 Session ses = Session.random();

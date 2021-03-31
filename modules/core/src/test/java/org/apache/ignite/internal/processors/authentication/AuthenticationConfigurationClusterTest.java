@@ -138,7 +138,9 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
                 return null;
             },
             IgniteSpiException.class,
-            "Local node's grid security processor class is not equal to remote node's grid security processor class");
+            authEnabled ?
+                "Failed to add node to topology because user authentication is enabled on cluster and the node doesn't support user authentication" :
+                "Local node's grid security processor class is not equal to remote node's grid security processor class");
     }
 
     /**

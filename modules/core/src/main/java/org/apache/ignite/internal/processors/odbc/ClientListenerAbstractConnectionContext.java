@@ -82,7 +82,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * @throws IgniteCheckedException If failed.
      */
     protected void authenticate(GridNioSession ses, String user, String pwd) throws IgniteCheckedException {
-        if (!ctx.security().enabled() || ctx.config().isAuthenticationEnabled())
+        if (!ctx.security().enabled() && !ctx.config().isAuthenticationEnabled())
             return;
 
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
