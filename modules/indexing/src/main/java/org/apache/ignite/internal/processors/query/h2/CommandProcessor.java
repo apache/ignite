@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -51,6 +52,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
@@ -774,7 +776,7 @@ public class CommandProcessor {
                             cmd.tableName());
                 }
                 else {
-                    QueryEntity e = toQueryEntity(cmd);
+                    QueryEntity e = toQueryEntity(ctx, cmd);
 
                     CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
 
@@ -1058,8 +1060,8 @@ public class CommandProcessor {
      * Convert this statement to query entity and do Ignite specific sanity checks on the way.
      * @return Query entity mimicking this SQL statement.
      */
-    private static QueryEntity toQueryEntity(GridSqlCreateTable createTbl) {
-        QueryEntity res = new QueryEntity();
+    private static QueryEntity toQueryEntity(GridKernalContext ctx, GridSqlCreateTable createTbl) {
+        QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(createTbl.tableName());
 
@@ -1132,8 +1134,15 @@ public class CommandProcessor {
 
             res.setKeyFieldName(pkCol.columnName());
         }
-        else
+        else {
             res.setKeyFields(createTbl.primaryKeyColumns());
+
+            if (IgniteFeatures.allNodesSupports(
+                ctx.discovery().serverNodes(ctx.discovery().topologyVersionEx()),
+                IgniteFeatures.SPECIFIED_SEQ_PK_KEYS
+            ))
+                res.setPreserveKeysOrder(true);
+        }
 
         if (!createTbl.wrapValue()) {
             GridSqlColumn valCol = null;
@@ -1156,13 +1165,8 @@ public class CommandProcessor {
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
 
-        if (!F.isEmpty(notNullFields)) {
-            QueryEntityEx res0 = new QueryEntityEx(res);
-
-            res0.setNotNullFields(notNullFields);
-
-            res = res0;
-        }
+        if (!F.isEmpty(notNullFields))
+            res.setNotNullFields(notNullFields);
 
         return res;
     }

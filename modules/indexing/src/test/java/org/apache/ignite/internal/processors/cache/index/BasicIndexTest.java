@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,9 +28,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -313,6 +316,102 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         expect = Arrays.asList("F3", "F2");
 
         checkPkFldSequence(tblName, expect, idx);
+    }
+
+    /**
+     * Checks that fields in primary index have correct order after node restart.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectPkFieldsSequenceAfterRestart() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(getConfiguration("0").setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        ));
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        {
+            GridQueryProcessor qryProc = ig0.context().query();
+
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig0).context().query().getIndexing();
+
+            String tblName = "T1";
+
+            qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC." + tblName + " (F1 VARCHAR, F2 VARCHAR, F3 VARCHAR, " +
+                "CONSTRAINT PK PRIMARY KEY (F2, F1))"), true).getAll();
+
+            List<String> expect = Arrays.asList("F2", "F1");
+
+            checkPkFldSequence(tblName, expect, idx);
+        }
+
+        stopAllGrids();
+
+        ig0 = startGrid(getConfiguration("0").setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        ));
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        {
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig0).context().query().getIndexing();
+
+            String tblName = "T1";
+
+            List<String> expect = Arrays.asList("F2", "F1");
+
+            checkPkFldSequence(tblName, expect, idx);
+        }
+    }
+
+    /**
+     * Checks that fields in primary index have incorrect order
+     * if grid has a node that doesn't support this feature.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPkFieldsSequenceFeatureUnsupported() throws Exception {
+        inlineSize = 10;
+
+        List<IgniteEx> nodes = new ArrayList<>();
+
+        nodes.add(startGrid(0));
+
+        String prev = System.getProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED);
+
+        try {
+            System.setProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED, "true");
+
+            nodes.add(startGrid(1));
+        }
+        finally {
+            if (prev == null)
+                System.clearProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED);
+            else
+                System.setProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED, prev);
+        }
+
+        int i = 0;
+        for (IgniteEx ig : nodes) {
+            GridQueryProcessor qryProc = ig.context().query();
+
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig).context().query().getIndexing();
+
+            String tblName = "T" + i++;
+
+            qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC." + tblName + " (F1 VARCHAR, F2 VARCHAR, F3 VARCHAR, " +
+                "CONSTRAINT PK PRIMARY KEY (F2, F1))"), true).getAll();
+
+            checkPkFldSequence(tblName, Arrays.asList("F1", "F2"), idx);
+        }
     }
 
     /**

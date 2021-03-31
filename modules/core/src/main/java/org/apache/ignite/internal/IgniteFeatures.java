@@ -29,6 +29,7 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
@@ -240,6 +241,9 @@ public enum IgniteFeatures {
 
         for (IgniteFeatures value : IgniteFeatures.values()) {
             if (value == PME_FREE_SWITCH && getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
+                continue;
+
+            if (SPECIFIED_SEQ_PK_KEYS == value && getBoolean(IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED))
                 continue;
 
             final int featureId = value.getFeatureId();

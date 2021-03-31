@@ -2012,6 +2012,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
     /**
+     * Disables keys order preserving for compound PK.
+     */
+    @SystemProperty(value = "Disables keys order preserving for compound PK.")
+    public static final String IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED = "IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
