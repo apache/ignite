@@ -147,7 +147,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @throws IgniteCheckedException If failed.
      */
     private void processPartition() throws IgniteCheckedException {
-        if (stop.get() || stopNode())
+        if (stop())
             return;
 
         checkCancelled();
@@ -174,7 +174,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             try {
                 int cntr = 0;
 
-                while (cursor.next() && !stop.get() && !stopNode()) {
+                while (!stop() && cursor.next()) {
                     KeyCacheObject key = cursor.get().key();
 
                     if (!locked) {
@@ -221,7 +221,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private void processKey(KeyCacheObject key) throws IgniteCheckedException {
         assert nonNull(key);
 
-        while (true) {
+        while (!stop()) {
             try {
                 checkCancelled();
 
@@ -248,20 +248,20 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     /**
      * Check if visit process is not cancelled.
      *
-     * @throws IgniteCheckedException If cancelled.
+     * @throws SchemaIndexOperationCancellationException If cancelled.
      */
-    private void checkCancelled() throws IgniteCheckedException {
+    private void checkCancelled() throws SchemaIndexOperationCancellationException {
         if (nonNull(cancel) && cancel.isCancelled())
-            throw new IgniteCheckedException("Index creation was cancelled.");
+            throw new SchemaIndexOperationCancellationException("Index creation was cancelled.");
     }
 
     /**
-     * Returns node in the process of stopping or not.
+     * Check if index rebuilding needs to be stopped.
      *
-     * @return {@code True} if node is in the process of stopping.
+     * @return {@code True} if necessary to stop rebuilding indexes.
      */
-    private boolean stopNode() {
-        return cctx.kernalContext().isStopping();
+    private boolean stop() {
+        return stop.get() || cctx.kernalContext().isStopping();
     }
 
     /** {@inheritDoc} */

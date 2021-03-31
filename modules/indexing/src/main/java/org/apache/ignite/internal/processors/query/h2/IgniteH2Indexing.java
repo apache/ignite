@@ -2369,7 +2369,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) {
-        ctx.indexProcessor().idxRowCacheRegistry().onCacheUnregistered(cacheInfo);
+        ctx.indexProcessor().unregisterCache(cacheInfo);
 
         String cacheName = cacheInfo.name();
 

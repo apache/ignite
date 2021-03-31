@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -155,14 +156,15 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
         @Override protected void startRebuild(
             GridCacheContext cctx,
             GridFutureAdapter<Void> rebuildIdxFut,
-            SchemaIndexCacheVisitorClosure clo
+            SchemaIndexCacheVisitorClosure clo,
+            SchemaIndexOperationCancellationToken cancel
         ) {
             CountDownLatch startThread = new CountDownLatch(1);
 
             new Thread(() -> {
                 startThread.countDown();
 
-                new SchemaIndexCacheVisitorImpl(cctx, null, rebuildIdxFut) {
+                new SchemaIndexCacheVisitorImpl(cctx, cancel, rebuildIdxFut) {
                     /** {@inheritDoc} */
                     @Override protected void beforeExecute() {
                         String cacheName = cctx.name();

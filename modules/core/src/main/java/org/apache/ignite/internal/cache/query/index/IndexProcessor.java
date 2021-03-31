@@ -47,6 +47,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
@@ -380,6 +381,17 @@ public class IndexProcessor extends GridProcessorAdapter {
      */
     public IndexDefinition indexDefinition(UUID idxId) {
         return idxDefs.get(idxId);
+    }
+
+    /**
+     * Unregisters cache.
+     *
+     * @param cacheInfo Cache context info.
+     */
+    public void unregisterCache(GridCacheContextInfo cacheInfo) {
+        idxRowCacheRegistry.onCacheUnregistered(cacheInfo);
+
+        idxRebuild.stopRebuild(cacheInfo);
     }
 
     /**

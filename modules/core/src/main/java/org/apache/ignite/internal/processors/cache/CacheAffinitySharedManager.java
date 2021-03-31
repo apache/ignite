@@ -537,6 +537,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             null,
                             null,
                             clientTop.lostPartitions());
+
+                        excFut.validate(grp);
                     }
 
                     assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
