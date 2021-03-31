@@ -410,6 +410,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertTrue(fut.isDone());
 
+            assertEquals(0, encryption.getBytesLeftForReencryption(grpId));
+
             List<Integer> parts = IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
                 .boxed().collect(Collectors.toList());
 

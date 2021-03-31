@@ -8826,14 +8826,14 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Attaches node ID to log file name.
+     * Attaches postfix to log file name.
      *
      * @param postfix Postfix.
      * @param fileName File name.
-     * @return File name with node ID.
+     * @return File name with postfix.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public static String nodeIdLogFileName(String postfix, String fileName) {
+    public static String logFileName(String postfix, String fileName) {
         assert postfix != null;
         assert fileName != null;
 
@@ -9031,7 +9031,7 @@ public abstract class IgniteUtils {
 
         if (cls == null) {
             if (clsFilter != null && !clsFilter.apply(clsName))
-                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
             if (ldr instanceof CacheClassLoaderMarker)

@@ -80,6 +80,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     /** {@inheritDoc} */
     @Override public PdsFolderSettings<NodeFileLockHolder> resolveFolders() throws IgniteCheckedException {
         if (settings == null) {
+            //here deprecated method is used to get compatible version of consistentId
             PdsFolderResolver<NodeFileLockHolder> resolver =
                 new PdsFolderResolver<>(cfg, log, ctx.discovery().consistentId(), this::tryLock);
 

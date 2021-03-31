@@ -45,7 +45,13 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
-public class PdsFolderResolver<FLH extends FileLockHolder> {
+/**
+ * This class contains logic to resolve and possibly lock PDS folder
+ * based on provided {@link IgniteConfiguration} and {@link #consistentId}.
+ *
+ * @param <L> Type of the lock holder.
+ */
+public class PdsFolderResolver<L extends FileLockHolder> {
     /** Database subfolders constant prefix. */
     private static final String DB_FOLDER_PREFIX = "node";
 
@@ -53,10 +59,10 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
     private static final String NODEIDX_UID_SEPARATOR = "-";
 
     /** Constant node subfolder prefix and node index pattern (nodeII, where II - node index as decimal integer) */
-    public static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
+    private static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
 
     /** Uuid as string pattern. */
-    public static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    private static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /**
      * Subdir (nodeII-UID, where II - node index as decimal integer, UID - string representation of consistent ID)
@@ -93,10 +99,10 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
     private final IgniteLogger log;
 
     /** */
-    private final Serializable consistentId;
+    private final @Nullable Serializable consistentId;
 
     /** */
-    private final Function<File, FLH> tryLock;
+    private final Function<File, L> tryLock;
 
     /**
      * @param cfg Ignite configuration.
@@ -107,8 +113,8 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
     public PdsFolderResolver(
         IgniteConfiguration cfg,
         IgniteLogger log,
-        Serializable consistentId,
-        Function<File, FLH> tryLock
+        @Nullable Serializable consistentId,
+        Function<File, L> tryLock
     ) {
         this.cfg = cfg;
         this.log = log;
@@ -123,25 +129,28 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
      * @param consistentId compatibility consistent ID
      * @return PDS folder settings compatible with previous versions.
      */
-    private PdsFolderSettings<FLH> compatibleResolve(
+    private PdsFolderSettings<L> compatibleResolve(
         @Nullable final File pstStoreBasePath,
-        @NotNull final Serializable consistentId) {
+        @Nullable final Serializable consistentId) {
 
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
             return new PdsFolderSettings<>(pstStoreBasePath, cfg.getConsistentId());
         }
 
-        return new PdsFolderSettings<>(pstStoreBasePath, consistentId);
+        if (consistentId == null)
+            return new PdsFolderSettings<>(pstStoreBasePath, consistentId);
+
+        return null;
     }
 
     /**
-     * Creates new settings when we don't have cached one.
+     * Resolves {@link PdsFolderSettings} according to specified {@link IgniteConfiguration}, {@link #consistentId}.
      *
-     * @return new settings with prelocked directory (if appropriate).
+     * @return new settings with prelocked directory (if appropriate) or null.
      * @throws IgniteCheckedException if IO failed.
      */
-    public PdsFolderSettings<FLH> resolve() throws IgniteCheckedException {
+    public PdsFolderSettings<L> resolve() throws IgniteCheckedException {
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
 
         if (!CU.isPersistenceEnabled(cfg))
@@ -164,7 +173,7 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
             // If such a folder exists, we start up with this ID (compatibility mode)
             final String subFolder = U.maskForFileName(consistentId.toString());
 
-            final FLH oldStyleFolderLockHolder = tryLock.apply(new File(pstStoreBasePath, subFolder));
+            final L oldStyleFolderLockHolder = tryLock.apply(new File(pstStoreBasePath, subFolder));
 
             if (oldStyleFolderLockHolder != null) {
                 return new PdsFolderSettings<>(pstStoreBasePath,
@@ -186,7 +195,7 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
         }
 
         for (FolderCandidate next : getNodeIndexSortedCandidates(pstStoreBasePath)) {
-            final FLH fileLockHolder = tryLock.apply(next.subFolderFile());
+            final L fileLockHolder = tryLock.apply(next.subFolderFile());
 
             if (fileLockHolder != null) {
                 if (log.isInfoEnabled())
@@ -207,11 +216,11 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
      * @return New PDS folder.
      * @throws IgniteCheckedException In case of error.
      */
-    public PdsFolderSettings<FLH> generateNew() throws IgniteCheckedException {
+    public PdsFolderSettings<L> generateNew() throws IgniteCheckedException {
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
 
         // was not able to find free slot, allocating new
-        try (final FLH rootDirLock = lockRootDirectory(pstStoreBasePath)) {
+        try (final L rootDirLock = lockRootDirectory(pstStoreBasePath)) {
             final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
             final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
 
@@ -307,7 +316,6 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
         sb.a(str);
 
         return sb.toString();
-
     }
 
     /**
@@ -318,13 +326,14 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
      * @return new settings to be used in this node.
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private PdsFolderSettings<FLH> generateAndLockNewDbStorage(final File pstStoreBasePath,
-        final int nodeIdx) throws IgniteCheckedException {
-
+    @NotNull private PdsFolderSettings<L> generateAndLockNewDbStorage(
+        final File pstStoreBasePath,
+        final int nodeIdx
+    ) throws IgniteCheckedException {
         final UUID uuid = UUID.randomUUID();
         final String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
-        final FLH fileLockHolder = tryLock.apply(newRandomFolder);
+        final L fileLockHolder = tryLock.apply(newRandomFolder);
 
         if (fileLockHolder != null) {
             if (log.isInfoEnabled())
@@ -332,6 +341,7 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
 
             return new PdsFolderSettings<>(pstStoreBasePath, consIdBasedFolder, uuid, fileLockHolder, false);
         }
+
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
     }
 
@@ -359,10 +369,10 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
      * @return locked directory, should be released and closed later
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private FLH lockRootDirectory(File pstStoreBasePath)
+    @NotNull private L lockRootDirectory(File pstStoreBasePath)
         throws IgniteCheckedException {
 
-        FLH rootDirLock;
+        L rootDirLock;
         int retry = 0;
 
         while ((rootDirLock = tryLock.apply(pstStoreBasePath)) == null) {
@@ -394,6 +404,7 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
             if (candidate != null)
                 res.add(candidate);
         }
+
         Collections.sort(res, new Comparator<FolderCandidate>() {
             @Override public int compare(
                 FolderCandidate c1, FolderCandidate c2) {
@@ -422,7 +433,6 @@ public class PdsFolderResolver<FLH extends FileLockHolder> {
             pstPath != null ? pstPath : DB_DEFAULT_FOLDER,
             false
         );
-
     }
 
     /**

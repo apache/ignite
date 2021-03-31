@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class holds information required for folder generation for ignite persistent store
  */
-public class PdsFolderSettings<FLH extends FileLockHolder> {
+public class PdsFolderSettings<L extends FileLockHolder> {
     /**
      * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
      * configuration. <br>
@@ -48,7 +48,7 @@ public class PdsFolderSettings<FLH extends FileLockHolder> {
      * directory. This value is to be used at activate instead of locking. <br> May be null in case preconfigured
      * consistent ID is used or in case lock holder was already taken by other processor.
      */
-    @Nullable private final FLH fileLockHolder;
+    @Nullable private final L fileLockHolder;
 
     /**
      * Indicates if compatible mode is enabled, in that case all sub folders are generated from consistent ID without
@@ -68,7 +68,7 @@ public class PdsFolderSettings<FLH extends FileLockHolder> {
     public PdsFolderSettings(@Nullable final File persistentStoreRootPath,
         final String folderName,
         final Serializable consistentId,
-        @Nullable final FLH fileLockHolder,
+        @Nullable final L fileLockHolder,
         final boolean compatible) {
 
         this.consistentId = consistentId;
@@ -125,7 +125,7 @@ public class PdsFolderSettings<FLH extends FileLockHolder> {
      *
      * @return File lock holder with prelocked db directory.
      */
-    @Nullable public FLH getLockedFileLockHolder() {
+    @Nullable public L getLockedFileLockHolder() {
         return fileLockHolder;
     }
 
