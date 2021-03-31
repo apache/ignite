@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -72,7 +71,7 @@ public class InlineRecommender {
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     public void recommend(IndexRow row, int currInlineSize) {
         // Do the check only for put operations.
-        if (row instanceof IndexSearchRowImpl)
+        if (row.indexSearchRow())
             return;
 
         long invokeCnt = inlineSizeCalculationCntr.get();

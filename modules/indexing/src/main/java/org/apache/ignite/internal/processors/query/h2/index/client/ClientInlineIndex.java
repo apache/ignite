@@ -22,12 +22,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,17 +71,17 @@ public class ClientInlineIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment,
-        IndexingQueryFilter filter) throws IgniteCheckedException {
+        IndexQueryContext qryCtx) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> findFirst(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> findLast(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -96,7 +96,7 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public long count(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
         throw unsupported();
     }
 

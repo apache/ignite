@@ -46,7 +46,6 @@ import org.junit.Test;
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
-@Ignore("MVCC is deprecated.")
 public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

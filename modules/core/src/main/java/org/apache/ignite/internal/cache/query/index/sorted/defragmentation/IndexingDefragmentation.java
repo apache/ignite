@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.L
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -174,8 +176,8 @@ public class IndexingDefragmentation {
 
                         IndexRow row = theTree.getRow(h2IO, pageAddr, idx);
 
-                        if (row instanceof IndexRowImpl) {
-                            IndexRowImpl r = (IndexRowImpl)row;
+                        if (!row.indexSearchRow()) {
+                            IndexRowImpl r = (IndexRowImpl) row;
 
                             CacheDataRow cacheDataRow = r.cacheDataRow();
 
@@ -187,9 +189,16 @@ public class IndexingDefragmentation {
 
                             long newLink = map.get(link);
 
+                            CacheDataRow newDataRow;
+
+                             if (((MvccIO) io).storeMvccInfo()) {
+                                 newDataRow = new MvccDataRow(newLink);
+                                 newDataRow.mvccVersion(row);
+                             } else
+                                 newDataRow = new CacheDataRowAdapter(newLink);
+
                             // Use old row handler, as MetaInfo is copied from old tree.
-                            IndexRowImpl newRow = new IndexRowImpl(
-                                oldRowHnd, new CacheDataRowAdapter(newLink), r.keys());
+                            IndexRowImpl newRow = new IndexRowImpl(oldRowHnd, newDataRow, r.keys());
 
                             newIdx.putIndexRow(newRow);
                         }

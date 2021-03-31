@@ -20,14 +20,10 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
@@ -50,26 +46,35 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
     /**
      * @param type Page type.
      * @param ver Page format version.
-     * @param inlineSize size of calculated inline keys.
+     * @param metaSize Size of item - information of a cache row.
+     * @param inlineSize Size of calculated inlined index keys.
      */
-    AbstractInlineLeafIO(short type, int ver, int inlineSize) {
-        super(type, ver, 8 + inlineSize);
+    AbstractInlineLeafIO(short type, int ver, int metaSize, int inlineSize) {
+        super(type, ver, metaSize + inlineSize);
 
         this.inlineSize = inlineSize;
     }
 
     /**
-     * Register IOs for every available {@link #inlineSize}.
+     * Register IOs for every available {@link #inlineSize} for MVCC and not.
      */
     public static void register() {
-        short type = PageIO.T_H2_EX_REF_LEAF_START;
+        register(false);
+        register(true);
+    }
+
+    /** */
+    private static void register(boolean mvcc) {
+        short type = mvcc ? PageIO.T_H2_EX_REF_MVCC_LEAF_START : PageIO.T_H2_EX_REF_LEAF_START;
 
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
-            IOVersions<? extends AbstractInlineLeafIO> io =
-                new IOVersions<AbstractInlineLeafIO>(
-                    new InlineLeafIO((short)(type + payload - 1), payload));
+            short ioType = (short) (type + payload - 1);
 
-            PageIO.registerH2ExtraLeaf(io, false);
+            AbstractInlineLeafIO io = mvcc ? new MvccInlineLeafIO(ioType, payload) : new InlineLeafIO(ioType, payload);
+
+            IOVersions<? extends AbstractInlineLeafIO> versions = new IOVersions<>(io);
+
+            PageIO.registerH2ExtraLeaf(versions, mvcc);
         }
     }
 
@@ -101,36 +106,14 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
             }
         }
 
-        // Write link after all inlined idx keys.
-        PageUtils.putLong(pageAddr, off + inlineSize, row.link());
+        IORowHandler.store(pageAddr, off, row, inlineSize, storeMvccInfo());
     }
 
     /** {@inheritDoc} */
     @Override public final IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
 
-        long link = PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
-
-        assert link != 0;
-
-        InlineIndexTree inlineTree = (InlineIndexTree) tree;
-
-        IndexRowImpl cachedRow = inlineTree.getCachedIndexRow(link);
-
-        if (cachedRow != null)
-            return cachedRow;
-
-        CacheDataRowAdapter row = new CacheDataRowAdapter(link);
-
-        CacheGroupContext ctx = inlineTree.cacheContext().group();
-
-        row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
-
-        IndexRowImpl r = new IndexRowImpl(ThreadLocalRowHandlerHolder.rowHandler(), row);
-
-        inlineTree.cacheIndexRow(r);
-
-        return r;
+        return IORowHandler.get(this, tree, pageAddr, idx);
     }
 
     /** {@inheritDoc} */
@@ -138,14 +121,12 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
         int srcOff = srcIo.offset(srcIdx);
 
         byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, inlineSize);
-        long link = PageUtils.getLong(srcPageAddr, srcOff + inlineSize);
-
-        assert link != 0;
 
         int dstOff = offset(dstIdx);
 
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
-        PageUtils.putLong(dstPageAddr, dstOff + inlineSize, link);
+
+        IORowHandler.store(dstPageAddr, dstOff + inlineSize, srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
     /** {@inheritDoc} */
@@ -160,14 +141,15 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
     /**
      * @param payload Payload size.
+     * @param mvccEnabled Whether MVCC is enabled.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusLeafIO<IndexRow>> versions(int payload) {
+    public static IOVersions<? extends BPlusLeafIO<IndexRow>> versions(int payload, boolean mvccEnabled) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)
-            return LeafIO.VERSIONS;
+            return mvccEnabled ? MvccLeafIO.VERSIONS : LeafIO.VERSIONS;
         else
-            return (IOVersions<BPlusLeafIO<IndexRow>>)PageIO.getLeafVersions((short)(payload - 1), false);
+            return (IOVersions<BPlusLeafIO<IndexRow>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
     }
 }

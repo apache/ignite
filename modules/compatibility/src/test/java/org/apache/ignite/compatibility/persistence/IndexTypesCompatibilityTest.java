@@ -97,7 +97,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     @Parameterized.Parameters(name = "ver={0}")
     public static Collection<Object[]> runConfig() {
         return Arrays.asList(new Object[][] {
-            {"2.6.0"}, {"2.7.0"}, {"2.7.6"}, {"2.8.0"}, {"2.8.1"}, {"2.9.0"}, {"2.9.1"}
+            {"2.6.0"}, {"2.7.0"}, {"2.7.6"}, {"2.8.0"}, {"2.8.1"}, {"2.9.0"}, {"2.9.1"}, {"2.10.0"}
         });
     }
 

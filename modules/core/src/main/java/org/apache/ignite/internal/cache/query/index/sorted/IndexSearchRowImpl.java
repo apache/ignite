@@ -71,6 +71,11 @@ public class IndexSearchRowImpl implements IndexRow {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return true;
+    }
+
     /** */
     private boolean isFullSchemaSearch(Object[] idxKeys, int schemaLength) {
         if (idxKeys.length != schemaLength)

@@ -15,21 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
+package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-/**
- * Represents common API for inline IOs.
- */
-public interface InlineIO extends MvccIO {
-    /**
-     * @param pageAddr Page address.
-     * @param idx Index.
-     * @return Row link.
-     */
-    public long link(long pageAddr, int idx);
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+
+/** */
+public class IndexQueryContext {
+    /** Cache entry filter. */
+    private final IndexingQueryFilter filter;
+
+    /** */
+    private final MvccSnapshot mvccSnapshot;
+
+    /** */
+    public IndexQueryContext(IndexingQueryFilter filter, MvccSnapshot snapshot) {
+        this.filter = filter;
+        this.mvccSnapshot = snapshot;
+    }
 
     /**
-     * @return Number of bytes stored in the inline payload.
+     * @return Mvcc snapshot.
      */
-    public int inlineSize();
+    public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /**
+     * @return Filter.
+     */
+    public IndexingQueryFilter filter() {
+        return filter;
+    }
 }

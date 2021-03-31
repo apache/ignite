@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests for use partition pruning at the SELECT step of the UPDATE/DELETE statements execution.
  */
-@Ignore("MVCC is deprecated")
 @SuppressWarnings("deprecation")
 public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBaseTest {
     /** Rows count for test tables. */

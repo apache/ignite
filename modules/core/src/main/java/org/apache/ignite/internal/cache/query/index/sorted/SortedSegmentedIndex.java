@@ -19,8 +19,8 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,30 +43,30 @@ public interface SortedSegmentedIndex extends Index {
      * @param lower Nullable lower bound.
      * @param upper Nullable upper bound.
      * @param segment Number of tree segment to find.
-     * @param filter Cache entry filter.
+     * @param qryCtx External index qyery context.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexQueryContext qryCtx)
         throws IgniteCheckedException;
 
     /**
      * Finds first index row for specified tree segment and cache filter.
      *
      * @param segment Number of tree segment to find.
-     * @param filter Cache entry filter.
+     * @param qryCtx External index qyery context.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> findFirst(int segment, IndexQueryContext qryCtx)
         throws IgniteCheckedException;
 
     /**
      * Finds last index row for specified tree segment and cache filter.
      *
      * @param segment Number of tree segment to find.
-     * @param filter Cache entry filter.
+     * @param qryCtx External index qyery context.
      * @return Cursor of found index rows.
      */
-    public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter)
+    public GridCursor<IndexRow> findLast(int segment, IndexQueryContext qryCtx)
         throws IgniteCheckedException;
 
     /**
@@ -81,10 +81,10 @@ public interface SortedSegmentedIndex extends Index {
      * Counts index rows in specified tree segment with cache filter.
      *
      * @param segment Number of tree segment to find.
-     * @param filter Cache entry filter.
+     * @param qryCtx Index query context.
      * @return count of index rows for specified segment.
      */
-    public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException;
+    public long count(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException;
 
     /**
      * Counts index rows for all segments.

@@ -37,13 +37,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests to check behavior with transactions on.
  */
-@Ignore("MVCC is deprecated.")
 public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";

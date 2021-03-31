@@ -23,7 +23,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /** */
-@Ignore("MVCC is deprecated.")
 public class IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest
     extends IgniteCachePartitionedAtomicColumnConstraintsTest {
     /** {@inheritDoc} */

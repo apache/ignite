@@ -32,10 +32,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommen
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 
 /**
  * Creates temporary index to defragment old index.
@@ -132,13 +134,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         if (io instanceof BPlusInnerIO) {
             assert io instanceof AbstractInlineInnerIO
-                || io instanceof InlineInnerIO;
+                || io instanceof InnerIO;
 
             return new BPlusInnerIoDelegate((BPlusInnerIO<IndexRow>)io, rowHnd);
         }
         else {
             assert io instanceof AbstractInlineLeafIO
-                || io instanceof InlineLeafIO;
+                || io instanceof LeafIO;
 
             return new BPlusLeafIoDelegate((BPlusLeafIO<IndexRow>)io, rowHnd);
         }
@@ -169,19 +171,39 @@ public class DefragIndexFactory extends InlineIndexFactory {
             keys[i] = key;
         }
 
+        if (io.storeMvccInfo()) {
+            long mvccCrdVer = io.mvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = io.mvccCounter(pageAddr, idx);
+            int mvccOpCntr = io.mvccOperationCounter(pageAddr, idx);
+
+            MvccDataRow row = new MvccDataRow(
+                null,
+                0,
+                link,
+                PageIdUtils.partId(PageIdUtils.pageId(link)),
+                CacheDataRowAdapter.RowData.LINK_ONLY,
+                mvccCrdVer,
+                mvccCntr,
+                mvccOpCntr,
+                true
+            );
+
+            return new IndexRowImpl(rowHnd, row, keys);
+        }
+
         return new IndexRowImpl(rowHnd, new CacheDataRowAdapter(link), keys);
     }
 
     /** */
     private static class BPlusInnerIoDelegate<IO extends BPlusInnerIO<IndexRow> & InlineIO>
         extends BPlusInnerIO<IndexRow> implements InlineIO {
-        /** */
+        /** {@inheritDoc} */
         private final IO io;
 
-        /** */
+        /** {@inheritDoc} */
         private final InlineIndexRowHandler rowHnd;
 
-        /** */
+        /** {@inheritDoc} */
         private BPlusInnerIoDelegate(IO io, InlineIndexRowHandler rowHnd) {
             super(io.getType(), io.getVersion(), io.canGetRow(), io.getItemSize());
             this.io = io;
@@ -195,13 +217,13 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx)
-            throws IgniteCheckedException
-        {
+            throws IgniteCheckedException {
             io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
         }
 
         /** {@inheritDoc} */
-        @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr,
+            int idx) throws IgniteCheckedException {
             return lookupRow(rowHnd, pageAddr, idx, this);
         }
 
@@ -213,6 +235,26 @@ public class DefragIndexFactory extends InlineIndexFactory {
         /** {@inheritDoc} */
         @Override public int inlineSize() {
             return io.inlineSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
+            return io.mvccCoordinatorVersion(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCounter(long pageAddr, int idx) {
+            return io.mvccCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int mvccOperationCounter(long pageAddr, int idx) {
+            return io.mvccOperationCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean storeMvccInfo() {
+            return io.storeMvccInfo();
         }
     }
 
@@ -257,6 +299,26 @@ public class DefragIndexFactory extends InlineIndexFactory {
         /** {@inheritDoc} */
         @Override public int inlineSize() {
             return io.inlineSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
+            return io.mvccCoordinatorVersion(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCounter(long pageAddr, int idx) {
+            return io.mvccCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int mvccOperationCounter(long pageAddr, int idx) {
+            return io.mvccOperationCounter(pageAddr, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean storeMvccInfo() {
+            return io.storeMvccInfo();
         }
     }
 }

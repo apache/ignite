@@ -37,12 +37,12 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -89,8 +89,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
-        InlineTreeFilterClosure closure = filterClosure(filter);
+    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
+        InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
         // If it is known that only one row will be returned an optimization is employed
         if (isSingleRowLookup(lower, upper)) {
@@ -125,8 +125,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
-        return segments[segment].size(filterClosure(filter));
+    @Override public long count(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
+        return segments[segment].size(filterClosure(qryCtx));
     }
 
     /**
@@ -146,7 +146,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** */
     private boolean isSingleRowLookup(IndexRow lower, IndexRow upper) throws IgniteCheckedException {
-        return def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+        return !cctx.mvccEnabled() && def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
@@ -201,11 +201,11 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> findFirst(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> findFirst(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
         try {
             ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-            InlineTreeFilterClosure closure = filterClosure(filter);
+            InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
             IndexRow found = segments[segment].findFirst(closure);
 
@@ -220,11 +220,11 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> findLast(int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> findLast(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
         try {
             ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
 
-            InlineTreeFilterClosure closure = filterClosure(filter);
+            InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
             IndexRow found = segments[segment].findLast(closure);
 
@@ -308,7 +308,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         try {
             int segment = segmentForRow(row);
 
-            segments[segment].remove(new IndexRowImpl(rowHnd, row));
+            segments[segment].removex(new IndexRowImpl(rowHnd, row));
 
         } catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
@@ -372,14 +372,22 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** */
-    public InlineTreeFilterClosure filterClosure(IndexingQueryFilter filter) {
-        if (filter != null) {
-            IndexingQueryCacheFilter f = filter.forCache(cctx.cache().name());
-            if (f != null)
-                return new InlineTreeFilterClosure(f);
-        }
+    private InlineTreeFilterClosure filterClosure(IndexQueryContext qryCtx) {
+        if (qryCtx == null)
+            return null;
 
-        return null;
+        IndexingQueryCacheFilter cacheFilter = qryCtx.filter() == null ? null
+            : qryCtx.filter().forCache(cctx.cache().name());
+
+        MvccSnapshot v = qryCtx.mvccSnapshot();
+
+        assert !cctx.mvccEnabled() || v != null;
+
+        if (cacheFilter == null && v == null)
+            return null;
+
+        return new InlineTreeFilterClosure(
+            cacheFilter, v, cctx, cctx.kernalContext().config().getGridLogger());
     }
 
     /** {@inheritDoc} */

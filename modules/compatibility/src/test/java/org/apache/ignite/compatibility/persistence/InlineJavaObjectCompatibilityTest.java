@@ -88,7 +88,10 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
             {"2.9.0", true},
 
             {"2.9.1", false},
-            {"2.9.1", true}
+            {"2.9.1", true},
+
+            {"2.10.0", false},
+            {"2.10.0", true}
         });
     }
 

@@ -15,21 +15,42 @@
  * limitations under the License.
  */
 
+
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
-/**
- * Represents common API for inline IOs.
- */
-public interface InlineIO extends MvccIO {
+/** This interface represents MVCC aware IO. */
+public interface MvccIO {
     /**
      * @param pageAddr Page address.
      * @param idx Index.
-     * @return Row link.
+     * @return Mvcc coordinator version.
      */
-    public long link(long pageAddr, int idx);
+    public default long mvccCoordinatorVersion(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
-     * @return Number of bytes stored in the inline payload.
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
      */
-    public int inlineSize();
+    public default long mvccCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc operation counter.
+     */
+    public default int mvccOperationCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return {@code True} if IO stores mvcc information.
+     */
+    public default boolean storeMvccInfo() {
+        return false;
+    }
 }

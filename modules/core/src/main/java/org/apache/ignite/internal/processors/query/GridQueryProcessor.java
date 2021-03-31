@@ -2478,8 +2478,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        idxProc.store(cctx, newRow, prevRow, prevRowAvailable);
-
         if (desc == null) {
             int typeId = ctx.cacheObjects().typeId(val);
 
@@ -2498,6 +2496,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return;
         }
+
+        idxProc.store(cctx, newRow, prevRow, prevRowAvailable);
 
         if (idx != null)
             idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
@@ -3261,11 +3261,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
 
-        idxProc.remove(cctx.name(), row);
-
-        if (idx == null)
-            return;
-
         QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
             cctx.cacheObjectContext(),
             row.key(),
@@ -3275,7 +3270,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (desc == null)
             return;
 
-        idx.remove(cctx, desc, row);
+        idxProc.remove(cctx.name(), row);
+
+        if (idx == null)
+            idx.remove(cctx, desc, row);
     }
 
     /**

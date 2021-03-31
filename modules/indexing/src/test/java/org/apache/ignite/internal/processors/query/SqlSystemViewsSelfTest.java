@@ -277,14 +277,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
 
-        for (List<?> idxs: srvNodeIndexes)
-            System.out.println(idxs);
-
-        System.out.println("----");
-
-        for (List<?> idxs: clientNodeNodeIndexes)
-            System.out.println(idxs);
-
         assertTrue(srvNodeIndexes.containsAll(clientNodeNodeIndexes));
 
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125

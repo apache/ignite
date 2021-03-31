@@ -34,6 +34,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
@@ -75,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexCondition;
@@ -204,7 +204,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
 
-            GridCursor<IndexRow> cursor = queryIndex.find(key.get1(), key.get2(), segment(qctx), filter(qctx));
+            GridCursor<IndexRow> cursor = queryIndex.find(key.get1(), key.get2(), segment(qctx), idxQryContext(qctx));
 
             GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -216,10 +216,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** */
-    private IndexingQueryFilter filter(QueryContext qctx) {
+    private IndexQueryContext idxQryContext(QueryContext qctx) {
         assert qctx != null || !cctx.mvccEnabled();
 
-        return qctx != null ? qctx.filter() : null;
+        if (qctx == null)
+            return null;
+
+        return new IndexQueryContext(qctx.filter(), qctx.mvccSnapshot());
     }
 
     /** */
@@ -287,7 +290,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
-            return queryIndex.count(segment(qctx), filter(qctx));
+            return queryIndex.count(segment(qctx), idxQryContext(qctx));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -299,9 +302,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
+            IndexQueryContext qryCtx = idxQryContext(qctx);
+
             GridCursor<IndexRow> cursor = b ?
-                queryIndex.findFirst(segment(qctx), filter(qctx))
-                : queryIndex.findLast(segment(qctx), filter(qctx));
+                queryIndex.findFirst(segment(qctx), qryCtx)
+                : queryIndex.findLast(segment(qctx), qryCtx);
 
             return new H2Cursor(new IndexValueCursor<>(cursor, this::mapIndexRow));
         }
@@ -459,7 +464,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                         // This is the first request containing all the search rows.
                         assert !msg.bounds().isEmpty() : "empty bounds";
 
-                        src = new RangeSource(this, msg.bounds(), msg.segment(), filter(qctx));
+                        src = new RangeSource(this, msg.bounds(), msg.segment(), idxQryContext(qctx));
                     }
                     else {
                         // This is request to fetch next portion of data.
@@ -564,17 +569,17 @@ public class H2TreeIndex extends H2TreeIndexBase {
      *
      * @param bounds Bounds.
      * @param segment Segment.
-     * @param filter Filter.
+     * @param qryCtx Index query context.
      * @return Iterator.
      */
-    public Iterator<H2Row> findForSegment(GridH2RowRangeBounds bounds, int segment, IndexingQueryFilter filter) {
+    public Iterator<H2Row> findForSegment(GridH2RowRangeBounds bounds, int segment, IndexQueryContext qryCtx) {
         SearchRow lower = toSearchRow(bounds.first());
         SearchRow upper = toSearchRow(bounds.last());
 
         T2<IndexRow, IndexRow> key = prepareIndexKeys(lower, upper);
 
         try {
-            GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), segment, filter);
+            GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), segment, qryCtx);
 
             if (range == null)
                 range = IndexValueCursor.EMPTY;

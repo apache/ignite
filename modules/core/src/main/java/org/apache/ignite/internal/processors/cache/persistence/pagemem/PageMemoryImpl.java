@@ -2149,10 +2149,10 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (fullPageId.pageId() == META_PAGE_ID)
                 return false;
 
-            clearRowCache(fullPageId, absPtr);
-
             if (PageHeader.isAcquired(absPtr))
                 return false;
+
+            clearRowCache(fullPageId, absPtr);
 
             if (isDirty(absPtr)) {
                 CheckpointPages checkpointPages = this.checkpointPages;

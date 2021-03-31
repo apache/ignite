@@ -25,6 +25,7 @@ public final class InlineInnerIO extends AbstractInlineInnerIO {
      * Constructor.
      */
     public InlineInnerIO(short type, int inlineSize) {
-        super(type, 1, inlineSize);
+        // Meta stores link to a cache row.
+        super(type, 1, 8, inlineSize);
     }
 }

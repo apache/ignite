@@ -31,13 +31,11 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Index rebuild after node restart test.
  */
-@Ignore("MVCC is deprecated.")
 public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration serverConfiguration(int idx, boolean filter) throws Exception {

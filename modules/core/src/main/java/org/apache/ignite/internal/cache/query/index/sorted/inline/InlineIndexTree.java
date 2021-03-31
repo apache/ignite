@@ -35,8 +35,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -44,13 +45,11 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -95,6 +94,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** Row cache. */
     private final @Nullable IndexRowCache idxRowCache;
+
+    /** Whether MVCC is enabled. */
+    private final boolean mvccEnabled;
 
     /**
      * Constructor.
@@ -142,6 +144,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         this.idxRowCache = idxRowCache;
 
+        mvccEnabled = cctx.mvccEnabled();
+
         if (!initNew) {
             // Init from metastore.
             // Page is ready - read meta information.
@@ -151,7 +155,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 def.initByMeta(initNew, metaInfo);
 
             inlineSize = metaInfo.inlineSize();
-            setIos(inlineSize);
+            setIos(inlineSize, mvccEnabled);
 
             boolean inlineObjSupported = inlineObjectSupported(def, metaInfo, rowHndFactory);
 
@@ -172,7 +176,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             inlineSize = computeInlineSize(
                 rowHnd.inlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
 
-            setIos(inlineSize);
+            setIos(inlineSize, mvccEnabled);
         }
 
         this.keyTypeSettings = keyTypeSettings;
@@ -183,15 +187,11 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** */
-    private void setIos(int inlineSize) {
-        if (inlineSize == 0)
-            setIos(InnerIO.VERSIONS, LeafIO.VERSIONS);
-        else
-            setIos(
-                // -1 is required as payload starts with 1, and indexes in list of IOs are with 0.
-                (IOVersions<BPlusInnerIO<IndexRow>>) PageIO.getInnerVersions(inlineSize - 1, false),
-                (IOVersions<BPlusLeafIO<IndexRow>>) PageIO.getLeafVersions(inlineSize - 1, false));
-
+    private void setIos(int inlineSize, boolean mvccEnabled) {
+        setIos(
+            AbstractInlineInnerIO.versions(inlineSize, mvccEnabled),
+            AbstractInlineLeafIO.versions(inlineSize, mvccEnabled)
+        );
     }
 
     /**
@@ -245,8 +245,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int searchKeysLength = row.keys().length;
 
-        if (inlineSize == 0)
-            return compareFullRows(getRow(io, pageAddr, idx), row, 0, searchKeysLength);
+        if (inlineSize == 0) {
+            IndexRow currRow = getRow(io, pageAddr, idx);
+
+            int cmp = compareFullRows(currRow, row, 0, searchKeysLength);
+
+            return cmp == 0 ? mvccCompare(currRow, row) : cmp;
+        }
 
         int fieldOff = 0;
 
@@ -289,12 +294,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                         fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
                     }
                     // If inlining of POJO is not supported then fallback to previous logic.
-                    else {
-                        if (currRow == null)
-                            currRow = getRow(io, pageAddr, idx);
-
-                        cmp = compareFullRows(currRow, row, keyIdx, keyIdx + 1);
-                    }
+                    else
+                        break;
                 }
 
                 // Can't compare as inlined bytes are not enough for comparation.
@@ -323,14 +324,20 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (currRow == null)
                 currRow = getRow(io, pageAddr, idx);
 
-            return compareFullRows(currRow, row, keyIdx, searchKeysLength);
+            int ret = compareFullRows(currRow, row, keyIdx, searchKeysLength);
+
+            if (ret != 0)
+                return ret;
         }
 
-        return 0;
+        return mvccCompare((MvccIO) io, pageAddr, idx, row);
     }
 
     /** */
     private int compareFullRows(IndexRow currRow, IndexRow row, int from, int searchKeysLength) throws IgniteCheckedException {
+        if (currRow == row)
+            return 0;
+
         for (int i = from; i < searchKeysLength; i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
@@ -584,5 +591,45 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      */
     public InlineIndexRowHandler rowHandler() {
         return rowHnd;
+    }
+
+    /**
+     * @param io IO.
+     * @param pageAddr Page address.
+     * @param idx Item index.
+     * @param row Search row.
+     * @return Comparison result.
+     */
+    private int mvccCompare(MvccIO io, long pageAddr, int idx, IndexRow row) {
+        if (!mvccEnabled || row.indexSearchRow())
+            return 0;
+
+        long crd = io.mvccCoordinatorVersion(pageAddr, idx);
+        long cntr = io.mvccCounter(pageAddr, idx);
+        int opCntr = io.mvccOperationCounter(pageAddr, idx);
+
+        assert MvccUtils.mvccVersionIsValid(crd, cntr, opCntr);
+
+        return -MvccUtils.compare(crd, cntr, opCntr, row);  // descending order
+    }
+
+    /**
+     * @param r1 First row.
+     * @param r2 Second row.
+     * @return Comparison result.
+     */
+    private int mvccCompare(IndexRow r1, IndexRow r2) {
+        if (!mvccEnabled || r2.indexSearchRow() || r1 == r2)
+            return 0;
+
+        long crdVer1 = r1.mvccCoordinatorVersion();
+        long crdVer2 = r2.mvccCoordinatorVersion();
+
+        int c = -Long.compare(crdVer1, crdVer2);
+
+        if (c != 0)
+            return c;
+
+        return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
     }
 }
