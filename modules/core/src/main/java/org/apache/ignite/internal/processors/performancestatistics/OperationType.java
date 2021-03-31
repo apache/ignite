@@ -82,7 +82,10 @@ public enum OperationType {
     CACHE_START(17),
 
     /** Checkpoint. */
-    CHECKPOINT(18);
+    CHECKPOINT(18),
+
+    /** Throttling. */
+    THROTTLING(19);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -188,6 +191,11 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
+        return (8 * 12) + (4 * 3);
+    }
+
+    /** @return Checkpoint record size. */
+    public static int throttlingRecordSize() {
         return (8 * 12) + (4 * 3);
     }
 }

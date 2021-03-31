@@ -56,6 +56,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.THROTTLING;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
@@ -65,6 +66,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.throttlingRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
 /**
@@ -357,6 +359,21 @@ public class FilePerformanceStatisticsWriter {
             buf.putInt(pagesSize);
             buf.putInt(dataPagesWritten);
             buf.putInt(cowPagesWritten);
+        });
+    }
+
+    /**
+     * @param queuedTime Time job spent on waiting queue.
+     * @param startTime Start time in milliseconds.
+     * @param duration Job execution time.
+     * @param timedOut {@code True} if job is timed out.
+     */
+    public void throttling(Boolean isBegin, long queuedTime, long startTime, long duration, boolean timedOut) {
+        doWrite(THROTTLING, throttlingRecordSize(), buf -> {
+            buf.putLong(queuedTime);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.put(isBegin ? (byte)1 : 0);
         });
     }
 

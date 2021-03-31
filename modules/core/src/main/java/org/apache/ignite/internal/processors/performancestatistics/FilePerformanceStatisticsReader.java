@@ -53,6 +53,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.THROTTLING;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
@@ -62,6 +63,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.throttlingRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
@@ -404,6 +406,34 @@ public class FilePerformanceStatisticsReader {
         }
         else if (opType == CHECKPOINT) {
             if (buf.remaining() < checkpointRecordSize())
+                return false;
+
+            long beforeLockDuration = buf.getLong();
+            long lockWaitDuration = buf.getLong();
+            long listenersExecDuration = buf.getLong();
+            long markDuration = buf.getLong();
+            long lockHoldDuration = buf.getLong();
+            long pagesWriteDuration = buf.getLong();
+            long fsyncDuration = buf.getLong();
+            long walCpRecordFsyncDuration = buf.getLong();
+            long writeCheckpointEntryDuration = buf.getLong();
+            long splitAndSortCpPagesDuration = buf.getLong();
+            long totalDuration = buf.getLong();
+            long checkpointStartTime = buf.getLong();
+            int pagesSize = buf.getInt();
+            int dataPagesWritten = buf.getInt();
+            int cowPagesWritten = buf.getInt();
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
+                    lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration,
+                    writeCheckpointEntryDuration, splitAndSortCpPagesDuration, totalDuration, checkpointStartTime,
+                    pagesSize, dataPagesWritten, cowPagesWritten);
+
+            return true;
+        }
+        else if (opType == THROTTLING) {
+            if (buf.remaining() < throttlingRecordSize())
                 return false;
 
             long beforeLockDuration = buf.getLong();
