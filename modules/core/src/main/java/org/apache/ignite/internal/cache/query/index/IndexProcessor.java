@@ -391,7 +391,7 @@ public class IndexProcessor extends GridProcessorAdapter {
     public void unregisterCache(GridCacheContextInfo cacheInfo) {
         idxRowCacheRegistry.onCacheUnregistered(cacheInfo);
 
-        idxRebuild.stopRebuild(cacheInfo);
+        idxRebuild.stopRebuild(cacheInfo, log);
     }
 
     /**

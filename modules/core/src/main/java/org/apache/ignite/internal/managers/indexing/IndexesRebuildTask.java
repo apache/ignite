@@ -128,10 +128,8 @@ public class IndexesRebuildTask {
      *
      * @param cacheInfo Cache context info.
      */
-    public void stopRebuild(GridCacheContextInfo cacheInfo) {
-        cancelIndexRebuildFuture(
-            idxRebuildFuts.remove(cacheInfo.cacheId()),
-            cacheInfo.cacheContext().kernalContext().grid().log());
+    public void stopRebuild(GridCacheContextInfo cacheInfo, IgniteLogger log) {
+        cancelIndexRebuildFuture(idxRebuildFuts.remove(cacheInfo.cacheId()), log);
     }
 
     /**
