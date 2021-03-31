@@ -208,7 +208,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, SHOW, true, true, emptyList()
+            null, null, null, sensitiveData, true, true, emptyList()
         );
 
         convert(out, arg);

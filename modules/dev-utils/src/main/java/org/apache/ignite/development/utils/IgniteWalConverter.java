@@ -81,24 +81,24 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
-//        if (params.includeSensitive() == null)
-//            System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
-//        else {
-//            switch (params.includeSensitive()) {
-//                case SHOW:
-//                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "plain");
-//                    break;
-//                case HASH:
-//                case MD5:
-//                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
-//                    break;
-//                case HIDE:
-//                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "none");
-//                    break;
-//                default:
-//                    assert false : "Unexpected includeSensitive: " + params.includeSensitive();
-//            }
-//        }
+        if (params.getProcessSensitiveData() == null)
+            System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
+        else {
+            switch (params.getProcessSensitiveData()) {
+                case SHOW:
+                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "plain");
+                    break;
+                case HASH:
+                case MD5:
+                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
+                    break;
+                case HIDE:
+                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "none");
+                    break;
+                default:
+                    assert false : "Unexpected includeSensitive: " + params.getProcessSensitiveData();
+            }
+        }
 
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_SKIP_CRC, Boolean.toString(params.isSkipCrc()));
         RecordV1Serializer.skipCrc = params.isSkipCrc();
