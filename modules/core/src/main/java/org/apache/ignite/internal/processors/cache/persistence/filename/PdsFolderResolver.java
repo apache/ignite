@@ -45,6 +45,12 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
+/**
+ * This class contains logic to resolve and possibly lock PDS folder
+ * based on provided {@link IgniteConfiguration} and {@link #consistentId}.
+ *
+ * @param <L> Type of the lock holder.
+ */
 public class PdsFolderResolver<L extends FileLockHolder> {
     /** Database subfolders constant prefix. */
     private static final String DB_FOLDER_PREFIX = "node";
