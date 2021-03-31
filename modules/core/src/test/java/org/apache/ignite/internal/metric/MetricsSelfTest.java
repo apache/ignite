@@ -144,7 +144,9 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, l.value());
 
-        assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(mName, "test")), AssertionError.class);
+        assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(mName, "")), AssertionError.class);
+        assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(metricName("mreg", mName), "")),
+            AssertionError.class);
     }
 
     /** */
@@ -373,6 +375,8 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(new T2<>("org.apache", "ignite"), fromFullName("org.apache.ignite"));
 
         assertEquals(new T2<>("org", "apache"), fromFullName("org.apache"));
+
+        assertThrowsWithCause(() -> fromFullName("ignite"), AssertionError.class);
     }
 
     /** */

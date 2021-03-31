@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -49,7 +50,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
@@ -122,11 +123,11 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param metric Metric.
      */
     public void register(Metric metric) {
-        String mregPrefix = regName + SEPARATOR;
+        T2<String, String> splitted = fromFullName(metric.name());
 
-        assert metric.name().startsWith(mregPrefix);
+        assert splitted.get1().equals(regName);
 
-        addMetric(metric.name().substring(mregPrefix.length()), metric);
+        addMetric(splitted.get2(), metric);
     }
 
     /**
@@ -323,8 +324,6 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return Registered metric.
      */
     private <T extends Metric> T addMetric(String name, T metric) {
-        assert metric.name().startsWith(regName + SEPARATOR);
-
         T old = (T)metrics.putIfAbsent(name, metric);
 
         if (old != null)
