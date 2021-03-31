@@ -24,11 +24,17 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  * Cache object over byte array.
@@ -194,6 +200,13 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
+        if (sensitiveDataLogging == PLAIN)
+            return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
+        else if (sensitiveDataLogging == HASH)
+            return val == null ? "null" : String.valueOf(IgniteUtils.hash(val));
+        else
+            return "CacheObject";
     }
 }

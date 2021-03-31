@@ -31,8 +31,11 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /**
  * BinaryObjectExceptionSelfTest
@@ -81,6 +84,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -152,6 +156,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testFailedMarshallingLogging() throws Exception {
         BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
 

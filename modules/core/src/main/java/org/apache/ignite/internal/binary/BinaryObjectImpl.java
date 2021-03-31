@@ -41,6 +41,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -940,11 +943,21 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         return length();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String toString() {
-        if (arr == null || ctx == null)
-            return "BinaryObjectImpl [arr= " + (arr != null) + ", ctx=" + (ctx != null) + ", start=" + start + "]";
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
 
-        return super.toString();
+        if (sensitiveDataLogging == PLAIN) {
+            if (arr == null || ctx == null)
+                return "BinaryObjectImpl [arr=" + (arr != null) + ", ctx=" + (ctx != null) + ", start=" + start + "]";
+
+            return super.toString();
+        }
+        else if (sensitiveDataLogging == HASH)
+            return String.valueOf(IgniteUtils.hash(this));
+        else
+            return "BinaryObject";
     }
 }

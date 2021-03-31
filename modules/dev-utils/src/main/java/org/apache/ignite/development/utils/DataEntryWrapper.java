@@ -105,48 +105,48 @@ class DataEntryWrapper extends DataEntry {
      * @return String presentation of the entry key or entry value depends on {@code isValue}.
      */
     public String toString(Object value, CacheObject co) {
-        String str;
-        if (sensitiveData == HIDE)
-            return "";
+        if (sensitiveData == SHOW || sensitiveData == MD5) {
+            String str;
 
-        if (sensitiveData == HASH)
+            if (value instanceof String)
+                str = (String) value;
+            else if (value instanceof BinaryObject)
+                str = value.toString();
+            else if (value != null)
+                str = toStringRecursive(value.getClass(), value);
+            else if (co instanceof BinaryObject)
+                str = co.toString();
+            else
+                str = null;
+
+            if (str == null || str.isEmpty()) {
+
+                try {
+                    CacheObjectValueContext ctx;
+                    try {
+                        ctx = IgniteUtils.field(source, "cacheObjValCtx");
+                    } catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                    str = Base64.getEncoder().encodeToString(co.valueBytes(ctx));
+                } catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (sensitiveData == MD5)
+                str = ProcessSensitiveDataUtils.md5(str);
+
+            return str;
+        }
+        else if (sensitiveData == HIDE)
+            return "";
+        else {
             if (value != null)
                 return Integer.toString(value.hashCode());
             else
                 return Integer.toString(co.hashCode());
-
-        if (value instanceof String)
-            str = (String)value;
-        else if (value instanceof BinaryObject)
-            str = value.toString();
-        else if (value != null)
-            str = toStringRecursive(value.getClass(), value);
-        else if (co instanceof BinaryObject)
-            str = co.toString();
-        else
-            str = null;
-
-        if (str == null || str.isEmpty()) {
-
-            try {
-                CacheObjectValueContext ctx = null;
-                try {
-                    ctx = IgniteUtils.field(source, "cacheObjValCtx");
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-                str = Base64.getEncoder().encodeToString(co.valueBytes(ctx));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
         }
-
-        if (sensitiveData == MD5)
-            str = ProcessSensitiveDataUtils.md5(str);
-
-        return str;
     }
 
     /**

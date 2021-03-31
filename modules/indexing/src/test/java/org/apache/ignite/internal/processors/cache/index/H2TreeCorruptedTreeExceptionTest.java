@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.lang.String.format;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /** */
 public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
@@ -63,7 +63,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
                     ", msg=Runtime failure on row: Row@.*?key: 1, val: .*?%s.*",
                 IDX_NAME,
                 GRP_NAME,
-                IGNITE_TO_STRING_INCLUDE_SENSITIVE
+                IGNITE_SENSITIVE_DATA_LOGGING
         )
     );
 
@@ -147,7 +147,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "none")
     public void testCorruptedTree() throws Exception {
         IgniteEx srv = startGrid(0);
 
@@ -175,7 +175,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         assertFalse(logSensListener.check());
 
-        System.setProperty(IGNITE_TO_STRING_INCLUDE_SENSITIVE, Boolean.TRUE.toString());
+        System.setProperty(IGNITE_SENSITIVE_DATA_LOGGING, "plain");
 
         clearGridToStringClassCache();
 

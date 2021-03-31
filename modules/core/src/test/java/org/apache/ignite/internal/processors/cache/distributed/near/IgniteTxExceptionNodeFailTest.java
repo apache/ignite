@@ -37,7 +37,9 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -46,6 +48,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -53,10 +56,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture.ALL_PARTITION_OWNERS_LEFT_GRID_MSG;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
- * Tests check a result of commit when a node fail before send {@link GridNearTxFinishResponse} to transaction
- * coordinator
+ * Tests check a result of commit when a node fail before
+ * send {@link GridNearTxFinishResponse} to transaction coordinator
  */
 @RunWith(Parameterized.class)
 public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
@@ -108,6 +113,27 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
+    public void testNodeFailBeforeSendGridNearTxFinishResponseWithSensitive() throws Exception {
+        testNodeFailBeforeSendGridNearTxFinishResponse();
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
+    public void testNodeFailBeforeSendGridNearTxFinishResponseWithHashSensitive() throws Exception {
+        testNodeFailBeforeSendGridNearTxFinishResponse();
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "none")
+    public void testNodeFailBeforeSendGridNearTxFinishResponseWithoutSensitive() throws Exception {
+        testNodeFailBeforeSendGridNearTxFinishResponse();
+    }
+
     /**
      * <ul>
      * <li>Start 2 nodes with transactional cache, without backups, with {@link IgniteTxExceptionNodeFailTest#syncMode}
@@ -123,8 +149,7 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
-    @Test
-    public void testNodeFailBeforeSendGridNearTxFinishResponse() throws Exception {
+    private void testNodeFailBeforeSendGridNearTxFinishResponse() throws Exception {
         IgniteEx grid0 = startGrids(2);
 
         grid0.cluster().state(ClusterState.ACTIVE);
@@ -182,6 +207,25 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
                     ", partition=\\d+, " +
                     "key=KeyCacheObjectImpl \\[part=\\d+, val=" + key0 +
                     ", hasValBytes=true\\]\\]");
+
+
+                if (S.getSensitiveDataLogging() == PLAIN) {
+                    msgPtrn = Pattern.compile(" \\[cacheName=" + DEFAULT_CACHE_NAME +
+                        ", partition=\\d+, " +
+                        "key=KeyCacheObjectImpl \\[part=\\d+, val=" + key0 +
+                        ", hasValBytes=true\\]\\]");
+                }
+                else if (S.getSensitiveDataLogging() == HASH) {
+                    msgPtrn = Pattern.compile(" \\[cacheName=" + DEFAULT_CACHE_NAME +
+                        ", partition=\\d+, " +
+                        "key=" + IgniteUtils.hash(key0) + "\\]");
+                }
+                else {
+                    msgPtrn = Pattern.compile(" \\[cacheName=" + DEFAULT_CACHE_NAME +
+                        ", partition=\\d+, " +
+                        "key=KeyCacheObject\\]");
+                }
+
 
                 Matcher matcher = msgPtrn.matcher(msg);
 

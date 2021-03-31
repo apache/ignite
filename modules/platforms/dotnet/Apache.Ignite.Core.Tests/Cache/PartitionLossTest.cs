@@ -168,12 +168,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                 int unused;
                 var ex = Assert.Throws<CacheException>(() => cache.TryGet(part, out unused));
 
-                Assert.AreEqual(string.Format(
+                Assert.True(ex.Message.StartsWith(string.Format(
                     "class org.apache.ignite.internal.processors.cache.CacheInvalidStateException" +
                     ": Failed to execute the cache operation (all partition owners have left the grid, " +
-                    "partition data has been lost) [cacheName={0}, partition={1}," +
-                    " key=UserKeyCacheObjectImpl [part={1}, val={1}, hasValBytes=false]]",
-                    CacheName, part), ex.Message);
+                    "partition data has been lost) [cacheName={0}, partition={1}, key",
+                    CacheName, part)));
             }
             else
             {
