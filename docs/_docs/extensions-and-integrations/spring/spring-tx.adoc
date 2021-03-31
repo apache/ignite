@@ -12,35 +12,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Apache Ignite With Spring Transactions
+= Apache Ignite with Spring Transactions
 
 == Overview
 
 http://docs.spring.io/spring/docs/current/spring-framework-reference/html/transaction.html[Spring Transactions, window="_blank"]
-abstraction allows you to use declarative transaction management to concentrate on business logic rather than
+abstraction allows you to use a declarative transaction management to concentrate on business logic rather than
 transaction life-cycle.
 
-Apache Ignite provides an extension - `ignite-spring-tx-ext` - that allows you to manage
+Apache Ignite provides the `ignite-spring-tx-ext` extension that allows to manage
 https://ignite.apache.org/docs/latest/key-value-api/transactions#performing-transactions[Apache Ignite Transactions, window="_blank"]
-through Spring Transactions abstraction. The mentioned integration is achieved by providing implementations of the Spring
-Transactions `TransactionManager` interface. There are two such implementations: `SpringTransactionManager` and
-`IgniteClientSpringTransactionManager`, which use Apache Ignite node or Apache Ignite thin client to connect to an
-Apache Ignite cluster and manage Apache Ignite transactions, respectively.
+through the Spring Transactions abstraction. The mentioned integration is achieved by providing implementations of the
+`TransactionManager` Spring Transactions interface. There are two such implementations: `SpringTransactionManager` and
+`IgniteClientSpringTransactionManager`, which use Apache Ignite node or Apache Ignite thin client to connect to the
+Apache Ignite cluster and manage the Apache Ignite transactions, respectively.
 
-To enable declarative transaction management in your Spring application, you need to create and configure
+To enable declarative transaction management in your Spring application, create and configure
 `SpringTransactionManager` or `IgniteClientSpringTransactionManager` bean in the Spring application context. The choice
 of implementation depends on your preferable way to access the Apache Ignite cluster.
 
 == Maven Configuration
 
 If you are using Maven to manage dependencies in your project, you can add Spring Transactions extension dependencies to
-an application's `pom.xml` file like this:
+the application's `pom.xml` file like this:
 
 [NOTE]
 ====
 For Apache Ignite versions earlier than `2.11.0`, the `ignite-spring-tx-ext` dependency must be added to
 classpath before `ignite-spring`, due to duplication of Spring Transactions integration classes. If you are using Maven
-to manage dependencies, it just needs to place `ignite-spring-tx-ext` before `ignite-spring` dependency in an
+to manage dependencies, place `ignite-spring-tx-ext` before the `ignite-spring` dependency in the
 application's `pom.xml` file.
 ====
 
@@ -75,28 +75,28 @@ tab:pom.xml[]
 ----
 --
 
-Replace `${ignite-spring-tx-ext.version}`, `${spring.version}` and
-`${ignite.version}` with an actual version of Apache Ignite Spring Transactions extension, Spring Transactions and
+Replace `${ignite-spring-tx-ext.version}`, `${spring.version}`, and
+`${ignite.version}` with an actual version of Apache Ignite Spring Transactions extension, Spring Transactions, and
 Apache Ignite dependency you are interested in, respectively.
 
 == Apache Ignite Node Transaction Manager Configuration
 This chapter shows how to set up `SpringTransactionManager` that relies on Apache Ignite node to connect to the cluster
-and manage transactions. The configuration consists of two steps -
-link:extensions-and-integrations/spring/spring-tx#cluster-connection-configuration[cluster connection configuration]
-and link:extensions-and-integrations/spring/spring-tx#transaction-concurrency-mode-configuration[transaction concurrency mode configuration].
+and to manage transactions. The configuration consists of two steps -
+link:extensions-and-integrations/spring/spring-tx#cluster-connection-configuration[Cluster connection configuration]
+and link:extensions-and-integrations/spring/spring-tx#transaction-concurrency-mode-configuration[Transaction concurrency mode configuration].
 
 === Cluster Connection Configuration
 
-Cluster connection configuration defines Apache Ignite node that `SpringTransactionManager` will use to access the cluster.
+Cluster connection configuration defines Apache Ignite node that `SpringTransactionManager` uses to access the cluster.
 To do this, you can use the following approaches.
 
 [NOTE]
 ====
-Mixing of multiple approaches is illegal and results in an exception during manager startup.
+Mixing of multiple approaches is incorrect and results in the exception during the manager startup.
 ====
 
 [discrete]
-=== 1. Specifying name of the manually started Apache Ignite node instance
+=== 1. Specifying Name of the Manually Started Apache Ignite Node Instance
 
 This approach is suitable if you have Apache Ignite node instance already running in your application.
 
@@ -141,9 +141,9 @@ tab:XML[]
 --
 
 [discrete]
-=== 2.  Specifying Apache Ignite node configuration
+=== 2. Specifying Apache Ignite Node Configuration
 
-In this case Apache Ignite node instance will be started automatically by the manager based on provided configuration.
+In this case, Apache Ignite node instance is started automatically by the manager based on the provided configuration.
 
 [tabs]
 --
@@ -191,9 +191,9 @@ tab:XML[]
 --
 
 [discrete]
-=== 3. Specifying path to Apache Ignite XML node configuration file
+=== 3. Specifying Path to Apache Ignite XML Node Configuration File
 
-In this case Apache Ignite node instance will be started automatically by the manager based on provided configuration.
+In this case, Apache Ignite node instance is started automatically by the manager based on the provided configuration.
 
 [tabs]
 --
@@ -237,24 +237,24 @@ tab:XML[]
 
 [NOTE]
 ====
-If no connection configuration is specified, `SpringTransactionManager` will use Apache Ignite node instance with the
-default name. If it does not exist, an exception will be thrown during the `SpringTransactionManager` startup.
+If no connection configuration is specified, `SpringTransactionManager` uses Apache Ignite node instance with the
+default name. If it does not exist, an exception is thrown during the `SpringTransactionManager` startup.
 ====
 
 [IMPORTANT]
 ====
 [discrete]
-No matter what configuration approach you chose, the same Apache Ignite node instance must be used to both initialize the
-transaction manager and perform transactional operations. In case Apache Ignite node was started by the transaction manager,
+Regardless the configuration approach you chose, the same Apache Ignite node instance must be used to initialize the
+transaction manager and perform the transactional operations. In case Apache Ignite node was started by the transaction manager,
 you can obtain its instance in your application through `Ignition.ignite("<name of the Apache Ignite node instance>");`.
 ====
 
 
-=== Transaction concurrency mode configuration
+=== Transaction Concurrency Mode Configuration
 
 The transaction concurrency mode configuration defines the
-https://ignite.apache.org/docs/latest/key-value-api/transactions#concurrency-modes-and-isolation-levels[Apache Ignite
-transaction concurrency mode, window="_blank"]
+link:https://ignite.apache.org/docs/latest/key-value-api/transactions#concurrency-modes-and-isolation-levels[Apache Ignite
+transaction concurrency mode,window="_blank"]
 that a manager will apply to all transactions that it processes.
 
 [tabs]
@@ -298,10 +298,10 @@ tab:XML[]
 
 [NOTE]
 ====
-If no transaction concurrency mode configuration is specified, `PESSIMISTIC` concurrency mode will be used.
+If no transaction concurrency mode configuration is specified, `PESSIMISTIC` concurrency mode is used.
 ====
 
-In case you need to support multiple transaction concurrency modes in your application, you need to create separate
+In case you need to support multiple transaction concurrency modes in your application, create separate
 transaction managers for each transaction concurrency mode that you need, and for each Spring transaction specify the
 manager that will process it.
 
@@ -376,9 +376,9 @@ public class TransactionalService {
 This chapter shows how to set up `IgniteClientSpringTransactionManager` that relies on Ignite thin client to connect
 to the cluster and manage transactions.
 
-=== Cluster connection configuration
-Cluster connection configuration defines Apache Ignite thin client instance that `IgniteClientSpringTransactionManager` will
-use to access the cluster.
+=== Cluster Connection Configuration
+Cluster connection configuration defines Apache Ignite thin client instance that `IgniteClientSpringTransactionManager`
+uses to access the cluster.
 
 [tabs]
 --
@@ -443,18 +443,18 @@ tab:XML[]
 [IMPORTANT]
 ====
 [discrete]
-The same Apache Ignite thin client instance must be used to both initialize the transaction manager and perform
+The same Apache Ignite thin client instance must be used to initialize the transaction manager and to perform
 transactional operations.
 ====
 
-=== Transaction concurrency mode configuration
+=== Transaction Concurrency Mode Configuration
 Transaction concurrency mode configuration for `IgniteClientSpringTransactionManager` is performed the same way as for
 link:extensions-and-integrations/spring/spring-tx#transaction-concurrency-mode-configuration[SpringTransactionManager]
 that uses Apache Ignite node instance to access the cluster.
 
 == Examples
 
-The example of using Apache Ignite Spring Transactions integration is available on link: https://github.com/apache/ignite-extensions/tree/master/modules/spring-tx-ext/examples/main/java/org/apache/ignite/transactions/spring/examples[GitHub, windows="_blank"]
+The example of using Apache Ignite Spring Transactions integration is available on link:https://github.com/apache/ignite-extensions/tree/master/modules/spring-tx-ext/examples/main/java/org/apache/ignite/transactions/spring/examples[GitHub, window="_blank"].
 
 
 
