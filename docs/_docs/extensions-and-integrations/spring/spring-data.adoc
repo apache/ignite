@@ -141,10 +141,10 @@ Instead of these operations you can use Ignite specific counterparts available v
 
 == Spring Data and Apache Ignite Configuration
 
-Apache Ignite Spring Data integration supports connecting to Apache Ignite cluster through Apache Ignite node or
-Apache Ignite thin client. Both approaches to configuring access to Apache Ignite cluster use the same API shown below.
-Apache Ignite Spring Data integration automatically recognizes the type of provided bean and uses the appropriate cluster
-connection.
+Apache Ignite Spring Data integration supports connecting to the Apache Ignite cluster through the Apache Ignite node or
+Apache Ignite thin client. Both approaches to configuring access to the Apache Ignite cluster use the same API shown
+below. Apache Ignite Spring Data integration automatically recognizes the type of the provided bean and uses the
+appropriate cluster connection.
 
 To enable Apache Ignite backed repositories in Spring Data, mark an application configuration with `@EnableIgniteRepositories`
 annotation, as shown below:
@@ -202,8 +202,8 @@ public class SpringAppCfg {
 ----
 --
 
-The configuration has to instantiate Apache Ignite bean (node) or Apache Ignite thin client bean that will be passed to
-`IgniteRepositoryFactoryBean` and will be used by all the Apache Ignite repositories in order to connect to the cluster.
+The configuration has to instantiate the Apache Ignite bean (node) or the Apache Ignite thin client bean that is passed
+to `IgniteRepositoryFactoryBean` and is used by all the Apache Ignite repositories in order to connect to the cluster.
 
 In the example above, the bean is initialized directly by the application and is named `igniteInstance`.
 Alternatively, the following beans can be registered in your configuration and an Apache Ignite node will be started automatically:
@@ -212,8 +212,8 @@ Alternatively, the following beans can be registered in your configuration and a
 * A path to Apache Ignite's Spring XML configuration named `igniteSpringCfgPath`.
 
 In the case of connecting to the cluster via Apache Ignite thin client, you can alternatively register the
-`ClientConfiguration` bean named `igniteCfg`, so that the Apache Ignite thin client instance will be started automatically
- by Apache Ignite Spring Data integration.
+`ClientConfiguration` bean named `igniteCfg`, so that the Apache Ignite thin client instance is started automatically by
+the Apache Ignite Spring Data integration.
 
 == Using Apache Ignite Repositories
 
