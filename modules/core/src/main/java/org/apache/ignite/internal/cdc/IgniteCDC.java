@@ -144,12 +144,10 @@ public class IgniteCDC implements Runnable {
 
         consumer = new WALRecordsConsumer<>(cdcCfg.getConsumer());
 
-        String workDir = workDir(cfg);
-
-        if (this.cfg.getWorkDirectory() == null)
-            this.cfg.setWorkDirectory(workDir);
+        initWorkDir(this.cfg);
 
         log = logger(this.cfg);
+
         factory = new IgniteWalIteratorFactory(log);
 
         if (!CU.isPersistenceEnabled(cfg)) {
@@ -284,7 +282,8 @@ public class IgniteCDC implements Runnable {
 
     /** Reads all available records from segment. */
     private void consumeSegment(Path segment) {
-        log.info("Processing WAL segment[segment=" + segment + ']');
+        if (log.isInfoEnabled())
+            log.info("Processing WAL segment[segment=" + segment + ']');
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .log(log)
@@ -419,12 +418,8 @@ public class IgniteCDC implements Runnable {
         }
     }
 
-    /**
-     * Resolves work directory.
-     *
-     * @return Working directory
-     */
-    private static String workDir(IgniteConfiguration cfg) {
+    /** Resolves work directory. */
+    private static void initWorkDir(IgniteConfiguration cfg) {
         try {
             String igniteHome = cfg.getIgniteHome();
 
@@ -438,7 +433,7 @@ public class IgniteCDC implements Runnable {
             String userProvidedWorkDir = cfg.getWorkDirectory();
 
             // Correctly resolve work directory and set it back to configuration.
-            return U.workDirectory(userProvidedWorkDir, igniteHome);
+            cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

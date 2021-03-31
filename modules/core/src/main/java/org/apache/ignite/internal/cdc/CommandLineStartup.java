@@ -135,7 +135,7 @@ public class CommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite-cdc");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite-cdc.{sh|bat}");
 
         int space = runner.indexOf(' ');
 
