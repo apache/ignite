@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -123,11 +122,9 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param metric Metric.
      */
     public void register(Metric metric) {
-        T2<String, String> splitted = fromFullName(metric.name());
+        assert fromFullName(metric.name()).get1().equals(regName);
 
-        assert splitted.get1().equals(regName);
-
-        addMetric(splitted.get2(), metric);
+        addMetric(fromFullName(metric.name()).get2(), metric);
     }
 
     /**
