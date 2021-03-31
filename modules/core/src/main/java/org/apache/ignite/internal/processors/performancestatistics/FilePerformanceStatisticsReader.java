@@ -436,27 +436,11 @@ public class FilePerformanceStatisticsReader {
             if (buf.remaining() < throttlingRecordSize())
                 return false;
 
-            long beforeLockDuration = buf.getLong();
-            long lockWaitDuration = buf.getLong();
-            long listenersExecDuration = buf.getLong();
-            long markDuration = buf.getLong();
-            long lockHoldDuration = buf.getLong();
-            long pagesWriteDuration = buf.getLong();
-            long fsyncDuration = buf.getLong();
-            long walCpRecordFsyncDuration = buf.getLong();
-            long writeCheckpointEntryDuration = buf.getLong();
-            long splitAndSortCpPagesDuration = buf.getLong();
-            long totalDuration = buf.getLong();
-            long checkpointStartTime = buf.getLong();
-            int pagesSize = buf.getInt();
-            int dataPagesWritten = buf.getInt();
-            int cowPagesWritten = buf.getInt();
+            long starTime = buf.getLong();
+            long endTime = buf.getLong();
 
             for (PerformanceStatisticsHandler handler : curHnd)
-                handler.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
-                    lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration,
-                    writeCheckpointEntryDuration, splitAndSortCpPagesDuration, totalDuration, checkpointStartTime,
-                    pagesSize, dataPagesWritten, cowPagesWritten);
+                handler.throttling(starTime, endTime);
 
             return true;
         }

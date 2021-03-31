@@ -225,6 +225,16 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             cowPagesWritten));
     }
 
+
+    /**
+     * @param startTime Start time.
+     * @param endTime End time.
+     */
+    public void throttling(long startTime, long endTime)
+    {
+        write(writer -> writer.throttling(startTime, endTime));
+    }
+
     /**
      * Starts collecting performance statistics.
      *

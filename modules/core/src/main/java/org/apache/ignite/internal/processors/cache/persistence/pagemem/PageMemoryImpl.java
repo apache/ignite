@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
@@ -2481,6 +2482,13 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (GridUnsafe.compareAndSwapLong(null, ptr, old, updated))
                 return updated;
         }
+    }
+
+    /**
+     * @return Performance statistics processor.
+     */
+    PerformanceStatisticsProcessor performanceStatistics() {
+        return ctx.kernalContext().performanceStatistics();
     }
 
     /**

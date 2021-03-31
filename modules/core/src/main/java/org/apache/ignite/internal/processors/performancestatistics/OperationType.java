@@ -196,6 +196,6 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int throttlingRecordSize() {
-        return (8 * 12) + (4 * 3);
+        return 8 + 8;
     }
 }

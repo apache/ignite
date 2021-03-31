@@ -363,17 +363,13 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param queuedTime Time job spent on waiting queue.
      * @param startTime Start time in milliseconds.
-     * @param duration Job execution time.
-     * @param timedOut {@code True} if job is timed out.
+     * @param endTime End time in milliseconds.
      */
-    public void throttling(Boolean isBegin, long queuedTime, long startTime, long duration, boolean timedOut) {
+    public void throttling(long startTime, long endTime) {
         doWrite(THROTTLING, throttlingRecordSize(), buf -> {
-            buf.putLong(queuedTime);
             buf.putLong(startTime);
-            buf.putLong(duration);
-            buf.put(isBegin ? (byte)1 : 0);
+            buf.putLong(endTime);
         });
     }
 

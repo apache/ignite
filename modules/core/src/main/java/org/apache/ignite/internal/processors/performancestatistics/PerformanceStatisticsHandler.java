@@ -116,4 +116,10 @@ public interface PerformanceStatisticsHandler {
         long lockHoldDuration, long pagesWriteDuration, long fsyncDuration, long walCpRecordFsyncDuration,
         long writeCpEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
         long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten);
+
+    /**
+     * @param startTime Start time in milliseconds.
+     * @param endTime End time in milliseconds.
+     */
+    void throttling(long startTime, long endTime);
 }

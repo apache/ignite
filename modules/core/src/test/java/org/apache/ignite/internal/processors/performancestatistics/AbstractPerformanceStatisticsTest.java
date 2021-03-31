@@ -205,6 +205,11 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             long totalDuration, long checkpointStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void throttling(long startTime, long endTime) {
+            // No-op.
+        }
     }
 
     /** Client type to run load from. */
