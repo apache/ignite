@@ -18,7 +18,6 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
-import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,29 +31,29 @@ class Log4jNodeIdFilePath implements IgniteClosure<String, String> {
     private static final long serialVersionUID = 0L;
 
     /** Node id. */
-    private final UUID nodeId;
+    private final String postfix;
 
     /**
      * Creates new instance.
      *
-     * @param id Node id.
+     * @param postfix Postfix.
      */
-    Log4jNodeIdFilePath(UUID id) {
-        nodeId = id;
+    Log4jNodeIdFilePath(String postfix) {
+        this.postfix = postfix;
     }
 
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
         if (!F.isEmpty(U.IGNITE_LOG_DIR))
-            return U.nodeIdLogFileName(nodeId, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
+            return U.logFileName(postfix, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
 
         if (oldPath != null) // fileName could be null if IGNITE_HOME is not defined.
-            return U.nodeIdLogFileName(nodeId, oldPath);
+            return U.logFileName(postfix, oldPath);
 
         String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
 
         if (tmpDir != null)
-            return U.nodeIdLogFileName(nodeId, new File(tmpDir, "ignite.log").getAbsolutePath());
+            return U.logFileName(postfix, new File(tmpDir, "ignite.log").getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
 

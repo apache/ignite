@@ -110,6 +110,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerPostfixAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -2535,8 +2536,21 @@ public class IgnitionEx {
          * @return Initialized logger.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("ErrorNotRethrown")
         private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
+            throws IgniteCheckedException {
+            return initLogger(cfgLog, nodeId, null, workDir);
+        }
+
+        /**
+         * @param cfgLog Configured logger.
+         * @param nodeId Local node ID.
+         * @param postfix Log file postfix.
+         * @param workDir Work directory.
+         * @return Initialized logger.
+         * @throws IgniteCheckedException If failed.
+         */
+        @SuppressWarnings("ErrorNotRethrown")
+        public IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String postfix, String workDir)
             throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
@@ -2600,8 +2614,12 @@ public class IgnitionEx {
                     ((JavaLogger)cfgLog).setWorkDirectory(workDir);
 
                 // Set node IDs for all file appenders.
-                if (cfgLog instanceof LoggerNodeIdAware)
-                    ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+                if (cfgLog instanceof LoggerNodeIdAware) {
+                    if (nodeId == null && cfgLog instanceof LoggerPostfixAware)
+                        ((LoggerPostfixAware)cfgLog).setPostfix(postfix);
+                    else
+                        ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+                }
 
                 if (log4jInitErr != null)
                     U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
