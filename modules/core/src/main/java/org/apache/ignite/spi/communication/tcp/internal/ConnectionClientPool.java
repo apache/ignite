@@ -177,12 +177,8 @@ public class ConnectionClientPool {
     public void stop() {
         this.stopping = true;
 
-        for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
-            if (fut instanceof ConnectionRequestFuture) {
-                // There's no way it would be done by itself at this point.
-                fut.onDone(new IgniteSpiException("SPI is being stopped."));
-            }
-        }
+        for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values())
+            fut.onDone(new IgniteSpiException("SPI is being stopped."));
 
         handshakeTimeoutExecutorService.shutdown();
     }
@@ -364,7 +360,7 @@ public class ConnectionClientPool {
         if (cfg.connectionRequestor() != null) {
             ConnectFuture fut0 = (ConnectFuture)fut;
 
-            ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
+            GridFutureAdapter<GridCommunicationClient> triggerFut = new GridFutureAdapter<>();
 
             triggerFut.listen(f -> {
                 try {

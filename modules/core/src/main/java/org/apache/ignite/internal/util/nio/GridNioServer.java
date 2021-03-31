@@ -927,7 +927,7 @@ public class GridNioServer<T> {
             }
             else
                 return new GridNioFinishedFuture<>(
-                    new IgniteCheckedException("Failed to create session, server is stopped."));
+                    new GridNioException("Failed to create session, server is stopped."));
         }
         catch (IOException e) {
             return new GridNioFinishedFuture<>(e);
