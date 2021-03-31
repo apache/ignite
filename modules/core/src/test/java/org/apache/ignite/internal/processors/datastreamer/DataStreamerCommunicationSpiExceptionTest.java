@@ -126,7 +126,7 @@ public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstrac
         }
     }
 
-	/**
+    /**
      * Test communication SPI.
      */
     public static class TestCommunicationSpi extends TcpCommunicationSpi {
