@@ -394,9 +394,4 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
         return null;
     }
-
-    /** Gets the security processor to which the current security facade delegates operations. */
-    public GridSecurityProcessor securityProcessor() {
-        return secPrc;
-    }
 }

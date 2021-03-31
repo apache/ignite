@@ -295,12 +295,7 @@ public class SecurityUtils {
     public static void ifAuthenticationEnabled(GridKernalContext ctx, Consumer<IgniteAuthenticationProcessor> consumer) {
         IgniteSecurity security = ctx.security();
 
-        if (!security.enabled())
-            return;
-
-        GridSecurityProcessor secPrc = ((IgniteSecurityProcessor)ctx.security()).securityProcessor();
-
-        if (secPrc instanceof IgniteAuthenticationProcessor)
-            consumer.accept((IgniteAuthenticationProcessor)secPrc);
+        if (security instanceof IgniteAuthenticationProcessor)
+            consumer.accept((IgniteAuthenticationProcessor)security);
     }
 }

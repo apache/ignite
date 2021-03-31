@@ -53,9 +53,12 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.UserOptions;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -73,6 +76,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -84,16 +88,14 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.AUTH_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_AUTH;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
 
-/**
- *
- */
-public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements GridSecurityProcessor, MetastorageLifecycleListener {
+/** */
+public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements IgniteSecurity, MetastorageLifecycleListener {
     /** Store user prefix. */
     private static final String STORE_USER_PREFIX = "user.";
 
@@ -149,6 +151,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Node activate future. */
     private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
 
+    /** No-op operation security context. */
+    private final OperationSecurityContext noOpSecCtx = new OperationSecurityContext(this, null);
+
+    /** Current security context. */
+    private final ThreadLocal<SecurityContext> curSecCtx = new ThreadLocal<>();
+
+    /** Instance of IgniteSandbox. */
+    private final IgniteSandbox sandbox = new NoOpSandbox();
+
     /**
      * @param ctx Kernal context.
      */
@@ -167,7 +178,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
 
-        ctx.addNodeAttribute(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null));
+        ctx.addNodeAttribute(ATTR_AUTHENTICATION_ENABLED, true);
 
         exec = new IgniteThreadPoolExecutor(
             "auth",
@@ -383,6 +394,20 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         return DiscoveryDataExchangeType.AUTH_PROC;
     }
 
+    /** */
+    public IgniteNodeValidationResult validateAuthenticationEnabled(ClusterNode node) {
+        Boolean rmtEnabled = node.attribute(ATTR_AUTHENTICATION_ENABLED);
+
+        if (rmtEnabled == null) {
+            String errMsg = "Failed to add node to topology because user authentication is enabled on cluster and " +
+                "the node doesn't support user authentication [nodeId=" + node.id() + ']';
+
+            return new IgniteNodeValidationResult(node.id(), errMsg);
+        }
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         // 1. Collect users info only on coordinator
@@ -424,7 +449,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return true;
+        return false;
     }
 
     /**
@@ -873,7 +898,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException {
-        return new SecurityContextImpl(node.id(), null);
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -892,8 +917,37 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx) throws SecurityException {
+    @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
+        SecurityContext old = curSecCtx.get();
+
+        curSecCtx.set(secCtx);
+
+        return new OperationSecurityContext(this, old);
+    }
+
+    /** {@inheritDoc} */
+    @Override public OperationSecurityContext withContext(UUID nodeId) {
+        return noOpSecCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityContext securityContext() {
+        return curSecCtx.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(SecurityPermission perm) throws SecurityException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSandbox sandbox() {
+        return sandbox;
     }
 
     /** {@inheritDoc} */
@@ -902,8 +956,16 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext(UUID subjId) {
-        return new SecurityContextImpl(subjId, null);
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
+        return validateAuthenticationEnabled(node);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(
+        ClusterNode node,
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
+        return validateAuthenticationEnabled(node);
     }
 
     /**
@@ -914,10 +976,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void checkUserOperation(UserManagementOperation op) throws IgniteAccessControlException {
         assert op != null;
 
-        Object login = ctx.security().securityContext().subject().login();
+        SecurityContext secCtx = ctx.security().securityContext();
 
-        if (login == null)
+        if (secCtx == null)
             throw new IgniteAccessControlException("Operation not allowed: security context is empty.");
+
+        Object login = secCtx.subject().login();
 
         if (!DFAULT_USER_NAME.equals(login) && !(UPDATE == op.type() && Objects.equals(login, op.user().name()))) {
             throw new IgniteAccessControlException("User management operations are not allowed for user" +

@@ -31,7 +31,7 @@ public class OperationSecurityContext implements AutoCloseable {
      * @param proc Ignite Security.
      * @param secCtx Security context.
      */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
+    public OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
         assert proc != null;
         assert secCtx != null || !proc.enabled();
 

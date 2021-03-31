@@ -249,7 +249,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        boolean securityEnabled = ctx.security().enabled();
+        boolean securityEnabled = ctx.security().enabled() || ctx.config().isAuthenticationEnabled();
 
         if (securityEnabled) {
             Session ses;
