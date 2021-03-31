@@ -139,7 +139,8 @@ public class WALRecordsConsumer<K, V> {
 
         dataConsumer.start(configuration, log);
 
-        log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
+        if (log.isInfoEnabled())
+            log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /**
@@ -149,7 +150,8 @@ public class WALRecordsConsumer<K, V> {
     public void stop() {
         dataConsumer.stop();
 
-        log.info("WalRecordsConsumer stoped[consumer=" + dataConsumer.getClass() + ']');
+        if (log.isInfoEnabled())
+            log.info("WalRecordsConsumer stoped[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /** {@inheritDoc} */

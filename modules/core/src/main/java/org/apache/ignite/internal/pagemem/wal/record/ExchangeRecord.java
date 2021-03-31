@@ -24,10 +24,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class ExchangeRecord extends TimeStampRecord {
     /** Event. */
-    private final Short constId;
+    private Short constId;
 
     /** Type. */
-    private final Type type;
+    private Type type;
 
     /**
      * @param constId Const id.
