@@ -122,13 +122,11 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param metric Metric.
      */
     public void register(Metric metric) {
-        String fullName = metric.name();
-
         String mregPrefix = regName + SEPARATOR;
 
-        assert fullName.startsWith(mregPrefix);
+        assert metric.name().startsWith(mregPrefix);
 
-        addMetric(fullName.substring(mregPrefix.length()), metric);
+        addMetric(metric.name().substring(mregPrefix.length()), metric);
     }
 
     /**
