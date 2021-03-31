@@ -17,10 +17,7 @@
 
 package org.apache.ignite.cdc;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.lang.IgniteExperimental;
 
