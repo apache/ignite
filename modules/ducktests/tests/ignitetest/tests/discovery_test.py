@@ -287,14 +287,14 @@ class DiscoveryTest(IgniteTest):
         """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
-        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd))
+        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd))[0]
 
         # Cache survivor id, do not read each time.
         surv_id = IgniteApplicationService.node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
             failed = IgniteApplicationService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
-                                                                                            survived_node.log_file))
+                                                                                            survived_node.log_file))[0]
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
                              (survived_node.name, surv_id, os.linesep, failed))
@@ -308,7 +308,7 @@ class DiscoveryTest(IgniteTest):
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
                 cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", node.log_file)
 
-                failed = IgniteApplicationService.exec_command(node, cmd)
+                failed = IgniteApplicationService.exec_command(node, cmd)[0]
 
                 if int(failed) > 0:
                     raise AssertionError(

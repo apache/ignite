@@ -268,10 +268,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ducktape node to searching log.
         :return: Time of found log message matched to pattern or None if not found.
         """
-        _, stdout, _ = node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (evt_message, node.log_file))
+        stdout = IgniteAwareService.exec_command(node, "grep '%s' %s" % (evt_message, node.log_file))[0]
 
-        match = re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8"))
+        match = re.match("^\\[[^\\[]+\\]", stdout)
 
         return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
 
@@ -365,26 +364,39 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INPUT):
-            node.account.ssh_client.exec_command(
+            out, err = IgniteAwareService.exec_command(
+                node,
                 f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
+            assert len(err) == 0, "Unexpected iptables error: " + err
+            assert len(out) == 0, "Unexpected iptables output: " + err
+
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTPUT):
-            node.account.ssh_client.exec_command(
+            out, err = IgniteAwareService.exec_command(
+                node,
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
+            assert len(err) == 0, "Unexpected iptables error: " + err
+            assert len(out) == 0, "Unexpected iptables output: " + err
+
+        settings = self.__dump_netfilter_settings(node)
+
+        assert re.findall("DROP", settings) == (2 if net_part == IgniteAwareService.NetPart.ALL else 1), \
+            "Network filter was not applied on '" + node.name + "': " + settings
+
+        self.logger.debug("Activated netfilter on '%s': %s" % (node.name, settings))
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
         for node in nodes:
             cmd = f"sudo iptables-save | tee {self.netfilter_store_path}"
 
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+            exec_error = IgniteAwareService.exec_command(node, cmd)[1]
 
             if "Warning: iptables-legacy tables present" in exec_error:
                 cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
-                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+                exec_error = IgniteAwareService.exec_command(node, cmd)[1]
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
@@ -401,7 +413,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         errors = []
 
         for node in self.disconnected_nodes:
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+            exec_error = IgniteAwareService.exec_command(node, cmd)[1]
 
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
@@ -419,7 +431,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Reads current netfilter settings on the node for debugging purposes.
         """
-        return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
+        return IgniteAwareService.exec_command(node, "sudo iptables -L -n")[0]
 
     def __update_node_log_file(self, node):
         """
@@ -439,7 +451,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     @staticmethod
     def exec_command(node, cmd):
         """Executes the command passed on the given node and returns result as string."""
-        return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+        _, out, err = node.account.ssh_client.exec_command(cmd)
+
+        return str(out.read(), sys.getdefaultencoding()), str(err.read(), sys.getdefaultencoding())
 
     @staticmethod
     def node_id(node):
@@ -450,7 +464,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         regexp = "^>>> Local node \\[ID=([^,]+),.+$"
         cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
 
-        return IgniteAwareService.exec_command(node, cmd).strip().lower()
+        return IgniteAwareService.exec_command(node, cmd)[0].strip().lower()
 
     def restore_from_snapshot(self, snapshot_name: str):
         """
