@@ -54,6 +54,9 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
+import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
+import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
+import static org.apache.ignite.development.utils.ProcessSensitiveData.SHOW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
@@ -230,7 +233,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 if (index > 0) {
                     index = result.indexOf("PersonKey", index + 10);
 
-                    if (index > 0) {
+                    if (index > 0)
                         index = result.indexOf("id=" + person.getId(), index + 9);
 
                     if (index > 0) {
@@ -543,7 +546,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
                                     find = index > 0;
                                 }
-                            }
                         }
                     }
                 }

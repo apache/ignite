@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
 import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
 import static org.apache.ignite.development.utils.ProcessSensitiveData.MD5;
+import static org.apache.ignite.development.utils.ProcessSensitiveData.SHOW;
 
 /**
  * Wrapper {@link DataEntry} for sensitive data output.

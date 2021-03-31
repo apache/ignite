@@ -47,6 +47,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -226,7 +227,7 @@ public class GridToStringBuilder {
      * @see GridToStringBuilder#setSensitiveDataLoggingSupplier(Supplier)
      */
     public static boolean includeSensitive() {
-        return Holder.SENS_DATA_LOG_SUP.get() == SensitiveDataLogging.PLAIN;
+        return Holder.SENS_DATA_LOG_SUP.get() == PLAIN;
     }
 
     /**

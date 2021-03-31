@@ -199,6 +199,10 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
                 throw new IgniteException("Failed to create string representation of binary object.", e);
             }
         }
+        if (sensitiveDataLogging == HASH)
+            return String.valueOf(IgniteUtils.hash(this));
+        else
+            return "BinaryObject";
     }
 
     /**
@@ -266,10 +270,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
                 ? "(" + msg + ": class not found " + e1.inaccessibleClass() + ")"
                 : "(" + msg + ")";
         }
-        if (sensitiveDataLogging == HASH)
-            return String.valueOf(IgniteUtils.hash(this));
-        else
-            return "BinaryObject";
     }
 
     /**
