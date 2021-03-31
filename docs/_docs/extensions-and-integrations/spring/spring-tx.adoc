@@ -454,4 +454,4 @@ that uses Apache Ignite node instance to access the cluster.
 
 == Examples
 
-The example of using Apache Ignite Spring Transactions integration is available on link:https://github.com/apache/ignite-extensions/tree/master/modules/spring-tx-ext/examples/main/java/org/apache/ignite/transactions/spring/examples[GitHub, window="_blank"].
+The example of using Apache Ignite Spring Transactions integration is available on https://github.com/apache/ignite-extensions/tree/master/modules/spring-tx-ext/examples/main/java/org/apache/ignite/transactions/spring/examples[GitHub, window="_blank"].
