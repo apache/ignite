@@ -18,6 +18,8 @@ This module contains smoke tests that checks that ducktape works as expected
 """
 import os
 
+from ducktape.mark import matrix
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
@@ -132,3 +134,51 @@ class SelfTest(IgniteTest):
             assert old_cnt == get_log_lines_count(ignites, f"console.log.{i + 1}")
 
         assert get_logs_count(ignites) == num_restarts
+
+    @cluster(num_nodes=1)
+    @ignite_versions(str(DEV_BRANCH))
+    @matrix(is_ignite_service=[True, False])
+    def test_config_rotation(self, ignite_version, is_ignite_service):
+        """
+        Tests the ignite-config.xml rotation after ignite service restart.
+        """
+
+        def get_config_count(service: IgniteService):
+            node = service.nodes[0]
+            return list(node.account.ssh_capture(f'ls {service.config_dir}/ignite-config.xml* | wc -l',
+                                                 callback=int))[0]
+
+        pfx = 'test'
+
+        num_restarts = 5
+
+        ignite_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version), consistent_id=f'{pfx}1')
+
+        if is_ignite_service:
+            ignite = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
+        else:
+            ignite = IgniteApplicationService(
+                self.test_context, ignite_cfg,
+                java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication")
+
+        ignite.start()
+        ignite.stop()
+
+        for i in range(2, num_restarts + 1):
+            ignite.config = ignite.config._replace(consistent_id=f'{pfx}{i}')
+
+            ignite.start(clean=False)
+
+            new_cnt = get_config_count(ignite)
+            assert new_cnt == i
+
+            ignite.stop()
+
+        assert get_config_count(ignite) == num_restarts
+
+        for i in range(1, num_restarts):
+            cfg_name = os.path.join(ignite.config_dir, f"ignite-config.xml.{i}")
+            log_name = os.path.join(ignite.log_dir, f"console.log.{i}")
+
+            ignite.nodes[0].account.ssh(f'grep consistentId {cfg_name} | grep {pfx}{i}')
+            ignite.nodes[0].account.ssh(f'grep consistentId={pfx}{i} {log_name}')
