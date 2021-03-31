@@ -39,6 +39,7 @@ import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -95,6 +96,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 public class IgniteCDC implements Runnable {
     /** State dir. */
     public static final String STATE_DIR = "state";
+
+    /** Wal segments filter. */
+    private static final Predicate<Path> WAL_SEGMENTS_FILTER =
+        p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
 
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
@@ -211,28 +216,7 @@ public class IgniteCDC implements Runnable {
             consumer.start(cfg, log);
 
             try {
-                Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
-
-                Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentIndex);
-
-                long[] lastSgmnt = new long[] { -1 };
-
-                waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
-                    try {
-                        long nextSgmnt = segmentIndex(segment);
-
-                        assert lastSgmnt[0] == -1 || nextSgmnt - lastSgmnt[0] == 1;
-
-                        lastSgmnt[0] = nextSgmnt;
-
-                        readSegment(segment);
-
-                        return true;
-                    }
-                    catch (IgniteCheckedException | IOException e) {
-                        throw new IgniteException(e);
-                    }
-                }, cdcCfg.getSleepBeforeCheckNewSegmentsTimeout(), log);
+                consumeWalSegmentsForever();
             }
             finally {
                 consumer.stop();
@@ -262,8 +246,44 @@ public class IgniteCDC implements Runnable {
         }
     }
 
+    /** Waits and consumes new WAL segments infinitely. */
+    public void consumeWalSegmentsForever() {
+        try {
+            Set<Path> seen = new HashSet<>();
+
+            long[] lastSgmnt = new long[] {-1};
+
+            while (true) {
+                try (Stream<Path> cdcFiles = Files.walk(cdcDir, 1)) {
+                    Set<Path> exists = new HashSet<>();
+
+                    cdcFiles
+                        .peek(exists::add) // Store files that exists in cdc dir.
+                        .filter(WAL_SEGMENTS_FILTER.and(p -> !seen.contains(p))) // Need unseend WAL segments only.
+                        .peek(seen::add) // Adds to seen.
+                        .sorted(Comparator.comparingLong(this::segmentIndex)) // Sort by segment index.
+                        .peek(p -> {
+                            long nextSgmnt = segmentIndex(p);
+
+                            assert lastSgmnt[0] == -1 || nextSgmnt - lastSgmnt[0] == 1;
+
+                            lastSgmnt[0] = nextSgmnt;
+                        })
+                        .forEach(this::consumeSegment); // Consuming segments.
+
+                    seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
+                }
+
+                U.sleep(cdcCfg.getSleepBeforeCheckNewSegmentsTimeout());
+            }
+        }
+        catch (IOException | IgniteInterruptedCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /** Reads all available records from segment. */
-    private void readSegment(Path segment) throws IgniteCheckedException, IOException {
+    private void consumeSegment(Path segment) {
         log.info("Processing WAL segment[segment=" + segment + ']');
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
@@ -291,7 +311,14 @@ public class IgniteCDC implements Runnable {
 
                 // WAL segment is a hard link to a segment file in the special CDC folder.
                 // So, we can safely delete it after processing.
-                Files.delete(segment);
+                try {
+                    Files.delete(segment);
+
+                    return;
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
             }
             else {
                 builder.from(initState);
@@ -320,6 +347,8 @@ public class IgniteCDC implements Runnable {
                     }
                 }
             }
+        } catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
         }
 
         prevSegments.add(segment);
@@ -349,13 +378,15 @@ public class IgniteCDC implements Runnable {
             return null;
         }
 
-        cdcDir = Paths.get(cdcRoot.getAbsolutePath(), dbStoreDirWithSubdirectory.getName());
+        Path cdcDir = Paths.get(cdcRoot.getAbsolutePath(), dbStoreDirWithSubdirectory.getName());
 
         if (!Files.exists(cdcDir)) {
             log.warning(cdcDir + " not exists.");
 
             return null;
         }
+
+        this.cdcDir = cdcDir;
 
         CDCFileLockHolder lock = new CDCFileLockHolder(cdcDir.toString(), () -> "cdc.lock", log);
 
@@ -422,54 +453,5 @@ public class IgniteCDC implements Runnable {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
-    }
-
-    /**
-     * Waits for the files or directories to be created insied {@code watchDir}
-     * and if new file pass the {@code filter} then {@code callback} notified with the newly create file.
-     * {@code callback} will allso be notified about already existing files that passes the filter.
-     *
-     * @param watchDir Directory to watch.
-     * @param filter Filter of events.
-     * @param sorter Sorter of files.
-     * @param callback Callback to be notified.
-     */
-    @SuppressWarnings("BusyWait")
-    public static void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> sorter,
-        Predicate<Path> callback, long timeout, IgniteLogger log) throws InterruptedException {
-        // If watch dir not exists waiting for it creation.
-        if (!Files.exists(watchDir))
-            waitFor(watchDir.getParent(), watchDir::equals, Path::compareTo, p -> false, timeout, log);
-
-        try {
-            // Clear deleted file.
-            Set<Path> seen = new HashSet<>();
-
-            while (true) {
-                try (Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
-                    final boolean[] status = {true};
-
-                    children
-                        .filter(filter.and(p -> !seen.contains(p)))
-                        .sorted(sorter)
-                        .peek(seen::add)
-                        .peek(p -> {
-                            if (log.isDebugEnabled())
-                                log.debug("New file[evt=" + p.toAbsolutePath() + ']');
-
-                            if (status[0])
-                                status[0] = callback.test(p);
-                        }).count();
-
-                    if (!status[0])
-                        return;
-                }
-
-                Thread.sleep(timeout);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
     }
 }
