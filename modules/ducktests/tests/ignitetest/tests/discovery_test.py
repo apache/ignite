@@ -287,7 +287,7 @@ class DiscoveryTest(IgniteTest):
         """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
-        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd))[0]
+        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd)[0])
 
         # Cache survivor id, do not read each time.
         surv_id = IgniteApplicationService.node_id(survived_node)

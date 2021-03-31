@@ -381,7 +381,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         settings = self.__dump_netfilter_settings(node)
 
-        assert re.findall("DROP", settings) == (2 if net_part == IgniteAwareService.NetPart.ALL else 1), \
+        assert len(re.findall("DROP", settings)) == (2 if net_part == IgniteAwareService.NetPart.ALL else 1), \
             "Network filter was not applied on '" + node.name + "': " + settings
 
         self.logger.debug("Activated netfilter on '%s': %s" % (node.name, settings))
