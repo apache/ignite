@@ -84,13 +84,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * File descriptors remained to scan.
      * <code>null</code> value means directory scan mode
      */
+    @Nullable
     private final List<FileDescriptor> walFileDescriptors;
 
     /** */
     private int curIdx = -1;
 
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
-    private final boolean keepBinary;
+    private boolean keepBinary;
 
     /** Replay from bound include. */
     private final WALPointer lowBound;
