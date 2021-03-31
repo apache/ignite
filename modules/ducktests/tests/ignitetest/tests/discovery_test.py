@@ -294,7 +294,7 @@ class DiscoveryTest(IgniteTest):
 
         if failed_cnt != len(failed_nodes):
             failed = IgniteAwareService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
-                                                                                            survived_node.log_file))[0]
+                                                                                      survived_node.log_file))[0]
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
                              (survived_node.name, surv_id, os.linesep, failed))
