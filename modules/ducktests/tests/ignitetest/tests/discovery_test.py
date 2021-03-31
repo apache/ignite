@@ -59,7 +59,7 @@ class DiscoveryTestConfig(NamedTuple):
     sequential_failure: bool = False
     with_zk: bool = False
     disable_conn_recovery: bool = False
-    net_part: IgniteAwareService.NetPart = IgniteService.NetPart.INPUT
+    net_part: IgniteAwareService.NetPart = IgniteService.NetPart.ALL
 
 
 # pylint: disable=W0223, no-member
@@ -75,7 +75,7 @@ class DiscoveryTest(IgniteTest):
     GLOBAL_DETECTION_TIMEOUT = "failure_detection_timeout"
 
     # Default maximum numbers of containers to utilize for the test.
-    MAX_CONTAINERS = 9
+    MAX_CONTAINERS = 12
 
     ZOOKEEPER_NODES = 3
 
@@ -92,32 +92,56 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[True],
-            net_part=[IgniteService.NetPart.INPUT],
+    @matrix(nodes_to_kill=[1, 2], net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
             load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, disable_conn_recovery: bool,
-                                           net_part: IgniteService.NetPart):
+    def test_nonsequential_failure_tcp(self, ignite_version, nodes_to_kill, load_type, net_part: IgniteService.NetPart):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
                                           load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
-                                          disable_conn_recovery=disable_conn_recovery, net_part=net_part)
+                                          net_part=net_part)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=MAX_CONTAINERS)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_nonsequential_failure_tcp_no_recovery(self, ignite_version, nodes_to_kill, load_type):
+        """
+        Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row with. The connection
+        recovery is disabled.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
+                                          disable_conn_recovery=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            net_part=[IgniteService.NetPart.INPUT], disable_conn_recovery=[True])
-    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, disable_conn_recovery: bool,
-                                         net_part: IgniteService.NetPart):
+            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT])
+    def test_sequential_failure_tcp(self, ignite_version, load_type, net_part: IgniteService.NetPart):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
                                           load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
-                                          disable_conn_recovery=disable_conn_recovery, net_part=net_part)
+                                          net_part=net_part)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=MAX_CONTAINERS)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_sequential_failure_tcp_no_recovery(self, ignite_version, load_type):
+        """
+        Test 2 nodes sequential failure scenario with TcpDiscoverySpi. The connection recovery is disabled.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
+                                          disable_conn_recovery=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -125,7 +149,7 @@ class DiscoveryTest(IgniteTest):
     @ignore_if(lambda version, globals: version == V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
+    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -139,7 +163,7 @@ class DiscoveryTest(IgniteTest):
     @ignore_if(lambda version, globals: version == V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
+    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
@@ -333,9 +357,9 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     """Choose node to kill during test"""
     assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
 
-    idx = random.randint(0, len(servers.nodes)-1)
+    idx = random.randint(0, len(servers.nodes) - 1)
 
-    to_kill = servers.nodes[idx:] + servers.nodes[:idx-1]
+    to_kill = servers.nodes[idx:] + servers.nodes[:idx - 1]
 
     if not sequential:
         to_kill = to_kill[0::2]

@@ -17,14 +17,14 @@
 Background thread service.
 """
 
-from abc import ABCMeta, abstractmethod
 import threading
 import traceback
+from abc import ABCMeta, abstractmethod
 
-from ducktape.services.service import Service
+from ignitetest.services.utils.ducktests_service import DucktestsService
 
 
-class BackgroundThreadService(Service, metaclass=ABCMeta):
+class BackgroundThreadService(DucktestsService, metaclass=ABCMeta):
     """BackgroundThreadService allow to start nodes simultaneously using pool of threads."""
 
     def __init__(self, context, num_nodes=None, cluster_spec=None, **kwargs):
@@ -86,7 +86,7 @@ class BackgroundThreadService(Service, metaclass=ABCMeta):
 
         self._propagate_exceptions()
 
-    def stop(self, **kwargs):
+    def stop(self, force_stop=False, **kwargs):
         alive_workers = sum(1 for worker in self.worker_threads.values() if worker.is_alive())
         if alive_workers > 0:
             self.logger.debug(
@@ -94,7 +94,7 @@ class BackgroundThreadService(Service, metaclass=ABCMeta):
 
             self.logger.debug("%s" % str(self.worker_threads))
 
-        super().stop(**kwargs)
+        super().stop(force_stop, **kwargs)
 
         self._propagate_exceptions()
 
