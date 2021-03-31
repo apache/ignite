@@ -201,7 +201,7 @@ public class IgniteCDC implements Runnable {
                 log.info("--------------------------------");
             }
 
-            state = new CDCConsumerState(cdcDir.resolve(STATE_DIR), "cdc-state.bin");
+            state = new CDCConsumerState(cdcDir.resolve(STATE_DIR));
 
             initState = state.load();
 

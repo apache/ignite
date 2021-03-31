@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -54,10 +53,9 @@ public class CDCConsumerState {
 
     /**
      * @param stateDir State directory.
-     * @param consumerId Consumer ID.
      */
-    public CDCConsumerState(Path stateDir, String consumerId) {
-        String fileName = "state-" + U.maskForFileName(consumerId) + FILE_SUFFIX;
+    public CDCConsumerState(Path stateDir) {
+        String fileName = "cdc-state" + FILE_SUFFIX;
 
         state = stateDir.resolve(fileName);
         tmp = stateDir.resolve(fileName + TMP_SUFFIX);
