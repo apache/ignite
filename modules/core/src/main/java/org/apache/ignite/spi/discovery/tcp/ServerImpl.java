@@ -3260,9 +3260,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                checkPendingCustomMessages();
+                //checkPendingCustomMessages();
 
-                processCustomMessage((TcpDiscoveryCustomEventMessage) msg, false, false);
+                processCustomMessage((TcpDiscoveryCustomEventMessage) msg, false);
             }
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
@@ -6219,9 +6219,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification, boolean force) {
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
-                if (posponeUndeliveredMessages(msg, force))
+                if (posponeUndeliveredMessages(msg))
                     return;
 
                 if (!msg.verified()) {
@@ -6240,13 +6240,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             registerPendingMessage(msg);
 
-                            processCustomMessage(msg, waitForNotification, true);
+                            processCustomMessage(msg, waitForNotification);
                         }
                     }
 
                     msg.message(null, msg.messageBytes());
                 }
                 else {
+                    clearPendingCustomMessage(msg.id());
+
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
                     DiscoverySpiCustomMessage msgObj = null;
@@ -6268,7 +6270,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
-                                processCustomMessage(ackMsg, waitForNotification, true);
+                                processCustomMessage(ackMsg, waitForNotification);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -6307,12 +6309,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * If node is in the progress of being added we must store and resend undelivered messages.
+         * If new node is in the progress of being added we must store and resend undelivered messages.
          *
-         * @param msg Message to send.
+         * @param msg Processed message.
          * @return {@code true} If message was appended to pending queue.
          */
-        private boolean posponeUndeliveredMessages(TcpDiscoveryCustomEventMessage msg, boolean force) {
+        private boolean posponeUndeliveredMessages(TcpDiscoveryCustomEventMessage msg) {
             boolean joiningEmpty;
 
             synchronized (mux) {
@@ -6329,12 +6331,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                //if (msg.verified() || force) {
-                    synchronized (mux) {
-                        pendingCustomMsgs.add(msg);
-                    }
-                    return true;
-                //}
+                synchronized (mux) {
+                    pendingCustomMsgs.add(msg);
+                }
+
+                return true;
             }
 
             return false;
@@ -6405,7 +6406,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomMessage()) != null)
-                    processCustomMessage(msg, true, false);
+                    processCustomMessage(msg, true);
+            }
+        }
+
+        private void clearPendingCustomMessage(final IgniteUuid id) {
+            synchronized (mux) {
+                pendingCustomMsgs.removeIf(msg -> msg.id().equals(id));
             }
         }
 
