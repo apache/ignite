@@ -23,11 +23,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 
@@ -36,71 +33,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
  */
 class IORowHandler {
     /** */
-    static <T extends BPlusIO & InlineIO> IndexRow get(T delegate, BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
-        throws IgniteCheckedException {
-
-        long link = PageUtils.getLong(pageAddr, delegate.offset(idx) + delegate.inlineSize());
-
-        assert link != 0;
-
-        if (delegate.storeMvccInfo())
-            return mvccIndexRow(delegate, link, (InlineIndexTree) tree, pageAddr, idx);
-
-        return indexRow(link, (InlineIndexTree) tree);
-    }
-
-    /** */
-    static void store(long pageAddr, int off, IndexRow row, int inlineSize, boolean storeMvccInfo) {
-        // Meta stores link and MVCC data for cache row.
-        int metaOff = off + inlineSize;
-
-        // Write link after all inlined idx keys.
-        PageUtils.putLong(pageAddr, metaOff, row.link());
-
-        if (storeMvccInfo) {
-            long mvccCrdVer = row.mvccCoordinatorVersion();
-            long mvccCntr = row.mvccCounter();
-            int mvccOpCntr = row.mvccOperationCounter();
-
-            assert MvccUtils.mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
-
-            PageUtils.putLong(pageAddr, metaOff + 8, mvccCrdVer);
-            PageUtils.putLong(pageAddr, metaOff + 16, mvccCntr);
-            PageUtils.putInt(pageAddr, metaOff + 24, mvccOpCntr);
-        }
-    }
-
-    /**
-     * @param dstPageAddr Destination page address.
-     * @param dstOff Destination page offset.
-     * @param srcIo Source IO.
-     * @param srcPageAddr Source page address.
-     * @param srcIdx Source index.
-     * @param storeMvcc {@code True} to store mvcc data.
-     */
-    static void store(long dstPageAddr, int dstOff, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx, boolean storeMvcc)
-    {
-        InlineIO rowIo = (InlineIO) srcIo;
-
-        long link = rowIo.link(srcPageAddr, srcIdx);
-
-        PageUtils.putLong(dstPageAddr, dstOff, link);
-
-        if (storeMvcc) {
-            long mvccCrdVer = rowIo.mvccCoordinatorVersion(srcPageAddr, srcIdx);
-            long mvccCntr = rowIo.mvccCounter(srcPageAddr, srcIdx);
-            int mvccOpCntr = rowIo.mvccOperationCounter(srcPageAddr, srcIdx);
-
-            assert MvccUtils.mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
-
-            PageUtils.putLong(dstPageAddr, dstOff + 8, mvccCrdVer);
-            PageUtils.putLong(dstPageAddr, dstOff + 16, mvccCntr);
-            PageUtils.putInt(dstPageAddr, dstOff + 24, mvccOpCntr);
-        }
-    }
-
-    /** */
-    private static IndexRow indexRow(long link, InlineIndexTree tree) throws IgniteCheckedException {
+    static IndexRow indexRow(long link, InlineIndexTree tree) throws IgniteCheckedException {
         IndexRowImpl cachedRow = tree.getCachedIndexRow(link);
 
         if (cachedRow != null)
@@ -120,7 +53,7 @@ class IORowHandler {
     }
 
     /** */
-    private static <T extends BPlusIO & InlineIO> IndexRow mvccIndexRow(T delegate, long link, InlineIndexTree tree, long pageAddr, int idx) throws IgniteCheckedException {
+    static <T extends BPlusIO & InlineIO> IndexRow mvccIndexRow(T delegate, long link, InlineIndexTree tree, long pageAddr, int idx) throws IgniteCheckedException {
         IndexRowImpl cachedRow = tree.getCachedIndexRow(link);
 
         if (cachedRow != null)
