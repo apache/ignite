@@ -3282,7 +3282,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         idxProc.remove(cctx.name(), row);
 
-        if (idx == null)
+        if (idx != null)
             idx.remove(cctx, desc, row);
     }
 
