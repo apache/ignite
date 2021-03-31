@@ -3259,11 +3259,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryDiscardMessage)
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                //checkPendingCustomMessages();
-
+            else if (msg instanceof TcpDiscoveryCustomEventMessage)
                 processCustomMessage((TcpDiscoveryCustomEventMessage) msg, false);
-            }
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
