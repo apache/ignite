@@ -15,15 +15,14 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteAzureTestSuite;
-
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteAzureTestSuite;
 
 public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
         extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryAzureBlobStoreIpFinder> {
