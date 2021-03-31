@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
@@ -245,13 +246,14 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         @Override protected void rebuildIndexesFromHash0(
             GridCacheContext cctx,
             SchemaIndexCacheVisitorClosure clo,
-            GridFutureAdapter<Void> rebuildIdxFut)
-        {
+            GridFutureAdapter<Void> rebuildIdxFut,
+            SchemaIndexOperationCancellationToken cancel
+        ) {
             idxRebuildsStartedNum.incrementAndGet();
 
             rebuildIdxFut.listen((CI1<IgniteInternalFuture<?>>)f -> idxRebuildsStartedNum.decrementAndGet());
 
-            super.rebuildIndexesFromHash0(cctx, new BlockingSchemaIndexCacheVisitorClosure(clo), rebuildIdxFut);
+            super.rebuildIndexesFromHash0(cctx, new BlockingSchemaIndexCacheVisitorClosure(clo), rebuildIdxFut, cancel);
         }
     }
 
