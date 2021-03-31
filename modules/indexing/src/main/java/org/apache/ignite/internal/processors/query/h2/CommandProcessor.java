@@ -1137,11 +1137,7 @@ public class CommandProcessor {
         else {
             res.setKeyFields(createTbl.primaryKeyColumns());
 
-            if (IgniteFeatures.allNodesSupports(
-                ctx.discovery().serverNodes(ctx.discovery().topologyVersionEx()),
-                IgniteFeatures.SPECIFIED_SEQ_PK_KEYS
-            ))
-                res.setPreserveKeysOrder(true);
+            res.setPreserveKeysOrder(true);
         }
 
         if (!createTbl.wrapValue()) {

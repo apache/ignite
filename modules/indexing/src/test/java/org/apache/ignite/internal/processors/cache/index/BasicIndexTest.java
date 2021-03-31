@@ -372,49 +372,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Checks that fields in primary index have incorrect order
-     * if grid has a node that doesn't support this feature.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPkFieldsSequenceFeatureUnsupported() throws Exception {
-        inlineSize = 10;
-
-        List<IgniteEx> nodes = new ArrayList<>();
-
-        nodes.add(startGrid(0));
-
-        String prev = System.getProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED);
-
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED, "true");
-
-            nodes.add(startGrid(1));
-        }
-        finally {
-            if (prev == null)
-                System.clearProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED);
-            else
-                System.setProperty(IgniteSystemProperties.IGNITE_SPECIFIED_SEQ_PK_KEYS_DISABLED, prev);
-        }
-
-        int i = 0;
-        for (IgniteEx ig : nodes) {
-            GridQueryProcessor qryProc = ig.context().query();
-
-            IgniteH2Indexing idx = (IgniteH2Indexing)(ig).context().query().getIndexing();
-
-            String tblName = "T" + i++;
-
-            qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC." + tblName + " (F1 VARCHAR, F2 VARCHAR, F3 VARCHAR, " +
-                "CONSTRAINT PK PRIMARY KEY (F2, F1))"), true).getAll();
-
-            checkPkFldSequence(tblName, Arrays.asList("F1", "F2"), idx);
-        }
-    }
-
-    /**
      * Fields correctness checker.
      *
      * @param tblName Table name.
