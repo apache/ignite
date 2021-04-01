@@ -58,4 +58,9 @@ class TransferLeadershipRequestImpl implements TransferLeadershipRequest, Transf
     @Override public TransferLeadershipRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1013;
+    }
 }

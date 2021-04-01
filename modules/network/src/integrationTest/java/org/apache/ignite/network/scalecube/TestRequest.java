@@ -14,16 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
+
+package org.apache.ignite.network.scalecube;
 
 import org.apache.ignite.network.message.NetworkMessage;
 
 /**
- * Handler of incoming messages.
+ * Test request which requires {@link TestResponse} as a response.
  */
-public interface NetworkMessageHandler {
+public class TestRequest implements NetworkMessage {
+    /** Public type for tests. */
+    public static final short TYPE = 1;
+
+    /** Some test value. */
+    private final int number;
+
+    /** Constructor. */
+    public TestRequest(int number) {
+        this.number = number;
+    }
+
     /**
-     * @param message Message which was received from cluster.
+     * @return Test value.
      */
-    void onReceived(NetworkMessage message);
+    public int number() {
+        return number;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE;
+    }
 }

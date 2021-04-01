@@ -17,12 +17,13 @@
 
 package org.apache.ignite.raft.client.message;
 
+import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.raft.client.Command;
 
 /**
  * Submit an action to a replication group.
  */
-public interface ActionRequest {
+public interface ActionRequest<T> extends NetworkMessage {
     /**
      * @return Group id.
      */

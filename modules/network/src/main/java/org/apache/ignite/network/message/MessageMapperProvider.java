@@ -14,16 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.message;
 
 /**
- * Handler of incoming messages.
+ * MessageMapperProvider creates {@link MessageDeserializer} and {@link MessageSerializer} instances
+ * for working with {@link NetworkMessage} objects.
+ * @param <M> Message type.
  */
-public interface NetworkMessageHandler {
+public interface MessageMapperProvider<M extends NetworkMessage> {
     /**
-     * @param message Message which was received from cluster.
+     * Create deserializer.
+     * @return Message deserializer.
      */
-    void onReceived(NetworkMessage message);
+    MessageDeserializer<M> createDeserializer();
+
+    /**
+     * Create serializer.
+     * @return Message serializer.
+     */
+    MessageSerializer<M> createSerializer();
 }

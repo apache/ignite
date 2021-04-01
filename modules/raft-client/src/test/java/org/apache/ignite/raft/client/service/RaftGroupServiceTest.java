@@ -103,7 +103,7 @@ public class RaftGroupServiceTest {
         mockLeaderRequest(cluster, false);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         assertNull(service.leader());
 
@@ -125,7 +125,7 @@ public class RaftGroupServiceTest {
         leader = null;
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         assertNull(service.leader());
 
@@ -160,7 +160,7 @@ public class RaftGroupServiceTest {
         }, 500);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, timer);
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         assertNull(service.leader());
 
@@ -179,7 +179,7 @@ public class RaftGroupServiceTest {
         mockLeaderRequest(cluster, true);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         try {
             service.refreshLeader().get();
@@ -202,7 +202,7 @@ public class RaftGroupServiceTest {
         mockUserInput(cluster, false);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         service.refreshLeader().get();
 
@@ -222,7 +222,7 @@ public class RaftGroupServiceTest {
         mockUserInput(cluster, false);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         assertNull(service.leader());
 
@@ -244,7 +244,7 @@ public class RaftGroupServiceTest {
         mockUserInput(cluster, true);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
         try {
             service.run(new TestCommand()).get();
@@ -267,7 +267,7 @@ public class RaftGroupServiceTest {
         mockUserInput(cluster, false);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, true, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, true, DELAY);
 
         Peer leader = this.leader;
 
@@ -298,7 +298,7 @@ public class RaftGroupServiceTest {
         mockUserInput(cluster, false);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, true, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, true, DELAY);
 
         Peer leader = this.leader;
 
@@ -334,7 +334,7 @@ public class RaftGroupServiceTest {
         mockUserInput(cluster, false);
 
         RaftGroupService service =
-            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, true, DELAY, new Timer());
+            new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, true, DELAY);
 
         Peer leader = this.leader;
 

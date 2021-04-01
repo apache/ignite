@@ -56,4 +56,9 @@ public class RaftErrorResponseImpl implements RaftErrorResponse, RaftErrorRespon
     @Override public RaftErrorResponse build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1009;
+    }
 }

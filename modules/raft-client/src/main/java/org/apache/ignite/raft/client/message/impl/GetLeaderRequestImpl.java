@@ -40,4 +40,9 @@ public class GetLeaderRequestImpl implements GetLeaderRequest, GetLeaderRequest.
     @Override public GetLeaderRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1005;
+    }
 }

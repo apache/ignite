@@ -14,16 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.message;
+
+import org.apache.ignite.network.internal.MessageWriter;
 
 /**
- * Handler of incoming messages.
+ * Message serializer.
+ * @param <M> Message type.
  */
-public interface NetworkMessageHandler {
+public interface MessageSerializer<M extends NetworkMessage> {
     /**
-     * @param message Message which was received from cluster.
+     * Write message to writer.
+     * @param message Message.
+     * @param writer Message writer.
+     * @throws MessageMappingException If failed.
      */
-    void onReceived(NetworkMessage message);
+    void writeMessage(M message, MessageWriter writer) throws MessageMappingException;
 }

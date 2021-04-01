@@ -40,4 +40,9 @@ class SnapshotRequestImpl implements SnapshotRequest, SnapshotRequest.Builder {
     @Override public SnapshotRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1012;
+    }
 }

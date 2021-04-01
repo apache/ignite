@@ -18,17 +18,24 @@
 
 package org.apache.ignite.network.scalecube;
 
-import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.network.message.NetworkMessage;
 
 /** */
-class TestMessage implements Serializable {
+class TestMessage implements NetworkMessage {
+    /** Visible type for tests. */
+    public static final short TYPE = 3;
+
     /** */
     private final String msg;
 
     /** */
     TestMessage(String msg) {
         this.msg = msg;
+    }
+
+    public String msg() {
+        return msg;
     }
 
     /** {@inheritDoc} */
@@ -51,5 +58,10 @@ class TestMessage implements Serializable {
         return "TestMessage{" +
             "msg='" + msg + '\'' +
             '}';
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE;
     }
 }

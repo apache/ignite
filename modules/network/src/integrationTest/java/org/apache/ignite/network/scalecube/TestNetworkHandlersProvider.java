@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.network.NetworkClusterEventHandler;
 import org.apache.ignite.network.NetworkHandlersProvider;
 import org.apache.ignite.network.NetworkMember;
-import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
 
 /** */

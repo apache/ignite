@@ -17,12 +17,13 @@
 
 package org.apache.ignite.raft.client.message;
 
+import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.raft.client.Peer;
 
 /**
  * A current leader.
  */
-public interface GetLeaderResponse {
+public interface GetLeaderResponse extends NetworkMessage {
     /**
      * @return The leader.
      */

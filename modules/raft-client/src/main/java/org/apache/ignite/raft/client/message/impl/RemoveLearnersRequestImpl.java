@@ -58,4 +58,9 @@ class RemoveLearnersRequestImpl implements RemoveLearnersRequest, RemoveLearners
     @Override public RemoveLearnersRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1010;
+    }
 }

@@ -57,4 +57,9 @@ class RemovePeersRequestImpl implements RemovePeersRequest, RemovePeersRequest.B
     @Override public RemovePeersRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1011;
+    }
 }

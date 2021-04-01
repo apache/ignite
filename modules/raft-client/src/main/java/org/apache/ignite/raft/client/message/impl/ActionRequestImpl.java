@@ -56,4 +56,9 @@ class ActionRequestImpl<T> implements ActionRequest, ActionRequest.Builder {
     @Override public ActionRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1000;
+    }
 }

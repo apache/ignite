@@ -14,16 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.message;
+
+import org.apache.ignite.network.internal.MessageReader;
 
 /**
- * Handler of incoming messages.
+ * Message deserializer.
+ * @param <M> Message type.
  */
-public interface NetworkMessageHandler {
+public interface MessageDeserializer<M extends NetworkMessage> {
     /**
-     * @param message Message which was received from cluster.
+     * Read message from reader.
+     * @param reader Message reader.
+     * @return Read message.
+     * @throws MessageMappingException If failed.
      */
-    void onReceived(NetworkMessage message);
+    M readMessage(MessageReader reader) throws MessageMappingException;
 }

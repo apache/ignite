@@ -17,10 +17,12 @@
 
 package org.apache.ignite.raft.client.message;
 
+import org.apache.ignite.network.message.NetworkMessage;
+
 /**
  * The result of an action.
  */
-public interface ActionResponse<T> {
+public interface ActionResponse<T> extends NetworkMessage {
     /**
      * @return A result for this request, can be of any type.
      */

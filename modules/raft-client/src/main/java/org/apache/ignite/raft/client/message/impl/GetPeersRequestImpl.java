@@ -55,4 +55,9 @@ class GetPeersRequestImpl implements GetPeersRequest, GetPeersRequest.Builder {
     @Override public GetPeersRequest build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1007;
+    }
 }

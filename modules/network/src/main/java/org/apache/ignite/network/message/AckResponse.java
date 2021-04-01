@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.message;
 
 /**
- * Handler of incoming messages.
+ * Response without actual data, that just states the fact of the receiving of a request message.
  */
-public interface NetworkMessageHandler {
-    /**
-     * @param message Message which was received from cluster.
-     */
-    void onReceived(NetworkMessage message);
+public class AckResponse implements NetworkMessage {
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 0;
+    }
 }

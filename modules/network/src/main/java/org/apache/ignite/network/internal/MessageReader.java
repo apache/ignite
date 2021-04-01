@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.internal;
+
+import java.io.ObjectInputStream;
 
 /**
- * Handler of incoming messages.
+ * Stateful message reader.
  */
-public interface NetworkMessageHandler {
-    /**
-     * @param message Message which was received from cluster.
-     */
-    void onReceived(NetworkMessage message);
+public interface MessageReader {
+    /** Get input stream. Will be replaced with Ignite 2.X message reader interface. */
+    @Deprecated
+    ObjectInputStream stream();
 }

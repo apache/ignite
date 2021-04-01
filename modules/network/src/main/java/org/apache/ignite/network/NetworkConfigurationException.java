@@ -14,46 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network;
 
 /**
- * Message for exchange information in cluster.
+ * Exception raised during configuration of the network cluster.
  */
-public class NetworkMessage {
-    /** Custom data. */
-    private final Object data;
-
-    /** Network member who sent this message. */
-    private final NetworkMember senderMember;
-
+public class NetworkConfigurationException extends RuntimeException {
     /**
-     * @param data Custom data.
-     * @param senderMember Network member who sent this message.
+     * Constructor.
+     * @param message Exception message.
      */
-    public NetworkMessage(Object data, NetworkMember senderMember) {
-        this.data = data;
-        this.senderMember = senderMember;
+    public NetworkConfigurationException(String message) {
+        super(message);
     }
 
     /**
-     * @param <T> Type of message.
-     * @return Custom data.
+     * Constructor.
+     * @param message Exception message.
+     * @param cause Cause of the exception.
      */
-    public <T> T data() {
-        return (T)data;
-    }
-
-    /**
-     * @return Network member who sent this message.
-     */
-    public NetworkMember sender() {
-        return senderMember;
-    }
-
-    @Override public String toString() {
-        return "NetworkMessage{" +
-            "data=" + data +
-            ", senderMember=" + senderMember +
-            '}';
+    public NetworkConfigurationException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

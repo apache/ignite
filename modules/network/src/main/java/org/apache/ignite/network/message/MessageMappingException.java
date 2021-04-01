@@ -14,16 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.message;
 
 /**
- * Handler of incoming messages.
+ * Exception happened during message serializing or deserializing.
  */
-public interface NetworkMessageHandler {
+public class MessageMappingException extends RuntimeException {
     /**
-     * @param message Message which was received from cluster.
+     * Constructor.
+     * @param message Message mapping error message.
      */
-    void onReceived(NetworkMessage message);
+    public MessageMappingException(String message) {
+        super(message);
+    }
+
+    /**
+     * Constructor.
+     * @param message Message mapping error message.
+     * @param cause Cause of message mapping error.
+     */
+    public MessageMappingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

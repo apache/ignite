@@ -41,4 +41,9 @@ public class GetLeaderResponseImpl implements GetLeaderResponse, GetLeaderRespon
     @Override public GetLeaderResponse build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1006;
+    }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.network;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import org.apache.ignite.network.message.NetworkMessage;
 
 /**
  * Main interface for interaction with network. It allows to get information about network members and send messages to
@@ -47,10 +48,10 @@ public interface NetworkCluster {
      * Try to send the message asynchronously to the specific member without any guarantees that this message would be
      * delivered.
      *
-     * @param member Netwrok member which should receive the message.
+     * @param member Network member which should receive the message.
      * @param msg Message which should be delivered.
      */
-    void weakSend(NetworkMember member, Object msg);
+    void weakSend(NetworkMember member, NetworkMessage msg);
 
     /**
      * Try to send the message asynchronously to the specific member with next guarantees:
@@ -60,18 +61,19 @@ public interface NetworkCluster {
      * @param member Network member which should receive the message.
      * @param msg Message which should be delivered.
      */
-    Future<?> send(NetworkMember member, Object msg);
+    Future<Void> send(NetworkMember member, NetworkMessage msg);
 
     /**
-     * Sends asynchronously a message with same guarantees as for {@link #send(NetworkMember, Object)} and
+     * Sends a message asynchronously with same guarantees as for {@link #send(NetworkMember, NetworkMessage)} and
      * returns a response.
      *
      * @param member Network member which should receive the message.
      * @param msg A message.
      * @param timeout Waiting for response timeout in milliseconds.
-     * @return A future holding the response, which can be of any type.
+     * @param <R> Expected response type.
+     * @return A future holding the response or error if the expected response was not received.
      */
-    CompletableFuture<?> sendWithResponse(NetworkMember member, Object msg, long timeout);
+    CompletableFuture<NetworkMessage> sendWithResponse(NetworkMember member, NetworkMessage msg, long timeout);
 
     /**
      * Add provider which allows to get configured handlers for different cluster events(ex. received message).

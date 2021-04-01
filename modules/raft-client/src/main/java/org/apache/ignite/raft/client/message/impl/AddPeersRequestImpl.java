@@ -60,4 +60,9 @@ class AddPeersRequestImpl implements AddPeersRequest, AddPeersRequest.Builder {
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1003;
+    }
 }

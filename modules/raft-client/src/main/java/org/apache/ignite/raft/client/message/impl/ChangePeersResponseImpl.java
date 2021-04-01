@@ -57,4 +57,9 @@ class ChangePeersResponseImpl implements ChangePeersResponse, ChangePeersRespons
     @Override public ChangePeersResponse build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1004;
+    }
 }

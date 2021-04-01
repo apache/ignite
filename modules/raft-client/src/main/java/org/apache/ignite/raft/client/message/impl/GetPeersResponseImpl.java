@@ -56,4 +56,9 @@ class GetPeersResponseImpl implements GetPeersResponse, GetPeersResponse.Builder
     @Override public GetPeersResponse build() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1008;
+    }
 }

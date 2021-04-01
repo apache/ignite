@@ -14,16 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.NetworkMessage;
+package org.apache.ignite.network.scalecube;
 
-/**
- * Handler of incoming messages.
- */
-public interface NetworkMessageHandler {
-    /**
-     * @param message Message which was received from cluster.
-     */
-    void onReceived(NetworkMessage message);
+import java.io.ObjectInputStream;
+import org.apache.ignite.network.internal.MessageReader;
+
+/** */
+@Deprecated
+public class ScaleCubeMessageReader implements MessageReader {
+    /** */
+    private final ObjectInputStream stream;
+
+    /** */
+    public ScaleCubeMessageReader(ObjectInputStream stream) {
+        this.stream = stream;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ObjectInputStream stream() {
+        return this.stream;
+    }
 }

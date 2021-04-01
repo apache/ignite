@@ -60,4 +60,9 @@ public class AddLearnersRequestImpl implements AddLearnersRequest, AddLearnersRe
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1002;
+    }
 }
