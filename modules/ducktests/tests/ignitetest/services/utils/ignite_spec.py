@@ -88,7 +88,7 @@ class IgniteSpec(metaclass=ABCMeta):
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
-    def __home(self, version=None,project=None):
+    def __home(self, version=None, project=None):
         """
         Get home directory for current spec.
         """
@@ -101,7 +101,7 @@ class IgniteSpec(metaclass=ABCMeta):
         Get module path for current spec.
         """
         if name == "ducktests":
-            return get_module_path(self.__home(DEV_BRANCH,project="ignite"), name, DEV_BRANCH)
+            return get_module_path(self.__home(DEV_BRANCH, project="ignite"), name, DEV_BRANCH)
 
         return get_module_path(self.__home(self.version), name, self.version)
 
