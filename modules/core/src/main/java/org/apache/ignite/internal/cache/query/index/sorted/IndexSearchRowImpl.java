@@ -75,18 +75,4 @@ public class IndexSearchRowImpl implements IndexRow {
     @Override public boolean indexSearchRow() {
         return true;
     }
-
-    /** */
-    private boolean isFullSchemaSearch(Object[] idxKeys, int schemaLength) {
-        if (idxKeys.length != schemaLength)
-            return false;
-
-        for (int i = 0; i < schemaLength; i++) {
-            // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
-            if (idxKeys[i] == null)
-                return false;
-        }
-
-        return true;
-    }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -41,19 +42,31 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexRow> implements In
     @Override public void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.link() != 0;
 
-        IORowHandler.store(pageAddr, off, row, 0, storeMvccInfo());
+        IORowHandler.store(pageAddr, off, row, storeMvccInfo());
     }
 
     /** {@inheritDoc} */
     @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
 
-        return IORowHandler.get(this, tree, pageAddr, idx);
+        long link = PageUtils.getLong(pageAddr, offset(idx));
+
+        assert link != 0;
+
+        if (storeMvccInfo()) {
+            long mvccCrdVer = mvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = mvccCounter(pageAddr, idx);
+            int mvccOpCntr = mvccOperationCounter(pageAddr, idx);
+
+            return ((InlineIndexTree) tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+        }
+
+        return ((InlineIndexTree) tree).createIndexRow(link);
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
-        IORowHandler.store(dstPageAddr, offset(dstIdx), srcIo, srcPageAddr, srcIdx, storeMvccInfo());
+        IORowHandler.store(dstPageAddr, offset(dstIdx), (InlineIO) srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
     /** {@inheritDoc} */

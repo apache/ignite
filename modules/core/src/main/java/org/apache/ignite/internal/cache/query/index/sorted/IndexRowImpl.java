@@ -34,14 +34,14 @@ public class IndexRowImpl implements IndexRow {
     private final CacheDataRow cacheRow;
 
     /** Cache for index row keys. To avoid hit underlying cache for every comparation. */
-    private final IndexKey[] keyCache;
+    private IndexKey[] keyCache;
 
     /** Schema of an index. */
     private final InlineIndexRowHandler rowHnd;
 
     /** Constructor. */
     public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row) {
-        this(rowHnd, row, new IndexKey[rowHnd.indexKeyDefinitions().size()]);
+        this(rowHnd, row, null);
     }
 
     /**
@@ -62,12 +62,13 @@ public class IndexRowImpl implements IndexRow {
 
     /** {@inheritDoc} */
     @Override public IndexKey key(int idx) {
-        if (keyCache[idx] != null)
+        if (keyCache != null && keyCache[idx] != null)
             return keyCache[idx];
 
         IndexKey key = rowHnd.indexKey(idx, cacheRow);
 
-        keyCache[idx] = key;
+        if (keyCache != null)
+            keyCache[idx] = key;
 
         return key;
     }
@@ -104,6 +105,11 @@ public class IndexRowImpl implements IndexRow {
      */
     public int cacheId() {
         return cacheDataRow().cacheId();
+    }
+
+    /** Initialize a cache for index keys. Useful for inserting rows as there are a lot of comparisons. */
+    public void prepareCache() {
+        keyCache = new IndexKey[rowHnd.indexKeyDefinitions().size()];
     }
 
     /** {@inheritDoc} */

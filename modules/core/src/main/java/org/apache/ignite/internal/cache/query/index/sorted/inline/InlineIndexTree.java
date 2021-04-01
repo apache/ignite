@@ -41,11 +41,13 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -243,12 +246,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     @Override protected int compare(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow row)
         throws IgniteCheckedException {
 
-        int searchKeysLength = row.keys().length;
-
         if (inlineSize == 0) {
             IndexRow currRow = getRow(io, pageAddr, idx);
 
-            int cmp = compareFullRows(currRow, row, 0, searchKeysLength);
+            int cmp = compareFullRows(currRow, row, 0);
 
             return cmp == 0 ? mvccCompare(currRow, row) : cmp;
         }
@@ -266,7 +267,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         List<InlineIndexKeyType> keyTypes = rowHnd.inlineIndexKeyTypes();
 
-        for (keyIdx = 0; keyIdx < searchKeysLength; keyIdx++) {
+        for (keyIdx = 0; keyIdx < keyTypes.size(); keyIdx++) {
             try {
                 // If a search key is null then skip other keys (consider that null shows that we should get all
                 // possible keys for that comparison).
@@ -318,13 +319,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             }
         }
 
-        if (keyIdx < searchKeysLength) {
+        if (keyIdx < keyDefs.size()) {
             recommender.recommend(row, inlineSize);
 
             if (currRow == null)
                 currRow = getRow(io, pageAddr, idx);
 
-            int ret = compareFullRows(currRow, row, keyIdx, searchKeysLength);
+            int ret = compareFullRows(currRow, row, keyIdx);
 
             if (ret != 0)
                 return ret;
@@ -334,11 +335,11 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** */
-    private int compareFullRows(IndexRow currRow, IndexRow row, int from, int searchKeysLength) throws IgniteCheckedException {
+    private int compareFullRows(IndexRow currRow, IndexRow row, int from) throws IgniteCheckedException {
         if (currRow == row)
             return 0;
 
-        for (int i = from; i < searchKeysLength; i++) {
+        for (int i = from; i < rowHnd.indexKeyDefinitions().size(); i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
             if (row.key(i) == null)
@@ -364,37 +365,59 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         return order == SortOrder.ASC ? c : -c;
     }
 
-    /** Get cached index row or {@code null} if the index row cache is not configured. */
-    public IndexRowImpl getCachedIndexRow(long link) throws IgniteCheckedException {
-        return idxRowCache == null ? null : idxRowCache.get(link);
+    /** Creates an index row for this tree. */
+    public IndexRowImpl createIndexRow(long link) throws IgniteCheckedException {
+        IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
+
+        if (cachedRow != null)
+            return cachedRow;
+
+        CacheDataRowAdapter row = new CacheDataRowAdapter(link);
+
+        row.initFromLink(cacheContext().group(), CacheDataRowAdapter.RowData.FULL, true);
+
+        IndexRowImpl r = new IndexRowImpl(rowHnd, row);
+
+        if (idxRowCache != null)
+            idxRowCache.put(r);
+
+        return r;
     }
 
-    /** Cache index row.  */
-    public void cacheIndexRow(IndexRowImpl row) {
-        if (idxRowCache == null)
-            return;
+    /** Creates an mvcc index row for this tree. */
+    public IndexRowImpl createMvccIndexRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
 
-        idxRowCache.put(row);
+        if (cachedRow != null)
+            return cachedRow;
+
+        int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
+
+        MvccDataRow row = new MvccDataRow(
+            cacheContext().group(),
+            0,
+            link,
+            partId,
+            null,
+            mvccCrdVer,
+            mvccCntr,
+            mvccOpCntr,
+            true
+        );
+
+        IndexRowImpl r = new IndexRowImpl(rowHnd, row);
+
+        if (idxRowCache != null)
+            idxRowCache.put(r);
+
+        return r;
     }
 
     /** {@inheritDoc} */
     @Override public IndexRow getRow(BPlusIO<IndexRow> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
 
-        boolean cleanSchema = false;
-
-        if (ThreadLocalRowHandlerHolder.rowHandler() == null) {
-            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
-            cleanSchema = true;
-        }
-
-        try {
-            return io.getLookupRow(this, pageAddr, idx);
-        }
-        finally {
-            if (cleanSchema)
-                ThreadLocalRowHandlerHolder.clearRowHandler();
-        }
+        return io.getLookupRow(this, pageAddr, idx);
     }
 
     /** */

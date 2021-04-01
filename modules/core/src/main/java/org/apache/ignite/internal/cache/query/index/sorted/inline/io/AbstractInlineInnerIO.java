@@ -23,6 +23,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -89,11 +90,9 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
         for (int i = 0; i < rowHnd.inlineIndexKeyTypes().size(); i++) {
             try {
-                int maxSize = inlineSize - fieldOff;
-
                 InlineIndexKeyType keyType = rowHnd.inlineIndexKeyTypes().get(i);
 
-                int size = keyType.put(pageAddr, off + fieldOff, row.key(i), maxSize);
+                int size = keyType.put(pageAddr, off + fieldOff, row.key(i), inlineSize - fieldOff);
 
                 // Inline size has exceeded.
                 if (size == 0)
@@ -106,14 +105,26 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
             }
         }
 
-        IORowHandler.store(pageAddr, off, row, inlineSize, storeMvccInfo());
+        IORowHandler.store(pageAddr, off + inlineSize, row, storeMvccInfo());
     }
 
     /** {@inheritDoc} */
     @Override public final IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
 
-        return IORowHandler.get(this, tree, pageAddr, idx);
+        long link = PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
+
+        assert link != 0;
+
+        if (storeMvccInfo()) {
+            long mvccCrdVer = mvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = mvccCounter(pageAddr, idx);
+            int mvccOpCntr = mvccOperationCounter(pageAddr, idx);
+
+            return ((InlineIndexTree) tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+        }
+
+        return ((InlineIndexTree) tree).createIndexRow(link);
     }
 
     /** {@inheritDoc} */
@@ -126,7 +137,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
 
-        IORowHandler.store(dstPageAddr, dstOff + inlineSize, srcIo, srcPageAddr, srcIdx, storeMvccInfo());
+        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO) srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
     /** {@inheritDoc} */

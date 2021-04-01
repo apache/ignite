@@ -263,6 +263,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     private IndexRow preparePlainIndexKey(SearchRow row, InlineIndexRowHandler rowHnd) {
         int idxColsLen = indexColumns.length;
 
+        
         IndexKey[] keys = row == null ? null : new IndexKey[idxColsLen];
 
         for (int i = 0; i < idxColsLen; ++i) {

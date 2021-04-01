@@ -265,6 +265,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
                 IndexRowImpl row0 = new IndexRowImpl(rowHnd, newRow);
 
+                row0.prepareCache();
+
                 // Validate all keys before an actual put. User may specify wrong data types for an insert query.
                 for (int i = 0; i < def.indexKeyDefinitions().size(); ++i)
                     row0.key(i);
@@ -308,7 +310,11 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         try {
             int segment = segmentForRow(row);
 
-            segments[segment].removex(new IndexRowImpl(rowHnd, row));
+            IndexRowImpl idxRow = new IndexRowImpl(rowHnd, row);
+
+            idxRow.prepareCache();
+
+            segments[segment].removex(idxRow);
 
         } catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));

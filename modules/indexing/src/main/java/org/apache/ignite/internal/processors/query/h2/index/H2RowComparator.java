@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
@@ -100,12 +99,12 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         Object robject = right.key(idx).key();
 
         // Side of comparison can be set by user in query with type that different for specified schema.
-        if (left instanceof IndexSearchRowImpl)
+        if (left.indexSearchRow())
             ltype = DataType.getTypeFromClass(lobject.getClass());
         else
             ltype = left.rowHandler().indexKeyDefinitions().get(idx).idxType();
 
-        if (right instanceof IndexSearchRowImpl)
+        if (right.indexSearchRow())
             rtype = DataType.getTypeFromClass(robject.getClass());
         else
             rtype = right.rowHandler().indexKeyDefinitions().get(idx).idxType();
