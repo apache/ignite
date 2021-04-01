@@ -491,6 +491,8 @@
           url: extensions-and-integrations/spring/spring-data
         - title: Spring Caching
           url: extensions-and-integrations/spring/spring-caching
+        - title: Spring Transactions
+          url: extensions-and-integrations/spring/spring-tx
     - title: Ignite for Spark
       items:
         - title: Overview

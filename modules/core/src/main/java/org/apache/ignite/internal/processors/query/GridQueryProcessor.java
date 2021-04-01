@@ -62,6 +62,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -182,6 +183,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final @Nullable GridQueryIndexing idx;
 
+    /** Indexing manager. */
+    private final IndexProcessor idxProc;
+
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
 
@@ -251,6 +255,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        idxProc = ctx.indexProcessor();
 
         valCtx = new CacheQueryObjectValueContext(ctx);
 
@@ -1883,8 +1889,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor;
 
                 if (cacheInfo.isCacheContextInited()) {
-                    GridCacheContext cctx = cacheInfo.cacheContext();
-
                     int buildIdxPoolSize = ctx.config().getBuildIndexThreadPoolSize();
                     int parallel = op0.parallel();
 
@@ -2289,11 +2293,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    public void markAsRebuildNeeded(GridCacheContext cctx) {
+    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
         if (rebuildIsMeaningless(cctx))
             return;
 
-        idx.markAsRebuildNeeded(cctx);
+        idxProc.markRebuildIndexesForCache(cctx, val);
+
+        idx.markAsRebuildNeeded(cctx, val);
     }
 
     /**
@@ -2362,7 +2368,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
-        IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx);
+        IgniteInternalFuture<?> idxFut = idxProc.rebuildIndexesForCache(cctx);
 
         return chainIndexRebuildFuture(idxFut, cctx);
     }
@@ -2452,9 +2458,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + val + "]");
 
-        if (idx == null)
-            return;
-
         String cacheName = cctx.name();
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
@@ -2469,8 +2472,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 false);
 
             if (prevValDesc != desc) {
-                if (prevValDesc != null)
-                    idx.remove(cctx, prevValDesc, prevRow);
+                if (prevValDesc != null) {
+                    idxProc.remove(cacheName, prevRow);
+
+                    if (idx != null)
+                        idx.remove(cctx, prevValDesc, prevRow);
+                }
 
                 // Row has already been removed from another table indexes
                 prevRow = null;
@@ -2496,7 +2503,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
         }
 
-        idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
+        idxProc.store(cctx, newRow, prevRow, prevRowAvailable);
+
+        if (idx != null)
+            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
 
     /**
@@ -3261,9 +3271,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
 
-        if (idx == null)
-            return;
-
         QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
             cctx.cacheObjectContext(),
             row.key(),
@@ -3273,7 +3280,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (desc == null)
             return;
 
-        idx.remove(cctx, desc, row);
+        idxProc.remove(cctx.name(), row);
+
+        if (idx != null)
+            idx.remove(cctx, desc, row);
     }
 
     /**
