@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -171,6 +172,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridIndexingManager indexingMgr;
+
+    /** */
+    @GridToStringExclude
+    private IndexProcessor indexProc;
 
     /** */
     @GridToStringExclude
@@ -718,6 +723,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             maintenanceProc = (MaintenanceProcessor) comp;
         else if (comp instanceof PerformanceStatisticsProcessor)
             perfStatProc = (PerformanceStatisticsProcessor)comp;
+        else if (comp instanceof IndexProcessor)
+            indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -913,6 +920,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexProcessor indexProcessor() {
+        return indexProc;
     }
 
     /** {@inheritDoc} */

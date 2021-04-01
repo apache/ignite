@@ -30,11 +30,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
@@ -96,7 +95,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private static final int LAST_NODE_NUM = GRIDS_NUM - 1;
 
     /**
-     * Map for blocking index rebuilds in a {@link BlockingIndexing}.
+     * Map for blocking index rebuilds in a {@link BlockingIndexesRebuildTask}.
      * To stop blocking, need to delete the entry.
      * Mapping: cache name -> future start blocking rebuilding indexes.
      */
@@ -138,7 +137,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /** */
     private void startupTestCluster() throws Exception {
         for (int i = 0; i < GRIDS_NUM; i++ ) {
-            GridQueryProcessor.idxCls = BlockingIndexing.class;
+            IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
             startGrid(i);
         }
 
@@ -517,7 +516,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         final IgniteEx ignite = startGrid(igniteIdx);
 
         resetBaselineTopology();
@@ -591,15 +590,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Indexing that blocks index rebuild until status request is completed.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
+    private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(
-            GridCacheContext cctx,
-            SchemaIndexCacheVisitorClosure clo,
-            GridFutureAdapter<Void> rebuildIdxFut,
-            SchemaIndexOperationCancellationToken cancel
-        ) {
-            super.rebuildIndexesFromHash0(cctx, clo, new BlockingRebuildIdxFuture(rebuildIdxFut, cctx), cancel);
+        @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
+            SchemaIndexCacheVisitorClosure clo, SchemaIndexOperationCancellationToken cancel) {
+            super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
         }
     }
 
@@ -647,9 +642,9 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @return Internal index rebuild future.
      */
     @Nullable private SchemaIndexCacheFuture schemaIndexCacheFuture(IgniteEx n, int cacheId) {
-        GridQueryIndexing indexing = n.context().query().getIndexing();
+        IndexesRebuildTask idxRebuild = n.context().indexProcessor().idxRebuild();
 
-        Map<Integer, SchemaIndexCacheFuture> idxRebuildFuts = getFieldValue(indexing, "idxRebuildFuts");
+        Map<Integer, SchemaIndexCacheFuture> idxRebuildFuts = getFieldValue(idxRebuild, "idxRebuildFuts");
 
         return idxRebuildFuts.get(cacheId);
     }
