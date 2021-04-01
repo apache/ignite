@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -31,7 +30,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -67,7 +65,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS)))
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         else {
-            CacheConfiguration ccfg = defaultCacheConfiguration();
+            CacheConfiguration<?,?> ccfg = defaultCacheConfiguration();
             ccfg.setName(CACHE_NAME);
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setBackups(1);
@@ -135,6 +133,48 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         }
 
         stopAllGrids();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testAffinityCallMergedExchanges() throws Exception {
+        startGrids(SRVS);
+
+        final Integer key = 1;
+
+        final IgniteEx client = startClientGrid(SRVS);
+
+        assertTrue(client.configuration().isClientMode());
+        assertNull(client.context().cache().cache(CACHE_NAME));
+
+        try {
+            grid(0).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+                new AffinityTopologyVersion(SRVS + 3, 0),
+                null
+            );
+
+            IgniteInternalFuture<IgniteEx> fut1 = GridTestUtils.runAsync(() -> startGrid(SRVS + 1));
+
+            assertTrue(GridTestUtils.waitForCondition(() -> client.context().cache().context()
+                .exchange().lastTopologyFuture()
+                .initialVersion().equals(new AffinityTopologyVersion(SRVS + 2, 0)), 5_000));
+
+            assertFalse(fut1.isDone());
+
+            // The future should not complete until second node is started.
+            IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(() ->
+                client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null)));
+
+            startGrid(SRVS + 2);
+
+            fut1.get();
+            fut2.get();
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -240,7 +280,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        private AffinityTopologyVersion topVer;
+        private final AffinityTopologyVersion topVer;
 
         /**
          * @param key Key.
@@ -255,7 +295,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         @Override public Object call() throws IgniteCheckedException {
             if (topVer != null) {
                 GridCacheAffinityManager aff =
-                    ((IgniteKernal)ignite).context().cache().internalCache(CACHE_NAME).context().affinity();
+                    ((IgniteEx)ignite).context().cache().internalCache(CACHE_NAME).context().affinity();
 
                 ClusterNode loc = ignite.cluster().localNode();
 
