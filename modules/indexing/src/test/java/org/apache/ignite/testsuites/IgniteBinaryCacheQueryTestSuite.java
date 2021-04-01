@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistryTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
@@ -659,7 +660,9 @@ import org.junit.runners.Suite;
     SqlMergeOnClientNodeTest.class,
 
     SqlFieldTypeValidationTypesTest.class,
-    SqlFieldTypeValidationOnKeyValueInsertTest.class
+    SqlFieldTypeValidationOnKeyValueInsertTest.class,
+
+    InlineIndexKeyTypeRegistryTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

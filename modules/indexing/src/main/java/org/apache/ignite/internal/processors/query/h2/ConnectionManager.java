@@ -64,9 +64,15 @@ public class ConnectionManager {
      * Initialize system properties for H2.
      */
     static {
+        // Note! System properties actually are not set correctly due to h2 SysProperties is initialized earlier
+        // in IgniteH2Indexing.start(). Then actual values of this properties are:
+        // - h2.objectCache = true
+        // - h2.serializeJavaObject = false (explicitly setup in IgniteH2Indexing.start())
+        // - h2.objectCacheMaxPerElementSize = 4096
         System.setProperty("h2.objectCache", "false");
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
+        // H2 DbSettings.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
         System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
@@ -328,5 +334,12 @@ public class ConnectionManager {
     void setH2Serializer(JavaObjectSerializer serializer) {
         if (dataNhd != null && dataNhd instanceof Database)
             DB_JOBJ_SERIALIZER.set((Database)dataNhd, serializer);
+    }
+
+    /**
+     * @return H2 connection.
+     */
+    public JdbcConnection jdbcConnection() {
+        return (JdbcConnection) sysConn;
     }
 }
