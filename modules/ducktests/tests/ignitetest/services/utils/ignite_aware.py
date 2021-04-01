@@ -185,8 +185,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         super().init_persistent(node)
 
-        self.__rotate_node_config_file(node)
-
         node_config = self._prepare_config(node)
 
         node.account.create_file(self.config_file, node_config)
@@ -437,23 +435,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
-
-    def __rotate_node_config_file(self, node):
-        """
-        Rotate the ignite-config.xml file on node.
-        :param node Ignite node.
-        """
-        if not hasattr(node, 'config_file'):
-            node.config_file = self.config_file
-        else:
-            cnt = list(node.account.ssh_capture(f'ls {self.config_dir} | '
-                                                f'grep -E "^ignite-config.xml(.[0-9]+)?$" | '
-                                                f'wc -l', callback=int))[0]
-
-            if cnt > 0:
-                rotated_config = os.path.join(self.config_dir, f"ignite-config.xml.{cnt}")
-                self.logger.debug(f"rotating {node.config_file} to {rotated_config} on {node.name}")
-                node.account.ssh(f"mv {node.config_file} {rotated_config}")
 
     @staticmethod
     def exec_command(node, cmd):

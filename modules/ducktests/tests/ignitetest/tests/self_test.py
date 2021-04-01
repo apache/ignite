@@ -138,21 +138,12 @@ class SelfTest(IgniteTest):
     @cluster(num_nodes=1)
     @ignite_versions(str(DEV_BRANCH))
     @matrix(is_ignite_service=[True, False])
-    def test_config_rotation(self, ignite_version, is_ignite_service):
+    def test_config_add_to_result(self, ignite_version, is_ignite_service):
         """
-        Tests the ignite-config.xml rotation after ignite service restart.
+        Test that the config file is in config directory
+        and Service.logs contains the config directory to add to the result.
         """
-
-        def get_config_count(service: IgniteService):
-            node = service.nodes[0]
-            return list(node.account.ssh_capture(f'ls {service.config_dir}/ignite-config.xml* | wc -l',
-                                                 callback=int))[0]
-
-        pfx = 'test'
-
-        num_restarts = 5
-
-        ignite_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version), consistent_id=f'{pfx}1')
+        ignite_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
         if is_ignite_service:
             ignite = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
@@ -162,23 +153,12 @@ class SelfTest(IgniteTest):
                 java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication")
 
         ignite.start()
+
+        assert ignite.logs.get('config').get('path') == ignite.config_dir
+
+        assert ignite.config_file.startswith(ignite.config_dir)
+
+        ignite.nodes[0].account.ssh(f'ls {ignite.config_dir} | grep {os.path.basename(ignite.config_file)}')
+        ignite.nodes[0].account.ssh(f'ls {ignite.config_dir} | grep {os.path.basename(ignite.log_config_file)}')
+
         ignite.stop()
-
-        for i in range(2, num_restarts + 1):
-            ignite.config = ignite.config._replace(consistent_id=f'{pfx}{i}')
-
-            ignite.start(clean=False)
-
-            new_cnt = get_config_count(ignite)
-            assert new_cnt == i
-
-            ignite.stop()
-
-        assert get_config_count(ignite) == num_restarts
-
-        for i in range(1, num_restarts):
-            cfg_name = os.path.join(ignite.config_dir, f"ignite-config.xml.{i}")
-            log_name = os.path.join(ignite.log_dir, f"console.log.{i}")
-
-            ignite.nodes[0].account.ssh(f'grep consistentId {cfg_name} | grep {pfx}{i}')
-            ignite.nodes[0].account.ssh(f'grep consistentId={pfx}{i} {log_name}')
