@@ -2742,14 +2742,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     PendingMessage pm = new PendingMessage(msg);
 
                     this.msgs.add(pm);
-
-                    if (pm.customMsg && pm.id.equals(customDiscardId))
-                        this.customDiscardId = customDiscardId;
-
-                    if (!pm.customMsg && pm.id.equals(discardId))
-                        this.discardId = discardId;
                 }
             }
+
+            this.discardId = discardId;
+            this.customDiscardId = customDiscardId;
         }
 
         /**
@@ -3260,7 +3257,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage) msg, false);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -6244,8 +6241,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msg.message(null, msg.messageBytes());
                 }
                 else {
-                    clearPendingCustomMessage(msg.id());
-
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
                     DiscoverySpiCustomMessage msgObj = null;
@@ -6311,23 +6306,19 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Processed message.
          * @return {@code true} If message was appended to pending queue.
          */
-        private boolean posponeUndeliveredMessages(TcpDiscoveryCustomEventMessage msg) {
+        private boolean posponeUndeliveredMessages(final TcpDiscoveryCustomEventMessage msg) {
             boolean joiningEmpty;
 
             synchronized (mux) {
                 joiningEmpty = joiningNodes.isEmpty();
+
+                log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
+                    ", joiningNodes=" + joiningNodes + ']');
             }
 
             boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
 
             if (delayMsg) {
-                if (log.isDebugEnabled()) {
-                    synchronized (mux) {
-                        log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
-                            ", joiningNodes=" + joiningNodes + ']');
-                    }
-                }
-
                 synchronized (mux) {
                     pendingCustomMsgs.add(msg);
                 }
@@ -6404,12 +6395,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while ((msg = pollPendingCustomMessage()) != null)
                     processCustomMessage(msg, true);
-            }
-        }
-
-        private void clearPendingCustomMessage(final IgniteUuid id) {
-            synchronized (mux) {
-                pendingCustomMsgs.removeIf(msg -> msg.id().equals(id));
             }
         }
 
