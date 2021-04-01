@@ -47,7 +47,8 @@ def resolve_spec(service, context, config, **kwargs):
         return len(impl_filter) > 0
 
     if is_impl("IgniteService"):
-        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(path_aware=service, config=config, **kwargs)
+        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(path_aware=service, context=context, config=config,
+                                                               **kwargs)
 
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context,
@@ -87,19 +88,22 @@ class IgniteSpec(metaclass=ABCMeta):
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
-    def __home(self, version=None):
+    def __home(self, version=None,project=None):
         """
         Get home directory for current spec.
         """
+        project = self.project if project is None else project
         version = version if version else self.version
-        return get_home_dir(self.path_aware.install_root, self.project, version)
+        return get_home_dir(self.path_aware.install_root, project, version)
 
     def _module(self, name):
         """
         Get module path for current spec.
         """
-        version = DEV_BRANCH if name == "ducktests" else self.version
-        return get_module_path(self.__home(version), name, version)
+        if name == "ducktests":
+            return get_module_path(self.__home(DEV_BRANCH,project="ignite"), name, DEV_BRANCH)
+
+        return get_module_path(self.__home(self.version), name, self.version)
 
     @abstractmethod
     def command(self, node):
@@ -168,8 +172,8 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
     """
     Implementation IgniteNodeSpec for Apache Ignite project
     """
-    def __init__(self, modules, **kwargs):
-        super().__init__(project="ignite", **kwargs)
+    def __init__(self, context, modules, **kwargs):
+        super().__init__(project=context.globals.get("project", "ignite"), **kwargs)
 
         libs = (modules or [])
         libs.append("log4j")
@@ -194,7 +198,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, context, modules, servicejava_class_name, java_class_name, params, start_ignite, **kwargs):
-        super().__init__(project="ignite", **kwargs)
+        super().__init__(project=context.globals.get("project", "ignite"), **kwargs)
         self.context = context
 
         libs = modules or []
