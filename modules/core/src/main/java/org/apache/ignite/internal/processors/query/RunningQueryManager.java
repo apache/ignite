@@ -145,7 +145,8 @@ public class RunningQueryManager {
      * @return Id of registered query.
      */
     public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
-        @Nullable GridQueryCancel cancel) {
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId) {
         long qryId = qryIdGen.incrementAndGet();
 
         final GridRunningQueryInfo run = new GridRunningQueryInfo(
@@ -157,7 +158,8 @@ public class RunningQueryManager {
             System.currentTimeMillis(),
             ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
-            loc
+            loc,
+            qryInitiatorId
         );
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);

@@ -111,6 +111,10 @@ public class JdbcConnection implements Connection {
     private static final IgniteProductVersion MULTIPLE_STATEMENTS_TASK_V2_SUPPORTED_SINCE =
         IgniteProductVersion.fromString("2.8.0");
 
+    /** Multiple statements V2 task supported since version. */
+    private static final IgniteProductVersion MULTIPLE_STATEMENTS_TASK_V3_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("8.11.0");
+
     /**
      * Ignite nodes cache.
      *
@@ -188,6 +192,16 @@ public class JdbcConnection implements Connection {
     final Set<JdbcStatement> statements = new HashSet<>();
 
     /**
+     * Describes the client connection:
+     * - thin cli: "cli:host:port@user_name"
+     * - thin JDBC: "jdbc-thin:host:port@user_name"
+     * - ODBC: "odbc:host:port@user_name"
+     *
+     * Used by the running query view to display query initiator.
+     */
+    private final String clientDesc;
+
+    /**
      * Creates new connection.
      *
      * @param url Connection URL.
@@ -259,6 +273,8 @@ public class JdbcConnection implements Connection {
                 if (schemaName == null)
                     schemaName = QueryUtils.DFLT_SCHEMA;
             }
+
+            clientDesc = "jdbc-v2:" + F.first(ignite.cluster().localNode().addresses()) + ":" + ignite.name();
         }
         catch (Exception e) {
             close();
@@ -879,6 +895,13 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsTaskV3Supported() {
+        return U.isOldestNodeVersionAtLeast(MULTIPLE_STATEMENTS_TASK_V3_SUPPORTED_SINCE, ignite.cluster().nodes());
+    }
+
+    /**
      * @return {@code true} if update on server is enabled, {@code false} otherwise.
      */
     boolean skipReducerOnUpdate() {
@@ -936,6 +959,20 @@ public class JdbcConnection implements Connection {
      */
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
+    }
+
+    /**
+     * Describes the client connection:
+     * - thin cli: "cli:host:port@user_name"
+     * - thin JDBC: "jdbc-thin:host:port@user_name"
+     * - ODBC: "odbc:host:port@user_name"
+     *
+     * Used by the running query view to display query initiator.
+     *
+     * @return Client descriptor string.
+     */
+    String clientDescriptor() {
+        return clientDesc;
     }
 
     /**
