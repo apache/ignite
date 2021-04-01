@@ -17,21 +17,30 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED;
+import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -52,7 +61,15 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         cfg.setGridLogger(listeningLog);
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setMetricsEnabled(true)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(10 * 1024 * 1024)
+                .setCheckpointPageBufferSize(1024 * 1024)
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointFrequency(1_000)
+            .setWriteThrottlingEnabled(true)
+            .setCheckpointThreads(1));
 
         return cfg;
     }
@@ -64,6 +81,30 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         cleanPersistenceDir();
 
         cleanPerformanceStatisticsDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @return {@code totalThrottlingTime} metric for the default region.
+     */
+    private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
+        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
+
+        LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
+
+        assertNotNull(totalThrottlingTime);
+
+        return totalThrottlingTime;
     }
 
     /** @throws Exception If failed. */
@@ -167,5 +208,47 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         finally {
             db.checkpointReadUnlock();
         }
+    }
+
+    /** @throws Exception if failed. */
+    @Test
+    public void testThrottleSpeedBased() throws Exception {
+        srv = startGrid();
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        startCollectStatistics();
+
+        AtomicBoolean run = new AtomicBoolean(true);
+
+        IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        GridTestUtils.runAsync(() -> {
+            for (long i = 0; run.get(); i++)
+                cache.put(i, i);
+        }, "loader");
+
+        assertTrue(waitForCondition(() -> totalThrottlingTime(srv).value() > 0, TIMEOUT));
+
+        run.set(false);
+
+        AtomicBoolean checker = new AtomicBoolean();
+
+        stopCollectStatisticsAndRead(new TestHandler(){
+            @Override public void throttling(long startTime, long endTime) {
+                checker.set(true);
+            }
+        });
+
+        assertTrue(checker.get());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, value = "TARGET_RATIO_BASED")
+    public void testThrottleTargetRatioBased() throws Exception {
+        testThrottleSpeedBased();
     }
 }
