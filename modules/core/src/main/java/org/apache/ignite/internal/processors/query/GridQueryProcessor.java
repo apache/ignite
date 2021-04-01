@@ -454,18 +454,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void beforeExchange(GridDhtPartitionsExchangeFuture fut) {
         ExchangeActions acts = fut.exchangeActions();
 
-        // TODO: 01.04.2021 be sure about topology 
-        
         if (acts != null) {
             Set<Integer> cacheIds = emptySet();
 
             if (!F.isEmpty(acts.cacheStartRequests())) {
                 cacheIds = acts.cacheStartRequests().stream()
                     .map(d -> CU.cacheId(d.request().cacheName()))
+                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
                     .collect(toSet());
             }
-            else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches()))
-                cacheIds = acts.localJoinContext().caches().stream().map(t2 -> t2.get1().cacheId()).collect(toSet());
+            else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
+                cacheIds = acts.localJoinContext().caches().stream()
+                    .map(t2 -> t2.get1().cacheId())
+                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
+                    .collect(toSet());
+            }
 
             Set<Integer> rejected = prepareIndexRebuildFutures(cacheIds, true);
 
@@ -2393,6 +2396,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idxFut.listen(fut -> {
                 idxRebuildOnExchange.remove(cacheId);
+
                 idxRebuildFuts.remove(cacheId, res);
 
                 Throwable err = fut.error();
@@ -3845,5 +3849,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public boolean rebuildIndexOnExchange(int cacheId) {
         return idxRebuildOnExchange.contains(cacheId);
+    }
+
+    /**
+     * Checking the need to rebuild the indexes for the cache on exchange.
+     *
+     * @param cacheId Cache id.
+     * @param exchangeFut Exchange future.
+     * @return {@code True} if indexes need to be rebuilt.
+     */
+    private boolean needRebuildIndexOnExchange(int cacheId, GridDhtPartitionsExchangeFuture exchangeFut) {
+        return exchangeFut.initialVersion().equals(ctx.cache().context().cacheContext(cacheId).startTopologyVersion());
     }
 }

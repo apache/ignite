@@ -1434,8 +1434,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         rebuildIndexes(
             cctx.cacheContexts(),
-            (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()) &&
-                cctx.kernalContext().query().rebuildIndexOnExchange(cacheCtx.cacheId()),
+            (cacheCtx) -> cctx.kernalContext().query().rebuildIndexOnExchange(cacheCtx.cacheId()),
             false
         );
     }
