@@ -292,7 +292,6 @@ docker_run() {
         done
     fi
 
-
     # Invoke docker-run. We need privileged mode to be able to run iptables
     # and mount FUSE filesystems inside the container.  We also need it to
     # run iptables inside the container.
