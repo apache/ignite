@@ -381,7 +381,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         # Sets given iptables settings and ensures they were applied.
         settings_before = self.__dump_netfilter_settings(node)
 
-        out, err = IgniteAwareService.exec_command_res(node, cmd)
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
 
         assert len(out) == 0, \
             "Unexpected iptables output on '" + node.name + "': '" + out + "'\n   Command: '" + cmd + "'."
@@ -401,12 +401,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for node in nodes:
             cmd = f"sudo iptables-save | tee {self.netfilter_store_path}"
 
-            _, exec_error = IgniteAwareService.exec_command_res(node, cmd)
+            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             if "Warning: iptables-legacy tables present" in exec_error:
                 cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
-                _, exec_error = IgniteAwareService.exec_command_res(node, cmd)
+                _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
@@ -425,7 +425,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for node in self.disconnected_nodes:
             settings_before = self.__dump_netfilter_settings(node)
 
-            _, exec_error = IgniteAwareService.exec_command_res(node, cmd)
+            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             settings_after = self.__dump_netfilter_settings(node)
 
@@ -465,16 +465,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 
     @staticmethod
-    def exec_command_res(node, cmd):
+    def exec_command_ex(node, cmd):
         """Executes the command passed on the given node and returns out and error results as string."""
         _, out, err = node.account.ssh_client.exec_command(cmd)
 
         return str(out.read(), sys.getdefaultencoding()), str(err.read(), sys.getdefaultencoding())
 
     @staticmethod
-    def exec_command(node, cmd):
+    def exec_command(node, cmd, check_error=True):
         """Executes the command passed on the given node and returns out result as string."""
-        out, _ = IgniteAwareService.exec_command_res(node, cmd)
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+        if check_error:
+            assert len(err) == 0, f"Command failed: '{cmd}'.\nError: '{err}'"
 
         return out
 
