@@ -2054,7 +2054,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+    @Override @Nullable public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean force) {
         assert nonNull(cctx);
 
         if (!CU.affinityNode(cctx.localNode(), cctx.config().getNodeFilter()))
@@ -2079,7 +2079,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 assert nonNull(tbl);
 
-                tbl.collectIndexesForPartialRebuild(clo0);
+                tbl.collectIndexesForPartialRebuild(clo0, force);
             }
 
             if (clo0.hasIndexes())
@@ -2097,9 +2097,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
 
         // An internal future for the ability to cancel index rebuilding.
-        // This behavior should be discussed in IGNITE-14321.
         SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(new SchemaIndexOperationCancellationToken());
-        cancelIndexRebuildFuture(idxRebuildFuts.put(cctx.cacheId(), intRebFut));
+
+        SchemaIndexCacheFuture prevIntRebFut = idxRebuildFuts.put(cctx.cacheId(), intRebFut);
+
+        // Check that the previous rebuild is completed.
+        assert prevIntRebFut == null;
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
@@ -2116,10 +2119,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (nonNull(err))
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
 
-            outRebuildCacheIdxFut.onDone(err);
-
             idxRebuildFuts.remove(cctx.cacheId(), intRebFut);
             intRebFut.onDone(err);
+
+            outRebuildCacheIdxFut.onDone(err);
         });
 
         rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut, intRebFut.cancelToken());

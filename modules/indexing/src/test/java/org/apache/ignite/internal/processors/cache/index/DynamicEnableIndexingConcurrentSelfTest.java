@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionSerializationException;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -627,10 +628,13 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        @Override @Nullable public IgniteInternalFuture<?> rebuildIndexesFromHash(
+            GridCacheContext cctx,
+            boolean force
+        ) {
             awaitIndexing(ctx.localNodeId());
 
-            return super.rebuildIndexesFromHash(cctx);
+            return super.rebuildIndexesFromHash(cctx, force);
         }
     }
 }

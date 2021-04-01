@@ -452,10 +452,13 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        @Override @Nullable public IgniteInternalFuture<?> rebuildIndexesFromHash(
+            GridCacheContext cctx,
+            boolean force
+        ) {
             cacheRebuildRunner.getOrDefault(cctx.name(), () -> {}).run();
 
-            return super.rebuildIndexesFromHash(cctx);
+            return super.rebuildIndexesFromHash(cctx, force);
         }
     }
 }

@@ -884,15 +884,16 @@ public class GridH2Table extends TableBase {
      * Collect indexes for rebuild.
      *
      * @param clo Closure.
+     * @param force Force rebuild indexes.
      */
-    public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
+    public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo, boolean force) {
         for (int i = 0; i < idxs.size(); i++) {
             Index idx = idxs.get(i);
 
             if (idx instanceof H2TreeIndex) {
                 H2TreeIndex idx0 = (H2TreeIndex)idx;
 
-                if (idx0.rebuildRequired())
+                if (idx0.rebuildRequired() || force)
                     clo.addIndex(this, idx0);
             }
         }
