@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -598,9 +597,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
                     rootPages,
                     trees,
-                    cctx.group().name(),
+                    cctx.group().name() == null ? cctx.cache().name() : cctx.group().name(),
                     cctx.cache().name(),
                     table.getSchema().getName(),
+                    treeName,
                     idxName
                 );
 
