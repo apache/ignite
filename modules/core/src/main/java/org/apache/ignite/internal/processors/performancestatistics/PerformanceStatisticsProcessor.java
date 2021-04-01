@@ -225,7 +225,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             cowPagesWritten));
     }
 
-
     /**
      * @param startTime Start time.
      * @param endTime End time.

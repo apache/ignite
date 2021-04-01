@@ -234,7 +234,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         AtomicBoolean checker = new AtomicBoolean();
 
-        stopCollectStatisticsAndRead(new TestHandler(){
+        stopCollectStatisticsAndRead(new TestHandler() {
             @Override public void throttling(long startTime, long endTime) {
                 checker.set(true);
             }
