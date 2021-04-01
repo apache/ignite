@@ -669,7 +669,7 @@ public class GridNioServerWrapper {
      * @return {@code True} if exception shows that client is unreachable, {@code false} otherwise.
      */
     private boolean isNodeUnreachableException(Exception e) {
-        return e instanceof SocketTimeoutException;
+        return e instanceof NodeUnreachableException || e instanceof SocketTimeoutException;
     }
 
     /**

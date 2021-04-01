@@ -471,9 +471,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
                     rootPages,
                     trees,
-                    cctx.group().name(),
+                    cctx.group().name() == null ? cctx.cache().name() : cctx.group().name(),
                     cctx.cache().name(),
-                    def.idxName()
+                    def.idxName(),
+                    treeName
                 );
 
                 cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
