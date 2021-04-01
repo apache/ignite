@@ -65,7 +65,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS)))
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         else {
-            CacheConfiguration<?,?> ccfg = defaultCacheConfiguration();
+            CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
             ccfg.setName(CACHE_NAME);
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setBackups(1);
