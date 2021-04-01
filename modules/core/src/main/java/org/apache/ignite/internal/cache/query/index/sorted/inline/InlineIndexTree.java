@@ -265,7 +265,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
 
-        List<InlineIndexKeyType> keyTypes = rowHnd.inlineIndexKeyTypes();
+        List<InlineIndexKeyType> keyTypes = rowHandler().inlineIndexKeyTypes();
 
         for (keyIdx = 0; keyIdx < keyTypes.size(); keyIdx++) {
             try {
@@ -339,7 +339,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (currRow == row)
             return 0;
 
-        for (int i = from; i < rowHnd.indexKeyDefinitions().size(); i++) {
+        for (int i = from; i < rowHandler().indexKeyDefinitions().size(); i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
             if (row.key(i) == null)
@@ -376,7 +376,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         row.initFromLink(cacheContext().group(), CacheDataRowAdapter.RowData.FULL, true);
 
-        IndexRowImpl r = new IndexRowImpl(rowHnd, row);
+        IndexRowImpl r = new IndexRowImpl(rowHandler(), row);
 
         if (idxRowCache != null)
             idxRowCache.put(r);
@@ -405,7 +405,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             true
         );
 
-        IndexRowImpl r = new IndexRowImpl(rowHnd, row);
+        IndexRowImpl r = new IndexRowImpl(rowHandler(), row);
 
         if (idxRowCache != null)
             idxRowCache.put(r);
@@ -610,10 +610,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /**
-     * @return Index row handler for this tree.
+     * @return Index row handler for this tree. Row handler for a tree can be set externally with the holder.
      */
     public InlineIndexRowHandler rowHandler() {
-        return rowHnd;
+        return rowHnd != null ? rowHnd : ThreadLocalRowHandlerHolder.rowHandler();
     }
 
     /**

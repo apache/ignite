@@ -94,29 +94,15 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
         // If it is known that only one row will be returned an optimization is employed
         if (isSingleRowLookup(lower, upper)) {
-            try {
-                ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
+            IndexRowImpl row = segments[segment].findOne(lower, closure, null);
 
-                IndexRowImpl row = segments[segment].findOne(lower, closure, null);
+            if (row == null || isExpired(row))
+                return IndexValueCursor.EMPTY;
 
-                if (row == null || isExpired(row))
-                    return IndexValueCursor.EMPTY;
-
-                return new SingleCursor<>(row);
-
-            } finally {
-                ThreadLocalRowHandlerHolder.clearRowHandler();
-            }
+            return new SingleCursor<>(row);
         }
 
-        try {
-            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
-
-            return segments[segment].find(lower, upper, closure, null);
-
-        } finally {
-            ThreadLocalRowHandlerHolder.clearRowHandler();
-        }
+        return segments[segment].find(lower, upper, closure, null);
     }
 
     /** {@inheritDoc} */
@@ -202,40 +188,26 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findFirst(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
-        try {
-            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
+        InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
-            InlineTreeFilterClosure closure = filterClosure(qryCtx);
+        IndexRow found = segments[segment].findFirst(closure);
 
-            IndexRow found = segments[segment].findFirst(closure);
+        if (found == null || isExpired(found))
+            return IndexValueCursor.EMPTY;
 
-            if (found == null || isExpired(found))
-                return IndexValueCursor.EMPTY;
-
-            return new SingleCursor<>(found);
-
-        } finally {
-            ThreadLocalRowHandlerHolder.clearRowHandler();
-        }
+        return new SingleCursor<>(found);
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findLast(int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
-        try {
-            ThreadLocalRowHandlerHolder.rowHandler(rowHnd);
+        InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
-            InlineTreeFilterClosure closure = filterClosure(qryCtx);
+        IndexRow found = segments[segment].findLast(closure);
 
-            IndexRow found = segments[segment].findLast(closure);
+        if (found == null || isExpired(found))
+            return IndexValueCursor.EMPTY;
 
-            if (found == null || isExpired(found))
-                return IndexValueCursor.EMPTY;
-
-            return new SingleCursor<>(found);
-
-        } finally {
-            ThreadLocalRowHandlerHolder.clearRowHandler();
-        }
+        return new SingleCursor<>(found);
     }
 
     /** {@inheritDoc} */
