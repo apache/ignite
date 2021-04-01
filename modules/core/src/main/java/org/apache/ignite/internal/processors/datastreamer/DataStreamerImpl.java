@@ -1999,32 +1999,29 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
                 }
-                catch (ClusterTopologyCheckedException e) {
-                    // This request was not sent probably.
-                    // Anyway it does not not make sense to track it.
-                    reqs.remove(reqId);
-
-                    GridFutureAdapter<Object> fut0 = ((GridFutureAdapter<Object>)fut);
-
-                    fut0.onDone(e);
-                }
                 catch (IgniteCheckedException e) {
+                    // This request was not sent probably.
+                    // Anyway it does not make sense to track it.
                     reqs.remove(reqId);
 
                     GridFutureAdapter<Object> fut0 = ((GridFutureAdapter<Object>)fut);
 
-                    if (X.hasCause(e, IgniteClientDisconnectedCheckedException.class, IgniteClientDisconnectedException.class))
+                    if (e instanceof ClusterTopologyCheckedException)
                         fut0.onDone(e);
                     else {
-                        try {
-                            if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
-                                fut0.onDone(e);
-                            else
-                                fut0.onDone(new ClusterTopologyCheckedException("Failed to send request (node has left): "
-                                    + node.id()));
-                        }
-                        catch (IgniteClientDisconnectedCheckedException e0) {
-                            fut0.onDone(e0);
+                        if (X.hasCause(e, IgniteClientDisconnectedCheckedException.class, IgniteClientDisconnectedException.class))
+                            fut0.onDone(e);
+                        else {
+                            try {
+                                if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
+                                    fut0.onDone(e);
+                                else
+                                    fut0.onDone(new ClusterTopologyCheckedException("Failed to send request (node has left): "
+                                        + node.id()));
+                            }
+                            catch (IgniteClientDisconnectedCheckedException e0) {
+                                fut0.onDone(e0);
+                            }
                         }
                     }
                 }

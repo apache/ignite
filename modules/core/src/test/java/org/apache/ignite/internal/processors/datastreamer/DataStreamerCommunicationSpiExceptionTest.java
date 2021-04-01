@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -39,16 +38,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CachePeekMode.ALL;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /**
  * Tests behavior of DataStreamer when communication channel fails to send a data streamer request due to some reason,
  * for example, handshake problems.
  */
 public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    public static final String CACHE_NAME = "test-cache";
-
     /** Data size. */
     public static final int DATA_SIZE = 50;
 
@@ -71,17 +66,6 @@ public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstrac
     }
 
     /**
-     * @return Cache configuration
-     */
-    private <K, V> CacheConfiguration<K, V> cacheConfiguration(Class<K> key, Class<V> val) {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(CACHE_NAME);
-
-        ccfg.setIndexedTypes(key, val);
-
-        return ccfg;
-    }
-
-    /**
      * Tests that flushing data streamer does not hang due to SPI exception on communication layer.
      * @throws Exception If failed.
      */
@@ -91,34 +75,22 @@ public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstrac
 
         Ignite client = startClientGrid(3);
 
-        client.cluster().state(ACTIVE);
+        IgniteCache<IgniteUuid, Integer> cache = client.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        IgniteCache<IgniteUuid, Integer> cache = client.createCache(new CacheConfiguration<>(CACHE_NAME));
-
-        awaitPartitionMapExchange(false, true, null);
+        awaitPartitionMapExchange();
 
         TestCommunicationSpi.spi(client).victim(grid(0).cluster().localNode().id());
 
         int threadBufSize = 10;
         int batchSize = threadBufSize * 2;
 
-        try (IgniteDataStreamer<IgniteUuid, Integer> streamer = client.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.perThreadBufferSize(threadBufSize);
 
-            Map<IgniteUuid, Integer> vals = new HashMap<>();
+            Map<Integer, Integer> vals = new HashMap<>();
 
-            for (int i = 0; i < DATA_SIZE; i++) {
-                vals.put(IgniteUuid.randomUuid(), i);
-
-                if (i > 0 && (i % batchSize) == 0) {
-                    streamer.addData(vals);
-
-                    vals.clear();
-                }
-            }
-
-            if (!vals.isEmpty())
-                streamer.addData(vals);
+            for (int i = 0; i < DATA_SIZE; i++)
+                streamer.addData(i, i);
 
             streamer.flush();
 
@@ -133,9 +105,6 @@ public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstrac
         /** Node id. */
         private volatile UUID victim;
 
-        /** Counter of blocked messages. */
-        private final AtomicInteger cnt = new AtomicInteger(1);
-
         /** Indicates that one data streamer request was blocked. */
         private final AtomicBoolean firstBlocked = new AtomicBoolean(false);
 
@@ -147,10 +116,8 @@ public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstrac
         ) throws IgniteSpiException {
             boolean dataStreamerReq = ((GridIoMessage)msg).message() instanceof DataStreamerRequest;
 
-            if (!firstBlocked.get() && node.id().equals(victim) && dataStreamerReq) {
-                if (firstBlocked.compareAndSet(false, true))
-                    throw new IgniteSpiException("Test Exception [cnt=" + cnt.getAndIncrement() + ']');
-            }
+            if (node.id().equals(victim) && dataStreamerReq && firstBlocked.compareAndSet(false, true))
+                throw new IgniteSpiException("Test Spi Exception");
 
             super.sendMessage(node, msg, ackC);
         }
