@@ -14,54 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.configuration.storage;
 
-import java.io.Serializable;
-import java.util.Map;
+package org.apache.ignite.configuration.internal.notifications;
 
-/**
- * Represents data in configuration storage.
- */
-public class Data {
-    /** Values. */
-    private final Map<String, Serializable> values;
+import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
+import org.jetbrains.annotations.Nullable;
 
-    /** Configuration storage version. */
-    private final long cfgVersion;
+public class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificationEvent<VIEW> {
+    private final VIEW oldValue;
 
-    /** */
+    private final VIEW newValue;
+
     private final long storageRevision;
 
-    /**
-     * Constructor.
-     * @param values Values.
-     * @param cfgVersion Version.
-     * @param storageRevision Storage revision.
-     */
-    public Data(Map<String, Serializable> values, long cfgVersion, long storageRevision) {
-        this.values = values;
-        this.cfgVersion = cfgVersion;
+    public ConfigurationNotificationEventImpl(VIEW oldValue, VIEW newValue, long storageRevision) {
+        this.oldValue = oldValue;
+        this.newValue = newValue;
         this.storageRevision = storageRevision;
     }
 
-    /**
-     * Get values.
-     * @return Values.
-     */
-    public Map<String, Serializable> values() {
-        return values;
+    /** {@inheritDoc} */
+    @Override public @Nullable VIEW oldValue() {
+        return oldValue;
     }
 
-    /**
-     * Get version.
-     * @return version.
-     */
-    public long cfgVersion() {
-        return cfgVersion;
+    /** {@inheritDoc} */
+    @Override public @Nullable VIEW newValue() {
+        return newValue;
     }
 
-    /** */
-    public long storageRevision() {
+    /** {@inheritDoc} */
+    @Override public long storageRevision() {
         return storageRevision;
     }
 }

@@ -21,10 +21,14 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.internal.SuperRoot;
+import org.apache.ignite.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.Test;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,7 +76,7 @@ public class ConfigurationUtilTest {
     }
 
     /** */
-    @Config
+    @ConfigurationRoot(rootName = "root", storage = TestConfigurationStorage.class)
     public static class ParentConfigurationSchema {
         /** */
         @NamedConfigValue
@@ -235,6 +239,56 @@ public class ConfigurationUtilTest {
 
     /** */
     @Test
+    public void nodeToFlatMap() {
+        var parentNode = new ParentNode();
+
+        var parentSuperRoot = new SuperRoot(emptyMap(), Map.of(
+            ParentConfiguration.KEY,
+            parentNode
+        ));
+
+        assertEquals(
+            emptyMap(),
+            ConfigurationUtil.nodeToFlatMap(null, parentSuperRoot)
+        );
+
+        // No defaults in this test so everything must be initialized explicitly.
+        parentNode.changeElements(elements ->
+            elements.create("name", element ->
+                element.initChild(child ->
+                    child.initStr("foo")
+                )
+            )
+        );
+
+        assertEquals(
+            singletonMap("root.elements.name.child.str", "foo"),
+            ConfigurationUtil.nodeToFlatMap(null, parentSuperRoot)
+        );
+
+        assertEquals(
+            emptyMap(),
+            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(emptyMap(), singletonMap(
+                ParentConfiguration.KEY,
+                new ParentNode().changeElements(elements ->
+                    elements.delete("void")
+                )
+            )))
+        );
+
+        assertEquals(
+            singletonMap("root.elements.name.child.str", null),
+            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(emptyMap(), singletonMap(
+                ParentConfiguration.KEY,
+                new ParentNode().changeElements(elements ->
+                    elements.delete("name")
+                )
+            )))
+        );
+    }
+
+    /** */
+    @Test
     public void patch() {
         var originalRoot = new ParentNode().initElements(elements ->
             elements.create("name1", element ->
@@ -284,5 +338,31 @@ public class ConfigurationUtilTest {
         assertNotNull(expandedRoot.elements().get("name1"));
         assertNull(shrinkedRoot.elements().get("name1"));
         assertNotNull(shrinkedRoot.elements().get("name2"));
+    }
+
+    /** */
+    @Test
+    public void cleanupMatchingValues() {
+        var curParent = new ParentNode().initElements(elements -> elements
+            .create("missing", element -> {})
+            .create("match", element -> element.initChild(child -> child.initStr("match")))
+            .create("mismatch", element -> element.initChild(child -> child.initStr("foo")))
+        );
+
+        var newParent = new ParentNode().initElements(elements -> elements
+            .create("extra", element -> {})
+            .create("match", element -> element.initChild(child -> child.initStr("match")))
+            .create("mismatch", element -> element.initChild(child -> child.initStr("bar")))
+        );
+
+        ConfigurationUtil.cleanupMatchingValues(curParent, newParent);
+
+        // Old node stayed intact.
+        assertEquals("match", curParent.elements().get("match").child().str());
+        assertEquals("foo", curParent.elements().get("mismatch").child().str());
+
+        // New node was modified.
+        assertNull(newParent.elements().get("match").child().str());
+        assertEquals("bar", newParent.elements().get("mismatch").child().str());
     }
 }

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.configuration.sample.storage;
+package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.lang.annotation.Retention;
@@ -24,14 +24,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import org.apache.ignite.configuration.ConfigurationChangeException;
-import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.storage.Data;
+import org.apache.ignite.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
@@ -39,8 +38,9 @@ import org.junit.jupiter.api.Test;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.configuration.sample.storage.AConfiguration.KEY;
+import static org.apache.ignite.configuration.AConfiguration.KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -99,7 +99,8 @@ public class ConfigurationChangerTest {
             .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
             .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
 
-        final ConfigurationChanger changer = new ConfigurationChanger(KEY);
+        ConfigurationChanger changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        changer.addRootKey(KEY);
         changer.register(storage);
 
         changer.change(Collections.singletonMap(KEY, data)).get(1, SECONDS);
@@ -129,10 +130,12 @@ public class ConfigurationChangerTest {
                 .create("b", init -> init.initStrCfg("2"))
             );
 
-        final ConfigurationChanger changer1 = new ConfigurationChanger(KEY);
+        ConfigurationChanger changer1 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        changer1.addRootKey(KEY);
         changer1.register(storage);
 
-        final ConfigurationChanger changer2 = new ConfigurationChanger(KEY);
+        ConfigurationChanger changer2 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        changer2.addRootKey(KEY);
         changer2.register(storage);
 
         changer1.change(Collections.singletonMap(KEY, data1)).get(1, SECONDS);
@@ -171,10 +174,12 @@ public class ConfigurationChangerTest {
                 .create("b", init -> init.initStrCfg("2"))
             );
 
-        final ConfigurationChanger changer1 = new ConfigurationChanger(KEY);
+        ConfigurationChanger changer1 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        changer1.addRootKey(KEY);
         changer1.register(storage);
 
-        final ConfigurationChanger changer2 = new ConfigurationChanger(KEY);
+        ConfigurationChanger changer2 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        changer2.addRootKey(KEY);
         changer2.register(storage);
 
         changer1.change(Collections.singletonMap(KEY, data1)).get(1, SECONDS);
@@ -203,7 +208,8 @@ public class ConfigurationChangerTest {
 
         ANode data = new ANode().initChild(child -> child.initIntCfg(1));
 
-        final ConfigurationChanger changer = new ConfigurationChanger(KEY);
+        ConfigurationChanger changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        changer.addRootKey(KEY);
 
         storage.fail(true);
 
@@ -258,7 +264,7 @@ public class ConfigurationChangerTest {
 
     @Test
     public void defaultsOnInit() throws Exception {
-        var changer = new ConfigurationChanger();
+        var changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
 
         changer.addRootKey(DefaultsConfiguration.KEY);
 

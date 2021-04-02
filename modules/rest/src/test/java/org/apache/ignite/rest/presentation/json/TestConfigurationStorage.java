@@ -29,26 +29,21 @@ import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
 
 /** */
-public class TestConfigurationStorage implements ConfigurationStorage {
+class TestConfigurationStorage implements ConfigurationStorage {
     /** */
     private final Set<ConfigurationStorageListener> listeners = new HashSet<>();
 
     /** {@inheritDoc} */
     @Override public Data readAll() throws StorageException {
-        return new Data(Collections.emptyMap(), 0);
+        return new Data(Collections.emptyMap(), 0, 0);
     }
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long version) {
         for (ConfigurationStorageListener listener : listeners)
-            listener.onEntriesChanged(new Data(newValues, version + 1));
+            listener.onEntriesChanged(new Data(newValues, version + 1, 0));
 
         return CompletableFuture.completedFuture(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<String> keys() throws StorageException {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -59,5 +54,8 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     /** {@inheritDoc} */
     @Override public void removeListener(ConfigurationStorageListener listener) {
         listeners.remove(listener);
+    }
+
+    @Override public void notifyApplied(long storageRevision) {
     }
 }

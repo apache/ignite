@@ -18,103 +18,19 @@ package org.apache.ignite.configuration.processor.internal;
 
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.VariableElement;
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.configuration.internal.NamedListConfiguration;
 
 /**
  * Annotation processing utilities.
  */
 public class Utils {
+    /** */
+    private static final ClassName NAMED_LIST_CFG_CLASSNAME = ClassName.get("org.apache.ignite.configuration.internal", "NamedListConfiguration");
+
     /** Private constructor. */
     private Utils() {
-    }
-
-    /**
-     * Create constructor for
-     *
-     * @param fieldSpecs List of fields.
-     * @return Constructor method.
-     */
-    public static MethodSpec createConstructor(List<FieldSpec> fieldSpecs) {
-        final MethodSpec.Builder builder = MethodSpec.constructorBuilder();
-
-        for (FieldSpec field : fieldSpecs) {
-            builder.addParameter(field.type, field.name);
-            builder.addStatement("this.$L = $L", field.name, field.name);
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Create getters for fields.
-     *
-     * @param fieldSpecs List of fields.
-     * @return List of getter methods.
-     */
-    public static List<MethodSpec> createGetters(List<FieldSpec> fieldSpecs) {
-        return fieldSpecs.stream().map(field ->
-            MethodSpec.methodBuilder(field.name)
-                .returns(field.type)
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addStatement("return $L", field.name)
-                .build()).collect(Collectors.toList()
-        );
-    }
-
-    /**
-     * Create builder-style setters.
-     *
-     * @param fieldSpecs List of fields.
-     * @return List of setter methods.
-     */
-    public static List<MethodSpec> createBuildSetters(List<FieldSpec> fieldSpecs) {
-        return fieldSpecs.stream().map(field -> {
-            return MethodSpec.methodBuilder("with" + field.name)
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addStatement("this.$L = $L", field.name, field.name)
-                .build();
-        }).collect(Collectors.toList());
-    }
-
-    /**
-     * Create '{@code new SomeObject(arg1, arg2, ..., argN)}' code block.
-     *
-     * @param type Type of the new object.
-     * @param fieldSpecs List of arguments.
-     * @return New object code block.
-     */
-    public static CodeBlock newObject(TypeName type, List<VariableElement> fieldSpecs) {
-        String args = fieldSpecs.stream().map(f -> f.getSimpleName().toString()).collect(Collectors.joining(", "));
-        return CodeBlock.builder()
-            .add("new $T($L)", type, args)
-            .build();
-    }
-
-    /**
-     * Get class with parameters, boxing them if necessary.
-     *
-     * @param clz Generic class.
-     * @param types Generic parameters.
-     * @return Parameterized type.
-     */
-    public static ParameterizedTypeName getParameterized(ClassName clz, TypeName... types) {
-        types = Arrays.stream(types).map(t -> {
-            if (t.isPrimitive())
-                t = t.box();
-            return t;
-        }).toArray(TypeName[]::new);
-        return ParameterizedTypeName.get(clz, types);
     }
 
     /**
@@ -200,27 +116,10 @@ public class Utils {
         if (type instanceof ParameterizedTypeName) {
             ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) type;
 
-            if (parameterizedTypeName.rawType.equals(ClassName.get(NamedListConfiguration.class)))
+            if (parameterizedTypeName.rawType.equals(NAMED_LIST_CFG_CLASSNAME))
                 return true;
         }
         return false;
-    }
-
-    /**
-     * Get {@code DynamicConfiguration} inside of the named configuration.
-     *
-     * @param type Type name.
-     * @return {@link DynamicConfiguration} class name.
-     */
-    public static TypeName unwrapNamedListConfigurationClass(TypeName type) {
-        if (type instanceof ParameterizedTypeName) {
-            ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) type;
-
-            if (parameterizedTypeName.rawType.equals(ClassName.get(NamedListConfiguration.class)))
-                return parameterizedTypeName.typeArguments.get(1);
-        }
-
-        throw new ProcessorException(type + " is not a NamedListConfiguration class");
     }
 
     /**

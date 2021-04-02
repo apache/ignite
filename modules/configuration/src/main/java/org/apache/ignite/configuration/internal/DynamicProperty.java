@@ -18,16 +18,13 @@
 package org.apache.ignite.configuration.internal;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.concurrent.Future;
 import org.apache.ignite.configuration.ConfigurationChanger;
-import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationValue;
-import org.apache.ignite.configuration.PropertyListener;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
@@ -37,10 +34,7 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
 /**
  * Holder for property value. Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.
  */
-public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T> implements ConfigurationProperty<T, T>, ConfigurationValue<T> {
-    /** Listeners of property update. */
-    private final List<PropertyListener<T, T>> updateListeners = new ArrayList<>();
-
+public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T, T> implements ConfigurationValue<T> {
     /**
      * Constructor.
      * @param prefix Property prefix.
@@ -55,14 +49,6 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
         ConfigurationChanger changer
     ) {
         super(prefix, key, rootKey, changer);
-    }
-
-    /**
-     * Add change listener to this property.
-     * @param listener Property change listener.
-     */
-    public void addListener(PropertyListener<T, T> listener) {
-        updateListeners.add(listener);
     }
 
     /** {@inheritDoc} */

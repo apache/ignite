@@ -69,6 +69,11 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return map.size();
+    }
+
+    /** {@inheritDoc} */
     @Override public final NamedListChange<N, N> update(String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(valConsumer, "valConsumer");
 

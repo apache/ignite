@@ -17,14 +17,17 @@
 
 package org.apache.ignite.configuration.internal;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.tree.NamedListChange;
 import org.apache.ignite.configuration.tree.NamedListInit;
 import org.apache.ignite.configuration.tree.NamedListView;
@@ -32,10 +35,13 @@ import org.apache.ignite.configuration.tree.NamedListView;
 /**
  * Named configuration wrapper.
  */
-public class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE, INIT>
+public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE, INIT>
     extends DynamicConfiguration<NamedListView<VIEW>, NamedListInit<INIT>, NamedListChange<CHANGE, INIT>>
     implements NamedConfigurationTree<T, VIEW, CHANGE, INIT>
 {
+    /** Listeners of property update. */
+    private final List<ConfigurationNamedListListener<VIEW>> extendedListeners = new CopyOnWriteArrayList<>();
+
     /** Creator of named configuration. */
     private final BiFunction<List<String>, String, T> creator;
 
@@ -83,5 +89,22 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE
         }
 
         this.values = newValues;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, ConfigurationProperty<?, ?>> members() {
+        refreshValue();
+
+        return Collections.unmodifiableMap(values);
+    }
+
+    /** */
+    public List<ConfigurationNamedListListener<VIEW>> extendedListeners() {
+        return Collections.unmodifiableList(extendedListeners);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final void listen(ConfigurationNamedListListener<VIEW> listener) {
+        extendedListeners.add(listener);
     }
 }

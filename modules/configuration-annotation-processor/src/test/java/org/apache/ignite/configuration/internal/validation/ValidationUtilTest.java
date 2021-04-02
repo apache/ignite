@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.internal.SuperRoot;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
-import org.apache.ignite.configuration.sample.storage.TestConfigurationStorage;
+import org.apache.ignite.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.configuration.tree.NamedListView;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;

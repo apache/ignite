@@ -33,4 +33,9 @@ public interface NamedListView<T> {
      * @return Requested value or {@code null} if it's not found.
      */
     T get(String key);
+
+    /**
+     * @return Number of elements.
+     */
+    int size();
 }

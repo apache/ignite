@@ -17,19 +17,26 @@
 
 package org.apache.ignite.configuration.internal;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.ConfigurationChanger;
+import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.internal.util.KeyNotFoundException;
+import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 
 /**
  * Super class for dynamic configuration tree nodes. Has all common data and value retrieving algorithm in it.
  */
-public abstract class ConfigurationNode<VIEW> {
+abstract class ConfigurationNode<VIEW, CHANGE> implements ConfigurationProperty<VIEW, CHANGE> {
+    /** Listeners of property update. */
+    protected final List<ConfigurationListener<VIEW>> updateListeners = new CopyOnWriteArrayList<>();
+
     /** Full path to the current node. */
     protected final List<String> keys;
 
@@ -71,6 +78,16 @@ public abstract class ConfigurationNode<VIEW> {
         this.changer = changer;
 
         assert Objects.equals(rootKey.key(), keys.get(0));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void listen(ConfigurationListener<VIEW> listener) {
+        updateListeners.add(listener);
+    }
+
+    /** @return List of update listeners. */
+    public List<ConfigurationListener<VIEW>> listeners() {
+        return Collections.unmodifiableList(updateListeners);
     }
 
     /**

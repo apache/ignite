@@ -18,7 +18,8 @@
 package org.apache.ignite.configuration.sample;
 
 import org.apache.ignite.configuration.ConfigurationRegistry;
-import org.apache.ignite.configuration.sample.storage.TestConfigurationStorage;
+import org.apache.ignite.configuration.storage.TestConfigurationStorage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -31,13 +32,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Simple usage test of generated configuration schema.
  */
 public class UsageTest {
+    /** */
+    private final ConfigurationRegistry registry = new ConfigurationRegistry();
+
+    /** */
+    @AfterEach
+    public void after() {
+        registry.stop();
+    }
+
     /**
      * Test creation of configuration and calling configuration API methods.
      */
     @Test
     public void test() throws Exception {
-        var registry = new ConfigurationRegistry();
-
         registry.registerRootKey(LocalConfiguration.KEY);
 
         registry.registerStorage(new TestConfigurationStorage());
@@ -91,8 +99,6 @@ public class UsageTest {
         int joinTimeout = 10_000;
 
         long autoAdjustTimeout = 30_000L;
-
-        ConfigurationRegistry registry = new ConfigurationRegistry();
 
         registry.registerRootKey(NetworkConfiguration.KEY);
         registry.registerRootKey(LocalConfiguration.KEY);

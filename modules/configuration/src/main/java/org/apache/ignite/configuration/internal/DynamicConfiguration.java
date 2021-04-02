@@ -37,10 +37,11 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
 /**
  * This class represents configuration root or node.
  */
-public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends ConfigurationNode<VIEW> implements ConfigurationProperty<VIEW, CHANGE>, ConfigurationTree<VIEW, CHANGE> {
-
+public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends ConfigurationNode<VIEW, CHANGE>
+    implements ConfigurationTree<VIEW, CHANGE>
+{
     /** Configuration members (leaves and nodes). */
-    protected final Map<String, ConfigurationProperty<?, ?>> members = new HashMap<>();
+    private final Map<String, ConfigurationProperty<?, ?>> members = new HashMap<>();
 
     /**
      * Constructor.
@@ -118,7 +119,7 @@ public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends Configura
     }
 
     /** {@inheritDoc} */
-    @Override public final Map<String, ConfigurationProperty<?, ?>> members() {
+    @Override public Map<String, ConfigurationProperty<?, ?>> members() {
         return Collections.unmodifiableMap(members);
     }
 }

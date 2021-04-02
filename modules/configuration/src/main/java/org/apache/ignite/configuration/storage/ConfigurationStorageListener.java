@@ -19,6 +19,7 @@ package org.apache.ignite.configuration.storage;
 /**
  * Configuration storage listener for changes.
  */
+@FunctionalInterface
 public interface ConfigurationStorageListener {
     /**
      * Method called when entries in storage change.

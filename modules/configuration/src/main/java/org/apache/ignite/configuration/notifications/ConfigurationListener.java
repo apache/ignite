@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.configuration.notifications;
 
-import java.util.concurrent.Future;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
+import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Configuration value.
- * @param <VIEW> Type of the value.
+ * Configuration property change listener.
+ *
+ * @param <VIEW> VIEW type configuration.
  */
-public interface ConfigurationValue<VIEW> extends ConfigurationProperty<VIEW, VIEW> {
-
+@FunctionalInterface
+public interface ConfigurationListener<VIEW> {
     /**
-     * Update this configuration node value.
+     * Called on property value update.
      *
-     * @param change New value for the configuration. Must not be null.
-     * @returns Future that signifies end of the update operation. Can also be completed with
-     *      {@link ConfigurationValidationException} and {@link ConfigurationChangeException}.
+     * @param ctx Notification context.
+     * @return Future that signifies end of listener execution.
      */
-    Future<Void> update(VIEW change) throws ConfigurationValidationException;
+    @NotNull CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<VIEW> ctx);
 }
+

@@ -19,14 +19,17 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
 import org.apache.ignite.configuration.internal.RootKeyImpl;
@@ -42,13 +45,19 @@ import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.Validator;
 
+import static org.apache.ignite.configuration.internal.util.ConfigurationNotificationsUtil.notifyListeners;
+import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.innerNodeVisitor;
+
 /** */
 public class ConfigurationRegistry {
+    /** */
+    private static final System.Logger logger = System.getLogger(ConfigurationRegistry.class.getName());
+
     /** */
     private final Map<String, DynamicConfiguration<?, ?, ?>> configs = new HashMap<>();
 
     /** */
-    private final ConfigurationChanger changer = new ConfigurationChanger();
+    private final ConfigurationChanger changer = new ConfigurationChanger(this::notificator);
 
     {
         // Default vaildators implemented in current module.
@@ -61,8 +70,6 @@ public class ConfigurationRegistry {
         changer.addRootKey(rootKey);
 
         configs.put(rootKey.key(), (DynamicConfiguration<?, ?, ?>)rootKey.createPublicRoot(changer));
-
-        //TODO IGNITE-14180 link these two entities.
     }
 
     /** */
@@ -73,6 +80,11 @@ public class ConfigurationRegistry {
     /** */
     public void registerStorage(ConfigurationStorage configurationStorage) {
         changer.register(configurationStorage);
+    }
+
+    /** */
+    public void startStorageConfigurations(Class<? extends ConfigurationStorage> storageType) {
+        changer.initialize(storageType);
     }
 
     /** */
@@ -111,6 +123,43 @@ public class ConfigurationRegistry {
     /** */
     public CompletableFuture<?> change(List<String> path, ConfigurationSource changesSource, ConfigurationStorage storage) {
         return changer.changeX(path, changesSource, storage);
+    }
+
+    /** */
+    public void stop() {
+        changer.stop();
+    }
+
+    /** */
+    private @NotNull CompletableFuture<Void> notificator(SuperRoot oldSuperRoot, SuperRoot newSuperRoot, long storageRevision) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
+
+        newSuperRoot.traverseChildren(new ConfigurationVisitor<Void>() {
+            @Override public Void visitInnerNode(String key, InnerNode newRoot) {
+                InnerNode oldRoot = oldSuperRoot.traverseChild(key, innerNodeVisitor());
+
+                var cfg = (DynamicConfiguration<InnerNode, ?, ?>)configs.get(key);
+
+                assert oldRoot != null && cfg != null : key;
+
+                if (oldRoot != newRoot)
+                    notifyListeners(oldRoot, newRoot, cfg, storageRevision, futures);
+
+                return null;
+            }
+        });
+
+        // Map futures into a "suppressed" future that won't throw any exceptions on completion.
+        Function<CompletableFuture<?>, CompletableFuture<?>> mapping = fut -> fut.handle((res, throwable) -> {
+            if (throwable != null)
+                logger.log(System.Logger.Level.ERROR, "Failed to notify configuration listener.", throwable);
+
+            return res;
+        });
+
+        CompletableFuture[] resultFutures = futures.stream().map(mapping).toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(resultFutures);
     }
 
     /**

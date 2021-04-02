@@ -15,31 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.configuration.notifications;
 
-import org.apache.ignite.configuration.notifications.ConfigurationListener;
+import org.apache.ignite.configuration.ConfigurationProperty;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Base interface for configuration.
- * @param <VIEW> Type of the value.
- * @param <CHANGE> Type of the object that changes the value of configuration.
+ * Event object propogated on configuration change. Passed to listeners after configuration changes are applied.
+ *
+ * @see ConfigurationProperty#listen(ConfigurationListener)
+ * @see ConfigurationListener
+ * @see ConfigurationNotificationEvent
  */
-public interface ConfigurationProperty<VIEW, CHANGE> {
+public interface ConfigurationNotificationEvent<VIEW> {
     /**
-     * Get key of this node.
-     * @return Key.
+     * Previous value of the updated configuration.
      */
-    String key();
+    @Nullable VIEW oldValue();
 
     /**
-     * Get value of this property.
-     * @return Value of this property.
+     * Updated value of the configuration.
      */
-    VIEW value();
+    @Nullable VIEW newValue();
 
     /**
-     * Add configuration values listener.
-     * @param listener Listener.
+     * Monotonously increasing counter, linked to the specific storage for current configuration values. Gives you a
+     * unique change identifier inside a specific configuration storage.
      */
-    void listen(ConfigurationListener<VIEW> listener);
+    long storageRevision();
 }

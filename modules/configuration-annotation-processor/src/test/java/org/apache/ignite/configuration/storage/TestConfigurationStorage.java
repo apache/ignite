@@ -14,21 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.configuration.sample.storage;
+package org.apache.ignite.configuration.storage;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
-import org.apache.ignite.configuration.storage.ConfigurationStorageListener;
-import org.apache.ignite.configuration.storage.Data;
-import org.apache.ignite.configuration.storage.StorageException;
 
 /**
  * Test configuration storage.
@@ -59,11 +54,11 @@ public class TestConfigurationStorage implements ConfigurationStorage {
         if (fail)
             throw new StorageException("Failed to read data");
 
-        return new Data(new HashMap<>(map), version.get());
+        return new Data(new HashMap<>(map), version.get(), 0);
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long sentVersion) throws StorageException {
+    @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long sentVersion) {
         if (fail)
             return CompletableFuture.failedFuture(new StorageException("Failed to write data"));
 
@@ -79,17 +74,9 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
         version.incrementAndGet();
 
-        listeners.forEach(listener -> listener.onEntriesChanged(new Data(newValues, version.get())));
+        listeners.forEach(listener -> listener.onEntriesChanged(new Data(newValues, version.get(), 0)));
 
         return CompletableFuture.completedFuture(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized Set<String> keys() throws StorageException {
-        if (fail)
-            throw new StorageException("Failed to get keys");
-
-        return map.keySet();
     }
 
     /** {@inheritDoc} */
@@ -100,5 +87,9 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     /** {@inheritDoc} */
     @Override public void removeListener(ConfigurationStorageListener listener) {
         listeners.remove(listener);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void notifyApplied(long storageRevision) {
     }
 }

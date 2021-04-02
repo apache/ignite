@@ -50,19 +50,12 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypesException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import org.apache.ignite.configuration.ConfigurationChanger;
-import org.apache.ignite.configuration.ConfigurationRegistry;
-import org.apache.ignite.configuration.ConfigurationTree;
-import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.NamedConfigurationTree;
-import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
-import org.apache.ignite.configuration.internal.DynamicProperty;
 import org.apache.ignite.configuration.internal.NamedListConfiguration;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
@@ -91,6 +84,9 @@ public class Processor extends AbstractProcessor {
 
     /** Inherit doc javadoc. */
     private static final String INHERIT_DOC = "{@inheritDoc}";
+
+    /** */
+    private static final ClassName ROOT_KEY_CLASSNAME = ClassName.get("org.apache.ignite.configuration", "RootKey");
 
     /**
      * Constructor.
@@ -302,14 +298,17 @@ public class Processor extends AbstractProcessor {
         ClassName schemaClassName
     ) {
         ClassName viewClassName = Utils.getViewName(schemaClassName);
-        ParameterizedTypeName fieldTypeName = ParameterizedTypeName.get(ClassName.get(RootKey.class), configInterface, viewClassName);
+
+        ParameterizedTypeName fieldTypeName = ParameterizedTypeName.get(ROOT_KEY_CLASSNAME, configInterface, viewClassName);
 
         ClassName nodeClassName = Utils.getNodeName(schemaClassName);
+
+        ClassName cfgRegistryClassName = ClassName.get("org.apache.ignite.configuration", "ConfigurationRegistry");
 
         FieldSpec keyField = FieldSpec.builder(fieldTypeName, "KEY", PUBLIC, STATIC, FINAL)
             .initializer(
                 "$T.newRootKey($S, $T.class, $T::new, $T::new)",
-                ConfigurationRegistry.class, configDesc.getName(), storageType, nodeClassName,
+                cfgRegistryClassName, configDesc.getName(), storageType, nodeClassName,
                 Utils.getConfigurationName(schemaClassName)
             )
             .build();
@@ -394,8 +393,10 @@ public class Processor extends AbstractProcessor {
 
         final Value valueAnnotation = field.getAnnotation(Value.class);
         if (valueAnnotation != null) {
-            ClassName dynPropClass = ClassName.get(DynamicProperty.class);
-            ClassName confValueClass = ClassName.get(ConfigurationValue.class);
+            // It is necessary to use class names without loading classes so that we won't
+            // accidentally get NoClassDefFoundError
+            ClassName dynPropClass = ClassName.get("org.apache.ignite.configuration.internal", "DynamicProperty");
+            ClassName confValueClass = ClassName.get("org.apache.ignite.configuration", "ConfigurationValue");
 
             TypeName genericType = baseType;
 
@@ -495,8 +496,8 @@ public class Processor extends AbstractProcessor {
         }
 
         builder
-            .addParameter(ParameterizedTypeName.get(ClassName.get(RootKey.class), WILDCARD, WILDCARD), "rootKey")
-            .addParameter(ConfigurationChanger.class, "changer");
+            .addParameter(ParameterizedTypeName.get(ROOT_KEY_CLASSNAME, WILDCARD, WILDCARD), "rootKey")
+            .addParameter(ClassName.get("org.apache.ignite.configuration", "ConfigurationChanger"), "changer");
 
         if (isRoot)
             builder.addStatement("super($T.emptyList(), $S, rootKey, changer)", Collections.class, configName);
@@ -528,12 +529,12 @@ public class Processor extends AbstractProcessor {
         final ClassName initClassName = Utils.getInitName(schemaClassName);
         final ClassName changeClassName = Utils.getChangeName(schemaClassName);
 
-        ClassName dynConfClass = ClassName.get(DynamicConfiguration.class);
+        ClassName dynConfClass = ClassName.get("org.apache.ignite.configuration.internal", "DynamicConfiguration");
         TypeName dynConfViewClassType = ParameterizedTypeName.get(dynConfClass, viewClassTypeName, initClassName, changeClassName);
 
         configurationClassBuilder.superclass(dynConfViewClassType);
 
-        ClassName confTreeInterface = ClassName.get(ConfigurationTree.class);
+        ClassName confTreeInterface = ClassName.get("org.apache.ignite.configuration", "ConfigurationTree");
         TypeName confTreeParameterized = ParameterizedTypeName.get(confTreeInterface, viewClassTypeName, changeClassName);
 
         configurationInterfaceBuilder.addSuperinterface(confTreeParameterized);
