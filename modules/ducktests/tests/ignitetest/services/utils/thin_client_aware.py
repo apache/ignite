@@ -78,7 +78,7 @@ class ThinClientAwareService(BackgroundThreadService, IgnitePathAware, metaclass
         """
         Starts in async way.
         """
-        super().start(clean=clean)
+        super().start()
 
     def start(self, clean=True):
         self.start_async(clean=clean)
