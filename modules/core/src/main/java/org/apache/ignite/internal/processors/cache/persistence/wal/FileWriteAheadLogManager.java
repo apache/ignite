@@ -54,6 +54,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -682,8 +683,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.interrupt();
 
         try {
-            if (archiver != null)
+            if (archiver != null) {
                 archiver.shutdown();
+
+                if (dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping()) {
+                    try {
+                        long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
+                        long to = segmentAware.curAbsWalIdx();
+
+                        for (long idx = from; idx <= to; idx++)
+                            archiver.archiveSegment(idx);
+                    }
+                    catch (StorageException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }
 
             if (compressor != null)
                 compressor.shutdown();

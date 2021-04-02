@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,9 +70,19 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean specificConsistentId;
 
-    @Parameterized.Parameters(name = "specificConsistentId={0}")
+    @Parameterized.Parameter(1)
+    public WALMode walMode;
+
+    @Parameterized.Parameters(name = "specificConsistentId={0},walMode={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{true}, {false}});
+        return Arrays.asList(new Object[][] {
+            {true, WALMode.FSYNC},
+            {false, WALMode.FSYNC},
+            {true, WALMode.LOG_ONLY},
+            {false, WALMode.LOG_ONLY},
+            {true, WALMode.BACKGROUND},
+            {false, WALMode.BACKGROUND}
+        });
     }
 
     /** Keys count. */
@@ -119,9 +130,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        TestCDCConsumer lsnr = new TestCDCConsumer();
+        TestCDCConsumer cnsmr = new TestCDCConsumer();
 
-        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -131,36 +142,34 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         addData(cache, 0, KEYS_CNT * 2);
         addData(txCache, 0, KEYS_CNT * 2);
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
-        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, cnsmr));
 
         fut.cancel();
 
-        List<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
         assertEquals(KEYS_CNT * 2, keys.size());
 
         for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
 
-        assertTrue(lsnr.stoped);
+        assertTrue(cnsmr.stoped);
 
         removeData(cache, 0, KEYS_CNT);
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr));
 
         rmvFut.cancel();
 
-        assertTrue(lsnr.stoped);
-
-        //TODO: assert empty CDC dir.
+        assertTrue(cnsmr.stoped);
     }
 
     /** */
     @Test
-    public void testReadOnStop() throws Exception {
+    public void testReadBeforeStop() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
@@ -171,7 +180,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         CountDownLatch onChangeLatch1 = new CountDownLatch(1);
         CountDownLatch onChangeLatch2 = new CountDownLatch(1);
 
-        TestCDCConsumer lsnr = new TestCDCConsumer() {
+        TestCDCConsumer cnsmr = new TestCDCConsumer() {
             @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
                 try {
                     startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
@@ -197,9 +206,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
+        runAsync(cdc);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -216,15 +225,75 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
         onChangeLatch2.countDown();
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr));
-        assertTrue(lsnr.stoped);
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+        assertTrue(cnsmr.stoped);
 
-        List<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
         assertEquals(KEYS_CNT, keys.size());
 
         for (int i = 0; i < KEYS_CNT; i++)
             assertTrue(keys.contains(i));
+    }
+
+    /** */
+    @Test
+    public void testReadAfterNodeStop() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        TestCDCConsumer cnsmr = new TestCDCConsumer();
+
+        // Restart node several time to make sure we can continue after gracefull shutdown.
+        for (int restarts = 0; restarts < 2; restarts++) {
+            Ignite ign = startGrid(cfg);
+
+            ign.cluster().state(ACTIVE);
+
+            long startCnt = cnt.get();
+
+            runAsync(() -> {
+                IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+                while (true) {
+                    byte[] bytes = new byte[1024];
+
+                    ThreadLocalRandom.current().nextBytes(bytes);
+
+                    int key = cnt.getAndIncrement();
+
+                    try {
+                        cache.put(key, new User("John Connor " + key, 42 + key, bytes));
+                    }
+                    catch (Exception e) {
+                        cnt.decrementAndGet();
+
+                        throw e;
+                    }
+                }
+            });
+
+            waitForCondition(() -> cnt.get() - startCnt > KEYS_CNT, getTestTimeout());
+
+            ign.close();
+
+            IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
+
+            IgniteInternalFuture<?> fut = runAsync(cdc);
+
+            assertTrue(waitForSize(cnt.get(), DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+
+            fut.cancel();
+
+            List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+
+            assertTrue(cnt.get() <= keys.size());
+
+            for (int i = 0; i < cnt.get(); i++)
+                assertTrue(keys.contains(i));
+        }
+
     }
 
     /** Simplest CDC test. */
@@ -236,9 +305,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        TestCDCConsumer lsnr = new TestCDCConsumer();
+        TestCDCConsumer cnsmr = new TestCDCConsumer();
 
-        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
         IgniteInternalFuture<?> runFut = runAsync(cdc);
 
@@ -252,12 +321,12 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
-                assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
-                assertTrue(waitForSize(2, TX_CACHE_NAME, UPDATE, lsnr));
+                assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+                assertTrue(waitForSize(2, TX_CACHE_NAME, UPDATE, cnsmr));
 
                 runFut.cancel();
 
-                assertTrue(lsnr.stoped);
+                assertTrue(cnsmr.stoped);
 
                 latch.countDown();
                 latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
@@ -275,17 +344,17 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         addData(cache, KEYS_CNT, KEYS_CNT * 2);
         addData(txCache, KEYS_CNT, KEYS_CNT * 2);
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr));
-        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, cnsmr));
 
         restartFut.cancel();
 
-        List<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
 
-        assertTrue(lsnr.stoped);
+        assertTrue(cnsmr.stoped);
     }
 
     /** */
@@ -300,14 +369,14 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> addDataFut = runAsync(() -> addData(cache, 0, KEYS_CNT));
 
-        TestCDCConsumer lsnr1 = new TestCDCConsumer();
-        TestCDCConsumer lsnr2 = new TestCDCConsumer();
+        TestCDCConsumer cnsmr1 = new TestCDCConsumer();
+        TestCDCConsumer cnsmr2 = new TestCDCConsumer();
 
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(lsnr1));
-        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(lsnr2));
+        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(cnsmr1));
+        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(cnsmr2));
 
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
 
@@ -319,29 +388,29 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         addDataFut.get(getTestTimeout());
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, lsnr1, lsnr2));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr1, cnsmr2));
 
-        assertFalse(lsnr1.stoped);
-        assertFalse(lsnr2.stoped);
+        assertFalse(cnsmr1.stoped);
+        assertFalse(cnsmr2.stoped);
 
         fut1.cancel();
         fut2.cancel();
 
-        assertTrue(lsnr1.stoped);
-        assertTrue(lsnr2.stoped);
+        assertTrue(cnsmr1.stoped);
+        assertTrue(cnsmr2.stoped);
 
         removeData(cache, 0, KEYS_CNT * 2);
 
         IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
         IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr1, lsnr2));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr1, cnsmr2));
 
         rmvFut1.cancel();
         rmvFut2.cancel();
 
-        assertTrue(lsnr1.stoped);
-        assertTrue(lsnr2.stoped);
+        assertTrue(cnsmr1.stoped);
+        assertTrue(cnsmr2.stoped);
     }
 
     /** */
@@ -349,11 +418,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     public void testOneOfConcurrentRunsFail() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        TestCDCConsumer lsnr1 = new TestCDCConsumer();
-        TestCDCConsumer lsnr2 = new TestCDCConsumer();
+        TestCDCConsumer cnsmr1 = new TestCDCConsumer();
+        TestCDCConsumer cnsmr2 = new TestCDCConsumer();
 
-        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(lsnr1)));
-        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(lsnr2)));
+        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(cnsmr1)));
+        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(cnsmr2)));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -364,7 +433,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             fut2.cancel();
 
-            assertTrue(lsnr2.stoped);
+            assertTrue(cnsmr2.stoped);
         }
         else {
             assertNotNull(fut2.error());
@@ -373,7 +442,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             fut1.cancel();
 
-            assertTrue(lsnr1.stoped);
+            assertTrue(cnsmr1.stoped);
         }
     }
 
@@ -391,26 +460,26 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         addData(cache, 0, KEYS_CNT);
 
         for (int i = 0; i < 3; i++) {
-            TestCDCConsumer lsnr = new TestCDCConsumer() {
+            TestCDCConsumer cnsmr = new TestCDCConsumer() {
                 @Override protected boolean commit() {
                     return false;
                 }
             };
 
-            IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+            IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
-            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
 
             fut.cancel();
 
-            assertTrue(lsnr.stoped);
+            assertTrue(cnsmr.stoped);
         }
 
         final int[] expSz = {KEYS_CNT};
 
-        TestCDCConsumer lsnr = new TestCDCConsumer() {
+        TestCDCConsumer cnsmr = new TestCDCConsumer() {
             @Override protected boolean commit() {
                 // Commiting on the half of the data.
                 List<Integer> keys = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
@@ -430,32 +499,37 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
         fut.cancel();
 
-        assertTrue(lsnr.stoped);
+        assertTrue(cnsmr.stoped);
 
         removeData(cache, 0, KEYS_CNT);
 
         fut = runAsync(cdc);
 
-        waitForSize(expSz[0], DEFAULT_CACHE_NAME, UPDATE, lsnr);
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, lsnr);
+        waitForSize(expSz[0], DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
 
         fut.cancel();
 
-        assertTrue(lsnr.stoped);
+        assertTrue(cnsmr.stoped);
     }
 
     /** */
-    private boolean waitForSize(int expSz, String cacheName, ChangeEventType evtType, TestCDCConsumer... lsnrs) throws IgniteInterruptedCheckedException {
+    private boolean waitForSize(int expSz, String cacheName, ChangeEventType evtType, TestCDCConsumer... cnsmrs)
+        throws IgniteInterruptedCheckedException {
         return waitForCondition(
-            () -> Arrays.stream(lsnrs).mapToInt(l -> F.size(l.keys(evtType, cacheId(cacheName)))).sum() >= expSz,
+            () -> {
+                int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
+                System.out.println("CDCSelfTest.waitForSize - " + sum);
+                return sum >= expSz;
+            },
             getTestTimeout());
     }
 
@@ -496,7 +570,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void stop() {
-            System.out.println("TestCDCConsumer.stop");
             stoped = true;
         }
 
@@ -564,10 +637,10 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer lsnr) {
+    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer cnsmr) {
         CaptureDataChangeConfiguration cdcCfg = new CaptureDataChangeConfiguration();
 
-        cdcCfg.setConsumer(lsnr);
+        cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(false);
 
         return cdcCfg;
