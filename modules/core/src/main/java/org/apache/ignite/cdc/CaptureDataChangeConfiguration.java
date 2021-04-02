@@ -29,7 +29,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public class CaptureDataChangeConfiguration {
     /** Capture Data Change consumer. */
-    private CaptureDataChangeConsumer<?, ?> consumer;
+    private CaptureDataChangeConsumer consumer;
 
     /** Keep binary flag.<br>Default value {@code true}. */
     private boolean keepBinary = true;
@@ -49,12 +49,12 @@ public class CaptureDataChangeConfiguration {
     private long sleepBeforeCheckNewSegmentsTimeout = 1000;
 
     /** @return CDC consumer. */
-    public CaptureDataChangeConsumer<?, ?> getConsumer() {
+    public CaptureDataChangeConsumer getConsumer() {
         return consumer;
     }
 
     /** @param consumer CDC consumer. */
-    public void setConsumer(CaptureDataChangeConsumer<?, ?> consumer) {
+    public void setConsumer(CaptureDataChangeConsumer consumer) {
         this.consumer = consumer;
     }
 

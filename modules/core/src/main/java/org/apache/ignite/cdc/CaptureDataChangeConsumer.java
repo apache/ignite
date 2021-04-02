@@ -41,7 +41,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see ChangeEventOrder
  */
 @IgniteExperimental
-public interface CaptureDataChangeConsumer<K, V> {
+public interface CaptureDataChangeConsumer {
     /**
      * Starts the consumer.
      *
@@ -58,7 +58,7 @@ public interface CaptureDataChangeConsumer<K, V> {
      * @param events Entry change events.
      * @return {@code True} if current offset should be saved on the disk to continue from it in case any failures or restart.
      */
-    boolean onChange(Iterator<ChangeEvent<K, V>> events);
+    boolean onChange(Iterator<ChangeEvent> events);
 
     /**
      * Stops the consumer.

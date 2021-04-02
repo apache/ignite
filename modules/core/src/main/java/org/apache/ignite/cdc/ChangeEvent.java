@@ -26,21 +26,19 @@ import org.apache.ignite.lang.IgniteExperimental;
  * Event of single entry change.
  * Instance presents new value of modified entry.
  *
- * @param <K> Key type.
- * @param <V> Value type.
  * @see IgniteCDC
  * @see CaptureDataChangeConsumer
  */
 @IgniteExperimental
-public class ChangeEvent<K, V> implements Serializable {
+public class ChangeEvent implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    private final K key;
+    private final Object key;
 
     /** Value. */
-    private final V val;
+    private final Object val;
 
     /** {@code True} if changes made on primary node. */
     private final boolean primary;
@@ -70,7 +68,7 @@ public class ChangeEvent<K, V> implements Serializable {
      * @param cacheId Cache id.
      * @param expireTime Entry expire time.
      */
-    public ChangeEvent(K key, V val, boolean primary, int part,
+    public ChangeEvent(Object key, Object val, boolean primary, int part,
         ChangeEventOrder ord, ChangeEventType op, int cacheId, long expireTime) {
         this.key = key;
         this.val = val;
@@ -85,14 +83,14 @@ public class ChangeEvent<K, V> implements Serializable {
     /**
      * @return Key for the changed entry.
      */
-    public K key() {
+    public Object key() {
         return key;
     }
 
     /**
      * @return Value for the changed entry.
      */
-    public V value() {
+    public Object value() {
         return val;
     }
 

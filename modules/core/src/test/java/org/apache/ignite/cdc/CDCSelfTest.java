@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -184,7 +183,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                 super.start(configuration, log);
             }
 
-            @Override public boolean onChange(Iterator<ChangeEvent<Integer, User>> events) {
+            @Override public boolean onChange(Iterator<ChangeEvent> events) {
                 onChangeLatch1.countDown();
 
                 try {
@@ -307,8 +306,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(lsnr1, Objects.toString(ign1.localNode().consistentId()), 0));
-        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(lsnr2, Objects.toString(ign2.localNode().consistentId()), 1));
+        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(lsnr1));
+        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(lsnr2));
 
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
 
@@ -483,7 +482,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestCDCConsumer implements CaptureDataChangeConsumer<Integer, User> {
+    private static class TestCDCConsumer implements CaptureDataChangeConsumer {
         /** Keys */
         private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
@@ -502,17 +501,17 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterator<ChangeEvent<Integer, User>> events) {
+        @Override public boolean onChange(Iterator<ChangeEvent> events) {
             events.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;
 
                 cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
-                    k -> new ArrayList<>()).add(evt.key());
+                    k -> new ArrayList<>()).add((Integer)evt.key());
 
                 if (evt.operation() == UPDATE) {
-                    assertTrue(evt.value().getName().startsWith("John Connor"));
-                    assertTrue(evt.value().getAge() >= 42);
+                    assertTrue(((User)evt.value()).getName().startsWith("John Connor"));
+                    assertTrue(((User)evt.value()).getAge() >= 42);
                 }
             });
 
@@ -565,12 +564,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer<?, ?> lsnr) {
-        return cdcConfig(lsnr, null, -1);
-    }
-
-    /** */
-    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer<?, ?> lsnr, String consistentId, int idx) {
+    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer lsnr) {
         CaptureDataChangeConfiguration cdcCfg = new CaptureDataChangeConfiguration();
 
         cdcCfg.setConsumer(lsnr);
