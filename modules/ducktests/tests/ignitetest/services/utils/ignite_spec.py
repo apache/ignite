@@ -92,7 +92,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Get home directory for current spec.
         """
-        project = self.project if project is None else project
+        project = project if project else self.project
         version = version if version else self.version
         return get_home_dir(self.path_aware.install_root, project, version)
 
