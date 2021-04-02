@@ -1599,7 +1599,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl) delegate;
 
             try {
-                IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().<K, V>publicJCache(context().name());
+                IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().publicJCache(context().name());
 
                 if (proxy != null) {
                     proxyImpl.opportunisticRestart(proxy.internalProxy());

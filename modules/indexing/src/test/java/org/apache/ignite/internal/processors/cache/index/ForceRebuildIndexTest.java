@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.StopRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        IgniteH2IndexingEx.clean();
+        IndexesRebuildTaskEx.clean();
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -57,7 +57,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IgniteH2IndexingEx.clean();
+        IndexesRebuildTaskEx.clean();
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -83,14 +83,14 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSequentialForceRebuildIndexes() throws Exception {
-        GridQueryProcessor.idxCls = IgniteH2IndexingEx.class;
+        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
 
         IgniteEx n = prepareCluster(100);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        IgniteH2IndexingEx.cacheRowConsumer.put(cacheCtx.name(), stopRebuildIdxConsumer);
+        IndexesRebuildTaskEx.cacheRowConsumer.put(cacheCtx.name(), stopRebuildIdxConsumer);
 
         // The forced rebuild has begun - no rejected.
         assertEqualsCollections(emptyList(), forceRebuildIndexes(n, cacheCtx));
@@ -140,10 +140,10 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
         stopAllGrids();
         deleteIndexBin(n.context().igniteInstanceName());
 
-        GridQueryProcessor.idxCls = IgniteH2IndexingEx.class;
+        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        IgniteH2IndexingEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
+        IndexesRebuildTaskEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
 
         n = startGrid(0);
         n.cluster().state(ACTIVE);
