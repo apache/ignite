@@ -94,13 +94,13 @@ class ThinClientTest(IgniteTest):
         # server_port = 10800
         thin_client_connection = ignite.nodes[0].account.hostname + ":" + 10800
 
-        static_clients = ThinClientService(self.test_context, server_configuration,
+        static_clients = IgniteService(self.test_context, server_configuration,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=static_clients_num,
                                            params={"cache_name": self.CACHE_NAME, "entry_num": self.ENTRY_NUM,
                                                    # "server_address": server_address, "port": server_port,
                                                    "thin_client_connection": thin_client_connection,
-                                                   "cache_mode": cache_mode, "cache_atomicity_mode": cache_atomicity_mode,
+                                                   # "cache_mode": cache_mode, "cache_atomicity_mode": cache_atomicity_mode,
                                                    "backups": backups},
                                            startup_timeout_sec=180)
 
