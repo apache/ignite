@@ -143,7 +143,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         cache.put(keys.get(2), new TestVal(keys.get(2)));
         ops.add(new T2<>(keys.get(2), op));
 
-        assertCountersSame(PARTITION_ID, false);
+        assertCountersSame(PARTITION_ID, false, DEFAULT_CACHE_NAME);
 
         cache.remove(keys.get(2));
         ops.add(new T2<>(keys.get(2), GridCacheOperation.DELETE));
@@ -154,7 +154,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         cache.remove(keys.get(0));
         ops.add(new T2<>(keys.get(0), GridCacheOperation.DELETE));
 
-        assertCountersSame(PARTITION_ID, false);
+        assertCountersSame(PARTITION_ID, false, DEFAULT_CACHE_NAME);
 
         for (Ignite ignite : G.allGrids()) {
             if (ignite.configuration().isClientMode())
@@ -407,7 +407,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 
     /**
