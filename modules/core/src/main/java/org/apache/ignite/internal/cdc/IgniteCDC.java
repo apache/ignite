@@ -272,7 +272,7 @@ public class IgniteCDC implements Runnable {
     }
 
     /** Searches required directories. */
-    private void init() throws IOException {
+    private void init() throws IOException, IgniteCheckedException {
         String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
         Files.createDirectories(cdcDir.resolve(STATE_DIR));

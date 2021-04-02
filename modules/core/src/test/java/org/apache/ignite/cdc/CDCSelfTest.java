@@ -173,7 +173,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         CountDownLatch onChangeLatch2 = new CountDownLatch(1);
 
         TestCDCConsumer lsnr = new TestCDCConsumer() {
-            @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+            @Override public void start(IgniteConfiguration configuration, MetricRegistry mreg, IgniteLogger log) {
                 try {
                     startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
                 }
@@ -181,7 +181,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                     throw new RuntimeException(e);
                 }
 
-                super.start(configuration, log);
+                super.start(configuration, mreg, log);
             }
 
             @Override public boolean onChange(Iterator<ChangeEvent> events) {
