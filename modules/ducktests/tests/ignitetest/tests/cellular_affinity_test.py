@@ -32,7 +32,7 @@ from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 @constructible

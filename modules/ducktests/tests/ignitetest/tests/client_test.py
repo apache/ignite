@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 # pylint: disable=W0223

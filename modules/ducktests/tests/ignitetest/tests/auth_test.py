@@ -26,7 +26,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 WRONG_PASSWORD = "wrong_password"
 TEST_USERNAME = "admin"

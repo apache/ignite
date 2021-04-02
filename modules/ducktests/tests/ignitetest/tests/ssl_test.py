@@ -25,7 +25,7 @@ from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_K
     DEFAULT_ADMIN_KEYSTORE
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
 # pylint: disable=W0223

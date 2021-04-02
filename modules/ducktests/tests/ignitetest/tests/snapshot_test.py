@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
 # pylint: disable=W0223

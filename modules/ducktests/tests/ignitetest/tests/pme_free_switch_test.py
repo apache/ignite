@@ -31,7 +31,7 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_ignite
 from ignitetest.utils import ignite_versions, cluster, ignore_if
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, V_2_8_0, IgniteVersion, LATEST
+from ignitetest.utils.version import DEV_BRANCH, V_2_8_0, IgniteVersion
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 
 

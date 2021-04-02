@@ -29,7 +29,7 @@ from ignitetest.tests.rebalance import preload_data, await_rebalance_start, awai
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
 @constructible

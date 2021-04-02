@@ -34,7 +34,7 @@ from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, ignore_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
