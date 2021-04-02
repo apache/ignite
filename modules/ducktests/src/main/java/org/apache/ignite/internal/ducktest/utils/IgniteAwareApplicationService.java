@@ -63,9 +63,8 @@ public class IgniteAwareApplicationService {
 
         String connStr = jsonNode.get("thin_client_connection").asText();
 
-        if (connStr != null && !connStr.isEmpty()) {
+        if (connStr != null && !connStr.isEmpty())
             app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
-        }
 
         if (startIgnite) {
             log.info("Starting Ignite node...");

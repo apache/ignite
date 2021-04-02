@@ -32,10 +32,7 @@ public class ThinClientSelfTest extends IgniteAwareApplication {
     @Override protected void run(JsonNode jsonNode) throws Exception {
         markInitialized();
 
-        ClientCacheConfiguration cfg = new ClientCacheConfiguration();
-        cfg.setName("testCache");
-
-        ClientCache<Integer, Integer> cache = client.getOrCreateCache(cfg);
+        ClientCache<Integer, Integer> cache = client.getOrCreateCache("testCache");
 
         cache.put(0, 0);
 

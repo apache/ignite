@@ -35,39 +35,30 @@ class ThinClientTest(IgniteTest):
     static_clients - the number of permanently employed clients.
     """
 
-    CACHE_NAME = "think_client_test_cache"
-    ENTRY_NUM = 10
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTest"
 
     """
     Tests services implementations
     """
 
-    @cluster(num_nodes=3)
+    @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
-    @parametrize(num_nodes=3, static_clients_num=1)
-    def test_replicated_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
-        backups = 2
-        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-                                   "REPLICATED", "ATOMIC", backups)
-
-    def start_fill_cache_stop(self, ignite_version, num_nodes, static_clients_num, cache_mode, cache_atomicity_mode,
-                              backups):
+    @parametrize(num_nodes=2, clients_num=1)
+    def test_replicated_atomic_cache(self, ignite_version, num_nodes, clients_num):
         """
         Test that thin client can connect, create, configure  and use cache
         """
-
-        servers_count = num_nodes - static_clients_num
+        servers_count = num_nodes - clients_num
 
         server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[])
 
         ignite = IgniteService(self.test_context, server_configuration, servers_count, startup_timeout_sec=180)
 
-        thin_client_connection = ignite.nodes[0].account.hostname + ":" + "10800"
+        thin_client_connection = ignite.nodes[0].account.hostname + ":10800"
 
         static_clients = IgniteApplicationService(self.test_context, server_configuration,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                           num_nodes=static_clients_num,
+                                           num_nodes=clients_num,
                                            params={"thin_client_connection": thin_client_connection},
                                            start_ignite = False,
                                            startup_timeout_sec=180)
