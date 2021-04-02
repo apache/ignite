@@ -131,6 +131,12 @@ public class IgniteCDC implements Runnable {
     /** Save state to start from. */
     private WALPointer initState;
 
+    /** Stoped flag. */
+    private volatile boolean stoped;
+
+    /** Owner thread. */
+    private volatile Thread owner;
+
     /** Previous segments. */
     private final List<Path> prevSegments = new ArrayList<>();
 
@@ -159,6 +165,13 @@ public class IgniteCDC implements Runnable {
 
     /** Runs CDC. */
     @Override public void run() {
+        synchronized (this) {
+            if (stoped)
+                return;
+
+            owner = Thread.currentThread();
+        }
+
         try {
             runX();
         }
@@ -214,7 +227,7 @@ public class IgniteCDC implements Runnable {
             consumer.start(cfg, log);
 
             try {
-                consumeWalSegmentsForever();
+                consumeWalSegmentsUntilStoped();
             }
             finally {
                 consumer.stop();
@@ -244,14 +257,14 @@ public class IgniteCDC implements Runnable {
         }
     }
 
-    /** Waits and consumes new WAL segments infinitely. */
-    public void consumeWalSegmentsForever() {
+    /** Waits and consumes new WAL segments until stoped. */
+    public void consumeWalSegmentsUntilStoped() {
         try {
             Set<Path> seen = new HashSet<>();
 
             long[] lastSgmnt = new long[] {-1};
 
-            while (true) {
+            while (!stoped) {
                 try (Stream<Path> cdcFiles = Files.walk(cdcDir, 1)) {
                     Set<Path> exists = new HashSet<>();
 
@@ -448,5 +461,15 @@ public class IgniteCDC implements Runnable {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /** Stops the application. */
+    public void stop() {
+        synchronized (this) {
+            if (log.isInfoEnabled())
+                log.info("Stopping of CDC");
+
+            stoped = true;
+        }
     }
 }

@@ -159,6 +159,75 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         //TODO: assert empty CDC dir.
     }
 
+    /** */
+    @Test
+    public void testReadOnStop() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        Ignite ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch onChangeLatch1 = new CountDownLatch(1);
+        CountDownLatch onChangeLatch2 = new CountDownLatch(1);
+
+        TestCDCConsumer lsnr = new TestCDCConsumer() {
+            @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+                try {
+                    startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                super.start(configuration, log);
+            }
+
+            @Override public boolean onChange(Iterator<ChangeEvent<Integer, User>> events) {
+                onChangeLatch1.countDown();
+
+                try {
+                    onChangeLatch2.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                return super.onChange(events);
+            }
+        };
+
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, KEYS_CNT);
+
+        startLatch.countDown();
+
+        onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        cdc.stop();
+
+        onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        fut.cancel();
+
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+
+        List<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+
+        assertEquals(KEYS_CNT * 2, keys.size());
+
+        for (int i = 0; i < KEYS_CNT * 2; i++)
+            assertTrue(keys.contains(i));
+
+        assertTrue(lsnr.stoped);
+    }
+
     /** Simplest CDC test. */
     @Test
     public void testRestoreStateAfterStop() throws Exception {
