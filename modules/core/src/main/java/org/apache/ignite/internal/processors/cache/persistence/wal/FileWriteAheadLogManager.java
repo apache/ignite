@@ -673,8 +673,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
+        boolean archiveAllForCdc = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
+
         try {
-            fileHandleManager.onDeactivate();
+            fileHandleManager.onDeactivate(archiveAllForCdc);
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
@@ -686,10 +688,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (archiver != null) {
                 archiver.shutdown();
 
-                if (dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping()) {
+                if (archiveAllForCdc) {
                     try {
                         long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
                         long to = segmentAware.curAbsWalIdx();
+
+                        System.out.println("from = " + from + ", to = " + to);
 
                         for (long idx = from; idx <= to; idx++)
                             archiver.archiveSegment(idx);
@@ -1427,6 +1431,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
+                System.out.println("FileWriteAheadLogManager.restoreWriteHandle - " + absIdx);
                 segmentAware.curAbsWalIdx(absIdx);
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();

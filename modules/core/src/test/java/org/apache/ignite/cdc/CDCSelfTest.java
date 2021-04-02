@@ -85,6 +85,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         });
     }
 
+    /** Consistent id. */
+    private static final UUID CONSISTENT_ID = UUID.randomUUID();
+
     /** Keys count. */
     private static final int KEYS_CNT = 50;
 
@@ -93,7 +96,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (specificConsistentId)
-            cfg.setConsistentId(UUID.randomUUID());
+            cfg.setConsistentId(CONSISTENT_ID);
 
         int segmentSz = 10 * 1024 * 1024;
 
@@ -239,14 +242,14 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testReadAfterNodeStop() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-0");
-
         AtomicInteger cnt = new AtomicInteger();
 
         TestCDCConsumer cnsmr = new TestCDCConsumer();
 
         // Restart node several time to make sure we can continue after gracefull shutdown.
         for (int restarts = 0; restarts < 2; restarts++) {
+            IgniteConfiguration cfg = getConfiguration("ignite-0");
+
             Ignite ign = startGrid(cfg);
 
             ign.cluster().state(ACTIVE);
@@ -527,7 +530,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         return waitForCondition(
             () -> {
                 int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
-                System.out.println("CDCSelfTest.waitForSize - " + sum);
+                System.out.println(sum + " - " + expSz);
                 return sum >= expSz;
             },
             getTestTimeout());

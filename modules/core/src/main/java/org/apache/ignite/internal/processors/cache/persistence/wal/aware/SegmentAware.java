@@ -157,6 +157,8 @@ public class SegmentAware {
      * @param curAbsWalIdx New current WAL index.
      */
     public void curAbsWalIdx(long curAbsWalIdx) {
+        System.out.println("SegmentAware.curAbsWalIdx - " + curAbsWalIdx);
+
         segmentCurrStateStorage.curAbsWalIdx(curAbsWalIdx);
     }
 

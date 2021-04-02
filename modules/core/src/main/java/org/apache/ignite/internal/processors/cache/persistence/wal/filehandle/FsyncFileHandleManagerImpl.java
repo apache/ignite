@@ -118,7 +118,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeactivate() throws IgniteCheckedException {
+    @Override public void onDeactivate(boolean rollOver) throws IgniteCheckedException {
         FsyncFileWriteHandle currHnd = currentHandle();
 
         if (mode == WALMode.BACKGROUND) {
@@ -127,7 +127,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         }
 
         if (currHnd != null)
-            currHnd.close(false);
+            currHnd.close(rollOver);
     }
 
     /** {@inheritDoc} */
