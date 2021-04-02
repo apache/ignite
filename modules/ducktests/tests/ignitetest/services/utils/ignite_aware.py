@@ -268,10 +268,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ducktape node to searching log.
         :return: Time of found log message matched to pattern or None if not found.
         """
-        _, stdout, _ = node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (evt_message, node.log_file))
+        stdout = IgniteAwareService.exec_command(node, "grep '%s' %s" % (evt_message, node.log_file))
 
-        match = re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8"))
+        match = re.match("^\\[[^\\[]+\\]", stdout)
 
         return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
 
@@ -364,27 +363,50 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
+        settings = ""
+
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INPUT):
-            node.account.ssh_client.exec_command(
+            settings = self.__apply_iptables_settings(
+                node,
                 f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTPUT):
-            node.account.ssh_client.exec_command(
+            settings = self.__apply_iptables_settings(
+                node,
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
+        self.logger.debug("Activated netfilter on '%s':\n%s" % (node.name, settings))
+
+    def __apply_iptables_settings(self, node, cmd):
+        # Sets given iptables settings and ensures they were applied.
+        settings_before = self.__dump_netfilter_settings(node)
+
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+        assert len(out) == 0, \
+            "Unexpected iptables output on '" + node.name + "': '" + out + "'\n   Command: '" + cmd + "'."
+        assert len(err) == 0, \
+            "Unexpected iptables output on '" + node.name + "': '" + err + "'.\n   Command: '" + cmd + "'."
+
+        settings = self.__dump_netfilter_settings(node)
+
+        assert settings_before != settings, \
+            "iptables settings not set on '" + node.name + "'\n   Command: '" + cmd + "'\n   ---iptables before---\n" \
+            + settings_before + "\n   ---iptables after---\n" + settings
+
+        return settings
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
         for node in nodes:
             cmd = f"sudo iptables-save | tee {self.netfilter_store_path}"
 
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             if "Warning: iptables-legacy tables present" in exec_error:
                 cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
-                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+                _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
@@ -401,13 +423,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         errors = []
 
         for node in self.disconnected_nodes:
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+            settings_before = self.__dump_netfilter_settings(node)
+
+            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
+
+            settings_after = self.__dump_netfilter_settings(node)
 
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
+            elif settings_before == settings_after:
+                errors.append("iptables settings not restored on '" + node.name + "':\n" + settings_after)
             else:
                 self.logger.debug(
-                    "Netfilter after launch on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
+                    "Netfilter after launch on '%s':\n%s" % (node.name, self.__dump_netfilter_settings(node)))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
@@ -419,7 +447,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Reads current netfilter settings on the node for debugging purposes.
         """
-        return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
+        return IgniteAwareService.exec_command(node, "sudo iptables -L -n")
 
     def __update_node_log_file(self, node):
         """
@@ -437,9 +465,21 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 
     @staticmethod
-    def exec_command(node, cmd):
-        """Executes the command passed on the given node and returns result as string."""
-        return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+    def exec_command_ex(node, cmd):
+        """Executes the command passed on the given node and returns out and error results as string."""
+        _, out, err = node.account.ssh_client.exec_command(cmd)
+
+        return str(out.read(), sys.getdefaultencoding()), str(err.read(), sys.getdefaultencoding())
+
+    @staticmethod
+    def exec_command(node, cmd, check_error=True):
+        """Executes the command passed on the given node and returns out result as string."""
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+        if check_error:
+            assert len(err) == 0, f"Command failed: '{cmd}'.\nError: '{err}'"
+
+        return out
 
     @staticmethod
     def node_id(node):
