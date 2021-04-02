@@ -844,7 +844,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
                 cpuTime = sunOs.getProcessCpuTime();
             }
-            catch (ClassCastException ignored) {
+            catch (RuntimeException ignored) {
                 return -1;
             }
 
