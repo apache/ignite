@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
-import java.util.Base64;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+import java.util.Base64;
 
 /**
  *
@@ -59,6 +61,13 @@ public class IgniteAwareApplicationService {
             (IgniteAwareApplication)clazz.getConstructor().newInstance();
 
         app.cfgPath = cfgPath;
+
+        String connStr = jsonNode.get("thin_client_connection").asText();
+
+        if (connStr != null && !connStr.isEmpty()) {
+            app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
+            startIgnite = false;
+        }
 
         if (startIgnite) {
             log.info("Starting Ignite node...");

@@ -40,7 +40,7 @@ class ThinClientTest(IgniteTest):
 
     CACHE_NAME = "think_client_test_cache"
     ENTRY_NUM = 10
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientCachePut"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTest"
 
     """
     Tests services implementations
@@ -54,29 +54,29 @@ class ThinClientTest(IgniteTest):
         self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
                                    "REPLICATED", "ATOMIC", backups)
 
-    @cluster(num_nodes=3)
-    @ignite_versions(str(DEV_BRANCH))
-    @parametrize(num_nodes=3, static_clients_num=1)
-    def test_replicated_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
-        backups = 2
-        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-                                   "REPLICATED", "TRANSACTIONAL", backups)
-
-    @cluster(num_nodes=3)
-    @ignite_versions(str(DEV_BRANCH))
-    @parametrize(num_nodes=3, static_clients_num=1)
-    def test_partitioned_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
-        backups = 2
-        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-                                   "PARTITIONED", "ATOMIC", backups)
-
-    @cluster(num_nodes=3)
-    @ignite_versions(str(DEV_BRANCH))
-    @parametrize(num_nodes=3, static_clients_num=1)
-    def test_partitioned_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
-        backups = 2
-        self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
-                                   "PARTITIONED", "TRANSACTIONAL", backups)
+    # @cluster(num_nodes=3)
+    # @ignite_versions(str(DEV_BRANCH))
+    # @parametrize(num_nodes=3, static_clients_num=1)
+    # def test_replicated_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
+    #     backups = 2
+    #     self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+    #                                "REPLICATED", "TRANSACTIONAL", backups)
+    #
+    # @cluster(num_nodes=3)
+    # @ignite_versions(str(DEV_BRANCH))
+    # @parametrize(num_nodes=3, static_clients_num=1)
+    # def test_partitioned_atomic_cache(self, ignite_version, num_nodes, static_clients_num):
+    #     backups = 2
+    #     self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+    #                                "PARTITIONED", "ATOMIC", backups)
+    #
+    # @cluster(num_nodes=3)
+    # @ignite_versions(str(DEV_BRANCH))
+    # @parametrize(num_nodes=3, static_clients_num=1)
+    # def test_partitioned_transactional_cache(self, ignite_version, num_nodes, static_clients_num):
+    #     backups = 2
+    #     self.start_fill_cache_stop(ignite_version, num_nodes, static_clients_num,
+    #                                "PARTITIONED", "TRANSACTIONAL", backups)
 
     def start_fill_cache_stop(self, ignite_version, num_nodes, static_clients_num, cache_mode, cache_atomicity_mode,
                               backups):
@@ -90,14 +90,16 @@ class ThinClientTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_configuration, servers_count, startup_timeout_sec=180)
 
-        server_address = ignite.nodes[0].account.hostname
-        server_port = 10800
+        # server_address = ignite.nodes[0].account.hostname
+        # server_port = 10800
+        thin_client_connection = ignite.nodes[0].account.hostname + ":" + 10800
 
         static_clients = ThinClientService(self.test_context, server_configuration,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=static_clients_num,
                                            params={"cache_name": self.CACHE_NAME, "entry_num": self.ENTRY_NUM,
-                                                   "server_address": server_address, "port": server_port,
+                                                   # "server_address": server_address, "port": server_port,
+                                                   "thin_client_connection": thin_client_connection,
                                                    "cache_mode": cache_mode, "cache_atomicity_mode": cache_atomicity_mode,
                                                    "backups": backups},
                                            startup_timeout_sec=180)
