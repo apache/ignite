@@ -206,6 +206,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         addData(cache, 0, KEYS_CNT);
 
+        Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
         startLatch.countDown();
 
         onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
@@ -213,19 +215,17 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         cdc.stop();
 
         onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-        fut.cancel();
+        onChangeLatch2.countDown();
 
         assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(lsnr.stoped);
 
         List<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
-        assertEquals(KEYS_CNT * 2, keys.size());
+        assertEquals(KEYS_CNT, keys.size());
 
-        for (int i = 0; i < KEYS_CNT * 2; i++)
+        for (int i = 0; i < KEYS_CNT; i++)
             assertTrue(keys.contains(i));
-
-        assertTrue(lsnr.stoped);
     }
 
     /** Simplest CDC test. */

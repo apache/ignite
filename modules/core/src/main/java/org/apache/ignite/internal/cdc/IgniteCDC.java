@@ -285,7 +285,8 @@ public class IgniteCDC implements Runnable {
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
                 }
 
-                U.sleep(cdcCfg.getSleepBeforeCheckNewSegmentsTimeout());
+                if (!stoped)
+                    U.sleep(cdcCfg.getSleepBeforeCheckNewSegmentsTimeout());
             }
         }
         catch (IOException | IgniteInterruptedCheckedException e) {
@@ -467,7 +468,7 @@ public class IgniteCDC implements Runnable {
     public void stop() {
         synchronized (this) {
             if (log.isInfoEnabled())
-                log.info("Stopping of CDC");
+                log.info("Stopping CDC");
 
             stoped = true;
         }
