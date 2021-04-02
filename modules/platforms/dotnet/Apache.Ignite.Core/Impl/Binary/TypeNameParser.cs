@@ -160,6 +160,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets a value indicating whether the namespace is present.
+        /// </summary>
+        public bool HasNamespace()
+        {
+            return NameStart > 0;
+        }
+
+        /// <summary>
+        /// Gets namespace name part.
+        /// </summary>
+        public string GetNamespace()
+        {
+            return NameStart == 0 ? null : _typeName.Substring(_start, NameStart - _start);
+        }
+
+        /// <summary>
         /// Parses this instance.
         /// </summary>
         private void Parse()
@@ -278,7 +294,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var bracket = true;
 
             RequireShift();
-            
+
             while (true)
             {
                 if (Char == '[')

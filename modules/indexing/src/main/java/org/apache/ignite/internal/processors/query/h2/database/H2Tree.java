@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
@@ -251,14 +252,26 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
             inlineSize = metaInfo.inlineSize();
 
+            setIos(
+                H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
+                H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled)
+            );
+
             List<InlineIndexColumn> inlineIdxs0 = getAvailableInlineColumns(affinityKey, cacheName, idxName, log, pk,
                 table, cols, factory, metaInfo.inlineObjectHash());
 
-            boolean inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
+            boolean inlineObjSupported = inlineSize > 0 && inlineObjectSupported(metaInfo, inlineIdxs0);
 
-            inlineIdxs = inlineObjSupported ? inlineIdxs0 : inlineIdxs0.stream()
-                .filter(ih -> ih.type() != Value.JAVA_OBJECT)
-                .collect(Collectors.toList());
+            if (inlineObjSupported)
+                inlineIdxs = inlineIdxs0;
+            else {
+                // If an index contains JO type and doesn't support inlining of it then use only prior columns.
+                int objIdx = 0;
+
+                for (; objIdx < inlineIdxs0.size() && inlineIdxs0.get(objIdx).type() != Value.JAVA_OBJECT; ++objIdx);
+
+                inlineIdxs = inlineIdxs0.subList(0, objIdx);
+            }
 
             inlineCols = new IndexColumn[inlineIdxs.size()];
 
@@ -269,11 +282,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
-
-            setIos(
-                H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
-                H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled)
-            );
         }
         else {
             unwrappedPk = true;
@@ -294,6 +302,35 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         }
 
         created = initNew;
+    }
+
+    /**
+     * Find whether tree supports inlining objects or not.
+     *
+     * @param metaInfo Metapage info.
+     * @param inlineIdxs Base collection of index helpers.
+     * @return {@code true} if inline object is supported by exists tree.
+     */
+    private boolean inlineObjectSupported(MetaPageInfo metaInfo, List<InlineIndexColumn> inlineIdxs) {
+        if (metaInfo.flagsSupported())
+            return metaInfo.inlineObjectSupported();
+        else {
+            try {
+                if (InlineObjectBytesDetector.objectMayBeInlined(inlineSize, inlineIdxs)) {
+                    InlineObjectBytesDetector inlineObjDetector = new InlineObjectBytesDetector(
+                        inlineSize, inlineIdxs, tblName, idxName, log);
+
+                    findFirst(inlineObjDetector);
+
+                    return inlineObjDetector.inlineObjectSupported();
+                }
+                else
+                    return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Unexpected exception on detect inline object", e);
+            }
+        }
     }
 
     /**
@@ -453,7 +490,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    private MetaPageInfo getMetaInfo() throws IgniteCheckedException {
+    public MetaPageInfo getMetaInfo() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
 
         try {
@@ -508,6 +545,38 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         }
     }
 
+    /**
+     * Copy info from another meta page.
+     * @param info Meta page info.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void copyMetaInfo(MetaPageInfo info) throws IgniteCheckedException {
+        final long metaPage = acquirePage(metaPageId);
+
+        try {
+            long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO.setValues(
+                    pageAddr,
+                    info.inlineSize,
+                    info.useUnwrappedPk,
+                    info.inlineObjSupported,
+                    info.inlineObjHash
+                );
+            }
+            finally {
+                writeUnlock(metaPageId, metaPage, pageAddr, true);
+            }
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<H2Row> io, long pageAddr, int idx,
@@ -524,7 +593,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
                 for (int i = 0; i < inlineIdxs.size(); i++) {
                     InlineIndexColumn inlineIdx = inlineIdxs.get(i);
-                    
+
                     Value v2 = row.getValue(inlineIdx.columnIndex());
 
                     if (v2 == null)

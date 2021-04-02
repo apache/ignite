@@ -236,7 +236,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             for (CustOrder o : orders) {
                 if (o.orderId % 9 == 0) {
                     Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId,
-                        new Date(o.date.getTime() + 12 * 60 * 60 * 1000));// Plus a half of day.
+                        new Date(o.date.getTime() + 12 * 60 * 60 * 1000)); // Plus a half of day.
 
                     add(c);
 

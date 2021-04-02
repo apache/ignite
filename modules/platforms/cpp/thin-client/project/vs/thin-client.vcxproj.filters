@@ -25,6 +25,12 @@
     <ClCompile Include="..\..\src\ignite_client.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cache\query\query_fields_cursor.cpp">
+      <Filter>Code\cache\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cache\query\query_fields_row.cpp">
+      <Filter>Code\cache\query</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\impl\data_router.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
@@ -61,6 +67,15 @@
     <ClCompile Include="..\..\src\impl\affinity\affinity_manager.cpp">
       <Filter>Code\impl\affinity</Filter>
     </ClCompile>
+	<ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_proxy.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -81,8 +96,20 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\readable.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\copyable.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\copyable_writable.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h">
       <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\query\query_fields_cursor_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\query\query_fields_row_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h">
       <Filter>Code\impl</Filter>
@@ -111,8 +138,26 @@
     <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h">
       <Filter>Code\impl\cache</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache\query\cursor_page.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache\query\query_fields_cursor_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache\query\query_fields_row_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h">
       <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\query\query_fields_cursor.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\query\query_fields_row.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\query\query_sql_fields.h">
+      <Filter>Code\cache\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\remote_type_updater.h">
       <Filter>Code\impl</Filter>
@@ -137,6 +182,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\impl\affinity\partition_awareness_group.h">
       <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transactions.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction_consts.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transactions_proxy.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\transactions\transactions_impl.h">
+      <Filter>Code\impl\transactions</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

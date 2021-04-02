@@ -127,6 +127,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.AreEqual(PersonCount, cache.Count());
             Assert.AreEqual(PersonCount, cache.Count(x => x.Key < PersonCount));
+            
+            Assert.AreEqual(PersonCount, cache.LongCount());
+            Assert.AreEqual(PersonCount, cache.LongCount(x => x.Key < PersonCount));
         }
 
         /// <summary>
@@ -379,6 +382,154 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.Throws(constraint, () => GetPersonCache().AsCacheQueryable()
                 .Select(x => selector(x))
                 .FirstOrDefault());
+        }
+
+        /// <summary>
+        /// Tests queries when cache key/val types are generic.
+        /// </summary>
+        [Test]
+        public void TestGenericCacheTypes()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(GenericTest<int>), typeof(GenericTest2<string>))}
+            };
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<GenericTest<int>, GenericTest2<string>>(cfg);
+            var key = new GenericTest<int>(1);
+            var value = new GenericTest2<string>("foo");
+            cache[key] = value;
+
+            var query = cache.AsCacheQueryable()
+                .Where(x => x.Key.Foo == key.Foo && x.Value.Bar == value.Bar)
+                .Select(x => x.Value.Bar);
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+            var res = query.ToList();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(value.Bar, res[0]);
+
+            var expectedSql = string.Format("select _T0.BAR from \"{0}\".GENERICTEST2 as", cache.Name);
+            StringAssert.StartsWith(expectedSql, sql);
+        }
+
+        /// <summary>
+        /// Tests queries when cache key/val types are generic.
+        /// </summary>
+        [Test]
+        public void TestNestedGenericCacheTypes()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest<GenericTest2<string>>))}
+            };
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, GenericTest<GenericTest2<string>>>(cfg);
+            var key = 1;
+            var value = new GenericTest<GenericTest2<string>>(new GenericTest2<string>("foo"));
+            cache[key] = value;
+
+            var query = cache.AsCacheQueryable()
+                .Where(x => x.Value.Foo.Bar == value.Foo.Bar)
+                .Select(x => x.Value.Foo);
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+            var res = query.ToList();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(value.Foo.Bar, res[0].Bar);
+
+            var expectedSql = string.Format("select _T0.FOO from \"{0}\".GENERICTEST as", cache.Name);
+            StringAssert.StartsWith(expectedSql, sql);
+        }
+
+        /// <summary>
+        /// Tests queries when cache val type has two generic type arguments.
+        /// </summary>
+        [Test]
+        public void TestTwoGenericArgumentsCacheType()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new[] {new QueryEntity(typeof(int), typeof(GenericTest3<int, string, bool>))}
+            };
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, GenericTest3<int, string, bool>>(cfg);
+            var key = 1;
+            var value = new GenericTest3<int, string, bool>(2, "3", true);
+            cache[key] = value;
+
+            var query = cache.AsCacheQueryable()
+                .Where(x => x.Value.Baz == value.Baz && x.Value.Qux == value.Qux && x.Value.Quz)
+                .Select(x => x.Value.Baz);
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+            var res = query.ToList();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(value.Baz, res[0]);
+
+            var expectedSql = string.Format("select _T0.BAZ from \"{0}\".GENERICTEST3 as", cache.Name);
+            StringAssert.StartsWith(expectedSql, sql);
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest<T>
+        {
+            /** */
+            public GenericTest(T foo)
+            {
+                Foo = foo;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Foo { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type.
+        /// </summary>
+        private class GenericTest2<T>
+        {
+            /** */
+            public GenericTest2(T bar)
+            {
+                Bar = bar;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Bar { get; set; }
+        }
+
+        /// <summary>
+        /// Generic query type with two generic arguments.
+        /// </summary>
+        private class GenericTest3<T, T2, T3>
+        {
+            /** */
+            public GenericTest3(T baz, T2 qux, T3 quz)
+            {
+                Baz = baz;
+                Qux = qux;
+                Quz = quz;
+            }
+
+            /** */
+            [QuerySqlField]
+            public T Baz { get; set; }
+            
+            /** */
+            [QuerySqlField]
+            public T2 Qux { get; set; }
+            
+            /** */
+            [QuerySqlField]
+            public T3 Quz { get; set; }
         }
     }
 }

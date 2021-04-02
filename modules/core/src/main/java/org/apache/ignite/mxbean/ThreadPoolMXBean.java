@@ -17,12 +17,20 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * MBean that provides access to information about executor service.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=threadPools.{thread_pool_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @MXBeanDescription("MBean that provides access to information about executor service.")
 @Deprecated
@@ -140,11 +148,13 @@ public interface ThreadPoolMXBean {
     public boolean isTerminating();
 
     /**
-     * Returns the class name of current rejection handler.
+     * The class name of the handler for tasks that cannot be executed.
+     * This may occur when no more threads or queue slots are available because their bounds would be exceeded,
+     * or upon shutdown of the Executor.
      *
-     * @return Class name of current rejection handler.
+     * @return Class name of the handler for tasks that cannot be executed by the thread pool.
      */
-    @MXBeanDescription("Class name of current rejection handler.")
+    @MXBeanDescription("Returns the class name of the handler for tasks that cannot be executed by the thread pool.")
     public String getRejectedExecutionHandlerClass();
 
     /**

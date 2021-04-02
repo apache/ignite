@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Reservation mechanism for multiple partitions allowing to do a reservation in one operation.
@@ -45,7 +46,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
     private final Object appKey;
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -64,7 +65,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
      * @param cctx Cache context.
      * @param appKey Application key for reservation.
      */
-    public GridDhtPartitionsReservation(AffinityTopologyVersion topVer, GridCacheContext<?,?> cctx, Object appKey) {
+    public GridDhtPartitionsReservation(AffinityTopologyVersion topVer, GridCacheContext<?, ?> cctx, Object appKey) {
         assert topVer != null;
         assert cctx != null;
         assert appKey != null;
@@ -280,5 +281,13 @@ public class GridDhtPartitionsReservation implements GridReservable {
         result = 31 * result + topVer.hashCode();
 
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(null,
+            "cache", cctx.name(), false,
+            "partitions", Arrays.toString(parts.get()), false,
+            "topology", topVer.toString(), false);
     }
 }

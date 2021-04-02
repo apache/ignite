@@ -35,14 +35,9 @@ class IgniteVersion(LooseVersion):
         assert v28 > v27  # assertion passes!
     """
     def __init__(self, version_string):
-        self.is_dev = (version_string.lower() == "dev")
+        self.is_dev = (version_string.lower() == __version__.lower()) or (version_string.lower() == "dev")
         if self.is_dev:
             version_string = __version__
-
-            # Drop dev suffix if present
-            dev_suffix_index = version_string.find(".dev")
-            if dev_suffix_index >= 0:
-                version_string = version_string[:dev_suffix_index]
 
         super().__init__(version_string)
 
@@ -56,7 +51,7 @@ class IgniteVersion(LooseVersion):
         return "IgniteVersion ('%s')" % str(self)
 
 
-DEV_BRANCH = IgniteVersion("dev")
+DEV_BRANCH = IgniteVersion(__version__)
 
 # 2.7.x versions
 V_2_7_6 = IgniteVersion("2.7.6")
@@ -69,6 +64,16 @@ LATEST_2_8 = V_2_8_1
 
 # 2.9.x versions
 V_2_9_0 = IgniteVersion("2.9.0")
-LATEST_2_9 = V_2_9_0
+V_2_9_1 = IgniteVersion("2.9.1")
+LATEST_2_9 = V_2_9_1
 
-LATEST = LATEST_2_9
+# 2.10.x versions
+V_2_10_0 = IgniteVersion("2.10.0")
+LATEST_2_10 = V_2_10_0
+
+# 2.11.x versions
+V_2_11_0 = IgniteVersion("2.11.0")
+
+# if you updated the LATEST version
+# please check DEV version in 'tests/ignitetest/__init__.py'
+LATEST = LATEST_2_10

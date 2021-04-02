@@ -34,7 +34,7 @@ public interface PerformanceStatisticsMBean {
     @MXBeanDescription("Stop collecting performance statistics in the cluster.")
     public void stop() throws IgniteCheckedException;
 
-    /** @return {@code True} if collecting performance statistics is started. */
-    @MXBeanDescription("True if collecting performance statistics is started.")
+    /** @return {@code True} if performance statistics collection is started. */
+    @MXBeanDescription("True if performance statistics collection is started.")
     public boolean started();
 }

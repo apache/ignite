@@ -20,8 +20,10 @@ This module contains IgniteConfiguration classes and utilities.
 from typing import NamedTuple
 
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
+from ignitetest.services.utils.ssl.ssl_params import SslParams
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -41,6 +43,15 @@ class IgniteConfiguration(NamedTuple):
     data_storage: DataStorageConfiguration = None
     caches: list = []
     local_host: str = None
+    ssl_params: SslParams = None
+    connector_configuration: ConnectorConfiguration = None
+    auth_enabled: bool = False
+    plugins: list = []
+    metric_exporter: str = None
+    rebalance_thread_pool_size: int = None
+    rebalance_batch_size: int = None
+    rebalance_batches_prefetch_count: int = None
+    rebalance_throttle: int = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

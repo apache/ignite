@@ -21,6 +21,7 @@ import os
 from abc import abstractmethod, ABCMeta
 
 from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
+from ignitetest.utils.version import DEV_BRANCH
 
 
 def get_home_dir(install_root, project, version):
@@ -51,7 +52,7 @@ class PathAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(f"{self.persistent_root} {self.temp_dir} {self.work_dir} {self.log_dir}")
+        node.account.mkdirs(f"{self.persistent_root} {self.temp_dir} {self.work_dir} {self.log_dir} {self.config_dir}")
 
     def init_logs_attribute(self):
         """
@@ -61,6 +62,10 @@ class PathAware:
         setattr(self, 'logs', {
             "logs": {
                 "path": self.log_dir,
+                "collect_default": True
+            },
+            "config": {
+                "path": self.config_dir,
                 "collect_default": True
             }
         })
@@ -85,6 +90,13 @@ class PathAware:
         :return: path to work directory
         """
         return os.path.join(self.persistent_root, "work")
+
+    @property
+    def config_dir(self):
+        """
+        :return: path to config directory
+        """
+        return os.path.join(self.persistent_root, "config")
 
     @property
     def log_dir(self):
@@ -159,11 +171,33 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     @property
     def config_file(self):
-        return os.path.join(self.persistent_root, "ignite-config.xml")
+        return os.path.join(self.config_dir, "ignite-config.xml")
 
     @property
     def log_config_file(self):
-        return os.path.join(self.persistent_root, "ignite-log4j.xml")
+        return os.path.join(self.config_dir, "ignite-log4j.xml")
+
+    @property
+    def database_dir(self):
+        """
+        :return: path to database directory
+        """
+        return os.path.join(self.work_dir, "db")
+
+    @property
+    def snapshots_dir(self):
+        """
+        :return: path to snapshots directory
+        """
+        return os.path.join(self.work_dir, "snapshots")
+
+    @property
+    def certificate_dir(self):
+        """
+        :return: path to the certificate directory.
+        """
+        return os.path.join(get_home_dir(self.install_root, self.project, DEV_BRANCH),
+                            "modules", "ducktests", "tests", "certs")
 
     def script(self, script_name):
         """

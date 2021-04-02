@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Ignite for Python
+= Ignite Quick Start Guide for Python
 
 This chapter explains system requirements for running Ignite and how to install Ignite, start a cluster, and run a simple Hello World example using a thin link:thin-clients/python-thin-client[client for Python].
 
@@ -85,4 +85,4 @@ Or you can enter the example into your Python interpreter/shell (IDLE on Windows
 
 == Further Examples
 
-Explore more Ignite Python examples link:{githubUrl}/modules/platforms/python/examples[here^].
+Explore more Ignite Python examples link:https://github.com/apache/ignite-python-thin-client/tree/master/examples[here^].

@@ -17,9 +17,7 @@
 This module contains class to start ignite cluster node.
 """
 
-import re
 import signal
-from datetime import datetime
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
@@ -37,10 +35,6 @@ class IgniteService(IgniteAwareService):
                  shutdown_timeout_sec=10, modules=None):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
-
-    def clean_node(self, node, **kwargs):
-        node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
-        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def thread_dump(self, node):
         """
@@ -80,8 +74,4 @@ def get_event_time(service, log_node, log_pattern, from_the_beginning=True, time
     service.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
                                 backoff_sec=0.3)
 
-    _, stdout, _ = log_node.account.ssh_client.exec_command(
-        "grep '%s' %s" % (log_pattern, log_node.log_file))
-
-    return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                             "[%Y-%m-%d %H:%M:%S,%f]")
+    return IgniteAwareService.event_time(log_pattern, log_node)

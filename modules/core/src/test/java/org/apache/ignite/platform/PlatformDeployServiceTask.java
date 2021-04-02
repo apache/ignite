@@ -47,6 +47,7 @@ import org.apache.ignite.platform.model.Address;
 import org.apache.ignite.platform.model.Department;
 import org.apache.ignite.platform.model.Employee;
 import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.Parameter;
 import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
@@ -451,6 +452,51 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public int testOverload(Integer count, Employee[] emps) {
+            assertNotNull(emps);
+            assertEquals((int)count, emps.length);
+
+            assertEquals("Sarah Connor", emps[0].getFio());
+            assertEquals(1, emps[0].getSalary());
+
+            assertEquals("John Connor", emps[1].getFio());
+            assertEquals(2, emps[1].getSalary());
+
+            return 42;
+        }
+
+        /** */
+        public int testOverload(int count, Parameter[] params) {
+            assertNotNull(params);
+            assertEquals(count, params.length);
+
+            assertEquals(1, params[0].getId());
+            assertEquals(2, params[0].getValues().length);
+
+            assertEquals(1, params[0].getValues()[0].getId());
+            assertEquals(42, params[0].getValues()[0].getVal());
+
+            assertEquals(2, params[0].getValues()[1].getId());
+            assertEquals(43, params[0].getValues()[1].getVal());
+
+            assertEquals(2, params[1].getId());
+            assertEquals(2, params[1].getValues().length);
+
+            assertEquals(3, params[1].getValues()[0].getId());
+            assertEquals(44, params[1].getValues()[0].getVal());
+
+            assertEquals(4, params[1].getValues()[1].getId());
+            assertEquals(45, params[1].getValues()[1].getVal());
+
+            return 43;
+        }
+
+        /** */
+        public int testOverload(int first, int second) {
+            return first + second;
+        }
+
+        /** */
         public Employee[] testEmployees(Employee[] emps) {
             if (emps == null)
                 return null;
@@ -576,6 +622,18 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public void testException(String exCls) throws Exception {
+            switch (exCls) {
+                case "InterruptedException": throw new InterruptedException("Test");
+                case "IllegalArgumentException": throw new IllegalArgumentException("Test");
+                case "TestMapped1Exception": throw new TestMapped1Exception("Test");
+                case "TestMapped2Exception": throw new TestMapped2Exception("Test");
+                case "TestUnmappedException": throw new TestUnmappedException("Test");
+                default: throw new IgniteException("Unexpected exception class: " + exCls);
+            }
+        }
+
+        /** */
         public void sleep(long delayMs) {
             try {
                 U.sleep(delayMs);
@@ -583,6 +641,30 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /** */
+    public static class TestMapped1Exception extends RuntimeException {
+        /** */
+        public TestMapped1Exception(String msg) {
+            super(msg);
+        }
+    }
+
+    /** */
+    public static class TestMapped2Exception extends RuntimeException {
+        /** */
+        public TestMapped2Exception(String msg) {
+            super(msg);
+        }
+    }
+
+    /** */
+    public static class TestUnmappedException extends RuntimeException {
+        /** */
+        public TestUnmappedException(String msg) {
+            super(msg);
         }
     }
 }

@@ -21,8 +21,10 @@ from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
 
-
 # pylint: disable=W0223
+from ignitetest.services.utils.ducktests_service import DucktestsService
+
+
 class IgniteTest(Test):
     """
     Basic ignite test.
@@ -42,16 +44,28 @@ class IgniteTest(Test):
         """
         return monotonic()
 
-    # pylint: disable=W0212
     def tearDown(self):
-        self.logger.debug("Killing all services to speed-up the tearing down.")
+        self.logger.debug("Killing all runned services to speed-up the tearing down.")
 
+        # pylint: disable=W0212
         for service in self.test_context.services._services.values():
+            assert isinstance(service, DucktestsService)
+
             try:
                 service.kill()
             except RemoteCommandError:
                 pass  # Process may be already self-killed on segmentation.
 
-        self.logger.debug("All services killed.")
+            assert service.stopped
+
+        self.logger.debug("All runned services killed.")
 
         super().tearDown()
+
+    def _global_param(self, param_name, default=None):
+        """Reads global parameter passed to the test suite."""
+        return self.test_context.globals.get(param_name, default)
+
+    def _global_int(self, param_name, default: int = None):
+        """Reads global parameter passed to the test suite and converts to int."""
+        return int(self._global_param(param_name, default))

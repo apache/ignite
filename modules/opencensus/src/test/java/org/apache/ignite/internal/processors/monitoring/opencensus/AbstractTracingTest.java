@@ -208,6 +208,25 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         int expSpansCnt,
         /* tagName: tagValue*/ Map<String, String> expAttrs
     ) {
+        return checkSpan(spanType, parentSpanId, expSpansCnt, expAttrs, CheckAttributes.EQUALS);
+    }
+
+    /**
+     * Check span.
+     *
+     * @param spanType Span type.
+     * @param parentSpanId Parent span id.
+     * @param expSpansCnt expected spans count.
+     * @param expAttrs Attributes to check.
+     * @return List of founded span ids.
+     */
+    java.util.List<SpanId> checkSpan(
+        SpanType spanType,
+        SpanId parentSpanId,
+        int expSpansCnt,
+        /* tagName: tagValue*/ Map<String, String> expAttrs,
+        CheckAttributes attrCheckType
+    ) {
         java.util.List<SpanData> gotSpans = hnd.allSpans()
             .filter(
                 span -> parentSpanId != null ?
@@ -222,7 +241,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         gotSpans.forEach(spanData -> {
             spanIds.add(spanData.getContext().getSpanId());
 
-            checkSpanAttributes(spanData, expAttrs);
+            checkSpanAttributes(spanData, expAttrs, attrCheckType);
         });
 
         return spanIds;
@@ -266,11 +285,28 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
      * @param spanData Span data to check.
      * @param expAttrs Attributes to check.
      */
-    private void checkSpanAttributes(SpanData spanData, /* tagName: tagValue*/ Map<String, String> expAttrs) {
+    private void checkSpanAttributes(
+        SpanData spanData,
+        /* tagName: tagValue*/ Map<String, String> expAttrs,
+        CheckAttributes attrCheckType
+    ) {
         Map<String, AttributeValue> attrs = spanData.getAttributes().getAttributeMap();
 
         if (expAttrs != null) {
-            assertEquals(expAttrs.size(), attrs.size());
+            switch (attrCheckType) {
+                case EQUALS:
+                    assertEquals(expAttrs.size(), attrs.size());
+
+                    break;
+
+                case CONTAINS:
+                    assertTrue(expAttrs.size() <= attrs.size());
+
+                    break;
+
+                default:
+                    fail("Unexpected attributes check: " + attrCheckType);
+            }
 
             for (Map.Entry<String, String> entry : expAttrs.entrySet())
                 assertEquals(entry.getValue(), attributeValueToString(attrs.get(entry.getKey())));
@@ -402,5 +438,20 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
                 span.end();
             }
         }
+
+        /** Clears collected spans. */
+        void clearCollectedSpans() {
+            collectedSpans.clear();
+            collectedSpansByParents.clear();
+        }
+    }
+
+    /** */
+    public enum CheckAttributes {
+        /** */
+        EQUALS,
+
+        /** */
+        CONTAINS
     }
 }
