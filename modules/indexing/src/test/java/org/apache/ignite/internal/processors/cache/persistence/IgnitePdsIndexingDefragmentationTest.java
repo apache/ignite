@@ -309,7 +309,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         private boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
+        @Override @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
             IgniteInternalFuture<?> future = super.rebuild(cctx, force);
             rebuiltIndexes = future != null;
 
