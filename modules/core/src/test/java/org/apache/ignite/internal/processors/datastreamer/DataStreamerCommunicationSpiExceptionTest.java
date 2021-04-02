@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
@@ -82,19 +80,20 @@ public class DataStreamerCommunicationSpiExceptionTest extends GridCommonAbstrac
         TestCommunicationSpi.spi(client).victim(grid(0).cluster().localNode().id());
 
         int threadBufSize = 10;
-        int batchSize = threadBufSize * 2;
 
         try (IgniteDataStreamer<Integer, Integer> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.perThreadBufferSize(threadBufSize);
-
-            Map<Integer, Integer> vals = new HashMap<>();
 
             for (int i = 0; i < DATA_SIZE; i++)
                 streamer.addData(i, i);
 
             streamer.flush();
 
-            assertEquals("", DATA_SIZE, cache.size(ALL));
+            int sz = cache.size(ALL);
+            assertEquals(
+                "Unexpected cache size (data was not flushed) [expected=" + DATA_SIZE + ", actual=" + sz + ']',
+                DATA_SIZE,
+                sz);
         }
     }
 
