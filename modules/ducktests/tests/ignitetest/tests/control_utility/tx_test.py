@@ -40,7 +40,7 @@ class TransactionsTests(IgniteTest):
     CACHE_NAME = "TEST"
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     def test_tx_info(self, ignite_version):
         """
         Tests verbose tx info for specific xid.
@@ -66,7 +66,7 @@ class TransactionsTests(IgniteTest):
         assert res.label == pick_tx.label
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     def test_kill_tx(self, ignite_version):
         """
         Test kill transactions by xid and filter.
@@ -96,7 +96,7 @@ class TransactionsTests(IgniteTest):
             .issubset(set(long_tx_2.extract_results("TX_ID")))
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     def test_tx_filter(self, ignite_version):
         """
         Test filtering transactions list.

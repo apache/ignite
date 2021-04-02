@@ -56,7 +56,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES + 2)
     @ignore_if(lambda version, globals: version < V_2_8_0 and is_ssl_enabled(globals))
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     @matrix(load_type=[LoadType.NONE, LoadType.EXTRA_CACHES, LoadType.LONG_TXS])
     def test(self, ignite_version, load_type):
         """

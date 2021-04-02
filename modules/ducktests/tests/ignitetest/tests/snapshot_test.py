@@ -40,7 +40,7 @@ class SnapshotTest(IgniteTest):
     CACHE_NAME = "TEST_CACHE"
 
     @cluster(num_nodes=4)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     def snapshot_test(self, ignite_version):
         """
         Basic snapshot test.

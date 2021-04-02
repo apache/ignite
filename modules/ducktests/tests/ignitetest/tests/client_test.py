@@ -49,7 +49,7 @@ class ClientTest(IgniteTest):
 
     # pylint: disable=R0913
     @cluster(num_nodes=7)
-    @ignite_versions(str(LATEST), str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
     def test_ignite_start_stop_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
                                      client_work_time):
@@ -62,7 +62,7 @@ class ClientTest(IgniteTest):
 
     # pylint: disable=R0913
     @cluster(num_nodes=7)
-    @ignite_versions(str(LATEST), str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
     def test_ignite_kill_start_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
                                      client_work_time):

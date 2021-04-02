@@ -35,7 +35,7 @@ class SslTest(IgniteTest):
     """
 
     @cluster(num_nodes=3)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     def test_ssl_connection(self, ignite_version):
         """
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.

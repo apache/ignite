@@ -47,7 +47,7 @@ class AuthenticationTests(IgniteTest):
     NUM_NODES = 2
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     def test_change_users(self, ignite_version):
         """
         Test add, update and remove user
