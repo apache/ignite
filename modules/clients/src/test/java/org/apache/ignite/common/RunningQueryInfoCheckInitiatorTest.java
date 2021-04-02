@@ -351,6 +351,8 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
             List<List<?>> res = node.context().query().querySqlFields(
                 new SqlFieldsQuery("SELECT * FROM SYS.SQL_QUERIES"), false).getAll();
 
+            res.stream().forEach(System.out::println);
+
             if (res.size() == expectedQryCount + 1)
                 return;
 
