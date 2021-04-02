@@ -52,7 +52,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
