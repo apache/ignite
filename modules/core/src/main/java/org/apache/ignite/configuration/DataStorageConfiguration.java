@@ -740,6 +740,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a path to the CDC directory.
+     * If this path is relative, it will be resolved relatively to Ignite work directory.
      *
      * @return CDC directory.
      */

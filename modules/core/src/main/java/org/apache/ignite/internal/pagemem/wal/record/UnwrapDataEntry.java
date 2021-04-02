@@ -34,7 +34,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
     private final CacheObjectValueContext cacheObjValCtx;
 
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects). */
-    private final boolean keepBinary;
+    private boolean keepBinary;
 
     /**
      * @param cacheId Cache ID.

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -91,7 +92,17 @@ public class CommandLineStartup {
 
             IgniteConfiguration cfg = cfgTuple.get1().iterator().next();
 
-            Thread appThread = new Thread(new IgniteCDC(cfg, consumerConfig(cfgUrl, spring)));
+            IgniteCDC cdc = new IgniteCDC(cfg, consumerConfig(cfgUrl, spring));
+
+            if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
+                Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {
+                    @Override public void run() {
+                        cdc.stop();
+                    }
+                });
+            }
+
+            Thread appThread = new Thread(cdc);
 
             appThread.start();
 
@@ -135,7 +146,7 @@ public class CommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite-cdc");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite-cdc.{sh|bat}");
 
         int space = runner.indexOf(' ');
 

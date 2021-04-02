@@ -910,6 +910,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * @param grp Cache group.
+     * @param partId Partition ID.
+     */
+    public void onCancelDestroyPartitionStore(CacheGroupContext grp, int partId) {
+        pageScanner.includePartition(grp.groupId(), partId);
+    }
+
+    /**
      * Callback when WAL segment is removed.
      *
      * @param segmentIdx WAL segment index.

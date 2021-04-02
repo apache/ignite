@@ -55,7 +55,7 @@ public class WALRecordsConsumer<K, V> {
     private IgniteLogger log;
 
     /** Data change events consumer. */
-    private final CaptureDataChangeConsumer<K, V> dataConsumer;
+    private final CaptureDataChangeConsumer dataConsumer;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -71,7 +71,7 @@ public class WALRecordsConsumer<K, V> {
     /**
      * @param dataConsumer User provided CDC consumer.
      */
-    public WALRecordsConsumer(CaptureDataChangeConsumer<K, V> dataConsumer) {
+    public WALRecordsConsumer(CaptureDataChangeConsumer dataConsumer) {
         this.dataConsumer = dataConsumer;
     }
 
@@ -120,9 +120,9 @@ public class WALRecordsConsumer<K, V> {
                     replicaVer.topologyVersion(), replicaVer.nodeOrderAndDrIdRaw(), replicaVer.order()));
             }
 
-            return new ChangeEvent<>(
-                (K)ue.unwrappedKey(),
-                (V)ue.unwrappedValue(),
+            return new ChangeEvent(
+                ue.unwrappedKey(),
+                ue.unwrappedValue(),
                 e.primary(),
                 e.partitionId(),
                 ord,
@@ -145,7 +145,8 @@ public class WALRecordsConsumer<K, V> {
 
         dataConsumer.start(configuration, mmgr.registry("cdc"), log);
 
-        log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
+        if (log.isInfoEnabled())
+            log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /**
@@ -155,7 +156,8 @@ public class WALRecordsConsumer<K, V> {
     public void stop() {
         dataConsumer.stop();
 
-        log.info("WalRecordsConsumer stoped[consumer=" + dataConsumer.getClass() + ']');
+        if (log.isInfoEnabled())
+            log.info("WalRecordsConsumer stoped[consumer=" + dataConsumer.getClass() + ']');
     }
 
     /** {@inheritDoc} */

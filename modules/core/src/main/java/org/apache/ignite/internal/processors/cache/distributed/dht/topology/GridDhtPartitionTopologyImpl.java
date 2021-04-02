@@ -2539,7 +2539,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param aff Affinity assignments.
      * @return {@code True} if there are local partitions need to be evicted.
      */
-    @SuppressWarnings("unchecked")
     private boolean checkEvictions(long updateSeq, AffinityAssignment aff) {
         assert lock.isWriteLockedByCurrentThread();
 
@@ -3219,9 +3218,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 GridDhtLocalPartition locPart = localPartition(p);
 
+                if (locPart == null)
+                    return false;
+
                 GridDhtPartitionState state0 = locPart.state();
 
-                if (locPart == null || state0 == RENTING || state0 == EVICTED || partitionLocalNode(p, readyTopVer))
+                if (state0 == RENTING || state0 == EVICTED || partitionLocalNode(p, readyTopVer))
                     return false;
 
                 locPart.rent();

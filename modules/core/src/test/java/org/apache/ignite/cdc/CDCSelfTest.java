@@ -22,11 +22,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -113,19 +114,17 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     /** Simplest CDC test. */
     @Test
     public void testReadAllKeys() throws Exception {
-        TestCDCConsumer lsnr = new TestCDCConsumer();
-
         IgniteConfiguration cfg = getConfiguration("ignite-0");
-
-        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
-
-        IgniteInternalFuture<?> fut;
-
-        fut = runAsync(cdc);
 
         Ignite ign = startGrid(cfg);
 
         ign.cluster().state(ACTIVE);
+
+        TestCDCConsumer lsnr = new TestCDCConsumer();
+
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+
+        IgniteInternalFuture<?> fut = runAsync(cdc);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
@@ -160,26 +159,97 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         //TODO: assert empty CDC dir.
     }
 
-    /** Simplest CDC test. */
+    /** */
     @Test
-    public void testRestoreStateAfterStop() throws Exception {
-        TestCDCConsumer lsnr = new TestCDCConsumer();
-
+    public void testReadOnStop() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
-
-        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
-
-        IgniteInternalFuture<?> runFut = runAsync(cdc);
 
         Ignite ign = startGrid(cfg);
 
         ign.cluster().state(ACTIVE);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch onChangeLatch1 = new CountDownLatch(1);
+        CountDownLatch onChangeLatch2 = new CountDownLatch(1);
+
+        TestCDCConsumer lsnr = new TestCDCConsumer() {
+            @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+                try {
+                    startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                super.start(configuration, log);
+            }
+
+            @Override public boolean onChange(Iterator<ChangeEvent> events) {
+                onChangeLatch1.countDown();
+
+                try {
+                    onChangeLatch2.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                return super.onChange(events);
+            }
+        };
+
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, KEYS_CNT);
+
+        Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
+        startLatch.countDown();
+
+        onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        cdc.stop();
+
+        onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+        onChangeLatch2.countDown();
+
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, lsnr));
+        assertTrue(lsnr.stoped);
+
+        List<Integer> keys = lsnr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+
+        assertEquals(KEYS_CNT, keys.size());
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            assertTrue(keys.contains(i));
+    }
+
+    /** Simplest CDC test. */
+    @Test
+    public void testRestoreStateAfterStop() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        Ignite ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        TestCDCConsumer lsnr = new TestCDCConsumer();
+
+        IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(lsnr));
+
+        IgniteInternalFuture<?> runFut = runAsync(cdc);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT);
         addData(txCache, 0, KEYS_CNT);
+
+        CountDownLatch latch = new CountDownLatch(2);
 
         IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
@@ -190,12 +260,18 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(lsnr.stoped);
 
+                latch.countDown();
+                latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
                 cdc.run();
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         });
+
+        latch.countDown();
+        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         addData(cache, KEYS_CNT, KEYS_CNT * 2);
         addData(txCache, KEYS_CNT, KEYS_CNT * 2);
@@ -231,8 +307,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(lsnr1, Objects.toString(ign1.localNode().consistentId()), 0));
-        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(lsnr2, Objects.toString(ign2.localNode().consistentId()), 1));
+        IgniteCDC cdc1 = new IgniteCDC(cfg1, cdcConfig(lsnr1));
+        IgniteCDC cdc2 = new IgniteCDC(cfg2, cdcConfig(lsnr2));
 
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
 
@@ -407,12 +483,12 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestCDCConsumer implements CaptureDataChangeConsumer<Integer, User> {
+    private static class TestCDCConsumer implements CaptureDataChangeConsumer {
         /** Keys */
         private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
         /** */
-        public boolean stoped;
+        public volatile boolean stoped;
 
         /** {@inheritDoc} */
         @Override public void start(IgniteConfiguration configuration, MetricRegistry mreg, IgniteLogger log) {
@@ -421,21 +497,22 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void stop() {
+            System.out.println("TestCDCConsumer.stop");
             stoped = true;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterator<ChangeEvent<Integer, User>> events) {
+        @Override public boolean onChange(Iterator<ChangeEvent> events) {
             events.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;
 
                 cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
-                    k -> new ArrayList<>()).add(evt.key());
+                    k -> new ArrayList<>()).add((Integer)evt.key());
 
                 if (evt.operation() == UPDATE) {
-                    assertTrue(evt.value().getName().startsWith("John Connor"));
-                    assertTrue(evt.value().getAge() >= 42);
+                    assertTrue(((User)evt.value()).getName().startsWith("John Connor"));
+                    assertTrue(((User)evt.value()).getAge() >= 42);
                 }
             });
 
@@ -488,21 +565,11 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer<?, ?> lsnr) {
-        return cdcConfig(lsnr, null, -1);
-    }
-
-    /** */
-    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer<?, ?> lsnr, String consistentId, int idx) {
+    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer lsnr) {
         CaptureDataChangeConfiguration cdcCfg = new CaptureDataChangeConfiguration();
 
         cdcCfg.setConsumer(lsnr);
         cdcCfg.setKeepBinary(false);
-
-        if (consistentId != null) {
-            cdcCfg.setAutoGeneratedConsistentId(UUID.fromString(consistentId));
-            cdcCfg.setNodeIndex(idx);
-        }
 
         return cdcCfg;
     }
