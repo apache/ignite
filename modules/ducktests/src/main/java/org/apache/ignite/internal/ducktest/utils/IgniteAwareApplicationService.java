@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import java.util.Base64;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
@@ -28,8 +29,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
-import java.util.Base64;
 
 /**
  *
@@ -66,7 +65,6 @@ public class IgniteAwareApplicationService {
 
         if (connStr != null && !connStr.isEmpty()) {
             app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
-            startIgnite = false;
         }
 
         if (startIgnite) {

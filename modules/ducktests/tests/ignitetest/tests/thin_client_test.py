@@ -21,9 +21,8 @@ import time
 from ducktape.mark import parametrize
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
@@ -64,14 +63,13 @@ class ThinClientTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_configuration, servers_count, startup_timeout_sec=180)
 
-        thin_client_connection = ignite.nodes[0].account.hostname + ":" + 10800
+        thin_client_connection = ignite.nodes[0].account.hostname + ":" + "10800"
 
-        static_clients = IgniteService(self.test_context, server_configuration,
+        static_clients = IgniteApplicationService(self.test_context, server_configuration,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=static_clients_num,
-                                           params={"cache_name": self.CACHE_NAME, "entry_num": self.ENTRY_NUM,
-                                                   "thin_client_connection": thin_client_connection,
-                                                   "backups": backups},
+                                           params={"thin_client_connection": thin_client_connection},
+                                           start_ignite = False,
                                            startup_timeout_sec=180)
 
         ignite.start()

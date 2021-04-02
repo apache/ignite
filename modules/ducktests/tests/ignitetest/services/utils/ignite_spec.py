@@ -53,9 +53,6 @@ def resolve_spec(service, context, config, **kwargs):
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context,
                                                                      config=config, **kwargs)
-    if is_impl("ThinClientService"):
-        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context,
-                                                                     config=config, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
 

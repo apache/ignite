@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.utils;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
@@ -28,9 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import sun.misc.Signal;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 
 /**
  *

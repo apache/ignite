@@ -28,21 +28,12 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * Thin client. Cache test: put, get, value check
  */
 public class ThinClientSelfTest extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void run(JsonNode jsonNode) throws Exception {
-        String cacheName = jsonNode.get("cache_name").asText();
-        String cacheMode = jsonNode.get("cache_mode").asText();
-        String cacheAtomcityMode = jsonNode.get("cache_atomicity_mode").asText();
-        int backups = jsonNode.get("backups").asInt();
-        int entry_num = jsonNode.get("entry_num").asInt();
-
+    /** {@inheritDoc} */
+    @Override protected void run(JsonNode jsonNode) throws Exception {
         markInitialized();
 
         ClientCacheConfiguration cfg = new ClientCacheConfiguration();
-        cfg.setName(cacheName);
+        cfg.setName("testCache");
 
         ClientCache<Integer, Integer> cache = client.getOrCreateCache(cfg);
 
@@ -52,7 +43,7 @@ public class ThinClientSelfTest extends IgniteAwareApplication {
 
         cache.remove(0);
 
-        client.destroyCache(cacheName);
+        client.destroyCache("testCache");
 
         markFinished();
     }
