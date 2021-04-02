@@ -28,8 +28,6 @@ from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
-from ignitetest.services.thin_client_app import ThinClientService
-
 class ThinClientTest(IgniteTest):
     """
     cluster - cluster size
