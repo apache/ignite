@@ -17,10 +17,11 @@
 
 package org.apache.ignite.raft.client.message;
 
+import java.io.Serializable;
 import org.apache.ignite.network.message.NetworkMessage;
 
 /** Get peers. */
-public interface GetPeersRequest extends NetworkMessage {
+public interface GetPeersRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
      */

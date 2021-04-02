@@ -17,12 +17,13 @@
 
 package org.apache.ignite.raft.client.message;
 
+import java.io.Serializable;
 import org.apache.ignite.network.message.NetworkMessage;
 
 /**
  * Take a local snapshot on the peer.
  */
-public interface SnapshotRequest extends NetworkMessage {
+public interface SnapshotRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
      */

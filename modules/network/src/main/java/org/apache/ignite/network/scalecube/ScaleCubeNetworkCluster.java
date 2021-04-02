@@ -19,6 +19,7 @@ package org.apache.ignite.network.scalecube;
 import io.scalecube.cluster.Cluster;
 import io.scalecube.cluster.transport.api.Message;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import org.apache.ignite.network.NetworkMember;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
 
+import static io.scalecube.cluster.transport.api.Message.fromData;
 import static java.time.Duration.ofMillis;
 import static org.apache.ignite.network.scalecube.ScaleCubeMessageCodec.HEADER_MESSAGE_TYPE;
 
@@ -88,12 +90,20 @@ public class ScaleCubeNetworkCluster implements NetworkCluster {
 
     /** {@inheritDoc} */
     @Override public Future<Void> send(NetworkMember member, NetworkMessage msg) {
-        return cluster.send(memberResolver.resolveMember(member), fromNetworkMessage(msg)).toFuture();
+        return cluster.send(memberResolver.resolveMember(member), fromData(msg)).toFuture();
+    }
+
+    @Override public Future<?> send(NetworkMember member, NetworkMessage msg, String corellationId) {
+        return cluster.send(memberResolver.resolveMember(member),
+            Message.withData(msg).header(HEADER_MESSAGE_TYPE, String.valueOf(msg.directType())).
+                correlationId(corellationId).build()).toFuture();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<NetworkMessage> sendWithResponse(NetworkMember member, NetworkMessage msg, long timeout) {
-        return cluster.requestResponse(memberResolver.resolveMember(member), fromNetworkMessage(msg))
+    @Override public CompletableFuture<NetworkMessage> invoke(NetworkMember member, NetworkMessage msg, long timeout) {
+        return cluster.requestResponse(memberResolver.resolveMember(member),
+            Message.withData(msg).correlationId(UUID.randomUUID().toString()).
+                header(HEADER_MESSAGE_TYPE, String.valueOf(msg.directType())).build())
             .timeout(ofMillis(timeout)).toFuture().thenApply(m -> m.data());
     }
 

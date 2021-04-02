@@ -15,22 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client.message.impl;
-
-import org.apache.ignite.raft.client.message.AddLearnersRequest;
-import org.apache.ignite.raft.client.message.AddPeersRequest;
-import org.apache.ignite.raft.client.message.ChangePeersResponse;
-import org.apache.ignite.raft.client.message.GetLeaderRequest;
-import org.apache.ignite.raft.client.message.GetLeaderResponse;
-import org.apache.ignite.raft.client.message.GetPeersRequest;
-import org.apache.ignite.raft.client.message.GetPeersResponse;
-import org.apache.ignite.raft.client.message.RaftErrorResponse;
-import org.apache.ignite.raft.client.message.RemoveLearnersRequest;
-import org.apache.ignite.raft.client.message.RemovePeersRequest;
-import org.apache.ignite.raft.client.message.SnapshotRequest;
-import org.apache.ignite.raft.client.message.TransferLeadershipRequest;
-import org.apache.ignite.raft.client.message.ActionRequest;
-import org.apache.ignite.raft.client.message.ActionResponse;
+package org.apache.ignite.raft.client.message;
 
 /**
  * A factory for immutable replication group messages.

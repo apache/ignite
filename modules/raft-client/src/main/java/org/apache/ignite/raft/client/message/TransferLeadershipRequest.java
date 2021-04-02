@@ -17,13 +17,14 @@
 
 package org.apache.ignite.raft.client.message;
 
+import java.io.Serializable;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.raft.client.Peer;
 
 /**
  * Transfer a leadership to receiving peer.
  */
-public interface TransferLeadershipRequest extends NetworkMessage {
+public interface TransferLeadershipRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
      */

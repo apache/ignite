@@ -15,53 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client;
+package org.apache.ignite.raft.server;
 
-/**
- * Error codes for raft protocol.
- */
-public enum RaftErrorCode {
-    /** */
-    SUCCESS(1000, "Successful"),
+import org.apache.ignite.raft.client.WriteCommand;
 
+/** */
+public class IncrementAndGetCommand implements WriteCommand {
     /** */
-    NO_LEADER(1001, "No leader is found within a timeout"),
-
-    /** */
-    LEADER_CHANGED(1002, "A peer is no longer a leader"),
-
-    /** */
-    ILLEGAL_STATE(1003, "A peer is in illegal state"),
-
-    /** */
-    BUSY(1004, "A peer is busy, retry later");
-
-    /** */
-    private final int code;
-
-    /** */
-    private final String desc;
+    private final int delta;
 
     /**
-     * @param code The code.
-     * @param desc The desctiption.
+     * @param delta The delta.
      */
-    RaftErrorCode(int code, String desc) {
-        this.code = code;
-        this.desc = desc;
+    public IncrementAndGetCommand(int delta) {
+        this.delta = delta;
     }
 
     /**
-     * @return The code.
+     * @return The delta.
      */
-    public int code() {
-        return code;
-    }
-
-    /**
-     * @return The description.
-     */
-    public String description() {
-        return desc;
+    public int delta() {
+        return delta;
     }
 }

@@ -44,6 +44,7 @@
         <module>modules/metastorage-client</module>
         <module>modules/metastorage-common</module>
         <module>modules/network</module>
+        <module>modules/raft</module>
         <module>modules/raft-client</module>
         <module>modules/rest</module>
         <module>modules/runner</module>

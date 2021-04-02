@@ -64,6 +64,17 @@ public interface NetworkCluster {
     Future<Void> send(NetworkMember member, NetworkMessage msg);
 
     /**
+     * Try to send the message asynchronously to the specific member with next guarantees:
+     * * Messages which was sent from one thread to one member will be delivered in the same order as they were sent.
+     * * If message N was successfully delivered to the member that means all messages preceding N also were successfully delivered.
+     *
+     * @param member Network member which should receive the message.
+     * @param msg Message which should be delivered.
+     * @param corellationId Corellation id when replying to the request.
+     */
+    Future<?> send(NetworkMember member, NetworkMessage msg, String corellationId);
+
+    /**
      * Sends a message asynchronously with same guarantees as for {@link #send(NetworkMember, NetworkMessage)} and
      * returns a response.
      *
@@ -73,7 +84,7 @@ public interface NetworkCluster {
      * @param <R> Expected response type.
      * @return A future holding the response or error if the expected response was not received.
      */
-    CompletableFuture<NetworkMessage> sendWithResponse(NetworkMember member, NetworkMessage msg, long timeout);
+    CompletableFuture<NetworkMessage> invoke(NetworkMember member, NetworkMessage msg, long timeout);
 
     /**
      * Add provider which allows to get configured handlers for different cluster events(ex. received message).

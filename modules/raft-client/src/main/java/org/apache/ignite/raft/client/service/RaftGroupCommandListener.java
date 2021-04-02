@@ -28,10 +28,10 @@ public interface RaftGroupCommandListener {
     /**
      * @param iterator Read command iterator.
      */
-    void onRead(Iterator<ReadCommand> iterator);
+    void onRead(Iterator<CommandClosure<ReadCommand>> iterator);
 
     /**
      * @param iterator Write command iterator.
      */
-    void onWrite(Iterator<WriteCommand> iterator);
+    void onWrite(Iterator<CommandClosure<WriteCommand>> iterator);
 }

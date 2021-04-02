@@ -15,32 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client.message;
+package org.apache.ignite.raft.server;
 
-import java.io.Serializable;
-import org.apache.ignite.network.message.NetworkMessage;
+import org.apache.ignite.raft.client.ReadCommand;
 
-/**
- * The result of an action.
- */
-public interface ActionResponse<T> extends NetworkMessage, Serializable {
-    /**
-     * @return A result for this request, can be of any type.
-     */
-    T result();
-
-    /** */
-    public interface Builder<T> {
-        /**
-         * @param result A result for this request.
-         * @return The builder.
-         */
-        Builder result(T result);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        ActionResponse build();
-    }
+/** */
+public class GetValueCommand implements ReadCommand {
 }

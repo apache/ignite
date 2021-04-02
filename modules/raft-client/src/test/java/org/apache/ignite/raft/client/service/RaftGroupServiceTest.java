@@ -30,7 +30,7 @@ import org.apache.ignite.raft.client.RaftErrorCode;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.message.ActionRequest;
 import org.apache.ignite.raft.client.message.GetLeaderRequest;
-import org.apache.ignite.raft.client.message.impl.RaftClientMessageFactory;
+import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
 import org.apache.ignite.raft.client.message.impl.RaftClientMessageFactoryImpl;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -378,7 +378,7 @@ public class RaftGroupServiceTest {
 
                 return completedFuture(resp);
             }
-        }).when(cluster).sendWithResponse(any(), argThat(new ArgumentMatcher<ActionRequest>() {
+        }).when(cluster).invoke(any(), argThat(new ArgumentMatcher<ActionRequest>() {
             @Override public boolean matches(ActionRequest arg) {
                 return arg.command() instanceof TestCommand;
             }
@@ -408,7 +408,7 @@ public class RaftGroupServiceTest {
 
                 return completedFuture(resp);
             }
-        }).when(cluster).sendWithResponse(any(), any(GetLeaderRequest.class), anyLong());
+        }).when(cluster).invoke(any(), any(GetLeaderRequest.class), anyLong());
     }
 
     /** */

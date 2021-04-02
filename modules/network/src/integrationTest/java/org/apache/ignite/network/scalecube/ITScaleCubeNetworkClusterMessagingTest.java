@@ -76,7 +76,7 @@ class ITScaleCubeNetworkClusterMessagingTest {
         final NetworkHandlersProvider messageWaiter = new NetworkHandlersProvider() {
             /** {@inheritDoc} */
             @Override public NetworkMessageHandler messageHandler() {
-                return message -> {
+                return (message, sender, corellationId) -> {
                     latch.countDown();
                 };
             }

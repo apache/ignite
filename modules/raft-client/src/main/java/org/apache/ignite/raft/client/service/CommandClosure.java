@@ -15,53 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client;
+package org.apache.ignite.raft.client.service;
+
+import org.apache.ignite.raft.client.Command;
 
 /**
- * Error codes for raft protocol.
+ * A closure to notify abbout command processing outcome.
+ * @param <R> Command type.
  */
-public enum RaftErrorCode {
-    /** */
-    SUCCESS(1000, "Successful"),
-
-    /** */
-    NO_LEADER(1001, "No leader is found within a timeout"),
-
-    /** */
-    LEADER_CHANGED(1002, "A peer is no longer a leader"),
-
-    /** */
-    ILLEGAL_STATE(1003, "A peer is in illegal state"),
-
-    /** */
-    BUSY(1004, "A peer is busy, retry later");
-
-    /** */
-    private final int code;
-
-    /** */
-    private final String desc;
+public interface CommandClosure<R extends Command> {
+    /**
+     * @return The command.
+     */
+    R command();
 
     /**
-     * @param code The code.
-     * @param desc The desctiption.
+     * Success outcome.
+     * @param res The result.
      */
-    RaftErrorCode(int code, String desc) {
-        this.code = code;
-        this.desc = desc;
-    }
+    void success(Object res);
 
     /**
-     * @return The code.
+     * Failure outcome.
+     * @param err The error.
      */
-    public int code() {
-        return code;
-    }
-
-    /**
-     * @return The description.
-     */
-    public String description() {
-        return desc;
-    }
+    void failure(Throwable err);
 }

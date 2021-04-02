@@ -65,7 +65,8 @@ public class ScaleCubeMessageHandler implements ClusterMessageHandler {
     @Override public void onMessage(Message message) {
         for (NetworkMessageHandler handler : messageHandlerHolder.messageHandlers()) {
             NetworkMessage msg = message.data();
-            handler.onReceived(msg);
+            NetworkMember sender = memberForAddress(message.sender());
+            handler.onReceived(msg, sender, message.correlationId());
         }
     }
 

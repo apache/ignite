@@ -17,8 +17,10 @@
 
 package org.apache.ignite.raft.client;
 
+import java.io.Serializable;
+
 /**
  * A marker interface for replication group command.
  */
-public interface Command {
+public interface Command extends Serializable {
 }

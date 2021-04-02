@@ -41,7 +41,7 @@ class TestNetworkHandlersProvider implements NetworkHandlersProvider {
 
     /** {@inheritDoc} */
     @Override public NetworkMessageHandler messageHandler() {
-        return event -> {
+        return (event, sender, corellationId) -> {
             MESSAGE_STORAGE.put(localName, event);
 
             System.out.println(localName + " handled messages : " + event);

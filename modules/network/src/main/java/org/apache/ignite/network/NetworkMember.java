@@ -16,12 +16,13 @@
  */
 package org.apache.ignite.network;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Representation of the network member.
  */
-public class NetworkMember {
+public class NetworkMember implements Serializable {
     /** Unique name of member in cluster. */
     private final String name;
 

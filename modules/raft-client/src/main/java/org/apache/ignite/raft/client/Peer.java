@@ -17,12 +17,13 @@
 
 package org.apache.ignite.raft.client;
 
+import java.io.Serializable;
 import org.apache.ignite.network.NetworkMember;
 
 /**
  * A participant of a replication group.
  */
-public final class Peer {
+public final class Peer implements Serializable {
     /**
      * Network node.
      */

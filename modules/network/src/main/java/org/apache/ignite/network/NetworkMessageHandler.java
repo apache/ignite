@@ -24,6 +24,8 @@ import org.apache.ignite.network.message.NetworkMessage;
 public interface NetworkMessageHandler {
     /**
      * @param message Message which was received from cluster.
+     * @param sender Sender.
+     * @param corellationId Corellation id.
      */
-    void onReceived(NetworkMessage message);
+    void onReceived(NetworkMessage message, NetworkMember sender, String corellationId);
 }
