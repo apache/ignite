@@ -199,7 +199,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         config.discovery_spi.prepare_on_start(cluster=self)
 
-        node_config = self.spec.config_template.render(config_dir=self.persistent_root, work_dir=self.work_dir,
+        node_config = self.spec.config_template.render(config_dir=self.config_dir, work_dir=self.work_dir,
                                                        config=config)
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
