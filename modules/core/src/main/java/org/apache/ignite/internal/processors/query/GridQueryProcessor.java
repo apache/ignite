@@ -458,24 +458,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param fut Exchange future.
      */
     public void beforeExchange(GridDhtPartitionsExchangeFuture fut) {
-        ExchangeActions acts = fut.exchangeActions();
+        Set<Integer> cacheIds = rebuildIndexCacheIds(fut);
 
-        if (acts != null) {
-            Set<Integer> cacheIds = emptySet();
-
-            if (!F.isEmpty(acts.cacheStartRequests())) {
-                cacheIds = acts.cacheStartRequests().stream()
-                    .map(d -> CU.cacheId(d.request().cacheName()))
-                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
-                    .collect(toSet());
-            }
-            else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
-                cacheIds = acts.localJoinContext().caches().stream()
-                    .map(t2 -> t2.get1().cacheId())
-                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
-                    .collect(toSet());
-            }
-
+        if (!cacheIds.isEmpty()) {
             Set<Integer> rejected = prepareIndexRebuildFutures(cacheIds, true);
 
             if (log.isDebugEnabled()) {
@@ -3852,6 +3837,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Removing futures of rebuilding indexes that should have been rebuilt on the exchange.
+     *
+     * @param fut Exchange future.
+     */
+    public void removeIndexRebuildFutures(GridDhtPartitionsExchangeFuture fut) {
+        Set<Integer> cacheIds = rebuildIndexCacheIds(fut);
+
+        if (!cacheIds.isEmpty()) {
+            synchronized (idxRebuildFuts) {
+                for (Integer cacheId : cacheIds) {
+                    GridFutureAdapter<Void> rmv;
+
+                    if (idxRebuildOnExchange.remove(cacheId) && (rmv = idxRebuildFuts.remove(cacheId)) != null)
+                        rmv.onDone();
+                }
+            }
+        }
+    }
+
+    /**
      * Checking the need to rebuild the indexes for the cache on exchange.
      *
      * @param cacheId Cache id.
@@ -3870,5 +3875,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private boolean needRebuildIndexOnExchange(int cacheId, GridDhtPartitionsExchangeFuture exchangeFut) {
         return exchangeFut.initialVersion().equals(ctx.cache().context().cacheContext(cacheId).startTopologyVersion());
+    }
+
+    /**
+     * Getting cache ids for which will need to rebuild the indexes on the exchange.
+     *
+     * @param fut Exchange future.
+     * @return Cache ids.
+     */
+    private Set<Integer> rebuildIndexCacheIds(GridDhtPartitionsExchangeFuture fut) {
+        ExchangeActions acts = fut.exchangeActions();
+
+        Set<Integer> cacheIds = emptySet();
+
+        if (acts != null) {
+            if (!F.isEmpty(acts.cacheStartRequests())) {
+                cacheIds = acts.cacheStartRequests().stream()
+                    .map(d -> CU.cacheId(d.request().cacheName()))
+                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
+                    .collect(toSet());
+            }
+            else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
+                cacheIds = acts.localJoinContext().caches().stream()
+                    .map(t2 -> t2.get1().cacheId())
+                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
+                    .collect(toSet());
+            }
+        }
+
+        return cacheIds;
     }
 }

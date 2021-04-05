@@ -188,6 +188,45 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checking that sequential index rebuilds on exchanges will not intersection.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSequentialRebuildIndexesOnExchange() throws Exception {
+        IgniteEx n = prepareCluster(100);
+
+        stopAllGrids();
+        deleteIndexBin(n.context().igniteInstanceName());
+
+        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
+        IndexesRebuildTaskEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
+
+        n = startGrid(0);
+        n.cluster().state(ACTIVE);
+
+        GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+
+        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+
+        IgniteInternalFuture<?> idxRebFut = checkStartRebuildIndexes(n, cacheCtx);
+
+        // To initiate an exchange.
+        n.getOrCreateCache(DEFAULT_CACHE_NAME + "_1");
+
+        assertTrue(idxRebFut == indexRebuildFuture(n, cacheCtx.cacheId()));
+
+        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+
+        idxRebFut.get(getTestTimeout());
+
+        checkFinishRebuildIndexes(n, cacheCtx, 100);
+        assertEquals(100, stopRebuildIdxConsumer.visitCnt.get());
+    }
+
+    /**
      * Prepare cluster for test.
      *
      * @param keys Key count.
