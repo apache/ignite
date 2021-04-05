@@ -43,12 +43,11 @@ class ThinClientTest(IgniteTest):
 
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
-    @parametrize(num_nodes=2, clients_num=1)
-    def test_replicated_atomic_cache(self, ignite_version, num_nodes, clients_num):
+    def test_thin_client_selftest(self, ignite_version):
         """
-        Test that thin client can connect, create, configure  and use cache
+        Thin client self test
         """
-        servers_count = num_nodes - clients_num
+        servers_count = 1
 
         server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[])
 
@@ -58,7 +57,7 @@ class ThinClientTest(IgniteTest):
 
         static_clients = IgniteApplicationService(self.test_context, server_configuration,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                           num_nodes=clients_num,
+                                           num_nodes=1,
                                            params={"thin_client_connection": thin_client_connection},
                                            start_ignite = False,
                                            startup_timeout_sec=180)

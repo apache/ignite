@@ -48,12 +48,12 @@ class IgniteApplicationService(IgniteAwareService):
         self.params = params
 
     def await_started(self):
-        super().await_started()
+        # super().await_started()
 
         self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
 
     def await_stopped(self):
-        super().await_stopped()
+        # super().await_stopped()
 
         self.__check_status(self.APP_FINISH_EVT_MSG)
 

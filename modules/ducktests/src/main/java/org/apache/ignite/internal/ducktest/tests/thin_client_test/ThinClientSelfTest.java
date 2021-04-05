@@ -25,7 +25,7 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Thin client. Cache test: put, get, value check
+ * Thin client. Cache test: put, get, value check.
  */
 public class ThinClientSelfTest extends IgniteAwareApplication {
     /** {@inheritDoc} */

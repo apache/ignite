@@ -96,7 +96,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
-        # self.await_started()
+        self.await_started()
 
     def update_ssl_config_with_globals(self):
         """
@@ -143,8 +143,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
         # Waiting will happen on plain stop() call made by ducktape during same step.
-        # if not force_stop:
-        #     self.await_stopped()
+        if not force_stop:
+            self.await_stopped()
 
     def await_stopped(self):
         """
