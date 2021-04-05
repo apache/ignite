@@ -36,27 +36,23 @@ public class PdsCompatiblityApplication extends IgniteAwareApplication {
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws IgniteCheckedException {
-
         String operation = jsonNode.get("operation").asText();
-        final String cacheName = "users";
 
         markInitialized();
 
-        IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName);
-
-        log.info("Input data: " + jsonNode.toString());
+        IgniteCache<Integer, String> cache = ignite.getOrCreateCache("users");
 
         switch (operation) {
             case "load":
-                for (int i = 0; i < users.size(); i++) {
+                for (int i = 0; i < users.size(); i++)
                     cache.put(i, users.get(i));
-                }
+
                 break;
 
             case "check":
-                for (int i = 0; i < users.size(); i++) {
+                for (int i = 0; i < users.size(); i++)
                     assert cache.get(i).equals(users.get(i));
-                }
+
                 break;
 
             default:

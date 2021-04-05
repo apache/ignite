@@ -33,13 +33,10 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 # pylint: disable=no-member
 class PdsCompatibilityTest(IgniteTest):
     """
-    A simple test to check PDS compatibility of different Ignite versions
+    A simple test to check PDS compatibility of different Ignite versions.
 
     Start Ignite cluster version "from_version" with PDS enabled
-    Start a client application that puts prepared data looks like
-    User (1, "John Connor")
-    User (2, "Sarah Connor")
-    User (3, "Kyle Reese")
+    Start a client application that puts prepared data
     Stop cluster and client
     Start Ignite cluster version "to_version" without PDS clearing
     Start client that reads data and checks that it can be read and have not changed
@@ -61,34 +58,39 @@ class PdsCompatibilityTest(IgniteTest):
         server_configuration_from = IgniteConfiguration(version=IgniteVersion(version_from),
                                                         data_storage=DataStorageConfiguration(
                                                             default=DataRegionConfiguration(persistent=True)))
-
-        server_configuration_to = server_configuration_from._replace(version=IgniteVersion(version_to))
-
         ignite_from = IgniteService(self.test_context, server_configuration_from, num_nodes=num_nodes)
-        nodes = ignite_from.nodes.copy()
 
         ignite_from.start()
 
-        self._run_application(ignite_from, self.LOAD_OPERATION)
+        ControlUtility(ignite_from).activate()
+
+        loader_config = ignite_from.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite_from))
+        loader = IgniteApplicationService(self.test_context, config=loader_config,
+                                          java_class_name=self.APP_CLASS,
+                                          params={"operation": self.LOAD_OPERATION})
+
+        app_nodes = loader.nodes.copy()
+        loader.start()
+        loader.await_stopped()
+        loader.free()
 
         ignite_from.stop()
+        nodes = ignite_from.nodes.copy()
         ignite_from.free()
 
+        server_configuration_to = server_configuration_from._replace(version=IgniteVersion(version_to))
         ignite_to = IgniteService(self.test_context, server_configuration_to, num_nodes=num_nodes)
         ignite_to.nodes = nodes
+
         ignite_to.start(clean=False)
 
-        self._run_application(ignite_to, self.CHECK_OPERATION)
+        ControlUtility(ignite_to).activate()
 
-    def _run_application(self, ignite, operation):
-        control_utility = ControlUtility(ignite)
-        control_utility.activate()
+        checker_config = ignite_to.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite_to))
+        checker = IgniteApplicationService(self.test_context, config=checker_config,
+                                           java_class_name=self.APP_CLASS,
+                                           params={"operation": self.CHECK_OPERATION})
 
-        app_config = ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
-        app = IgniteApplicationService(self.test_context, config=app_config,
-                                       java_class_name=self.APP_CLASS,
-                                       params={"operation": operation})
-        app.start(clean=False)
-        app.await_stopped()
-        app.free()
-        control_utility.deactivate()
+        checker.nodes = app_nodes
+        checker.start(clean=False)
+        checker.await_stopped()
