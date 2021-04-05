@@ -24,7 +24,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /**
  * Thin client. Cache test: put, get, remove.
  */
-public class ThinClientSelfTest extends IgniteAwareApplication {
+public class ThinClientSelfTestApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         markInitialized();
