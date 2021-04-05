@@ -154,12 +154,12 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
+        UUID reqId = UUID.randomUUID();
+
         ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
-                    fut.onDone(f.error());
-
-                    fut = null;
+                    finishProcess(reqId, f.error());
 
                     return;
                 }
@@ -182,10 +182,8 @@ public class SnapshotRestoreProcess {
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    fut.onDone(new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
+                    finishProcess(reqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
                         "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                    fut = null;
 
                     return;
                 }
@@ -193,7 +191,7 @@ public class SnapshotRestoreProcess {
                 ctx.cache().context().snapshotMgr().runSnapshotVerfification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
-                            fut.onDone(f0.error());
+                            finishProcess(reqId, f0.error());
 
                             return;
                         }
@@ -205,15 +203,13 @@ public class SnapshotRestoreProcess {
 
                             res.print(sb::append, true);
 
-                            fut.onDone(new IgniteException(sb.toString()));
-
-                            fut = null;
+                            finishProcess(reqId, new IgniteException(sb.toString()));
 
                             return;
                         }
 
-                        SnapshotRestoreRequest req = new SnapshotRestoreRequest(UUID.randomUUID(),
-                            snpName, dataNodes, cacheGrpNames, F.first(dataNodes));
+                        SnapshotRestoreRequest req =
+                            new SnapshotRestoreRequest(reqId, snpName, dataNodes, cacheGrpNames, F.first(dataNodes));
 
                         prepareRestoreProc.start(req.requestId(), req);
                     }
@@ -275,27 +271,29 @@ public class SnapshotRestoreProcess {
 
     /**
      * Finish local cache group restore process.
+     *
+     * @param reqId Request ID.
      */
-    private void finishProcess() {
-        finishProcess(null);
+    private void finishProcess(UUID reqId) {
+        finishProcess(reqId, null);
     }
 
     /**
      * Finish local cache group restore process.
      *
+     * @param reqId Request ID.
      * @param err Error, if any.
      */
-    private void finishProcess(@Nullable Throwable err) {
+    private void finishProcess(UUID reqId, @Nullable Throwable err) {
+        if (err != null)
+            log.error("Failed to restore snapshot cache group [reqId=" + reqId + ']', err);
+        else if (log.isInfoEnabled())
+            log.info("Successfully restored cache group(s) from the snapshot [reqId=" + reqId + ']');
+
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        String details = opCtx0 == null ? "" : " [reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']';
-
-        if (err != null)
-            log.error("Failed to restore snapshot cache group" + details, err);
-        else if (log.isInfoEnabled())
-            log.info("Successfully restored cache group(s) from the snapshot" + details);
-
-        opCtx = null;
+        if (opCtx0 != null && reqId.equals(opCtx0.reqId))
+            opCtx = null;
 
         synchronized (this) {
             GridFutureAdapter<Void> fut0 = fut;
@@ -584,7 +582,7 @@ public class SnapshotRestoreProcess {
         assert opCtx0 != null || failure != null : ctx.localNodeId();
 
         if (opCtx0 == null) {
-            finishProcess(failure);
+            finishProcess(reqId, failure);
 
             return;
         }
@@ -664,7 +662,7 @@ public class SnapshotRestoreProcess {
             orElse(checkNodeLeft(opCtx0.nodes, res.keySet()));
 
         if (failure == null) {
-            finishProcess();
+            finishProcess(reqId);
 
             return;
         }
@@ -774,7 +772,7 @@ public class SnapshotRestoreProcess {
                 " operation [reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", node(s)=" + leftNodes + ']');
         }
 
-        finishProcess(opCtx0.err.get());
+        finishProcess(reqId, opCtx0.err.get());
     }
 
     /**
