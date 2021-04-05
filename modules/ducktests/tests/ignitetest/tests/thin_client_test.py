@@ -23,6 +23,7 @@ from ducktape.mark import parametrize, matrix
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
@@ -33,7 +34,7 @@ class ThinClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME - running classname.
     """
 
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTest"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTestApplication"
 
     @cluster(num_nodes=2)
     @matrix(server_version=[str(DEV_BRANCH), str(LATEST)], thin_client_version=[str(DEV_BRANCH), str(LATEST)])
@@ -42,11 +43,13 @@ class ThinClientTest(IgniteTest):
         Thin client compatibility test.
         """
 
-        server_config = IgniteConfiguration(version=IgniteVersion(server_version))
+        server_config = IgniteConfiguration(version=IgniteVersion(server_version),
+                                            client_connector_configuration = ClientConnectorConfiguration())
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
-        thin_client_connection = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+        thin_client_connection = ignite.nodes[0].account.hostname + ":" + \
+                                 str(server_config.client_connector_configuration.port)
 
         thin_clients = IgniteApplicationService(self.test_context,
                                            IgniteConfiguration(version=IgniteVersion(thin_client_version)),

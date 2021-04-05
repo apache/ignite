@@ -37,6 +37,9 @@ public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
 
+    /** Thin client connection string variable. */
+    public static final String THIN_CLIENT_CONNECTION = "thin_client_connection";
+
     /**
      * @param args Args.
      */
@@ -78,10 +81,9 @@ public class IgniteAwareApplicationService {
             }
         }
         else {
-            final String connStr = jsonNode.get("thin_client_connection").asText();
+            String connStr = jsonNode.get(THIN_CLIENT_CONNECTION).asText();
 
-            if (connStr != null && !connStr.isEmpty())
-                app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
+            app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
 
             app.start(jsonNode);
         }
