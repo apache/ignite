@@ -64,32 +64,36 @@ class PdsCompatibilityTest(IgniteTest):
 
         ControlUtility(ignite_from).activate()
 
-        loader_config = ignite_from.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite_from))
-        loader = IgniteApplicationService(self.test_context, config=loader_config,
-                                          java_class_name=self.APP_CLASS,
-                                          params={"operation": self.LOAD_OPERATION})
+        loader = IgniteApplicationService(
+            self.test_context,
+            config=ignite_from.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite_from)),
+            java_class_name=self.APP_CLASS,
+            params={"operation": self.LOAD_OPERATION})
 
         app_nodes = loader.nodes.copy()
-        loader.start()
-        loader.await_stopped()
+        loader.run()
         loader.free()
 
         ignite_from.stop()
         nodes = ignite_from.nodes.copy()
         ignite_from.free()
 
-        server_configuration_to = server_configuration_from._replace(version=IgniteVersion(version_to))
-        ignite_to = IgniteService(self.test_context, server_configuration_to, num_nodes=num_nodes)
+        ignite_to = IgniteService(
+            self.test_context,
+            config=server_configuration_from._replace(version=IgniteVersion(version_to)),
+            num_nodes=num_nodes)
+
         ignite_to.nodes = nodes
 
         ignite_to.start(clean=False)
 
         ControlUtility(ignite_to).activate()
 
-        checker_config = ignite_to.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite_to))
-        checker = IgniteApplicationService(self.test_context, config=checker_config,
-                                           java_class_name=self.APP_CLASS,
-                                           params={"operation": self.CHECK_OPERATION})
+        checker = IgniteApplicationService(
+            self.test_context,
+            config=ignite_to.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite_to)),
+            java_class_name=self.APP_CLASS,
+            params={"operation": self.CHECK_OPERATION})
 
         checker.nodes = app_nodes
         checker.start(clean=False)
