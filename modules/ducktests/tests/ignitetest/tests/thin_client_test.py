@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-This module contains client tests
+This module contains client tests.
 """
 import time
 
@@ -29,7 +29,7 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 class ThinClientTest(IgniteTest):
     """
-    cluster - cluster size
+    cluster - cluster size.
     JAVA_CLIENT_CLASS_NAME - running classname.
     """
 
@@ -37,16 +37,18 @@ class ThinClientTest(IgniteTest):
 
     @cluster(num_nodes=2)
     @matrix(server_version=[str(DEV_BRANCH), str(LATEST)], thin_client_version=[str(DEV_BRANCH), str(LATEST)])
-    def test_thin_client(self, server_version, thin_client_version):
+    def test_thin_client_compatibility(self, server_version, thin_client_version):
         """
-        Thin client self test
+        Thin client compatibility test.
         """
 
         ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(server_version), caches=[]), 1)
 
-        thin_client_connection = ignite.nodes[0].account.hostname + ":10800"
+        client_config = IgniteConfiguration(version=IgniteVersion(thin_client_version), caches=[])
 
-        thin_clients = IgniteApplicationService(self.test_context, IgniteConfiguration(version=IgniteVersion(thin_client_version), caches=[]),
+        thin_client_connection = ignite.nodes[0].account.hostname + ":" + str(client_config.client_connector_configuration.port)
+
+        thin_clients = IgniteApplicationService(self.test_context, client_config,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=1,
                                            params={"thin_client_connection": thin_client_connection},
