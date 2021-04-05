@@ -349,7 +349,11 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, reason);
 
-        IgniteFuture<?> stopFut = opCtx0.stopFut;
+        IgniteFuture<?> stopFut;
+
+        synchronized (this) {
+            stopFut = opCtx0.stopFut;
+        }
 
         if (stopFut != null)
             stopFut.get();
@@ -718,32 +722,35 @@ public class SnapshotRestoreProcess {
 
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
-        opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+        synchronized (this) {
+            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-        try {
-            ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
-                if (log.isInfoEnabled()) {
-                    log.info("Removing restored cache directories [reqId=" + opCtx0.reqId +
-                        ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
-                }
+            try {
+                ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
+                    if (log.isInfoEnabled()) {
+                        log.info("Removing restored cache directories [reqId=" + opCtx0.reqId +
+                            ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
+                    }
 
-                IgniteCheckedException ex = null;
+                    IgniteCheckedException ex = null;
 
-                for (File cacheDir : opCtx0.dirs) {
-                    if (!cacheDir.exists())
-                        continue;
+                    for (File cacheDir : opCtx0.dirs) {
+                        if (!cacheDir.exists())
+                            continue;
 
-                    if (!U.delete(cacheDir))
-                        ex = new IgniteCheckedException("Unable to remove directory " + cacheDir);
-                }
+                        if (!U.delete(cacheDir))
+                            ex = new IgniteCheckedException("Unable to remove directory " + cacheDir);
+                    }
 
-                if (ex != null)
-                    retFut.onDone(ex);
-                else
-                    retFut.onDone(true);
-            });
-        } catch (RejectedExecutionException e) {
-            retFut.onDone(e);
+                    if (ex != null)
+                        retFut.onDone(ex);
+                    else
+                        retFut.onDone(true);
+                });
+            }
+            catch (RejectedExecutionException e) {
+                retFut.onDone(e);
+            }
         }
 
         return retFut;
