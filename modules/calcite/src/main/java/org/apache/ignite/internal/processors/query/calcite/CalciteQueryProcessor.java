@@ -24,7 +24,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
+import org.apache.calcite.sql.parser.ddl.SqlDdlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -78,7 +78,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withDecorrelationEnabled(true))
         .parserConfig(
             SqlParser.config()
-                .withParserFactory(SqlBabelParserImpl.FACTORY)
+                .withParserFactory(SqlDdlParserImpl.FACTORY)
                 .withLex(Lex.ORACLE)
                 .withConformance(SqlConformanceEnum.DEFAULT))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT

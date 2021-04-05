@@ -19,14 +19,18 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
@@ -41,18 +45,29 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
+import org.apache.calcite.sql.ddl.SqlCreateTable;
+import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -60,6 +75,7 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -67,6 +83,8 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
@@ -83,6 +101,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
+import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
@@ -99,6 +118,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -112,6 +134,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -120,6 +144,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
+import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
@@ -176,6 +201,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private final RowHandler<Row> handler;
 
+    /** */
+    private final GridCacheProcessor cacheProcessor;
+
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * @param ctx Kernal.
      */
@@ -185,6 +216,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
         running = new ConcurrentHashMap<>();
+
+        cacheProcessor = ctx.cache();
+        this.ctx = ctx;
     }
 
     /**
@@ -536,27 +570,21 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         ctx.planner().reset();
 
-        switch (sqlNode.getKind()) {
-            case SELECT:
-            case ORDER_BY:
-            case WITH:
-            case VALUES:
-            case UNION:
-                return prepareQuery(sqlNode, ctx);
+       if (sqlNode.getKind().belongsTo(SqlKind.QUERY))
+           return prepareQuery(sqlNode, ctx);
 
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return prepareDml(sqlNode, ctx);
+       else if (sqlNode.getKind().belongsTo(SqlKind.DML))
+           return prepareDml(sqlNode, ctx);
 
-            case EXPLAIN:
-                return prepareExplain(sqlNode, ctx);
+       else if (sqlNode.getKind() == SqlKind.EXPLAIN)
+           return prepareExplain(sqlNode, ctx);
 
-            default:
-                throw new IgniteSQLException("Unsupported operation [" +
-                    "sqlNodeKind=" + sqlNode.getKind() + "; " +
-                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
+       else if (sqlNode.getKind().belongsTo(SqlKind.DDL))
+           return prepareDdl(sqlNode, ctx);
+
+       throw new IgniteSQLException("Unsupported operation [" +
+           "sqlNodeKind=" + sqlNode.getKind() + "; " +
+           "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /** */
@@ -594,6 +622,89 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         QueryTemplate template = new QueryTemplate(mappingSvc, fragments);
 
         return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
+    }
+
+    /** */
+    private QueryPlan prepareDdl(SqlNode sqlNode, PlanningContext ctx) {
+        assert sqlNode instanceof SqlDdl : sqlNode == null ? "null" : sqlNode.getClass().getName();
+
+        SqlDdl ddlNode = (SqlDdl)sqlNode;
+
+        if (ddlNode instanceof SqlCreateTable) {
+            SqlCreateTable createTblNode = (SqlCreateTable)ddlNode;
+
+            SqlIdentifier tblFullName = createTblNode.name;
+
+            if (tblFullName.names.size() > 2)
+                throw new IllegalArgumentException(); // TODO: replace with a valid exception
+
+            String tblName, schemaName;
+            if (tblFullName.names.size() > 1)
+                schemaName = tblFullName.names.get(tblFullName.names.size() - 2);
+            else
+                schemaName = "PUBLIC"; // TODO: get from context
+
+            tblName = Util.last(tblFullName.names);
+
+            String valTypeName = QueryUtils.createTableValueTypeName(schemaName, tblName);
+            String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+            CreateTableCommand createTblCmd = new CreateTableCommand();
+
+            createTblCmd.schemaName(schemaName);
+            createTblCmd.tableName(tblName);
+            createTblCmd.valueTypeName(valTypeName);
+            createTblCmd.keyTypeName(keyTypeName);
+
+            List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList.getList().stream()
+                .filter(SqlColumnDeclaration.class::isInstance)
+                .map(SqlColumnDeclaration.class::cast)
+                .collect(Collectors.toList());
+
+            IgnitePlanner planner = ctx.planner();
+
+            List<ColumnDefinition> cols = new ArrayList<>();
+
+            for (SqlColumnDeclaration col : colDeclarations) {
+                ColumnDefinition def = new ColumnDefinition();
+
+                cols.add(def);
+
+                def.name(Util.last(col.name.names));
+                def.type(planner.conver(col.dataType));
+                def.nullable(col.strategy != ColumnStrategy.NOT_NULLABLE);
+
+                if (col.expression != null)
+                   def.defaultValue(((SqlLiteral)col.expression).getValue());
+            }
+
+            createTblCmd.columns(cols);
+
+            List<SqlKeyConstraint> pkConstraints = createTblNode.columnList.getList().stream()
+                .filter(SqlKeyConstraint.class::isInstance)
+                .map(SqlKeyConstraint.class::cast)
+                .collect(Collectors.toList());
+
+            if (pkConstraints.size() != 1)
+                throw new RuntimeException(); // TODO: replace with a valid exception
+
+            Set<String> dedupSet = new HashSet<>();
+
+            List<String> pkCols = pkConstraints.stream()
+                .map(pk -> pk.getOperandList().get(1))
+                .map(SqlNodeList.class::cast)
+                .flatMap(l -> l.getList().stream())
+                .map(SqlIdentifier.class::cast)
+                .map(id -> Util.last(id.names))
+                .filter(dedupSet::add)
+                .collect(Collectors.toList());
+
+            createTblCmd.primaryKeyColumns(pkCols);
+
+            return new DdlPlan(createTblCmd);
+        }
+
+        throw new UnsupportedOperationException("Command " + ddlNode.getKind() + " is not supported");
     }
 
     /** */
@@ -647,7 +758,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsMetadata explainFieldsMetadata(PlanningContext ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
-            factory.createSqlType(SqlTypeName.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED);
+            factory.createSqlType(SqlTypeName.VARCHAR, PRECISION_NOT_SPECIFIED);
         T2<String, RelDataType> planField = new T2<>(ExplainPlan.PLAN_COL_NAME, planStrDataType);
         RelDataType planDataType = factory.createStructType(singletonList(planField));
 
@@ -663,10 +774,122 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
+            case DDL:
+                return executeDdl((DdlPlan)plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
         }
+    }
+
+    /** */
+    private FieldsQueryCursor<List<?>> executeDdl(DdlPlan plan, PlanningContext pctx) {
+        DdlCommand cmd = plan.command();
+        try {
+            if (cmd instanceof CreateTableCommand)
+                executeCreateTable((CreateTableCommand)cmd, pctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + pctx.query() +
+                ", err=" + e.getMessage() + ']', e);
+        }
+
+        return H2Utils.zeroCursor();
+    }
+
+    /** */
+    private void executeCreateTable(CreateTableCommand cmd, PlanningContext pctx) throws IgniteCheckedException {
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
+
+        QueryEntity e = toQueryEntity(cmd, pctx);
+
+        // TODO: check for existance + access rigths
+
+        ccfg.setQueryEntities(Collections.singleton(e));
+        ccfg.setSqlSchema(cmd.schemaName());
+
+        SchemaOperationException err =
+            QueryUtils.checkQueryEntityConflicts(ccfg, cacheProcessor.cacheDescriptors().values());
+
+        if (err != null)
+            throw new RuntimeException(err); // TODO: replace with valid exception
+
+        ctx.query().dynamicTableCreate(
+            cmd.schemaName(),
+            e,
+            QueryUtils.TEMPLATE_PARTITIONED,
+            cmd.cacheName(),
+            cmd.cacheGroup(),
+            cmd.dataRegionName(),
+            cmd.affinityKey(),
+            cmd.atomicityMode(),
+            cmd.writeSynchronizationMode(),
+            cmd.backups(),
+            cmd.ifNotExists(),
+            cmd.encrypted(),
+            null
+        );
+    }
+
+    /** */
+    private QueryEntity toQueryEntity(CreateTableCommand cmd, PlanningContext pctx) {
+        QueryEntity res = new QueryEntity();
+
+        res.setTableName(cmd.tableName());
+
+        Set<String> notNullFields = null;
+
+        HashMap<String, Object> dfltValues = new HashMap<>();
+
+        Map<String, Integer> precision = new HashMap<>();
+        Map<String, Integer> scale = new HashMap<>();
+
+        IgniteTypeFactory tf = pctx.typeFactory();
+
+        for (ColumnDefinition col : cmd.columns()) {
+            String name = col.name();
+
+            res.addQueryField(name, tf.getJavaClass(col.type()).getTypeName(), null);
+
+            if (!col.nullable()) {
+                if (notNullFields == null)
+                    notNullFields = new HashSet<>();
+
+                notNullFields.add(name);
+            }
+
+            if (col.defaultValue() != null)
+                dfltValues.put(name, col.defaultValue());
+
+            if (col.precision() != null)
+                precision.put(name, col.precision());
+
+            if (col.scale() != null)
+                scale.put(name, col.scale());
+        }
+
+        if (!F.isEmpty(dfltValues))
+            res.setDefaultFieldValues(dfltValues);
+
+        if (!F.isEmpty(precision))
+            res.setFieldsPrecision(precision);
+
+        if (!F.isEmpty(scale))
+            res.setFieldsScale(scale);
+
+        res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
+        res.setValueType(cmd.valueTypeName());
+        res.setKeyType(cmd.keyTypeName());
+
+        if (!F.isEmpty(notNullFields)) {
+            QueryEntityEx res0 = new QueryEntityEx(res);
+
+            res0.setNotNullFields(notNullFields);
+
+            res = res0;
+        }
+
+        return res;
     }
 
     /** */

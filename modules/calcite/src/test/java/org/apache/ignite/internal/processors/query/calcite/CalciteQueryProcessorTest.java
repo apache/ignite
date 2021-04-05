@@ -40,12 +40,14 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -849,6 +851,28 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(ImmutableIntList.of(2, 3), tblMap.get("MY_TBL_1").descriptor().distribution().getKeys());
         assertEquals(ImmutableIntList.of(3), tblMap.get("MY_TBL_2").descriptor().distribution().getKeys());
+    }
+
+    @Test
+    public void test() throws IgniteInterruptedCheckedException {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        qryProc.query(null, "PUBLIC", "create table tbl (id int, constraint pk primary key (id), val varchar)");
+
+//        U.sleep(5_000);
+//        qryProc.query(null, "PUBLIC", "insert into tbl (id, val) values (1, '1'), (2, '2')")/*.get(0).getAll()*/;
+
+        execute(client,"insert into tbl (id, val) values (1, '1'), (2, '2')");
+
+        List<List<?>> res = qryProc.query(null, "PUBLIC", "select * from tbl order by id").get(0).getAll();
+
+        assertEquals(2, res.size());
+
+        assertEquals(1, res.get(0).get(0));
+        assertEquals("1", res.get(0).get(1));
+
+        assertEquals(2, res.get(1).get(0));
+        assertEquals("2", res.get(1).get(1));
     }
 
     /**
