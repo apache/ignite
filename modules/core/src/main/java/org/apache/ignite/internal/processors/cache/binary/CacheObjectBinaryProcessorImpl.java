@@ -56,6 +56,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
@@ -1018,6 +1019,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (BinaryMetadata newMeta : metadata) {
                 if (stopChecker.getAsBoolean())
                     return;
+
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
 
                 addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
             }

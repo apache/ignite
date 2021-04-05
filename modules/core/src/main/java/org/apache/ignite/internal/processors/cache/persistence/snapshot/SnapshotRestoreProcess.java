@@ -1,19 +1,19 @@
-///*
-// * Licensed to the Apache Software Foundation (ASF) under one or more
-// * contributor license agreements.  See the NOTICE file distributed with
-// * this work for additional information regarding copyright ownership.
-// * The ASF licenses this file to You under the Apache License, Version 2.0
-// * (the "License"); you may not use this file except in compliance with
-// * the License.  You may obtain a copy of the License at
-// *
-// *      http://www.apache.org/licenses/LICENSE-2.0
-// *
-// * Unless required by applicable law or agreed to in writing, software
-// * distributed under the License is distributed on an "AS IS" BASIS,
-// * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// * See the License for the specific language governing permissions and
-// * limitations under the License.
-// */
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
@@ -94,7 +94,7 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** The future to be completed when the cache restore process is complete. */
+    /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile GridFutureAdapter<Void> fut;
 
     /** Snapshot restore operation context. */
@@ -148,7 +148,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                if (isRestoring())
+                if (isRestoring() && fut == null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new GridFutureAdapter<>();
@@ -227,7 +227,7 @@ public class SnapshotRestoreProcess {
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        return opCtx != null || fut != null;
+        return isRestoring(null, null);
     }
 
     /**
@@ -237,11 +237,14 @@ public class SnapshotRestoreProcess {
      * @param grpName Cache group name.
      * @return {@code True} if the cache or group with the specified name is currently being restored.
      */
-    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+    public boolean isRestoring(@Nullable String cacheName, @Nullable String grpName) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
             return false;
+
+        if (cacheName == null)
+            return true;
 
         Map<Integer, StoredCacheData> cacheCfgs = opCtx0.cfgs;
 
@@ -291,12 +294,14 @@ public class SnapshotRestoreProcess {
 
         opCtx = null;
 
-        GridFutureAdapter<Void> fut0 = fut;
+        synchronized (this) {
+            GridFutureAdapter<Void> fut0 = fut;
 
-        if (fut0 != null) {
-            fut = null;
+            if (fut0 != null) {
+                fut = null;
 
-            ctx.getSystemExecutorService().submit(() -> fut0.onDone(null, err));
+                ctx.getSystemExecutorService().submit(() -> fut0.onDone(null, err));
+            }
         }
     }
 
@@ -342,7 +347,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, reason);
 
-        IgniteInternalFuture<?> stopFut;
+        IgniteFuture<?> stopFut;
 
         synchronized (this) {
             stopFut = opCtx0.stopFut;
@@ -351,15 +356,8 @@ public class SnapshotRestoreProcess {
                 stopped = true;
         }
 
-        if (stopFut == null || stopFut.isDone())
-            return;
-
-        try {
+        if (stopFut != null)
             stopFut.get();
-        }
-        catch (IgniteCheckedException ignore) {
-            // No-op.
-        }
     }
 
     /**
@@ -423,42 +421,30 @@ public class SnapshotRestoreProcess {
                     ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
             }
 
-            boolean updateMeta = ctx.localNodeId().equals(req.updateMetaNodeId());
-            Consumer<Exception> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
-            BooleanSupplier stopChecker = () -> {
-                if (opCtx.err.get() != null)
-                    return true;
-
-                if (Thread.currentThread().isInterrupted()) {
-                    errHnd.accept(new IgniteInterruptedCheckedException("Thread has been interrupted."));
-
-                    return true;
-                }
-
-                return false;
-            };
-
+            Consumer<Throwable> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
+            BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
             synchronized (this) {
                 if (stopped || ctx.isStopping())
                     throw new NodeStoppingException("Node is stopping.");
 
-                opCtx0.stopFut = retFut.chain(f -> null);
+                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
             }
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, updateMeta, stopChecker, errHnd).thenAccept(res -> {
-                Throwable err = opCtx.err.get();
+            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.updateMetaNodeId()), stopChecker, errHnd)
+                .thenAccept(res -> {
+                    Throwable err = opCtx.err.get();
 
-                if (err != null) {
-                    log.error("Unable to restore cache group(s) from the snapshot " +
-                        "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
+                    if (err != null) {
+                        log.error("Unable to restore cache group(s) from the snapshot " +
+                            "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', err);
 
-                    retFut.onDone(err);
-                }
-                else
-                    retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
-            });
+                        retFut.onDone(err);
+                    }
+                    else
+                        retFut.onDone(new ArrayList<>(opCtx.cfgs.values()));
+                });
 
             return retFut;
         } catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
@@ -484,7 +470,7 @@ public class SnapshotRestoreProcess {
         Collection<File> dirs,
         boolean updateMeta,
         BooleanSupplier stopChecker,
-        Consumer<Exception> errHnd
+        Consumer<Throwable> errHnd
     ) throws IgniteCheckedException {
         IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
         String pdsFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
@@ -498,8 +484,8 @@ public class SnapshotRestoreProcess {
                 try {
                     ctx.cacheObjects().updateMetadata(binDir, stopChecker);
                 }
-                catch (IgniteCheckedException e) {
-                    errHnd.accept(e);
+                catch (Throwable t) {
+                    errHnd.accept(t);
                 }
             }, snapshotMgr.snapshotExecutorService()));
         }
@@ -516,6 +502,9 @@ public class SnapshotRestoreProcess {
                         return;
 
                     try {
+                        if (Thread.currentThread().isInterrupted())
+                            throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
+
                         File target = new File(cacheDir, snpFile.getName());
 
                         if (log.isDebugEnabled()) {
@@ -527,7 +516,7 @@ public class SnapshotRestoreProcess {
 
                         Files.copy(snpFile.toPath(), target.toPath());
                     }
-                    catch (IOException e) {
+                    catch (IgniteInterruptedCheckedException | IOException e) {
                         errHnd.accept(e);
                     }
                 }, ctx.cache().context().snapshotMgr().snapshotExecutorService()));
@@ -740,27 +729,34 @@ public class SnapshotRestoreProcess {
             if (stopped)
                 return new GridFinishedFuture<>(new NodeStoppingException("Node is stopping."));
 
-            opCtx0.stopFut = retFut.chain(f -> null);
+            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
         }
 
-        ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
-            if (log.isInfoEnabled()) {
-                log.info("Performing local rollback routine for restored cache groups " +
-                    "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
-            }
+        try {
+            ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
+                if (log.isInfoEnabled()) {
+                    log.info("Removing restored cache directories [reqId=" + opCtx0.reqId +
+                        ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
+                }
 
-            for (File cacheDir : opCtx0.dirs) {
-                if (!cacheDir.exists())
-                    continue;
+                IgniteCheckedException ex = null;
 
-                if (log.isInfoEnabled())
-                    log.info("Cleaning up directory " + cacheDir);
+                for (File cacheDir : opCtx0.dirs) {
+                    if (!cacheDir.exists())
+                        continue;
 
-                U.delete(cacheDir);
-            }
+                    if (!U.delete(cacheDir))
+                        ex = new IgniteCheckedException("Unable to remove directory " + cacheDir);
+                }
 
-            retFut.onDone(true);
-        });
+                if (ex != null)
+                    retFut.onDone(ex);
+                else
+                    retFut.onDone(true);
+            });
+        } catch (RejectedExecutionException e) {
+            retFut.onDone(e);
+        }
 
         return retFut;
     }
@@ -810,13 +806,13 @@ public class SnapshotRestoreProcess {
         private final Collection<File> dirs;
 
         /** The exception that led to the interruption of the process. */
-        private final AtomicReference<Exception> err = new AtomicReference<>();
+        private final AtomicReference<Throwable> err = new AtomicReference<>();
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
 
         /** Graceful shutdown future. */
-        private IgniteInternalFuture<?> stopFut;
+        private IgniteFuture<?> stopFut;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
