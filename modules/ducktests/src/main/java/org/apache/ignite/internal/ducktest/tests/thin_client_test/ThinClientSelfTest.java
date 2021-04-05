@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
