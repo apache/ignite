@@ -33,7 +33,7 @@ public class ThinClientSelfTest extends IgniteAwareApplication {
 
         cache.put(0, 0);
 
-        Integer val = cache.get(0);
+        assert cache.get(0) == 0;
 
         cache.remove(0);
 

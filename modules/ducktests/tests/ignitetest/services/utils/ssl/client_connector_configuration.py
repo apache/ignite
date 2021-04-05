@@ -19,8 +19,6 @@ This module contains classes and utilities for Ignite ConnectorConfiguration.
 
 from typing import NamedTuple
 
-from ignitetest.services.utils.ssl.ssl_params import SslParams
-
 
 class ClientConnectorConfiguration(NamedTuple):
     """

@@ -61,11 +61,6 @@ public class IgniteAwareApplicationService {
 
         app.cfgPath = cfgPath;
 
-        String connStr = jsonNode.get("thin_client_connection").asText();
-
-        if (connStr != null && !connStr.isEmpty())
-            app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
-
         if (startIgnite) {
             log.info("Starting Ignite node...");
 
@@ -82,7 +77,13 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else
+        else {
+            String connStr = jsonNode.get("thin_client_connection").asText();
+
+            if (connStr != null && !connStr.isEmpty())
+                app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
+
             app.start(jsonNode);
+        }
     }
 }
