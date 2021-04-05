@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
-
 public class DictionaryCacheApplication extends IgniteAwareApplication {
     /** Predefined test data. */
     static List<String> users = Arrays.asList("John Connor", "Sarah Connor", "Kyle Reese");
@@ -36,7 +35,6 @@ public class DictionaryCacheApplication extends IgniteAwareApplication {
         String cacheName = jsonNode.get("cacheName").asText();
 
         IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName);
-
 
         if (operation.equals("load")) {
             for (int i = 0; i < users.size(); i++) {
