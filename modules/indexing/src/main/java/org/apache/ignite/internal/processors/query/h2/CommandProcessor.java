@@ -775,7 +775,7 @@ public class CommandProcessor {
                             cmd.tableName());
                 }
                 else {
-                    QueryEntity e = toQueryEntity(ctx, cmd);
+                    QueryEntity e = toQueryEntity(cmd);
 
                     CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
 
@@ -1059,7 +1059,7 @@ public class CommandProcessor {
      * Convert this statement to query entity and do Ignite specific sanity checks on the way.
      * @return Query entity mimicking this SQL statement.
      */
-    private static QueryEntity toQueryEntity(GridKernalContext ctx, GridSqlCreateTable createTbl) {
+    private static QueryEntity toQueryEntity(GridSqlCreateTable createTbl) {
         QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(createTbl.tableName());
