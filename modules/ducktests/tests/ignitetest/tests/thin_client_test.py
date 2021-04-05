@@ -30,9 +30,7 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 class ThinClientTest(IgniteTest):
     """
     cluster - cluster size
-    CACHE_NAME - name of the cache to create for the test.
     JAVA_CLIENT_CLASS_NAME - running classname.
-    static_clients - the number of permanently employed clients.
     """
 
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTest"
@@ -47,11 +45,10 @@ class ThinClientTest(IgniteTest):
         """
         Thin client self test
         """
-        servers_count = 1
 
         server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[])
 
-        ignite = IgniteService(self.test_context, server_configuration, servers_count, startup_timeout_sec=180)
+        ignite = IgniteService(self.test_context, server_configuration, 1, startup_timeout_sec=180)
 
         thin_client_connection = ignite.nodes[0].account.hostname + ":10800"
 
@@ -59,8 +56,7 @@ class ThinClientTest(IgniteTest):
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=1,
                                            params={"thin_client_connection": thin_client_connection},
-                                           start_ignite = False,
-                                           startup_timeout_sec=180)
+                                           start_ignite = False)
 
         ignite.start()
         static_clients.start()
