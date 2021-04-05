@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Set;
+import java.util.Map;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -27,6 +27,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
@@ -305,8 +306,8 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
      * @param expContains Whether a cache is expected.
      */
     private void checkRebuildAfterExchange(IgniteEx n, int cacheId, boolean expContains) {
-        Set<Integer> idxRebuildOnExchange = getFieldValue(n.context().query(), "idxRebuildOnExchange");
+        Map<Integer, AffinityTopologyVersion> idxRebuildTops = getFieldValue(n.context().query(), "idxRebuildTops");
 
-        assertEquals(expContains, idxRebuildOnExchange.contains(cacheId));
+        assertEquals(expContains, idxRebuildTops.containsKey(cacheId));
     }
 }

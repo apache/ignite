@@ -1432,19 +1432,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (defrgMgr != null)
             return;
 
-        rebuildIndexes(
+        Collection<GridCacheContext> rejected = rebuildIndexes(
             cctx.cacheContexts(),
             (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()) &&
                 cctx.kernalContext().query().rebuildIndexOnExchange(cacheCtx.cacheId()),
             false
         );
+
+        if (!rejected.isEmpty()) {
+            cctx.kernalContext().query().removeIndexRebuildFuturesOnExchange(
+                exchangeFut,
+                rejected.stream().map(GridCacheContext::cacheId).collect(toSet())
+            );
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridCacheContext> forceRebuildIndexes(Collection<GridCacheContext> contexts) {
         Set<Integer> cacheIds = contexts.stream().map(GridCacheContext::cacheId).collect(toSet());
 
-        Set<Integer> rejected = cctx.kernalContext().query().prepareIndexRebuildFutures(cacheIds, false);
+        Set<Integer> rejected = cctx.kernalContext().query().prepareIndexRebuildFutures(cacheIds, null);
 
         if (log.isDebugEnabled()) {
             log.debug("Preparing features of rebuilding indexes for caches on force rebuild [requested=" + cacheIds +
@@ -1463,8 +1470,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param contexts Collection of cache contexts for which indexes should be rebuilt.
      * @param rebuildCond Condition that should be met for indexes to be rebuilt for specific cache.
      * @param force Force rebuild indexes.
+     * @return Cash contexts that did not pass by {@code rebuildCond}.
      */
-    private void rebuildIndexes(
+    private Collection<GridCacheContext> rebuildIndexes(
         Collection<GridCacheContext> contexts,
         Predicate<GridCacheContext> rebuildCond,
         boolean force
@@ -1472,7 +1480,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
         if (!qryProc.moduleEnabled())
-            return;
+            return emptyList();
 
         GridCountDownCallback rebuildIndexesCompleteCntr = new GridCountDownCallback(
             contexts.size(),
@@ -1483,17 +1491,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             1  //need at least 1 index rebuilded to print message about rebuilding completion
         );
 
+        Collection<GridCacheContext> rejected = new ArrayList<>(0);
+
         for (GridCacheContext cacheCtx : contexts) {
-            if (!rebuildCond.test(cacheCtx))
-                continue;
+            if (rebuildCond.test(cacheCtx)) {
+                IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx, force);
 
-            IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx, force);
-
-            if (nonNull(rebuildFut))
-                rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+                if (nonNull(rebuildFut))
+                    rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+                else
+                    rebuildIndexesCompleteCntr.countDown(false);
+            }
             else
-                rebuildIndexesCompleteCntr.countDown(false);
+                rejected.add(cacheCtx);
         }
+
+        return rejected;
     }
 
     /**
