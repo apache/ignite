@@ -3867,17 +3867,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Checking the need to rebuild the indexes for the cache on exchange.
-     *
-     * @param cacheId Cache id.
-     * @param exchangeFut Exchange future.
-     * @return {@code True} if indexes need to be rebuilt.
-     */
-    private boolean needRebuildIndexOnExchange(int cacheId, GridDhtPartitionsExchangeFuture exchangeFut) {
-        return exchangeFut.initialVersion().equals(ctx.cache().context().cacheContext(cacheId).startTopologyVersion());
-    }
-
-    /**
      * Getting cache ids for which will need to rebuild the indexes on the exchange.
      *
      * @param fut Exchange future.
@@ -3892,13 +3881,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!F.isEmpty(acts.cacheStartRequests())) {
                 cacheIds = acts.cacheStartRequests().stream()
                     .map(d -> CU.cacheId(d.request().cacheName()))
-                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
                     .collect(toSet());
             }
             else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
                 cacheIds = acts.localJoinContext().caches().stream()
                     .map(t2 -> t2.get1().cacheId())
-                    .filter(cid -> needRebuildIndexOnExchange(cid, fut))
                     .collect(toSet());
             }
         }
