@@ -34,7 +34,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheExistsException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -101,7 +100,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
      */
     private QueryEntity queryEntity(String typeName) {
         return new QueryEntity()
-            .setKeyType("java.lang.Integer")
+            .setKeyType(Integer.class.getName())
             .setValueType(typeName)
             .setFields(new LinkedHashMap<>(F.asMap("id", Integer.class.getName(), "name", String.class.getName())))
             .setIndexes(Arrays.asList(new QueryIndex("id"), new QueryIndex("name")));
@@ -283,63 +282,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         checkCacheKeys(ignite.cache(cacheName1), CACHE_KEYS_RANGE);
         checkCacheKeys(ignite.cache(cacheName2), CACHE_KEYS_RANGE);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testRestoreCacheGroupWithNodeFilter() throws Exception {
-        String cacheName1 = "cache1";
-        String cacheName2 = "cache2";
-
-        CacheConfiguration<Integer, Object> cacheCfg1 =
-            txCacheConfig(new CacheConfiguration<Integer, Object>(cacheName1)).setCacheMode(CacheMode.REPLICATED);
-
-        CacheConfiguration<Integer, Object> cacheCfg2 =
-            txCacheConfig(new CacheConfiguration<Integer, Object>(cacheName2)).setCacheMode(CacheMode.REPLICATED);
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        UUID nodeId0 = ignite0.localNode().id();
-        UUID nodeId1 = ignite1.localNode().id();
-
-        cacheCfg1.setNodeFilter(node -> node.id().equals(nodeId0));
-        cacheCfg2.setNodeFilter(node -> node.id().equals(nodeId1));
-
-        putKeys(ignite0.cache(dfltCacheCfg.getName()), 0, CACHE_KEYS_RANGE);
-
-        IgniteCache<Integer, Object> cache1 = ignite0.createCache(cacheCfg1);
-        putKeys(cache1, 0, CACHE_KEYS_RANGE);
-
-        IgniteCache<Integer, Object> cache2 = ignite0.createCache(cacheCfg2);
-        putKeys(cache2, 0, CACHE_KEYS_RANGE);
-
-        ignite0.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        cache1.destroy();
-        cache2.destroy();
-
-        forceCheckpoint();
-
-        awaitPartitionMapExchange();
-
-        // After destroying the cache with a node filter, the configuration file remains on the filtered node.
-        // todo https://issues.apache.org/jira/browse/IGNITE-14044
-        for (String cacheName : new String[] {cacheName1, cacheName2}) {
-            for (int nodeIdx = 0; nodeIdx < 2; nodeIdx++)
-                U.delete(resolveCacheDir(grid(nodeIdx), cacheName));
-        }
-
-        ignite1.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName2)).get(TIMEOUT);
-        awaitPartitionMapExchange();
-
-        ignite0.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName1)).get(TIMEOUT);
-        awaitPartitionMapExchange();
-
-        checkCacheKeys(ignite0.cache(cacheName1), CACHE_KEYS_RANGE);
-        checkCacheKeys(ignite0.cache(cacheName2), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */

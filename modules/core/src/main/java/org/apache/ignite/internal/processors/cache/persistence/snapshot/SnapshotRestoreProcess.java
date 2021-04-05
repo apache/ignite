@@ -318,24 +318,23 @@ public class SnapshotRestoreProcess {
      * Abort the currently running restore procedure (if any).
      */
     public void stop() {
-        interrupt(new NodeStoppingException("Node is stopping."));
-
-        stopped = true;
+        interrupt(new NodeStoppingException("Node is stopping."), true);
     }
 
     /**
      * Abort the currently running restore procedure (if any).
      */
     public void deactivate() {
-        interrupt(new IgniteCheckedException("The cluster has been deactivated."));
+        interrupt(new IgniteCheckedException("The cluster has been deactivated."), false);
     }
 
     /**
      * Abort the currently running restore procedure (if any).
      *
      * @param reason Interruption reason.
+     * @param stop Stop flag.
      */
-    private synchronized void interrupt(Exception reason) {
+    private void interrupt(Exception reason, boolean stop) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
@@ -343,15 +342,23 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, reason);
 
-        IgniteInternalFuture<?> stopFut = opCtx0.stopFut;
+        IgniteInternalFuture<?> stopFut;
 
-        if (stopFut != null && !stopFut.isDone()) {
-            try {
-                stopFut.get();
-            }
-            catch (IgniteCheckedException ignore) {
-                // No-op.
-            }
+        synchronized (this) {
+            stopFut = opCtx0.stopFut;
+
+            if (stop)
+                stopped = true;
+        }
+
+        if (stopFut == null || stopFut.isDone())
+            return;
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException ignore) {
+            // No-op.
         }
     }
 
@@ -398,9 +405,6 @@ public class SnapshotRestoreProcess {
             for (String grpName : req.groups())
                 ensureCacheAbsent(grpName);
 
-            if (ctx.isStopping())
-                throw new NodeStoppingException("Node is stopping.");
-
             opCtx = prepareContext(req);
 
             SnapshotRestoreContext opCtx0 = opCtx;
@@ -436,7 +440,12 @@ public class SnapshotRestoreProcess {
 
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
-            opCtx0.stopFut = retFut;
+            synchronized (this) {
+                if (stopped || ctx.isStopping())
+                    throw new NodeStoppingException("Node is stopping.");
+
+                opCtx0.stopFut = retFut.chain(f -> null);
+            }
 
             restoreAsync(opCtx0.snpName, opCtx0.dirs, updateMeta, stopChecker, errHnd).thenAccept(res -> {
                 Throwable err = opCtx.err.get();
@@ -716,7 +725,7 @@ public class SnapshotRestoreProcess {
      * @param reqId Request ID.
      * @return Result future.
      */
-    private synchronized IgniteInternalFuture<Boolean> rollback(UUID reqId) {
+    private IgniteInternalFuture<Boolean> rollback(UUID reqId) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -725,12 +734,14 @@ public class SnapshotRestoreProcess {
         if (F.isEmpty(opCtx0.dirs))
             return new GridFinishedFuture<>();
 
-        if (stopped)
-            return new GridFinishedFuture<>(new NodeStoppingException("Node is stopping."));
-
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
-        opCtx0.stopFut = retFut;
+        synchronized (this) {
+            if (stopped)
+                return new GridFinishedFuture<>(new NodeStoppingException("Node is stopping."));
+
+            opCtx0.stopFut = retFut.chain(f -> null);
+        }
 
         ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
             if (log.isInfoEnabled()) {
@@ -805,7 +816,7 @@ public class SnapshotRestoreProcess {
         private volatile Map<Integer, StoredCacheData> cfgs;
 
         /** Graceful shutdown future. */
-        private GridFutureAdapter<?> stopFut;
+        private IgniteInternalFuture<?> stopFut;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
