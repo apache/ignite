@@ -42,14 +42,14 @@ class ThinClientTest(IgniteTest):
         Thin client compatibility test.
         """
 
-        server_config = IgniteConfiguration(version=IgniteVersion(server_version), caches=[])
+        server_config = IgniteConfiguration(version=IgniteVersion(server_version))
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
         thin_client_connection = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
         thin_clients = IgniteApplicationService(self.test_context,
-                                           IgniteConfiguration(version=IgniteVersion(thin_client_version), caches=[]),
+                                           IgniteConfiguration(version=IgniteVersion(thin_client_version)),
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=1,
                                            params={"thin_client_connection": thin_client_connection},
@@ -58,5 +58,5 @@ class ThinClientTest(IgniteTest):
         ignite.start()
         thin_clients.start()
 
-        thin_clients.stop()
+        thin_clients.await_stopped()
         ignite.stop()
