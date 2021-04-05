@@ -169,7 +169,7 @@ public class JdbcCursorLeaksTest extends AbstractIndexingCommonTest {
                 return;
 
             if (U.currentTimeMillis() - t0 > timeout)
-                fail ("Timeout. There are unexpected running queries [node=" + ign.name() + ", queries= " + res + ']');
+                fail("Timeout. There are unexpected running queries [node=" + ign.name() + ", queries= " + res + ']');
         }
     }
 
@@ -195,7 +195,7 @@ public class JdbcCursorLeaksTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return grid(0).context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setArgs(args), false);
     }
