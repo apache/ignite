@@ -1431,7 +1431,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
-                System.out.println("FileWriteAheadLogManager.restoreWriteHandle - " + absIdx);
                 segmentAware.curAbsWalIdx(absIdx);
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
