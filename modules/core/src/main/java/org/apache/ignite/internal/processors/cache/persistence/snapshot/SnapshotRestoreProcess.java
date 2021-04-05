@@ -324,24 +324,10 @@ public class SnapshotRestoreProcess {
 
     /**
      * Abort the currently running restore procedure (if any).
-     */
-    public void stop() {
-        interrupt(new NodeStoppingException("Node is stopping."));
-    }
-
-    /**
-     * Abort the currently running restore procedure (if any).
-     */
-    public void deactivate() {
-        interrupt(new IgniteCheckedException("The cluster has been deactivated."));
-    }
-
-    /**
-     * Abort the currently running restore procedure (if any).
      *
      * @param reason Interruption reason.
      */
-    private void interrupt(Exception reason) {
+    public void interrupt(Exception reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
