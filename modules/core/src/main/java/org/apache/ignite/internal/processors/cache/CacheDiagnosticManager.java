@@ -91,7 +91,7 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
         try {
             U.registerMBean(
                 cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
+                U.getInstanceNameFromContext(cctx.kernalContext()),
                 groupName,
                 mbeanName,
                 impl,
@@ -120,7 +120,7 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
         try {
             cfg.getMBeanServer().unregisterMBean(
                 U.makeMBeanName(
-                    cfg.getIgniteInstanceName(),
+                    U.getInstanceNameFromContext(cctx.kernalContext()),
                     groupName,
                     name
                 ));
