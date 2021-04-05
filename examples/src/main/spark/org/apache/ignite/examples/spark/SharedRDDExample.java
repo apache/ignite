@@ -64,7 +64,7 @@ public class SharedRDDExample {
 
         // Creates Ignite context with specific configuration and runs Ignite in the embedded mode.
         JavaIgniteContext<Integer, Integer> igniteContext = new JavaIgniteContext<Integer, Integer>(
-            sparkContext,"examples/config/spark/example-shared-rdd.xml", false);
+            sparkContext, "examples/config/spark/example-shared-rdd.xml", false);
 
         // Create a Java Ignite RDD of Type (Int,Int) Integer Pair.
         JavaIgniteRDD<Integer, Integer> sharedRDD = igniteContext.<Integer, Integer>fromCache("sharedRDD");

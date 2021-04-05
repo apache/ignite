@@ -46,9 +46,9 @@ corresponding index. See the examples below:
 == Building the Report
 
 Ignite provides a tool to generate the report from performance statistics files. The tool is published in the
-ignite-extensions repository:
-https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[performance-statistics-ext,
-windows="_blank"].
+https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[ignite-extensions,
+windows="_blank"] repository as link:extensions-and-integrations/performance-statistics[performance-statistics-ext]
+extension.
 
 Follow these steps to build the performance report:
 

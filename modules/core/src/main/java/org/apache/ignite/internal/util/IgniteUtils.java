@@ -9031,7 +9031,7 @@ public abstract class IgniteUtils {
 
         if (cls == null) {
             if (clsFilter != null && !clsFilter.apply(clsName))
-                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
             if (ldr instanceof CacheClassLoaderMarker)
@@ -11448,7 +11448,7 @@ public abstract class IgniteUtils {
     /**
      * The batch of tasks with a batch index in global array.
      */
-    private static class Batch<T,R> {
+    private static class Batch<T, R> {
         /** List tasks. */
         private final List<T> tasks;
 

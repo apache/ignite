@@ -243,8 +243,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override protected CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
-        if (ctx.database() instanceof GridCacheDatabaseSharedManager)
-            ((GridCacheDatabaseSharedManager) ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
+        if (ctx.database() instanceof GridCacheDatabaseSharedManager) {
+            boolean canceled =
+                ((GridCacheDatabaseSharedManager)ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
+
+            if (canceled && grp.config().isEncryptionEnabled())
+                ctx.kernalContext().encryption().onCancelDestroyPartitionStore(grp, p);
+        }
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
@@ -1015,15 +1020,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     public void destroyPartitionStore(int grpId, int partId) throws IgniteCheckedException {
         PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-        if (grp.config().isEncryptionEnabled())
-            ctx.kernalContext().encryption().onDestroyPartitionStore(grp, partId);
-
         int tag = pageMemory.invalidate(grp.groupId(), partId);
 
         if (grp.walEnabled())
             ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
 
         ctx.pageStore().onPartitionDestroyed(grpId, partId, tag);
+
+        if (grp.config().isEncryptionEnabled())
+            ctx.kernalContext().encryption().onDestroyPartitionStore(grp, partId);
     }
 
     /** {@inheritDoc} */
@@ -1055,6 +1060,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** {@inheritDoc} */
     @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
         return indexStorage.allocateCacheIndex(cacheId, idxName, segment);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        return indexStorage.findCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
@@ -1331,11 +1341,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     RootPage page = indexStorage.allocateIndex(name);
 
-                    ctx.kernalContext().query().getIndexing().destroyOrphanIndex(
+                    ctx.kernalContext().indexProcessor().destroyOrphanIndex(
+                        ctx.kernalContext(),
                         page,
                         name,
                         grp.groupId(),
-                        grp.dataRegion().pageMemory(), globalRemoveId(),
+                        grp.dataRegion().pageMemory(),
+                        globalRemoveId(),
                         reuseListForIndex(name),
                         grp.mvccEnabled()
                     );
@@ -2699,7 +2711,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer,filter, primary, needHistory, needOldVal, retVal);
+            return delegate.mvccRemove(cctx, key, mvccVer, filter, primary, needHistory, needOldVal, retVal);
         }
 
         /** {@inheritDoc} */

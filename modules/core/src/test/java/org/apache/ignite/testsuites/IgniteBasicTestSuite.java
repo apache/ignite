@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadP
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMapTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ClockPageReplacementFlagsTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
@@ -102,6 +103,7 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpThrottlingTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageClassloadingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
@@ -200,6 +202,7 @@ import org.junit.runners.Suite;
     DiscoveryDataDeserializationFailureHanderTest.class,
 
     EvictPartitionInLogTest.class,
+    PartitionEvictionOrderTest.class,
 
     IgniteExceptionInNioWorkerSelfTest.class,
     IgniteLocalNodeMapBeforeStartTest.class,
@@ -278,6 +281,7 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
     DistributedMetaStorageHistoryCacheTest.class,
+    DistributedMetaStorageClassloadingTest.class,
     DmsDataWriterWorkerTest.class,
     InMemoryCachedDistributedMetaStorageBridgeTest.class,
     DistributedConfigurationInMemoryTest.class,

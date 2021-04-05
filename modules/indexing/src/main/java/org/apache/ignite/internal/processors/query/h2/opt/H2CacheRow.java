@@ -133,7 +133,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      * @param colIdx Column index.
      * @return Value.
      */
-    private Value getCached(int colIdx) {
+    public Value getCached(int colIdx) {
         return valCache != null ? valCache[colIdx] : null;
     }
 
