@@ -24,8 +24,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
-from ignitetest.utils import cluster, versions_pair
+from ignitetest.utils import cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
@@ -60,8 +59,8 @@ class PdsCompatibilityTest(IgniteTest):
         num_nodes = len(self.test_context.cluster) - 2
 
         server_configuration_from = IgniteConfiguration(version=IgniteVersion(version_from),
-                                                     data_storage=DataStorageConfiguration(
-                                                         default=DataRegionConfiguration(persistent=True)))
+                                                        data_storage=DataStorageConfiguration(
+                                                            default=DataRegionConfiguration(persistent=True)))
 
         server_configuration_to = server_configuration_from._replace(version=IgniteVersion(version_to))
 
