@@ -58,14 +58,9 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
     /** {@inheritDoc} */
     @Override public void push(Row r) {
-        List<Row> newEqRows = new ArrayList<>();
+        List<Row> eqRows = rows.computeIfAbsent(key(r), k -> new ArrayList<>());
 
-        List<Row> eqRows = rows.putIfAbsent(key(r), newEqRows);
-
-        if (eqRows != null)
-            eqRows.add(r);
-        else
-            newEqRows.add(r);
+        eqRows.add(r);
     }
 
     /** */
@@ -103,7 +98,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // No-op.
         }
 
@@ -111,10 +106,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         @NotNull @Override public Iterator<Row> iterator() {
             List<Row> eqRows = rows.get(key(searchRow.get()));
 
-            if (eqRows == null)
-                return Collections.emptyIterator();
-
-            return eqRows.iterator();
+            return eqRows == null ? Collections.emptyIterator() : eqRows.iterator();
         }
     }
 }

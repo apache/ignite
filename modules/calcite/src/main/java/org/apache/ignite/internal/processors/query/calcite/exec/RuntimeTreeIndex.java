@@ -71,7 +71,7 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
     /**
      * Add row to index.
      */
-    public void push(Row r) {
+    @Override public void push(Row r) {
         List<Row> newEqRows = new ArrayList<>();
 
         List<Row> eqRows = rows.putIfAbsent(r, newEqRows);

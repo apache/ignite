@@ -296,7 +296,7 @@ public class RexUtils {
         if (F.isEmpty(fieldsToPredicates))
             return null;
 
-        List<RexNode> searchPreds = new ArrayList<>();
+        List<RexNode> searchPreds = null;
 
         for (int fldIdx : fieldsToPredicates.keySet()) {
             List<RexCall> collFldPreds = fieldsToPredicates.get(fldIdx);
@@ -314,9 +314,15 @@ public class RexUtils {
                 if (pred.getOperator().kind != SqlKind.EQUALS)
                     return null;
 
+                if (searchPreds == null)
+                    searchPreds = new ArrayList<>();
+
                 searchPreds.add(pred);
             }
         }
+
+        if (searchPreds == null)
+            return null;
 
         return asBound(cluster, searchPreds, rowType, null);
     }

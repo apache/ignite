@@ -116,7 +116,7 @@ public class IndexConditions {
                 keys.add(i);
         }
 
-        return keys;
+        return Collections.unmodifiableSet(keys);
     }
 
     /**
