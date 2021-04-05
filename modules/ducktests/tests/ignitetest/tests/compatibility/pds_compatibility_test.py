@@ -49,14 +49,14 @@ class PdsCompatibilityTest(IgniteTest):
     LOAD_OPERATION = "load"
     CHECK_OPERATION = "check"
 
-    @cluster(num_nodes=3)
+    @cluster(num_nodes=2)
     @parametrize(version_from=str(LATEST), version_to=str(DEV_BRANCH))
     def test_pds_compatibility(self, version_from, version_to):
         """
         Saves data using one version of ignite and then load with another.
         """
 
-        num_nodes = len(self.test_context.cluster) - 2
+        num_nodes = len(self.test_context.cluster) - 1
 
         server_configuration_from = IgniteConfiguration(version=IgniteVersion(version_from),
                                                         data_storage=DataStorageConfiguration(
@@ -88,6 +88,7 @@ class PdsCompatibilityTest(IgniteTest):
         app = IgniteApplicationService(self.test_context, config=app_config,
                                        java_class_name=self.APP_CLASS,
                                        params={"operation": operation})
-        app.start()
+        app.start(clean=False)
         app.await_stopped()
+        app.free()
         control_utility.deactivate()
