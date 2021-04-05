@@ -16,6 +16,7 @@
 """
 This module contains test that checks that PDS "from_version" compatible with "to_version"
 """
+from ducktape.mark import parametrize
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -45,44 +46,40 @@ class PdsCompatibilityTest(IgniteTest):
     Start client that reads data and checks that it can be read and have not changed
 
     """
-    APP_CLASS = "org.apache.ignite.internal.ducktest.tests.compatibility.DictionaryCacheApplication"
-    CACHE_NAME = "users"
-    LOAD_OPERATION = "loadData"
-    CHECK_OPERATION = "checkData"
+    APP_CLASS = "org.apache.ignite.internal.ducktest.tests.compatibility.PdsCompatiblityApplication"
+    LOAD_OPERATION = "load"
+    CHECK_OPERATION = "check"
 
     @cluster(num_nodes=3)
-    @versions_pair(str(LATEST), str(DEV_BRANCH))
-    def test_pds_compatibility(self, ignite_version_1, ignite_version_2):
+    @parametrize(version_from=str(LATEST), version_to=str(DEV_BRANCH))
+    def test_pds_compatibility(self, version_from, version_to):
         """
         Saves data using one version of ignite and then load with another.
         """
 
-        num_nodes = len(self.test_context.cluster) - 1
+        num_nodes = len(self.test_context.cluster) - 2
 
-        server_configuration_1 = IgniteConfiguration(version=IgniteVersion(ignite_version_1),
-                                                     caches=[
-                                                         CacheConfiguration(name=self.CACHE_NAME, backups=1,
-                                                                            atomicity_mode='ATOMIC')],
+        server_configuration_from = IgniteConfiguration(version=IgniteVersion(version_from),
                                                      data_storage=DataStorageConfiguration(
                                                          default=DataRegionConfiguration(persistent=True)))
 
-        server_configuration_2 = server_configuration_1._replace(version=IgniteVersion(ignite_version_2))
+        server_configuration_to = server_configuration_from._replace(version=IgniteVersion(version_to))
 
-        ignite_1 = IgniteService(self.test_context, server_configuration_1, num_nodes=num_nodes)
-        nodes = ignite_1.nodes.copy()
+        ignite_from = IgniteService(self.test_context, server_configuration_from, num_nodes=num_nodes)
+        nodes = ignite_from.nodes.copy()
 
-        ignite_1.start()
+        ignite_from.start()
 
-        self._run_application(ignite_1, self.LOAD_OPERATION)
+        self._run_application(ignite_from, self.LOAD_OPERATION)
 
-        ignite_1.stop()
-        ignite_1.free()
+        ignite_from.stop()
+        ignite_from.free()
 
-        ignite_2 = IgniteService(self.test_context, server_configuration_2, num_nodes=num_nodes)
-        ignite_2.nodes = nodes
-        ignite_2.start(clean=False)
+        ignite_to = IgniteService(self.test_context, server_configuration_to, num_nodes=num_nodes)
+        ignite_to.nodes = nodes
+        ignite_to.start(clean=False)
 
-        self._run_application(ignite_2, self.CHECK_OPERATION)
+        self._run_application(ignite_to, self.CHECK_OPERATION)
 
     def _run_application(self, ignite, operation):
         control_utility = ControlUtility(ignite)
@@ -91,8 +88,7 @@ class PdsCompatibilityTest(IgniteTest):
         app_config = ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
         app = IgniteApplicationService(self.test_context, config=app_config,
                                        java_class_name=self.APP_CLASS,
-                                       params={"cacheName": self.CACHE_NAME, "operation": operation})
+                                       params={"operation": operation})
         app.start()
-        app.stop()
-        app.free()
+        app.await_stopped()
         control_utility.deactivate()

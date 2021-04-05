@@ -22,29 +22,45 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
-public class DictionaryCacheApplication extends IgniteAwareApplication {
+/**
+ *
+ */
+public class PdsCompatiblityApplication extends IgniteAwareApplication {
     /** Predefined test data. */
-    static List<String> users = Arrays.asList("John Connor", "Sarah Connor", "Kyle Reese");
+    private static List<String> users = Arrays.asList("John Connor", "Sarah Connor", "Kyle Reese");
 
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) {
+    @Override protected void run(JsonNode jsonNode) throws IgniteCheckedException {
 
         String operation = jsonNode.get("operation").asText();
-        String cacheName = jsonNode.get("cacheName").asText();
+        final String cacheName = "users";
+
+        markInitialized();
 
         IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName);
 
-        if (operation.equals("load")) {
-            for (int i = 0; i < users.size(); i++) {
-                cache.put(i, users.get(i));
-            }
-        } else if (operation.equals("check")) {
-            for (int i = 0; i < users.size(); i++) {
-                assert cache.get(i).equals(users.get(i));
-            }
+        log.info("Input data: " + jsonNode.toString());
+
+        switch (operation) {
+            case "load":
+                for (int i = 0; i < users.size(); i++) {
+                    cache.put(i, users.get(i));
+                }
+                break;
+
+            case "check":
+                for (int i = 0; i < users.size(); i++) {
+                    assert cache.get(i).equals(users.get(i));
+                }
+                break;
+
+            default:
+                throw new IgniteCheckedException("Unknown operation: " + operation + ".");
         }
-        markSyncExecutionComplete();
+
+        markFinished();
     }
 }
