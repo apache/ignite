@@ -35,10 +35,6 @@ class ThinClientTest(IgniteTest):
 
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTest"
 
-    """
-    Tests services implementations
-    """
-
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
     def test_thin_client(self, ignite_version):
