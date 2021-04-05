@@ -26,7 +26,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- *
+ * Simple application that have 2 options
+ * 1 - load some predefined data to cache
+ * 2 - check if we have that predifined data in that cache
  */
 public class PdsCompatiblityApplication extends IgniteAwareApplication {
     /** Predefined test data. */
