@@ -157,7 +157,9 @@ public class SnapshotRestoreProcess {
         ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
-                    finishProcess(f.error());
+                    fut.onDone(f.error());
+
+                    fut = null;
 
                     return;
                 }
@@ -180,8 +182,10 @@ public class SnapshotRestoreProcess {
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    finishProcess(new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
+                    fut.onDone(new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
                         "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                    fut = null;
 
                     return;
                 }
@@ -201,7 +205,9 @@ public class SnapshotRestoreProcess {
 
                             res.print(sb::append, true);
 
-                            finishProcess(new IgniteException(sb.toString()));
+                            fut.onDone(new IgniteException(sb.toString()));
+
+                            fut = null;
 
                             return;
                         }
@@ -320,23 +326,22 @@ public class SnapshotRestoreProcess {
      * Abort the currently running restore procedure (if any).
      */
     public void stop() {
-        interrupt(new NodeStoppingException("Node is stopping."), true);
+        interrupt(new NodeStoppingException("Node is stopping."));
     }
 
     /**
      * Abort the currently running restore procedure (if any).
      */
     public void deactivate() {
-        interrupt(new IgniteCheckedException("The cluster has been deactivated."), false);
+        interrupt(new IgniteCheckedException("The cluster has been deactivated."));
     }
 
     /**
      * Abort the currently running restore procedure (if any).
      *
      * @param reason Interruption reason.
-     * @param stop Stop flag.
      */
-    private void interrupt(Exception reason, boolean stop) {
+    private void interrupt(Exception reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
@@ -795,7 +800,7 @@ public class SnapshotRestoreProcess {
         private volatile Map<Integer, StoredCacheData> cfgs;
 
         /** Graceful shutdown future. */
-        private IgniteFuture<?> stopFut;
+        private volatile IgniteFuture<?> stopFut;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
