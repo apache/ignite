@@ -18,7 +18,7 @@ This module contains client tests
 """
 import time
 
-from ducktape.mark import parametrize
+from ducktape.mark import parametrize, matrix
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -36,19 +36,17 @@ class ThinClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTest"
 
     @cluster(num_nodes=2)
-    @ignite_versions(str(DEV_BRANCH))
-    def test_thin_client(self, ignite_version):
+    @matrix(server_version=[str(DEV_BRANCH), str(LATEST)], thin_client_version=[str(DEV_BRANCH), str(LATEST)])
+    def test_thin_client(self, server_version, thin_client_version):
         """
         Thin client self test
         """
 
-        server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[])
-
-        ignite = IgniteService(self.test_context, server_configuration, 1)
+        ignite = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(server_version), caches=[]), 1)
 
         thin_client_connection = ignite.nodes[0].account.hostname + ":10800"
 
-        thin_clients = IgniteApplicationService(self.test_context, server_configuration,
+        thin_clients = IgniteApplicationService(self.test_context, IgniteConfiguration(version=IgniteVersion(thin_client_version), caches=[]),
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=1,
                                            params={"thin_client_connection": thin_client_connection},
