@@ -27,6 +27,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -149,7 +150,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         Consumer<String> sqlExec = sql -> {
             GridTestUtils.runAsync(() -> {
                     try (Connection conn = DriverManager.getConnection(
-                        "jdbc:ignite:thin://127.0.0.1/?user=ignite&password=ignite")) {
+                        "jdbc:ignite:thin://127.0.0.1:" + clientPort(grid(0)) + "/?user=ignite&password=ignite")) {
                         try (Statement stmt = conn.createStatement()) {
                             stmt.execute(sql);
                         }
@@ -178,7 +179,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
             GridTestUtils.runAsync(() -> {
                     try (IgniteClient cli = Ignition.startClient(
                         new ClientConfiguration()
-                            .setAddresses("127.0.0.1")
+                            .setAddresses("127.0.0.1:" + clientPort(grid(0)))
                             .setUserName("ignite")
                             .setUserPassword("ignite"))) {
                         cli.query(new SqlFieldsQuery(sql)).getAll();
@@ -255,13 +256,13 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
                 try (Connection conn = DriverManager.getConnection(
-                    "jdbc:ignite:thin://127.0.0.1/?user=ignite&password=ignite")) {
+                    "jdbc:ignite:thin://127.0.0.1:" + clientPort(grid(0)) + "/?user=ignite&password=ignite")) {
                     try (Statement stmt = conn.createStatement()) {
                         stmt.execute("CREATE TABLE T (ID INT PRIMARY KEY, VAL INT)");
 
                         stmt.execute("SET STREAMING ON");
 
-                        for(int i = 0; !end.get(); ++i)
+                        for (int i = 0; !end.get(); ++i)
                             stmt.execute("INSERT INTO T VALUES(" + i + " , 0)");
                     }
                 }
@@ -331,7 +332,6 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
                 new SqlFieldsQuery("SELECT sql, initiator_id FROM SYS.SQL_QUERIES"), false).getAll();
 
             for (List<?> row : res) {
-                System.out.println("+++ " + row);
                 if (((String)row.get(0)).toUpperCase().contains(sqlMatch.toUpperCase()))
                     return (String)row.get(1);
             }
@@ -361,6 +361,11 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         }
     }
 
+    /** */
+    private static int clientPort(IgniteEx ign) {
+        return ign.context().sqlListener().port();
+    }
+
     /**
      * Utility class with custom SQL functions.
      */
@@ -371,7 +376,6 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
          * Recreate latches. Old latches are released.
          */
         static void unlockQuery() {
-            System.out.println("+++ unlock");
             ph.arriveAndAwaitAdvance();
         }
 
@@ -383,9 +387,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         @QuerySqlFunction
         public static long await() {
             try {
-                System.out.println("+++ await");
                 ph.arriveAndAwaitAdvance();
-                System.out.println("+++ await Done");
             }
             catch (Exception ignored) {
                 // No-op.
