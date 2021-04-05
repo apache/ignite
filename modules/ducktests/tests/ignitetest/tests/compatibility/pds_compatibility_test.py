@@ -29,6 +29,8 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
+# pylint: disable=W0223
+# pylint: disable=no-member
 class PdsCompatibilityTest(IgniteTest):
     """
     A simple test to check PDS compatibility of different Ignite versions
@@ -88,8 +90,8 @@ class PdsCompatibilityTest(IgniteTest):
 
         app_config = ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
         app = IgniteApplicationService(self.test_context, config=app_config,
-                                 java_class_name=self.APP_CLASS,
-                                 params={"cacheName": self.CACHE_NAME, "operation": operation})
+                                       java_class_name=self.APP_CLASS,
+                                       params={"cacheName": self.CACHE_NAME, "operation": operation})
         app.start()
         app.stop()
         app.free()
