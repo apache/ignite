@@ -129,6 +129,7 @@ import org.junit.runners.Suite;
     JdbcAuthorizationTest.class,
 
     // Ignite client node based driver tests
+    org.apache.ignite.internal.jdbc2.JdbcCursorLeaksTest.class,
     org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcSpringSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcStatementSelfTest.class,
