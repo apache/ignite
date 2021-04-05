@@ -30,6 +30,7 @@ class IgnoreIf(Ignore):
     """
     Ignore test if version or global parameters correspond to condition.
     """
+
     def __init__(self, condition, variable_name):
         super().__init__()
         self.condition = condition
@@ -54,6 +55,7 @@ class IgniteVersionParametrize(Mark):
     """
     Parametrize function with ignite_version
     """
+
     def __init__(self, *args, version_prefix):
         """
         :param args: Can be string, tuple of strings or iterable of them.
@@ -185,10 +187,12 @@ def ignite_versions(*args, version_prefix="ignite_version"):
     :param args: Can be string, tuple of strings or iterable of them.
     :param version_prefix: prefix for variable to inject into test function.
     """
+
     def parametrizer(func):
         Mark.mark(func, IgniteVersionParametrize(*args, version_prefix=version_prefix))
 
         return func
+
     return parametrizer
 
 
@@ -199,6 +203,7 @@ def ignore_if(condition, *, variable_name='ignite_version'):
     :param condition: function(IgniteVersion, Globals) -> bool
     :param variable_name: version variable name
     """
+
     def ignorer(func):
         Mark.mark(func, IgnoreIf(condition, variable_name))
         return func
@@ -214,8 +219,30 @@ def cluster(**kwargs):
       - ``num_nodes`` provide hint about how many nodes the test will consume
       - ``cluster_spec`` provide hint about how many nodes of each type the test will consume
     """
+
     def cluster_use_metadata_adder(func):
         Mark.mark(func, ParametrizableClusterMetadata(**kwargs))
         return func
 
     return cluster_use_metadata_adder
+
+
+def versions_pair(*args, version_prefix="ignite_version"):
+    """
+    Decorate test function to inject ignite versions. Versions will be overriden by globals "ignite_versions" param.
+    produce pairs for all possible versions intersections
+    :param args: Can be string, tuple of strings or iterable of them.
+    :param version_prefix: prefix for variable to inject into test function.
+    """
+    res = []
+    for v_arg1 in args:
+        for v_arg2 in args:
+            if v_arg1 < v_arg2:
+                res.append((v_arg1, v_arg2))
+
+    def parametrizer(func):
+        Mark.mark(func, IgniteVersionParametrize(*res, version_prefix=version_prefix))
+
+        return func
+
+    return parametrizer

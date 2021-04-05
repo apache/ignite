@@ -14,9 +14,5 @@
 # limitations under the License.
 
 """
-This module contains convenient utils for test.
+This package contains compatibility tests.
 """
-
-from ._mark import ignore_if, ignite_versions, cluster, versions_pair
-
-__all__ = ['ignore_if', 'ignite_versions', 'cluster', 'versions_pair']
