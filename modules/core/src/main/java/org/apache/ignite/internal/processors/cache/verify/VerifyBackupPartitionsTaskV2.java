@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.PartitionState;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,56 +135,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
     }
 
-    /** */
-    private static IdleVerifyResultV2 checkConflicts(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
-        Map<ClusterNode, Exception> exceptions
-    ) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
-
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> updateCntrConflicts = new HashMap<>();
-
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingParts = new HashMap<>();
-
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostParts = new HashMap<>();
-
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
-            Integer partHash = null;
-            Long updateCntr = null;
-
-            for (PartitionHashRecordV2 record : e.getValue()) {
-                if (record.partitionState() == PartitionState.MOVING) {
-                    movingParts.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
-                        .add(record);
-
-                    continue;
-                }
-
-                if (record.partitionState() == PartitionState.LOST) {
-                    lostParts.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
-                        .add(record);
-
-                    continue;
-                }
-
-                if (partHash == null) {
-                    partHash = record.partitionHash();
-
-                    updateCntr = record.updateCounter();
-                }
-                else {
-                    if (record.updateCounter() != updateCntr)
-                        updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
-
-                    if (record.partitionHash() != partHash)
-                        hashConflicts.putIfAbsent(e.getKey(), e.getValue());
-                }
-            }
-        }
-
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, lostParts, exceptions);
-    }
-
     /**
      * @param results Received results of broadcast remote requests.
      * @return Idle verify job result constructed from results of remote executions.
@@ -211,7 +160,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         if (results.size() != ex.size())
-            return checkConflicts(clusterHashes, ex);
+            return new IdleVerifyResultV2(clusterHashes, ex);
         else
             return new IdleVerifyResultV2(ex);
     }

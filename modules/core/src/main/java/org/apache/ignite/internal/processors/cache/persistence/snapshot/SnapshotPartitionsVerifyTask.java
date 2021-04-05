@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
@@ -67,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
+import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2.reduce0;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
@@ -75,9 +75,12 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 @GridInternal
 public class SnapshotPartitionsVerifyTask
-    extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, IdleVerifyResultV2> {
+    extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** Task argument. */
+    private final Map<ClusterNode, List<SnapshotMetadata>> arg = new HashMap<>();
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -116,6 +119,8 @@ public class SnapshotPartitionsVerifyTask
                 new IgniteException("Some metadata is missing from the snapshot: " + missed)));
         }
 
+        arg.putAll(clusterMetas);
+
         while (!allMetas.isEmpty()) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
                 SnapshotMetadata meta = F.find(e.getValue(), null, allMetas::remove);
@@ -134,8 +139,8 @@ public class SnapshotPartitionsVerifyTask
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-        return VerifyBackupPartitionsTaskV2.reduce0(results);
+    @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+        return new SnapshotPartitionsVerifyTaskResult(arg, reduce0(results));
     }
 
     /** {@inheritDoc} */

@@ -826,6 +826,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code true} if snapshot is OK.
      */
     public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshot(String name) {
+        return checkSnapshot(name, null);
+    }
+
+    /**
+     * The check snapshot procedure performs compute operation over the whole cluster to verify the snapshot
+     * entirety and partitions consistency. The result future will be completed with an exception if this
+     * exception is not related to the check procedure, and will be completed normally with the {@code IdleVerifyResult}.
+     *
+     * @param name Snapshot name.
+     * @param grps List of cache group names to check.
+     * @return {@code true} if snapshot is OK.
+     */
+    public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshot(String name, List<String> grps) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -851,7 +864,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas)
                         .listen(f1 -> {
                             if (f1.error() == null)
-                                res.onDone(f1.result());
+                                res.onDone(f1.result().idleVerifyResult());
                             else if (f1.error() instanceof IgniteSnapshotVerifyException)
                                 res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
                             else
