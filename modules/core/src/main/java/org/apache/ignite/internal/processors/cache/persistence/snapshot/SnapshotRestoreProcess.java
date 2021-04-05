@@ -100,9 +100,6 @@ public class SnapshotRestoreProcess {
     /** Snapshot restore operation context. */
     private volatile SnapshotRestoreContext opCtx;
 
-    /** Stopped flag. */
-    private volatile boolean stopped;
-
     /**
      * @param ctx Kernal context.
      */
@@ -347,14 +344,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, reason);
 
-        IgniteFuture<?> stopFut;
-
-        synchronized (this) {
-            stopFut = opCtx0.stopFut;
-
-            if (stop)
-                stopped = true;
-        }
+        IgniteFuture<?> stopFut = opCtx0.stopFut;
 
         if (stopFut != null)
             stopFut.get();
@@ -425,12 +415,10 @@ public class SnapshotRestoreProcess {
             BooleanSupplier stopChecker = () -> opCtx.err.get() != null;
             GridFutureAdapter<ArrayList<StoredCacheData>> retFut = new GridFutureAdapter<>();
 
-            synchronized (this) {
-                if (stopped || ctx.isStopping())
-                    throw new NodeStoppingException("Node is stopping.");
+            if (ctx.isStopping())
+                throw new NodeStoppingException("Node is stopping.");
 
-                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
-            }
+            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
             restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.updateMetaNodeId()), stopChecker, errHnd)
                 .thenAccept(res -> {
@@ -725,12 +713,7 @@ public class SnapshotRestoreProcess {
 
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
-        synchronized (this) {
-            if (stopped)
-                return new GridFinishedFuture<>(new NodeStoppingException("Node is stopping."));
-
-            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
-        }
+        opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
         try {
             ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
