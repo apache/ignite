@@ -1020,7 +1020,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 if (stopChecker.getAsBoolean())
                     return;
 
-                if (Thread.currentThread().isInterrupted())
+                if (Thread.interrupted())
                     throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
 
                 addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);

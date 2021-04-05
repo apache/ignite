@@ -485,7 +485,7 @@ public class SnapshotRestoreProcess {
                         return;
 
                     try {
-                        if (Thread.currentThread().isInterrupted())
+                        if (Thread.interrupted())
                             throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
 
                         File target = new File(cacheDir, snpFile.getName());
@@ -714,7 +714,7 @@ public class SnapshotRestoreProcess {
             try {
                 ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
                     if (log.isInfoEnabled()) {
-                        log.info("Removing restored cache directories [reqId=" + opCtx0.reqId +
+                        log.info("Removing restored cache directories [reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
                     }
 
@@ -724,8 +724,12 @@ public class SnapshotRestoreProcess {
                         if (!cacheDir.exists())
                             continue;
 
-                        if (!U.delete(cacheDir))
-                            ex = new IgniteCheckedException("Unable to remove directory " + cacheDir);
+                        if (!U.delete(cacheDir)) {
+                            log.error("Unable to perform rollback routine completely, cannot remove cache directory " +
+                                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + cacheDir + ']');
+
+                            ex = new IgniteCheckedException("Unable to remove cache directory " + cacheDir);
+                        }
                     }
 
                     if (ex != null)
@@ -735,6 +739,9 @@ public class SnapshotRestoreProcess {
                 });
             }
             catch (RejectedExecutionException e) {
+                log.error("Unable to perform rollback routine, task has been rejected " +
+                    "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ']');
+
                 retFut.onDone(e);
             }
         }
@@ -751,9 +758,9 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return;
 
-        for (Map.Entry<UUID, Exception> entry : errs.entrySet()) {
-            log.warning("Remote node was not able to perform rollback " +
-                "[nodeId=" + entry.getKey() + ", err=" + entry.getValue().getMessage() + ']');
+        if (!errs.isEmpty()) {
+            log.warning("Some nodes were unable to complete the rollback routine completely, check the local log " +
+                "files for more information [nodeIds=" + errs.keySet() + ']');
         }
 
         SnapshotRestoreContext opCtx0 = opCtx;
