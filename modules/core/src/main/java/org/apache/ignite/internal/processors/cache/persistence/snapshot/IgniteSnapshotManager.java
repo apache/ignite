@@ -1923,18 +1923,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    private static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
+    protected static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
         /** Unique snapshot request id. */
-        private final UUID rqId;
+        final UUID rqId;
 
         /** Snapshot name. */
-        private final String name;
+        final String name;
 
         /** Snapshot start time. */
-        private final long startTime;
+        final long startTime;
 
         /** Snapshot finish time. */
-        private volatile long endTime;
+        volatile long endTime;
 
         /**
          * Default constructor.

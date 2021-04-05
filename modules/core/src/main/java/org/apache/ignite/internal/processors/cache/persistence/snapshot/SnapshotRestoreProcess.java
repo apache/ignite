@@ -51,6 +51,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -95,7 +96,7 @@ public class SnapshotRestoreProcess {
     private final IgniteLogger log;
 
     /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
-    private volatile GridFutureAdapter<Void> fut;
+    private volatile ClusterSnapshotFuture fut;
 
     /** Snapshot restore operation context. */
     private volatile SnapshotRestoreContext opCtx;
@@ -148,18 +149,16 @@ public class SnapshotRestoreProcess {
                 if (isRestoring() || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new GridFutureAdapter<>();
+                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
             }
         } catch (IgniteException e) {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        UUID reqId = UUID.randomUUID();
-
         ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
-                    finishProcess(reqId, f.error());
+                    finishProcess(fut.rqId, f.error());
 
                     return;
                 }
@@ -182,7 +181,7 @@ public class SnapshotRestoreProcess {
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    finishProcess(reqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
+                    finishProcess(fut.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
                         "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
 
                     return;
@@ -191,7 +190,7 @@ public class SnapshotRestoreProcess {
                 ctx.cache().context().snapshotMgr().runSnapshotVerfification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
-                            finishProcess(reqId, f0.error());
+                            finishProcess(fut.rqId, f0.error());
 
                             return;
                         }
@@ -203,13 +202,13 @@ public class SnapshotRestoreProcess {
 
                             res.print(sb::append, true);
 
-                            finishProcess(reqId, new IgniteException(sb.toString()));
+                            finishProcess(fut.rqId, new IgniteException(sb.toString()));
 
                             return;
                         }
 
                         SnapshotRestoreRequest req =
-                            new SnapshotRestoreRequest(reqId, snpName, dataNodes, cacheGrpNames, F.first(dataNodes));
+                            new SnapshotRestoreRequest(fut.rqId, snpName, dataNodes, cacheGrpNames, F.first(dataNodes));
 
                         prepareRestoreProc.start(req.requestId(), req);
                     }
@@ -296,9 +295,9 @@ public class SnapshotRestoreProcess {
             opCtx = null;
 
         synchronized (this) {
-            GridFutureAdapter<Void> fut0 = fut;
+            ClusterSnapshotFuture fut0 = fut;
 
-            if (fut0 != null) {
+            if (fut0 != null && reqId.equals(fut0.rqId)) {
                 fut = null;
 
                 ctx.getSystemExecutorService().submit(() -> fut0.onDone(null, err));
