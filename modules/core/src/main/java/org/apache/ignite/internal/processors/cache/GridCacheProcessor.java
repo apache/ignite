@@ -4432,13 +4432,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache.
      */
     private <K, V> IgniteInternalCache<K, V> internalCacheEx(String name) {
-        try {
-            awaitStarted();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         if (ctx.discovery().localNode().isClient()) {
             IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jcacheProxy(name, true);
 
