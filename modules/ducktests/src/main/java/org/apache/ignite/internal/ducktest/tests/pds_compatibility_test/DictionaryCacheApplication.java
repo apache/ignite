@@ -17,34 +17,37 @@
 
 package org.apache.ignite.internal.ducktest.tests.pds_compatibility_test;
 
-import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiFunction;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
+
 public class DictionaryCacheApplication extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
+    /** Predefined test data. */
+    static List<String> users = Arrays.asList("John Connor", "Sarah Connor", "Kyle Reese");
+
+    /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) {
-        log.info("Creating cache...");
 
-        CacheConfiguration<Long, String> cacheCfg = new CacheConfiguration<>();
-        cacheCfg.setName(jsonNode.get("cacheName").asText())
-                .setCacheMode(CacheMode.REPLICATED)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setIndexedTypes(Long.class, String.class);
+        String operation = jsonNode.get("operation").asText();
+        String cacheName = jsonNode.get("cacheName").asText();
 
-        IgniteCache<Long, String> cache = ignite.getOrCreateCache(cacheCfg);
+        IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName);
 
-        for (long i = 0; i < jsonNode.get("range").asLong(); i++) {
-            String uuid = UUID.randomUUID().toString();
-            cache.put(i, uuid);
+
+        if (operation.equals("load")) {
+            for (int i = 0; i < users.size(); i++) {
+                cache.put(i, users.get(i));
+            }
+        } else if (operation.equals("check")) {
+            for (int i = 0; i < users.size(); i++) {
+                assert cache.get(i).equals(users.get(i));
+            }
         }
-        log.info("Cache created");
         markSyncExecutionComplete();
     }
 }
