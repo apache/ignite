@@ -646,15 +646,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             tblName = Util.last(tblFullName.names);
 
-            String valTypeName = QueryUtils.createTableValueTypeName(schemaName, tblName);
-            String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
-
             CreateTableCommand createTblCmd = new CreateTableCommand();
 
             createTblCmd.schemaName(schemaName);
             createTblCmd.tableName(tblName);
-            createTblCmd.valueTypeName(valTypeName);
-            createTblCmd.keyTypeName(keyTypeName);
 
             List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList.getList().stream()
                 .filter(SqlColumnDeclaration.class::isInstance)
@@ -877,9 +872,27 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         if (!F.isEmpty(scale))
             res.setFieldsScale(scale);
 
-        res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
-        res.setValueType(cmd.valueTypeName());
-        res.setKeyType(cmd.keyTypeName());
+        String valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+
+        String keyTypeName;
+        if (cmd.primaryKeyColumns().size() > 1 || !F.isEmpty(cmd.keyTypeName())) {
+            keyTypeName = cmd.keyTypeName();
+
+            if (F.isEmpty(keyTypeName))
+                keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+            res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
+        }
+        else {
+            String pkFieldName = cmd.primaryKeyColumns().get(0);
+
+            keyTypeName = res.getFields().get(pkFieldName);
+
+            res.setKeyFieldName(pkFieldName);
+        }
+
+        res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());
+        res.setKeyType(keyTypeName);
 
         if (!F.isEmpty(notNullFields)) {
             QueryEntityEx res0 = new QueryEntityEx(res);
