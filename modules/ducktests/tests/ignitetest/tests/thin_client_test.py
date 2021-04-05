@@ -41,25 +41,25 @@ class ThinClientTest(IgniteTest):
 
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
-    def test_thin_client_selftest(self, ignite_version):
+    def test_thin_client(self, ignite_version):
         """
         Thin client self test
         """
 
         server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[])
 
-        ignite = IgniteService(self.test_context, server_configuration, 1, startup_timeout_sec=180)
+        ignite = IgniteService(self.test_context, server_configuration, 1)
 
         thin_client_connection = ignite.nodes[0].account.hostname + ":10800"
 
-        static_clients = IgniteApplicationService(self.test_context, server_configuration,
+        thin_clients = IgniteApplicationService(self.test_context, server_configuration,
                                            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                            num_nodes=1,
                                            params={"thin_client_connection": thin_client_connection},
                                            start_ignite = False)
 
         ignite.start()
-        static_clients.start()
+        thin_clients.start()
 
-        static_clients.stop()
+        thin_clients.stop()
         ignite.stop()
