@@ -106,8 +106,8 @@ public interface PerformanceStatisticsHandler {
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
      * @param writeCpEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
-     * @param totalDuration Total duration.
-     * @param cpStartTime Checkpoint start time.
+     * @param totalDuration Total duration in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
      * @param pagesSize Pages size.
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.

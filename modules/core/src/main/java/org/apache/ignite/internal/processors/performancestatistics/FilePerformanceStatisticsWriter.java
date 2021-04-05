@@ -332,8 +332,8 @@ public class FilePerformanceStatisticsWriter {
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
      * @param writeCheckpointEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
-     * @param totalDuration Total duration.
-     * @param checkpointStartTime Checkpoint start time.
+     * @param totalDuration Total duration in milliseconds.
+     * @param checkpointStartTime Checkpoint start time in milliseconds.
      * @param pagesSize Pages size.
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.

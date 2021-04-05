@@ -68,6 +68,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
             .setWriteThrottlingEnabled(true)
+            .setCheckpointFrequency(1_000L)
             .setCheckpointThreads(1));
 
         return cfg;
@@ -75,11 +76,11 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        listeningLog = new ListeningTestLogger(log);
+        super.beforeTestsStarted();
 
         cleanPersistenceDir();
 
-        cleanPerformanceStatisticsDir();
+        listeningLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */

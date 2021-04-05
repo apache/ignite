@@ -208,8 +208,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
      * @param writeCheckpointEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
-     * @param totalDuration Total duration.
-     * @param checkpointStartTime Checkpoint start time.
+     * @param totalDuration Total duration in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
      * @param pagesSize Pages size.
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
@@ -217,17 +217,16 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
         long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
         long walCpRecordFsyncDuration, long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long checkpointStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
+        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
     {
         write(writer -> writer.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
             lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration, writeCheckpointEntryDuration,
-            splitAndSortCpPagesDuration, totalDuration, checkpointStartTime, pagesSize, dataPagesWritten, 
-            cowPagesWritten));
+            splitAndSortCpPagesDuration, totalDuration, cpStartTime, pagesSize, dataPagesWritten, cowPagesWritten));
     }
 
     /**
-     * @param startTime Start time.
-     * @param endTime End time.
+     * @param startTime Start time in milliseconds.
+     * @param endTime End time in milliseconds.
      */
     public void throttling(long startTime, long endTime)
     {
