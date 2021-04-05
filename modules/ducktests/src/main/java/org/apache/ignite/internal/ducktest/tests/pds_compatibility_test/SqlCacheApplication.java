@@ -25,25 +25,29 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
-public class DictionaryCacheApplication extends IgniteAwareApplication {
+public class SqlCacheApplication extends IgniteAwareApplication {
     /**
      * {@inheritDoc}
      */
     @Override protected void run(JsonNode jsonNode) {
         log.info("Creating cache...");
 
-        CacheConfiguration<Long, String> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Long, Account> cacheCfg = new CacheConfiguration<>();
         cacheCfg.setName(jsonNode.get("cacheName").asText())
-                .setCacheMode(CacheMode.REPLICATED)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setIndexedTypes(Long.class, String.class);
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(3)
+                .setIndexedTypes(Long.class, Account.class);
 
-        IgniteCache<Long, String> cache = ignite.getOrCreateCache(cacheCfg);
+        IgniteCache<Long, Account> cache = ignite.getOrCreateCache(cacheCfg);
 
         for (long i = 0; i < jsonNode.get("range").asLong(); i++) {
             String uuid = UUID.randomUUID().toString();
-            cache.put(i, uuid);
+            cache.put(i, new Account(
+                    uuid, uuid, uuid, uuid, uuid, uuid,
+                    uuid, uuid, uuid, i, i));
         }
+
         log.info("Cache created");
         markSyncExecutionComplete();
     }

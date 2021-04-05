@@ -17,6 +17,6 @@
 This module contains convenient utils for test.
 """
 
-from ._mark import ignore_if, ignite_versions, cluster, versions_pair
+from ._mark import version_if, ignite_versions, cluster, versions_pair
 
-__all__ = ['ignore_if', 'ignite_versions', 'cluster', 'versions_pair']
+__all__ = ['version_if', 'ignite_versions', 'cluster', 'versions_pair']
