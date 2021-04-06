@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
@@ -147,11 +148,12 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         try {
             stopCollectStatisticsAndRead(new TestHandler() {
-                @Override public void checkpoint(long beforeLockDuration, long lockWaitDuration,
+                @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
                     long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
                     long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration,
                     long splitAndSortCpPagesDuration, long totalDuration, long cpStartTime, int pagesSize,
                     int dataPagesWritten, int cowPagesWritten) {
+                    assertEquals(srv.localNode().id(), nodeId);
                     assertEquals(mLastBeforeLockDuration.value(), beforeLockDuration);
                     assertEquals(mLastLockWaitDuration.value(), lockWaitDuration);
                     assertEquals(mLastListenersExecDuration.value(), listenersExecDuration);
@@ -221,7 +223,8 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         AtomicBoolean checker = new AtomicBoolean();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void pagesWriteThrottle(long startTime, long endTime) {
+            @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long endTime) {
+                assertEquals(srv.localNode().id(), nodeId);
                 checker.set(true);
             }
         });

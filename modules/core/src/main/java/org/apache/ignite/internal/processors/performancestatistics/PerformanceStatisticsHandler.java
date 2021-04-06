@@ -96,6 +96,7 @@ public interface PerformanceStatisticsHandler {
     void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
 
     /**
+     * @param nodeId Node id.
      * @param beforeLockDuration Before lock duration.
      * @param lockWaitDuration Lock wait duration.
      * @param listenersExecDuration Listeners execute duration.
@@ -112,14 +113,15 @@ public interface PerformanceStatisticsHandler {
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
      */
-    void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration, long markDuration,
+    void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration, long markDuration,
         long lockHoldDuration, long pagesWriteDuration, long fsyncDuration, long walCpRecordFsyncDuration,
         long writeCpEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
         long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten);
 
     /**
+     * @param nodeId Node id.
      * @param startTime Start time in milliseconds.
      * @param endTime End time in milliseconds.
      */
-    void pagesWriteThrottle(long startTime, long endTime);
+    void pagesWriteThrottle(UUID nodeId, long startTime, long endTime);
 }

@@ -199,7 +199,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
+        @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
             long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
             long walCpRecordFsyncDuration, long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration,
             long totalDuration, long checkpointStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
@@ -207,7 +207,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void pagesWriteThrottle(long startTime, long endTime) {
+        @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long endTime) {
             // No-op.
         }
     }
