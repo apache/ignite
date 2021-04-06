@@ -481,9 +481,6 @@ public class Checkpointer extends GridWorker {
             tracker.onEnd();
 
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
-                if (cacheProcessor.context().kernalContext().performanceStatistics().enabled())
-                    writeStatistics(chp, tracker);
-
                 if (log.isInfoEnabled()) {
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
                             "walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
@@ -499,6 +496,9 @@ public class Checkpointer extends GridWorker {
             }
 
             updateMetrics(chp, tracker);
+
+            if (cacheProcessor.context().kernalContext().performanceStatistics().enabled())
+                writeStatistics(chp, tracker);
         }
         catch (IgniteCheckedException e) {
             chp.progress.fail(e);
@@ -989,6 +989,8 @@ public class Checkpointer extends GridWorker {
 
     /**
      * Writes checkpoint performance statistics.
+     * @param chp Checkpoint.
+     * @param tracker CheckpointMetricsTracker.
      */
     private void writeStatistics(Checkpoint chp, CheckpointMetricsTracker tracker) {
         cacheProcessor.context().kernalContext().performanceStatistics().checkpoint(

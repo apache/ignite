@@ -158,7 +158,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
 
             pageMemory.metrics().addThrottlingTime(endTime - startTime);
 
-            if (pageMemory.performanceStatistics() != null && pageMemory.performanceStatistics().enabled())
+            if (pageMemory.performanceStatistics().enabled())
                 pageMemory.performanceStatistics().pagesWriteThrottle(startTime, endTime);
         }
         else {
