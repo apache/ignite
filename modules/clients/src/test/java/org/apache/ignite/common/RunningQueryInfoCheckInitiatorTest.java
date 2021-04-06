@@ -397,9 +397,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         }
     }
 
-    /**
-     *
-     */
+    /** */
     public static class TestSqlJob implements IgniteRunnable {
         /** */
         String sql;

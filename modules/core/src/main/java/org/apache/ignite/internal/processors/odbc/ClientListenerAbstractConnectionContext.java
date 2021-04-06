@@ -159,9 +159,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
             ctx.security().onSessionExpired(secCtx.subject().id());
     }
 
-    /**
-     *
-     */
+    /** */
     protected void initClientDescriptor(String prefix) {
         clientDesc = prefix + ":" + ses.remoteAddress().getHostString() + ":" + ses.remoteAddress().getPort();
 
