@@ -55,8 +55,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
 
     def await_stopped(self):
-        if self.start_ignite:
-            super().await_stopped()
+        super().await_stopped()
 
         self.__check_status(self.APP_FINISH_EVT_MSG)
 
