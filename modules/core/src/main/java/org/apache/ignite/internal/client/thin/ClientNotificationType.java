@@ -17,24 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.nio.ByteBuffer;
-
 /**
- * Server to client notification listener.
+ * Notification types.
  */
-interface NotificationListener {
-    /**
-     * Accept notification.
-     *
-     * @param payload Notification payload or {@code null} if there is no payload.
-     * @param err Error.
-     */
-    public void acceptNotification(ByteBuffer payload, Exception err);
-
-    /**
-     * Handles connection loss.
-     *
-     * @param reason Exception that caused the disconnect, can be {@code null}.
-     */
-    public void onChannelClosed(Exception reason);
+enum ClientNotificationType {
+    /** Compute task finished. */
+    COMPUTE_TASK_FINISHED;
 }
