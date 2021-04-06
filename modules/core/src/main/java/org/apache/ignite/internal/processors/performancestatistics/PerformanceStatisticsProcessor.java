@@ -206,7 +206,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param pagesWriteDuration Pages write duration.
      * @param fsyncDuration Fsync duration.
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
-     * @param writeCheckpointEntryDuration Write checkpoint entry duration.
+     * @param writeCpEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
      * @param totalDuration Total duration in milliseconds.
      * @param cpStartTime Checkpoint start time in milliseconds.
@@ -216,10 +216,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
         long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
-        long walCpRecordFsyncDuration, long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration,
+        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
         long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
         write(writer -> writer.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
-            lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration, writeCheckpointEntryDuration,
+            lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration, writeCpEntryDuration,
             splitAndSortCpPagesDuration, totalDuration, cpStartTime, pagesSize, dataPagesWritten, cowPagesWritten));
     }
 

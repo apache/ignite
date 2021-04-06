@@ -330,18 +330,18 @@ public class FilePerformanceStatisticsWriter {
      * @param pagesWriteDuration Pages write duration.
      * @param fsyncDuration Fsync duration.
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
-     * @param writeCheckpointEntryDuration Write checkpoint entry duration.
+     * @param writeCpEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
      * @param totalDuration Total duration in milliseconds.
-     * @param checkpointStartTime Checkpoint start time in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
      * @param pagesSize Pages size.
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
      */
     public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
         long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
-        long walCpRecordFsyncDuration, long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long checkpointStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
+        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
+        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
     {
         doWrite(CHECKPOINT, checkpointRecordSize(), buf -> {
             buf.putLong(beforeLockDuration);
@@ -352,10 +352,10 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(pagesWriteDuration);
             buf.putLong(fsyncDuration);
             buf.putLong(walCpRecordFsyncDuration);
-            buf.putLong(writeCheckpointEntryDuration);
+            buf.putLong(writeCpEntryDuration);
             buf.putLong(splitAndSortCpPagesDuration);
             buf.putLong(totalDuration);
-            buf.putLong(checkpointStartTime);
+            buf.putLong(cpStartTime);
             buf.putInt(pagesSize);
             buf.putInt(dataPagesWritten);
             buf.putInt(cowPagesWritten);
