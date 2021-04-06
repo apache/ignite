@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -496,8 +495,8 @@ public class SnapshotRestoreProcess {
 
                         Files.copy(snpFile.toPath(), target.toPath());
                     }
-                    catch (IgniteInterruptedCheckedException | IOException e) {
-                        errHnd.accept(e);
+                    catch (Throwable t) {
+                        errHnd.accept(t);
                     }
                 }, ctx.cache().context().snapshotMgr().snapshotExecutorService()));
             }
@@ -559,7 +558,7 @@ public class SnapshotRestoreProcess {
             pageStore.readCacheConfigurations(snpCacheDir, cfgsByName);
         }
 
-        Map<Integer, StoredCacheData> cfgsById = cfgsByName.isEmpty() ? Collections.emptyMap() :
+        Map<Integer, StoredCacheData> cfgsById =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
 
         return new SnapshotRestoreContext(req, cacheDirs, cfgsById);
@@ -578,7 +577,7 @@ public class SnapshotRestoreProcess {
 
         Exception failure = F.first(errs.values());
 
-        assert opCtx0 != null || failure != null : ctx.localNodeId();
+        assert opCtx0 != null || failure != null : "Context has not been created on the node " + ctx.localNodeId();
 
         if (opCtx0 == null) {
             finishProcess(reqId, failure);
