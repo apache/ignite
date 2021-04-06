@@ -875,7 +875,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (f0.error() == null) {
                     Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
-                    runSnapshotVerfification(metas).listen(f1 -> {
+                    runSnapshotVerification(metas).listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
@@ -917,7 +917,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param metas Nodes snapshot metadata.
      * @return Future with the verification results.
      */
-    IgniteInternalFuture<IdleVerifyResultV2> runSnapshotVerfification(Map<ClusterNode, List<SnapshotMetadata>> metas) {
+    IgniteInternalFuture<IdleVerifyResultV2> runSnapshotVerification(Map<ClusterNode, List<SnapshotMetadata>> metas) {
         GridKernalContext kctx0 = cctx.kernalContext();
 
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);

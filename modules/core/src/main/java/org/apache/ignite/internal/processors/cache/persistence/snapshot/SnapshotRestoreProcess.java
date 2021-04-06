@@ -187,7 +187,7 @@ public class SnapshotRestoreProcess {
                     return;
                 }
 
-                ctx.cache().context().snapshotMgr().runSnapshotVerfification(metas).listen(
+                ctx.cache().context().snapshotMgr().runSnapshotVerification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
                             finishProcess(fut.rqId, f0.error());
