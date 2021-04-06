@@ -228,9 +228,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param startTime Start time in milliseconds.
      * @param endTime End time in milliseconds.
      */
-    public void throttling(long startTime, long endTime)
+    public void pagesWriteThrottle(long startTime, long endTime)
     {
-        write(writer -> writer.throttling(startTime, endTime));
+        write(writer -> writer.pagesWriteThrottle(startTime, endTime));
     }
 
     /**

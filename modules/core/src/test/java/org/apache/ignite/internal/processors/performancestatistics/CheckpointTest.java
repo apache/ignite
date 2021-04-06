@@ -215,7 +215,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         GridTestUtils.runAsync(() -> {
             for (long i = 0; run.get(); i++)
                 cache.put(i, i);
-        }, "loader");
+        });
 
         assertTrue(waitForCondition(() -> totalThrottlingTime.value() > 0, TIMEOUT));
 
@@ -224,7 +224,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         AtomicBoolean checker = new AtomicBoolean();
 
         stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void throttling(long startTime, long endTime) {
+            @Override public void pagesWriteThrottle(long startTime, long endTime) {
                 checker.set(true);
             }
         });

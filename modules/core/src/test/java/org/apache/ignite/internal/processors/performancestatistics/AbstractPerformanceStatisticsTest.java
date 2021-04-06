@@ -207,7 +207,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void throttling(long startTime, long endTime) {
+        @Override public void pagesWriteThrottle(long startTime, long endTime) {
             // No-op.
         }
     }

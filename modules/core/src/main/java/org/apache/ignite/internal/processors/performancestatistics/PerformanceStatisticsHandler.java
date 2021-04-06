@@ -121,5 +121,5 @@ public interface PerformanceStatisticsHandler {
      * @param startTime Start time in milliseconds.
      * @param endTime End time in milliseconds.
      */
-    void throttling(long startTime, long endTime);
+    void pagesWriteThrottle(long startTime, long endTime);
 }

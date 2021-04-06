@@ -366,7 +366,7 @@ public class FilePerformanceStatisticsWriter {
      * @param startTime Start time in milliseconds.
      * @param endTime End time in milliseconds.
      */
-    public void throttling(long startTime, long endTime) {
+    public void pagesWriteThrottle(long startTime, long endTime) {
         doWrite(THROTTLING, throttlingRecordSize(), buf -> {
             buf.putLong(startTime);
             buf.putLong(endTime);

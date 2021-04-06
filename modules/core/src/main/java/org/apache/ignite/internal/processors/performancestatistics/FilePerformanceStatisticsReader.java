@@ -440,7 +440,7 @@ public class FilePerformanceStatisticsReader {
             long endTime = buf.getLong();
 
             for (PerformanceStatisticsHandler handler : curHnd)
-                handler.throttling(starTime, endTime);
+                handler.pagesWriteThrottle(starTime, endTime);
 
             return true;
         }
