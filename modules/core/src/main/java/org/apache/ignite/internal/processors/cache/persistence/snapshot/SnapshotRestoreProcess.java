@@ -84,7 +84,7 @@ public class SnapshotRestoreProcess {
     private final GridKernalContext ctx;
 
     /** Cache group restore prepare phase. */
-    private final DistributedProcess<SnapshotRestoreRequest, ArrayList<StoredCacheData>> prepareRestoreProc;
+    private final DistributedProcess<SnapshotOperationRequest, ArrayList<StoredCacheData>> prepareRestoreProc;
 
     /** Cache group restore cache start phase. */
     private final DistributedProcess<UUID, Boolean> cacheStartProc;
@@ -207,8 +207,8 @@ public class SnapshotRestoreProcess {
                             return;
                         }
 
-                        SnapshotRestoreRequest req =
-                            new SnapshotRestoreRequest(fut.rqId, snpName, dataNodes, cacheGrpNames, F.first(dataNodes));
+                        SnapshotOperationRequest req =
+                            new SnapshotOperationRequest(fut.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
 
                         prepareRestoreProc.start(req.requestId(), req);
                     }
@@ -360,7 +360,7 @@ public class SnapshotRestoreProcess {
      * @param req Request to prepare cache group restore from the snapshot.
      * @return Result future.
      */
-    private IgniteInternalFuture<ArrayList<StoredCacheData>> prepare(SnapshotRestoreRequest req) {
+    private IgniteInternalFuture<ArrayList<StoredCacheData>> prepare(SnapshotOperationRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -412,7 +412,7 @@ public class SnapshotRestoreProcess {
 
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.updateMetaNodeId()), stopChecker, errHnd)
+            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operNodeId()), stopChecker, errHnd)
                 .thenAccept(res -> {
                     Throwable err = opCtx.err.get();
 
@@ -513,7 +513,7 @@ public class SnapshotRestoreProcess {
      * @return Snapshot restore operation context.
      * @throws IgniteCheckedException If failed.
      */
-    private SnapshotRestoreContext prepareContext(SnapshotRestoreRequest req) throws IgniteCheckedException {
+    private SnapshotRestoreContext prepareContext(SnapshotOperationRequest req) throws IgniteCheckedException {
         if (opCtx != null) {
             throw new IgniteCheckedException(OP_REJECT_MSG +
                 "The previous snapshot restore operation was not completed.");
@@ -804,7 +804,7 @@ public class SnapshotRestoreProcess {
          * @param dirs List of cache group names to restore from the snapshot.
          * @param cfgs Cache ID to configuration mapping.
          */
-        protected SnapshotRestoreContext(SnapshotRestoreRequest req, Collection<File> dirs,
+        protected SnapshotRestoreContext(SnapshotOperationRequest req, Collection<File> dirs,
             Map<Integer, StoredCacheData> cfgs) {
             reqId = req.requestId();
             snpName = req.snapshotName();

@@ -21,12 +21,14 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Request to prepare cache group restore from the snapshot.
+ * Snapshot operation start request for {@link DistributedProcess} initiate message.
  */
-public class SnapshotRestoreRequest implements Serializable {
+public class SnapshotOperationRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -37,33 +39,38 @@ public class SnapshotRestoreRequest implements Serializable {
     private final String snpName;
 
     /** Baseline node IDs that must be alive to complete the operation. */
+    @GridToStringInclude
     private final Set<UUID> nodes;
 
-    /** List of cache group names to restore from the snapshot. */
+    /** List of cache group names. */
+    @GridToStringInclude
     private final Collection<String> grps;
 
-    /** Node ID from which to update the binary metadata. */
-    private final UUID updateMetaNodeId;
+    /** Operational node ID. */
+    private final UUID opNodeId;
+
+    /** Exception occurred during snapshot operation processing. */
+    private volatile Throwable err;
 
     /**
      * @param reqId Request ID.
+     * @param opNodeId Operational node ID.
      * @param snpName Snapshot name.
+     * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param grps List of cache group names to restore from the snapshot.
-     * @param updateMetaNodeId Node ID from which to update the binary metadata.
      */
-    public SnapshotRestoreRequest(
+    public SnapshotOperationRequest(
         UUID reqId,
+        UUID opNodeId,
         String snpName,
-        Set<UUID> nodes,
         Collection<String> grps,
-        UUID updateMetaNodeId
+        Set<UUID> nodes
     ) {
         this.reqId = reqId;
+        this.opNodeId = opNodeId;
         this.snpName = snpName;
-        this.nodes = nodes;
         this.grps = grps;
-        this.updateMetaNodeId = updateMetaNodeId;
+        this.nodes = nodes;
     }
 
     /**
@@ -81,7 +88,7 @@ public class SnapshotRestoreRequest implements Serializable {
     }
 
     /**
-     * @return List of cache group names to restore from the snapshot.
+     * @return List of cache group names.
      */
     public Collection<String> groups() {
         return grps;
@@ -95,14 +102,28 @@ public class SnapshotRestoreRequest implements Serializable {
     }
 
     /**
-     * @return Node ID from which to update the binary metadata.
+     * @return Operational node ID.
      */
-    public UUID updateMetaNodeId() {
-        return updateMetaNodeId;
+    public UUID operNodeId() {
+        return opNodeId;
+    }
+
+    /**
+     * @return Exception occurred during snapshot operation processing.
+     */
+    public Throwable error() {
+        return err;
+    }
+
+    /**
+     * @param err Exception occurred during snapshot operation processing.
+     */
+    public void error(Throwable err) {
+        this.err = err;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRestoreRequest.class, this);
+        return S.toString(SnapshotOperationRequest.class, this);
     }
 }
