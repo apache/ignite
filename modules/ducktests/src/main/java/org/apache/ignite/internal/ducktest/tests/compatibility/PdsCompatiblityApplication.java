@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.ducktest.tests.compatibility;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
+
 /**
- * Simple application that have 2 options
- * "load" - load some predefined data to cache
- * "check" - check if we have that predifined data in that cache
+ * Simple application that have 2 options.
+ * "load" - load some predefined data to cache.
+ * "check" - check if we have that predifined data in that cache.
  */
 public class PdsCompatiblityApplication extends IgniteAwareApplication {
     /** Predefined test data. */
-    private static List<String> users = Arrays.asList("John Connor", "Sarah Connor", "Kyle Reese");
+    private static List<User> users = Arrays.asList(
+            new User(0,"John Connor"),
+            new User(1,"Sarah Connor"),
+            new User(2,"Kyle Reese"));
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws IgniteCheckedException {
@@ -40,7 +46,7 @@ public class PdsCompatiblityApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        IgniteCache<Integer, String> cache = ignite.getOrCreateCache("users");
+        IgniteCache<Integer, User> cache = ignite.getOrCreateCache("users");
 
         switch (operation) {
             case "load":
@@ -60,5 +66,52 @@ public class PdsCompatiblityApplication extends IgniteAwareApplication {
         }
 
         markFinished();
+    }
+
+    /**
+     *
+     */
+    static class User implements Serializable {
+        /** */
+        private Integer id;
+
+        /** */
+        private String fullName;
+
+        /**
+         * @param id user id.
+         * @param fullName user full name.
+         */
+        public User(Integer id, String fullName) {
+            this.id = id;
+            this.fullName = fullName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "User{" +
+                    "id=" + id +
+                    ", fullName='" + fullName + '\'' +
+                    '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            User person = (User)o;
+
+            return Objects.equals(id, person.id) &&
+                    Objects.equals(fullName, person.fullName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, fullName);
+        }
     }
 }

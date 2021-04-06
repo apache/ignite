@@ -35,11 +35,11 @@ class PdsCompatibilityTest(IgniteTest):
     """
     A simple test to check PDS compatibility of different Ignite versions.
 
-    Start Ignite cluster version "from_version" with PDS enabled
-    Start a client application that puts prepared data
-    Stop cluster and client
-    Start Ignite cluster version "to_version" without PDS clearing
-    Start client that reads data and checks that it can be read and have not changed
+    Start Ignite cluster version "from_version" with PDS enabled.
+    Start a client application that puts prepared data.
+    Stop cluster and client.
+    Start Ignite cluster version "to_version" without PDS clearing.
+    Start client that reads data and checks that it can be read and have not changed.
 
     """
     APP_CLASS = "org.apache.ignite.internal.ducktest.tests.compatibility.PdsCompatiblityApplication"
@@ -53,12 +53,10 @@ class PdsCompatibilityTest(IgniteTest):
         Saves data using one version of ignite and then load with another.
         """
 
-        num_nodes = len(self.test_context.cluster) - 1
-
         server_configuration_from = IgniteConfiguration(version=IgniteVersion(version_from),
                                                         data_storage=DataStorageConfiguration(
                                                             default=DataRegionConfiguration(persistent=True)))
-        ignite_from = IgniteService(self.test_context, server_configuration_from, num_nodes=num_nodes)
+        ignite_from = IgniteService(self.test_context, server_configuration_from, num_nodes=1)
 
         ignite_from.start()
 
@@ -81,7 +79,7 @@ class PdsCompatibilityTest(IgniteTest):
         ignite_to = IgniteService(
             self.test_context,
             config=server_configuration_from._replace(version=IgniteVersion(version_to)),
-            num_nodes=num_nodes)
+            num_nodes=1)
 
         ignite_to.nodes = nodes
 
