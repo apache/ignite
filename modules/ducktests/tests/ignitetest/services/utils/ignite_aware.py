@@ -74,7 +74,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.start_ignite = kwargs.get("start_ignite")
+        self.start_ignite = kwargs.get("start_ignite", True)
 
     @property
     def version(self):
