@@ -46,20 +46,17 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -132,7 +129,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
-        ensureCacheDirEmpty(2, dfltCacheCfg.getName());
+        ensureCacheDirEmpty(2, dfltCacheCfg);
     }
 
     /** @throws Exception If failed. */
@@ -160,7 +157,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         IgniteEx ignite = startGridsWithSnapshot(2, keysCnt);
 
-        // remove metadata
+        // Remove metadata.
         int typeId = ignite.context().cacheObjects().typeId(BIN_TYPE_NAME);
 
         ignite.context().cacheObjects().removeType(typeId);
@@ -217,7 +214,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         awaitPartitionMapExchange();
 
-        // remove metadata
+        // Remove metadata.
         int typeId = ignite.context().cacheObjects().typeId(BIN_TYPE_NAME);
 
         ignite.context().cacheObjects().removeType(typeId);
@@ -312,7 +309,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         fut.get(TIMEOUT);
 
-        // Ensure that existing type has been updated
+        // Ensure that existing type has been updated.
         BinaryType type = ignite.context().cacheObjects().metadata(typeId);
 
         assertTrue(type.fieldNames().contains("name"));
@@ -342,7 +339,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), BinaryObjectException.class, null);
 
-        ensureCacheDirEmpty(2, dfltCacheCfg.getName());
+        ensureCacheDirEmpty(2, dfltCacheCfg);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             assertEquals(objs[i], cache1.get(i));
@@ -451,7 +448,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
                 "Required node has left the cluster"
             );
 
-            ensureCacheDirEmpty(3, dfltCacheCfg.getName());
+            ensureCacheDirEmpty(3, dfltCacheCfg);
 
             fut0.get(TIMEOUT);
 
@@ -581,7 +578,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ensureCacheDirEmpty(stopNode ? nodesCnt - 1 : nodesCnt, dfltCacheCfg.getName());
+        ensureCacheDirEmpty(stopNode ? nodesCnt - 1 : nodesCnt, dfltCacheCfg);
 
         String cacheName = dfltCacheCfg.getName();
 
@@ -600,10 +597,12 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /**
      * @param nodesCnt Count of nodes.
-     * @param cacheName Cache name.
+     * @param ccfg Cache configuration.
      * @throws IgniteCheckedException if failed.
      */
-    private void ensureCacheDirEmpty(int nodesCnt, String cacheName) throws IgniteCheckedException {
+    private void ensureCacheDirEmpty(int nodesCnt, CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+        String cacheName = ccfg.getName();
+
         for (int nodeIdx = 0; nodeIdx < nodesCnt; nodeIdx++) {
             IgniteEx grid = grid(nodeIdx);
 
@@ -615,32 +614,13 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
                 () -> !grid.context().cache().context().snapshotMgr().isRestoring(),
                 TIMEOUT);
 
-            File dir = resolveCacheDir(grid, cacheName);
+            File dir = ((FilePageStoreManager)grid.context().cache().context().pageStore()).cacheWorkDir(ccfg);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
                 grid.name(), dir, dir.exists(), Arrays.toString(dir.list()));
 
             assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
         }
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param cacheOrGrpName Cache (or group) name.
-     * @return Local path to the cache directory.
-     * @throws IgniteCheckedException if failed.
-     */
-    private File resolveCacheDir(IgniteEx ignite, String cacheOrGrpName) throws IgniteCheckedException {
-        File workDIr = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        String nodeDirName = ignite.context().pdsFolderResolver().resolveFolders().folderName() + File.separator;
-
-        File cacheDir = new File(workDIr, nodeDirName + CACHE_DIR_PREFIX + cacheOrGrpName);
-
-        if (cacheDir.exists())
-            return cacheDir;
-
-        return new File(workDIr, nodeDirName + CACHE_GRP_DIR_PREFIX + cacheOrGrpName);
     }
 
     /**
