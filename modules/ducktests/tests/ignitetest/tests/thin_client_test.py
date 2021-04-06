@@ -60,6 +60,6 @@ class ThinClientTest(IgniteTest):
         ignite.start()
         thin_clients.start()
 
-        thin_clients.await_event(evt_message="IGNITE_APPLICATION_FINISHED", timeout_sec=60)
+        thin_clients.await_event(evt_message=thin_clients.APP_FINISH_EVT_MSG, timeout_sec=60)
         thin_clients.stop()
         ignite.stop()
