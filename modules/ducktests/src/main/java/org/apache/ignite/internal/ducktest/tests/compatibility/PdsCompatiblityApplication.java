@@ -67,7 +67,7 @@ public class PdsCompatiblityApplication extends IgniteAwareApplication {
     }
 
     /**
-     *
+     * Data model class, which instances used as cache entry values.
      */
     private static class User {
         /** */
