@@ -16,17 +16,16 @@
 """
 This module contains client tests.
 """
-import time
-
-from ducktape.mark import parametrize, matrix
+from ducktape.mark import matrix
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.utils import ignite_versions, cluster
+from ignitetest.utils import cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
+
 
 class ThinClientTest(IgniteTest):
     """
@@ -44,7 +43,7 @@ class ThinClientTest(IgniteTest):
         """
 
         server_config = IgniteConfiguration(version=IgniteVersion(server_version),
-                                            client_connector_configuration = ClientConnectorConfiguration())
+                                            client_connector_configuration=ClientConnectorConfiguration())
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
@@ -52,11 +51,11 @@ class ThinClientTest(IgniteTest):
                                  str(server_config.client_connector_configuration.port)
 
         thin_clients = IgniteApplicationService(self.test_context,
-                                           IgniteConfiguration(version=IgniteVersion(thin_client_version)),
-                                           java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                           num_nodes=1,
-                                           params={"thin_client_connection": thin_client_connection},
-                                           start_ignite = False)
+                                                IgniteConfiguration(version=IgniteVersion(thin_client_version)),
+                                                java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                                                num_nodes=1,
+                                                params={"thin_client_connection": thin_client_connection},
+                                                start_ignite=False)
 
         ignite.start()
         thin_clients.start()
