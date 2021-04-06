@@ -45,6 +45,9 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRebuildRunner;
+import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
+import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -57,7 +60,7 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        IndexesRebuildTaskEx.clean();
+        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -67,7 +70,7 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IndexesRebuildTaskEx.clean();
+        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -179,11 +182,14 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        IndexesRebuildTaskEx.cacheRebuildRunner.put(
-            cacheCtx.name(), () -> assertNull(internalIndexRebuildFuture(n, cacheCtx.cacheId())));
+        addCacheRebuildRunner(
+            nodeName(n),
+            cacheCtx.name(),
+            () -> assertNull(internalIndexRebuildFuture(n, cacheCtx.cacheId()))
+        );
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        IndexesRebuildTaskEx.cacheRowConsumer.put(cacheCtx.name(), stopRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), cacheCtx.name(), stopRebuildIdxConsumer);
 
         forceRebuildIndexes(n, cacheCtx);
 
@@ -226,11 +232,10 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
         int keys = 100_000;
         IgniteEx n = prepareCluster(keys);
 
-        IndexesRebuildTaskEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, row -> {
-            U.sleep(10);
-        });
-
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+
+        addCacheRowConsumer(nodeName(n), cacheCtx.name(), row -> U.sleep(10));
+
         forceRebuildIndexes(n, cacheCtx);
 
         IgniteInternalFuture<?> fut0 = indexRebuildFuture(n, cacheCtx.cacheId());
@@ -239,7 +244,7 @@ public class StopRebuildIndexTest extends GridCommonAbstractTest {
         SchemaIndexCacheFuture fut1 = internalIndexRebuildFuture(n, cacheCtx.cacheId());
         assertNotNull(fut1);
 
-        CacheMetricsImpl metrics0 = cacheMetrics0(n, DEFAULT_CACHE_NAME);
+        CacheMetricsImpl metrics0 = cacheMetrics0(n, cacheCtx.name());
         assertTrue(metrics0.isIndexRebuildInProgress());
         assertFalse(fut0.isDone());
 

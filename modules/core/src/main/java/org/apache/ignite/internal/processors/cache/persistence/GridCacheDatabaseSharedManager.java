@@ -1470,7 +1470,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param contexts Collection of cache contexts for which indexes should be rebuilt.
      * @param rebuildCond Condition that should be met for indexes to be rebuilt for specific cache.
      * @param force Force rebuild indexes.
-     * @return Cash contexts that did not pass by {@code rebuildCond}.
+     * @return Cache contexts that did not pass by {@code rebuildCond}.
      */
     private Collection<GridCacheContext> rebuildIndexes(
         Collection<GridCacheContext> contexts,

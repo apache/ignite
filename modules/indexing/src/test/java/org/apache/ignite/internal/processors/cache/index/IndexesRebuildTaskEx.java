@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -29,17 +31,27 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.emptyMap;
 
 /**
  * Extension {@link IndexesRebuildTask} for the tests.
  */
 class IndexesRebuildTaskEx extends IndexesRebuildTask {
-    /** Consumer for cache rows when rebuilding indexes. */
-    static final Map<String, IgniteThrowableConsumer<CacheDataRow>> cacheRowConsumer = new ConcurrentHashMap<>();
+    /**
+     * Consumer for cache rows when rebuilding indexes on a node.
+     * Mapping: Node name -> Cache name -> Consumer.
+     */
+    private static final Map<String, Map<String, IgniteThrowableConsumer<CacheDataRow>>> cacheRowConsumer =
+        new ConcurrentHashMap<>();
 
-    /** A function that should run before preparing to rebuild the cache indexes. */
-    static final Map<String, Runnable> cacheRebuildRunner = new ConcurrentHashMap<>();
+    /**
+     * A function that should run before preparing to rebuild the cache indexes on a node.
+     * Mapping: Node name -> Cache name -> Function.
+     */
+    private static final Map<String, Map<String, Runnable>> cacheRebuildRunner = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void startRebuild(
@@ -51,7 +63,8 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
         super.startRebuild(cctx, rebuildIdxFut, new SchemaIndexCacheVisitorClosure() {
             /** {@inheritDoc} */
             @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                cacheRowConsumer.getOrDefault(cctx.name(), r -> { }).accept(row);
+                cacheRowConsumer.getOrDefault(nodeName(cctx), emptyMap())
+                    .getOrDefault(cctx.name(), r -> { }).accept(row);
 
                 clo.apply(row);
             }
@@ -60,17 +73,93 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
 
     /** {@inheritDoc} */
     @Override @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
-        cacheRebuildRunner.getOrDefault(cctx.name(), () -> { }).run();
+        cacheRebuildRunner.getOrDefault(nodeName(cctx), emptyMap()).getOrDefault(cctx.name(), () -> { }).run();
 
         return super.rebuild(cctx, force);
     }
 
     /**
-     * Cleaning of internal structures.
+     * Cleaning of internal structures. It is recommended to clean at
+     * {@code GridCommonAbstractTest#beforeTest} and {@code GridCommonAbstractTest#afterTest}.
+     *
+     * @param nodeNamePrefix Prefix of node name ({@link GridKernalContext#igniteInstanceName()})
+     *      for which internal structures will be removed, if {@code null} will be removed for all.
+     *
+     * @see GridCommonAbstractTest#getTestIgniteInstanceName()
      */
-    static void clean() {
-        cacheRowConsumer.clear();
-        cacheRebuildRunner.clear();
+    static void clean(@Nullable String nodeNamePrefix) {
+        if (nodeNamePrefix == null) {
+            cacheRowConsumer.clear();
+            cacheRebuildRunner.clear();
+        }
+        else {
+            cacheRowConsumer.entrySet().removeIf(e -> e.getKey().startsWith(nodeNamePrefix));
+            cacheRebuildRunner.entrySet().removeIf(e -> e.getKey().startsWith(nodeNamePrefix));
+        }
+    }
+
+    /**
+     * Registering a consumer for cache rows when rebuilding indexes on a node.
+     *
+     * @param nodeName The name of the node,
+     *      the value of which will return {@link GridKernalContext#igniteInstanceName()}.
+     * @param cacheName Cache name.
+     * @param c Cache row consumer.
+     *
+     * @see #nodeName(GridKernalContext)
+     * @see #nodeName(IgniteEx)
+     * @see #nodeName(GridCacheContext)
+     * @see GridCommonAbstractTest#getTestIgniteInstanceName(int)
+     */
+    static void addCacheRowConsumer(String nodeName, String cacheName, IgniteThrowableConsumer<CacheDataRow> c) {
+        cacheRowConsumer.computeIfAbsent(nodeName, s -> new ConcurrentHashMap<>()).put(cacheName, c);
+    }
+
+    /**
+     * Registering A function that should run before preparing to rebuild the cache indexes on a node.
+     *
+     * @param nodeName The name of the node,
+     *      the value of which will return {@link GridKernalContext#igniteInstanceName()}.
+     * @param cacheName Cache name.
+     * @param r A function that should run before preparing to rebuild the cache indexes.
+     *
+     * @see #nodeName(GridKernalContext)
+     * @see #nodeName(IgniteEx)
+     * @see #nodeName(GridCacheContext)
+     * @see GridCommonAbstractTest#getTestIgniteInstanceName(int)
+     */
+    static void addCacheRebuildRunner(String nodeName, String cacheName, Runnable r) {
+        cacheRebuildRunner.computeIfAbsent(nodeName, s -> new ConcurrentHashMap<>()).put(cacheName, r);
+    }
+
+    /**
+     * Getting local instance name of the node.
+     *
+     * @param cacheCtx Cache context.
+     * @return Local instance name.
+     */
+    static String nodeName(GridCacheContext cacheCtx) {
+        return nodeName(cacheCtx.kernalContext());
+    }
+
+    /**
+     * Getting local instance name of the node.
+     *
+     * @param n Node.
+     * @return Local instance name.
+     */
+    static String nodeName(IgniteEx n) {
+        return nodeName(n.context());
+    }
+
+    /**
+     * Getting local instance name of the node.
+     *
+     * @param kernalCtx Kernal context.
+     * @return Local instance name.
+     */
+    static String nodeName(GridKernalContext kernalCtx) {
+        return kernalCtx.igniteInstanceName();
     }
 
     /**

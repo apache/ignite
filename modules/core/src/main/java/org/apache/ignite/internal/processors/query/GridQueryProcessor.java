@@ -206,7 +206,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = new LinkedHashMap<>();
 
     /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
-    private final Map<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
 
     /** General state mutex. */
     private final Object stateMux = new Object();
@@ -244,7 +244,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
     /** Mapping the cache id to the {@link GridDhtPartitionsExchangeFuture#initialVersion()} for rebuilding indexes. */
-    private final Map<Integer, AffinityTopologyVersion> idxRebuildTops = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, AffinityTopologyVersion> idxRebuildTops = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -3854,14 +3854,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             cacheIds = rebuildIndexCacheIds(fut);
 
         if (!cacheIds.isEmpty()) {
-            synchronized (idxRebuildFuts) {
-                for (Integer cacheId : cacheIds) {
-                    GridFutureAdapter<Void> rmv;
+            for (Integer cacheId : cacheIds) {
+                GridFutureAdapter<Void> rmv;
 
-                    if (idxRebuildTops.remove(cacheId, fut.initialVersion()) &&
-                        (rmv = idxRebuildFuts.remove(cacheId)) != null)
-                        rmv.onDone();
-                }
+                if (idxRebuildTops.remove(cacheId, fut.initialVersion()) &&
+                    (rmv = idxRebuildFuts.remove(cacheId)) != null)
+                    rmv.onDone();
             }
         }
     }

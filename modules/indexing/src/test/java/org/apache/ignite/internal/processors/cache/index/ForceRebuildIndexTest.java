@@ -37,6 +37,8 @@ import org.junit.Test;
 
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
+import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -48,7 +50,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        IndexesRebuildTaskEx.clean();
+        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -58,7 +60,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IndexesRebuildTaskEx.clean();
+        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -91,7 +93,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        IndexesRebuildTaskEx.cacheRowConsumer.put(cacheCtx.name(), stopRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), cacheCtx.name(), stopRebuildIdxConsumer);
 
         // The forced rebuild has begun - no rejected.
         assertEqualsCollections(emptyList(), forceRebuildIndexes(n, cacheCtx));
@@ -144,7 +146,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
         IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        IndexesRebuildTaskEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
 
         n = startGrid(0);
         n.cluster().state(ACTIVE);
@@ -203,7 +205,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
         IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        IndexesRebuildTaskEx.cacheRowConsumer.put(DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
 
         n = startGrid(0);
         n.cluster().state(ACTIVE);
