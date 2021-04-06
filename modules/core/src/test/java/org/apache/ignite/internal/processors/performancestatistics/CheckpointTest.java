@@ -47,9 +47,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests checkpoint performance statistics.
  */
 public class CheckpointTest extends AbstractPerformanceStatisticsTest {
-    /** Ignite. */
-    private static IgniteEx srv;
-
     /** Listener test logger. */
     private static ListeningTestLogger listeningLog;
 
@@ -104,7 +101,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         listeningLog.registerListener(node_started);
         listeningLog.registerListener(lsnr);
 
-        srv = startGrid();
+        IgniteEx srv = startGrid();
 
         srv.cluster().state(ClusterState.ACTIVE);
 
@@ -197,7 +194,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
     /** @throws Exception if failed. */
     public void checkThrottling() throws Exception {
-        srv = startGrid();
+        IgniteEx srv = startGrid();
 
         srv.cluster().state(ClusterState.ACTIVE);
 
