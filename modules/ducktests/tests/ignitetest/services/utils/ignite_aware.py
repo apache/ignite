@@ -233,7 +233,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         return len(self.pids(node)) > 0
 
     @staticmethod
-    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=0):
+    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=.1):
         """
         Await for specific event message in a node's log file.
         :param evt_message: Event message.
@@ -248,7 +248,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=0):
+    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
