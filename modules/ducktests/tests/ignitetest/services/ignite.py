@@ -17,10 +17,6 @@
 This module contains class to start ignite cluster node.
 """
 
-import signal
-
-from ducktape.cluster.remoteaccount import RemoteCommandError
-
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
@@ -33,27 +29,8 @@ class IgniteService(IgniteAwareService):
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, jvm_opts=None, full_jvm_opts=None, startup_timeout_sec=60,
                  shutdown_timeout_sec=10, modules=None):
-        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
-                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
-
-    def thread_dump(self, node):
-        """
-        Generate thread dump on node.
-        :param node: Ignite service node.
-        """
-        for pid in self.pids(node):
-            try:
-                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
-            except RemoteCommandError:
-                self.logger.warn("Could not dump threads on node")
-
-    def pids(self, node):
-        try:
-            cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.APP_SERVICE_CLASS
-            pid_arr = list(node.account.ssh_capture(cmd, allow_fail=True, callback=int))
-            return pid_arr
-        except (RemoteCommandError, ValueError):
-            return []
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, self.APP_SERVICE_CLASS,
+                         modules=modules, jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
 
 def node_failed_event_pattern(failed_node_id=None):

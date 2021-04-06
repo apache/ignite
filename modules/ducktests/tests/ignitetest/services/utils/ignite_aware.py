@@ -22,7 +22,7 @@ import signal
 import socket
 import sys
 import time
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta
 from datetime import datetime
 from enum import IntEnum
 from threading import Thread
@@ -56,7 +56,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         ALL = 2
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
+                 **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -67,10 +68,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.log_level = "DEBUG"
 
         self.config = config
+        self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
 
-        self.spec = resolve_spec(self, context, config, **kwargs)
+        self.spec = resolve_spec(self, context, config, main_java_class, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
@@ -208,13 +210,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         return node_config
 
-    @abstractmethod
     def pids(self, node):
         """
         :param node: Ignite service node.
         :return: List of service's pids.
         """
-        raise NotImplementedError
+        return node.account.java_pids(self.main_java_class)
 
     # pylint: disable=W0613
     def worker(self, idx, node, **kwargs):
