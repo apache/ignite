@@ -989,6 +989,7 @@ public class Checkpointer extends GridWorker {
 
     /**
      * Writes checkpoint performance statistics.
+     *
      * @param chp Checkpoint.
      * @param tracker CheckpointMetricsTracker.
      */
