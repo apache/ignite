@@ -1984,6 +1984,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // can't write header without that condition.
         WALPointer lastReadPtr = logicalState.lastReadRecordPointer();
 
+        System.out.println("GridCacheDatabaseSharedManager.tailPointer - " + lastFlushPtr + ", " + lastReadPtr);
+
         if (lastFlushPtr != null && lastReadPtr == null)
             return lastFlushPtr;
 
