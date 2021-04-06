@@ -79,6 +79,10 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerChangeFlagsRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlushRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
@@ -265,6 +269,22 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** Service invocation. */
     private static final short OP_SERVICE_INVOKE = 7000;
+
+    /* Data streamers. */
+    /** */
+    private static final short OP_DATA_STREAMER_CREATE = 8000;
+
+    /** */
+    private static final short OP_DATA_STREAMER_FLAGS = 8001;
+
+    /** */
+    private static final short OP_DATA_STREAMER_ADD = 8002;
+
+    /** */
+    private static final short OP_DATA_STREAMER_FLUSH = 8003;
+
+    /** */
+    public static final short OP_DATA_STREAMER_ADDED = 8004;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -475,6 +495,18 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_SERVICE_INVOKE:
                 return new ClientServiceInvokeRequest(reader);
+
+            case OP_DATA_STREAMER_CREATE:
+                return new ClientDataStreamerCreateRequest(reader);
+
+            case OP_DATA_STREAMER_FLAGS:
+                return new ClientDataStreamerChangeFlagsRequest(reader);
+
+            case OP_DATA_STREAMER_ADD:
+                return new ClientDataStreamerAddDataRequest(reader);
+
+            case OP_DATA_STREAMER_FLUSH:
+                return new ClientDataStreamerFlushRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

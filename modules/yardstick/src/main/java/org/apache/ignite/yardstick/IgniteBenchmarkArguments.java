@@ -24,7 +24,6 @@ import java.util.Map;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -32,7 +31,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
+import org.apache.ignite.yardstick.datastreamer.DataStreamerBenchmarkArguments;
 import org.apache.ignite.yardstick.jdbc.SelectCommand;
 import org.apache.ignite.yardstick.upload.UploadBenchmarkArguments;
 import org.jetbrains.annotations.Nullable;
@@ -258,20 +257,9 @@ public class IgniteBenchmarkArguments {
     private String walMode = "LOG_ONLY";
 
     /** */
-    @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
-    private String streamerCachesPrefix = "streamer";
-
-    /** */
-    @Parameter(names = {"-stci", "--streamerCachesIndex"}, description = "First cache index for streamer benchmark")
-    private int streamerCacheIndex;
-
-    /** */
-    @Parameter(names = {"-stcc", "--streamerConcCaches"}, description = "Number of concurrently loaded caches for streamer benchmark")
-    private int streamerConcurrentCaches = 1;
-
-    /** */
-    @Parameter(names = {"-stbs", "--streamerBufSize"}, description = "Data streamer buffer size")
-    private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
+    @ParametersDelegate
+    @GridToStringInclude
+    public DataStreamerBenchmarkArguments streamer = new DataStreamerBenchmarkArguments();
 
     /** */
     @Parameter(names = {"-sqlr", "--sqlRange"}, description = "Result set size")
@@ -690,34 +678,6 @@ public class IgniteBenchmarkArguments {
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
             "-txc=" + txConcurrency + "-rd=" + restartDelay + "-rs=" + restartSleep;
-    }
-
-    /**
-     * @return Cache name prefix for caches to be used in {@link IgniteStreamerBenchmark}.
-     */
-    public String streamerCachesPrefix() {
-        return streamerCachesPrefix;
-    }
-
-    /**
-     * @return First cache index for {@link IgniteStreamerBenchmark}.
-     */
-    public int streamerCacheIndex() {
-        return streamerCacheIndex;
-    }
-
-    /**
-     * @return Number of concurrently loaded caches for {@link IgniteStreamerBenchmark}.
-     */
-    public int streamerConcurrentCaches() {
-        return streamerConcurrentCaches;
-    }
-
-    /**
-     * @return Streamer buffer size {@link IgniteStreamerBenchmark} (see {@link IgniteDataStreamer#perNodeBufferSize()}.
-     */
-    public int streamerBufferSize() {
-        return streamerBufSize;
     }
 
     /**
