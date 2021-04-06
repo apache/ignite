@@ -74,6 +74,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
+        self.start_ignite = kwargs.get("start_ignite")
 
     @property
     def version(self):
@@ -96,7 +97,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
-        self.await_started()
+        self.await_started(self.start_ignite)
 
     def update_ssl_config_with_globals(self):
         """
@@ -113,7 +114,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                                connector_configuration=ConnectorConfiguration(
                                                    ssl_enabled=True, ssl_params=ssl_params))
 
-    def await_started(self):
+    def await_started(self, start_ingite=True):
         """
         Awaits start finished.
         """
