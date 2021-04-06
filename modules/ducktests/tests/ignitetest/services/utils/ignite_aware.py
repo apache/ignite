@@ -233,7 +233,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         return len(self.pids(node)) > 0
 
     @staticmethod
-    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=0):
         """
         Await for specific event message in a node's log file.
         :param evt_message: Event message.
@@ -248,7 +248,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=0):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
@@ -274,6 +274,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         match = re.match("^\\[[^\\[]+\\]", stdout)
 
         return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
+
+    def get_event_time_on_node(self, node, log_pattern, from_the_beginning=True, timeout=15):
+        """
+        Extracts event time from ignite log by pattern .
+        :param node: ducktape node to search ignite log on.
+        :param log_pattern: pattern to search ignite log for.
+        :param from_the_beginning: switches searching log from its beginning.
+        :param timeout: timeout to wait for the patters in the log.
+        """
+        self.await_event_on_node(log_pattern, node, timeout, from_the_beginning=from_the_beginning, backoff_sec=0)
+
+        return self.event_time(log_pattern, node)
 
     def get_event_time(self, evt_message, selector=max):
         """
@@ -505,3 +517,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
+
+
+def node_failed_event_pattern(failed_node_id=None):
+    """Failed node pattern in log."""
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
+           ".\\{1,\\}\\(isClient\\|client\\)=false"

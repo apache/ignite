@@ -31,24 +31,3 @@ class IgniteService(IgniteAwareService):
                  shutdown_timeout_sec=10, modules=None):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, self.APP_SERVICE_CLASS,
                          modules=modules, jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
-
-
-def node_failed_event_pattern(failed_node_id=None):
-    """Failed node pattern in log."""
-    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
-           ".\\{1,\\}\\(isClient\\|client\\)=false"
-
-
-def get_event_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
-    """
-    Extracts event time from ignite log by pattern .
-    :param service: ducktape service (ignite service) responsible to search log.
-    :param log_node: ducktape node to search ignite log on.
-    :param log_pattern: pattern to search ignite log for.
-    :param from_the_beginning: switches searching log from its beginning.
-    :param timeout: timeout to wait for the patters in the log.
-    """
-    service.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
-                                backoff_sec=0.3)
-
-    return IgniteAwareService.event_time(log_pattern, log_node)
