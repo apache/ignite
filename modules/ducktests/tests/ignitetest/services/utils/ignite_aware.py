@@ -97,8 +97,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
-        if self.start_ignite:
-            self.await_started()
+        self.await_started()
 
     def update_ssl_config_with_globals(self):
         """
@@ -119,6 +118,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
+        if not self.start_ignite:
+            return
+
         self.logger.info("Waiting for IgniteAware(s) to start ...")
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
