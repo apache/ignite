@@ -47,9 +47,8 @@ class IgniteApplicationService(IgniteAwareService):
         self.java_class_name = java_class_name
         self.params = params
 
-    def await_started(self, start_ignite=True):
-        if start_ignite:
-            super().await_started()
+    def await_started(self):
+        super().await_started()
 
         self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
 

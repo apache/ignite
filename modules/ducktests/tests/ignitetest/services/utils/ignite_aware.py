@@ -97,7 +97,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
-        self.await_started(self.start_ignite)
+        if self.start_ignite:
+            self.await_started()
 
     def update_ssl_config_with_globals(self):
         """
@@ -114,7 +115,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                                connector_configuration=ConnectorConfiguration(
                                                    ssl_enabled=True, ssl_params=ssl_params))
 
-    def await_started(self, start_ingite=True):
+    def await_started(self):
         """
         Awaits start finished.
         """
