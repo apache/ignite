@@ -1951,6 +1951,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         return res;
     }
 
+    /** @return Performance statistics processor. */
+    PerformanceStatisticsProcessor performanceStatistics() {
+        return ctx.kernalContext().performanceStatistics();
+    }
+
     /**
      *
      */
@@ -2482,13 +2487,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (GridUnsafe.compareAndSwapLong(null, ptr, old, updated))
                 return updated;
         }
-    }
-
-    /**
-     * @return Performance statistics processor.
-     */
-    PerformanceStatisticsProcessor performanceStatistics() {
-        return ctx.kernalContext().performanceStatistics();
     }
 
     /**

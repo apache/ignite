@@ -217,8 +217,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
         long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
         long walCpRecordFsyncDuration, long writeCheckpointEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
-    {
+        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
         write(writer -> writer.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
             lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration, writeCheckpointEntryDuration,
             splitAndSortCpPagesDuration, totalDuration, cpStartTime, pagesSize, dataPagesWritten, cowPagesWritten));
@@ -228,8 +227,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param startTime Start time in milliseconds.
      * @param endTime End time in milliseconds.
      */
-    public void pagesWriteThrottle(long startTime, long endTime)
-    {
+    public void pagesWriteThrottle(long startTime, long endTime) {
         write(writer -> writer.pagesWriteThrottle(startTime, endTime));
     }
 

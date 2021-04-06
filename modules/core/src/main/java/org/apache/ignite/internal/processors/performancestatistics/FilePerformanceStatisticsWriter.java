@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.THROTTLING;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.throttlingRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pagesWriteThrottleRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
 /**
@@ -367,7 +367,7 @@ public class FilePerformanceStatisticsWriter {
      * @param endTime End time in milliseconds.
      */
     public void pagesWriteThrottle(long startTime, long endTime) {
-        doWrite(THROTTLING, throttlingRecordSize(), buf -> {
+        doWrite(PAGES_WRITE_THROTTLE, pagesWriteThrottleRecordSize(), buf -> {
             buf.putLong(startTime);
             buf.putLong(endTime);
         });

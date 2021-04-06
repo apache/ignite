@@ -84,8 +84,8 @@ public enum OperationType {
     /** Checkpoint. */
     CHECKPOINT(18),
 
-    /** Throttling. */
-    THROTTLING(19);
+    /** Pages write throttle. */
+    PAGES_WRITE_THROTTLE(19);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -191,11 +191,11 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return (8 * 12) + (4 * 3);
+        return 8 * 12 + 4 * 3;
     }
 
-    /** @return Throttling record size. */
-    public static int throttlingRecordSize() {
+    /** @return Pages write throttle record size. */
+    public static int pagesWriteThrottleRecordSize() {
         return 8 + 8;
     }
 }

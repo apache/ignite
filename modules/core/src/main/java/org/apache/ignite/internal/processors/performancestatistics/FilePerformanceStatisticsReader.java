@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.THROTTLING;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.throttlingRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pagesWriteThrottleRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
@@ -433,8 +433,8 @@ public class FilePerformanceStatisticsReader {
 
             return true;
         }
-        else if (opType == THROTTLING) {
-            if (buf.remaining() < throttlingRecordSize())
+        else if (opType == PAGES_WRITE_THROTTLE) {
+            if (buf.remaining() < pagesWriteThrottleRecordSize())
                 return false;
 
             long starTime = buf.getLong();
