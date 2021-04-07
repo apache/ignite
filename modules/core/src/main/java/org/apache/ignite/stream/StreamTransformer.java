@@ -73,7 +73,7 @@ public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, E
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class EntryProcessorWrapper<K, V> extends StreamTransformer<K,V> implements GridPeerDeployAware {
+    private static class EntryProcessorWrapper<K, V> extends StreamTransformer<K, V> implements GridPeerDeployAware {
         /** */
         private static final long serialVersionUID = 0L;
 

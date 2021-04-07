@@ -366,7 +366,13 @@ public class ReliableChannelTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void addNotificationListener(NotificationListener lsnr) {
+        @Override public void addNotificationListener(ClientNotificationType type, Long rsrcId,
+            NotificationListener lsnr) {
+            /* No-op */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ClientNotificationType type, Long rsrcId) {
             /* No-op */
         }
 

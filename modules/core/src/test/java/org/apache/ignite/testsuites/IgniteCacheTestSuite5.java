@@ -55,13 +55,17 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinity
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchComplexOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchIsolationTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchTxContinuationTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchTxCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeSwitchTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceMetricsTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -99,6 +103,8 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, GridExchangeFreeSwitchTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridExchangeFreeCellularSwitchComplexOperationsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridExchangeFreeCellularSwitchIsolationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridExchangeFreeCellularSwitchTxContinuationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridExchangeFreeCellularSwitchTxCountersTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, EntryVersionConsistencyReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheSyncRebalanceModeSelfTest.class, ignoredTests);
@@ -120,6 +126,7 @@ public class IgniteCacheTestSuite5 {
 
         GridTestUtils.addTestIfNeeded(suite, CacheRebalancingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheManualRebalancingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RebalanceMetricsTest.class, ignoredTests);
 
         // Affinity tests.
         GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityBackupsSelfTest.class, ignoredTests);
@@ -149,7 +156,7 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTopologyChangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTransactionRemapTest.class, ignoredTests);
 
-        //GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
 
         return suite;
     }

@@ -732,7 +732,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void cleanUpTestEnviroment() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        U.quietAndInfo(log(), ">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
         printJvmMemoryStatistic();
 
         try {
@@ -1038,6 +1038,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Starts new grid with given index.
      *
      * @param idx Index of the grid to start.
+     * @param cfgC Configuration mutator. Can be used to avoid oversimplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, Consumer<IgniteConfiguration> cfgC) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfg -> {
+            cfgC.accept(cfg);
+
+            return cfg;
+        });
+    }
+
+    /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
      * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
      * @return Started grid.
      * @throws Exception If anything failed.
@@ -1284,7 +1300,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        return startRemoteGrid(igniteInstanceName, cfg, ctx,true);
+        return startRemoteGrid(igniteInstanceName, cfg, ctx, true);
     }
 
     /**
@@ -2414,7 +2430,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             if (t != null) {
                 if (t instanceof AssumptionViolatedException)
-                    U.quietAndInfo(log,"Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
+                    U.quietAndInfo(log, "Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
                 else {
                     U.error(log, "Test failed [test=" + testDescription() +
                         ", duration=" + (System.currentTimeMillis() - ts) + "]", t);

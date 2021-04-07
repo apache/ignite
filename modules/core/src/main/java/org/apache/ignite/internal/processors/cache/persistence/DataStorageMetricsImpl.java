@@ -25,10 +25,12 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -106,8 +108,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private volatile boolean metricsEnabled;
 
-    /** */
-    private volatile IgniteWriteAheadLogManager wal;
+    /** WAL manager. */
+    @Nullable private volatile IgniteWriteAheadLogManager wal;
 
     /** */
     private volatile IgniteOutClosure<Long> walSizeProvider;
@@ -159,6 +161,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private final HistogramMetricImpl cpHistogram;
+
+    /** Total number of logged bytes into the WAL. */
+    private final LongAdderMetric walWrittenBytes;
+
+    /** Total size of the compressed segments in bytes. */
+    private final LongAdderMetric walCompressedBytes;
 
     /**
      * @param mmgr Metrics manager.
@@ -235,7 +243,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
         lastCpWalRecordFsyncDuration = mreg.longMetric("LastCheckpointWalRecordFsyncDuration",
-            "Duration of the WAL fsync after logging CheckpointRecord on begin of the last checkpoint " +
+            "Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint " +
                 "in milliseconds.");
 
         lastCpWriteEntryDuration = mreg.longMetric("LastCheckpointWriteEntryDuration",
@@ -276,38 +284,48 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
 
         cpBeforeLockHistogram = mreg.histogram("CheckpointBeforeLockHistogram", cpBounds,
-                "Histogram of checkpoint action before taken write lock durations in milliseconds.");
+                "Histogram of checkpoint action before taken write lock duration in milliseconds.");
 
         cpLockWaitHistogram = mreg.histogram("CheckpointLockWaitHistogram", cpBounds,
-                "Histogram of checkpoint lock wait durations in milliseconds.");
+                "Histogram of checkpoint lock wait duration in milliseconds.");
 
         cpListenersExecuteHistogram = mreg.histogram("CheckpointListenersExecuteHistogram", cpBounds,
-                "Histogram of checkpoint execution listeners under write lock durations in milliseconds.");
+                "Histogram of checkpoint execution listeners under write lock duration in milliseconds.");
 
         cpMarkHistogram = mreg.histogram("CheckpointMarkHistogram", cpBounds,
-                "Histogram of checkpoint mark durations in milliseconds.");
+                "Histogram of checkpoint mark duration in milliseconds.");
 
         cpLockHoldHistogram = mreg.histogram("CheckpointLockHoldHistogram", cpBounds,
-                "Histogram of checkpoint lock hold durations in milliseconds.");
+                "Histogram of checkpoint lock hold duration in milliseconds.");
 
         cpPagesWriteHistogram = mreg.histogram("CheckpointPagesWriteHistogram", cpBounds,
-                "Histogram of checkpoint pages write durations in milliseconds.");
+                "Histogram of checkpoint pages write duration in milliseconds.");
 
         cpFsyncHistogram = mreg.histogram("CheckpointFsyncHistogram", cpBounds,
-                "Histogram of checkpoint fsync durations in milliseconds.");
+                "Histogram of checkpoint fsync duration in milliseconds.");
 
         cpWalRecordFsyncHistogram = mreg.histogram("CheckpointWalRecordFsyncHistogram", cpBounds,
-                "Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint durations " +
+                "Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint duration " +
                     "in milliseconds.");
 
         cpWriteEntryHistogram = mreg.histogram("CheckpointWriteEntryHistogram", cpBounds,
-                "Histogram of entry buffer writing to file durations in milliseconds.");
+                "Histogram of entry buffer writing to file duration in milliseconds.");
 
         cpSplitAndSortPagesHistogram = mreg.histogram("CheckpointSplitAndSortPagesHistogram", cpBounds,
-                "Histogram of splitting and sorting checkpoint pages durations in milliseconds.");
+                "Histogram of splitting and sorting checkpoint pages duration in milliseconds.");
 
         cpHistogram = mreg.histogram("CheckpointHistogram", cpBounds,
-                "Histogram of checkpoint durations in milliseconds.");
+                "Histogram of checkpoint duration in milliseconds.");
+
+        walWrittenBytes = mreg.longAdderMetric(
+            "WalWrittenBytes",
+            "Total number of logged bytes into the WAL."
+        );
+
+        walCompressedBytes = mreg.longAdderMetric(
+            "WalCompressedBytes",
+            "Total size of the compressed segments in bytes."
+        );
     }
 
     /** {@inheritDoc} */
@@ -331,7 +349,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return wal.walArchiveSegments();
+        IgniteWriteAheadLogManager walMgr = this.wal;
+
+        return walMgr == null ? 0 : walMgr.walArchiveSegments();
     }
 
     /** {@inheritDoc} */
@@ -785,10 +805,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /**
+     * Callback on logging a record to a WAL.
      *
+     * @param size Record size in bytes.
      */
-    public void onWalRecordLogged() {
+    public void onWalRecordLogged(long size) {
         walLoggingRate.increment();
+
+        walWrittenBytes.add(size);
     }
 
     /**
@@ -825,5 +849,30 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         walFsyncTimeDuration.reset(rateTimeInterval, subInts);
         walFsyncTimeNum.reset(rateTimeInterval, subInts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalWrittenBytes() {
+        if (!metricsEnabled)
+            return 0;
+
+        return walWrittenBytes.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalCompressedBytes() {
+        if (!metricsEnabled)
+            return 0;
+
+        return walCompressedBytes.value();
+    }
+
+    /**
+     * Callback on compression of a WAL segment.
+     *
+     * @param size Size of the compressed segment in bytes.
+     */
+    public void onWalSegmentCompressed(long size) {
+        walCompressedBytes.add(size);
     }
 }

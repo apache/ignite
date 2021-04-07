@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Ignite for C++
+= Ignite Quick Start Guide for C++
 
 This chapter explains system requirements for running Ignite and how to install Ignite, start a cluster, and run a simple Hello World example in C++.
 

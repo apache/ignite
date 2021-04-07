@@ -92,11 +92,13 @@ public interface IgniteCacheOffheapManager {
     /**
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
-     * @param partitionRecoveryStates Partition recovery states.
-     * @return Number of processed partitions.
+     * @param partRecoveryStates Partition recovery states.
+     * @return Processed partitions: partition id -> processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
-    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
+    Map<Integer, Long> restorePartitionStates(
+        Map<GroupPartitionId, Integer> partRecoveryStates
+    ) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
@@ -552,6 +554,13 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.

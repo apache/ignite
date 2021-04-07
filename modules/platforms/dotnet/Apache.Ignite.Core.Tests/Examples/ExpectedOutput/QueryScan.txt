@@ -1,0 +1,5 @@
+>>> Cache scan query example started.
+
+>>> Employees with zipcode 94109 (scan):
+>>>    Employee [name=James Wilson, salary=12500, address=Address [street=1096 Eddy Street, San Francisco, CA, zip=94109], departments=[Human Resources, Customer Service]]
+>>>    Employee [name=Allison Mathis, salary=25300, address=Address [street=2702 Freedom Lane, San Francisco, CA, zip=94109], departments=[Development]]

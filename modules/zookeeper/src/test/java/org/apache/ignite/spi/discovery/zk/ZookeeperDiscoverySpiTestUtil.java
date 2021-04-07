@@ -43,7 +43,7 @@ public class ZookeeperDiscoverySpiTestUtil {
      * @param customProps Custom configuration properties for every server.
      * @return Test cluster.
      */
-    public static TestingCluster createTestingCluster(int instances, @Nullable Map<String,Object>[] customProps) {
+    public static TestingCluster createTestingCluster(int instances, @Nullable Map<String, Object>[] customProps) {
         String tmpDir;
 
         tmpDir = System.getenv("TMPFS_ROOT") != null
@@ -61,7 +61,7 @@ public class ZookeeperDiscoverySpiTestUtil {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-            Map<String,Object> props = customProps != null ? customProps[i] : null;
+            Map<String, Object> props = customProps != null ? customProps[i] : null;
 
             specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500, props));
         }

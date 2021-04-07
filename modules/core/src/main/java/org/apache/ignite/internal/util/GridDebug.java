@@ -66,7 +66,7 @@ public class GridDebug {
      * sudo mkdir /ramdisk
      * sudo mount -t tmpfs -o size=2048M tmpfs /ramdisk
      */
-    private static final String LOGS_PATH = null;// "/ramdisk/";
+    private static final String LOGS_PATH = null; // "/ramdisk/";
 
     /** */
     private static boolean allowLog;
@@ -225,7 +225,7 @@ public class GridDebug {
         if (que == null)
             return;
 
-        int start = -1;// que.size() - 5000;
+        int start = -1; // que.size() - 5000;
 
         int x = 0;
 

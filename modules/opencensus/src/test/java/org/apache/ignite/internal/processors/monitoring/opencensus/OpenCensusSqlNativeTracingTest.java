@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -33,6 +34,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -42,6 +44,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
@@ -65,6 +69,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_U
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_IDX_RANGE_ROWS;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_SCHEMA;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.tag;
@@ -281,6 +286,10 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             "SELECT * FROM " + prsnTable + " AS p JOIN " + orgTable + " AS o ON o.orgId = p.prsnId",
             TEST_SCHEMA, false, true, true);
 
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+        UUID.fromString(qryId.substring(0, qryId.indexOf('_')));
+
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
 
@@ -319,7 +328,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 ).boxed().collect(Collectors.toSet());
 
                 Set<Integer> parts = Arrays.stream(matcher.group(2).split(","))
-                    .map(s -> Integer.parseInt(s.trim()))
+                    .map(s -> parseInt(s.trim()))
                     .collect(Collectors.toSet());
 
                 assertEquals(expParts, parts);
@@ -489,13 +498,87 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     }
 
     /**
+     * Tests that tracing of multiple SELECT queries produces separate span tree for each query and does not affect
+     * user thread {@link MTC#span()} value during execution and after it.
+     */
+    @Test
+    public void testSelectQueryUserThreadSpanNotAffected() throws Exception {
+        String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
+        String orgTable = createTableAndPopulate(Organization.class, PARTITIONED, 1);
+
+        try (
+            FieldsQueryCursor<List<?>> prsnQryCursor = reducer().context().query()
+                .querySqlFields(new SqlFieldsQuery("SELECT * FROM " + prsnTable), false);
+
+            FieldsQueryCursor<List<?>> orgQryCursor = reducer().context().query()
+                .querySqlFields(new SqlFieldsQuery("SELECT * FROM " + orgTable), false)
+        ) {
+            Iterator<List<?>> prsnQryIter = prsnQryCursor.iterator();
+            Iterator<List<?>> orgQryIter = orgQryCursor.iterator();
+
+            while (prsnQryIter.hasNext() && orgQryIter.hasNext()) {
+                assertEquals(NoopSpan.INSTANCE, MTC.span());
+
+                prsnQryIter.next();
+
+                assertEquals(NoopSpan.INSTANCE, MTC.span());
+
+                orgQryIter.next();
+
+                assertEquals(NoopSpan.INSTANCE, MTC.span());
+            }
+        }
+
+        assertEquals(NoopSpan.INSTANCE, MTC.span());
+
+        handler().flush();
+
+        checkDroppedSpans();
+
+        List<SpanId> rootSpans = findRootSpans(SQL_QRY);
+
+        assertEquals(2, rootSpans.size());
+
+        for (SpanId rootSpan : rootSpans)
+            checkBasicSelectQuerySpanTree(rootSpan, TEST_TABLE_POPULATION);
+    }
+
+    /**
+     * Checks presence of basic spans that related to SELECT SQL query and are childs of the specfied span.
+     *
+     * @param expRows Number of rows as a result of SELECT query.
+     * @param rootSpan Span which childs will be checked.
+     */
+    protected void checkBasicSelectQuerySpanTree(SpanId rootSpan, int expRows) {
+        int fetchedRows = 0;
+
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+
+        SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
+
+        SpanId fetchSpan = checkChildSpan(SQL_PAGE_FETCH, iterSpan);
+
+        fetchedRows += parseInt(getAttribute(fetchSpan, SQL_PAGE_ROWS));
+
+        List<SpanId> pageFetchSpans = findChildSpans(SQL_PAGE_FETCH, rootSpan);
+
+        for (SpanId span : pageFetchSpans)
+            fetchedRows += parseInt(getAttribute(span, SQL_PAGE_ROWS));
+
+        assertEquals(expRows, fetchedRows);
+
+        assertFalse(findChildSpans(SQL_CURSOR_CLOSE, rootSpan).isEmpty());
+    }
+
+    /**
      * Executes DML query and checks corresponding span tree.
      *
      * @param qry SQL query to execute.
      * @param fetchRequired Whether query need to fetch data before cache update.
      */
     private void checkDmlQuerySpans(String qry, boolean fetchRequired, int expCacheUpdates) throws Exception {
-        SpanId rootSpan = executeAndCheckRootSpan(qry, TEST_SCHEMA, false,false,false);
+        SpanId rootSpan = executeAndCheckRootSpan(qry, TEST_SCHEMA, false, false, false);
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
 
@@ -526,7 +609,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      * @return Id of the the child span.
      */
     protected SpanId checkChildSpan(SpanType type, SpanId parentSpan) {
-        return checkSpan(type, parentSpan,1, null).get(0);
+        return checkSpan(type, parentSpan, 1, null).get(0);
     }
 
     /**
@@ -541,6 +624,19 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             .filter(span -> parentSpanId != null ?
                 parentSpanId.equals(span.getParentSpanId()) && type.spanName().equals(span.getName()) :
                 type.spanName().equals(span.getName()))
+            .map(span -> span.getContext().getSpanId())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Finds root spans with specified type.
+     *
+     * @param type Span type.
+     * @return Ids of the found spans.
+     */
+    protected List<SpanId> findRootSpans(SpanType type) {
+        return handler().allSpans()
+            .filter(span -> span.getParentSpanId() == null && type.spanName().equals(span.getName()))
             .map(span -> span.getContext().getSpanId())
             .collect(Collectors.toList());
     }
@@ -617,7 +713,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 .put(tag(NODE, NAME), reducer().name())
                 .put(SQL_QRY_TEXT, sql)
                 .put(SQL_SCHEMA, schema)
-                .build()
+                .build(),
+            CheckAttributes.CONTAINS
         ).get(0);
     }
 
@@ -642,7 +739,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     /**
      * Checks that no spans were dropped by OpencenCensus due to exporter buffer overflow.
      */
-    private void checkDroppedSpans() {
+    protected void checkDroppedSpans() {
         Object worker = U.field(Tracing.getExportComponent().getSpanExporter(), "worker");
 
         long droppedSpans = U.field(worker, "droppedSpans");

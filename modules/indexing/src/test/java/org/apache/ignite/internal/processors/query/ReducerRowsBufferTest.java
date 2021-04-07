@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.twostep.ReduceBlockList;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -58,9 +59,14 @@ public class ReducerRowsBufferTest extends GridCommonAbstractTest {
 
         it.next();
 
-        ReduceBlockList<Row> fetched = GridTestUtils.getFieldValue(
-            it,
-            "cursor", "iter", "iter", "cursor", "this$0", "fetched");
+        ReduceBlockList<Row> fetched;
+
+        Object innerIt = GridTestUtils.getFieldValue(it, "cursor", "iter");
+
+        if (innerIt instanceof QueryCursorImpl.LazyIterator)
+            fetched = GridTestUtils.getFieldValue(innerIt, "delegate", "iter", "cursor", "this$0", "fetched");
+        else
+            fetched = GridTestUtils.getFieldValue(innerIt, "iter", "cursor", "this$0", "fetched");
 
         int cnt = 1;
         while (it.hasNext()) {

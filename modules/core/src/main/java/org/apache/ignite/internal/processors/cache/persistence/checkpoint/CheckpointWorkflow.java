@@ -192,12 +192,12 @@ public class CheckpointWorkflow {
         this.checkpointReadWriteLock = checkpointReadWriteLock;
         this.dataRegions = dataRegions;
         this.cacheGroupsContexts = cacheGroupContexts;
-        this.checkpointCollectPagesInfoPool = initializeCheckpointPool();
+        this.checkpointCollectInfoThreads = checkpointCollectInfoThreads;
         this.log = logger.apply(getClass());
         this.checkpointMarkersStorage = checkpointMarkersStorage;
         this.checkpointWriteOrder = checkpointWriteOrder;
         this.igniteInstanceName = igniteInstanceName;
-        this.checkpointCollectInfoThreads = checkpointCollectInfoThreads;
+        this.checkpointCollectPagesInfoPool = initializeCheckpointPool();
     }
 
     /**

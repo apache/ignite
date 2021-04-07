@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="assemblies">Assemblies to look in.</param>
         /// <param name="nameMapper">The name mapper.</param>
         /// <returns>
-        /// Resolved type. 
+        /// Resolved type.
         /// </returns>
         private static Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies,
             IBinaryNameMapper nameMapper)
@@ -267,6 +267,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static Type FindType(Assembly asm, string typeName, IBinaryNameMapper mapper)
         {
+            if (asm.IsDynamic)
+            {
+                return null;
+            }
+
             if (mapper == null)
             {
                 return asm.GetType(typeName);

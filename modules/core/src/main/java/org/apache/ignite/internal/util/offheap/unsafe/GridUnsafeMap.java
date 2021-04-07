@@ -769,7 +769,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
          * @return Iterator.
          */
         GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator() {
-            return new GridCloseableIteratorAdapter<IgniteBiTuple<byte[],byte[]>>() {
+            return new GridCloseableIteratorAdapter<IgniteBiTuple<byte[], byte[]>>() {
                 private final Queue<IgniteBiTuple<byte[], byte[]>> bin = new LinkedList<>();
 
                 {
