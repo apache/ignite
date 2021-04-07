@@ -195,6 +195,8 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
     /** @throws Exception if failed. */
     public void checkThrottling() throws Exception {
+        long limit = 50_000L;
+
         IgniteEx srv = startGrid();
 
         srv.cluster().state(ClusterState.ACTIVE);
@@ -211,8 +213,12 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         AtomicBoolean run = new AtomicBoolean(true);
 
         GridTestUtils.runAsync(() -> {
-            for (long i = 0; run.get(); i++)
+            for (long i = 0; run.get(); i++) {
                 cache.put(i, i);
+
+                if (i > limit)
+                    i = 0;
+            }
         });
 
         assertTrue(waitForCondition(() -> totalThrottlingTime.value() > 0, TIMEOUT));
