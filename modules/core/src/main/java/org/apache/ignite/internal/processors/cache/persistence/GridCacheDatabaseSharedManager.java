@@ -1930,6 +1930,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     public void preserveWalTailPointer() throws IgniteCheckedException {
+        System.out.println("GridCacheDatabaseSharedManager.preserveWalTailPointer");
         walTail = cctx.wal().flush(null, true);
     }
 
