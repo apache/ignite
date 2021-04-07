@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
 import java.lang.reflect.Field;
@@ -470,8 +471,7 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override
-        public InetAddress[] lookupAllHostAddr(String paramStr) throws UnknownHostException {
+        @Override public InetAddress[] lookupAllHostAddr(String paramStr) throws UnknownHostException {
             if (fqdn.equals(paramStr)) {
                 String ip = needReturnIp1 ? ip1 : ip2;
 
@@ -499,8 +499,7 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String getHostByAddr(byte[] paramArrOfByte) throws UnknownHostException {
+        @Override public String getHostByAddr(byte[] paramArrOfByte) throws UnknownHostException {
             throw new UnknownHostException();
         }
 
