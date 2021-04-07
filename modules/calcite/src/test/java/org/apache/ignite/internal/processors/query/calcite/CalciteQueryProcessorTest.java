@@ -857,7 +857,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     public void test() throws IgniteInterruptedCheckedException {
         CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
 
-        qryProc.query(null, "PUBLIC", "create table tbl (id int, constraint pk primary key (id), val varchar)");
+//        qryProc.query(null, "PUBLIC", "create table tbl (id int, constraint pk primary key (id), val varchar)");
+        qryProc.query(null, "PUBLIC", "create table tbl (id int, val varchar) with template=partitioned,backups=14");
         qryProc.query(null, "PUBLIC", "insert into tbl (id, val) values (1, '1'), (2, '2')").get(0).getAll();
 
         List<List<?>> res = qryProc.query(null, "PUBLIC", "select * from tbl order by id").get(0).getAll();

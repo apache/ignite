@@ -55,7 +55,6 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
-import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -124,6 +123,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlComman
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -630,8 +631,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         SqlDdl ddlNode = (SqlDdl)sqlNode;
 
-        if (ddlNode instanceof SqlCreateTable) {
-            SqlCreateTable createTblNode = (SqlCreateTable)ddlNode;
+        if (ddlNode instanceof IgniteSqlCreateTable) {
+            IgniteSqlCreateTable createTblNode = (IgniteSqlCreateTable)ddlNode;
 
             SqlIdentifier tblFullName = createTblNode.name;
 
@@ -650,6 +651,24 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             createTblCmd.schemaName(schemaName);
             createTblCmd.tableName(tblName);
+
+            for (SqlNode optNode : createTblNode.createOptionList.getList()) {
+                IgniteSqlCreateTableOption opt = (IgniteSqlCreateTableOption)optNode;
+
+                switch (opt.opt) {
+                    case TEMPLATE:
+                        createTblCmd.templateName(opt.value.toValue());
+                        break;
+                    case BACKUPS:
+                        createTblCmd.backups(opt.value.intValue(true));
+                        break;
+                    case AFFINITY_KEY:
+                        createTblCmd.affinityKey(opt.value.toValue());
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported option " + opt.opt);
+                }
+            }
 
             List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList.getList().stream()
                 .filter(SqlColumnDeclaration.class::isInstance)
