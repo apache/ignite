@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
@@ -83,9 +84,15 @@ public class IgniteAwareApplicationService {
         else {
             String connStr = jsonNode.get(THIN_CLIENT_CONNECTION).asText();
 
-            app.client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr));
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr))) {
+                app.client = client;
 
-            app.start(jsonNode);
+                app.start(jsonNode);
+            }
+            finally {
+                log.info("Thin client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
+            }
+
         }
     }
 }
