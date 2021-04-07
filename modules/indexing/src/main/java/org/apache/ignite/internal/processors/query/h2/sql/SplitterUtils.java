@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.TreeSet;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -284,6 +287,74 @@ public class SplitterUtils {
         }
 
         return false;
+    }
+
+    /**
+     *
+     */
+    public static void checkPartitionedJoin(GridSqlAst ast, IgniteLogger log) {
+        if (!(ast instanceof GridSqlJoin)) {
+            for (int i = 0; i < ast.size(); i++)
+                checkPartitionedJoin(ast.child(i), log);
+
+            return;
+        }
+
+        GridSqlJoin join = (GridSqlJoin) ast;
+
+        GridH2Table left = getTable(join.leftTable()).dataTable();
+        GridH2Table right = getTable(join.rightTable()).dataTable();
+
+        if (!(left.isPartitioned() && right.isPartitioned()))
+            return;
+
+        String leftAffCol = left.getAffinityKeyColumn().columnName;
+        String rightAffCol = right.getAffinityKeyColumn().columnName;
+
+        GridSqlElement joinCondition = join.on();
+
+        if (!checkJoinCondition(joinCondition, leftAffCol, rightAffCol))
+            log.warning(
+                "Non-collocated join. For perform you must set the 'distributedJoin' flag, or make a join in affinity columns: "
+                + left.getName() + "." + leftAffCol + ", " + right.getName() + "." + rightAffCol
+            );
+    }
+
+    private static GridSqlTable getTable(GridSqlElement el) {
+        if (el instanceof GridSqlTable)
+            return (GridSqlTable) el;
+
+        if (el instanceof GridSqlAlias)
+            return el.child();
+
+        assert false: el;
+
+        return null;
+    }
+
+    /** */
+    private static boolean checkJoinCondition(GridSqlElement condition, String affColLeft, String affColRight) {
+        if (!(condition instanceof GridSqlOperation))
+            return false;
+
+        GridSqlOperation op = (GridSqlOperation) condition;
+
+        if (GridSqlOperationType.EQUAL != op.operationType())
+            return false;
+
+        if (!(op.child(0) instanceof GridSqlColumn))
+            return false;
+
+        if (!(op.child(1) instanceof GridSqlColumn))
+            return false;
+
+        String leftCol = ((GridSqlColumn) op.child(0)).columnName();
+        String rightCol = ((GridSqlColumn) op.child(1)).columnName();
+
+        if (!leftCol.equals(affColLeft) && !leftCol.equals(affColRight))
+            return false;
+
+        return rightCol.equals(affColRight) || rightCol.equals(affColLeft);
     }
 
     /**
