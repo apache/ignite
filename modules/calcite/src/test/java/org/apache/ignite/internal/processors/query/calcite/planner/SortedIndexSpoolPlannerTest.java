@@ -44,7 +44,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
      * CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
      */
     @Test
-    public void test() throws Exception {
+    public void testNotColocatedEqJoin() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
