@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util.mbeans;
 
+import java.util.Set;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
@@ -26,7 +27,6 @@ import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
 
-import static java.util.stream.Collectors.toSet;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
@@ -37,7 +37,7 @@ import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import java.util.Set;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * MBean test.
@@ -347,13 +347,12 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMbeanCreation() throws Exception {
-        checkIfMbeanHaveInstanceName(null,null);
-        checkIfMbeanHaveInstanceName("testInstanceName",null);
-        checkIfMbeanHaveInstanceName(null,"testConsistanceId");
-        checkIfMbeanHaveInstanceName("testInstanceName","testConsistanceId");
+        checkIfMbeanHaveInstanceName(null, null);
+        checkIfMbeanHaveInstanceName("testInstanceName", null);
+        checkIfMbeanHaveInstanceName(null, "testConsistanceId");
+        checkIfMbeanHaveInstanceName("testInstanceName", "testConsistanceId");
 
     }
-
 
     private void checkIfMbeanHaveInstanceName(String instanceName, String consistanceId) throws Exception {
         IgniteEx ignite = (IgniteEx) startGrid(instanceName, new IgniteConfiguration()
