@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -130,14 +131,22 @@ public class CancelTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
+        Throwable ex = GridTestUtils.assertThrows(log, () -> {
                 while (it.hasNext())
                     it.next();
 
                 return null;
-            },
-            ClusterTopologyCheckedException.class, "node left"
-        );
+            }, IgniteSQLException.class, null);
+
+        // Sometimes remote node during stopping can send error to originator node and this error processed before
+        // node left event, in this case exception stack will looks like:
+        // IgniteSQLException -> RemoteException -> IgniteInterruptedCheckedException
+        if (!X.hasCause(ex, "node left", ClusterTopologyCheckedException.class) && !(X.hasCause(ex,
+            RemoteException.class) && X.hasCause(ex, IgniteInterruptedCheckedException.class))) {
+            log.error("Unexpected exception", ex);
+
+            fail("Unexpected exception: " + ex);
+        }
 
         awaitReservationsRelease(grid(0), "TEST");
     }
