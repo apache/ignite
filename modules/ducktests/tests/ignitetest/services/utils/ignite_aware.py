@@ -22,11 +22,12 @@ import signal
 import socket
 import sys
 import time
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta
 from datetime import datetime
 from enum import IntEnum
 from threading import Thread
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.background_thread import BackgroundThreadService
@@ -56,7 +57,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         ALL = 2
 
     # pylint: disable=R0913, R0902
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
+                 **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -67,10 +69,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.log_level = "DEBUG"
 
         self.config = config
+        self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
 
-        self.spec = resolve_spec(self, context, config, **kwargs)
+        self.spec = resolve_spec(self, context, config, main_java_class, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
@@ -212,13 +215,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         return node_config
 
-    @abstractmethod
     def pids(self, node):
         """
         :param node: Ignite service node.
         :return: List of service's pids.
         """
-        raise NotImplementedError
+        return node.account.java_pids(self.main_java_class)
 
     # pylint: disable=W0613
     def worker(self, idx, node, **kwargs):
@@ -236,7 +238,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         return len(self.pids(node)) > 0
 
     @staticmethod
-    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=.1):
         """
         Await for specific event message in a node's log file.
         :param evt_message: Event message.
@@ -251,7 +253,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
@@ -277,6 +279,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         match = re.match("^\\[[^\\[]+\\]", stdout)
 
         return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
+
+    def get_event_time_on_node(self, node, log_pattern, from_the_beginning=True, timeout=15):
+        """
+        Extracts event time from ignite log by pattern .
+        :param node: ducktape node to search ignite log on.
+        :param log_pattern: pattern to search ignite log for.
+        :param from_the_beginning: switches searching log from its beginning.
+        :param timeout: timeout to wait for the patters in the log.
+        """
+        self.await_event_on_node(log_pattern, node, timeout, from_the_beginning=from_the_beginning, backoff_sec=0)
+
+        return self.event_time(log_pattern, node)
 
     def get_event_time(self, evt_message, selector=max):
         """
@@ -485,6 +499,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         return out
 
+    def thread_dump(self, node):
+        """
+        Generate thread dump on node.
+        :param node: Ignite service node.
+        """
+        for pid in self.pids(node):
+            try:
+                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
+            except RemoteCommandError:
+                self.logger.warn("Could not dump threads on node")
+
     @staticmethod
     def node_id(node):
         """
@@ -508,3 +533,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
+
+
+def node_failed_event_pattern(failed_node_id=None):
+    """Failed node pattern in log."""
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
+           ".\\{1,\\}\\(isClient\\|client\\)=false"
