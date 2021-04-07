@@ -60,6 +60,4 @@ class ThinClientTest(IgniteTest):
 
         ignite.start()
         thin_clients.run()
-
-        thin_clients.stop()
         ignite.stop()
