@@ -66,7 +66,6 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
             .setWriteThrottlingEnabled(true)
-            .setCheckpointFrequency(1_000L)
             .setCheckpointThreads(1));
 
         return cfg;
@@ -202,14 +201,14 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         startCollectStatistics();
 
-        AtomicBoolean run = new AtomicBoolean(true);
-
-        IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
-
         MetricRegistry mreg = srv.context().metric().registry(
             metricName(DATAREGION_METRICS_PREFIX, DFLT_DATA_REG_DEFAULT_NAME));
 
         LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
+
+        IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        AtomicBoolean run = new AtomicBoolean(true);
 
         GridTestUtils.runAsync(() -> {
             for (long i = 0; run.get(); i++)
@@ -220,11 +219,18 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         run.set(false);
 
+        stopCollectStatistics();
+
+        long now = System.currentTimeMillis();
+
         AtomicBoolean checker = new AtomicBoolean();
 
-        stopCollectStatisticsAndRead(new TestHandler() {
+        readFiles(statisticsFiles(), new TestHandler() {
             @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long endTime) {
                 assertEquals(srv.localNode().id(), nodeId);
+
+                assertTrue(0L < startTime && startTime <= endTime && endTime < now);
+
                 checker.set(true);
             }
         });
