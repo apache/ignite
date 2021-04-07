@@ -42,7 +42,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         markInitialized();
 
         for (int i = 1; i <= cacheCnt; i++) {
-            // TODO https://issues.apache.org/jira/browse/IGNITE-14319
             IgniteCache<Integer, DataModel> cache = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
                     .setBackups(backups));

@@ -14,11 +14,13 @@
 # limitations under the License.
 
 """
-Module contains in-memory rebalance tests.
+Module contains persistence rebalance tests.
 """
 from ducktape.mark import defaults
+from ducktape.utils.util import wait_until
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
@@ -30,12 +32,12 @@ from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
 
 
 # pylint: disable=W0223
-class RebalanceInMemoryTest(IgniteTest):
+class RebalancePersistentTest(IgniteTest):
     """
-    Tests rebalance scenarios in in-memory mode.
+    Tests rebalance scenarios in persistent mode.
     """
     NUM_NODES = 4
-    DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
+    DATA_REGION_NAME = "persistent"
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
@@ -92,11 +94,10 @@ class RebalanceInMemoryTest(IgniteTest):
         node_count = len(self.test_context.cluster) - preloaders
 
         node_config = IgniteConfiguration(
+            cluster_state="INACTIVE",
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(max_size=max(
-                    cache_count * entry_count * entry_size * (backups + 1),
-                    self.DEFAULT_DATA_REGION_SZ))),
+                default=DataRegionConfiguration(persistent=True)),
             metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
             rebalance_thread_pool_size=thread_pool_size,
             rebalance_batch_size=batch_size,
@@ -106,6 +107,10 @@ class RebalanceInMemoryTest(IgniteTest):
         ignites = IgniteService(self.test_context, config=node_config,
                                 num_nodes=node_count if trigger_event else node_count - 1)
         ignites.start()
+
+        control_utility = ControlUtility(ignites)
+        control_utility.activate()
+        control_utility.enable_baseline_auto_adjust(500)
 
         preload_time = preload_data(
             self.test_context,
@@ -119,6 +124,8 @@ class RebalanceInMemoryTest(IgniteTest):
             ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                    num_nodes=1)
             ignite.start()
+            wait_until(lambda: len(control_utility.baseline()) == node_count, timeout_sec=5)
+            ignite.await_event_on_node("Checkpoint finished", ignite.nodes[0], 3600)
 
         start_node, _ = await_rebalance_start(ignite)
 

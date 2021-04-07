@@ -16,13 +16,23 @@
 """
 This package contains rebalance tests.
 """
-
+from enum import IntEnum
 from typing import NamedTuple
 
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.utils.enum import constructible
+
+
+@constructible
+class TriggerEvent(IntEnum):
+    """
+    Rebalance trigger event.
+    """
+    NODE_JOIN = 0
+    NODE_LEFT = 1
 
 
 # pylint: disable=too-many-arguments
