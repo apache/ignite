@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -101,11 +102,11 @@ public class IndexConditions {
     }
 
     /** */
-    public ImmutableIntList keys() {
+    public Set<Integer> keys() {
         if (upperBound == null && lowerBound == null)
-            return ImmutableIntList.of();
+            return Collections.emptySet();
 
-        List<Integer> keys = new ArrayList<>();
+        Set<Integer> keys = new HashSet<>();
 
         int cols = lowerBound != null ? lowerBound.size() : upperBound.size();
 
@@ -115,7 +116,7 @@ public class IndexConditions {
                 keys.add(i);
         }
 
-        return ImmutableIntList.copyOf(keys);
+        return Collections.unmodifiableSet(keys);
     }
 
     /**

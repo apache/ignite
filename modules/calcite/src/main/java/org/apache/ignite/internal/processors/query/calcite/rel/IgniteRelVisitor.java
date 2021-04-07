@@ -141,12 +141,17 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteIndexSpool rel);
+    T visit(IgniteSortedIndexSpool rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
     T visit(IgniteLimit rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteHashIndexSpool rel);
 
     /**
      * Visits a relational node and calculates a result on the basis of node meta information.

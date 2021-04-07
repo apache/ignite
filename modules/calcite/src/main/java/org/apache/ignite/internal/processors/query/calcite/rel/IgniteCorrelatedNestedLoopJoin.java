@@ -106,7 +106,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         List<Integer> newRightCollationFields = maxPrefix(rightCollation.getKeys(), joinInfo.leftKeys);
 
         if (F.isEmpty(newRightCollationFields))
-            return ImmutableList.of();
+            return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY), inputTraits));
 
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
@@ -138,9 +138,6 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     ) {
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        // Index lookup (collation) is required for right input.
-        RelCollation rightReplace = RelCollations.of(joinInfo.rightKeys);
-
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1) {
             Pair<RelTraitSet, List<RelTraitSet>> baseTraits = super.passThroughCollation(nodeTraits, inputTraits);
@@ -149,13 +146,13 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
                 baseTraits.getKey(),
                 ImmutableList.of(
                     baseTraits.getValue().get(0),
-                    baseTraits.getValue().get(1).replace(rightReplace)
+                    baseTraits.getValue().get(1)
                 )
             );
         }
 
         return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(rightReplace)));
+            ImmutableList.of(left.replace(RelCollations.EMPTY), right));
     }
 
     /** {@inheritDoc} */
