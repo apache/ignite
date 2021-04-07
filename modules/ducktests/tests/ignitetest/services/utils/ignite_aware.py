@@ -55,7 +55,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         OUTPUT = 1
         ALL = 2
 
-    # pylint: disable=R0913
+    # pylint: disable=R0913, R0902
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
