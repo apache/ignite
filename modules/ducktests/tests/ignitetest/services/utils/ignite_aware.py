@@ -43,6 +43,7 @@ from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enab
 from ignitetest.utils.enum import constructible
 
 
+# pylint: disable=R0902
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -56,7 +57,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         OUTPUT = 1
         ALL = 2
 
-    # pylint: disable=R0913, R0902
+    # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
                  **kwargs):
         """
