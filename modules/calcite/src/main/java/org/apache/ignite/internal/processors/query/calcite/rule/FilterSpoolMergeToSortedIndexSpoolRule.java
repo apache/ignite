@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -73,7 +74,7 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
         if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
             return;
 
-        RelCollation collation = TraitUtils.createCollation(idxCond.keys());
+        RelCollation collation = TraitUtils.createCollation(ImmutableList.copyOf(idxCond.keys()));
         
         RelNode res = new IgniteSortedIndexSpool(
             cluster,

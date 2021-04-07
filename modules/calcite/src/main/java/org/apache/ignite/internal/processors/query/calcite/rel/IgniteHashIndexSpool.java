@@ -36,14 +36,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Relational operator that returns the sorted contents of a table
- * and allow to lookup rows by specified bounds.
+ * Relational operator that returns the hashed contents of a table
+ * and allow to lookup rows by specified keys.
  */
 public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** Search row. */
     private final List<RexNode> searchRow;
 
-    /** Search row. */
+    /** Keys (number of the columns at the input row) to build hash index. */
     private final ImmutableBitSet keys;
 
     /** Condition (used to calculate selectivity). */
@@ -111,7 +111,7 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCnt = mq.getRowCount(getInput());
-        double bytesPerRow = (getRowType().getFieldCount() - keys.cardinality()) * IgniteCost.AVERAGE_FIELD_SIZE;
+        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
         double totalBytes = rowCnt * bytesPerRow;
         double cpuCost = IgniteCost.HASH_LOOKUP_COST;
 

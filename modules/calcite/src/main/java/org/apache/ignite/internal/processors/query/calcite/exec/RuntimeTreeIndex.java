@@ -68,9 +68,7 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
         rows = new TreeMap<>(comp);
     }
 
-    /**
-     * Add row to index.
-     */
+    /** {@inheritDoc} */
     @Override public void push(Row r) {
         List<Row> newEqRows = new ArrayList<>();
 
@@ -82,12 +80,12 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
             newEqRows.add(r);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         rows.clear();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public GridCursor<Row> find(Row lower, Row upper, BPlusTree.TreeRowClosure<Row, Row> filterC) {
         assert filterC == null;
 
@@ -103,7 +101,9 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
             return new Cursor(rows);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Creates iterable on the index.
+     */
     public Iterable<Row> scan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,

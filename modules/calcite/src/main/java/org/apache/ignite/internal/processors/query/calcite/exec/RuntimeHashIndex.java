@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Runtime sorted index based on on-heap tree.
+ * Runtime hash index based on on-heap hash map.
  */
 public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** */
