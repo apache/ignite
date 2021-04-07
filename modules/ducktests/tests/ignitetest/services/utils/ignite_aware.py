@@ -43,6 +43,7 @@ from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enab
 from ignitetest.utils.enum import constructible
 
 
+# pylint: disable=R0902
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -77,6 +78,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
+        self.start_ignite = kwargs.get("start_ignite", True)
 
     @property
     def version(self):
@@ -120,6 +122,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
+        if not self.start_ignite:
+            return
+
         self.logger.info("Waiting for IgniteAware(s) to start ...")
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)

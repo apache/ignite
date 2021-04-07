@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -66,6 +67,9 @@ public abstract class IgniteAwareApplication {
 
     /** Ignite. */
     protected Ignite ignite;
+
+    /** Client. */
+    protected IgniteClient client;
 
     /** Cfg path. */
     protected String cfgPath;

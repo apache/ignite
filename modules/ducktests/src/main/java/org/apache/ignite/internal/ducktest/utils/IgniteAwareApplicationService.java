@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Base64;
+import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -35,6 +38,9 @@ import org.apache.log4j.Logger;
 public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
+
+    /** Thin client connection string variable. */
+    public static final String THIN_CLIENT_CONNECTION = "thin_client_connection";
 
     /**
      * @param args Args.
@@ -54,6 +60,10 @@ public class IgniteAwareApplicationService {
 
         JsonNode jsonNode = params.length > 3 ?
             mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
+
+        String tcConnStr = Optional.ofNullable(jsonNode.get(THIN_CLIENT_CONNECTION))
+            .map(JsonNode::asText)
+            .orElse(null);
 
         IgniteAwareApplication app =
             (IgniteAwareApplication)clazz.getConstructor().newInstance();
@@ -76,7 +86,16 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else
+        else if (tcConnStr != null && !tcConnStr.isEmpty()) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(tcConnStr))) {
+                app.client = client;
+
+                app.start(jsonNode);
+            }
+            finally {
+                log.info("Thin client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
+            }
+        } else
             app.start(jsonNode);
     }
 }
