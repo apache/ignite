@@ -134,6 +134,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.newSetFromMap;
+import static java.util.Collections.singleton;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toSet;
@@ -1945,7 +1946,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
                 }
 
-                rebuildIndexesFromHash0(cacheInfo.cacheContext(), false);
+                if (idxRebuildAware.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
+                    rebuildIndexesFromHash0(cacheInfo.cacheContext(), false);
+                else {
+                    if (log.isInfoEnabled())
+                        log.info("Rebuilding indexes for the cache is already in progress: " + cacheInfo.name());
+                }
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
