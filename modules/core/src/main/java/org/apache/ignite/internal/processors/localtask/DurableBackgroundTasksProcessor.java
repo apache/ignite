@@ -272,10 +272,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) {
-        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
-            if (task.isCompleted())
-                removeDurableBackgroundTask(task);
-        }
+        /* No op. */
     }
 
     /** {@inheritDoc} */
@@ -286,5 +283,13 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
         /* No op. */
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterCheckpointEnd(Context ctx) {
+        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
+            if (task.isCompleted())
+                removeDurableBackgroundTask(task);
+        }
     }
 }
