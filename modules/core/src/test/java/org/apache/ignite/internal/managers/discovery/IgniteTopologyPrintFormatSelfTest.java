@@ -41,9 +41,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String ALIVE_NODES_MSG = ".*aliveNodes=\\[(TcpDiscoveryNode " +
         "\\[id=[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}," +
-        " consistentId=.*, addrs=ArrayList \\[([0-9]{1,3}[\\.]){3}[0-9]{1,3}], sockAddrs=HashSet \\[.*]," +
-        " discPort=.*, order=[1-9], intOrder=[1-9], lastExchangeTime=.*, loc=(false|true), ver=.*," +
-        " isClient=(false|true)](, )?){%s,%s}]]";
+        " consistentId=.*, isClient=(false|true), ver=.*](, )?){%s,%s}]]";
 
     /** */
     private static final String NUMBER_SRV_NODES = ">>> Number of server nodes: %d";
