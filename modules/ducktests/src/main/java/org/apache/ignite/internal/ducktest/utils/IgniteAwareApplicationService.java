@@ -60,6 +60,8 @@ public class IgniteAwareApplicationService {
         JsonNode jsonNode = params.length > 3 ?
             mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
 
+        String tcConnStr = jsonNode.get(THIN_CLIENT_CONNECTION).asText();
+
         IgniteAwareApplication app =
             (IgniteAwareApplication)clazz.getConstructor().newInstance();
 
@@ -81,10 +83,8 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else {
-            String connStr = jsonNode.get(THIN_CLIENT_CONNECTION).asText();
-
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(connStr))) {
+        else if (tcConnStr != null && !tcConnStr.isEmpty()) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(tcConnStr))) {
                 app.client = client;
 
                 app.start(jsonNode);
@@ -92,7 +92,7 @@ public class IgniteAwareApplicationService {
             finally {
                 log.info("Thin client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
-
-        }
+        } else
+            app.start(jsonNode);
     }
 }
