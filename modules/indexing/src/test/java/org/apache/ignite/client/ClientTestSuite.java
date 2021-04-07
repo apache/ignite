@@ -56,7 +56,7 @@ import org.junit.runners.Suite;
     ClusterApiTest.class,
     ClusterGroupTest.class,
     ServicesTest.class,
-    ThinClientPartitionAwarenessStableTopologyTest.class,
+//    ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class,
     ThinClientPartitionAwarenessDiscoveryTest.class,
