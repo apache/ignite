@@ -205,9 +205,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Active propose messages. */
     private final LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = new LinkedHashMap<>();
 
-    /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
-    private final ConcurrentHashMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
-
     /** General state mutex. */
     private final Object stateMux = new Object();
 
@@ -243,8 +240,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
     private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
-    /** Mapping the cache id to the {@link GridDhtPartitionsExchangeFuture#initialVersion()} for rebuilding indexes. */
-    private final ConcurrentHashMap<Integer, AffinityTopologyVersion> idxRebuildTops = new ConcurrentHashMap<>();
+    /** Index rebuild aware. */
+    private final IndexRebuildAware idxRebuildAware = new IndexRebuildAware();
 
     /**
      * @param ctx Kernal context.
@@ -460,13 +457,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void beforeExchange(GridDhtPartitionsExchangeFuture fut) {
         Set<Integer> cacheIds = rebuildIndexCacheIds(fut);
 
-        if (!cacheIds.isEmpty()) {
-            Set<Integer> rejected = prepareIndexRebuildFutures(cacheIds, fut.initialVersion());
+        Set<Integer> rejected = idxRebuildAware.prepareRebuildIndexes(cacheIds, fut.initialVersion());
 
-            if (log.isDebugEnabled()) {
-                log.debug("Preparing features of rebuilding indexes for caches on exchange [requested=" + cacheIds +
-                    ", rejected=" + rejected + ']');
-            }
+        if (log.isDebugEnabled()) {
+            log.debug("Preparing features of rebuilding indexes for caches on exchange [requested=" + cacheIds +
+                ", rejected=" + rejected + ']');
         }
     }
 
@@ -2375,21 +2370,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Nullable IgniteInternalFuture<?> idxFut,
         GridCacheContext<?, ?> cctx
     ) {
-        int cacheId = cctx.cacheId();
+        GridFutureAdapter<Void> res = idxRebuildAware.indexRebuildFuture(cctx.cacheId());
 
-        if (nonNull(idxFut)) {
-            GridFutureAdapter<Void> res = idxRebuildFuts.computeIfAbsent(cacheId, id -> new GridFutureAdapter<>());
+        assert res != null;
 
+        if (idxFut != null) {
             String cacheInfo = "[name=" + cctx.name() + ", grpName=" + cctx.group().name() + "]";
 
             if (log.isInfoEnabled())
                 log.info("Started indexes rebuilding for cache " + cacheInfo);
 
             idxFut.listen(fut -> {
-                idxRebuildTops.remove(cacheId);
-
-                idxRebuildFuts.remove(cacheId, res);
-
                 Throwable err = fut.error();
 
                 if (isNull(err) && log.isInfoEnabled())
@@ -2397,18 +2388,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 else if (!(err instanceof NodeStoppingException))
                     log.error("Failed to rebuild indexes for cache " + cacheInfo, err);
 
-                res.onDone(err);
+                idxRebuildAware.onFinishRebuildIndexes(cctx.cacheId(), err);
             });
 
             return res;
         }
         else {
-            idxRebuildTops.remove(cacheId);
-
-            GridFutureAdapter<Void> fut = idxRebuildFuts.remove(cacheId);
-
-            if (fut != null)
-                fut.onDone();
+            idxRebuildAware.onFinishRebuildIndexes(cctx.cacheId(), null);
 
             return null;
         }
@@ -2418,7 +2404,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when indexes for given cache are restored.
      */
     @Nullable public IgniteInternalFuture<?> indexRebuildFuture(int cacheId) {
-        return idxRebuildFuts.get(cacheId);
+        return idxRebuildAware.indexRebuildFuture(cacheId);
     }
 
     /**
@@ -3804,42 +3790,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Preparing futures of rebuilding indexes for caches.
-     * The future for the cache will be added only if the previous one is missing or completed.
-     *
-     * @param cacheIds Cache ids.
-     * @param initVer Initial affinity topology version of the exchange.
-     * @return Cache ids for which features have not been added.
-     */
-    public Set<Integer> prepareIndexRebuildFutures(Set<Integer> cacheIds, @Nullable AffinityTopologyVersion initVer) {
-        if (!cacheIds.isEmpty()) {
-            synchronized (idxRebuildFuts) {
-                Set<Integer> alreadyPrepared = new HashSet<>();
-
-                for (Integer cacheId : cacheIds) {
-                    GridFutureAdapter<Void> prevFut = idxRebuildFuts.get(cacheId);
-
-                    if (prevFut == null || prevFut.isDone()) {
-                        if (initVer != null) {
-                            AffinityTopologyVersion prev = idxRebuildTops.put(cacheId, initVer);
-
-                            assert prev == null;
-                        }
-
-                        idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
-                    }
-                    else
-                        alreadyPrepared.add(cacheId);
-                }
-
-                return alreadyPrepared;
-            }
-        }
-        else
-            return emptySet();
-    }
-
-    /**
      * Removing futures of rebuilding indexes that should have been rebuilt on the exchange.
      *
      * @param fut Exchange future.
@@ -3850,28 +3800,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         GridDhtPartitionsExchangeFuture fut,
         @Nullable Set<Integer> cacheIds
     ) {
-        if (cacheIds == null)
-            cacheIds = rebuildIndexCacheIds(fut);
-
-        if (!cacheIds.isEmpty()) {
-            for (Integer cacheId : cacheIds) {
-                GridFutureAdapter<Void> rmv;
-
-                if (idxRebuildTops.remove(cacheId, fut.initialVersion()) &&
-                    (rmv = idxRebuildFuts.remove(cacheId)) != null)
-                    rmv.onDone();
-            }
-        }
+        idxRebuildAware.cancelRebuildIndexesOnExchange(
+            cacheIds != null ? cacheIds : rebuildIndexCacheIds(fut),
+            fut.initialVersion()
+        );
     }
 
     /**
-     * Checking the need to rebuild the indexes for the cache on exchange.
+     * Checks that the indexes need to be rebuilt on the exchange.
      *
      * @param cacheId Cache id.
-     * @return {@code True} if index rebuilding is needed.
+     * @param fut Exchange future.
+     * @return {@code True} if need to rebuild.
      */
-    public boolean rebuildIndexOnExchange(int cacheId) {
-        return idxRebuildTops.containsKey(cacheId);
+    public boolean rebuildIndexOnExchange(int cacheId, GridDhtPartitionsExchangeFuture fut) {
+        return idxRebuildAware.rebuildIndexesOnExchange(cacheId, fut.initialVersion());
+    }
+
+    /**
+     * Preparing futures of rebuilding indexes for caches.
+     * The future for the cache will be added only if the previous one is missing or completed.
+     *
+     * @param cacheIds Cache ids.
+     * @return Cache ids for which features have not been added.
+     */
+    public Set<Integer> prepareRebuildIndexes(Set<Integer> cacheIds) {
+        return idxRebuildAware.prepareRebuildIndexes(cacheIds, null);
     }
 
     /**

@@ -1435,7 +1435,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection<GridCacheContext> rejected = rebuildIndexes(
             cctx.cacheContexts(),
             (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()) &&
-                cctx.kernalContext().query().rebuildIndexOnExchange(cacheCtx.cacheId()),
+                cctx.kernalContext().query().rebuildIndexOnExchange(cacheCtx.cacheId(), exchangeFut),
             false
         );
 
@@ -1451,7 +1451,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public Collection<GridCacheContext> forceRebuildIndexes(Collection<GridCacheContext> contexts) {
         Set<Integer> cacheIds = contexts.stream().map(GridCacheContext::cacheId).collect(toSet());
 
-        Set<Integer> rejected = cctx.kernalContext().query().prepareIndexRebuildFutures(cacheIds, null);
+        Set<Integer> rejected = cctx.kernalContext().query().prepareRebuildIndexes(cacheIds);
 
         if (log.isDebugEnabled()) {
             log.debug("Preparing features of rebuilding indexes for caches on force rebuild [requested=" + cacheIds +
@@ -1491,7 +1491,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             1  //need at least 1 index rebuilded to print message about rebuilding completion
         );
 
-        Collection<GridCacheContext> rejected = new ArrayList<>(0);
+        Collection<GridCacheContext> rejected = null;
 
         for (GridCacheContext cacheCtx : contexts) {
             if (rebuildCond.test(cacheCtx)) {
@@ -1502,11 +1502,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 else
                     rebuildIndexesCompleteCntr.countDown(false);
             }
-            else
+            else {
+                if (rejected == null)
+                    rejected = new ArrayList<>();
+
                 rejected.add(cacheCtx);
+            }
         }
 
-        return rejected;
+        return rejected == null ? emptyList() : rejected;
     }
 
     /**
