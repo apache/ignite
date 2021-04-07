@@ -173,11 +173,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     DiscoveryClientSocketTest.class,
 
-    DiscoverySpiDataExchangeTest.class
-    IgniteMetricsOverflowTest.class,
-    MetricsCompactionTest.class,
-
-    GridDiscoveryManagerChangeCoordinatorTest.class,
+    DiscoverySpiDataExchangeTest.class,
 
     TcpDiscoveryIpFinderFailureTest.class
 })
