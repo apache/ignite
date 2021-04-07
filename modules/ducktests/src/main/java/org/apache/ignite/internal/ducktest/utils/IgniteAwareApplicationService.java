@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Base64;
+import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
@@ -60,7 +61,9 @@ public class IgniteAwareApplicationService {
         JsonNode jsonNode = params.length > 3 ?
             mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
 
-        String tcConnStr = jsonNode.get(THIN_CLIENT_CONNECTION).asText();
+        String tcConnStr = Optional.ofNullable(jsonNode.get(THIN_CLIENT_CONNECTION))
+            .map(JsonNode::asText)
+            .orElse(null);
 
         IgniteAwareApplication app =
             (IgniteAwareApplication)clazz.getConstructor().newInstance();
