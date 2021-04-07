@@ -24,12 +24,12 @@ import os
 from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
+from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
-from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 
 
-def resolve_spec(service, context, config, **kwargs):
+def resolve_spec(service, context, config, main_java_class, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -51,8 +51,8 @@ def resolve_spec(service, context, config, **kwargs):
                                                                **kwargs)
 
     if is_impl("IgniteApplicationService"):
-        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context,
-                                                                     config=config, **kwargs)
+        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context, config=config,
+                                                                     main_java_class=main_java_class, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
 
@@ -197,7 +197,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     Implementation IgniteApplicationSpec for Apache Ignite project
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, servicejava_class_name, java_class_name, params, start_ignite, **kwargs):
+    def __init__(self, context, modules, main_java_class, java_class_name, params, start_ignite, **kwargs):
         super().__init__(project=context.globals.get("project", "ignite"), **kwargs)
         self.context = context
 
@@ -209,7 +209,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         libs.extend(self.__jackson())
 
         self.envs = {
-            "MAIN_CLASS": servicejava_class_name,
+            "MAIN_CLASS": main_java_class,
             "EXCLUDE_TEST_CLASSES": "true",
             "IGNITE_LOG_DIR": self.path_aware.persistent_root,
             "USER_LIBS": ":".join(libs)

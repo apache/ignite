@@ -22,7 +22,6 @@ from typing import NamedTuple
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
-from ignitetest.services.ignite import get_event_time
 from ignitetest.services.ignite_app import IgniteApplicationService
 
 
@@ -93,9 +92,8 @@ def await_rebalance_start(ignite, timeout=1):
     """
     for node in ignite.nodes:
         try:
-            rebalance_start_time = get_event_time(
-                ignite, node,
-                "Starting rebalance routine \\[test-cache-",
+            rebalance_start_time = ignite.get_event_time_on_node(
+                node, "Starting rebalance routine \\[test-cache-",
                 timeout=timeout)
         except TimeoutError:
             continue
@@ -117,8 +115,7 @@ def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
     rebalance_complete_times = []
 
     for cache_idx in range(cache_count):
-        rebalance_complete_times.append(get_event_time(
-            ignite,
+        rebalance_complete_times.append(ignite.get_event_time_on_node(
             node if node else ignite.nodes[0],
             "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
             ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
