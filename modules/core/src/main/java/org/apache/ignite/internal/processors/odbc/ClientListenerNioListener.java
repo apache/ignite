@@ -321,7 +321,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(clientType);
+            connCtx = prepareContext(clientType, ses);
 
             ensureClientPermissions(clientType);
 
@@ -377,22 +377,24 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /**
      * Prepare context.
      *
+     * @param ses Client's NIO session.
      * @param clientType Client type.
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(byte clientType, GridNioSession ses)
+        throws IgniteCheckedException {
         long connId = nextConnectionId();
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, busyLock, connId, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);
+                return new ClientConnectionContext(ctx, ses, connId, maxCursors, thinCfg);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);
