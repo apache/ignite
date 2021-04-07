@@ -27,6 +27,7 @@ from datetime import datetime
 from enum import IntEnum
 from threading import Thread
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.background_thread import BackgroundThreadService
@@ -493,6 +494,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             assert len(err) == 0, f"Command failed: '{cmd}'.\nError: '{err}'"
 
         return out
+
+    def thread_dump(self, node):
+        """
+        Generate thread dump on node.
+        :param node: Ignite service node.
+        """
+        for pid in self.pids(node):
+            try:
+                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
+            except RemoteCommandError:
+                self.logger.warn("Could not dump threads on node")
 
     @staticmethod
     def node_id(node):
