@@ -224,11 +224,11 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param startTime Start time in milliseconds.
-     * @param endTime End time in milliseconds.
+     * @param startTimeMillis Start time in milliseconds.
+     * @param durationNano Duration in nanoseconds.
      */
-    public void pagesWriteThrottle(long startTime, long endTime) {
-        write(writer -> writer.pagesWriteThrottle(startTime, endTime));
+    public void pagesWriteThrottle(long startTimeMillis, long durationNano) {
+        write(writer -> writer.pagesWriteThrottle(startTimeMillis, durationNano));
     }
 
     /**

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -64,7 +64,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(15 * 1024 * 1024)
+                .setMaxSize(10 * 1024 * 1024)
                 .setCheckpointPageBufferSize(1024 * 1024)
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
@@ -122,11 +122,11 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         startCollectStatistics();
 
-        long first = lastStart.value();
+        lastStart.reset();
 
         forceCheckpoint();
 
-        assertTrue(waitForCondition(() -> first < lastStart.value(), TIMEOUT));
+        assertTrue(waitForCondition(() -> 0 < lastStart.value(), TIMEOUT));
 
         AtomicInteger cnt = new AtomicInteger();
 
@@ -186,48 +186,45 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        long before = System.currentTimeMillis();
+        long start = U.currentTimeMillis();
 
         startCollectStatistics();
 
         long keysCnt = 1024L;
 
+        long awaitTime = U.currentTimeMillis() + TIMEOUT;
+
         slowCheckpointEnabled.set(true);
 
         try {
-            GridTestUtils.runAsync(() -> {
-                while (slowCheckpointEnabled.get()) {
-                    long l = ThreadLocalRandom.current().nextLong(keysCnt);
+            while (U.currentTimeMillis() < awaitTime && totalThrottlingTime.value() <= 0) {
+                long l = ThreadLocalRandom.current().nextLong(keysCnt);
 
-                    cache.put(l, l);
-                }
-            });
-
-            assertTrue(waitForCondition(() -> totalThrottlingTime.value() > 0, TIMEOUT));
+                cache.put(l, l);
+            }
         }
         finally {
             slowCheckpointEnabled.set(false);
         }
 
-        stopCollectStatistics();
+        assertTrue(totalThrottlingTime.value() > 0);
 
-        long after = System.currentTimeMillis();
+        stopCollectStatistics();
 
         AtomicInteger cnt = new AtomicInteger();
 
         readFiles(statisticsFiles(), new TestHandler() {
-            @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long endTime) {
+            @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long duration) {
                 assertEquals(srv.localNode().id(), nodeId);
 
-                assertTrue(before <= startTime);
-                assertTrue( startTime <= endTime);
-                assertTrue(endTime <= after);
+                assertTrue(start <= startTime);
+                assertTrue( duration >= 0);
 
                 cnt.incrementAndGet();
             }
         });
 
-        assertTrue(0 < cnt.get());
+        assertTrue(cnt.get() > 0);
     }
 
     /**
@@ -268,7 +265,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
                 /** Parks current checkpoint thread if slow mode is enabled. */
                 private void parkIfNeeded() {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("db-checkpoint-thread"))
                         LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
                 }
             };
