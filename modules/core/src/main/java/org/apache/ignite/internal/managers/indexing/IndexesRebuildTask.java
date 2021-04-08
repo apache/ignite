@@ -127,7 +127,7 @@ public class IndexesRebuildTask {
      * Actual start rebuilding. Use this method for test purposes only.
      *
      * @param cctx Cache context.
-     * @param fut rebuildIdxFut Future for rebuild indexes.
+     * @param fut Future for rebuild indexes.
      * @param clo Closure.
      * @param cancel Cancellation token.
      */
