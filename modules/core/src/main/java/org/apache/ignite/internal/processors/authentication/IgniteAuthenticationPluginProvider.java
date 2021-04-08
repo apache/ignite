@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-/** Represents Ignite Authentication Plugin provider that provides instance of {@link GridSecurityProcessor}. */
+/** Represents Ignite Authentication Plugin provider. */
 public class IgniteAuthenticationPluginProvider implements PluginProvider<PluginConfiguration> {
     /** Plugin name. */
     public static final String IGNITE_AUTHENTICATION_PLUGIN_NAME = "ignite-authentication-plugin";
@@ -59,7 +59,7 @@ public class IgniteAuthenticationPluginProvider implements PluginProvider<Plugin
 
     /** {@inheritDoc} */
     @Override public String copyright() {
-        return null;
+        return "Copyright(C) Apache Software Foundation";
     }
 
     /** {@inheritDoc} */

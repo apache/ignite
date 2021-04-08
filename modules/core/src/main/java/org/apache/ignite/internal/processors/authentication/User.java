@@ -43,7 +43,7 @@ public class User implements Serializable {
      */
     private static int bCryptGensaltLog2Rounds = 10;
 
-    /** */
+    /** User identifier. */
     private transient UUID id;
 
     /** User name. */

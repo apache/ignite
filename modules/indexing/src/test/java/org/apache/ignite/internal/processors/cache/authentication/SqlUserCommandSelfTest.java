@@ -162,19 +162,22 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
                 userSql(idx, null, "CREATE USER test WITH PASSWORD 'test'");
 
                 return null;
-            }, IgniteAccessControlException.class, "Operation not allowed: security context is empty");
+            }, IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected.");
 
             GridTestUtils.assertThrowsAnyCause(log, () -> {
                 userSql(idx, null, "ALTER USER test WITH PASSWORD 'test'");
 
                 return null;
-            }, IgniteAccessControlException.class, "Operation not allowed: security context is empty");
+            }, IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected.");
 
             GridTestUtils.assertThrowsAnyCause(log, () -> {
                 userSql(idx, null, "DROP USER test");
 
                 return null;
-            }, IgniteAccessControlException.class, "Operation not allowed: security context is empty");
+            }, IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected.");
         }
     }
 

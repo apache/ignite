@@ -85,7 +85,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.AUTH_PROC;
-import static org.apache.ignite.internal.GridTopic.TOPIC_AUTH;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
@@ -221,7 +220,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 onAuthenticateResponseMessage((UserAuthenticateResponseMessage)msg);
         };
 
-        ioMgr.addMessageListener(TOPIC_AUTH, ioLsnr);
+        ioMgr.addMessageListener(GridTopic.TOPIC_AUTH, ioLsnr);
 
         exec = new IgniteThreadPoolExecutor(
             "auth",
@@ -235,7 +234,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ioLsnr != null)
-            ctx.io().removeMessageListener(TOPIC_AUTH, ioLsnr);
+            ctx.io().removeMessageListener(GridTopic.TOPIC_AUTH, ioLsnr);
 
         if (discoLsnr != null)
             ctx.event().removeDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
@@ -305,7 +304,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
                     authFuts.put(msg.id(), fut);
 
-                    ctx.io().sendToGridTopic(rndNode, TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(rndNode, GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
                 }
 
                 fut.get();
@@ -929,8 +928,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         SecuritySubject subj = ctx.security().securityContext().subject();
 
-        if (subj.type() == REMOTE_NODE)
-            throw new IgniteAccessControlException("Operation not allowed: security context is empty.");
+        if (subj.type() == REMOTE_NODE) {
+            throw new IgniteAccessControlException("User management operations initiated on behalf of the Ignite node" +
+                " are not expected.");
+        }
 
         Object login = subj.login();
 
@@ -1321,21 +1322,21 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    /** */
+    /** Represents {@link SecuritySubject} implementation. */
     private static class SecuritySubjectImpl implements SecuritySubject {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Security subject identifier. */
         private final UUID id;
 
-        /**  */
+        /** Security subject login.  */
         private final Object login;
 
-        /** */
+        /** Security subject type. */
         private final SecuritySubjectType type;
 
-        /** */
+        /** Security subject address. */
         private final InetSocketAddress addr;
 
         /** */
@@ -1377,7 +1378,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    /** */
+    /** Represents {@link SecurityContext} implementation that ignores any security permission checks. */
     private static class SecurityContextImpl implements SecurityContext, Serializable {
         /** */
         private static final long serialVersionUID = 0L;

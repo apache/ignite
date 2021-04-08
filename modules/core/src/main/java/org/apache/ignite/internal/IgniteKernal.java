@@ -1569,7 +1569,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cfg.isAuthenticationEnabled() && !(prc instanceof IgniteAuthenticationProcessor)) {
             throw new IgniteCheckedException("Invalid security configuration: both authentication is enabled" +
-                " and security plugin is provided.");
+                " and external security plugin is provided.");
         }
 
         return prc != null && prc.enabled()

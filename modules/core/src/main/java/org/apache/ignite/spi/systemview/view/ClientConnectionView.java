@@ -86,9 +86,7 @@ public class ClientConnectionView {
         if (secCtx == null)
             return null;
 
-        Object login = secCtx.subject().login();
-
-        return login == null ? null : login.toString();
+        return (String)secCtx.subject().login();
     }
 
     /** @return Protocol version. */

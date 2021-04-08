@@ -126,7 +126,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      * Checks that a new node cannot join a cluster with a different authentication enable state.
      *
      * @param client Is joining node client.
-     * @param  authEnabled Whether authentication is enabled on joining node.
+     * @param authEnabled Whether authentication is enabled on joining node.
      * @throws Exception If failed.
      */
     private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
@@ -191,6 +191,6 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
                 return null;
             },
             IgniteCheckedException.class,
-            "Invalid security configuration: both authentication is enabled and security plugin is provided.");
+            "Invalid security configuration: both authentication is enabled and external security plugin is provided.");
     }
 }

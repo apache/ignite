@@ -46,7 +46,7 @@ public class UserOptions implements Iterable<Map.Entry<UserOption, Object>> {
         return opts.entrySet().iterator();
     }
 
-    /** Aliases of supported options for create/alter user. */
+    /** Aliases of supported options for create/alter user operations. */
     public enum UserOption {
         /** */
         PASSWORD

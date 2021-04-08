@@ -196,7 +196,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
             alterUserPassword(grid(nodeIdx), secCtx, "test", "test");
 
             assertThrows(() -> dropUser(grid(nodeIdx), null, "test"),
-                IgniteAccessControlException.class, "Operation not allowed: security context is empty");
+                IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected.");
         }
     }
 
@@ -496,7 +497,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         assertEquals("test", secCtxNew.subject().login());
     }
 
-    /** */
+    /** Authenticates user on the specified node. */
     public static SecurityContext authenticate(IgniteEx ignite, String login, String pwd) throws IgniteCheckedException {
         AuthenticationContext authCtx = new AuthenticationContext();
 
@@ -507,38 +508,38 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** Creates user with specified login and password. */
-    public static void createUser(IgniteEx ignite, SecurityContext ctx, String login, String pwd)
+    public static void createUser(IgniteEx ignite, SecurityContext secCtx, String login, String pwd)
         throws IgniteCheckedException {
-        withSecurityContext(ignite, ctx, ign ->
+        withSecurityContext(ignite, secCtx, ign ->
             ign.context().security().createUser(login, new UserOptions().password(pwd)));
     }
 
     /** Alters password of the user with the specified login. */
-    public static void alterUserPassword(IgniteEx ignite, SecurityContext ctx, String login, String newPwd)
+    public static void alterUserPassword(IgniteEx ignite, SecurityContext secCtx, String login, String newPwd)
         throws IgniteCheckedException {
-        withSecurityContext(ignite, ctx, ign ->
+        withSecurityContext(ignite, secCtx, ign ->
             ign.context().security().alterUser(login, new UserOptions().password(newPwd)));
     }
 
     /** Drops the user with specified login. */
-    public static void dropUser(IgniteEx ignite, SecurityContext ctx, String login) throws IgniteCheckedException {
-        withSecurityContext(ignite, ctx, ign -> ign.context().security().dropUser(login));
+    public static void dropUser(IgniteEx ignite, SecurityContext secCtx, String login) throws IgniteCheckedException {
+        withSecurityContext(ignite, secCtx, ign -> ign.context().security().dropUser(login));
     }
 
     /**
      * @param ignite Ignite instance to perform the operation on.
-     * @param ctx Security context in which operation will be executed.
+     * @param secCtx Security context in which operation will be executed.
      * @param op Operation to execute.
      */
     public static void withSecurityContext(
         IgniteEx ignite,
-        SecurityContext ctx,
+        SecurityContext secCtx,
         IgniteThrowableConsumer<IgniteEx> op
     ) throws IgniteCheckedException {
         IgniteSecurity security = ignite.context().security();
 
-        if (ctx != null) {
-            try (OperationSecurityContext ignored = security.withContext(ctx)) {
+        if (secCtx != null) {
+            try (OperationSecurityContext ignored = security.withContext(secCtx)) {
                 op.accept(ignite);
             }
         }
