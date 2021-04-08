@@ -173,11 +173,6 @@ public class ScriptTestRunner {
 
                         break;
 
-                    case "require":
-                        // Ignore
-
-                        break;
-
                     case "loop":
                         cmd = new Loop(tokens);
 
@@ -189,7 +184,7 @@ public class ScriptTestRunner {
                         break;
 
                     case "mode":
-                        // Ignore
+                        // TODO: output_hash. output_result, debug, skip, unskip
 
                         break;
 
@@ -215,6 +210,7 @@ public class ScriptTestRunner {
         Command() {
             posDesc = script.positionDescription();
         }
+
         /** */
         abstract void execute();
     }
