@@ -16,7 +16,7 @@
 #}
 
 {% macro cluster_state(state, version) %}
-    {% if version > "2.9.0" %}
+    {% if version > "4.290" %}
         <property name="clusterStateOnStart" value="{{ state }}"/>
     {%  else %}
         <property name="activeOnStart" value="{{ 'false' if state == 'INACTIVE' else 'true'}}"/>
