@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -446,6 +447,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing manager.
      */
     public GridIndexingManager indexing();
+
+    /**
+     * Indexes processor.
+     *
+     * @return Indexes processor.
+     */
+    public IndexProcessor indexProcessor();
 
     /**
      * Gets encryption manager.

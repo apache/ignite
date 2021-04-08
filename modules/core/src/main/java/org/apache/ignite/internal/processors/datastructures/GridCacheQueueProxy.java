@@ -416,6 +416,16 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
         return delegate.name();
     }
 
+    /** @return Group name for queue. */
+    public String groupName() {
+        return cctx.group().name();
+    }
+
+    /** @return Group id for queue. */
+    public int groupId() {
+        return cctx.group().groupId();
+    }
+
     /** {@inheritDoc} */
     @Override public int capacity() {
         return delegate.capacity();

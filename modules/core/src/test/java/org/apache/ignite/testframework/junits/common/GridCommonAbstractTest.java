@@ -77,6 +77,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
@@ -103,6 +105,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -136,6 +140,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
@@ -146,6 +151,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -1353,10 +1359,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is neither primary nor backup.
-     * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
-        throws IgniteCheckedException {
+    protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         return findKeys(cache, cnt, startFrom, 2);
     }
 
@@ -1543,10 +1547,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @return Key for which given cache is neither primary nor backup.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer nearKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer nearKey(IgniteCache<?, ?> cache) {
         return nearKeys(cache, 1, 1).get(0);
     }
 
@@ -2177,6 +2179,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws IgniteException If none caches or node found.
      */
     protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
+        log.info("Starting idleVerify ...");
+
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
@@ -2391,15 +2395,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param partId Partition.
      * @param withReserveCntr {@code True} to compare reserve counters. Because reserve counters are synced during
+     * @param cacheName Cache name.
      * PME invoking with {@code true} makes sense only after PME was finished.
      */
-    protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
+    protected void assertCountersSame(int partId, boolean withReserveCntr, String cacheName) throws AssertionFailedError {
         PartitionUpdateCounter cntr0 = null;
 
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
-            new T3<>(ignite.name(), counter(partId, ignite.name()),
-                ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
 
         for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
             if (cntr.get2() == null)
@@ -2416,6 +2421,36 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             cntr0 = cntr.get2();
+        }
+    }
+
+    /**
+     * @param partId Partition.
+     * @param withReserveCntr {@code True} to compare reserve counters. Because reserve counters are synced during
+     * @param cacheName Cache name.
+     * @param cnt Counter.
+     * @param reserved Reserved counter.
+     * PME invoking with {@code true} makes sense only after PME was finished.
+     */
+    protected void assertCountersAsExpected(int partId, boolean withReserveCntr, String cacheName, long cnt,
+        long reserved) throws AssertionFailedError {
+        List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
+            !ignite.configuration().isClientMode()).map(ignite ->
+            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+
+        for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
+            if (cntr.get2() == null)
+                continue;
+
+            assertEquals("Expecting same counters [partId=" + partId +
+                ", cntrs=" + cntrMap + ']', cnt, cntr.get2().get());
+
+            if (withReserveCntr) {
+                assertEquals("Expecting same reservation counters [partId=" + partId +
+                        ", cntrs=" + cntrMap + ']',
+                    reserved, cntr.get2().reserved());
+            }
         }
     }
 
@@ -2608,5 +2643,37 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 s.addData(key, key);
             }
         }
+    }
+
+     /**
+      * Getting WAL manager.
+      *
+      * @param n Node.
+      * @return WAL manger.
+     */
+     protected static FileWriteAheadLogManager walMgr(IgniteEx n) {
+         return (FileWriteAheadLogManager)n.context().cache().context().wal();
+     }
+
+    /**
+     * Disable/enable VAL.
+     *
+     * @param n Node.
+     * @param disable Disable flag.
+     * @throws Exception If failed.
+     */
+    protected static void disableWal(IgniteEx n, boolean disable) throws Exception {
+        WALDisableContext walDisableCtx = n.context().cache().context().walState().walDisableContext();
+
+        setFieldValue(walDisableCtx, "disableWal", disable);
+
+        assertEquals(disable, walDisableCtx.check());
+
+        WALPointer logPtr = walMgr(n).log(new DataRecord(emptyList()));
+
+        if (disable)
+            assertNull(logPtr);
+        else
+            assertNotNull(logPtr);
     }
 }

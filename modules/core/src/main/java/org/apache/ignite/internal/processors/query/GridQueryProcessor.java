@@ -62,6 +62,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -112,6 +114,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridPlainOutClosure;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -179,6 +182,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private final @Nullable GridQueryIndexing idx;
+
+    /** Indexing manager. */
+    private final IndexProcessor idxProc;
 
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
@@ -249,6 +255,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        idxProc = ctx.indexProcessor();
 
         valCtx = new CacheQueryObjectValueContext(ctx);
 
@@ -1881,8 +1889,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor;
 
                 if (cacheInfo.isCacheContextInited()) {
-                    GridCacheContext cctx = cacheInfo.cacheContext();
-
                     int buildIdxPoolSize = ctx.config().getBuildIndexThreadPoolSize();
                     int parallel = op0.parallel();
 
@@ -2287,11 +2293,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    public void markAsRebuildNeeded(GridCacheContext cctx) {
+    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
         if (rebuildIsMeaningless(cctx))
             return;
 
-        idx.markAsRebuildNeeded(cctx);
+        idxProc.markRebuildIndexesForCache(cctx, val);
+
+        idx.markAsRebuildNeeded(cctx, val);
     }
 
     /**
@@ -2360,7 +2368,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
-        IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx);
+        IgniteInternalFuture<?> idxFut = idxProc.rebuildIndexesForCache(cctx);
 
         return chainIndexRebuildFuture(idxFut, cctx);
     }
@@ -2419,11 +2427,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Getting the cache object context.
+     *
      * @param cacheName Cache name.
-     * @return Cache object context.
+     * @return Cache object context, {@code null} if the cache was not found.
      */
-    private CacheObjectContext cacheObjectContext(String cacheName) {
-        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
+    @Nullable private CacheObjectContext cacheObjectContext(String cacheName) {
+        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+        return cache == null ? null : cache.context().cacheObjectContext();
     }
 
     /**
@@ -2446,9 +2458,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + val + "]");
 
-        if (idx == null)
-            return;
-
         String cacheName = cctx.name();
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
@@ -2463,8 +2472,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 false);
 
             if (prevValDesc != desc) {
-                if (prevValDesc != null)
-                    idx.remove(cctx, prevValDesc, prevRow);
+                if (prevValDesc != null) {
+                    idxProc.remove(cacheName, prevRow);
+
+                    if (idx != null)
+                        idx.remove(cctx, prevValDesc, prevRow);
+                }
 
                 // Row has already been removed from another table indexes
                 prevRow = null;
@@ -2490,7 +2503,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
         }
 
-        idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
+        idxProc.store(cctx, newRow, prevRow, prevRowAvailable);
+
+        if (idx != null)
+            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
 
     /**
@@ -2600,17 +2616,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private QueryTypeDescriptorImpl type(@Nullable String cacheName, CacheObject val) throws IgniteCheckedException {
-        CacheObjectContext coctx = cacheObjectContext(cacheName);
-
+    private QueryTypeDescriptorImpl type(String cacheName, CacheObject val) throws IgniteCheckedException {
         QueryTypeIdKey id;
 
         boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
 
         if (binaryVal)
             id = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(val));
-        else
+        else {
+            CacheObjectContext coctx = cacheObjectContext(cacheName);
+
+            if (coctx == null)
+                throw new IgniteCheckedException("Object context for cache not found: " + cacheName);
+
             id = new QueryTypeIdKey(cacheName, val.value(coctx, false).getClass());
+        }
 
         return types.get(id);
     }
@@ -2863,7 +2883,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param supplier Code to be executed.
      * @return Result.
      */
-    private <T> T executeQuerySafe(@Nullable final GridCacheContext<?, ?> cctx, SupplierX<T> supplier) {
+    private <T> T executeQuerySafe(@Nullable final GridCacheContext<?, ?> cctx, GridPlainOutClosure<T> supplier) {
         GridCacheContext oldCctx = curCache.get();
 
         curCache.set(cctx);
@@ -2872,7 +2892,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return supplier.get();
+            return supplier.apply();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -2892,7 +2912,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Update counter.
      */
     public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
-        final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
+        final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args,
+        String qryInitiatorId) {
         assert streamer != null;
 
         if (!busyLock.enterBusy())
@@ -2903,7 +2924,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
-                    return idx.streamUpdateQuery(schemaName, qry, args, streamer);
+                    return idx.streamUpdateQuery(schemaName, qry, args, streamer, qryInitiatorId);
                 }
             }, true);
         }
@@ -2923,7 +2944,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Update counters.
      */
     public List<Long> streamBatchedUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
-        final String qry, final List<Object[]> args) {
+        final String qry, final List<Object[]> args, String qryInitiatorId) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
@@ -2932,7 +2953,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, null, new IgniteOutClosureX<List<Long>>() {
                 @Override public List<Long> applyx() throws IgniteCheckedException {
-                    return idx.streamBatchedUpdateQuery(schemaName, qry, args, cliCtx);
+                    return idx.streamBatchedUpdateQuery(schemaName, qry, args, cliCtx, qryInitiatorId);
                 }
             }, true);
         }
@@ -3251,9 +3272,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
 
-        if (idx == null)
-            return;
-
         QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
             cctx.cacheObjectContext(),
             row.key(),
@@ -3263,7 +3281,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (desc == null)
             return;
 
-        idx.remove(cctx, desc, row);
+        idxProc.remove(cctx.name(), row);
+
+        if (idx != null)
+            idx.remove(cctx, desc, row);
     }
 
     /**
@@ -3786,19 +3807,5 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             this.mgr = mgr;
         }
-    }
-
-    /**
-     * Function which can throw exception.
-     */
-    @FunctionalInterface
-    private interface SupplierX<T> {
-        /**
-         * Get value.
-         *
-         * @return Value.
-         * @throws IgniteCheckedException If failed.
-         */
-        T get() throws IgniteCheckedException;
     }
 }

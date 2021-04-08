@@ -703,3 +703,156 @@ This view exposes the contents of the metastorage cache.
 |NAME | string | Name
 |VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
 |===
+
+== DS_QUEUES
+
+This view exposes the list of `IgniteQueue`.
+Note, queue will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|ID | UUID | ID
+|NAME | string | Data structure name
+|CAPACITY | int | Capacity
+|SIZE | int | Current size
+|BOUNDED | boolean | `True` when queue capacity is bounded
+|COLLOCATED | boolean | `True` when collocated
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_SETS
+
+This view exposes the list of `IgniteSet`.
+Note, set will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|ID | UUID | ID
+|NAME | string | Data structure name
+|SIZE | int | Current size
+|COLLOCATED | boolean | `True` when collocated
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICSEQUENCES
+
+This view exposes the list of `IgniteAtomicSequence`.
+Note, atomicsequence will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | long | Current sequence value
+|BATCH_SIZE | long | Local batch size
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICLONGS
+
+This view exposes the list of `IgniteAtomicLong`.
+Note, atomiclong will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | long | Current value
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICREFERENCES
+
+This view exposes the list of `IgniteAtomicReference`.
+Note, atomicreference will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | string | Current value
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_ATOMICSTAMPED
+
+This view exposes the list of `IgniteAtomicStamped`.
+Note, atomicstamped will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|VALUE | string | Current value
+|STAMP | string | Current stamp value
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_COUNTDOWNLATCHES
+
+This view exposes the list of `IgniteCountDownLatch`.
+Note, latch will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|COUNT | int | Current count
+|INITIAL_COUT | int | Initial count
+|AUTO_DELETE | boolean | True to automatically delete the latch from a cache when its count reaches zero
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_SEMAPHORES
+
+This view exposes the list of `IgniteSemaphore`.
+Note, semaphores will be shown on the non parent nodes only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|AVAILABLE_PERMITS | long | Number of permits available
+|HAS_QUEUED_THREADS | boolean | `True` if there may be other threads waiting to acquire the lock
+|QUEUE_LENGTH | int | The estimated number of nodes waiting for this lock
+|FAILOVER_SAFE | boolean | `True` if failover safe
+|BROKEN | boolean | `True` if a node failed on this semaphore and `FAILOVER_SAFE` flag was set to `false`, `false` otherwise.
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===
+
+== DS_REENTRANTLOCKS
+
+This view exposes the contents of `IgniteLock`.
+Note, lock will be shown on the non parent node only after initial usage on that node.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Data structure name
+|LOCKED | boolean | `True` if locked
+|HAS_QUEUED_THREADS | boolean | `True` if there may be other threads waiting to acquire the lock
+|FAILOVER_SAFE | boolean | `True` if failover safe
+|FAIR | boolean | `True` if lock is fair
+|BROKEN | boolean | `True` if a node failed on this semaphore and `FAILOVER_SAFE` flag was set to `false`, `false` otherwise.
+|GROUP_NAME | string | Cache group name to store data structure
+|GROUP_ID | int | Cache group id to store data structure
+|REMOVED | boolean | `True` if removed
+|===

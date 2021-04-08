@@ -655,7 +655,7 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
-        if (!isKeyClsSqlType)
+        if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
             d.primaryKeyFields(keyFields);
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
