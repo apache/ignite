@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOpti
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -2853,17 +2854,33 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @param state New state.
      */
-    public void setMvccState(IgniteInternalTx tx, byte state) {
+    public void setMvccState(IgniteInternalTx tx, TransactionState state) {
         if (cctx.kernalContext().clientNode() || tx.mvccSnapshot() == null || tx.near() && !tx.local())
             return;
+
+        byte state0 = toMvccState(state);
 
         cctx.database().checkpointReadLock();
 
         try {
-            cctx.coordinators().updateState(tx.mvccSnapshot(), state, tx.local());
+            cctx.coordinators().updateState(tx.mvccSnapshot(), state0, tx.local());
         }
         finally {
             cctx.database().checkpointReadUnlock();
+        }
+    }
+
+    /** */
+    private byte toMvccState(TransactionState state) {
+        switch (state) {
+            case PREPARED:
+                return TxState.PREPARED;
+            case COMMITTED:
+                return TxState.COMMITTED;
+            case ROLLED_BACK:
+                return TxState.ABORTED;
+            default:
+                throw new IllegalStateException("Unexpected state: " + state);
         }
     }
 

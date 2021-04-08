@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpda
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -932,6 +933,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 // We are about to initiate transaction rollback when tx has started to committing.
                 // Need to remove version from committed list.
                 cctx.tm().removeCommittedTx(this);
+
+                boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
+
+                if (persistenceEnabled) {
+                    GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
+
+                    dbManager.skipCheckPointOnNodeStop(true);
+                }
 
                 if (X.hasCause(ex, NodeStoppingException.class)) {
                     U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
