@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,10 +46,10 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -876,6 +878,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(2, res.get(1).get(0));
         assertEquals("2", res.get(1).get(1));
+    }
+
+    @Test
+    public void test2() throws Exception {
+        String query = "create table tbl (" +
+            "id int primary key, " +
+            "val varchar, " +
+            "constraint pk_psdf primary key (val, id)," +
+            "primary key (id, id)" +
+            ") with template=partitioned,backups=14";
+
+        SqlParser parser = SqlParser.create(query, SqlParser.config().withParserFactory(IgniteSqlParserImpl.FACTORY));
+
+        SqlNode node = parser.parseStmt();
+
+        System.out.println(node);
     }
 
     /**

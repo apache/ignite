@@ -43,11 +43,27 @@ IgniteSqlCreateTableOptionEnum CreateTableOptionEnumOpt() :
 {
 }
 {
-    <TEMPLATE> { return IgniteSqlCreateTableOptionEnum.AFFINITY_KEY; }
+    <TEMPLATE> { return IgniteSqlCreateTableOptionEnum.TEMPLATE; }
 |
     <BACKUPS> { return IgniteSqlCreateTableOptionEnum.BACKUPS; }
 |
     <AFFINITY_KEY> { return IgniteSqlCreateTableOptionEnum.AFFINITY_KEY; }
+|
+    <ATOMICITY> { return IgniteSqlCreateTableOptionEnum.ATOMICITY; }
+|
+    <WRITE_SYNCHRONIZATION_MODE> { return IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE; }
+|
+    <CACHE_GROUP> { return IgniteSqlCreateTableOptionEnum.CACHE_GROUP; }
+|
+    <CACHE_NAME> { return IgniteSqlCreateTableOptionEnum.CACHE_NAME; }
+|
+    <DATA_REGION> { return IgniteSqlCreateTableOptionEnum.DATA_REGION; }
+|
+    <KEY_TYPE> { return IgniteSqlCreateTableOptionEnum.KEY_TYPE; }
+|
+    <VALUE_TYPE> { return IgniteSqlCreateTableOptionEnum.VALUE_TYPE; }
+|
+    <ENCRYPTED> { return IgniteSqlCreateTableOptionEnum.ENCRYPTED; }
 }
 
 void CreateTableOption(List<SqlNode> list) :
@@ -68,27 +84,15 @@ void CreateTableOption(List<SqlNode> list) :
     }
 }
 
-SqlNode TokenAsStringLiteral() :
-{
-}
-{
-    {
-        getNextToken();
-        return SqlLiteral.createCharString(token.image, getPos());
-    }
-}
-
 void TableElement(List<SqlNode> list) :
 {
-    final SqlIdentifier id;
     final SqlDataTypeSpec type;
     final boolean nullable;
-    final SqlNode constraint;
     final SqlNodeList columnList;
     final Span s = Span.of();
     final ColumnStrategy strategy;
     final SqlNode dflt;
-    SqlIdentifier name = null;
+    SqlIdentifier id = null;
 }
 {
     id = SimpleIdentifier() type = DataType() nullable = NullableOptDefaultTrue()
@@ -106,7 +110,7 @@ void TableElement(List<SqlNode> list) :
     [
         <PRIMARY> { s.add(this); } <KEY> {
             columnList = SqlNodeList.of(id);
-            list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+            list.add(SqlDdlNodes.primary(s.end(columnList), null, columnList));
         }
     ]
     {
@@ -115,10 +119,10 @@ void TableElement(List<SqlNode> list) :
                 type.withNullable(nullable), dflt, strategy));
     }
 |
-    [ <CONSTRAINT> { s.add(this); } name = SimpleIdentifier() ]
+    [ <CONSTRAINT> { s.add(this); } id = SimpleIdentifier() ]
     <PRIMARY> { s.add(this); } <KEY>
     columnList = ParenthesizedSimpleIdentifierList() {
-        list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+        list.add(SqlDdlNodes.primary(s.end(columnList), id, columnList));
     }
 }
 
@@ -151,7 +155,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     id = SimpleIdentifier()
     columnList = TableElementList()
     (
-        <WITH> optionList = CreateTableOptionList()
+        <WITH> { s.add(this); } optionList = CreateTableOptionList()
     |
         { optionList = null; }
     )

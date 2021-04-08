@@ -32,13 +32,19 @@ import org.apache.calcite.util.ImmutableNullableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Parse tree for {@code CREATE TABLE} statement, with extensions for particular SQL dialects supported by Babel.
+ * Parse tree for {@code CREATE TABLE} statement with Ignite specific features.
  */
 public class IgniteSqlCreateTable extends SqlCreate {
-    public final SqlIdentifier name;
-    public final @Nullable SqlNodeList columnList;
-    public final @Nullable SqlNodeList createOptionList;
+    /** */
+    private final SqlIdentifier name;
 
+    /** */
+    private final @Nullable SqlNodeList columnList;
+
+    /** */
+    private final @Nullable SqlNodeList createOptionList;
+
+    /** */
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
@@ -81,5 +87,24 @@ public class IgniteSqlCreateTable extends SqlCreate {
         }
     }
 
+    /**
+     * @return Name of the table.
+     */
+    public SqlIdentifier name() {
+        return name;
+    }
 
+    /**
+     * @return List of the specified columns and constraints.
+     */
+    public SqlNodeList columnList() {
+        return columnList;
+    }
+
+    /**
+     * @return List of the specified options to create table with.
+     */
+    public SqlNodeList createOptionList() {
+        return createOptionList;
+    }
 }

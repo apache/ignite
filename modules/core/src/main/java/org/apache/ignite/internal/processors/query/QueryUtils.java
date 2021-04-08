@@ -1221,7 +1221,7 @@ public class QueryUtils {
      */
     public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
         Collection<DynamicCacheDescriptor> descs) {
-        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+        String schema = normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
         Set<String> idxNames = new HashSet<>();
 
@@ -1231,7 +1231,7 @@ public class QueryUtils {
             if (F.eq(ccfg.getName(), desc.cacheName()))
                 continue;
 
-            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+            String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
             if (!F.eq(schema, descSchema))
@@ -1580,6 +1580,55 @@ public class QueryUtils {
         }
 
         return alias;
+    }
+
+    /**
+     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
+     */
+    public static IgniteSQLException convert(SchemaOperationException e) {
+        int sqlCode;
+
+        switch (e.code()) {
+            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_EXISTS:
+                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_EXISTS:
+                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_EXISTS:
+                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            default:
+                sqlCode = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
     }
 
     /**

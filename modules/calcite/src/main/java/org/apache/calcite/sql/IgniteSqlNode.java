@@ -18,6 +18,7 @@ package org.apache.calcite.sql;
 
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+/** A {@link SqlNode} that exposes constructor for descendant classes. */
 public abstract class IgniteSqlNode extends SqlNode {
     /**
      * Creates a node.

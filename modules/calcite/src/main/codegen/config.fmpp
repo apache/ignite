@@ -43,6 +43,14 @@ data: {
       "TEMPLATE"
       "BACKUPS"
       "AFFINITY_KEY"
+      "ATOMICITY"
+      "WRITE_SYNCHRONIZATION_MODE"
+      "CACHE_GROUP"
+      "CACHE_NAME"
+      "DATA_REGION"
+#     "KEY_TYPE" // already presented in Calcite
+      "VALUE_TYPE"
+      "ENCRYPTED"
     ]
 
     # List of non-reserved keywords to add;
@@ -52,6 +60,14 @@ data: {
       "TEMPLATE"
       "BACKUPS"
       "AFFINITY_KEY"
+      "ATOMICITY"
+      "WRITE_SYNCHRONIZATION_MODE"
+      "CACHE_GROUP"
+      "CACHE_NAME"
+      "DATA_REGION"
+#     "KEY_TYPE" // already presented in Calcite
+      "VALUE_TYPE"
+      "ENCRYPTED"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,

@@ -25,26 +25,30 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.util.Litmus;
 
-/** */
+/** An AST node representing option to create table with. */
 public class IgniteSqlCreateTableOption extends IgniteSqlNode {
-    public final IgniteSqlCreateTableOptionEnum opt;
-    public final SqlNode value;
+    /** Option key. */
+    private final IgniteSqlCreateTableOptionEnum key;
 
-    public IgniteSqlCreateTableOption(IgniteSqlCreateTableOptionEnum opt, SqlNode value, SqlParserPos pos) {
+    /** Option value. */
+    private final SqlNode value;
+
+    /** Creates IgniteSqlCreateTableOption. */
+    public IgniteSqlCreateTableOption(IgniteSqlCreateTableOptionEnum key, SqlNode value, SqlParserPos pos) {
         super(pos);
 
-        this.opt = opt;
+        this.key = key;
         this.value = value;
     }
 
     /** {@inheritDoc} */
     @Override public SqlNode clone(SqlParserPos pos) {
-        return new IgniteSqlCreateTableOption(opt, value, pos);
+        return new IgniteSqlCreateTableOption(key, value, pos);
     }
 
     /** {@inheritDoc} */
     @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword(opt.name());
+        writer.keyword(key.name());
         writer.keyword("=");
         value.unparse(writer, leftPrec, rightPrec);
     }
@@ -64,10 +68,24 @@ public class IgniteSqlCreateTableOption extends IgniteSqlNode {
         if (!(node instanceof IgniteSqlCreateTableOption))
             return litmus.fail("{} != {}", this, node);
 
-        IgniteSqlCreateTableOption that = (IgniteSqlCreateTableOption) node;
-        if (opt != that.opt)
+        IgniteSqlCreateTableOption that = (IgniteSqlCreateTableOption)node;
+        if (key != that.key)
             return litmus.fail("{} != {}", this, node);
 
         return value.equalsDeep(that.value, litmus);
+    }
+
+    /**
+     * @return Option's key.
+     */
+    public IgniteSqlCreateTableOptionEnum key() {
+        return key;
+    }
+
+    /**
+     * @return Option's value.
+     */
+    public SqlNode value() {
+        return value;
     }
 }
