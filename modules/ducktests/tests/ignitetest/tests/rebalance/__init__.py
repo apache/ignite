@@ -22,8 +22,12 @@ from typing import NamedTuple
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils.enum import constructible
+from ignitetest.utils.ignite_test import IgniteTest
 
 
 @constructible
@@ -33,6 +37,82 @@ class TriggerEvent(IntEnum):
     """
     NODE_JOIN = 0
     NODE_LEFT = 1
+
+
+class NodeJoinLeftScenario(IgniteTest):
+    """
+    Test scenario with rebalance triggered by node join or node left.
+    """
+
+    # pylint: disable=too-many-arguments, too-many-locals
+    def _run_scenario(self, ignite_version, trigger_event,
+                      backups, cache_count, entry_count, entry_size, preloaders,
+                      thread_pool_size, batch_size, batches_prefetch_count, throttle):
+        """
+        Test performs rebalance test which consists of following steps:
+            * Start cluster.
+            * Put data to it via IgniteClientApp.
+            * Triggering a rebalance event and awaits for rebalance to finish.
+            * Collecting and returning the rebalance statistics.
+        :param ignite_version: Ignite version.
+        :param trigger_event: Trigger event.
+        :param backups: Backup count.
+        :param cache_count: Cache count.
+        :param entry_count: Cache entry count.
+        :param entry_size: Cache entry size.
+        :param preloaders: Preload application nodes count.
+        :param thread_pool_size: rebalanceThreadPoolSize config property.
+        :param batch_size: rebalanceBatchSize config property.
+        :param batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
+        :param throttle: rebalanceThrottle config property.
+        :return: Rebalance and data preload stats.
+        """
+        node_config = self._build_config(
+            ignite_version, backups, cache_count, entry_count, entry_size,
+            thread_pool_size, batch_size, batches_prefetch_count, throttle)
+
+        node_count = len(self.test_context.cluster) - preloaders
+
+        ignites = self._start_cluster(node_config, node_count if trigger_event else node_count - 1)
+
+        preload_time = preload_data(
+            self.test_context,
+            node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            preloaders, backups, cache_count, entry_count, entry_size)
+
+        rebalance_nodes = self._do_rebalance_trigger_event(trigger_event, ignites, node_config)
+
+        await_rebalance_start(rebalance_nodes)
+        await_rebalance_complete(rebalance_nodes, cache_count)
+
+        stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
+
+        return {
+            "rebalance_nodes": len(rebalance_nodes),
+            "rebalance_stats": stats,
+            "preload_time": int(preload_time * 1000),
+            "preloaded_bytes": cache_count * entry_count * entry_size
+        }
+
+    # pylint: disable=too-many-arguments, too-many-locals
+    def _build_config(self, ignite_version, backups, cache_count, entry_count, entry_size,
+                      thread_pool_size, batch_size, batches_prefetch_count, throttle):
+        raise NotImplementedError()
+
+    def _start_cluster(self, node_config, num_nodes):
+        ignites = IgniteService(self.test_context, config=node_config, num_nodes=num_nodes)
+        ignites.start()
+        return ignites
+
+    def _do_rebalance_trigger_event(self, trigger_event, ignites, node_config):
+        if trigger_event:  # TriggerEvent.NODE_LEFT
+            ignites.stop_node(ignites.nodes[len(ignites.nodes) - 1])
+            return ignites.nodes[:-1]
+        else:  # TriggerEvent.NODE_JOIN
+            ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
+                                   num_nodes=1)
+            ignite.start()
+            return ignite.nodes
 
 
 # pylint: disable=too-many-arguments
@@ -91,33 +171,31 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
             min(map(lambda app: app.get_init_time(), apps))).total_seconds()
 
 
-def await_rebalance_start(ignite, timeout=1):
+def await_rebalance_start(nodes, timeout=1):
     """
     Awaits rebalance starting on any test-cache on any node.
-    :param ignite: IgniteService instance.
+    :param nodes: Ignite nodes in which rebalance start will be awaited.
     :param timeout: Rebalance start await timeout.
-    :return: dictionary of two keypairs with keys "node" and "time",
-    where "node" contains the first node on which rebalance start was detected
-    and "time" contains the time when rebalance was started.
+    :return: Time when rebalance was started.
     """
-    for node in ignite.nodes:
+    for node in nodes:
         try:
-            rebalance_start_time = ignite.get_event_time_on_node(
-                node, "Starting rebalance routine \\[test-cache-",
+            rebalance_start_time = IgniteAwareService.get_event_time_on_node(
+                node,
+                "Starting rebalance routine \\[test-cache-",
                 timeout=timeout)
         except TimeoutError:
             continue
         else:
-            return node, rebalance_start_time
+            return rebalance_start_time
 
     raise RuntimeError("Rebalance start was not detected on any node")
 
 
-def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
+def await_rebalance_complete(nodes, cache_count=1, timeout=300):
     """
     Awaits rebalance complete on each test-cache.
-    :param ignite: IgniteService instance.
-    :param node: Ignite node in which rebalance will be awaited. If None, the first node in ignite will be used.
+    :param nodes: Ignite nodes in which rebalance will be awaited.
     :param cache_count: The count of test caches to wait for rebalance completion.
     :param timeout: Rebalance completion timeout.
     :return: The time of rebalance completion.
@@ -125,11 +203,13 @@ def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
     rebalance_complete_times = []
 
     for cache_idx in range(cache_count):
-        rebalance_complete_times.append(ignite.get_event_time_on_node(
-            node if node else ignite.nodes[0],
-            "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
-            ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
-            timeout=timeout))
+        cache_grp = "test-cache-%d" % (cache_idx + 1)
+        for node in nodes:
+            rebalance_complete_times.append(IgniteAwareService.get_event_time_on_node(
+                node,
+                "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\[grp=%s"
+                % cache_grp,
+                timeout=timeout))
 
     return max(rebalance_complete_times)
 

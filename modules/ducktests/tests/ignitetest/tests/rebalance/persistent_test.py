@@ -19,25 +19,21 @@ Module contains persistence rebalance tests.
 from ducktape.mark import defaults
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance import preload_data, await_rebalance_start, await_rebalance_complete, \
-    aggregate_rebalance_stats, TriggerEvent
+from ignitetest.tests.rebalance import TriggerEvent, NodeJoinLeftScenario
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
 
 
 # pylint: disable=W0223
-class RebalancePersistentTest(IgniteTest):
+class PersistentTest(NodeJoinLeftScenario):
     """
     Tests rebalance scenarios in persistent mode.
     """
     NUM_NODES = 4
-    DATA_REGION_NAME = "persistent"
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
@@ -50,9 +46,9 @@ class RebalancePersistentTest(IgniteTest):
         """
         Tests rebalance on node join.
         """
-        return self.__run(ignite_version, TriggerEvent.NODE_JOIN,
-                          backups, cache_count, entry_count, entry_size, preloaders,
-                          thread_pool_size, batch_size, batches_prefetch_count, throttle)
+        return self._run_scenario(ignite_version, TriggerEvent.NODE_JOIN,
+                                  backups, cache_count, entry_count, entry_size, preloaders,
+                                  thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
@@ -65,35 +61,14 @@ class RebalancePersistentTest(IgniteTest):
         """
         Tests rebalance on node left.
         """
-        return self.__run(ignite_version, TriggerEvent.NODE_LEFT,
-                          backups, cache_count, entry_count, entry_size, preloaders,
-                          thread_pool_size, batch_size, batches_prefetch_count, throttle)
+        return self._run_scenario(ignite_version, TriggerEvent.NODE_LEFT,
+                                  backups, cache_count, entry_count, entry_size, preloaders,
+                                  thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
-    def __run(self, ignite_version, trigger_event,
-              backups, cache_count, entry_count, entry_size, preloaders,
-              thread_pool_size, batch_size, batches_prefetch_count, throttle):
-        """
-        Test performs rebalance test which consists of following steps:
-            * Start cluster.
-            * Put data to it via IgniteClientApp.
-            * Triggering a rebalance event and awaits for rebalance to finish.
-        :param ignite_version: Ignite version.
-        :param trigger_event: Trigger event.
-        :param backups: Backup count.
-        :param cache_count: Cache count.
-        :param entry_count: Cache entry count.
-        :param entry_size: Cache entry size.
-        :param preloaders: Preload application nodes count.
-        :param thread_pool_size: rebalanceThreadPoolSize config property.
-        :param batch_size: rebalanceBatchSize config property.
-        :param batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
-        :param throttle: rebalanceThrottle config property.
-        :return: Rebalance and data preload stats.
-        """
-        node_count = len(self.test_context.cluster) - preloaders
-
-        node_config = IgniteConfiguration(
+    def _build_config(self, ignite_version, backups, cache_count, entry_count, entry_size,
+                      thread_pool_size, batch_size, batches_prefetch_count, throttle):
+        return IgniteConfiguration(
             cluster_state="INACTIVE",
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
@@ -104,40 +79,22 @@ class RebalancePersistentTest(IgniteTest):
             rebalance_batches_prefetch_count=batches_prefetch_count,
             rebalance_throttle=throttle)
 
-        ignites = IgniteService(self.test_context, config=node_config,
-                                num_nodes=node_count if trigger_event else node_count - 1)
-        ignites.start()
+    def _start_cluster(self, node_config, num_nodes):
+        ignites = super()._start_cluster(node_config, num_nodes)
 
-        control_utility = ControlUtility(ignites)
-        control_utility.activate()
-        control_utility.enable_baseline_auto_adjust(500)
+        ignites.control = ControlUtility(ignites)
+        ignites.control.activate()
+        ignites.control.enable_baseline_auto_adjust(500)
 
-        preload_time = preload_data(
-            self.test_context,
-            node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            preloaders, backups, cache_count, entry_count, entry_size)
+        return ignites
 
-        if trigger_event:
-            ignites.stop_node(ignites.nodes[node_count - 1])
-            ignite = ignites
-        else:
-            ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
-                                   num_nodes=1)
-            ignite.start()
-            wait_until(lambda: len(control_utility.baseline()) == node_count, timeout_sec=5)
-            ignite.await_event_on_node("Checkpoint finished", ignite.nodes[0], 3600)
+    def _do_rebalance_trigger_event(self, trigger_event, ignites, node_config):
+        rebalance_nodes = super()._do_rebalance_trigger_event(trigger_event, ignites, node_config)
 
-        start_node, _ = await_rebalance_start(ignite)
+        new_bl_size = len(ignites.nodes) + (1 if not trigger_event else -1)
+        wait_until(lambda: len(ignites.control.baseline()) == new_bl_size, timeout_sec=5)
 
-        await_rebalance_complete(ignite, start_node, cache_count)
+        if not trigger_event:  # TriggerEvent.NODE_JOIN
+            IgniteAwareService.await_event_on_node("Checkpoint finished", rebalance_nodes[0], 3600)
 
-        rebalance_nodes = ignite.nodes[:-1] if trigger_event else ignite.nodes
-
-        stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
-
-        return {
-            "rebalance_nodes": len(rebalance_nodes),
-            "rebalance_stats": stats,
-            "preload_time": int(preload_time * 1000),
-            "preloaded_bytes": cache_count * entry_count * entry_size
-        }
+        return rebalance_nodes
