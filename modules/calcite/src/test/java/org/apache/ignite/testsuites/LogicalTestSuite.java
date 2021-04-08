@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 })
 @TestEnvironment(scriptsRoot = "src/test/sql"
-//    , script = "src/test/sql/insert/test_insert_invalid.test"
+//    , script = "src/test/sql/types/decimal/decimal_arithmetic.test"
 )
 public class LogicalTestSuite {
 }

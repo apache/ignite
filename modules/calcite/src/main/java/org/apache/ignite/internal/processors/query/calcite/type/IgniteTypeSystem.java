@@ -27,4 +27,14 @@ import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
  */
 public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializable {
     public static final RelDataTypeSystem INSTANCE = new IgniteTypeSystem();
+
+    /** {@inheritDoc} */
+    @Override public int getMaxNumericScale() {
+        return Short.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMaxNumericPrecision() {
+        return Short.MAX_VALUE;
+    }
 }

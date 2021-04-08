@@ -335,7 +335,7 @@ public class ScriptTestRunner {
                     if (expected != ExpectedStatementStatus.OK)
                         throw new IgniteException("Error expected at: " + posDesc + ". Statement: " + toString());
                 }
-                catch (IgniteSQLException e) {
+                catch (Throwable e) {
                     if (expected != ExpectedStatementStatus.ERROR)
                         throw new IgniteException("Error at: " + posDesc + ". Statement: " + toString(), e);
                 }
@@ -495,7 +495,7 @@ public class ScriptTestRunner {
         private void checkResultTuples(List<List<?>> res) {
             if (expectedRes.size() != res.size()) {
                 throw new AssertionError("Invalid results rows count " +
-                    "[expected=" + expectedRes + ", actual=" + res+ ']');
+                    "[expected=" + expectedRes + ", actual=" + res + ']');
             }
 
             for (int i = 0; i < expectedRes.size(); ++i) {
