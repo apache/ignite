@@ -21,6 +21,25 @@ package org.apache.ignite.internal.client.thin;
  * Notification types.
  */
 enum ClientNotificationType {
+    /** Continuous query  event. */
+    CONTINUOUS_QUERY_EVENT(false),
+
     /** Compute task finished. */
-    COMPUTE_TASK_FINISHED;
+    COMPUTE_TASK_FINISHED(true);
+
+    /** */
+    private final boolean keepNotificationsWithoutListener;
+
+    /** */
+    ClientNotificationType(boolean keepNotificationsWithoutListener) {
+        this.keepNotificationsWithoutListener = keepNotificationsWithoutListener;
+    }
+
+    /**
+     * @return {@code True} if it's required to save all received notifications when listener for this notification
+     * is not yet registered. These notifications will be processed when listener for their resource will be registered.
+     */
+    public boolean keepNotificationsWithoutListener() {
+        return keepNotificationsWithoutListener;
+    }
 }
