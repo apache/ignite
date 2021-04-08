@@ -226,34 +226,42 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop() throws Exception {
-        testPartiallyCommitedTx(2);
-    }
-
-    /**Tests partially commited transactions with further recovery. */
-    @Test
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithoutCpOnNodeStop() throws Exception {
-        testPartiallyCommitedTx(2);
+    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop_MultiNodeTx() throws Exception {
+        testPartiallyCommitedTx(2, false);
     }
 
     /**Tests partially commited transactions with further recovery. */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_OneNode_WithCpOnNodeStop() throws Exception {
-        testPartiallyCommitedTx(1);
+    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop_SingleNodeTx() throws Exception {
+        testPartiallyCommitedTx(2, true);
     }
 
     /**Tests partially commited transactions with further recovery. */
     @Test
     @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_OneNode_WithoutCpOnNodeStop() throws Exception {
-        testPartiallyCommitedTx(1);
+    public void testPartiallyCommitedTx_TwoNode_WithoutCpOnNodeStop_SingleNodeTx() throws Exception {
+        testPartiallyCommitedTx(2, true);
+    }
+
+    /**Tests partially commited transactions with further recovery. */
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
+    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
+    public void testPartiallyCommitedTx_OneNode_WithCpOnNodeStop_SingleNodeTx() throws Exception {
+        testPartiallyCommitedTx(1, true);
+    }
+
+    /**Tests partially commited transactions with further recovery. */
+    @Test
+    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
+    public void testPartiallyCommitedTx_OneNode_WithoutCpOnNodeStop_SingleNodeTx() throws Exception {
+        testPartiallyCommitedTx(1, true);
     }
 
     /** */
-    private void testPartiallyCommitedTx(int numSrvNodes) throws Exception {
+    private void testPartiallyCommitedTx(int numSrvNodes, boolean singleNodeTx) throws Exception {
         final String cacheName = "recovery";
 
         int itmsCount = 15_000;
@@ -284,14 +292,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
             Thread t = new Thread(() -> {
                 try (Transaction tx = clnt.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                    if (numSrvNodes == 1) {
-                        for (int i = 0; i < itmsCount; i++)
-                            cache.put(i, i);
-                    }
-                    else {
+                    if (singleNodeTx) {
                         List<Integer> keys = primaryKeys(srv.cache(cacheName), itmsCount, 0);
 
                         keys.forEach(k -> cache.put(k, k));
+                    }
+                    else {
+                        for (int i = 0; i < itmsCount; i++)
+                            cache.put(i, i);
                     }
 
                     commitStart.countDown();

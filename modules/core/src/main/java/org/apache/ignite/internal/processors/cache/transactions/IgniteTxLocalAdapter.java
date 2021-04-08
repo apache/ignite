@@ -934,19 +934,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 // Need to remove version from committed list.
                 cctx.tm().removeCommittedTx(this);
 
-                boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
-
-                if (persistenceEnabled) {
-                    GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
-
-                    dbManager.skipCheckPointOnNodeStop(true);
-                }
-
                 if (X.hasCause(ex, NodeStoppingException.class)) {
                     U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
                         ", err=" + ex + ']');
 
-                    return;
+                    boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
+
+                    if (persistenceEnabled) {
+                        GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
+
+                        dbManager.skipCheckPointOnNodeStop(true);
+                    }
+
+                    throw ex;
                 }
 
                 err = heuristicException(ex);

@@ -195,6 +195,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
@@ -2617,12 +2618,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (restoreMeta) { // Also restore tx states.
                             TxRecord txRec = (TxRecord)rec;
 
-                            if (singleNodeTx(txRec.participatingNodes())) {
-                                if (txRec.state() == COMMITTED || txRec.state() == ROLLED_BACK)
-                                    uncommitedTx.remove(txRec.nearXidVersion());
-                                else if (txRec.state() == PREPARED)
-                                    uncommitedTx.add(txRec.nearXidVersion());
-                            }
+                            if (txRec.state() == COMMITTED || txRec.state() == ROLLED_BACK)
+                                uncommitedTx.remove(txRec.nearXidVersion());
+                            else if (txRec.state() == PREPARED || txRec.state() == PREPARING)
+                                uncommitedTx.add(txRec.nearXidVersion());
                         }
 
                         break;
@@ -2779,22 +2778,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             lsnr.afterLogicalUpdatesApplied(this, restoreLogicalState);
 
         return restoreLogicalState;
-    }
-
-    /** No backup nodes present. */
-    private static boolean singleNodeTx(Map<Short, Collection<Short>> priToBackups) {
-        if (F.isEmpty(priToBackups) || priToBackups.size() != 1)
-            return false;
-
-        final Iterator<Collection<Short>> it = priToBackups.values().iterator();
-
-        if (it.hasNext()) {
-            Collection<Short> next = it.next();
-
-            return next == null || next.isEmpty() || next.size() == 1;
-        }
-        else
-            return false;
     }
 
     /**
@@ -3471,8 +3454,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private IgnitePredicate<Integer> groupsWithEnabledWal() {
         return groupId -> !initiallyGlobalWalDisabledGrps.contains(groupId)
-            && !initiallyLocalWalDisabledGrps.contains(groupId)
-            && MetaStorage.METASTORAGE_CACHE_ID != groupId;
+            && !initiallyLocalWalDisabledGrps.contains(groupId);
     }
 
     /**
