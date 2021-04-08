@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
@@ -25,7 +26,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -60,12 +60,12 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(10 * 1024 * 1024)
+                .setMaxSize(15 * 1024 * 1024)
                 .setCheckpointPageBufferSize(1024 * 1024)
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
-            .setWalMode(WALMode.BACKGROUND)
             .setWriteThrottlingEnabled(true)
+            .setFileIOFactory(new SlowCheckpointFileIOFactory())
             .setCheckpointThreads(1));
 
         return cfg;
@@ -195,8 +195,6 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
     /** @throws Exception if failed. */
     public void checkThrottling() throws Exception {
-        long limit = 50_000L;
-
         IgniteEx srv = startGrid();
 
         srv.cluster().state(ClusterState.ACTIVE);
@@ -210,20 +208,21 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        AtomicBoolean run = new AtomicBoolean(true);
+        AtomicBoolean stop = new AtomicBoolean(false);
+
+        long keysCnt = 1024L;
 
         GridTestUtils.runAsync(() -> {
-            for (long i = 0; run.get(); i++) {
-                cache.put(i, i);
+            while (!stop.get()) {
+                long l = ThreadLocalRandom.current().nextLong(keysCnt);
 
-                if (i > limit)
-                    i = 0;
+                cache.put(l, l);
             }
         });
 
         assertTrue(waitForCondition(() -> totalThrottlingTime.value() > 0, TIMEOUT));
 
-        run.set(false);
+        stop.set(true);
 
         stopCollectStatistics();
 
