@@ -29,6 +29,7 @@ data: {
     imports: [
       "org.apache.calcite.sql.SqlCreate",
       "org.apache.calcite.sql.SqlLiteral",
+      "org.apache.calcite.schema.ColumnStrategy",
       "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable",
       "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
@@ -70,7 +71,7 @@ data: {
       "ACTION"
       "ADD"
       "AFTER"
-      "ALL"
+#     "ALL"
       "ALLOCATE"
       "ALLOW"
       "ALTER"
@@ -130,7 +131,7 @@ data: {
       "CONDITION"
       "CONNECT"
       "CONNECTION"
-      "CONSTRAINT"
+#     "CONSTRAINT"
       "CONSTRAINTS"
       "CONSTRUCTOR"
       "CONTAINS"
@@ -374,7 +375,7 @@ data: {
       "PREPARE"
       "PRESERVE"
       "PREV"
-      "PRIMARY"
+#     "PRIMARY"
       "PRIOR"
       "PRIVILEGES"
       "PROCEDURE"

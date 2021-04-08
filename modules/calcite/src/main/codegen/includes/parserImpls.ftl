@@ -24,43 +24,6 @@ boolean IfNotExistsOpt() :
     { return false; }
 }
 
-SqlNodeList ColumnList() :
-{
-    final Span s;
-    List<SqlNode> list = new ArrayList<SqlNode>();
-}
-{
-    <LPAREN> { s = span(); }
-    ColumnWithType(list)
-    (
-        <COMMA> ColumnWithType(list)
-    )*
-    <RPAREN> {
-        return new SqlNodeList(list, s.end(this));
-    }
-}
-
-void ColumnWithType(List<SqlNode> list) :
-{
-    SqlIdentifier id;
-    SqlDataTypeSpec type;
-    boolean nullable = true;
-    final Span s = Span.of();
-}
-{
-    id = CompoundIdentifier()
-    type = DataType()
-    [
-        <NOT> <NULL> {
-            nullable = false;
-        }
-    ]
-    {
-        list.add(SqlDdlNodes.column(s.add(id).end(this), id,
-            type.withNullable(nullable), null, null));
-    }
-}
-
 SqlNodeList CreateTableOptionList() :
 {
     List<SqlNode> list = new ArrayList<SqlNode>();
@@ -69,7 +32,7 @@ SqlNodeList CreateTableOptionList() :
 {
     CreateTableOption(list)
     (
-        <COMMA> CreateTableOption(list)
+        <COMMA> { s.add(this); } CreateTableOption(list)
     )*
     {
         return new SqlNodeList(list, s.end(this));
@@ -99,11 +62,9 @@ void CreateTableOption(List<SqlNode> list) :
     (
         val = Literal()
     |
-        val = TokenAsStringLiteral()
+        val = SimpleIdentifier()
     ) {
-        list.add(new IgniteSqlCreateTableOption(
-            key, (SqlLiteral)val, s.end(this)
-        ));
+        list.add(new IgniteSqlCreateTableOption(key, val, s.end(this)));
     }
 }
 
@@ -117,6 +78,66 @@ SqlNode TokenAsStringLiteral() :
     }
 }
 
+void TableElement(List<SqlNode> list) :
+{
+    final SqlIdentifier id;
+    final SqlDataTypeSpec type;
+    final boolean nullable;
+    final SqlNode constraint;
+    final SqlNodeList columnList;
+    final Span s = Span.of();
+    final ColumnStrategy strategy;
+    final SqlNode dflt;
+    SqlIdentifier name = null;
+}
+{
+    id = SimpleIdentifier() type = DataType() nullable = NullableOptDefaultTrue()
+    (
+        <DEFAULT_> { s.add(this); } dflt = Literal() {
+            strategy = ColumnStrategy.DEFAULT;
+        }
+    |
+        {
+            dflt = null;
+            strategy = nullable ? ColumnStrategy.NULLABLE
+                : ColumnStrategy.NOT_NULLABLE;
+        }
+    )
+    [
+        <PRIMARY> { s.add(this); } <KEY> {
+            columnList = SqlNodeList.of(id);
+            list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+        }
+    ]
+    {
+        list.add(
+            SqlDdlNodes.column(s.add(id).end(this), id,
+                type.withNullable(nullable), dflt, strategy));
+    }
+|
+    [ <CONSTRAINT> { s.add(this); } name = SimpleIdentifier() ]
+    <PRIMARY> { s.add(this); } <KEY>
+    columnList = ParenthesizedSimpleIdentifierList() {
+        list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+    }
+}
+
+SqlNodeList TableElementList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+}
+{
+    <LPAREN> { s = span(); }
+    TableElement(list)
+    (
+        <COMMA> TableElement(list)
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
 SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -127,8 +148,8 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     <TABLE>
     ifNotExists = IfNotExistsOpt()
-    id = CompoundIdentifier()
-    columnList = ColumnList()
+    id = SimpleIdentifier()
+    columnList = TableElementList()
     (
         <WITH> optionList = CreateTableOptionList()
     |

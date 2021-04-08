@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
@@ -53,7 +54,6 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;

@@ -45,7 +45,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -636,34 +635,32 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             SqlIdentifier tblFullName = createTblNode.name;
 
-            if (tblFullName.names.size() > 2)
-                throw new IllegalArgumentException(); // TODO: replace with a valid exception
-
-            String tblName, schemaName;
-            if (tblFullName.names.size() > 1)
-                schemaName = tblFullName.names.get(tblFullName.names.size() - 2);
-            else
-                schemaName = "PUBLIC"; // TODO: get from context
-
-            tblName = Util.last(tblFullName.names);
-
             CreateTableCommand createTblCmd = new CreateTableCommand();
 
-            createTblCmd.schemaName(schemaName);
-            createTblCmd.tableName(tblName);
+            createTblCmd.schemaName("PUBLIC"); // TODO: get from the context
+            createTblCmd.tableName(Util.last(tblFullName.names));
 
             for (SqlNode optNode : createTblNode.createOptionList.getList()) {
                 IgniteSqlCreateTableOption opt = (IgniteSqlCreateTableOption)optNode;
 
                 switch (opt.opt) {
                     case TEMPLATE:
-                        createTblCmd.templateName(opt.value.toValue());
+                        if (!(opt.value instanceof SqlIdentifier))
+                            throw new IllegalArgumentException(); // validation exception
+
+                        createTblCmd.templateName(((SqlIdentifier) opt.value).names.get(0));
                         break;
                     case BACKUPS:
-                        createTblCmd.backups(opt.value.intValue(true));
+                        if (!(opt.value instanceof SqlLiteral))
+                            throw new IllegalArgumentException(); // validation exception
+
+                        createTblCmd.backups(((SqlLiteral)opt.value).intValue(true));
                         break;
                     case AFFINITY_KEY:
-                        createTblCmd.affinityKey(opt.value.toValue());
+                        if (!(opt.value instanceof SqlIdentifier))
+                            throw new IllegalArgumentException(); // validation exception
+
+                        createTblCmd.affinityKey(((SqlIdentifier) opt.value).names.get(0));
                         break;
                     default:
                         throw new IllegalStateException("Unsupported option " + opt.opt);
@@ -685,8 +682,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 cols.add(def);
 
                 def.name(Util.last(col.name.names));
-                def.type(planner.conver(col.dataType));
-                def.nullable(col.strategy != ColumnStrategy.NOT_NULLABLE);
+
+                RelDataType type = planner.conver(col.dataType);
+
+                def.type(type);
+                def.nullable(type.isNullable());
 
                 if (col.expression != null)
                    def.defaultValue(((SqlLiteral)col.expression).getValue());
@@ -699,7 +699,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 .map(SqlKeyConstraint.class::cast)
                 .collect(Collectors.toList());
 
-            if (pkConstraints.size() != 1)
+            if (pkConstraints.size() <= 1)
                 throw new RuntimeException(); // TODO: replace with a valid exception
 
             Set<String> dedupSet = new HashSet<>();
@@ -718,7 +718,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             return new DdlPlan(createTblCmd);
         }
 
-        throw new UnsupportedOperationException("Command " + ddlNode.getKind() + " is not supported");
+        throw new IgniteSQLException("Unsupported operation [" +
+            "sqlNodeKind=" + sqlNode.getKind() + "; " +
+            "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /** */

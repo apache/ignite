@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import org.apache.calcite.sql.IgniteSqlNode;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -29,9 +28,9 @@ import org.apache.calcite.util.Litmus;
 /** */
 public class IgniteSqlCreateTableOption extends IgniteSqlNode {
     public final IgniteSqlCreateTableOptionEnum opt;
-    public final SqlLiteral value;
+    public final SqlNode value;
 
-    public IgniteSqlCreateTableOption(IgniteSqlCreateTableOptionEnum opt, SqlLiteral value, SqlParserPos pos) {
+    public IgniteSqlCreateTableOption(IgniteSqlCreateTableOptionEnum opt, SqlNode value, SqlParserPos pos) {
         super(pos);
 
         this.opt = opt;
