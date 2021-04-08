@@ -19,10 +19,15 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
@@ -46,8 +51,13 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -65,6 +75,13 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
         super.beforeTestsStarted();
 
         startGrids(3);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
+            new ClientConnectorConfiguration().setThinClientConfiguration(
+                new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(100)));
     }
 
     /** Test continuous queries. */
@@ -353,6 +370,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
     /** Test continuous queries and JCache entry listeners with remote filters. */
     @Test
+    @SuppressWarnings("deprecation")
     public void testListenersWithRemoteFilter() throws Exception {
         try (IgniteClient client = startClient(0, 1, 2)) {
             ClientCache<Integer, Integer> cache = client.getOrCreateCache("testListenersWithRmtFilter");
@@ -486,7 +504,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
     /** */
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
+    @SuppressWarnings({"ThrowableNotThrown", "deprecation"})
     public void testListenersUnsupportedParameters() throws Exception {
         try (IgniteClient client = startClient(0, 1, 2)) {
             ClientCache<Integer, Integer> cache = client.getOrCreateCache("testUnsupportedParams");
@@ -520,7 +538,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             assertThrowsWithCause(() -> cache.query(qry1), IllegalArgumentException.class);
 
             // Check null listener.
-            ContinuousQuery<Integer, Integer> qry2 = new ContinuousQuery<Integer, Integer>();
+            ContinuousQuery<Integer, Integer> qry2 = new ContinuousQuery<>();
 
             assertThrowsWithCause(() -> cache.query(qry2), NullPointerException.class);
 
@@ -578,6 +596,54 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
             assertTrue(lsnr1.isQueueEmpty());
             assertTrue(lsnr2.isQueueEmpty());
+        }
+    }
+
+    /** */
+    @Test
+    public void testContinuousQueriesWithConcurrentCompute() throws Exception {
+        try (IgniteClient client = startClient(0, 1, 2)) {
+            int threadsCnt = 20;
+            int iterations = 50;
+
+            Set<UUID> allNodesIds = new HashSet<>(F.nodeIds(grid(0).cluster().nodes()));
+
+            AtomicInteger threadIdxs = new AtomicInteger();
+
+            GridTestUtils.runMultiThreaded(
+                () -> {
+                    int threadIdx = threadIdxs.incrementAndGet();
+
+                    ClientCache<Integer, Integer> cache = client.getOrCreateCache("testCQwithCompute" + threadIdx);
+
+                    try {
+                        for (int i = 0; i < iterations; i++) {
+                            ContinuousQueryListener<Integer, Integer> lsnr = new ContinuousQueryListener<>();
+
+                            QueryCursor<?> cur = cache.query(new ContinuousQuery<Integer, Integer>()
+                                .setLocalListener(lsnr));
+
+                            cache.put(i, i);
+
+                            Future<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(),
+                                null);
+
+                            assertEquals(allNodesIds, fut.get().get2());
+
+                            lsnr.assertNextCacheEvent(EventType.CREATED, i, i);
+
+                            assertTrue(lsnr.isQueueEmpty());
+
+                            cur.close();
+                        }
+                    }
+                    catch (Exception e) {
+                        log.error("Failure: ", e);
+
+                        fail();
+                    }
+                }, threadsCnt, "run-task-async"
+            );
         }
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +27,8 @@ import java.util.function.Function;
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.FactoryBuilder;
-import javax.cache.event.CacheEntryCreatedListener;
-import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListener;
-import javax.cache.event.CacheEntryRemovedListener;
-import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -780,10 +775,10 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         A.ensure(!(qry.getInitialQuery() instanceof ContinuousQuery), "Initial query for continuous query " +
             "can't be an instance of another continuous query");
         A.notNull(qry.getLocalListener(), "Local listener");
-        A.ensure(!qry.isLocal(), "Unsupported Local flag value");
-        A.ensure(qry.isAutoUnsubscribe(), "Unsupported AutoUnsubscribe flag value");
+        A.ensure(!qry.isLocal(), "Local query is not supported by thin client");
+        A.ensure(qry.isAutoUnsubscribe(), "AutoUnsubscribe flag is not supported by thin client");
         A.ensure(qry.getRemoteFilterFactory() == null || qry.getRemoteFilter() == null,
-            "Should be used either RemoterFilter or RemoteFilterFactory.");
+            "RemoteFilter and RemoteFilterFactory can't be used together");
 
         ClientCacheEntryListenerHandler<K, V> hnd = new ClientCacheEntryListenerHandler<>(
             jCacheAdapter,
@@ -841,9 +836,16 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (lsnrsRegistry.registerCacheEntryListener(name, cfg, hnd)) {
             CacheEntryListener<? super K, ? super V> locLsnr = cfg.getCacheEntryListenerFactory().create();
 
+            ClientDisconnectListener disconnectLsnr0 = e -> {
+                if (disconnectLsnr != null)
+                    disconnectLsnr.onDisconnected(e);
+
+                lsnrsRegistry.deregisterCacheEntryListener(name, cfg);
+            };
+
             hnd.startListen(
-                new JCacheEntryListenerAdapter<>(locLsnr),
-                new JCacheDisconnectListenerAdapter(disconnectLsnr, cfg),
+                new ClientJCacheEntryListenerAdapter<>(locLsnr),
+                disconnectLsnr0,
                 cfg.getCacheEntryEventFilterFactory(),
                 ContinuousQuery.DFLT_PAGE_SIZE,
                 ContinuousQuery.DFLT_TIME_INTERVAL,
@@ -1060,74 +1062,5 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                     serDes.writeObject(out, e.getKey());
                     serDes.writeObject(out, e.getValue());
                 });
-    }
-
-    /**
-     * Adapter to convert CQ listener calls to JCache listener calls.
-     */
-    private static class JCacheEntryListenerAdapter<K, V> implements CacheEntryUpdatedListener<K, V> {
-        /** Created listener. */
-        private final CacheEntryCreatedListener<K, V> crtLsnr;
-
-        /** Updated listener. */
-        private final CacheEntryUpdatedListener<K, V> updLsnr;
-
-        /** Removed listener. */
-        private final CacheEntryRemovedListener<K, V> rmvLsnr;
-
-        /** Expired listener. */
-        private final CacheEntryExpiredListener<K, V> expLsnr;
-
-        /** */
-        JCacheEntryListenerAdapter(CacheEntryListener<? super K, ? super V> impl) {
-            crtLsnr = impl instanceof CacheEntryCreatedListener ? (CacheEntryCreatedListener<K, V>)impl : evts -> {};
-            updLsnr = impl instanceof CacheEntryUpdatedListener ? (CacheEntryUpdatedListener<K, V>)impl : evts -> {};
-            rmvLsnr = impl instanceof CacheEntryRemovedListener ? (CacheEntryRemovedListener<K, V>)impl : evts -> {};
-            expLsnr = impl instanceof CacheEntryExpiredListener ? (CacheEntryExpiredListener<K, V>)impl : evts -> {};
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends K, ? extends V>> evts) {
-            for (CacheEntryEvent<? extends K, ? extends V> evt : evts) {
-                try {
-                    Iterable<CacheEntryEvent<? extends K, ? extends V>> evtColl = Collections.singleton(evt);
-
-                    switch (evt.getEventType()) {
-                        case CREATED: crtLsnr.onCreated(evtColl); break;
-                        case UPDATED: updLsnr.onUpdated(evtColl); break;
-                        case REMOVED: rmvLsnr.onRemoved(evtColl); break;
-                        case EXPIRED: expLsnr.onExpired(evtColl); break;
-                    }
-                }
-                catch (Exception ignored) {
-                    // Ignore exceptions in user code.
-                }
-            }
-        }
-    }
-
-    /**
-     * Client disconnect listener for JCache listeners.
-     */
-    private class JCacheDisconnectListenerAdapter implements ClientDisconnectListener {
-        /** Delegate. */
-        private final ClientDisconnectListener delegate;
-
-        /** Config. */
-        private final CacheEntryListenerConfiguration<?, ?> cfg;
-
-        /** */
-        JCacheDisconnectListenerAdapter(ClientDisconnectListener lsnr, CacheEntryListenerConfiguration<?, ?> cfg) {
-            delegate = lsnr;
-            this.cfg = cfg;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onDisconnected(Exception reason) {
-            if (delegate != null)
-                delegate.onDisconnected(reason);
-
-            lsnrsRegistry.deregisterCacheEntryListener(name, cfg);
-        }
     }
 }
