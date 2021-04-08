@@ -154,7 +154,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             else
                 LockSupport.parkNanos(throttleParkTimeNs);
 
-            long endTime = U.currentTimeMillis();
+            long endTime = System.currentTimeMillis();
 
             pageMemory.metrics().addThrottlingTime(endTime - startTime);
 
