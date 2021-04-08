@@ -97,10 +97,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.services.ServicePermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -113,6 +113,9 @@ import org.jetbrains.annotations.Nullable;
 import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.CANCEL;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.DEPLOY;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.INVOKE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -540,7 +543,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
             if (err == null) {
                 try {
-                    ctx.security().authorize(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
+                    ctx.security().authorize(new ServicePermission(cfg.getName(), DEPLOY));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to authorize service creation [name=" + cfg.getName() +
@@ -868,7 +871,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
      */
     private CancelResult removeServiceFromCache(String name) throws IgniteCheckedException {
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_CANCEL);
+            ctx.security().authorize(new ServicePermission(name, CANCEL));
         }
         catch (SecurityException e) {
             return new CancelResult(new GridFinishedFuture<>(e), false);
@@ -969,7 +972,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /** {@inheritDoc} */
     @Override public <T> T service(String name) {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+        ctx.security().authorize(new ServicePermission(name, INVOKE));
 
         Collection<ServiceContextImpl> ctxs;
 
@@ -1023,7 +1026,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
         long timeout)
         throws IgniteException {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+        ctx.security().authorize(new ServicePermission(name, INVOKE));
 
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -1060,7 +1063,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /** {@inheritDoc} */
     @Override public <T> Collection<T> services(String name) {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+        ctx.security().authorize(new ServicePermission(name, INVOKE));
 
         Collection<ServiceContextImpl> ctxs;
 

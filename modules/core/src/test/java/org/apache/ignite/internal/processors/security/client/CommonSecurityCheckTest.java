@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -27,6 +29,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.IgniteSecurityConstants;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -34,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -43,10 +45,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ALLOW_ALL_PERMISSIONS;
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
  * Common parent for security tests for thin client.
@@ -70,11 +70,11 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return Test data.
      */
     protected TestSecurityData[] clientData() {
-        return new TestSecurityData[]{new TestSecurityData(CLIENT,
-            SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
-                .build()
-        )};
+        Permissions perms = new Permissions();
+        perms.add(new CachePermission("*", "create"));
+        perms.add(IgniteSecurityConstants.ADMIN_OPS);
+
+        return new TestSecurityData[] {new TestSecurityData(CLIENT, perms)};
     }
 
     /**
@@ -167,7 +167,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return Plugin provider.
      */
     protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL_PERMISSIONS,
             globalAuth, true, clientData());
     }
 }

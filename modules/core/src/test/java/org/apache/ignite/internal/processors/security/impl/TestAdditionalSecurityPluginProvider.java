@@ -21,7 +21,6 @@ import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
  *
@@ -37,7 +36,7 @@ public class TestAdditionalSecurityPluginProvider extends TestSecurityPluginProv
     protected final boolean checkAddPass;
 
     /** */
-    public TestAdditionalSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestAdditionalSecurityPluginProvider(String login, String pwd, Permissions perms,
         boolean globalAuth, boolean checkAddPass, TestSecurityData... clientData) {
         super(login, pwd, perms, globalAuth, clientData);
 

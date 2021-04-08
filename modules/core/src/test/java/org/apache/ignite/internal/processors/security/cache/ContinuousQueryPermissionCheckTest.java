@@ -17,22 +17,23 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
+import java.security.Permissions;
 import java.util.function.Consumer;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -135,9 +136,13 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     /**
      * @return Subject Ignite permissions.
      */
-    private SecurityPermissionSet permissions() {
-        return SecurityPermissionSetBuilder.create()
-            .appendCachePermissions(CACHE_NAME, CACHE_READ)
-            .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build();
+    private Permissions permissions() {
+        Permissions res = new Permissions();
+
+        res.add(JOIN_AS_SERVER);
+        res.add(new CachePermission("*", "create"));
+        res.add(new CachePermission(CACHE_NAME, GET));
+
+        return res;
     }
 }

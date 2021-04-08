@@ -42,7 +42,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
@@ -596,26 +595,6 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             /** {@inheritDoc} */
             @Override public SecuritySubject subject() {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean systemOperationAllowed(SecurityPermission perm) {
-                return true;
             }
         }
     }

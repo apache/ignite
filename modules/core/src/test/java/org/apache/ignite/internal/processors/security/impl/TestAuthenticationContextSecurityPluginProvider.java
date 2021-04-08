@@ -26,7 +26,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.AuthenticationContext;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
  *
@@ -36,7 +35,7 @@ public class TestAuthenticationContextSecurityPluginProvider extends TestAdditio
     private Consumer<AuthenticationContext> hndlr;
 
     /** */
-    public TestAuthenticationContextSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestAuthenticationContextSecurityPluginProvider(String login, String pwd, Permissions perms,
         boolean globalAuth, boolean checkAddPass, Consumer<AuthenticationContext> hndlr,
         TestSecurityData... clientData) {
         super(login, pwd, perms, globalAuth, checkAddPass, clientData);

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.security.datastreamer;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,6 +35,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -55,11 +56,14 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
     /** */
     @Test
     public void testDataStreamer() throws Exception {
-        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_PUT)
-                .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
-                .build(), clientMode);
+        Permissions perms = new Permissions();
+
+        perms.add(JOIN_AS_SERVER);
+        perms.add(new CachePermission("*", "create"));
+        perms.add(new CachePermission(CACHE_NAME, "put"));
+        perms.add(new CachePermission(FORBIDDEN_CACHE, "get"));
+
+        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node", perms, clientMode);
 
         List<Consumer<IgniteDataStreamer<String, Integer>>> ops = Arrays.asList(
             s -> s.addData("k", 1),

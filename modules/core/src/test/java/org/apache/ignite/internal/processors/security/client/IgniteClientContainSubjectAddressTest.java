@@ -31,12 +31,11 @@ import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurit
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.AuthenticationContext;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ALLOW_ALL_PERMISSIONS;
 
 /**
  * Test AuthenticationContext contain subject address when subject is IgniteClient.
@@ -59,7 +58,7 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestSubjectAddressSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestSubjectAddressSecurityPluginProvider(name, null, ALLOW_ALL_PERMISSIONS,
             globalAuth, true, clientData());
     }
 
@@ -67,7 +66,7 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
     private class TestSubjectAddressSecurityPluginProvider extends TestAdditionalSecurityPluginProvider {
         /** */
         public TestSubjectAddressSecurityPluginProvider(String login, String pwd,
-            SecurityPermissionSet perms, boolean globalAuth, boolean checkAddPass,
+            Permissions perms, boolean globalAuth, boolean checkAddPass,
             TestSecurityData... clientData) {
             super(login, pwd, perms, globalAuth, checkAddPass, clientData);
         }

@@ -17,35 +17,29 @@
 
 package org.apache.ignite.jdbc;
 
+import java.security.Permissions;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.client.Config;
+import org.apache.ignite.compute.ComputePermission;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.junit.Test;
 
 import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.EXECUTE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
-import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -70,25 +64,25 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** Name of the cache for the DROP TABLE query security permissions testing. */
     private static final String TEST_DROP_TABLE_CACHE = "test-drop-table-cache";
 
-    /** Name of the user with the {@link SecurityPermission#CACHE_CREATE} system permission granted. */
+    /** Name of the user with the cache create permission granted. */
     private static final String CACHE_CREATE_SYS_PERM_USER = "cache-create-sys-perm-user";
 
-    /** Name of the user with the {@link SecurityPermission#CACHE_DESTROY} system permission granted. */
+    /** Name of the user with the cache destroy permission granted. */
     private static final String CACHE_DESTROY_SYS_PERMS_USER = "cache-destroy-sys-perm-user";
 
-    /** Name of the user with {@link SecurityPermission#CACHE_CREATE} granted for {@link #TEST_CREATE_TABLE_CACHE}.*/
+    /** Name of the user with cache create permission granted for {@link #TEST_CREATE_TABLE_CACHE}.*/
     private static final String CACHE_CREATE_CACHE_PERMS_USER = "cache-create-cache-perm-user";
 
-    /** Name of the user with {@link SecurityPermission#CACHE_DESTROY} granted for {@link #TEST_DROP_TABLE_CACHE}. */
+    /** Name of the user with cache destroy permission granted for {@link #TEST_DROP_TABLE_CACHE}. */
     private static final String CACHE_DESTROY_CACHE_PERMS_USER = "cache-destroy-cache-perm-user";
 
-    /** Name of the user with the {@link SecurityPermission#CACHE_READ} granted for the default cache. */
+    /** Name of the user with the cahe read permission granted for the default cache. */
     private static final String CACHE_READ_USER = "cache-read-user";
 
-    /** Name of the user with the {@link SecurityPermission#CACHE_PUT} permission granted for the default cache. */
+    /** Name of the user with the cache write permission granted for the default cache. */
     private static final String CACHE_PUT_USER = "cache-put-user";
 
-    /** Name of the user with the {@link SecurityPermission#CACHE_REMOVE} permission granted for the default cache. */
+    /** Name of the user with the cache remove permission granted for the default cache. */
     private static final String CACHE_REMOVE_USER = "cache-remove-user";
 
     /** Name of the user with no permission granted. */
@@ -106,17 +100,14 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         super.beforeTestsStarted();
 
         Ignite srv = startSecurityGrid(0,
-            new TestSecurityData(EMPTY_PERMS_USER, new SecurityBasicPermissionSet()),
-            new TestSecurityData(CACHE_CREATE_SYS_PERM_USER, systemPermissions(CACHE_CREATE)),
-            new TestSecurityData(CACHE_DESTROY_SYS_PERMS_USER, systemPermissions(CACHE_DESTROY)),
-            new TestSecurityData(CACHE_CREATE_CACHE_PERMS_USER, cachePermissions(TEST_CREATE_TABLE_CACHE, CACHE_CREATE)),
-            new TestSecurityData(CACHE_DESTROY_CACHE_PERMS_USER, cachePermissions(TEST_DROP_TABLE_CACHE, CACHE_DESTROY)),
-            new TestSecurityData(CACHE_READ_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_READ)),
-            new TestSecurityData(CACHE_PUT_USER, create().defaultAllowAll(false)
-                .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT)
-                .appendCachePermissions(TEST_BULKLOAD_CACHE, CACHE_PUT)
-                .build()),
-            new TestSecurityData(CACHE_REMOVE_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_REMOVE)));
+            new TestSecurityData(EMPTY_PERMS_USER, new Permissions()),
+            new TestSecurityData(CACHE_CREATE_SYS_PERM_USER, permissions("*", "create")),
+            new TestSecurityData(CACHE_DESTROY_SYS_PERMS_USER, permissions("*", "destroy")),
+            new TestSecurityData(CACHE_CREATE_CACHE_PERMS_USER, permissions(TEST_CREATE_TABLE_CACHE, "create")),
+            new TestSecurityData(CACHE_DESTROY_CACHE_PERMS_USER, permissions(TEST_DROP_TABLE_CACHE, "destroy")),
+            new TestSecurityData(CACHE_READ_USER, permissions(DEFAULT_CACHE_NAME, "get")),
+            new TestSecurityData(CACHE_PUT_USER, permissions("*", "put")),
+            new TestSecurityData(CACHE_REMOVE_USER, permissions(DEFAULT_CACHE_NAME, "remove")));
 
         startSecurityGrid(1);
 
@@ -129,6 +120,14 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         ccfg.setSqlSchema(TEST_DML_SCHEMA);
 
         srv.createCache(ccfg);
+    }
+
+    private Permissions permissions(String cacheName, String actions){
+        Permissions res = new Permissions();
+
+        res.add(new CachePermission(cacheName, actions));
+
+        return res;
     }
 
     /**
@@ -366,28 +365,15 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * @return {@link SecurityPermissionSet} containing specified system permissions.
+     * @return {@link Permissions} containing specified system permissions.
      */
-    private SecurityPermissionSet systemPermissions(SecurityPermission... perms) {
-        return create().defaultAllowAll(false).appendSystemPermissions(perms).build();
-    }
+    private Permissions serverPermissions() {
+        Permissions res = new Permissions();
 
-    /**
-     * @return {@link SecurityPermissionSet} containing specified system permissions.
-     */
-    private SecurityPermissionSet serverPermissions() {
-        return create()
-            .defaultAllowAll(false)
-            .appendSystemPermissions(CACHE_CREATE, JOIN_AS_SERVER)
-            .appendTaskPermissions(
-                "org.apache.ignite.internal.processors.cache.GridCacheAdapter$SizeTask", TASK_EXECUTE)
-            .build();
-    }
+        res.add(JOIN_AS_SERVER);
+        res.add(new CachePermission("*", "create"));
+        res.add(new ComputePermission("org.apache.ignite.internal.processors.cache.GridCacheAdapter$SizeTask", EXECUTE));
 
-    /**
-     * @return {@link SecurityPermissionSet} containing specified cache permissions.
-     */
-    private SecurityPermissionSet cachePermissions(String cache, SecurityPermission... perms) {
-        return create().defaultAllowAll(false).appendCachePermissions(cache, perms).build();
+        return res;
     }
 }

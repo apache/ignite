@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.security.snapshot;
 
+import java.security.Permission;
+import java.security.Permissions;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -29,6 +31,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -36,17 +39,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.lang.String.format;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -80,7 +78,7 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotForbidden() throws Exception {
-        doTest(op -> assertThrowsWithCause(() -> run(op), SecurityException.class), EMPTY_PERMS);
+        doTest(op -> assertThrowsWithCause(() -> run(op), SecurityException.class));
     }
 
     /**
@@ -88,7 +86,7 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
      * @param perms Permissions to check.
      * @throws Exception If fails.
      */
-    private void doTest(Consumer<? super Supplier<Future<Void>>> check, SecurityPermission... perms) throws Exception {
+    private void doTest(Consumer<? super Supplier<Future<Void>>> check, Permission... perms) throws Exception {
         Ignite srv = startGrid("srv", permissions(perms), false);
 
         Ignite clnt = startGrid("clnt", permissions(perms), true);
@@ -127,12 +125,15 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param perms Permissions.
      */
-    private static SecurityPermissionSet permissions(SecurityPermission... perms) {
-        return SecurityPermissionSetBuilder.create()
-            .defaultAllowAll(false)
-            .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_CREATE, CACHE_PUT)
-            .appendSystemPermissions(perms)
-            .build();
+    private static Permissions permissions(Permission... perms) {
+        Permissions res = new Permissions();
+
+        res.add(new CachePermission(DEFAULT_CACHE_NAME, "create,put"));
+
+        for (Permission p : perms)
+            res.add(p);
+
+        return res;
     }
 
     /**

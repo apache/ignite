@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ALLOW_ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -100,15 +100,15 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
 
     /** */
     protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid(SRV, ALLOW_ALL, false);
+        Ignite srv = startGrid(SRV, ALLOW_ALL_PERMISSIONS, false);
 
         Permissions perms = new Permissions();
 
         perms.add(new PropertyPermission(PROP_NAME, "write"));
 
-        startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL, perms, true);
+        startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL_PERMISSIONS, perms, true);
 
-        startGrid(CLNT_FORBIDDEN_WRITE_PROP, ALLOW_ALL, true);
+        startGrid(CLNT_FORBIDDEN_WRITE_PROP, ALLOW_ALL_PERMISSIONS, true);
 
         srv.cluster().active(true);
     }

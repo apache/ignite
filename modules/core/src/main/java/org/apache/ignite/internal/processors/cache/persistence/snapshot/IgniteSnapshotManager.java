@@ -62,6 +62,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.IgniteClusterPermission;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -171,13 +172,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_SNAPSHOT;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
 /**
  * Internal implementation of snapshot operations over persistence caches.

@@ -78,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,6 +89,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.IgniteFeatures.CONT_QRY_SECURITY_AWARE;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
 
 /**
  * Continuous queries manager.
@@ -729,7 +729,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         final boolean keepBinary,
         boolean onStart) throws IgniteCheckedException
     {
-        cctx.checkSecurity(SecurityPermission.CACHE_READ);
+        cctx.checkSecurity(GET);
 
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?
             cctx.kernalContext().job().currentTaskNameHash() : 0;

@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +39,8 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CachePermission;
+import org.apache.ignite.compute.ComputePermission;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorMessageInterceptor;
 import org.apache.ignite.internal.GridKernalContext;
@@ -89,7 +92,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
@@ -100,6 +102,13 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_OPS;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.CREATE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.DESTROY;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.EXECUTE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.PUT;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.REMOVE;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
 /**
@@ -852,16 +861,14 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @throws SecurityException If authorization failed.
      */
     private void authorize(GridRestRequest req) throws SecurityException {
-        SecurityPermission perm = null;
-        String name = null;
+        Permission perm = null;
 
         switch (req.command()) {
             case CACHE_GET:
             case CACHE_CONTAINS_KEY:
             case CACHE_CONTAINS_KEYS:
             case CACHE_GET_ALL:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), GET);
 
                 break;
 
@@ -870,8 +877,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case EXECUTE_SCAN_QUERY:
             case CLOSE_SQL_QUERY:
             case FETCH_SQL_QUERY:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((RestQueryRequest)req).cacheName();
+                perm = new CachePermission(((RestQueryRequest)req).cacheName(), GET);
 
                 break;
 
@@ -882,43 +888,51 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case CACHE_CAS:
             case CACHE_APPEND:
             case CACHE_PREPEND:
+            case CACHE_PUT_IF_ABSENT:
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), PUT);
+
+                break;
+
             case CACHE_GET_AND_PUT:
             case CACHE_GET_AND_REPLACE:
             case CACHE_GET_AND_PUT_IF_ABSENT:
-            case CACHE_PUT_IF_ABSENT:
             case CACHE_REPLACE_VALUE:
-                perm = SecurityPermission.CACHE_PUT;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), "get,put");
 
                 break;
 
             case CACHE_REMOVE:
             case CACHE_REMOVE_ALL:
             case CACHE_CLEAR:
-            case CACHE_GET_AND_REMOVE:
             case CACHE_REMOVE_VALUE:
-                perm = SecurityPermission.CACHE_REMOVE;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), REMOVE);
+
+                break;
+
+            case CACHE_GET_AND_REMOVE:
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), "get,remove");
 
                 break;
 
             case EXE:
             case RESULT:
-                perm = SecurityPermission.TASK_EXECUTE;
-
                 GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
-                name = taskReq.taskName();
+                String name = taskReq.taskName();
 
                 // We should extract task name wrapped by VisorGatewayTask.
                 if (VisorGatewayTask.class.getName().equals(name))
                     name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
 
+                perm = new ComputePermission(name, EXECUTE);
+
                 break;
 
             case GET_OR_CREATE_CACHE:
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), CREATE);
+
+                break;
             case DESTROY_CACHE:
-                perm = SecurityPermission.ADMIN_CACHE;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), DESTROY);
 
                 break;
 
@@ -930,7 +944,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case BASELINE_ADD:
             case BASELINE_REMOVE:
             case CLUSTER_SET_STATE:
-                perm = SecurityPermission.ADMIN_OPS;
+                perm = ADMIN_OPS;
 
                 break;
 
@@ -963,7 +977,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         }
 
         if (perm != null)
-            ctx.security().authorize(name, perm);
+            ctx.security().authorize(perm);
     }
 
     /**

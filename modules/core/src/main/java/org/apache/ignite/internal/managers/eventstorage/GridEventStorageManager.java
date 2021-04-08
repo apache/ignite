@@ -42,6 +42,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.IgniteEventsPermission;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
@@ -381,7 +381,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void enableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(SecurityPermission.EVENTS_ENABLE);
+        ctx.security().authorize(new IgniteEventsPermission("enable"));
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -423,7 +423,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(SecurityPermission.EVENTS_DISABLE);
+        ctx.security().authorize(new IgniteEventsPermission("disable"));
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;

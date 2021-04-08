@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskMapAsync;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
+import org.apache.ignite.compute.ComputePermission;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TaskEvent;
@@ -81,7 +82,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +96,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.EXECUTE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
@@ -614,7 +615,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             thCtx.set(null);
 
         if (map.get(TC_SKIP_AUTH) == null)
-            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
+            ctx.security().authorize(new ComputePermission(taskClsName, EXECUTE));
 
         Long timeout = (Long)map.get(TC_TIMEOUT);
 

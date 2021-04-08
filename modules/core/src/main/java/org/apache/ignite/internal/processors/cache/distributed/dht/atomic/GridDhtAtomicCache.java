@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityConstants;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -115,7 +116,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -134,6 +134,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.*;
 
 /**
  * Non-transactional partitioned cache.
@@ -468,7 +469,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -565,7 +566,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean needVer,
         boolean asyncOp
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -1037,7 +1038,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         assert ctx.updatesAllowed();
 
-        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
+        ctx.checkSecurity(PUT);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -1148,7 +1149,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         assert ctx.updatesAllowed();
 
-        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
+        ctx.checkSecurity(PUT);
 
         final GridNearAtomicAbstractUpdateFuture updateFut =
             createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter);
@@ -1183,7 +1184,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean async) {
         assert ctx.updatesAllowed();
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(REMOVE);
 
         final GridNearAtomicAbstractUpdateFuture updateFut = createSingleUpdateFuture(key,
             null,
@@ -1334,7 +1335,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         assert keys != null || conflictMap != null;
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(REMOVE);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 

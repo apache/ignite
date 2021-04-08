@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Security utilities.
@@ -124,20 +123,6 @@ public class SecurityUtils {
      */
     public static void restoreDefaultSerializeVersion() {
         serializeVersion(DFLT_SERIALIZE_VERSION);
-    }
-
-    /**
-     * @return Allow all service permissions.
-     */
-    public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
-        Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
-
-        srvcPerms.put("*", Arrays.asList(
-            SecurityPermission.SERVICE_CANCEL,
-            SecurityPermission.SERVICE_DEPLOY,
-            SecurityPermission.SERVICE_INVOKE));
-
-        return srvcPerms;
     }
 
     /**

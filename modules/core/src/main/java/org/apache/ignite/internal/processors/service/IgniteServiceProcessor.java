@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -76,7 +77,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.services.ServicePermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -95,6 +96,9 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.CANCEL;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.DEPLOY;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.INVOKE;
 
 /**
  * Ignite service processor.
@@ -587,7 +591,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             if (err == null)
-                err = checkPermissions(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
+                err = checkPermissions(new ServicePermission(cfg.getName(), DEPLOY));
 
             if (err == null) {
                 try {
@@ -621,18 +625,17 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Checks security permissions for service with given name.
      *
-     * @param name Service name.
      * @param perm Security permissions.
      * @return {@code null} if success, otherwise instance of {@link SecurityException}.
      */
-    private SecurityException checkPermissions(String name, SecurityPermission perm) {
+    private SecurityException checkPermissions(Permission perm) {
         try {
-            ctx.security().authorize(name, perm);
+            ctx.security().authorize(perm);
 
             return null;
         }
         catch (SecurityException e) {
-            U.error(log, "Failed to authorize service access [name=" + name + ", perm=" + perm + ']', e);
+            U.error(log, "Failed to authorize service access [perm=" + perm + ']', e);
 
             return e;
         }
@@ -773,7 +776,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     if (srvcId == null)
                         continue;
 
-                    Exception err = checkPermissions(name, SecurityPermission.SERVICE_CANCEL);
+                    Exception err = checkPermissions(new ServicePermission(name, CANCEL));
 
                     if (err != null) {
                         res.add(new GridFinishedFuture<>(err));
@@ -875,7 +878,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return null;
 
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+            ctx.security().authorize(new ServicePermission(name, INVOKE));
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
@@ -946,7 +949,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
         long timeout)
         throws IgniteException {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+        ctx.security().authorize(new ServicePermission(name, INVOKE));
 
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -987,7 +990,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return null;
 
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+            ctx.security().authorize(new ServicePermission(name, INVOKE));
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 

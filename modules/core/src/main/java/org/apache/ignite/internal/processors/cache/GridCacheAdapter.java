@@ -151,7 +151,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -169,6 +168,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.REMOVE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -776,7 +777,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -837,7 +838,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException {
         A.notNull(key, "key");
 
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -1140,7 +1141,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(REMOVE);
 
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
@@ -1993,7 +1994,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         warnIfUnordered(keys, BulkOperation.GET);
 
@@ -4772,7 +4773,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(REMOVE);
 
         GridCacheVersion obsoleteVer = nextVersion();
 

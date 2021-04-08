@@ -55,6 +55,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -184,7 +185,6 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -219,6 +219,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.CREATE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.DESTROY;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -4147,7 +4149,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      */
     static void authorizeCacheDestroy(IgniteSecurity security, String cacheName) {
-        security.authorize(cacheName, SecurityPermission.CACHE_DESTROY);
+        security.authorize(new CachePermission(cacheName, DESTROY));
     }
 
     /**
@@ -4160,7 +4162,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cacheCfg == null)
             return;
 
-        security.authorize(cacheCfg.getName(), SecurityPermission.CACHE_CREATE);
+        security.authorize(new CachePermission(cacheCfg.getName(), CREATE));
 
         if (cacheCfg.isOnheapCacheEnabled() &&
                 IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE))

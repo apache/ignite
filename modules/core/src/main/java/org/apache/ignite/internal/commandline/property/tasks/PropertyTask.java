@@ -30,8 +30,8 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_READ_DISTRIBUTED_PROPERTY;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_WRITE_DISTRIBUTED_PROPERTY;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_READ_DISTRIBUTED_PROPERTY;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_WRITE_DISTRIBUTED_PROPERTY;
 
 /**
  * Task for property operations.

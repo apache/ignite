@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -28,9 +29,11 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.PUT;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.REMOVE;
 
 /**
  * Job to put entries to cache on affinity node.
@@ -120,12 +123,12 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                 CacheObject val = e.getValue();
 
                 if (val != null) {
-                    checkSecurityPermission(SecurityPermission.CACHE_PUT);
+                    checkSecurityPermission(PUT);
 
                     val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
                 }
                 else
-                    checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+                    checkSecurityPermission(REMOVE);
             }
 
             StreamReceiver receiver = SecurityUtils.sandboxedProxy(ctx, StreamReceiver.class, rcvr);
@@ -161,12 +164,12 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     }
 
     /**
-     * @param perm Security permission.
+     * @param action Operation.
      * @throws org.apache.ignite.plugin.security.SecurityException If permission is not enough.
      */
-    private void checkSecurityPermission(SecurityPermission perm)
+    private void checkSecurityPermission(String action)
         throws org.apache.ignite.plugin.security.SecurityException {
         if (ctx.security().enabled())
-            ctx.security().authorize(cacheName, perm);
+            ctx.security().authorize(new CachePermission(cacheName, action));
     }
 }

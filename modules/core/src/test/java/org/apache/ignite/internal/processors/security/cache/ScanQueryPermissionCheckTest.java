@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -62,10 +63,12 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
             }
         }
 
-        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_READ)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), clientMode);
+        Permissions perms = new Permissions();
+        perms.add(JOIN_AS_SERVER);
+        perms.add(new CachePermission("*", "create"));
+        perms.add(new CachePermission(CACHE_NAME, "get"));
+
+        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node", perms, clientMode);
 
         assertFalse(node.cache(CACHE_NAME).query(new ScanQuery<String, Integer>()).getAll().isEmpty());
 

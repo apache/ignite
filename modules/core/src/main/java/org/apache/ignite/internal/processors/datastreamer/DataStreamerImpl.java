@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -117,7 +118,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -125,6 +125,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.PUT;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.REMOVE;
 
 /**
  * Data streamer implementation.
@@ -594,7 +596,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
-        checkSecurityPermission(SecurityPermission.CACHE_PUT);
+        checkSecurityPermission(PUT);
 
         Collection<DataStreamerEntry> batch = new ArrayList<>(entries.size());
 
@@ -745,9 +747,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         A.notNull(key, "key");
 
         if (val == null)
-            checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+            checkSecurityPermission(REMOVE);
         else
-            checkSecurityPermission(SecurityPermission.CACHE_PUT);
+            checkSecurityPermission(PUT);
 
         KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
@@ -1460,15 +1462,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * Check permissions for streaming.
      *
-     * @param perm Security permission.
+     * @param action Operation.
      * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
      */
-    private void checkSecurityPermission(SecurityPermission perm)
+    private void checkSecurityPermission(String action)
         throws org.apache.ignite.plugin.security.SecurityException {
         if (!ctx.security().enabled())
             return;
 
-        ctx.security().authorize(cacheName, perm);
+        ctx.security().authorize(new CachePermission(cacheName, action));
     }
 
     /**

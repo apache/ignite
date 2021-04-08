@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Permission;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
@@ -41,7 +42,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -199,12 +199,12 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
+    @Override public void authorize(Permission perm) throws SecurityException {
         SecurityContext secCtx = curSecCtx.get();
 
         assert secCtx != null;
 
-        secPrc.authorize(name, perm, secCtx);
+        secPrc.authorize(perm, secCtx);
     }
 
     /** {@inheritDoc} */

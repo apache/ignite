@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.IgniteSecurityConstants;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -78,9 +79,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.*;
 
 /**
  * Colocated cache.
@@ -185,7 +187,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean deserializeBinary,
         final boolean skipVals,
         final boolean needVer) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         GridNearTxLocal tx = checkCurrentTx();
 
@@ -320,7 +322,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());

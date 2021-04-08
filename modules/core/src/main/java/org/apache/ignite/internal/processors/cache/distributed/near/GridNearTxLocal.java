@@ -113,7 +113,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -128,6 +127,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.PUT;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.REMOVE;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_READ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_WRITE;
@@ -1746,7 +1748,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        cacheCtx.checkSecurity(REMOVE);
 
         if (retval)
             needReturnValue(true);
@@ -2625,7 +2627,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         try (TraceSurroundings ignored2 =
                  MTC.support(context().kernalContext().tracing().create(TX_NEAR_ENLIST_READ, MTC.span()))) {
-            cacheCtx.checkSecurity(SecurityPermission.CACHE_READ);
+            cacheCtx.checkSecurity(GET);
 
             boolean single = keysCnt == 1;
 
@@ -5058,7 +5060,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         checkUpdatesAllowed(cacheCtx);
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
+        cacheCtx.checkSecurity(PUT);
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
@@ -5082,7 +5084,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         checkUpdatesAllowed(cacheCtx);
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        cacheCtx.checkSecurity(REMOVE);
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);

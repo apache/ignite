@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Permission;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -25,7 +26,6 @@ import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
@@ -42,9 +42,8 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurity {
     /**
-     * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
-     * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
-     * holder {@link OperationSecurityContext} will be closed.
+     * Creates {@link OperationSecurityContext}. All calls of method {@link #authorize(Permission)} will be processed
+     * into the context of passed {@link SecurityContext} until holder {@link OperationSecurityContext} will be closed.
      *
      * @param secCtx Security Context.
      * @return Security context holder.
@@ -52,9 +51,9 @@ public interface IgniteSecurity {
     public OperationSecurityContext withContext(SecurityContext secCtx);
 
     /**
-     * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
-     * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
-     * the node with given nodeId until holder {@link OperationSecurityContext} will be closed.
+     * Creates {@link OperationSecurityContext}. All calls of method {@link #authorize(Permission)} will be
+     * processed into the context of {@link SecurityContext} that is owned by the node with given nodeId until holder
+     * {@link OperationSecurityContext} will be closed.
      *
      * @param nodeId Node id.
      * @return Security context holder.
@@ -98,23 +97,12 @@ public interface IgniteSecurity {
     public void onSessionExpired(UUID subjId);
 
     /**
-     * Authorizes grid operation.
-     *
-     * @param name Cache name or task class name.
-     * @param perm Permission to authorize.
-     * @throws SecurityException If security check failed.
-     */
-    public void authorize(String name, SecurityPermission perm) throws SecurityException;
-
-    /**
-     * Authorizes grid system operation.
+     * Authorizes Ignite operation.
      *
      * @param perm Permission to authorize.
      * @throws SecurityException If security check failed.
      */
-    public default void authorize(SecurityPermission perm) throws SecurityException {
-        authorize(null, perm);
-    }
+    public void authorize(Permission perm) throws SecurityException;
 
     /**
      * @return Instance of IgniteSandbox.

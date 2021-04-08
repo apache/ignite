@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singleton;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -47,20 +47,16 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
     /** */
     @Test
     public void test() throws Exception {
-        IgniteEx verifierNode = startGrid("verifier_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_READ)
-                .appendCachePermissions(FORBIDDEN_CACHE, CACHE_READ).build(), false);
+        Permissions verifierNodePerms = permissions();
+        verifierNodePerms.add(new CachePermission("*", "get"));
 
-        IgniteEx srvNode = startGrid("server_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), false);
+        IgniteEx verifierNode = startGrid("verifier_node", verifierNodePerms, false);
 
-        IgniteEx clientNode = startGrid("client_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
+        Permissions perms = permissions();
+        perms.add(new CachePermission(CACHE_NAME, "get,put"));
+
+        IgniteEx srvNode = startGrid("server_node", perms, false);
+        IgniteEx clientNode = startGrid("client_node", perms, true);
 
         awaitPartitionMapExchange();
 
@@ -71,6 +67,15 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
                 runForbiddenOperation(verifierNode, c);
             })
         );
+    }
+
+    private Permissions permissions() {
+        Permissions res = new Permissions();
+
+        res.add(JOIN_AS_SERVER);
+        res.add(new CachePermission("*", "create"));
+
+        return res;
     }
 
     /** */

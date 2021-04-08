@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
+import org.apache.ignite.compute.ComputePermission;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -39,8 +40,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.CANCEL;
 
 /**
  * This class provide implementation for task future.
@@ -234,7 +236,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
-        ctx.security().authorize(ses.getTaskName(), SecurityPermission.TASK_CANCEL);
+        ctx.security().authorize(new ComputePermission(ses.getTaskName(), CANCEL));
 
         if (onCancelled()) {
             ctx.task().onCancelled(ses.getId());

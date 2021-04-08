@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
+import java.security.Permissions;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -36,12 +37,9 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ALLOW_ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,7 +50,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestCertificateSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Permissions. */
-    public static final Map<String, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+    public static final Map<String, Permissions> PERMS = new ConcurrentHashMap<>();
 
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
@@ -76,7 +74,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin("")
-                .setPerms(ALLOW_ALL)
+                .setPerms(ALLOW_ALL_PERMISSIONS)
         );
     }
 
@@ -120,16 +118,6 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
-        throws SecurityException {
-
-        if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
-            throw new SecurityException("Authorization failed [perm=" + perm +
-                ", name=" + name +
-                ", subject=" + securityCtx.subject() + ']');
     }
 
     /** {@inheritDoc} */

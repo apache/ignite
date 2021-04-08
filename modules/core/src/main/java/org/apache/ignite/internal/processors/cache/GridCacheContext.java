@@ -48,6 +48,7 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -113,7 +114,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
@@ -829,14 +829,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param op Operation to check.
+     * @param action Operation to check.
      * @throws SecurityException If security check failed.
      */
-    public void checkSecurity(SecurityPermission op) throws SecurityException {
+    public void checkSecurity(String action) throws SecurityException {
         if (CU.isSystemCache(name()))
             return;
 
-        ctx.security().authorize(name(), op);
+        ctx.security().authorize(new CachePermission(name(), action));
     }
 
     /**

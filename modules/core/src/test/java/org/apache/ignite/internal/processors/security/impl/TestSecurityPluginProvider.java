@@ -22,7 +22,6 @@ import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /** */
 public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
@@ -33,7 +32,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     protected final String pwd;
 
     /** Permissions. */
-    protected final SecurityPermissionSet perms;
+    protected final Permissions perms;
 
     /** */
     private final Permissions sandboxPerms;
@@ -45,13 +44,13 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     protected final TestSecurityData[] clientData;
 
     /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestSecurityPluginProvider(String login, String pwd, Permissions perms,
         boolean globalAuth, TestSecurityData... clientData) {
         this(login, pwd, perms, null, globalAuth, clientData);
     }
 
     /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestSecurityPluginProvider(String login, String pwd, Permissions perms,
         Permissions sandboxPerms, boolean globalAuth, TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;

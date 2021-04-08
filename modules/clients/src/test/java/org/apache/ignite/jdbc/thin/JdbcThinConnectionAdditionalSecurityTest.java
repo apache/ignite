@@ -32,14 +32,13 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_OPS;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ALLOW_ALL_PERMISSIONS;
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
  * SSL connection test with security plugin.
@@ -74,8 +73,8 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider("srv_" + igniteInstanceName, null, ALLOW_ALL,
-            false, true, clientData()));
+        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider("srv_" + igniteInstanceName, null,
+            ALLOW_ALL_PERMISSIONS, false, true, clientData()));
 
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration()
@@ -93,11 +92,12 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
      * @return Test data.
      */
     protected TestSecurityData[] clientData() {
+        Permissions perms = new Permissions();
+        perms.add(ADMIN_OPS);
+
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             "pwd",
-            SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS)
-                .build(),
+            perms,
             new Permissions()
         )};
     }

@@ -105,9 +105,10 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
 
 /**
  * Cache proxy implementation.
@@ -773,7 +774,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         A.notNull(qry, "qry");
         try {
-            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+            ctx.checkSecurity(GET);
 
             validate(qry);
 
@@ -799,7 +800,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         A.notNull(qry, "qry");
         try {
-            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+            ctx.checkSecurity(GET);
 
             validate(qry);
 
@@ -846,7 +847,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             throw new UnsupportedOperationException("Transformers are supported only for SCAN queries.");
 
         try {
-            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+            ctx.checkSecurity(GET);
 
             validate(qry);
 

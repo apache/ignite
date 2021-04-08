@@ -17,19 +17,18 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
-import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -68,11 +67,10 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** */
     @Test
     public void testCreateCacheWithCachePermissions() throws Exception {
-        SecurityPermissionSet secPermSet = builder()
-            .appendCachePermissions(CACHE_NAME, CACHE_CREATE)
-            .build();
+        Permissions perms = permissions();
+        perms.add(new CachePermission(CACHE_NAME, "create"));
 
-        try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
+        try (Ignite node = startGrid(TEST_NODE, perms, clientMode)) {
             assertThrowsWithCause(() -> node.createCache(UNMANAGED_CACHE), SecurityException.class);
 
             assertNull(grid(SRV).cache(UNMANAGED_CACHE));
@@ -84,14 +82,13 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** */
     @Test
     public void testDestroyCacheWithCachePermissions() throws Exception {
-        SecurityPermissionSet secPermSet = builder()
-            .appendCachePermissions(CACHE_NAME, CACHE_DESTROY)
-            .build();
+        Permissions perms = permissions();
+        perms.add(new CachePermission(CACHE_NAME, "create,destroy"));
 
         grid(SRV).createCache(CACHE_NAME);
         grid(SRV).createCache(UNMANAGED_CACHE);
 
-        try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
+        try (Ignite node = startGrid(TEST_NODE, perms, clientMode)) {
             node.destroyCache(CACHE_NAME);
 
             assertThrowsWithCause(() -> node.destroyCache(UNMANAGED_CACHE), SecurityException.class);
@@ -105,11 +102,10 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** */
     @Test
     public void testCreateCacheWithSystemPermissions() throws Exception {
-        SecurityPermissionSet secPermSet = builder()
-            .appendSystemPermissions(CACHE_CREATE)
-            .build();
+        Permissions perms = permissions();
+        perms.add(new CachePermission("*", "create"));
 
-        try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
+        try (Ignite node = startGrid(TEST_NODE, perms, clientMode)) {
             assertThrowsWithCause(() -> forbidden(clientMode).createCache(CACHE_NAME), SecurityException.class);
 
             assertNotNull(node.createCache(CACHE_NAME));
@@ -119,13 +115,12 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** */
     @Test
     public void testDestroyCacheWithSystemPermissions() throws Exception {
-        SecurityPermissionSet secPermSet = builder()
-            .appendSystemPermissions(CACHE_DESTROY)
-            .build();
+        Permissions perms = permissions();
+        perms.add(new CachePermission("*", "create,destroy"));
 
         grid(SRV).createCache(CACHE_NAME);
 
-        try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
+        try (Ignite node = startGrid(TEST_NODE, perms, clientMode)) {
             assertThrowsWithCause(() -> forbidden(clientMode).destroyCache(CACHE_NAME), SecurityException.class);
 
             node.destroyCache(CACHE_NAME);
@@ -134,11 +129,12 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         }
     }
 
-    /** */
-    private SecurityPermissionSetBuilder builder() {
-        return SecurityPermissionSetBuilder.create()
-            .defaultAllowAll(false)
-            .appendSystemPermissions(JOIN_AS_SERVER);
+    @NotNull private Permissions permissions() {
+        Permissions perms = new Permissions();
+
+        perms.add(JOIN_AS_SERVER);
+
+        return perms;
     }
 
     /**
@@ -152,9 +148,11 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV);
 
-        startGrid(CLNT_WITHOUT_PERMS, builder().build(), true);
+        Permissions perms = permissions();
 
-        startGrid(SRV_WITHOUT_PERMS, builder().build(), false);
+        startGrid(CLNT_WITHOUT_PERMS, perms, true);
+
+        startGrid(SRV_WITHOUT_PERMS, perms, false);
     }
 
     /** {@inheritDoc} */

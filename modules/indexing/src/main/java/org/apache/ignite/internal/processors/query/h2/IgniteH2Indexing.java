@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -170,7 +171,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -205,6 +205,7 @@ import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFie
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.GET;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_SCHEMA;
@@ -1622,7 +1623,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheId);
 
             if (desc != null)
-                ctx.security().authorize(desc.cacheName(), SecurityPermission.CACHE_READ);
+                ctx.security().authorize(new CachePermission(desc.cacheName(), GET));
         }
     }
 

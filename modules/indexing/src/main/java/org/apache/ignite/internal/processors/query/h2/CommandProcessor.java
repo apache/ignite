@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePermission;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -118,7 +119,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
@@ -136,6 +136,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEna
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.CREATE;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.DESTROY;
 
 /**
  * Processor responsible for execution of all non-SELECT and non-DML commands.
@@ -762,7 +764,7 @@ public class CommandProcessor {
             else if (cmdH2 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
 
-                ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
+                ctx.security().authorize(new CachePermission(cmd.cacheName(), CREATE));
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -828,7 +830,7 @@ public class CommandProcessor {
                             cmd.tableName());
                 }
                 else {
-                    ctx.security().authorize(tbl.cacheName(), SecurityPermission.CACHE_DESTROY);
+                    ctx.security().authorize(new CachePermission(tbl.cacheName(), DESTROY));
 
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
                 }

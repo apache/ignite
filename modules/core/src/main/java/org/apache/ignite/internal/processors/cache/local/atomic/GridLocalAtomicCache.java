@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
+import org.apache.ignite.internal.processors.security.IgniteSecurityConstants;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
@@ -73,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -378,7 +378,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean skipVals,
         boolean needVer
     ) throws IgniteCheckedException {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkSecurity(IgniteSecurityConstants.GET);
 
         if (F.isEmpty(keys))
             return Collections.emptyMap();
@@ -865,9 +865,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean keepBinary
     ) throws IgniteCheckedException {
         if (op == DELETE)
-            ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+            ctx.checkSecurity(IgniteSecurityConstants.REMOVE);
         else
-            ctx.checkSecurity(SecurityPermission.CACHE_PUT);
+            ctx.checkSecurity(IgniteSecurityConstants.PUT);
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 

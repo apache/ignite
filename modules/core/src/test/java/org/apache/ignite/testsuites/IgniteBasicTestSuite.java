@@ -126,7 +126,6 @@ import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.plugin.PluginConfigurationTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.MessageOrderLogListenerTest;
@@ -214,8 +213,6 @@ import org.junit.runners.Suite;
 
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
-
-    SecurityPermissionSetBuilderTest.class,
 
     AttributeNodeFilterSelfTest.class,
 

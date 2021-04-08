@@ -20,6 +20,7 @@ package org.apache.ignite.plugin.security;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.security.PermissionCollection;
+import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.UUID;
@@ -71,7 +72,7 @@ public interface SecuritySubject extends Serializable {
      *
      * @return Authorized permission set for the subject.
      */
-    public SecurityPermissionSet permissions();
+    public Permissions permissions();
 
     /**
      * @return Permissions for SecurityManager checks.

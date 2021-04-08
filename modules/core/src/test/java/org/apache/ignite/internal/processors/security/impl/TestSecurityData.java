@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.impl;
 
 import java.security.Permissions;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
  * Test security data for subject configuration.
@@ -32,7 +31,7 @@ public class TestSecurityData {
     private String pwd;
 
     /** Security permission set. */
-    private SecurityPermissionSet prmSet;
+    private Permissions perms;
 
     /** */
     private Permissions sandboxPerms;
@@ -47,36 +46,36 @@ public class TestSecurityData {
     /**
      * @param login Login.
      * @param pwd Password.
-     * @param prmSet Permissions.
+     * @param perms Permissions.
      */
-    public TestSecurityData(String login, String pwd, SecurityPermissionSet prmSet,
+    public TestSecurityData(String login, String pwd, Permissions perms,
         Permissions sandboxPerms) {
         this.login = login;
         this.pwd = pwd;
-        this.prmSet = prmSet;
+        this.perms = perms;
         this.sandboxPerms = sandboxPerms;
     }
 
     /**
      * @param login Login.
-     * @param prmSet Permissions.
+     * @param perms Permissions.
      */
-    public TestSecurityData(String login, SecurityPermissionSet prmSet) {
-        this(login, "", prmSet, new Permissions());
+    public TestSecurityData(String login, Permissions perms) {
+        this(login, "", perms, new Permissions());
     }
 
     /**
      * Getting security permission set.
      */
-    public SecurityPermissionSet getPermissions() {
-        return prmSet;
+    public Permissions getPermissions() {
+        return perms;
     }
 
     /**
-     * @param prmSet Security permission set.
+     * @param perms Security permission set.
      */
-    public TestSecurityData setPermissions(SecurityPermissionSet prmSet) {
-        this.prmSet = prmSet;
+    public TestSecurityData setPermissions(Permissions perms) {
+        this.perms = perms;
 
         return this;
     }

@@ -33,10 +33,11 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.ADMIN_METADATA_OPS;
 
 /**
  * Task for remove specified binary type.
@@ -91,7 +92,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
         @Override protected MetadataMarshalled run(@Nullable MetadataTypeArgs arg) throws IgniteException {
             try {
                 if (future == null) {
-                    ignite.context().security().authorize(null, SecurityPermission.ADMIN_METADATA_OPS);
+                    ignite.context().security().authorize(ADMIN_METADATA_OPS);
 
                     assert Objects.nonNull(arg);
 
@@ -143,7 +144,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
         /** {@inheritDoc} */
         @Override public void run() throws IgniteException {
-            ignite.context().security().authorize(null, SecurityPermission.ADMIN_METADATA_OPS);
+            ignite.context().security().authorize(ADMIN_METADATA_OPS);
 
             ignite.context().sqlListener().closeAllSessions();
         }

@@ -20,7 +20,6 @@ package org.apache.ignite.testframework.junits.spi;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +33,6 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -129,13 +126,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             tests.put(getClass(), data = new TestData<>());
 
         return data;
-    }
-
-    /**
-     * @return Allow all permission security set.
-     */
-    private static SecurityPermissionSet getAllPermissionSet() {
-        return new SecurityPermissionSetImpl();
     }
 
     /**
@@ -711,36 +701,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                 " [spi=" + spi +
                 ", discoSpi=" + discoSpi +
                 ", allAttrs=" + allAttrs + ']';
-        }
-    }
-
-    private static class SecurityPermissionSetImpl implements SecurityPermissionSet {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public boolean defaultAllowAll() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-            return null;
         }
     }
 }

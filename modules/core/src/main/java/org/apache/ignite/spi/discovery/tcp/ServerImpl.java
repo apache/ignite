@@ -32,11 +32,14 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.security.Permission;
+import java.security.Permissions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -113,8 +116,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -183,6 +184,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.JOIN_AS_SERVER;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
@@ -2170,25 +2172,27 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Checks if two given {@link SecurityPermissionSet} objects contain the same permissions.
-     * Each permission belongs to one of three groups : cache, task or system.
+     * Checks if two given {@link Permissions} objects contain the same permissions. Each permission belongs to one of
+     * three groups : cache, task or system.
      *
      * @param locPerms The first set of permissions.
      * @param rmtPerms The second set of permissions.
      * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
      */
-    private boolean permissionsEqual(@Nullable SecurityPermissionSet locPerms,
-        @Nullable SecurityPermissionSet rmtPerms) {
+    private boolean permissionsEqual(@Nullable Permissions locPerms,
+        @Nullable Permissions rmtPerms) {
         if (locPerms == null || rmtPerms == null)
             return false;
 
-        boolean dfltAllowMatch = locPerms.defaultAllowAll() == rmtPerms.defaultAllowAll();
+        Enumeration<Permission> e = rmtPerms.elements();
+        while (e.hasMoreElements()) {
+            Permission p = e.nextElement();
 
-        boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
-            F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
-            F.eqNotOrdered(rmtPerms.taskPermissions(), locPerms.taskPermissions());
+            if (!locPerms.implies(p))
+                return false;
+        }
 
-        return dfltAllowMatch && bothHaveSamePerms;
+        return true;
     }
 
     /**
@@ -4334,7 +4338,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 authFailedMsg = "Authentication subject is not serializable";
                             }
                             else if (node.clientRouterNodeId() == null &&
-                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
+                                !subj.subject().permissions().implies(JOIN_AS_SERVER))
                                 authFailedMsg = "Node is not authorised to join as a server node";
 
                             if (authFailedMsg != null) {
@@ -5278,7 +5282,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param secCtx Security context.
          * @return Security permission set.
          */
-        private @Nullable SecurityPermissionSet getPermissions(SecurityContext secCtx) {
+        private @Nullable Permissions getPermissions(SecurityContext secCtx) {
             if (secCtx == null || secCtx.subject() == null)
                 return null;
 

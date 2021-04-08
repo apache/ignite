@@ -31,14 +31,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityConstants;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
-import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
@@ -48,7 +45,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Permissions. */
-    public static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+    public static final Map<SecurityCredentials, Permissions> PERMS = new ConcurrentHashMap<>();
 
     /** Sandbox permissions. */
     private static final Map<SecurityCredentials, Permissions> SANDBOX_PERMS = new ConcurrentHashMap<>();
@@ -106,12 +103,10 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         if (ctx.credentials() == null || ctx.credentials().getLogin() == null)
             return null;
 
-        SecurityPermissionSet perms = PERMS.get(ctx.credentials());
+        Permissions perms = PERMS.get(ctx.credentials());
 
-        if (perms == null) {
-            perms = new SecurityBasicPermissionSet();
-            ((SecurityBasicPermissionSet) perms).setDefaultAllowAll(true);
-        }
+        if (perms == null)
+            perms = IgniteSecurityConstants.ALLOW_ALL_PERMISSIONS;
 
         SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
@@ -142,15 +137,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(UUID subjId) {
         return SECURITY_CONTEXTS.get(subjId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
-        throws SecurityException {
-        if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
-            throw new SecurityException("Authorization failed [perm=" + perm +
-                ", name=" + name +
-                ", subject=" + securityCtx.subject() + ']');
     }
 
     /** {@inheritDoc} */
