@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,6 +32,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -50,6 +58,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CheckpointTest extends AbstractPerformanceStatisticsTest {
     /** Listener test logger. */
     private static ListeningTestLogger listeningLog;
+
+    /** Slow checkpoint enabled. */
+    private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -208,21 +219,24 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        AtomicBoolean stop = new AtomicBoolean(false);
-
         long keysCnt = 1024L;
 
-        GridTestUtils.runAsync(() -> {
-            while (!stop.get()) {
-                long l = ThreadLocalRandom.current().nextLong(keysCnt);
+        slowCheckpointEnabled.set(true);
 
-                cache.put(l, l);
-            }
-        });
+        try {
+            GridTestUtils.runAsync(() -> {
+                while (slowCheckpointEnabled.get()) {
+                    long l = ThreadLocalRandom.current().nextLong(keysCnt);
 
-        assertTrue(waitForCondition(() -> totalThrottlingTime.value() > 0, TIMEOUT));
+                    cache.put(l, l);
+                }
+            });
 
-        stop.set(true);
+            assertTrue(waitForCondition(() -> totalThrottlingTime.value() > 0, TIMEOUT));
+        }
+        finally {
+            slowCheckpointEnabled.set(false);
+        }
 
         stopCollectStatistics();
 
@@ -241,5 +255,52 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         });
 
         assertTrue(checker.get());
+    }
+
+    /**
+    * Create File I/O that emulates poor checkpoint write speed.
+    */
+    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
+        /** Default checkpoint park nanos. */
+        private static final int CHECKPOINT_PARK_NANOS = 50_000_000;
+
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Delegate factory. */
+        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(java.io.File file, OpenOption... openOption) throws IOException {
+            final FileIO delegate = delegateFactory.create(file, openOption);
+
+            return new FileIODecorator(delegate) {
+                @Override public int write(ByteBuffer srcBuf) throws IOException {
+                    parkIfNeeded();
+
+                    return delegate.write(srcBuf);
+                }
+
+                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+                    parkIfNeeded();
+
+                    return delegate.write(srcBuf, position);
+                }
+
+                @Override public int write(byte[] buf, int off, int len) throws IOException {
+                    parkIfNeeded();
+
+                    return delegate.write(buf, off, len);
+                }
+
+                /**
+                 * Parks current checkpoint thread if slow mode is enabled.
+                 */
+                private void parkIfNeeded() {
+                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
+                }
+            };
+        }
     }
 }
