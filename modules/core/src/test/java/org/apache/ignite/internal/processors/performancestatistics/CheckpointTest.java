@@ -40,8 +40,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -56,9 +54,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests checkpoint performance statistics.
  */
 public class CheckpointTest extends AbstractPerformanceStatisticsTest {
-    /** Listener test logger. */
-    private static ListeningTestLogger listeningLog;
-
     /** Slow checkpoint enabled. */
     private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(false);
 
@@ -67,7 +62,6 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
-        cfg.setGridLogger(listeningLog);
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -87,8 +81,6 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         super.beforeTestsStarted();
 
         cleanPersistenceDir();
-
-        listeningLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */
@@ -103,22 +95,9 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
     /** @throws Exception If failed. */
     @Test
     public void testCheckpoint() throws Exception {
-        LogListener node_started = LogListener.matches("reason='node started'")
-            .build();
-
-        LogListener lsnr = LogListener.matches("Checkpoint finished")
-            .build();
-
-        listeningLog.registerListener(node_started);
-        listeningLog.registerListener(lsnr);
-
         IgniteEx srv = startGrid();
 
         srv.cluster().state(ClusterState.ACTIVE);
-
-        // wait for checkpoint to finish on node start
-        assertTrue(waitForCondition(node_started::check, TIMEOUT));
-        assertTrue(waitForCondition(lsnr::check, TIMEOUT));
 
         MetricRegistry mreg = srv.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
@@ -139,16 +118,15 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         AtomicLongMetric mLastDataPages = mreg.findMetric("LastCheckpointDataPagesNumber");
         AtomicLongMetric mLastCOWPages = mreg.findMetric("LastCheckpointCopiedOnWritePagesNumber");
 
+        assertTrue(waitForCondition(() -> 0 < mLastStart.value(), TIMEOUT));
+
         startCollectStatistics();
 
-        lsnr = LogListener.matches("Checkpoint finished")
-            .build();
-
-        listeningLog.registerListener(lsnr);
+        long first = mLastStart.value();
 
         forceCheckpoint();
 
-        assertTrue(waitForCondition(lsnr::check, TIMEOUT));
+        assertTrue(waitForCondition(() -> first < mLastStart.value(), TIMEOUT));
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)srv.context().cache().context().database();
 
