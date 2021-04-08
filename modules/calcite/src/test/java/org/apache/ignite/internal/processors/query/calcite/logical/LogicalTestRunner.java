@@ -69,6 +69,9 @@ public class LogicalTestRunner extends Runner {
     /** Scripts root directory. */
     private final Path scriptsRoot;
 
+    /** Single script to execute. */
+    private final Path script;
+
     /** Nodes count. */
     private final int nodes;
 
@@ -78,13 +81,14 @@ public class LogicalTestRunner extends Runner {
     /** */
     public LogicalTestRunner(Class<?> testCls) {
         this.testCls = testCls;
-        TestEnvironment scripts = testCls.getAnnotation(TestEnvironment.class);
+        TestEnvironment env = testCls.getAnnotation(TestEnvironment.class);
 
-        assert !F.isEmpty(scripts.scriptsRoot());
+        assert !F.isEmpty(env.scriptsRoot());
 
-        nodes = scripts.nodes();
-        scriptsRoot = FS.getPath(scripts.scriptsRoot());
-        restartCluster = scripts.restart();
+        nodes = env.nodes();
+        scriptsRoot = FS.getPath(env.scriptsRoot());
+        script = F.isEmpty(env.script()) ? null : FS.getPath(env.script());
+        restartCluster = env.restart();
     }
 
     /** {@inheritDoc} */
@@ -95,55 +99,99 @@ public class LogicalTestRunner extends Runner {
     /** {@inheritDoc} */
     @Override public void run(RunNotifier notifier) {
         try {
-            Files.walk(scriptsRoot).forEach((p) -> {
-                if (p.equals(scriptsRoot))
-                    return;
+            if (script == null) {
+                Files.walk(scriptsRoot).forEach((p) -> {
+                    if (p.equals(scriptsRoot))
+                        return;
 
-                if (Files.isDirectory(p)) {
-                    if (!F.isEmpty(Ignition.allGrids()) && restartCluster) {
-                        rootLog.info(">>> Restart cluster");
+                    if (Files.isDirectory(p)) {
+                        if (!F.isEmpty(Ignition.allGrids()) && restartCluster) {
+                            rootLog.info(">>> Restart cluster");
 
-                        Ignition.stopAll(false);
+                            Ignition.stopAll(false);
+                        }
+
+                        if (F.isEmpty(Ignition.allGrids()))
+                            startGrid();
+
+                        return;
                     }
 
-                    if (F.isEmpty(Ignition.allGrids()))
-                        startGrid();
+                    String dirName = p.getParent().toString().substring(scriptsRoot.toString().length() + 1);
+                    String fileName = p.getFileName().toString();
 
-                    return;
-                }
+                    if (!fileName.endsWith("test") && !fileName.endsWith("test_slow"))
+                        return;
 
-                String dirName = p.getParent().toString().substring(scriptsRoot.toString().length() + 1);
-                String fileName = p.getFileName().toString();
+                    Description desc = Description.createTestDescription(dirName, fileName);
 
-                if (!fileName.endsWith("test") && fileName.endsWith("test_slow"))
-                    return;
+                    notifier.fireTestStarted(desc);
 
-                Description desc = Description.createTestDescription(dirName, fileName);
+                    try {
+                        QueryEngine engine = Commons.lookupComponent(
+                            ((IgniteEx)F.first(Ignition.allGrids())).context(),
+                            QueryEngine.class
+                        );
 
-                notifier.fireTestStarted(desc);
+                        ScriptTestRunner scriptTestRunner = new ScriptTestRunner(p, engine, rootLog);
 
-                try {
-                    QueryEngine engine = Commons.lookupComponent(
-                        ((IgniteEx)F.first(Ignition.allGrids())).context(),
-                        QueryEngine.class
-                    );
+                        rootLog.info(">>> Start: " + dirName + "/" + fileName);
 
-                    ScriptTestRunner scriptTestRunner = new ScriptTestRunner(p, engine, rootLog);
+                        scriptTestRunner.run();
+                    }
+                    catch (Throwable e) {
+                        notifier.fireTestFailure(new Failure(desc, e));
+                    }
+                    finally {
+                        rootLog.info(">>> Finish: " + dirName + "/" + fileName);
+                        notifier.fireTestFinished(desc);
+                    }
+                });
+            }
+            else {
+                startGrid();
 
-                    rootLog.info(">>> Start: " + dirName + "/" + fileName);
-
-                    scriptTestRunner.run();
-                }
-                catch (Throwable e) {
-                    notifier.fireTestFailure(new Failure(desc, e));
-                }
-                finally {
-                    rootLog.info(">>> Finish: " + dirName + "/" + fileName);
-                    notifier.fireTestFinished(desc);
-                }
-            });
-        } catch (Exception e) {
+                runTest(script, notifier);
+            }
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
+        }
+        finally {
+            Ignition.stopAll(false);
+        }
+    }
+
+    /** */
+    private void runTest(Path test, RunNotifier notifier) {
+        String dirName = test.getParent().toString().substring(scriptsRoot.toString().length() + 1);
+        String fileName = test.getFileName().toString();
+
+        if (!fileName.endsWith("test") && fileName.endsWith("test_slow"))
+            return;
+
+        Description desc = Description.createTestDescription(dirName, fileName);
+
+        notifier.fireTestStarted(desc);
+
+        try {
+            QueryEngine engine = Commons.lookupComponent(
+                ((IgniteEx)F.first(Ignition.allGrids())).context(),
+                QueryEngine.class
+            );
+
+            ScriptTestRunner scriptTestRunner = new ScriptTestRunner(test, engine, rootLog);
+
+            rootLog.info(">>> Start: " + dirName + "/" + fileName);
+
+            scriptTestRunner.run();
+        }
+        catch (Throwable e) {
+            notifier.fireTestFailure(new Failure(desc, e));
+        }
+        finally {
+            rootLog.info(">>> Finish: " + dirName + "/" + fileName);
+            notifier.fireTestFinished(desc);
         }
     }
 

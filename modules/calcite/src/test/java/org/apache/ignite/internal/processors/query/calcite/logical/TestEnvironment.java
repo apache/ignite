@@ -34,6 +34,11 @@ public @interface TestEnvironment {
     String scriptsRoot();
 
     /**
+     * @return Single script to execute.
+     */
+    String script() default "";
+
+    /**
      * @return Ignite nodes count.
      */
     int nodes() default 2;

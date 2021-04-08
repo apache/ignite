@@ -23,10 +23,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,6 +43,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  */
 public class ScriptTestRunner {
+    /** Hashing label. */
+    private static final Pattern HASHING_PTRN = Pattern.compile("([0-9]+) values hashing to ([0-9a-fA-F]+)");
+
+    /** Hashing label. */
+    private static final Set<String> ignoredStmts = ImmutableSet.of("PRAGMA");
+
+    /** NULL label. */
+    private static final String NULL = "NULL";
+
     /** Test script path. */
     private final Path test;
 
@@ -48,6 +64,9 @@ public class ScriptTestRunner {
     /** Script. */
     private Script script;
 
+    /** Loop variables. */
+    private HashMap<String, Integer> loopVars = new HashMap<>();
+
     /** */
     public ScriptTestRunner(Path test, QueryEngine engine, IgniteLogger log) {
         this.test = test;
@@ -58,36 +77,18 @@ public class ScriptTestRunner {
     /** */
     public void run() throws Exception {
         script = new Script(test);
+
         try {
             while (script.ready()) {
-                String s = script.nextLine();
+                try {
+                    Command cmd = script.nextCommand();
 
-                if (F.isEmpty(s) || s.startsWith("#"))
-                    continue;
-
-                String[] tokens = s.split("\\s+");
-
-                if (tokens.length < 2)
-                    throw new IgniteException("Invalid command line. " + script.positionDescription() + ". [cmd=" + s + ']');
-
-                Command cmd;
-                switch (tokens[0]) {
-                    case "statement":
-                        cmd = new Statement(tokens);
-
-                        break;
-
-                    case "query":
-                        cmd = new Query(tokens);
-
-                        break;
-
-                    default:
-                        throw new IgniteException("Unexpected command. "
-                            + script.positionDescription() + ". [cmd=" + s + ']');
+                    if (cmd != null)
+                        cmd.execute();
                 }
-
-                cmd.execute();
+                finally {
+                    loopVars.clear();
+                }
             }
         }
         finally {
@@ -96,7 +97,7 @@ public class ScriptTestRunner {
     }
 
     /** */
-    private static class Script implements AutoCloseable {
+    private class Script implements AutoCloseable {
         /** Reader. */
         private final String fileName;
 
@@ -145,19 +146,140 @@ public class ScriptTestRunner {
         @Override public void close() throws Exception {
             r.close();
         }
+
+        /** */
+        Command nextCommand() throws IOException {
+            while (script.ready()) {
+                String s = script.nextLine();
+
+                if (F.isEmpty(s) || s.startsWith("#"))
+                    continue;
+
+                String[] tokens = s.split("\\s+");
+
+                assert !F.isEmpty(tokens) : "Invalid command line. "
+                        + script.positionDescription() + ". [cmd=" + s + ']';
+
+                Command cmd = null;
+
+                switch (tokens[0]) {
+                    case "statement":
+                        cmd = new Statement(tokens);
+
+                        break;
+
+                    case "query":
+                        cmd = new Query(tokens);
+
+                        break;
+
+                    case "require":
+                        // Ignore
+
+                        break;
+
+                    case "loop":
+                        cmd = new Loop(tokens);
+
+                        break;
+
+                    case "endloop":
+                        cmd = new EndLoop();
+
+                        break;
+
+                    case "mode":
+                        // Ignore
+
+                        break;
+
+                    default:
+                        throw new IgniteException("Unexpected command. "
+                            + script.positionDescription() + ". [cmd=" + s + ']');
+                }
+
+                if (cmd != null)
+                   return cmd;
+            }
+
+            return null;
+        }
     }
 
     /** */
     private abstract class Command {
         /** */
+        protected final String posDesc;
+
+        /** */
+        Command() {
+            posDesc = script.positionDescription();
+        }
+        /** */
         abstract void execute();
     }
+
+    /** */
+    private class Loop extends Command {
+        /** */
+        List<Command> cmds = new ArrayList<>();
+
+        /** */
+        int begin;
+
+        /** */
+        int end;
+
+        /** */
+        String var;
+
+        /** */
+        Loop(String[] cmdTokens) throws IOException {
+            try {
+                var = cmdTokens[1];
+                begin = Integer.parseInt(cmdTokens[2]);
+                end = Integer.parseInt(cmdTokens[3]);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Unexpected loop syntax. "
+                    + script.positionDescription() + ". [cmd=" + cmdTokens + ']');
+            }
+
+            while (script.ready()) {
+                Command cmd = script.nextCommand();
+
+                if (cmd instanceof EndLoop)
+                    break;
+
+                cmds.add(cmd);
+            }
+        }
+
+        /** */
+        @Override void execute() {
+            for (int i = begin; i < end; ++i) {
+                loopVars.put(var, i);
+
+                for (Command c : cmds)
+                    c.execute();
+            }
+        }
+    }
+
+    /** */
+    private class EndLoop extends Command {
+        /** {@inheritDoc} */
+        @Override void execute() {
+            // No-op.
+        }
+    }
+
 
     /** */
     private class Statement extends Command {
         /** */
         @GridToStringInclude
-        List<String> sql;
+        List<String> queries;
 
         /** */
         @GridToStringInclude
@@ -178,10 +300,10 @@ public class ScriptTestRunner {
 
                 default:
                     throw new IgniteException("Statement argument should be 'ok' or 'error'. "
-                        + script.positionDescription() + "[cmd = " + Arrays.toString(cmd) + ']');
+                        + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
             }
 
-            sql = new ArrayList<>();
+            queries = new ArrayList<>();
 
             while (script.ready()) {
                 String s = script.nextLine();
@@ -189,14 +311,35 @@ public class ScriptTestRunner {
                 if (F.isEmpty(s))
                     break;
 
-                sql.add(s);
+                queries.add(s);
             }
         }
 
         /** {@inheritDoc} */
         @Override void execute() {
-            // TODO
-            log.info("+++ " + toString());
+            for (String qry : queries) {
+
+                String[] toks = qry.split("\\s+");
+
+                if (ignoredStmts.contains(toks[0])) {
+                    log.info("Ignore: " + toString());
+
+                    continue;
+                }
+
+                log.info("Execute: " + qry);
+
+                try {
+                    engine.query(null, null, qry);
+
+                    if (expected != ExpectedStatementStatus.OK)
+                        throw new IgniteException("Error expected at: " + posDesc + ". Statement: " + toString());
+                }
+                catch (IgniteSQLException e) {
+                    if (expected != ExpectedStatementStatus.ERROR)
+                        throw new IgniteException("Error at: " + posDesc + ". Statement: " + toString(), e);
+                }
+            }
         }
 
         /** {@inheritDoc} */
@@ -219,36 +362,44 @@ public class ScriptTestRunner {
         List<List<Object>> expectedRes;
 
         /** */
+        String expectedHash;
+
+        /** */
+        int expectedRows;
+
+        /** */
         Query(String[] cmd) throws IOException {
             String resTypesChars = cmd[1];
 
             for (int i = 0; i < resTypesChars.length(); i++) {
                 switch (resTypesChars.charAt(i)) {
                     case 'I':
-                        resTypes.add(ColumnType.INTEGER);
+                        resTypes.add(ColumnType.I);
 
                         break;
 
                     case 'R':
-                        resTypes.add(ColumnType.DECIMAL);
+                        resTypes.add(ColumnType.R);
 
                         break;
 
                     case 'T':
-                        resTypes.add(ColumnType.STRING);
+                        resTypes.add(ColumnType.T);
 
                         break;
 
                     default:
                         throw new IgniteException("Unknown type character '" + resTypesChars.charAt(i) + "'. "
-                            + script.positionDescription() + "[cmd = " + Arrays.toString(cmd) + ']');
+                            + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
                 }
             }
 
-            if (F.isEmpty(resTypes))
+            if (F.isEmpty(resTypes)) {
                 throw new IgniteException("Missing type string. "
-                    + script.positionDescription() + "[cmd = " + Arrays.toString(cmd) + ']');
+                    + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
+            }
 
+            // Read SQL query
             while (script.ready()) {
                 String s = script.nextLine();
 
@@ -257,18 +408,135 @@ public class ScriptTestRunner {
 
                 sql.append(s);
             }
+
+            // Read expected results
+            String s = script.nextLine();
+            Matcher m = HASHING_PTRN.matcher(s);
+
+            if (m.matches()) {
+                // Expected results are hashing
+                expectedRows = Integer.parseInt(m.group(1));
+                expectedHash = m.group(2);
+            }
+            else {
+                // Read expected results tuples.
+                expectedRes = new ArrayList<>();
+
+                boolean singleValOnLine = false;
+
+                List<Object> row = new ArrayList<>();
+
+                while (!F.isEmpty(s)) {
+                    String[] vals = s.split("\\t");
+
+                    if (!singleValOnLine && vals.length == 1 && vals.length != resTypes.size())
+                        singleValOnLine = true;
+
+                    if (vals.length != resTypes.size() && !singleValOnLine) {
+                        throw new IgniteException("Invalid columns count at the result. "
+                            + script.positionDescription() + " [row=\"" + s + "\", types=" + resTypes + ']');
+                    }
+
+                    try {
+                        if (singleValOnLine) {
+                            row.add(fromString(vals[0], resTypes.get(row.size())));
+
+                            if (row.size() == resTypes.size()) {
+                                expectedRes.add(row);
+
+                                row = new ArrayList<>();
+                            }
+                        }
+                        else {
+                            for (int i = 0; i < vals.length; ++i)
+                                row.add(fromString(vals[i], resTypes.get(i)));
+
+                            expectedRes.add(row);
+                            row = new ArrayList<>();
+                        }
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException("Cannot parse expected results. "
+                            + script.positionDescription() + "[row=\"" + s + "\", types=" + resTypes + ']', e);
+                    }
+
+                    s = script.nextLine();
+                }
+            }
         }
 
         /** {@inheritDoc} */
         @Override void execute() {
-            log.info("+++ " + toString());
-            // TODO
+            log.info("Execute: " + sql);
+
+            try {
+                List<FieldsQueryCursor<List<?>>> curs = engine.query(null, null, sql.toString());
+
+                assert curs.size() == 1;
+
+                List<List<?>> res = curs.get(0).getAll();
+
+                checkResult(res);
+            }
+            catch (IgniteSQLException e) {
+                throw new IgniteException("Error at: " + posDesc + ". sql: " + sql, e);
+            }
+        }
+
+        /** */
+        void checkResult(List<List<?>> res) {
+            if (expectedHash != null)
+                checkResultsHashed(res);
+            else
+                checkResultTuples(res);
+        }
+
+        /** */
+        private void checkResultTuples(List<List<?>> res) {
+            if (expectedRes.size() != res.size()) {
+                throw new AssertionError("Invalid results rows count " +
+                    "[expected=" + expectedRes + ", actual=" + res+ ']');
+            }
+
+            for (int i = 0; i < expectedRes.size(); ++i) {
+                List<Object> expectedRow = expectedRes.get(i);
+                List<?> row = res.get(i);
+
+                if (row.size() != expectedRow.size()) {
+                    throw new AssertionError("Invalid columns count " +
+                        "[expected=" + expectedRes + ", actual=" + res+ ']');
+                }
+
+                for (int j = 0; j < expectedRow.size(); ++j) {
+                    String exp = String.valueOf(expectedRow.get(j));
+                    String val = String.valueOf(row.get(j));
+
+                    if (!exp.equals(val)) {
+                        throw new AssertionError("Not expected result [row=" + i + ", col=" + j +
+                            ", expected=" + exp + ", actual=" + val + ']');
+                    }
+                }
+            }
+        }
+
+        /** */
+        private void checkResultsHashed(List<List<?>> res) {
+            // TODO:
+            throw new UnsupportedOperationException("Hashed results compare not supported");
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Query.class, this);
         }
+    }
+
+    /** */
+    private static Object fromString(String s, ColumnType type) {
+        if (NULL.equals(s))
+            return null;
+
+        return s;
     }
 
     /** */
@@ -279,8 +547,8 @@ public class ScriptTestRunner {
 
     /** */
     private enum ColumnType {
-        INTEGER,
-        STRING,
-        DECIMAL
+        I,
+        T,
+        R
     }
 }

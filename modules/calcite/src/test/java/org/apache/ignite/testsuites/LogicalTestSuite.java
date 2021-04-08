@@ -28,6 +28,8 @@ import org.junit.runners.Suite;
 @RunWith(LogicalTestRunner.class)
 @Suite.SuiteClasses({
 })
-@TestEnvironment(scriptsRoot = "src/test/sql")
+@TestEnvironment(scriptsRoot = "src/test/sql"
+//    , script = "src/test/sql/insert/test_insert_invalid.test"
+)
 public class LogicalTestSuite {
 }
