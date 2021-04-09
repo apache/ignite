@@ -155,7 +155,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                     }
                 });
 
-                return cnt.get() > 0;
+                return cnt.get() == 1;
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
