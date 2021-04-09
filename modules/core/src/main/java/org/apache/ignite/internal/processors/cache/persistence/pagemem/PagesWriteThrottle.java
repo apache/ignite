@@ -136,11 +136,6 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
 
             long startTime = U.currentTimeMillis();
 
-            boolean performanceStatsEnabled = pageMemory.performanceStatistics() != null
-                && pageMemory.performanceStatistics().enabled();
-
-            long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0L;
-
             if (isPageInCheckpoint) {
                 cpBufThrottledThreads.put(curThread.getId(), curThread);
 
@@ -160,9 +155,6 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
                 LockSupport.parkNanos(throttleParkTimeNs);
 
             pageMemory.metrics().addThrottlingTime(U.currentTimeMillis() - startTime);
-
-            if (performanceStatsEnabled)
-                pageMemory.performanceStatistics().pagesWriteThrottle(startTime, System.nanoTime() - startTimeNanos);
         }
         else {
             int oldCntr = cntr.getAndSet(0);

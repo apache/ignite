@@ -363,12 +363,12 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param startTime Start time in milliseconds.
-     * @param duration Duration in nanoseconds.
+     * @param endTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
      */
-    public void pagesWriteThrottle(long startTime, long duration) {
+    public void pagesWriteThrottle(long endTime, long duration) {
         doWrite(PAGES_WRITE_THROTTLE, pagesWriteThrottleRecordSize(), buf -> {
-            buf.putLong(startTime);
+            buf.putLong(endTime);
             buf.putLong(duration);
         });
     }

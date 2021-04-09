@@ -120,8 +120,8 @@ public interface PerformanceStatisticsHandler {
 
     /**
      * @param nodeId Node id.
-     * @param startTime Start time in milliseconds.
-     * @param duration Duration in nanoseconds.
+     * @param endTime End time in milliseconds.
+     * @param duration Duration in milliseconds.
      */
-    void pagesWriteThrottle(UUID nodeId, long startTime, long duration);
+    void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
 }

@@ -437,11 +437,11 @@ public class FilePerformanceStatisticsReader {
             if (buf.remaining() < pagesWriteThrottleRecordSize())
                 return false;
 
-            long starTime = buf.getLong();
+            long endTime = buf.getLong();
             long duration = buf.getLong();
 
             for (PerformanceStatisticsHandler handler : curHnd)
-                handler.pagesWriteThrottle(nodeId, starTime, duration);
+                handler.pagesWriteThrottle(nodeId, endTime, duration);
 
             return true;
         }

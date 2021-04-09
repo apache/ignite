@@ -263,7 +263,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx.metric(), NO_OP_METRICS);
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx, NO_OP_METRICS);
 
         long[] sizes = prepareSegmentSizes(regCfg.getMaxSize());
 

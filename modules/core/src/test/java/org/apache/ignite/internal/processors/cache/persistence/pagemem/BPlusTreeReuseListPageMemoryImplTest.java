@@ -119,7 +119,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
                 }
             },
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
+            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx, NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

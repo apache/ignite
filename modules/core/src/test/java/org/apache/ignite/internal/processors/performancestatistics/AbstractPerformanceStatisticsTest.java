@@ -220,7 +220,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long duration) {
+        @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
             // No-op.
         }
     }

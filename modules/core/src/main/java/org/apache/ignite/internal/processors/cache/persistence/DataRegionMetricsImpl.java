@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -113,17 +114,21 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
+    /** Grid kernal context. */
+    private final GridKernalContext cctx;
+
     /**
      * @param memPlcCfg DataRegionConfiguration.
-     * @param mmgr Metrics manager.
+     * @param cctx Grid kernal context.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
-        GridMetricManager mmgr,
+        GridKernalContext cctx,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
-        this.mmgr = mmgr;
+        this.mmgr = cctx.metric();
+        this.cctx = cctx;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -583,6 +588,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     public void addThrottlingTime(long time) {
         if (metricsEnabled)
             totalThrottlingTime.add(time);
+
+        if (cctx.performanceStatistics() != null && cctx.performanceStatistics().enabled())
+            cctx.performanceStatistics().pagesWriteThrottle(U.currentTimeMillis(), time);
     }
 
     /**

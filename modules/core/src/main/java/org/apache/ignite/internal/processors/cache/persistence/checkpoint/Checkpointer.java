@@ -496,9 +496,6 @@ public class Checkpointer extends GridWorker {
             }
 
             updateMetrics(chp, tracker);
-
-            if (cacheProcessor.context().kernalContext().performanceStatistics().enabled())
-                writeStatistics(chp, tracker);
         }
         catch (IgniteCheckedException e) {
             chp.progress.fail(e);
@@ -618,6 +615,25 @@ public class Checkpointer extends GridWorker {
                 tracker.dataPagesWritten(),
                 tracker.cowPagesWritten()
             );
+        }
+
+        if (cacheProcessor.context().kernalContext().performanceStatistics().enabled()) {
+            cacheProcessor.context().kernalContext().performanceStatistics().checkpoint(
+                tracker.beforeLockDuration(),
+                tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
+                tracker.markDuration(),
+                tracker.lockHoldDuration(),
+                tracker.pagesWriteDuration(),
+                tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
+                tracker.totalDuration(),
+                tracker.checkpointStartTime(),
+                chp.pagesSize,
+                tracker.dataPagesWritten(),
+                tracker.cowPagesWritten());
         }
     }
 
@@ -985,30 +1001,5 @@ public class Checkpointer extends GridWorker {
      */
     private boolean isShutdownNow() {
         return shutdownNow;
-    }
-
-    /**
-     * Writes checkpoint performance statistics.
-     *
-     * @param chp Checkpoint.
-     * @param tracker CheckpointMetricsTracker.
-     */
-    private void writeStatistics(Checkpoint chp, CheckpointMetricsTracker tracker) {
-        cacheProcessor.context().kernalContext().performanceStatistics().checkpoint(
-            tracker.beforeLockDuration(),
-            tracker.lockWaitDuration(),
-            tracker.listenersExecuteDuration(),
-            tracker.markDuration(),
-            tracker.lockHoldDuration(),
-            tracker.pagesWriteDuration(),
-            tracker.fsyncDuration(),
-            tracker.walCpRecordFsyncDuration(),
-            tracker.writeCheckpointEntryDuration(),
-            tracker.splitAndSortCpPagesDuration(),
-            tracker.totalDuration(),
-            tracker.checkpointStartTime(),
-            chp.pagesSize,
-            tracker.dataPagesWritten(),
-            tracker.cowPagesWritten());
     }
 }

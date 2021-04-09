@@ -152,8 +152,6 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
         long curNanoTime = System.nanoTime();
 
-        long startTime = U.currentTimeMillis();
-
         speedCpWrite.setCounter(fullyCompletedPages, curNanoTime);
 
         long markDirtySpeed = speedMarkAndAvgParkTime.getSpeedOpsPerSec(curNanoTime);
@@ -230,12 +228,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             doPark(throttleParkTimeNs);
         }
 
-        long duration = System.nanoTime() - curNanoTime;
-
-        pageMemory.metrics().addThrottlingTime(U.nanosToMillis(duration));
-
-        if (pageMemory.performanceStatistics() != null && pageMemory.performanceStatistics().enabled())
-            pageMemory.performanceStatistics().pagesWriteThrottle(startTime, duration);
+        pageMemory.metrics().addThrottlingTime(U.nanosToMillis(System.nanoTime() - curNanoTime));
 
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
     }
