@@ -166,10 +166,12 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int nodeIdx = i;
 
-            assertThrows(() -> dropUser(grid(nodeIdx), secCtxDflt, "ignite"),
+            IgniteEx srv = grid(nodeIdx);
+
+            assertThrows(() -> dropUser(srv, secCtxDflt, "ignite"),
                 IgniteAccessControlException.class, "Default user cannot be removed");
 
-            assertNotNull(authenticate(grid(nodeIdx), "ignite", "ignite"));
+            assertNotNull(authenticate(srv, "ignite", "ignite"));
         }
     }
 
@@ -183,20 +185,19 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         final SecurityContext secCtx = authenticate(grid(0), "test", "test");
 
         for (int i = 0; i < NODES_COUNT; ++i) {
-            final int nodeIdx = i;
+            IgniteEx srv = grid(i);
 
-            assertThrows(() -> createUser(grid(nodeIdx), secCtx, "test1", "test1"),
-                IgniteAccessControlException.class, "User management operations are not allowed for user");
+            assertThrows(() -> createUser(srv, secCtx, "test1", "test1"), IgniteAccessControlException.class,
+                "User management operations are not allowed for user");
 
-            assertThrows(() -> dropUser(grid(nodeIdx), secCtx, "test"),
-                IgniteAccessControlException.class, "User management operations are not allowed for user");
+            assertThrows(() -> dropUser(srv, secCtx, "test"), IgniteAccessControlException.class,
+                "User management operations are not allowed for user");
 
-            alterUserPassword(grid(nodeIdx), secCtx, "test", "new_password");
+            alterUserPassword(srv, secCtx, "test", "new_password");
 
-            alterUserPassword(grid(nodeIdx), secCtx, "test", "test");
+            alterUserPassword(srv, secCtx, "test", "test");
 
-            assertThrows(() -> dropUser(grid(nodeIdx), null, "test"),
-                IgniteAccessControlException.class,
+            assertThrows(() -> dropUser(srv, null, "test"), IgniteAccessControlException.class,
                 "User management operations initiated on behalf of the Ignite node are not expected.");
         }
     }
@@ -209,12 +210,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         createUser(grid(0), secCtxDflt, "test0", "test");
         createUser(grid(0), secCtxDflt, "test1", "test");
 
-        int nodeIdx = NODES_COUNT;
+        IgniteEx srv = startGrid(NODES_COUNT);
 
-        startGrid(nodeIdx);
-
-        SecurityContext secCtx0 = authenticate(grid(nodeIdx), "test0", "test");
-        SecurityContext secCtx1 = authenticate(grid(nodeIdx), "test1", "test");
+        SecurityContext secCtx0 = authenticate(srv, "test0", "test");
+        SecurityContext secCtx1 = authenticate(srv, "test1", "test");
 
         assertNotNull(secCtx0);
         assertEquals("test0", secCtx0.subject().login());
@@ -228,12 +227,12 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     @Test
     public void testAuthenticationInvalidUser() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
-            final int nodeIdx = i;
+            IgniteEx srv = grid(i);
 
-            assertThrows(() -> authenticate(grid(nodeIdx), "invalid_name", "test"),
+            assertThrows(() -> authenticate(srv, "invalid_name", "test"),
                 IgniteAccessControlException.class, "The user name or password is incorrect");
 
-            assertThrows(() -> authenticate(grid(nodeIdx), "test", "invalid_password"),
+            assertThrows(() -> authenticate(srv, "test", "invalid_password"),
                 IgniteAccessControlException.class, "The user name or password is incorrect");
         }
     }
@@ -270,12 +269,12 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     @Test
     public void testUpdateRemoveDoesNotExistsUser() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
-            final int nodeIdx = i;
+            IgniteEx srv = grid(i);
 
-            assertThrows(() -> alterUserPassword(grid(nodeIdx), secCtxDflt, "invalid_name", "test"),
+            assertThrows(() -> alterUserPassword(srv, secCtxDflt, "invalid_name", "test"),
                 UserManagementException.class, "User doesn't exist");
 
-            assertThrows(() -> dropUser(grid(nodeIdx), secCtxDflt, "invalid_name"),
+            assertThrows(() -> dropUser(srv, secCtxDflt, "invalid_name"),
                 UserManagementException.class, "User doesn't exist");
         }
     }
@@ -300,7 +299,9 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAuthorizeOnClientDisconnect() throws Exception {
-        createUser(grid(CLI_NODE), secCtxDflt, "test", "test");
+        IgniteEx cli = grid(CLI_NODE);
+
+        createUser(cli, secCtxDflt, "test", "test");
 
         final IgniteInternalFuture stopServersFut = GridTestUtils.runAsync(() -> {
             try {
@@ -318,7 +319,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         assertThrows(() -> {
                 while (!stopServersFut.isDone())
-                    assertNotNull(authenticate(grid(CLI_NODE), "test", "test"));
+                    assertNotNull(authenticate(cli, "test", "test"));
             },
             IgniteCheckedException.class,
             "Client node was disconnected from topology (operation result is unknown)");
@@ -338,9 +339,11 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
             try {
                 for (int i = 0; i < ITERATIONS; ++i) {
-                   createUser(grid(CLI_NODE), secCtxDflt, user, "passwd_" + user);
+                    IgniteEx cli = grid(CLI_NODE);
 
-                   dropUser(grid(CLI_NODE), secCtxDflt, user);
+                   createUser(cli, secCtxDflt, user, "passwd_" + user);
+
+                   dropUser(cli, secCtxDflt, user);
                 }
             }
             catch (Exception e) {
@@ -366,14 +369,16 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         startClientGrid(CLI_NODE);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
+            IgniteEx srv = grid(i);
+
             for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
-                SecurityContext secCtx0 = authenticate(grid(i), "test" + usrIdx, "passwd" + usrIdx);
+                SecurityContext secCtx0 = authenticate(srv, "test" + usrIdx, "passwd" + usrIdx);
 
                 assertNotNull(secCtx0);
                 assertEquals("test" + usrIdx, secCtx0.subject().login());
             }
 
-            SecurityContext secCtz = authenticate(grid(i), "ignite", "new_passwd");
+            SecurityContext secCtz = authenticate(srv, "ignite", "new_passwd");
 
             assertNotNull(secCtz);
             assertEquals("ignite", secCtxDflt.subject().login());
@@ -395,12 +400,14 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         startClientGrid(CLI_NODE);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
-            SecurityContext secCtx = authenticate(grid(i), "ignite", "ignite");
+            IgniteEx srv = grid(i);
+
+            SecurityContext secCtx = authenticate(srv, "ignite", "ignite");
 
             assertNotNull(secCtx);
             assertEquals("ignite", secCtx.subject().login());
 
-            secCtx = authenticate(grid(i), "test", "passwd");
+            secCtx = authenticate(srv, "test", "passwd");
 
             assertNotNull(secCtx);
             assertEquals("test", secCtx.subject().login());
@@ -413,19 +420,21 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInvalidUserNamePassword() throws Exception {
-        assertThrows(() -> createUser(grid(CLI_NODE), null, null, "test"),
+        IgniteEx cli = grid(CLI_NODE);
+
+        assertThrows(() -> createUser(cli, null, null, "test"),
             UserManagementException.class, "User name is empty");
 
-        assertThrows(() -> createUser(grid(CLI_NODE), null, "", "test"),
+        assertThrows(() -> createUser(cli, null, "", "test"),
             UserManagementException.class, "User name is empty");
 
-        assertThrows(() -> createUser(grid(CLI_NODE), null, "test", null),
+        assertThrows(() -> createUser(cli, null, "test", null),
             UserManagementException.class, "Password is empty");
 
-        assertThrows(() -> createUser(grid(CLI_NODE), null, "test", ""),
+        assertThrows(() -> createUser(cli, null, "test", ""),
             UserManagementException.class, "Password is empty");
 
-        assertThrows(() -> createUser(grid(CLI_NODE), null, repeat('a', 60), "a"),
+        assertThrows(() -> createUser(cli, null, repeat('a', 60), "a"),
             UserManagementException.class, "User name is too long");
     }
 

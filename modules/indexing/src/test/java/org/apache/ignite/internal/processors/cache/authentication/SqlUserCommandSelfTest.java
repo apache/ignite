@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -94,14 +95,16 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             userSql(i, secCtxDflt, "CREATE USER test WITH PASSWORD 'test'");
 
-            SecurityContext secCtx = authenticate(grid(i), "TEST", "test");
+            IgniteEx srv = grid(i);
+
+            SecurityContext secCtx = authenticate(srv, "TEST", "test");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
             userSql(i, secCtxDflt, "ALTER USER test WITH PASSWORD 'newpasswd'");
 
-            secCtx = authenticate(grid(i), "TEST", "newpasswd");
+            secCtx = authenticate(srv, "TEST", "newpasswd");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());

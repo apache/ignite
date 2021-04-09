@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -88,15 +89,15 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
      */
     @Test
     public void test1kUsersNodeRestartServer() throws Exception {
-        startGrid(0);
+        IgniteEx srv = startGrid(0);
 
-        grid(0).cluster().active(true);
+        srv.cluster().active(true);
 
-        SecurityContext secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+        SecurityContext secCtxDflt = authenticate(srv, DFAULT_USER_NAME, "ignite");
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(i -> {
             try {
-                createUser(grid(0), secCtxDflt, "test" + i, "init");
+                createUser(srv, secCtxDflt, "test" + i, "init");
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -105,7 +106,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(i -> {
             try {
-                alterUserPassword(grid(0), secCtxDflt, "test" + i, "passwd_" + i);
+                alterUserPassword(srv, secCtxDflt, "test" + i, "passwd_" + i);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

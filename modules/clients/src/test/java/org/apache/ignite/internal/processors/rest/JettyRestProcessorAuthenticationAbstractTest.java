@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -112,7 +113,9 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
         assertTrue(res.asBoolean());
 
-        assertNotNull(authenticate(grid(0), "user1", "password1"));
+        IgniteEx srv = grid(0);
+
+        assertNotNull(authenticate(srv, "user1", "password1"));
 
         // Update user password.
         ret = content(null, GridRestCommand.UPDATE_USER,
@@ -123,7 +126,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
         assertTrue(res.asBoolean());
 
-        assertNotNull(authenticate(grid(0), "user1", "password2"));
+        assertNotNull(authenticate(srv, "user1", "password2"));
 
         // Remove user.
         ret = content(null, GridRestCommand.REMOVE_USER,
@@ -135,7 +138,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                authenticate(grid(0), "user1", "password1");
+                authenticate(srv, "user1", "password1");
 
                 return null;
             }
