@@ -19,7 +19,7 @@ Module contains persistence rebalance tests.
 from ducktape.mark import defaults
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
@@ -84,15 +84,25 @@ class PersistentTest(NodeJoinLeftScenario):
 
         ignites.control = ControlUtility(ignites)
         ignites.control.activate()
-        ignites.control.enable_baseline_auto_adjust(500)
+        ignites.control.enable_baseline_auto_adjust(1000)
 
         return ignites
 
     def _do_rebalance_trigger_event(self, trigger_event, ignites, node_config):
         rebalance_nodes = super()._do_rebalance_trigger_event(trigger_event, ignites, node_config)
 
-        new_bl_size = len(ignites.nodes) + (1 if not trigger_event else -1)
-        wait_until(lambda: len(ignites.control.baseline()) == new_bl_size, timeout_sec=5)
+        if trigger_event:  # TriggerEvent.NODE_LEFT
+            left = ignites.nodes[len(ignites.nodes) - 1]
+            wait_until(lambda: not ignites.alive(left),
+                       timeout_sec=ignites.shutdown_timeout_sec)
+
+        def __bl_changed():
+            try:
+                return len(ignites.control.baseline()) == len(ignites.nodes) + (1 if not trigger_event else -1)
+            except ControlUtilityError:
+                return False
+
+        wait_until(__bl_changed, timeout_sec=5)
 
         if not trigger_event:  # TriggerEvent.NODE_JOIN
             IgniteAwareService.await_event_on_node("Checkpoint finished", rebalance_nodes[0], 3600)
