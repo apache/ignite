@@ -44,14 +44,15 @@ import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.Validator;
+import org.apache.ignite.lang.IgniteLogger;
 
 import static org.apache.ignite.configuration.internal.util.ConfigurationNotificationsUtil.notifyListeners;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.innerNodeVisitor;
 
 /** */
 public class ConfigurationRegistry {
-    /** */
-    private static final System.Logger logger = System.getLogger(ConfigurationRegistry.class.getName());
+    /** Logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ConfigurationRegistry.class);
 
     /** */
     private final Map<String, DynamicConfiguration<?, ?, ?>> configs = new HashMap<>();
@@ -152,7 +153,7 @@ public class ConfigurationRegistry {
         // Map futures into a "suppressed" future that won't throw any exceptions on completion.
         Function<CompletableFuture<?>, CompletableFuture<?>> mapping = fut -> fut.handle((res, throwable) -> {
             if (throwable != null)
-                logger.log(System.Logger.Level.ERROR, "Failed to notify configuration listener.", throwable);
+                LOG.error("Failed to notify configuration listener.", throwable);
 
             return res;
         });

@@ -19,7 +19,7 @@ package org.apache.ignite.raft.server;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.lang.LogWrapper;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.Network;
 import org.apache.ignite.network.NetworkCluster;
 import org.apache.ignite.network.scalecube.ScaleCubeMemberResolver;
@@ -42,10 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** */
 class ITRaftCounterServerTest {
     /** */
-    private static LogWrapper LOG = new LogWrapper(ITRaftCounterServerTest.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ITRaftCounterServerTest.class);
 
     /** */
-    private static RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
+    private static final RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
 
     /** */
     private RaftServer server;

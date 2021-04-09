@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import org.apache.ignite.lang.LogWrapper;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkCluster;
 import org.apache.ignite.network.NetworkMember;
 import org.apache.ignite.network.message.NetworkMessage;
@@ -58,8 +58,8 @@ import static java.util.concurrent.ThreadLocalRandom.current;
  * The implementation of {@link RaftGroupService}
  */
 public class RaftGroupServiceImpl implements RaftGroupService {
-    /** */
-    private static LogWrapper LOG = new LogWrapper(RaftGroupServiceImpl.class);
+    /** Logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(RaftGroupServiceImpl.class);
 
     /** */
     private volatile int timeout;
