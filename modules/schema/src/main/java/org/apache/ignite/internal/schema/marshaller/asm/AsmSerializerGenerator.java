@@ -50,6 +50,7 @@ import org.apache.ignite.internal.schema.marshaller.SerializationException;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
 import org.apache.ignite.internal.schema.marshaller.SerializerFactory;
 import org.apache.ignite.internal.util.ObjectFactory;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 
 /**
@@ -122,7 +123,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
 
         }
         catch (Exception | LinkageError e) {
-            throw new IllegalStateException("Failed to create serializer for key-value pair: schemaVer=" + schema.version() +
+            throw new IgniteInternalException("Failed to create serializer for key-value pair: schemaVer=" + schema.version() +
                 ", keyClass=" + keyClass.getSimpleName() + ", valueClass=" + valClass.getSimpleName(), e);
         }
     }
@@ -336,7 +337,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
 
         methodDef.getBody().append(new IfStatement().condition(BytecodeExpressions.isNull(asm)).ifTrue(
             new BytecodeBlock()
-                .append(BytecodeExpressions.newInstance(IllegalStateException.class, BytecodeExpressions.constantString("ASM can't be null.")))
+                .append(BytecodeExpressions.newInstance(IgniteInternalException.class, BytecodeExpressions.constantString("ASM can't be null.")))
                 .throwObject()
         ));
 

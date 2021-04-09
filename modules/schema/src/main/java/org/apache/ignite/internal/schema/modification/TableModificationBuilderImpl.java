@@ -43,7 +43,7 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     /** {@inheritDoc} */
     @Override public TableModificationBuilder addColumn(Column column) {
         if (table.hasColumn(column.name()))
-            throw new IllegalStateException("Duplicate column: name='" + column.name() + '\'');
+            throw new IllegalArgumentException("Duplicate column: name='" + column.name() + '\'');
 
         return this;
     }
@@ -51,7 +51,7 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     /** {@inheritDoc} */
     @Override public TableModificationBuilder addKeyColumn(Column column) {
         if (table.hasColumn(column.name()))
-            throw new IllegalStateException("Duplicate column: name=" + column.name() + '\'');
+            throw new IllegalArgumentException("Duplicate column: name=" + column.name() + '\'');
 
         return this;
     }
@@ -64,7 +64,7 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     /** {@inheritDoc} */
     @Override public TableModificationBuilder dropColumn(String columnName) {
         if (table.hasKeyColumn(columnName))
-            throw new IllegalStateException("Can't drop key column: name=" + columnName);
+            throw new IllegalArgumentException("Can't drop key column: name=" + columnName);
 
         return this;
     }
@@ -74,7 +74,7 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
         assert !PrimaryIndex.PRIMARY_KEY_INDEX_NAME.equals(index.name());
 
         if (table.indices().stream().anyMatch(i -> i.name().equals(index.name())))
-            throw new IllegalStateException("Index already exists: name=" + index.name() + '\'');
+            throw new IllegalArgumentException("Index already exists: name=" + index.name() + '\'');
 
         return this;
     }
@@ -82,7 +82,7 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     /** {@inheritDoc} */
     @Override public TableModificationBuilder dropIndex(String indexName) {
         if (PrimaryIndex.PRIMARY_KEY_INDEX_NAME.equals(indexName))
-            throw new IllegalStateException("Can't drop primary key index: name=" + indexName);
+            throw new IllegalArgumentException("Can't drop primary key index: name=" + indexName);
 
         return this;
     }

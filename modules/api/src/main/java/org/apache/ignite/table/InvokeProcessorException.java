@@ -17,9 +17,11 @@
 
 package org.apache.ignite.table;
 
+import org.apache.ignite.lang.IgniteException;
+
 /**
  * InvokeProcessor invocation exception.
  */
-public class InvokeProcessorException extends RuntimeException {
+public class InvokeProcessorException extends IgniteException {
 
 }

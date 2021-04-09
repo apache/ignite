@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema.marshaller;
 
 import java.util.BitSet;
 import java.util.UUID;
+import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.util.ObjectFactory;
@@ -43,7 +44,7 @@ public final class MarshallerUtil {
                 return RowAssembler.utf8EncodedLength((CharSequence)val);
 
             default:
-                throw new IllegalStateException("Unsupported test varsize type: " + type);
+                throw new InvalidTypeException("Unsupported variable-length type: " + type);
         }
     }
 

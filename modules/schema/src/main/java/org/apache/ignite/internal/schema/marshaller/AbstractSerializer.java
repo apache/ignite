@@ -50,21 +50,21 @@ public abstract class AbstractSerializer implements Serializer {
 
     /** {@inheritDoc} */
     @Override public <K> K deserializeKey(byte[] data) throws SerializationException {
-        final Row row = new ByteBufferRow(schema, data);
+        final Row row = new Row(schema, new ByteBufferRow(data));
 
         return (K)deserializeKey0(row);
     }
 
     /** {@inheritDoc} */
     @Override public <V> V deserializeValue(byte[] data) throws SerializationException {
-        final Row row = new ByteBufferRow(schema, data);
+        final Row row = new Row(schema, new ByteBufferRow(data));
 
         return (V)deserializeValue0(row);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> Pair<K, V> deserialize(byte[] data) throws SerializationException {
-        final Row row = new ByteBufferRow(schema, data);
+        final Row row = new Row(schema, new ByteBufferRow(data));
 
         return new Pair<>((K)deserializeKey0(row), (V)deserializeValue0(row));
     }

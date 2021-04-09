@@ -67,7 +67,7 @@ public final class TestUtils {
             }
 
             default:
-                throw new IllegalStateException("Unsupported type: " + type);
+                throw new IllegalArgumentException("Unsupported type: " + type);
         }
     }
 

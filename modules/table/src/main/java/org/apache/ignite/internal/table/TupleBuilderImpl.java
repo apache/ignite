@@ -17,88 +17,82 @@
 
 package org.apache.ignite.internal.table;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
-import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.table.Tuple;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.table.TupleBuilder;
 
 /**
- * Row to RowChunk adapter.
+ * Buildable tuple.
  */
-public abstract class RowChunkAdapter implements Tuple {
-    /**
-     * @param colName Column name.
-     * @return Column.
-     */
-    @NotNull protected abstract Column columnByName(@NotNull String colName);
+public class TupleBuilderImpl implements TupleBuilder, Tuple {
+    /** Columns values. */
+    private final Map<String, Object> map;
 
     /**
-     * @return Underlying row.
+     * Constructor.
      */
-    protected abstract Row row();
+    public TupleBuilderImpl() {
+        map = new HashMap<>();
+    }
 
     /** {@inheritDoc} */
-    @Override public <T> T value(String colName) {
-        final Column col = columnByName(colName);
+    @Override public TupleBuilder set(String colName, Object value) {
+        map.put(colName, value);
 
-        return (T)col.type().spec().objectValue(row(), col.schemaIndex());
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Tuple build() {
+        return this;
+    }
+
+    @Override public <T> T value(String colName) {
+        return (T)map.get(colName);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObject binaryObjectField(String colName) {
-        Column col = columnByName(colName);
+        byte[] data = value(colName);
 
-        return BinaryObjects.wrap(row().bytesValue(col.schemaIndex()));
+        return BinaryObjects.wrap(data);
     }
 
     /** {@inheritDoc} */
     @Override public byte byteValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().byteValue(col.schemaIndex());
+        return value(colName);
     }
 
     /** {@inheritDoc} */
     @Override public short shortValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().shortValue(col.schemaIndex());
+        return value(colName);
     }
 
     /** {@inheritDoc} */
     @Override public int intValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().intValue(col.schemaIndex());
+        return value(colName);
     }
 
     /** {@inheritDoc} */
     @Override public long longValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().longValue(col.schemaIndex());
+        return value(colName);
     }
 
     /** {@inheritDoc} */
     @Override public float floatValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().floatValue(col.schemaIndex());
+        return value(colName);
     }
 
     /** {@inheritDoc} */
     @Override public double doubleValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().doubleValue(col.schemaIndex());
+        return value(colName);
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue(String colName) {
-        Column col = columnByName(colName);
-
-        return row().stringValue(col.schemaIndex());
+        return value(colName);
     }
 }

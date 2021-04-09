@@ -64,7 +64,7 @@ public class SchemaTableBuilderImpl implements SchemaTableBuilder {
     @Override public SchemaTableBuilderImpl columns(Column... columns) {
         for (int i = 0; i < columns.length; i++) {
             if (this.columns.put(columns[i].name(), columns[i]) != null)
-                throw new IllegalStateException("Column with same name already exists: columnName=" + columns[i].name());
+                throw new IllegalArgumentException("Column with same name already exists: columnName=" + columns[i].name());
         }
 
         return this;

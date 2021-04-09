@@ -20,6 +20,7 @@ package org.apache.ignite.internal.schema.marshaller.asm;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.marshaller.BinaryMode;
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
  * Row access code generator.
@@ -66,7 +67,7 @@ public class ColumnAccessCodeGenerator {
                 return new ColumnAccessCodeGenerator("bitmaskValue", "appendBitmask", BitSet.class, colIdx);
         }
 
-        throw new IllegalStateException("Unsupported binary mode: " + mode);
+        throw new IgniteInternalException("Unsupported binary mode: " + mode);
     }
 
     /** Reader handle name. */

@@ -17,28 +17,29 @@
 
 package org.apache.ignite.internal.schema.marshaller;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.table.Tuple;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Serialization exception.
+ * Marshaller interface.
+ *
+ * @apiNote For key tuple marshalling, a {@code marshal(key, null)} method call must be used.
+ * A {@code marshal(key} may return the same result, but it validates value columns even if not specified.
+ *
  */
-public class SerializationException extends IgniteInternalCheckedException {
+public interface TupleMarshaller {
     /**
-     * Constructor.
-     *
-     * @param cause Cause.
+     * @param tuple Record tuple.
+     * @return Table row with columns set from given tuples.
      */
-    public SerializationException(Throwable cause) {
-        super(cause);
-    }
+    Row marshal(@NotNull Tuple tuple);
 
     /**
-     * Constructor.
-     *
-     * @param message Message.
-     * @param cause Cause.
+     * @param keyTuple Key tuple.
+     * @param valTuple Value tuple.
+     * @return Table row with columns set from given tuples.
      */
-    public SerializationException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    Row marshal(@NotNull Tuple keyTuple, @Nullable Tuple valTuple);
 }

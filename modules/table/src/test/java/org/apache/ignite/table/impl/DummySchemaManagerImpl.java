@@ -15,30 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.marshaller;
+package org.apache.ignite.table.impl;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.table.TableSchemaManager;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Serialization exception.
+ * Dummy schema manager for tests.
  */
-public class SerializationException extends IgniteInternalCheckedException {
-    /**
-     * Constructor.
-     *
-     * @param cause Cause.
-     */
-    public SerializationException(Throwable cause) {
-        super(cause);
-    }
+public class DummySchemaManagerImpl implements TableSchemaManager {
+    /** Schema. */
+    private final SchemaDescriptor schema;
 
     /**
      * Constructor.
      *
-     * @param message Message.
-     * @param cause Cause.
+     * @param schema Schema descriptor.
      */
-    public SerializationException(String message, Throwable cause) {
-        super(message, cause);
+    public DummySchemaManagerImpl(@NotNull SchemaDescriptor schema) {
+        assert schema != null;
+
+        this.schema = schema;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SchemaDescriptor schema() {
+        return schema;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SchemaDescriptor schema(int ver) {
+        assert ver >= 0;
+
+        assert schema.version() == ver;
+
+        return schema;
     }
 }

@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
+package org.apache.ignite.internal.schema.marshaller;
 
-import org.apache.ignite.table.Tuple;
+import org.apache.ignite.internal.schema.Row;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Table row chunk.
+ * Key-value marshaller interface.
  */
-public interface RowChunk extends Tuple {
+public interface KVSerializer<K, V> {
     /**
-     * @return Row chunk bytes.
+     * @param obj Object to serialize.
+     * @return Table row with columns set from given object.
      */
-    public byte[] toBytes();
+    Row serialize(@NotNull K obj, V val);
+
+    /**
+     * @param row Table row.
+     * @return Deserialized key object.
+     */
+    @NotNull K deserializeKey(@NotNull Row row);
+
+    /**
+     * @param row Table row.
+     * @return Deserialized value object.
+     */
+    @Nullable V deserializeValue(@NotNull Row row);
 }

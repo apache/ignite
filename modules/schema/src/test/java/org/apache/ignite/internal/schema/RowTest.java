@@ -211,7 +211,7 @@ public class RowTest {
             if (vals[i] != null && !type.fixedLength()) {
                 if (type == NativeTypeSpec.BYTES) {
                     byte[] val = (byte[])vals[i];
-                    if (schema.keyColumn(i)) {
+                    if (schema.isKeyColumn(i)) {
                         nonNullVarLenKeyCols++;
                         nonNullVarLenKeySize += val.length;
                     }
@@ -221,7 +221,7 @@ public class RowTest {
                     }
                 }
                 else if (type == NativeTypeSpec.STRING) {
-                    if (schema.keyColumn(i)) {
+                    if (schema.isKeyColumn(i)) {
                         nonNullVarLenKeyCols++;
                         nonNullVarLenKeySize += RowAssembler.utf8EncodedLength((CharSequence)vals[i]);
                     }
@@ -231,7 +231,7 @@ public class RowTest {
                     }
                 }
                 else
-                    throw new IllegalStateException("Unsupported test varlen type: " + type);
+                    throw new IllegalStateException("Unsupported variable-length type: " + type);
             }
         }
 
@@ -296,7 +296,7 @@ public class RowTest {
 
         byte[] data = asm.build();
 
-        ByteBufferRow tup = new ByteBufferRow(schema, data);
+        Row tup = new Row(schema, new ByteBufferRow(data));
 
         for (int i = 0; i < vals.length; i++) {
             Column col = schema.column(i);

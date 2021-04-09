@@ -51,8 +51,8 @@ public class SchemaDescriptor {
 
         colMap = new HashMap<>(keyCols.length + valCols.length);
 
-        Arrays.stream(keyCols).forEach(c -> colMap.put(c.name(), c));
-        Arrays.stream(valCols).forEach(c -> colMap.put(c.name(), c));
+        Arrays.stream(this.keyCols.columns()).forEach(c -> colMap.put(c.name(), c));
+        Arrays.stream(this.valCols.columns()).forEach(c -> colMap.put(c.name(), c));
     }
 
     /**
@@ -66,7 +66,7 @@ public class SchemaDescriptor {
      * @param idx Index to check.
      * @return {@code true} if the column belongs to the key chunk.
      */
-    public boolean keyColumn(int idx) {
+    public boolean isKeyColumn(int idx) {
         return idx < keyCols.length();
     }
 

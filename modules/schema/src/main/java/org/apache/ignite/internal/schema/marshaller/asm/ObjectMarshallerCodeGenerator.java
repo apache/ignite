@@ -36,6 +36,7 @@ import java.util.EnumSet;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
  * Generates {@link Serializer} methods code.
@@ -67,7 +68,7 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
             }
         }
         catch (NoSuchFieldException ex) {
-            throw new IllegalStateException(ex);
+            throw new IgniteInternalException(ex);
         }
     }
 

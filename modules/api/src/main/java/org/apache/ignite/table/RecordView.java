@@ -17,11 +17,13 @@
 
 package org.apache.ignite.table;
 
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.table.mapper.Mappers;
 
 /**
  * Record view of table provides methods to access table records.
  * <p>
+ *
  * @param <R> Record type.
  * @apiNote 'Record class field' &gt;-&lt 'table column' mapping laid down in implementation.
  * @apiNote Some methods require a record with the only key fields set. This is not mandatory requirement
@@ -39,4 +41,15 @@ public interface RecordView<R> extends TableView<R> {
      * @return Record with all fields filled from the table.
      */
     R fill(R recObjToFill);
+
+    /**
+     * Asynchronously fills given record with the values from the table.
+     * Similar to {@link #get(Object)}, but return original object with filled value fields.
+     * <p>
+     * All value fields of given object will be rewritten.
+     *
+     * @param recObjToFill Record object with key fields to be filled.
+     * @return Future representing pending completion of the operation.
+     */
+    CompletableFuture<R> fillAsync(R recObjToFill);
 }

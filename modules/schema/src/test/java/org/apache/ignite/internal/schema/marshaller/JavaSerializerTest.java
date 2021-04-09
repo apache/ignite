@@ -44,6 +44,7 @@ import org.apache.ignite.internal.schema.TestUtils;
 import org.apache.ignite.internal.schema.marshaller.asm.AsmSerializerGenerator;
 import org.apache.ignite.internal.schema.marshaller.reflection.JavaSerializerFactory;
 import org.apache.ignite.internal.util.ObjectFactory;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
@@ -266,7 +267,7 @@ public class JavaSerializerTest {
         final Object key = WrongTestObject.randomObject(rnd);
         final Object val = WrongTestObject.randomObject(rnd);
 
-        assertThrows(IllegalStateException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
+        assertThrows(IgniteInternalException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
     }
 
     /**

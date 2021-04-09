@@ -17,22 +17,107 @@
 
 package org.apache.ignite.internal.table;
 
+import java.util.Objects;
+import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.Row;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.table.Tuple;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
- * Table binary row interface.
+ * Row to Tuple adapter.
+ *
+ * Provides methods to access columns values by column names.
  */
-public interface TableRow extends RowChunk {
+public class TableRow extends RowChunkAdapter {
+    /** Schema. */
+    private final SchemaDescriptor schema;
+
+    /** Row. */
+    private final Row row;
+
+    /**
+     * Constructor.
+     *
+     * @param schema Schema descriptor.
+     * @param row Row.
+     */
+    public TableRow(SchemaDescriptor schema, Row row) {
+        assert schema.version() == row.schemaVersion();
+
+        this.schema = schema;
+        this.row = row;
+    }
+
+    /** {@inheritDoc} */
+    @Override @NotNull protected final Column columnByName(@NotNull String colName) {
+        Objects.requireNonNull(colName);
+
+        final Column col = schema.column(colName);
+
+        if (col == null)
+            throw new IllegalArgumentException("Invalid column name: columnName=" + colName + ", schemaVersion=" + schema.version());
+
+        return col;
+    }
+
     /**
      * @return Key chunk.
      */
-    RowChunk keyChunk();
+    public Tuple keyChunk() {
+        return new KeyRowChunk();
+    }
 
     /**
      * @return Value chunk.
      */
-    RowChunk valueChunk();
+    public @Nullable Tuple valueChunk() {
+        return row.hasValue() ? new ValueRowChunk() : null;
+    }
 
-    /**
-     * @return Row schema version.
-     */
-    long schemaVersion();
+    /** {@inheritDoc} */
+    @Override protected Row row() {
+        return row;
+    }
+
+    /** Key column chunk. */
+    private class KeyRowChunk extends RowChunkAdapter {
+        /** {@inheritDoc} */
+        @Override protected Row row() {
+            return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected @NotNull Column columnByName(@NotNull String colName) {
+            Objects.requireNonNull(colName);
+
+            final Column col = schema.column(colName);
+
+            if (col == null || !schema.isKeyColumn(col.schemaIndex()))
+                throw new IllegalArgumentException("Invalid key column name: columnName=" + colName + ", schemaVersion=" + schema.version());
+
+            return col;
+        }
+    }
+
+    /** Value column chunk. */
+    private class ValueRowChunk extends RowChunkAdapter {
+        /** {@inheritDoc} */
+        @Override protected Row row() {
+            return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected @NotNull Column columnByName(@NotNull String colName) {
+            Objects.requireNonNull(colName);
+
+            final Column col = schema.column(colName);
+
+            if (col == null || schema.isKeyColumn(col.schemaIndex()))
+                throw new IllegalArgumentException("Invalid key column name: columnName=" + colName + ", schemaVersion=" + schema.version());
+
+            return col;
+        }
+    }
 }

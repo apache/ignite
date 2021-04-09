@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
  * Object factory.
@@ -38,17 +39,17 @@ public class ObjectFactory<T> implements Factory<T> {
             cnstr.setAccessible(true);
         }
         catch (NoSuchMethodException e) {
-            throw new IllegalStateException("Class has no default constructor: class=" + tClass.getName(), e);
+            throw new IgniteInternalException("Class has no default constructor: class=" + tClass.getName(), e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public T create() throws IllegalStateException {
+    @Override public T create() throws IgniteInternalException {
         try {
             return cnstr.newInstance();
         }
         catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            throw new IllegalStateException("Failed to instantiate class: " + cnstr.getDeclaringClass().getName(), e);
+            throw new IgniteInternalException("Failed to instantiate class: " + cnstr.getDeclaringClass().getName(), e);
         }
     }
 }

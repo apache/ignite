@@ -20,10 +20,10 @@ package org.apache.ignite.table;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.internal.table.TableImpl;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.table.impl.TestTableStorageImpl;
+import org.apache.ignite.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.table.mapper.Mappers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,14 +32,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  *
  */
-@SuppressWarnings({"PMD.EmptyLineSeparatorCheck", "emptylineseparator",
+@SuppressWarnings({
+    "PMD.EmptyLineSeparatorCheck", "emptylineseparator",
     "unused", "UnusedAssignment", "InstanceVariableMayNotBeInitialized", "JoinDeclarationAndAssignmentJava"})
 public class Example {
     /**
      * @return Table implementation.
      */
     private static List<Table> tableFactory() {
-        return Collections.singletonList(new TableImpl(new TestTableStorageImpl()));
+        return Collections.singletonList(new TableImpl(new DummyInternalTableImpl(), null));
     }
 
     /**

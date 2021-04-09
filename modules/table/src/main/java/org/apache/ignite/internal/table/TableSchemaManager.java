@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.storage;
+package org.apache.ignite.internal.table;
 
-import org.apache.ignite.internal.table.TableRow;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
 
 /**
- * Table storage facade.
+ * Table schema manager interface.
  */
-public interface TableStorage {
+public interface TableSchemaManager {
     /**
-     * Gets row from storage.
-     *
-     * @param keyRow Row with key columns set.
-     * @return Row with all columns set.
+     * @return Current schema.
      */
-    public TableRow get(TableRow keyRow);
+    SchemaDescriptor schema();
 
     /**
-     * Puts row from storage.
-     *
-     * @param row Row.
-     * @return Replaced row or {@code null}.
+     * @param ver Schema version.
+     * @return Schema of given version.
      */
-    TableRow put(TableRow row);
+    SchemaDescriptor schema(int ver);
 }
