@@ -105,6 +105,12 @@ class PersistentTest(NodeJoinLeftScenario):
         wait_until(__bl_changed, timeout_sec=5)
 
         if not trigger_event:  # TriggerEvent.NODE_JOIN
-            IgniteAwareService.await_event_on_node("Checkpoint finished", rebalance_nodes[0], 3600)
+            IgniteAwareService.await_event_on_node(
+                "Checkpoint finished \\[cpId=%s" % IgniteAwareService.select_from_log(
+                    rebalance_nodes[0],
+                    "enable-durability-rebalance-finished",
+                    "^.+Checkpoint started \\[checkpointId=([^,]+),.+$"),
+                rebalance_nodes[0],
+                3600)
 
         return rebalance_nodes

@@ -514,15 +514,21 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                 self.logger.warn("Could not dump threads on node")
 
     @staticmethod
+    def select_from_log(node, select_regexp, cut_regexp=None):
+        """
+        Returns regexp match result from node's log.
+        This is a remote call. Reuse its results if possible.
+        """
+        cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (select_regexp, node.log_file, cut_regexp or select_regexp)
+        return IgniteAwareService.exec_command(node, cmd).strip()
+
+    @staticmethod
     def node_id(node):
         """
         Returns node id from its log if started.
         This is a remote call. Reuse its results if possible.
         """
-        regexp = "^>>> Local node \\[ID=([^,]+),.+$"
-        cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
-
-        return IgniteAwareService.exec_command(node, cmd).strip().lower()
+        return IgniteAwareService.select_from_log(node, "^>>> Local node \\[ID=([^,]+),.+$").lower()
 
     def restore_from_snapshot(self, snapshot_name: str):
         """
