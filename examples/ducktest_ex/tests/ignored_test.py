@@ -1,0 +1,1 @@
+from ducktest_ex.services.example_class import ExampleClass
