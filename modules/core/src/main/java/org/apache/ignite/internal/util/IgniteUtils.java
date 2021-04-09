@@ -4775,11 +4775,12 @@ public abstract class IgniteUtils {
 
             if (igniteInstanceName == null && ctx.config() != null) {
                 if (ctx.config().getConsistentId() != null)
-                    igniteInstanceName = ctx.config().getConsistentId().toString();
+                    igniteInstanceName = "\"" + ctx.config().getConsistentId().toString() + "\"";
                 else if (ctx.config().getNodeId() != null)
                     igniteInstanceName = ctx.config().getNodeId().toString();
             }
         }
+
         return igniteInstanceName;
     }
 
@@ -4793,7 +4794,7 @@ public abstract class IgniteUtils {
      * @return JMX object name.
      * @throws MalformedObjectNameException Thrown in case of any errors.
      */
-    public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
+    @SuppressWarnings("checkstyle:WhitespaceAround") public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
