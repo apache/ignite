@@ -16,5 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+/** Common interface to group all DDL operations. */
 public interface DdlCommand {
 }

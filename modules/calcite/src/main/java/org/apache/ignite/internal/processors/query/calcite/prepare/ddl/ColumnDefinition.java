@@ -14,54 +14,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import java.util.Objects;
+
 import org.apache.calcite.rel.type.RelDataType;
+import org.jetbrains.annotations.Nullable;
 
+/** Definies a particular column within table. */
 public class ColumnDefinition {
-    private String name;
-    private RelDataType type;
-    private Object dflt;
-    private boolean nullable;
+    /** */
+    private final String name;
 
+    /** */
+    private final RelDataType type;
+
+    /** */
+    private final Object dflt;
+
+    /** Creates a column definition. */
+    public ColumnDefinition(String name, RelDataType type, @Nullable Object dflt) {
+        this.name = Objects.requireNonNull(name, "name");
+        this.type = Objects.requireNonNull(type, "type");
+        this.dflt = dflt;
+    }
+
+    /**
+     * @return Column's name.
+     */
     public String name() {
         return name;
     }
 
-    public void name(String name) {
-        this.name = name;
-    }
-
+    /**
+     * @return Column's type.
+     */
     public RelDataType type() {
         return type;
     }
 
-    public void type(RelDataType type) {
-        this.type = type;
-    }
-
-    public Object defaultValue() {
+    /**
+     * @return Column's default value.
+     */
+    public @Nullable Object defaultValue() {
         return dflt;
     }
 
-    public void defaultValue(Object dflt) {
-        this.dflt = dflt;
-    }
-
+    /**
+     * @return {@code true} if this column accepts nulls.
+     */
     public boolean nullable() {
-        return nullable;
+        return type.isNullable();
     }
 
-    public void nullable(boolean nullable) {
-        this.nullable = nullable;
-    }
-
+    /**
+     * @return Column's precision.
+     */
     public Integer precision() {
-        return type != null && type.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED ? type.getPrecision() : null;
+        return type.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED ? type.getPrecision() : null;
     }
 
+    /**
+     * @return Column's scale.
+     */
     public Integer scale() {
-        return type != null && type.getScale() != RelDataType.SCALE_NOT_SPECIFIED ? type.getScale() : null;
+        return type.getScale() != RelDataType.SCALE_NOT_SPECIFIED ? type.getScale() : null;
     }
 }

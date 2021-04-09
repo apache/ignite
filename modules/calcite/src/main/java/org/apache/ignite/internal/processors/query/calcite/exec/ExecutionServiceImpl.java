@@ -804,19 +804,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             List<ColumnDefinition> cols = new ArrayList<>();
 
             for (SqlColumnDeclaration col : colDeclarations) {
-                ColumnDefinition def = new ColumnDefinition();
-
-                cols.add(def);
-
-                def.name(Util.last(col.name.names));
-
+                String name = Util.last(col.name.names);
                 RelDataType type = planner.conver(col.dataType);
 
-                def.type(type);
-                def.nullable(type.isNullable());
-
+                Object dflt = null;
                 if (col.expression != null)
-                   def.defaultValue(((SqlLiteral)col.expression).getValue());
+                    dflt = ((SqlLiteral)col.expression).getValue();
+
+                cols.add(new ColumnDefinition(name, type, dflt));
             }
 
             createTblCmd.columns(cols);
