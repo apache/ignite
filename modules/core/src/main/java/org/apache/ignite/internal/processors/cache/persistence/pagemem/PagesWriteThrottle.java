@@ -136,7 +136,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
 
             long startTime = U.currentTimeMillis();
 
-            boolean performanceStatsEnabled = pageMemory.performanceStatistics().enabled();
+            boolean performanceStatsEnabled = pageMemory.performanceStatistics() != null
+                && pageMemory.performanceStatistics().enabled();
 
             long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0L;
 
