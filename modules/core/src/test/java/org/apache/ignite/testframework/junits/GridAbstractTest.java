@@ -3043,11 +3043,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
-        Set<ObjectName> names = mbeanSrv.queryNames(mbeanName,null);
+        Set<ObjectName> names = mbeanSrv.queryNames(mbeanName, null);
 
         if (names.isEmpty())
             throw new IgniteException("MBean not registered.");
-        else if(names.size() > 1)
+        else if (names.size() > 1)
             throw new IgniteException("There is more the one MBean with name: " + mbeanName);
         else
             return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, names.iterator().next(), clazz, false);
