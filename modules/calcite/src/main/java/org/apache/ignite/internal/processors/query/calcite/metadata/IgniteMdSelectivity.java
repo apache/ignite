@@ -31,7 +31,8 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -95,7 +96,20 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     }
 
     /** */
-    public Double getSelectivity(IgniteIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
+    public Double getSelectivity(IgniteSortedIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
+        if (predicate != null) {
+            return mq.getSelectivity(rel.getInput(),
+                RelMdUtil.minusPreds(
+                    rel.getCluster().getRexBuilder(),
+                    predicate,
+                    rel.condition()));
+        }
+
+        return mq.getSelectivity(rel.getInput(), rel.condition());
+    }
+
+    /** */
+    public Double getSelectivity(IgniteHashIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
         if (predicate != null) {
             return mq.getSelectivity(rel.getInput(),
                 RelMdUtil.minusPreds(

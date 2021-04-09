@@ -32,6 +32,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -59,6 +60,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
@@ -159,14 +161,14 @@ public class RexUtils {
     /**
      * Builds index conditions.
      */
-    public static IndexConditions buildIndexConditions(
+    public static IndexConditions buildSortedIndexConditions(
         RelOptCluster cluster,
         RelCollation collation,
         RexNode condition,
         RelDataType rowType,
         ImmutableBitSet requiredColumns
     ) {
-        if (condition == null || collation == null || collation.getFieldCollations().isEmpty())
+        if (condition == null)
             return new IndexConditions();
 
         condition = RexUtil.toCnf(builder(cluster), condition);
@@ -178,6 +180,10 @@ public class RexUtils {
 
         List<RexNode> lower = new ArrayList<>();
         List<RexNode> upper = new ArrayList<>();
+
+        // Force collation for all fields of the condition.
+        if (collation == null || collation.isDefault())
+            collation = RelCollations.of(ImmutableIntList.copyOf(fieldsToPredicates.keySet()));
 
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
             RelFieldCollation fc = collation.getFieldCollations().get(i);
@@ -273,6 +279,52 @@ public class RexUtils {
             upper = null;
 
         return new IndexConditions(lower, upper, lowerBound, upperBound);
+    }
+
+    /**
+     * Builds index conditions.
+     */
+    public static List<RexNode> buildHashSearchRow(
+        RelOptCluster cluster,
+        RexNode condition,
+        RelDataType rowType
+    ) {
+        condition = RexUtil.toCnf(builder(cluster), condition);
+
+        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
+
+        if (F.isEmpty(fieldsToPredicates))
+            return null;
+
+        List<RexNode> searchPreds = null;
+
+        for (int fldIdx : fieldsToPredicates.keySet()) {
+            List<RexCall> collFldPreds = fieldsToPredicates.get(fldIdx);
+
+            if (F.isEmpty(collFldPreds))
+                break;
+
+            for (RexCall pred : collFldPreds) {
+                if (U.assertionsEnabled()) {
+                    RexNode cond = RexUtil.removeCast(pred.operands.get(1));
+
+                    assert idxOpSupports(cond) : cond;
+                }
+
+                if (pred.getOperator().kind != SqlKind.EQUALS)
+                    return null;
+
+                if (searchPreds == null)
+                    searchPreds = new ArrayList<>();
+
+                searchPreds.add(pred);
+            }
+        }
+
+        if (searchPreds == null)
+            return null;
+
+        return asBound(cluster, searchPreds, rowType, null);
     }
 
     /** */
@@ -466,6 +518,21 @@ public class RexUtils {
             return Collections.emptySet();
 
         return extractCorrelationIds(Collections.singletonList(node));
+    }
+
+    /** */
+    public static Set<Integer> notNullKeys(List<RexNode> row) {
+        if (F.isEmpty(row))
+            return Collections.emptySet();
+
+        Set<Integer> keys = new HashSet<>();
+
+        for (int i = 0; i < row.size(); ++i ) {
+            if (isNotNull(row.get(i)))
+                keys.add(i);
+        }
+
+        return keys;
     }
 
     /** */

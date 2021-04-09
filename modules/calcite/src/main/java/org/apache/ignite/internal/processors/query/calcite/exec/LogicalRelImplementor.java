@@ -59,8 +59,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
@@ -375,7 +376,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteIndexSpool rel) {
+    @Override public Node<Row> visit(IgniteSortedIndexSpool rel) {
         RelCollation collation = rel.collation();
 
         assert rel.indexCondition() != null : rel;
@@ -387,7 +388,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
         Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
 
-        IndexSpoolNode<Row> node = new IndexSpoolNode<>(
+        IndexSpoolNode<Row> node = IndexSpoolNode.createTreeSpool(
             ctx,
             rel.getRowType(),
             collation,
@@ -395,6 +396,24 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             filter,
             lower,
             upper
+        );
+
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteHashIndexSpool rel) {
+        Supplier<Row> searchRow = expressionFactory.rowSource(rel.searchRow());
+
+        IndexSpoolNode<Row> node = IndexSpoolNode.createHashSpool(
+            ctx,
+            rel.getRowType(),
+            ImmutableBitSet.of(rel.keys()),
+            searchRow
         );
 
         Node<Row> input = visit(rel.getInput());

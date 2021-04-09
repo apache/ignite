@@ -26,7 +26,7 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -38,13 +38,13 @@ import org.junit.Test;
 /**
  *
  */
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
+public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
-     * Check equi-join. CorrelatedNestedLoopJoinTest is applicable for it.
+     * Check equi-join on not colocated fields.
+     * CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
      */
     @Test
-    public void testValidIndexExpressions() throws Exception {
+    public void testSingleKey() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -58,84 +58,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-                }
-            }
-        );
-
-        publicSchema.addTable(
-            "T1",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-                }
-            }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
-        );
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
-
-        IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter"
-        );
-
-        System.out.println("+++ " + RelOptUtil.toString(phys));
-
-        assertNotNull(phys);
-
-        checkSplitAndSerialization(phys, publicSchema);
-
-        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
-
-        List<RexNode> lBound = idxScan.lowerBound();
-
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), lBound);
-        assertEquals(3, lBound.size());
-
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-
-        List<RexNode> uBound = idxScan.upperBound();
-
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), uBound);
-        assertEquals(3, uBound.size());
-
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
-    }
-
-    /**
-     * Check join with not equi condition.
-     * Current implementation of the CorrelatedNestedLoopJoinTest is not applicable for such case.
-     */
-    @Test
-    public void testInvalidIndexExpressions() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        publicSchema.addTable(
-            "T0",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.affinity(0, "T0", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
@@ -151,7 +74,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
@@ -159,16 +82,153 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.jid + 2 > t1.jid * 2";
+            "join t1 on t0.jid = t1.jid";
 
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToSortedIndexSpoolRule"
         );
 
-        assertNotNull(phys);
+        System.out.println("+++\n" + RelOptUtil.toString(phys));
 
         checkSplitAndSerialization(phys, publicSchema);
+
+        IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
+
+        List<RexNode> searchRow = idxSpool.searchRow();
+
+        assertNotNull(searchRow);
+        assertEquals(3, searchRow.size());
+
+        assertTrue(((RexLiteral)searchRow.get(0)).isNull());
+        assertTrue(((RexLiteral)searchRow.get(2)).isNull());
+        assertTrue(searchRow.get(1) instanceof RexFieldAccess);
+    }
+
+    /** */
+    @Test
+    public void testMultipleKeys() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "T0",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID0", f.createJavaType(Integer.class))
+                    .add("JID1", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "T0", "hash");
+                }
+            }
+        );
+
+        publicSchema.addTable(
+            "T1",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID0", f.createJavaType(Integer.class))
+                    .add("JID1", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "T1", "hash");
+                }
+            }
+                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid0_idx")
+        );
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0.jid0 = t1.jid0 and t0.jid1 = t1.jid1";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToSortedIndexSpoolRule"
+        );
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
+
+        List<RexNode> searcRow = idxSpool.searchRow();
+
+        assertNotNull(searcRow);
+        assertEquals(4, searcRow.size());
+
+        assertTrue(((RexLiteral)searcRow.get(0)).isNull());
+        assertTrue(searcRow.get(1) instanceof RexFieldAccess);
+        assertTrue(searcRow.get(2) instanceof RexFieldAccess);
+        assertTrue(((RexLiteral)searcRow.get(3)).isNull());
+    }
+
+    /**
+     * Check equi-join on not colocated fields without indexes.
+     */
+    @Test
+    public void testSourceWithoutCollation() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "T0",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "T0", "hash");
+                }
+            }
+        );
+
+        publicSchema.addTable(
+            "T1",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "T1", "hash");
+                }
+            }
+        );
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0.jid = t1.jid";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter"
+        );
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
+
+        List<RexNode> searchRow = idxSpool.searchRow();
+
+        assertNotNull(searchRow);
+        assertEquals(3, searchRow.size());
+
+        assertTrue(((RexLiteral)searchRow.get(0)).isNull());
+        assertTrue(((RexLiteral)searchRow.get(2)).isNull());
+        assertTrue(searchRow.get(1) instanceof RexFieldAccess);
     }
 }

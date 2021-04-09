@@ -41,7 +41,7 @@ import org.junit.Test;
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class IndexSpoolExecutionTest extends AbstractExecutionTest {
+public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
@@ -132,7 +132,7 @@ public class IndexSpoolExecutionTest extends AbstractExecutionTest {
             Object[] upper = new Object[3];
             TestPredicate testFilter = new TestPredicate();
 
-            IndexSpoolNode<Object[]> spool = new IndexSpoolNode<>(
+            IndexSpoolNode<Object[]> spool = IndexSpoolNode.createTreeSpool(
                 ctx,
                 rowType,
                 RelCollations.of(ImmutableIntList.of(0)),

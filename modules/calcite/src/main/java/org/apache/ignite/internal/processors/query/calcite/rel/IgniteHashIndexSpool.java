@@ -18,54 +18,53 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Relational operator that returns the sorted contents of a table
- * and allow to lookup rows by specified bounds.
+ * Relational operator that returns the hashed contents of a table
+ * and allow to lookup rows by specified keys.
  */
-public class IgniteIndexSpool extends Spool implements IgniteRel {
+public class IgniteHashIndexSpool extends Spool implements IgniteRel {
+    /** Search row. */
+    private final List<RexNode> searchRow;
+
+    /** Keys (number of the columns at the input row) to build hash index. */
+    private final ImmutableBitSet keys;
+
+    /** Condition (used to calculate selectivity). */
+    private final RexNode cond;
+
     /** */
-    private final RelCollation collation;
-
-    /** Index condition. */
-    private final IndexConditions idxCond;
-
-    /** Filters. */
-    protected final RexNode condition;
-
-    /** */
-    public IgniteIndexSpool(
+    public IgniteHashIndexSpool(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
-        RelCollation collation,
-        RexNode condition,
-        IndexConditions idxCond
+        List<RexNode> searchRow,
+        RexNode cond
     ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
 
-        assert Objects.nonNull(idxCond);
-        assert Objects.nonNull(condition);
+        assert !F.isEmpty(searchRow);
 
-        this.idxCond = idxCond;
-        this.condition = condition;
-        this.collation = collation;
+        this.searchRow = searchRow;
+        this.cond = cond;
+
+        keys = ImmutableBitSet.of(RexUtils.notNullKeys(searchRow));
     }
 
     /**
@@ -73,13 +72,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
      *
      * @param input Serialized representation.
      */
-    public IgniteIndexSpool(RelInput input) {
+    public IgniteHashIndexSpool(RelInput input) {
         this(input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
-            input.getCollation(),
-            input.getExpression("condition"),
-            new IndexConditions(input)
+            input.getExpressionList("searchRow"),
+            null
         );
     }
 
@@ -90,12 +88,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexSpool(cluster, getTraitSet(), inputs.get(0), collation, condition, idxCond);
+        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), searchRow, cond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteIndexSpool(getCluster(), traitSet, input, collation, condition, idxCond);
+        return new IgniteHashIndexSpool(getCluster(), traitSet, input, searchRow, cond);
     }
 
     /** {@inheritDoc} */
@@ -107,10 +105,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
-        writer.item("condition", condition);
-        writer.item("collation", collation);
-
-        return idxCond.explainTerms(writer);
+        return writer.item("searchRow", searchRow);
     }
 
     /** {@inheritDoc} */
@@ -118,10 +113,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         double rowCnt = mq.getRowCount(getInput());
         double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
         double totalBytes = rowCnt * bytesPerRow;
-        double cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
-
-        if (idxCond.lowerCondition() != null)
-            cpuCost += Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
+        double cpuCost = IgniteCost.HASH_LOOKUP_COST;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
@@ -134,17 +126,17 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     }
 
     /** */
-    public IndexConditions indexCondition() {
-        return idxCond;
+    public List<RexNode> searchRow() {
+        return searchRow;
     }
 
     /** */
-    @Override public RelCollation collation() {
-        return collation;
+    public ImmutableBitSet keys() {
+        return keys;
     }
 
     /** */
     public RexNode condition() {
-        return condition;
+        return cond;
     }
 }

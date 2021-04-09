@@ -30,7 +30,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,7 +111,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * but IndexSpool has internal filter that could filter out some rows,
      * hence we need to estimate it differently.
      */
-    public double getRowCount(IgniteIndexSpool rel, RelMetadataQuery mq) {
+    public double getRowCount(IgniteSortedIndexSpool rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 }
