@@ -293,10 +293,13 @@ public class GridSqlQuerySplitter {
         assert !F.isEmpty(splitter.mapSqlQrys) : "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null : "rdc"; // We must have a reduce query.
 
-        boolean allCollocated = true;
+        // If we have distributed joins, then we have to optimize all MAP side queries
+        // to have a correct join order with respect to batched joins and check if we need
+        // distributed joins at all.
+        if (distributedJoins) {
+            boolean allCollocated = true;
 
-        for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-            if (distributedJoins || mapSqlQry.hasJoin()) {
+            for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
                 Prepared prepared0 = prepare(
                     conn,
                     H2Utils.context(conn),
@@ -304,23 +307,15 @@ public class GridSqlQuerySplitter {
                     true,
                     enforceJoinOrder);
 
-                // TODO: Check isCollocated for non-distributed join queries too.
-                //       But before that check whether query contains join expression.
-                //       There is no chances to find bad join before that. As in preparing query we calculate cost
-                //       that runs with disabled validation.
                 allCollocated &= isCollocated((Query)prepared0);
 
-                // If we have distributed joins, then we have to optimize all MAP side queries
-                // to have a correct join order with respect to batched joins and check if we need
-                // distributed joins at all.
-                if (distributedJoins)
-                    mapSqlQry.query(GridSqlQueryParser.parseQuery(prepared0, true, log).getSQL());
+                mapSqlQry.query(GridSqlQueryParser.parseQuery(prepared0, true, log).getSQL());
             }
-        }
 
-        // We do not need distributed joins if all MAP queries are collocated.
-        if (allCollocated)
-            distributedJoins = false;
+            // We do not need distributed joins if all MAP queries are collocated.
+            if (allCollocated)
+                distributedJoins = false;
+        }
 
         List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
         boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);

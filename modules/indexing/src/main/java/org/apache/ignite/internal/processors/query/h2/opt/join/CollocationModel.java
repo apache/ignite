@@ -103,7 +103,18 @@ public final class CollocationModel {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "";
+        calculate();
+
+        SB b = new SB();
+
+        for (int lvl = 0; lvl < 20; lvl++) {
+            if (!toString(b, lvl))
+                break;
+
+            b.a('\n');
+        }
+
+        return b.toString();
     }
 
     /**
@@ -415,20 +426,12 @@ public final class CollocationModel {
 
                                 if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
                                     return CollocationModelAffinity.COLLOCATED_JOIN;
-                                else {
-                                    if (validate && !SplitterContext.get().distributedJoins())
-                                        throw new CacheException("Failed to prepare join query: " +
-                                            "join is not collocated [joinedCache=" + tbl.cacheName() +
-                                            ", plan=" + tf.getSelect().getPlanSQL() + ']');
-                                }
                             }
                         }
                     }
                 }
             }
         }
-
-        // TODO: check query like A join B on A.v > B.v?
 
         return affKeyCondFound ? CollocationModelAffinity.HAS_AFFINITY_CONDITION : CollocationModelAffinity.NONE;
     }
