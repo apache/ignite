@@ -4794,7 +4794,7 @@ public abstract class IgniteUtils {
      * @return JMX object name.
      * @throws MalformedObjectNameException Thrown in case of any errors.
      */
-    @SuppressWarnings("checkstyle:WhitespaceAround") public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
+    public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
