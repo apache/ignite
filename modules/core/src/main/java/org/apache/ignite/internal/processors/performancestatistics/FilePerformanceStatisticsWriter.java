@@ -363,13 +363,13 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param startTimeMillis Start time in milliseconds.
-     * @param durationNano Duration in nanoseconds.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
      */
-    public void pagesWriteThrottle(long startTimeMillis, long durationNano) {
+    public void pagesWriteThrottle(long startTime, long duration) {
         doWrite(PAGES_WRITE_THROTTLE, pagesWriteThrottleRecordSize(), buf -> {
-            buf.putLong(startTimeMillis);
-            buf.putLong(durationNano);
+            buf.putLong(startTime);
+            buf.putLong(duration);
         });
     }
 

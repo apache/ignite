@@ -31,22 +31,20 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -86,6 +84,8 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        slowCheckpointEnabled.set(false);
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -120,44 +120,47 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         // wait for checkpoint to finish on node start
         assertTrue(waitForCondition(() -> 0 < lastStart.value(), TIMEOUT));
 
-        startCollectStatistics();
-
-        lastStart.reset();
+        startCollectStatisticsWithNoFlushSize();
 
         forceCheckpoint();
 
-        assertTrue(waitForCondition(() -> 0 < lastStart.value(), TIMEOUT));
+        assertTrue(waitForCondition(() -> {
+            try {
+                AtomicInteger cnt = new AtomicInteger();
 
-        AtomicInteger cnt = new AtomicInteger();
+                readFiles(statisticsFiles(), new TestHandler() {
+                    @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
+                        long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
+                        long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration,
+                        long splitAndSortCpPagesDuration, long totalDuration, long cpStartTime, int pagesSize,
+                        int dataPagesWritten, int cowPagesWritten) {
+                        assertEquals(srv.localNode().id(), nodeId);
+                        assertEquals(lastBeforeLockDuration.value(), beforeLockDuration);
+                        assertEquals(lastLockWaitDuration.value(), lockWaitDuration);
+                        assertEquals(lastListenersExecDuration.value(), listenersExecDuration);
+                        assertEquals(lastMarcDuration.value(), markDuration);
+                        assertEquals(lastLockHoldDuration.value(), lockHoldDuration);
+                        assertEquals(lastPagesWriteDuration.value(), pagesWriteDuration);
+                        assertEquals(lastFsyncDuration.value(), fsyncDuration);
+                        assertEquals(lastWalRecordFsyncDuration.value(), walCpRecordFsyncDuration);
+                        assertEquals(lastWriteEntryDuration.value(), writeCpEntryDuration);
+                        assertEquals(lastSplitAndSortPagesDuration.value(), splitAndSortCpPagesDuration);
+                        assertEquals(lastDuration.value(), totalDuration);
+                        assertEquals(lastStart.value(), cpStartTime);
+                        assertEquals(lastTotalPages.value(), pagesSize);
+                        assertEquals(lastDataPages.value(), dataPagesWritten);
+                        assertEquals(lastCOWPages.value(), cowPagesWritten);
 
-        stopCollectStatisticsAndRead(new TestHandler() {
-            @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
-                long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
-                long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration,
-                long splitAndSortCpPagesDuration, long totalDuration, long cpStartTime, int pagesSize,
-                int dataPagesWritten, int cowPagesWritten) {
-                assertEquals(srv.localNode().id(), nodeId);
-                assertEquals(lastBeforeLockDuration.value(), beforeLockDuration);
-                assertEquals(lastLockWaitDuration.value(), lockWaitDuration);
-                assertEquals(lastListenersExecDuration.value(), listenersExecDuration);
-                assertEquals(lastMarcDuration.value(), markDuration);
-                assertEquals(lastLockHoldDuration.value(), lockHoldDuration);
-                assertEquals(lastPagesWriteDuration.value(), pagesWriteDuration);
-                assertEquals(lastFsyncDuration.value(), fsyncDuration);
-                assertEquals(lastWalRecordFsyncDuration.value(), walCpRecordFsyncDuration);
-                assertEquals(lastWriteEntryDuration.value(), writeCpEntryDuration);
-                assertEquals(lastSplitAndSortPagesDuration.value(), splitAndSortCpPagesDuration);
-                assertEquals(lastDuration.value(), totalDuration);
-                assertEquals(lastStart.value(), cpStartTime);
-                assertEquals(lastTotalPages.value(), pagesSize);
-                assertEquals(lastDataPages.value(), dataPagesWritten);
-                assertEquals(lastCOWPages.value(), cowPagesWritten);
+                        cnt.incrementAndGet();
+                    }
+                });
 
-                cnt.incrementAndGet();
+                return cnt.get() > 0;
             }
-        });
-
-        assertEquals(1, cnt.get());
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, TIMEOUT));
     }
 
     /** @throws Exception if failed. */
@@ -179,52 +182,48 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         srv.cluster().state(ClusterState.ACTIVE);
 
-        MetricRegistry mreg = srv.context().metric().registry(
-            metricName(DATAREGION_METRICS_PREFIX, DFLT_DATA_REG_DEFAULT_NAME));
-
-        LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
-
         IgniteCache<Long, Long> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         long start = U.currentTimeMillis();
 
-        startCollectStatistics();
+        startCollectStatisticsWithNoFlushSize();
 
-        long keysCnt = 1024L;
+        int keysCnt = 1024;
 
-        long awaitTime = U.currentTimeMillis() + TIMEOUT;
+        AtomicBoolean stop = new AtomicBoolean();
 
         slowCheckpointEnabled.set(true);
 
-        try {
-            while (U.currentTimeMillis() < awaitTime && totalThrottlingTime.value() <= 0) {
-                long l = ThreadLocalRandom.current().nextLong(keysCnt);
-
-                cache.put(l, l);
-            }
-        }
-        finally {
-            slowCheckpointEnabled.set(false);
-        }
-
-        assertTrue(totalThrottlingTime.value() > 0);
-
-        stopCollectStatistics();
-
-        AtomicInteger cnt = new AtomicInteger();
-
-        readFiles(statisticsFiles(), new TestHandler() {
-            @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long duration) {
-                assertEquals(srv.localNode().id(), nodeId);
-
-                assertTrue(start <= startTime);
-                assertTrue( duration >= 0);
-
-                cnt.incrementAndGet();
-            }
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            while (!stop.get())
+                cache.put(ThreadLocalRandom.current().nextLong(keysCnt), ThreadLocalRandom.current().nextLong());
         });
 
-        assertTrue(cnt.get() > 0);
+        assertTrue(waitForCondition(() -> {
+            try {
+                AtomicInteger cnt = new AtomicInteger();
+
+                readFiles(statisticsFiles(), new TestHandler() {
+                    @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long duration) {
+                        assertEquals(srv.localNode().id(), nodeId);
+
+                        assertTrue(start <= startTime);
+                        assertTrue(duration >= 0);
+
+                        cnt.incrementAndGet();
+                    }
+                });
+
+                return cnt.get() > 0;
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, TIMEOUT));
+
+        stop.set(true);
+
+        fut.get(TIMEOUT);
     }
 
     /**
@@ -235,7 +234,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         private static final long serialVersionUID = 0L;
 
         /** Default checkpoint park nanos. */
-        private static final int CHECKPOINT_PARK_NANOS = 50_000_000;
+        private static final int CHECKPOINT_PARK_NANOS = 5_000_000;
 
         /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();

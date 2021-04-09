@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.G;
@@ -31,6 +33,7 @@ import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -79,6 +82,18 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         statisticsMBean(grids.get(0).name()).start();
 
         waitForStatisticsEnabled(true);
+    }
+
+    /** Starts collecting performance statistics with no flush size. */
+    protected static void startCollectStatisticsWithNoFlushSize() throws Exception {
+        System.setProperty(IGNITE_PERF_STAT_FLUSH_SIZE, "1");
+
+        try {
+            startCollectStatistics();
+        }
+        finally {
+            System.clearProperty(IGNITE_PERF_STAT_FLUSH_SIZE);
+        }
     }
 
     /** Rotate file collecting performance statistics. */
@@ -207,7 +222,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void pagesWriteThrottle(UUID nodeId, long startTimeMillis, long durationNano) {
+        @Override public void pagesWriteThrottle(UUID nodeId, long startTime, long duration) {
             // No-op.
         }
     }

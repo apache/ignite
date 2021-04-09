@@ -134,8 +134,11 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
                     + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
             }
 
-            long startTimeMillis = U.currentTimeMillis();
-            long startTimeNano = System.nanoTime();
+            long startTime = U.currentTimeMillis();
+
+            boolean performanceStatsEnabled = pageMemory.performanceStatistics().enabled();
+
+            long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0L;
 
             if (isPageInCheckpoint) {
                 cpBufThrottledThreads.put(curThread.getId(), curThread);
@@ -155,12 +158,10 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             else
                 LockSupport.parkNanos(throttleParkTimeNs);
 
-            long durationNano = System.nanoTime() - startTimeNano;
+            pageMemory.metrics().addThrottlingTime(U.currentTimeMillis() - startTime);
 
-            pageMemory.metrics().addThrottlingTime(U.nanosToMillis(durationNano));
-
-            if (pageMemory.performanceStatistics().enabled())
-                pageMemory.performanceStatistics().pagesWriteThrottle(startTimeMillis, durationNano);
+            if (performanceStatsEnabled)
+                pageMemory.performanceStatistics().pagesWriteThrottle(startTime, System.nanoTime() - startTimeNanos);
         }
         else {
             int oldCntr = cntr.getAndSet(0);

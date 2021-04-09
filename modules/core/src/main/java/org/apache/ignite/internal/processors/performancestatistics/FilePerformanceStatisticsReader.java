@@ -438,10 +438,10 @@ public class FilePerformanceStatisticsReader {
                 return false;
 
             long starTime = buf.getLong();
-            long durationNano = buf.getLong();
+            long duration = buf.getLong();
 
             for (PerformanceStatisticsHandler handler : curHnd)
-                handler.pagesWriteThrottle(nodeId, starTime, durationNano);
+                handler.pagesWriteThrottle(nodeId, starTime, duration);
 
             return true;
         }
