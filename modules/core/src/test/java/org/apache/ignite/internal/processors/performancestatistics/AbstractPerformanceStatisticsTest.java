@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.G;
