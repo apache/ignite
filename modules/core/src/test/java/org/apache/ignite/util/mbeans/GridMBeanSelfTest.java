@@ -372,8 +372,8 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
         assertTrue("There are mbeans without instanceName for case when instanceName="
                 + instanceName + " and consistanceId="
                 + consistanceId + ":"
-                + String.join("\n", beans)
-            , beans.isEmpty());
+                + String.join("\n", beans),
+            beans.isEmpty());
 
         stopGrid(instanceName, false);
 
