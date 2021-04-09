@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -2531,15 +2530,5 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
-    }
-
-    /**
-     * Getting WAL manager.
-     *
-     * @param n Node.
-     * @return WAL manager.
-     */
-    public static FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
     }
 }

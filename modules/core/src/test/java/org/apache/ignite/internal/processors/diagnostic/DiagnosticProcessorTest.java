@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -56,7 +57,6 @@ import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcess
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.walDirs;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
-import static org.apache.ignite.testframework.GridTestUtils.walMgr;
 
 /**
  * Class for testing diagnostics.
@@ -172,11 +172,11 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOutputDiagnosticCorruptedPagesInfo() throws Exception {
-        LogListener logLsnr = LogListener.matches("CorruptedTreeException has occurred. To diagnose it, postpone" +
-            " the following directories until the node is restarted:").build();
+        ListeningTestLogger listeningTestLog = new ListeningTestLogger(GridAbstractTest.log);
 
-        IgniteEx n = startGrid(0,
-            (Consumer<IgniteConfiguration>)cfg -> cfg.setGridLogger(new ListeningTestLogger(log, logLsnr)));
+        IgniteEx n = startGrid(0, cfg -> {
+            cfg.setGridLogger(listeningTestLog);
+        });
 
         n.cluster().state(ClusterState.ACTIVE);
         awaitPartitionMapExchange();
@@ -188,6 +188,11 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
         T2<Integer, Long> anyPageId = findAnyPageId(n);
         assertNotNull(anyPageId);
+
+        LogListener logLsnr = LogListener.matches("CorruptedTreeException has occurred. " +
+            "To diagnose it, make a backup of the following directories: ").build();
+
+        listeningTestLog.registerListener(logLsnr);
 
         n.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR,
             new CorruptedTreeException("Test ex", null, anyPageId.get1(), DEFAULT_CACHE_NAME, anyPageId.get2())));

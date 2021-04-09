@@ -111,10 +111,10 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
 
                     args += " pages=" + corruptedPagesFile.getAbsolutePath();
 
-                    log.warning(corruptedTreeE.getClass().getSimpleName() + " has occurred. To diagnose it, " +
-                        "postpone the following directories until the node is restarted: " + walDirsStr + ". " +
-                        "Then, run the following command from ignite-dev-util module: java -cp <classpath> " +
-                        "org.apache.ignite.development.utils.IgniteWalConverter " + args);
+                    log.warning(corruptedTreeE.getClass().getSimpleName() + " has occurred. " +
+                        "To diagnose it, make a backup of the following directories: " + walDirsStr + ". " +
+                        "Then, run the following command: java -cp <classpath> " +
+                        "org.apache.ignite.development.utils.IgniteWalConverter" + args);
                 }
                 catch (Throwable t) {
                     String pages = Arrays.stream(corruptedTreeE.pages())
