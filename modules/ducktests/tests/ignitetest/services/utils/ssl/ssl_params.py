@@ -52,7 +52,7 @@ class SslParams:
         if not key_store_jks and not key_store_path:
             raise Exception("Keystore must be specified to init SslParams")
 
-        certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")
+        certificate_dir = os.path.join(root_dir, "certs")
 
         self.key_store_path = key_store_path if key_store_path else os.path.join(certificate_dir, key_store_jks)
         self.key_store_password = key_store_password
