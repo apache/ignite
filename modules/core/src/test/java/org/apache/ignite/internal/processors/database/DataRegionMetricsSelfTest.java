@@ -74,11 +74,11 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
-        GridTestKernalContext cctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
 
-        cctx.add(new GridMetricManager(cctx));
+        ctx.add(new GridMetricManager(ctx));
 
-        memMetrics = new DataRegionMetricsImpl(plcCfg, cctx, NO_OP_METRICS);
+        memMetrics = new DataRegionMetricsImpl(plcCfg, ctx, NO_OP_METRICS);
 
         memMetrics.enableMetrics();
     }

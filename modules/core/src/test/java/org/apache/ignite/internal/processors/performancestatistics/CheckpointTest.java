@@ -204,10 +204,10 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                 AtomicInteger cnt = new AtomicInteger();
 
                 readFiles(statisticsFiles(), new TestHandler() {
-                    @Override public void pagesWriteThrottle(UUID nodeId, long endTome, long duration) {
+                    @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
                         assertEquals(srv.localNode().id(), nodeId);
 
-                        assertTrue(start <= endTome);
+                        assertTrue(start <= endTime);
                         assertTrue(duration >= 0);
 
                         cnt.incrementAndGet();

@@ -514,11 +514,11 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
-        GridTestKernalContext cctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
 
-        cctx.add(new GridMetricManager(cctx));
+        ctx.add(new GridMetricManager(ctx));
 
-        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg, cctx, NO_OP_METRICS);
+        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg, ctx, NO_OP_METRICS);
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 

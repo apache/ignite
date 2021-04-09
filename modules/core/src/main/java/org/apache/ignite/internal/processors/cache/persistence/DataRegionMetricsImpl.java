@@ -115,20 +115,20 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private volatile long rateTimeInterval;
 
     /** Grid kernal context. */
-    private final GridKernalContext cctx;
+    private final GridKernalContext ctx;
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
-     * @param cctx Grid kernal context.
+     * @param ctx Grid kernal context.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
-        GridKernalContext cctx,
+        GridKernalContext ctx,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
-        this.mmgr = cctx.metric();
-        this.cctx = cctx;
+        this.mmgr = ctx.metric();
+        this.ctx = ctx;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -589,8 +589,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (metricsEnabled)
             totalThrottlingTime.add(time);
 
-        if (cctx.performanceStatistics() != null && cctx.performanceStatistics().enabled())
-            cctx.performanceStatistics().pagesWriteThrottle(U.currentTimeMillis(), time);
+        if (ctx.performanceStatistics() != null && ctx.performanceStatistics().enabled())
+            ctx.performanceStatistics().pagesWriteThrottle(U.currentTimeMillis(), time);
     }
 
     /**

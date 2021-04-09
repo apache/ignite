@@ -363,7 +363,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param endTime Start time in milliseconds.
+     * @param endTime End time in milliseconds.
      * @param duration Duration in milliseconds.
      */
     public void pagesWriteThrottle(long endTime, long duration) {
