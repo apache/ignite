@@ -157,6 +157,8 @@ public class SegmentAware {
      * @param curAbsWalIdx New current WAL index.
      */
     public void curAbsWalIdx(long curAbsWalIdx) {
+        assert curAbsWalIdx > lastArchivedAbsoluteIndex() || lastArchivedAbsoluteIndex() == -1 : curAbsWalIdx + " - " + lastArchivedAbsoluteIndex();
+
         segmentCurrStateStorage.curAbsWalIdx(curAbsWalIdx);
     }
 

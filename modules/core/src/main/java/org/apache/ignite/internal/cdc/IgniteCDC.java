@@ -341,7 +341,10 @@ public class IgniteCDC implements Runnable {
         }
 
         try (WALIterator it = factory.iterator(builder)) {
+            System.out.println("BeforeHasNext = " + segment);
+
             while (it.hasNext()) {
+                System.out.println("AfterHasNext = " + segment);
                 boolean commit = consumer.onRecords(F.iterator(it.iterator(), IgniteBiTuple::get2, true));
 
                 if (commit) {

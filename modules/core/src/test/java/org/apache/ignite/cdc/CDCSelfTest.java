@@ -281,6 +281,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
             ign.close();
 
+            System.out.println("CDCSelfTest.testReadAfterNodeStop =====================================");
+
             IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
@@ -579,6 +581,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onChange(Iterator<ChangeEvent> events) {
             events.forEachRemaining(evt -> {
+                System.out.println("evt.key() = " + evt.key() + ", evts.primary = " + evt.primary());
+
                 if (!evt.primary())
                     return;
 

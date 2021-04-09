@@ -71,6 +71,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -673,10 +675,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
-        boolean archiveAllForCdc = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
+        boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
 
         try {
-            fileHandleManager.onDeactivate(archiveAllForCdc);
+            if (archiveLast)
+                closeBufAndRollover(currentHandle(), null, RolloverType.NONE);
+
+            fileHandleManager.onDeactivate(false);
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
@@ -688,15 +693,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (archiver != null) {
                 archiver.shutdown();
 
-                if (archiveAllForCdc) {
+                if (archiveLast) {
                     try {
                         long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
                         long to = segmentAware.curAbsWalIdx();
 
-                        System.out.println("from = " + from + ", to = " + to);
-
-                        for (long idx = from; idx <= to; idx++)
-                            archiver.archiveSegment(idx);
+                        for (long i = from; i < to; i++)
+                            archiver.archiveSegment(i);
                     }
                     catch (StorageException e) {
                         throw new IgniteException(e);
@@ -876,6 +879,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
+        if (rec.type() == WALRecord.RecordType.DATA_RECORD_V2) {
+            List<DataEntry> entries = ((DataRecord)rec).writeEntries();
+            for (DataEntry entry : entries) {
+                System.out.println("entry.key() = " + entry.key() + ", " + currHnd.getSegmentId());
+            }
+        }
+
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -1392,6 +1402,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
+/*
+        if (segmentAware.lastArchivedAbsoluteIndex() >= absIdx)
+            absIdx = segmentAware.lastArchivedAbsoluteIndex() + 1;
+
+*/
         @Nullable FileArchiver archiver0 = archiver;
 
         long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();
