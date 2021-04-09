@@ -137,6 +137,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEna
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
@@ -965,17 +966,6 @@ public class CommandProcessor {
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
         }
-    }
-
-    /**
-     * Check if schema supports DDL statement.
-     *
-     * @param schemaName Schema name.
-     */
-    private static void isDdlOnSchemaSupported(String schemaName) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
-            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

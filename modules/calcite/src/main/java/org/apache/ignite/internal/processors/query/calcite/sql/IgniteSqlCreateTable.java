@@ -107,4 +107,11 @@ public class IgniteSqlCreateTable extends SqlCreate {
     public SqlNodeList createOptionList() {
         return createOptionList;
     }
+
+    /**
+     * @return Whether the IF NOT EXISTS is specified.
+     */
+    public boolean ifNotExists() {
+        return ifNotExists;
+    }
 }
