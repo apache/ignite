@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -290,71 +291,252 @@ public class SplitterUtils {
     }
 
     /**
-     *
+     * Traverse AST while join operation isn't found. Check it if found.
      */
-    public static void checkPartitionedJoin(GridSqlAst ast, IgniteLogger log) {
-        if (!(ast instanceof GridSqlJoin)) {
+    public static void lookForPartitionedJoin(GridSqlAst ast, GridSqlAst upWhere, IgniteLogger log) {
+        if (ast == null)
+            return;
+
+        GridSqlJoin join = null;
+        GridSqlAst where = null;
+
+        if (ast instanceof GridSqlJoin) {
+            join = (GridSqlJoin) ast;
+            where = upWhere;
+
+        } else if (ast instanceof GridSqlSelect) {
+            GridSqlSelect select = (GridSqlSelect) ast;
+
+            if (select.from() instanceof GridSqlJoin) {
+                join = (GridSqlJoin) select.from();
+                where = select.where();
+            }
+        }
+
+        // Traverse AST deeper.
+        if (join == null) {
             for (int i = 0; i < ast.size(); i++)
-                checkPartitionedJoin(ast.child(i), log);
+                lookForPartitionedJoin(ast.child(i), null, log);
 
             return;
         }
 
-        GridSqlJoin join = (GridSqlJoin) ast;
+        // Also checks WHERE condition.
+        lookForPartitionedJoin(where, null, log);
 
-        GridH2Table left = getTable(join.leftTable()).dataTable();
-        GridH2Table right = getTable(join.rightTable()).dataTable();
+        GridSqlTable leftTable = getTable(join.leftTable());
 
+        // Left side of join is a subquery.
+        if (leftTable == null) {
+            lookForPartitionedJoin(join.leftTable(), where, log);
+            return;
+        }
+
+        GridSqlTable rightTable = getTable(join.rightTable());
+
+        // Right side of join is a subquery.
+        if (rightTable == null) {
+            lookForPartitionedJoin(join.rightTable(), where, log);
+            return;
+        }
+
+        GridH2Table left = leftTable.dataTable();
+        GridH2Table right = leftTable.dataTable();
+
+        // Skip check at least of tables isn't partitioned.
         if (!(left.isPartitioned() && right.isPartitioned()))
             return;
 
-        String leftAffCol = left.getAffinityKeyColumn().columnName;
-        String rightAffCol = right.getAffinityKeyColumn().columnName;
+        checkPartitionedJoin(join, where, left, right, log);
+    }
 
-        GridSqlElement joinCondition = join.on();
+    /**
+     * Checks whether an AST contains valid join operation between partitioned tables.
+     * Join condition should be an equality operation of affinity keys of tables. Conditions can be splitted between
+     * join and where clauses. If join is invalid then warning a user about that.
+     *
+     * @param join The join to check.
+     * @param where The where statement from previous AST, for nested joins.
+     * @param left Left side of join.
+     * @param right Right side of join.
+     * @param log Ignite logger.
+     */
+    private static void checkPartitionedJoin(GridSqlJoin join, GridSqlAst where, GridH2Table left, GridH2Table right, IgniteLogger log) {
+        String leftTblAls = getAlias(join.leftTable());
+        String rightTblAls = getAlias(join.rightTable());
 
-        if (!checkJoinCondition(joinCondition, leftAffCol, rightAffCol))
+        // User explicitly specify an affinity key. Otherwise use primary key.
+        boolean pkLeft = left.getExplicitAffinityKeyColumn() == null;
+        boolean pkRight = right.getExplicitAffinityKeyColumn() == null;
+
+        Set<String> leftAffKeys = affKeys(pkLeft, left);
+        Set<String> rightAffKeys = affKeys(pkRight, right);
+
+        boolean joinIsValid = checkPartitionedCondition(join.on(),
+            leftTblAls, leftAffKeys, pkLeft,
+            rightTblAls, rightAffKeys, pkRight);
+
+        if (!joinIsValid && where instanceof GridSqlElement)
+            joinIsValid = checkPartitionedCondition((GridSqlElement) where,
+                leftTblAls, leftAffKeys, pkLeft,
+                rightTblAls, rightAffKeys, pkRight);
+
+        if (!joinIsValid) {
             log.warning(
-                "Non-collocated join. For perform you must set the 'distributedJoin' flag, or make a join in affinity columns: "
-                + left.getName() + "." + leftAffCol + ", " + right.getName() + "." + rightAffCol
+                String.format(
+                    "For join two partitioned tables join condition should be the equality operation of affinity keys." +
+                        " Left side: %s; right side: %s", left.getName(), right.getName())
             );
+        }
     }
 
-    private static GridSqlTable getTable(GridSqlElement el) {
-        if (el instanceof GridSqlTable)
-            return (GridSqlTable) el;
+    /** @return Set of possible affinity keys for this table, incl. default _KEY. */
+    private static Set<String> affKeys(boolean pk, GridH2Table tbl) {
+        Set<String> affKeys = new HashSet<>();
 
-        if (el instanceof GridSqlAlias)
-            return el.child();
+        // User explicitly specify an affinity key. Otherwise use primary key.
+        if (!pk)
+            affKeys.add(tbl.getAffinityKeyColumn().columnName);
+        else {
+            affKeys.add("_KEY");
 
-        assert false: el;
+            String keyFieldName = tbl.rowDescriptor().type().keyFieldName();
 
-        return null;
+            if (keyFieldName == null)
+                affKeys.addAll(tbl.rowDescriptor().type().primaryKeyFields());
+            else
+                affKeys.add(keyFieldName);
+        }
+
+        return affKeys;
     }
 
-    /** */
-    private static boolean checkJoinCondition(GridSqlElement condition, String affColLeft, String affColRight) {
+    /**
+     * Valid join condition contains:
+     * 1. Equality of Primary (incl. cases of complex PK) or Affinity keys;
+     * 2. Additional conditions must be joint with AND operation to the affinity join condition.
+     *
+     * @return {@code true} if join condition contains affinity join condition, otherwise {@code false}.
+     */
+    private static boolean checkPartitionedCondition(GridSqlElement condition,
+        String leftTbl, Set<String> leftAffKeys, boolean pkLeft,
+        String rightTbl, Set<String> rightAffKeys, boolean pkRight) {
+
         if (!(condition instanceof GridSqlOperation))
             return false;
 
         GridSqlOperation op = (GridSqlOperation) condition;
 
-        if (GridSqlOperationType.EQUAL != op.operationType())
+        // It is may be a part of affinity condition.
+        if (GridSqlOperationType.EQUAL == op.operationType())
+            checkEqualityOperation(op, leftTbl, leftAffKeys, pkLeft, rightTbl, rightAffKeys, pkRight);
+
+        // Check affinity condition is covered fully. If true then return. Otherwise go deeper.
+        if (affinityCondIsCovered(leftAffKeys, rightAffKeys))
+            return true;
+
+        // If we don't cover affinity condition prior to first AND then this is not an affinity condition.
+        if (GridSqlOperationType.AND != op.operationType())
             return false;
 
-        if (!(op.child(0) instanceof GridSqlColumn))
-            return false;
+        // Go recursively to childs.
+        for (int i = 0; i < op.size(); i++) {
+            boolean ret = checkPartitionedCondition(op.child(i),
+                leftTbl, leftAffKeys, pkLeft,
+                rightTbl, rightAffKeys, pkRight);
 
-        if (!(op.child(1) instanceof GridSqlColumn))
-            return false;
+            if (ret)
+                return true;
+        }
 
-        String leftCol = ((GridSqlColumn) op.child(0)).columnName();
-        String rightCol = ((GridSqlColumn) op.child(1)).columnName();
+        // Join condition doesn't contain affinity condition.
+        return false;
+    }
 
-        if (!leftCol.equals(affColLeft) && !leftCol.equals(affColRight))
-            return false;
+    /** */
+    private static boolean affinityCondIsCovered(Set<String> leftAffKeys, Set<String> rightAffKeys) {
+        return leftAffKeys.isEmpty() && rightAffKeys.isEmpty();
+    }
 
-        return rightCol.equals(affColRight) || rightCol.equals(affColLeft);
+    /** */
+    private static void checkEqualityOperation(GridSqlOperation equalOp,
+        String leftTbl, Set<String> leftCols, boolean pkLeft,
+        String rightTbl, Set<String> rightCols, boolean pkRight) {
+
+        // TODO: Alias?
+        if (!(equalOp.child(0) instanceof GridSqlColumn))
+            return;
+
+        // TODO: Alias?
+        if (!(equalOp.child(1) instanceof GridSqlColumn))
+            return;
+
+        String leftCol = ((GridSqlColumn) equalOp.child(0)).columnName();
+        String rightCol = ((GridSqlColumn) equalOp.child(1)).columnName();
+
+        String leftTblAls = ((GridSqlColumn) equalOp.child(0)).tableAlias();
+        String rightTblAls = ((GridSqlColumn) equalOp.child(1)).tableAlias();
+
+        Set<String> actLeftCols;
+        Set<String> actRightCols;
+
+        if (leftTbl.equals(leftTblAls))
+            actLeftCols = leftCols;
+        else if (leftTbl.equals(rightTblAls))
+            actLeftCols = rightCols;
+        else
+            return;
+
+        if (rightTbl.equals(rightTblAls))
+            actRightCols = rightCols;
+        else if (rightTbl.equals(leftTblAls))
+            actRightCols = leftCols;
+        else
+            return;
+
+        // This is part of the affinity join condition.
+        if (actLeftCols.contains(leftCol) && actRightCols.contains(rightCol)) {
+            if (pkLeft && "_KEY".equals(leftCol))
+                actLeftCols.clear();
+            else if (pkLeft) {
+                actLeftCols.remove(leftCol);
+                // Only _KEY is there.
+                if (actLeftCols.size() == 1)
+                    actLeftCols.clear();
+            }
+            else
+                actLeftCols.remove(leftCol);
+
+            if (pkRight && "_KEY".equals(rightCol))
+                actRightCols.clear();
+            else if (pkRight) {
+                actRightCols.remove(rightCol);
+                // Only _KEY is there.
+                if (actRightCols.size() == 1)
+                    actRightCols.clear();
+            }
+            else
+                actRightCols.remove(rightCol);
+        }
+    }
+
+    /** Extract table instance from an AST element. */
+    private static GridSqlTable getTable(GridSqlElement el) {
+        if (el instanceof GridSqlTable)
+            return (GridSqlTable) el;
+
+        if (el instanceof GridSqlAlias && el.child() instanceof GridSqlTable)
+            return el.child();
+
+        return null;
+    }
+
+    /** Extract alias value. */
+    private static String getAlias(GridSqlElement el) {
+        if (el instanceof GridSqlAlias)
+            return ((GridSqlAlias)el).alias();
+
+        return null;
     }
 
     /**
