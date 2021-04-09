@@ -19,14 +19,14 @@ package org.apache.ignite.network;
 
 import java.util.Arrays;
 import java.util.Collections;
-import org.apache.ignite.network.message.MessageMapperProvider;
+import org.apache.ignite.network.message.MessageSerializerProvider;
 
 /**
  * Entry point for network module.
  */
 public class Network {
     /** Message mapper providers, messageMapperProviders[message type] -> message mapper provider for message with message type. */
-    private final MessageMapperProvider<?>[] messageMapperProviders = new MessageMapperProvider<?>[Short.MAX_VALUE << 1];
+    private final MessageSerializerProvider<?>[] messageSerializerProviders = new MessageSerializerProvider<?>[Short.MAX_VALUE << 1];
 
     /** Message handlers. */
     private final MessageHandlerHolder messageHandlerHolder = new MessageHandlerHolder();
@@ -47,11 +47,11 @@ public class Network {
      * @param type Message type.
      * @param mapperProvider Message mapper provider.
      */
-    public void registerMessageMapper(short type, MessageMapperProvider mapperProvider) throws NetworkConfigurationException {
-        if (this.messageMapperProviders[type] != null)
+    public void registerMessageMapper(short type, MessageSerializerProvider mapperProvider) throws NetworkConfigurationException {
+        if (this.messageSerializerProviders[type] != null)
             throw new NetworkConfigurationException("Message mapper for type " + type + " is already defined");
 
-        this.messageMapperProviders[type] = mapperProvider;
+        this.messageSerializerProviders[type] = mapperProvider;
     }
 
     /**
@@ -60,7 +60,7 @@ public class Network {
      */
     public NetworkCluster start() {
         //noinspection Java9CollectionFactory
-        NetworkClusterContext context = new NetworkClusterContext(messageHandlerHolder, Collections.unmodifiableList(Arrays.asList(messageMapperProviders)));
+        NetworkClusterContext context = new NetworkClusterContext(messageHandlerHolder, Collections.unmodifiableList(Arrays.asList(messageSerializerProviders)));
         return clusterFactory.startCluster(context);
     }
 }

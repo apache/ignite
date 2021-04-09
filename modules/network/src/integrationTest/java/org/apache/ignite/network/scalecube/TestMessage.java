@@ -18,46 +18,54 @@
 
 package org.apache.ignite.network.scalecube;
 
+import java.io.Serializable;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.network.message.NetworkMessage;
 
 /** */
-class TestMessage implements NetworkMessage {
+public class TestMessage implements NetworkMessage, Serializable {
     /** Visible type for tests. */
     public static final short TYPE = 3;
 
     /** */
     private final String msg;
 
+    private final Map<Integer, String> map;
+
     /** */
-    TestMessage(String msg) {
+    public TestMessage(String msg, Map<Integer, String> map) {
         this.msg = msg;
+        this.map = map;
     }
 
     public String msg() {
         return msg;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        TestMessage message = (TestMessage)o;
-        return Objects.equals(msg, message.msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(msg);
+    public Map<Integer, String> getMap() {
+        return map;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "TestMessage{" +
             "msg='" + msg + '\'' +
+            ", map=" + map +
             '}';
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TestMessage message = (TestMessage) o;
+        return Objects.equals(msg, message.msg) && Objects.equals(map, message.map);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(msg, map);
     }
 
     /** {@inheritDoc} */

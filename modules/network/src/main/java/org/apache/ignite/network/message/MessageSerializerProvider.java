@@ -17,19 +17,26 @@
 
 package org.apache.ignite.network.message;
 
-import org.apache.ignite.network.internal.MessageWriter;
-
 /**
- * Message serializer.
+ * MessageMapperProvider creates {@link MessageDeserializer} and {@link MessageSerializer} instances
+ * for working with {@link NetworkMessage} objects.
  * @param <M> Message type.
  */
-public interface MessageSerializer<M extends NetworkMessage> {
+public interface MessageSerializerProvider<M extends NetworkMessage> {
     /**
-     * Writes a message to the writer.
-     * @param message Message.
-     * @param writer Message writer.
-     * @return {@code true } if the message was completely written.
-     * @throws MessageMappingException If failed.
+     * Create deserializer.
+     * @return Message deserializer.
      */
-    boolean writeMessage(M message, MessageWriter writer) throws MessageMappingException;
+    MessageDeserializer<M> createDeserializer();
+
+    /**
+     * Create serializer.
+     * @return Message serializer.
+     */
+    MessageSerializer<M> createSerializer();
+
+    /**
+     * @return Message's field count.
+     */
+    byte fieldsCount();
 }

@@ -28,8 +28,8 @@ import org.apache.ignite.network.NetworkCluster;
 import org.apache.ignite.network.NetworkClusterEventHandler;
 import org.apache.ignite.network.NetworkHandlersProvider;
 import org.apache.ignite.network.NetworkMember;
-import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
+import org.apache.ignite.network.message.NetworkMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -88,7 +88,7 @@ class ITScaleCubeNetworkClusterMessagingTest {
 
         waitForCluster(alice);
 
-        TestMessage sentMessage = new TestMessage("Message from Alice");
+        TestMessage sentMessage = new TestMessage("Message from Alice", null);
 
         //When: Send one message to all members in cluster.
         for (NetworkMember member : alice.allMembers()) {
@@ -118,9 +118,9 @@ class ITScaleCubeNetworkClusterMessagingTest {
             new ScaleCubeNetworkClusterFactory(name, port, addresses, new ScaleCubeMemberResolver())
         );
 
-        network.registerMessageMapper(TestMessage.TYPE, new TestMessageMapperProvider());
-        network.registerMessageMapper(TestRequest.TYPE, new TestRequestMapperProvider());
-        network.registerMessageMapper(TestResponse.TYPE, new TestResponseMapperProvider());
+        network.registerMessageMapper(TestMessage.TYPE, new TestMessageSerializerProvider());
+        network.registerMessageMapper(TestRequest.TYPE, new TestRequestSerializerProvider());
+        network.registerMessageMapper(TestResponse.TYPE, new TestResponseSerializerProvider());
 
         NetworkCluster member = network.start();
 

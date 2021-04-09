@@ -15,24 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.scalecube;
+package org.apache.ignite.internal.util;
 
-import java.io.ObjectOutputStream;
-import org.apache.ignite.network.internal.MessageWriter;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import sun.misc.Unsafe;
 
-/** */
-@Deprecated
-public class ScaleCubeMessageWriter implements MessageWriter {
+/**
+ * {@link DirectBufferCleaner} implementation based on the {@code Unsafe.invokeCleaner} method.
+ *
+ * Note: This implementation will work only for Java 9+.
+ */
+public class UnsafeDirectBufferCleaner implements DirectBufferCleaner {
+    /** Cleaner method. */
+    private final Method cleanerMtd;
+
     /** */
-    private final ObjectOutputStream stream;
-
-    /** */
-    public ScaleCubeMessageWriter(ObjectOutputStream stream) {
-        this.stream = stream;
+    public UnsafeDirectBufferCleaner() {
+        try {
+            cleanerMtd = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
+        }
+        catch (NoSuchMethodException e) {
+            throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public ObjectOutputStream stream() {
-        return stream;
+    @Override public void clean(ByteBuffer buf) {
+        GridUnsafe.invoke(cleanerMtd, buf);
     }
 }
+

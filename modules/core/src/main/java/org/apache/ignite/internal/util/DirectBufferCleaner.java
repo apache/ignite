@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.scalecube;
+package org.apache.ignite.internal.util;
 
-import java.io.ObjectInputStream;
-import org.apache.ignite.network.internal.MessageReader;
+import java.nio.ByteBuffer;
 
-/** */
-@Deprecated
-public class ScaleCubeMessageReader implements MessageReader {
-    /** */
-    private final ObjectInputStream stream;
-
-    /** */
-    public ScaleCubeMessageReader(ObjectInputStream stream) {
-        this.stream = stream;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ObjectInputStream stream() {
-        return this.stream;
-    }
+/**
+ * Cleaner interface for {@code java.nio.ByteBuffer}.
+ */
+public interface DirectBufferCleaner {
+    /**
+     * Cleans the direct buffer.
+     *
+     * @param buf direct buffer.
+     */
+    public void clean(ByteBuffer buf);
 }

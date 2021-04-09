@@ -25,10 +25,14 @@ import org.apache.ignite.network.internal.MessageReader;
  */
 public interface MessageDeserializer<M extends NetworkMessage> {
     /**
-     * Read message from reader.
+     * Read a message from the reader.
      * @param reader Message reader.
-     * @return Read message.
+     * @return {@code true } if the message has been read completely.
      * @throws MessageMappingException If failed.
      */
-    M readMessage(MessageReader reader) throws MessageMappingException;
+    boolean readMessage(MessageReader reader) throws MessageMappingException;
+
+    Class<M> klass();
+
+    M getMessage();
 }

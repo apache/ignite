@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.message;
+package org.apache.ignite.network.internal.direct.state;
 
 /**
- * MessageMapperProvider creates {@link MessageDeserializer} and {@link MessageSerializer} instances
- * for working with {@link NetworkMessage} objects.
- * @param <M> Message type.
+ * Message state item.
  */
-public interface MessageMapperProvider<M extends NetworkMessage> {
+public interface DirectMessageStateItem {
     /**
-     * Create deserializer.
-     * @return Message deserializer.
+     * Resets the state.
      */
-    MessageDeserializer<M> createDeserializer();
-
-    /**
-     * Create serializer.
-     * @return Message serializer.
-     */
-    MessageSerializer<M> createSerializer();
+    public void reset();
 }

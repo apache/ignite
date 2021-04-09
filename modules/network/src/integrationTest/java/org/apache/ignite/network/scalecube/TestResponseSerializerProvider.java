@@ -17,38 +17,26 @@
 
 package org.apache.ignite.network.scalecube;
 
-import java.io.IOException;
 import org.apache.ignite.network.message.MessageDeserializer;
-import org.apache.ignite.network.message.MessageMapperProvider;
-import org.apache.ignite.network.message.MessageMappingException;
 import org.apache.ignite.network.message.MessageSerializer;
+import org.apache.ignite.network.message.MessageSerializerProvider;
 
 /**
- * Mapper for {@link TestRequest}.
+ * Mapper provider for {@link TestResponse}.
  */
-public class TestRequestMapperProvider implements MessageMapperProvider<TestRequest> {
+public class TestResponseSerializerProvider implements MessageSerializerProvider<TestResponse> {
     /** {@inheritDoc} */
-    @Override public MessageDeserializer<TestRequest> createDeserializer() {
-        return reader -> {
-            try {
-                final int number = reader.stream().readInt();
-                return new TestRequest(number);
-            }
-            catch (IOException e) {
-                throw new MessageMappingException("Failed to deserialize", e);
-            }
-        };
+    @Override public MessageDeserializer<TestResponse> createDeserializer() {
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public MessageSerializer<TestRequest> createSerializer() {
-        return (message, writer) -> {
-            try {
-                writer.stream().writeInt(message.number());
-            }
-            catch (IOException e) {
-                throw new MessageMappingException("Failed to serialize", e);
-            }
-        };
+    @Override public MessageSerializer<TestResponse> createSerializer() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0;
     }
 }

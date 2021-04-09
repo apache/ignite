@@ -20,7 +20,6 @@ package org.apache.ignite.raft.server;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.lang.LogWrapper;
-import org.apache.ignite.network.message.DefaultMessageMapperProvider;
 import org.apache.ignite.network.Network;
 import org.apache.ignite.network.NetworkCluster;
 import org.apache.ignite.network.scalecube.ScaleCubeMemberResolver;
@@ -151,11 +150,12 @@ class ITRaftCounterServerTest {
             new ScaleCubeNetworkClusterFactory(name, port, servers, new ScaleCubeMemberResolver())
         );
 
-        network.registerMessageMapper((short)1000, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1001, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1005, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1006, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1009, new DefaultMessageMapperProvider());
+        // TODO: IGNITE-14088: Uncomment and use real serializer provider
+//        network.registerMessageMapper((short)1000, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1001, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1005, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1006, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1009, new DefaultMessageMapperProvider());
 
         return network.start();
     }

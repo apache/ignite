@@ -42,6 +42,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- 3-rd party dependencies. -->
         <dependency>
             <groupId>io.scalecube</groupId>

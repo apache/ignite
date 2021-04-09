@@ -28,12 +28,11 @@ import org.apache.ignite.network.NetworkCluster;
 import org.apache.ignite.network.NetworkClusterEventHandler;
 import org.apache.ignite.network.NetworkHandlersProvider;
 import org.apache.ignite.network.NetworkMember;
-import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
+import org.apache.ignite.network.message.NetworkMessage;
 
 import static io.scalecube.cluster.transport.api.Message.fromData;
 import static java.time.Duration.ofMillis;
-import static org.apache.ignite.network.scalecube.ScaleCubeMessageCodec.HEADER_MESSAGE_TYPE;
 
 /**
  * Implementation of {@link NetworkCluster} based on ScaleCube.
@@ -95,15 +94,14 @@ public class ScaleCubeNetworkCluster implements NetworkCluster {
 
     @Override public Future<?> send(NetworkMember member, NetworkMessage msg, String corellationId) {
         return cluster.send(memberResolver.resolveMember(member),
-            Message.withData(msg).header(HEADER_MESSAGE_TYPE, String.valueOf(msg.directType())).
-                correlationId(corellationId).build()).toFuture();
+            Message.withData(msg).correlationId(corellationId).build()
+        ).toFuture();
     }
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<NetworkMessage> invoke(NetworkMember member, NetworkMessage msg, long timeout) {
         return cluster.requestResponse(memberResolver.resolveMember(member),
-            Message.withData(msg).correlationId(UUID.randomUUID().toString()).
-                header(HEADER_MESSAGE_TYPE, String.valueOf(msg.directType())).build())
+            Message.withData(msg).correlationId(UUID.randomUUID().toString()).build())
             .timeout(ofMillis(timeout)).toFuture().thenApply(m -> m.data());
     }
 
@@ -128,7 +126,6 @@ public class ScaleCubeNetworkCluster implements NetworkCluster {
     private Message fromNetworkMessage(NetworkMessage message) {
         return Message.builder()
             .data(message)
-            .header(HEADER_MESSAGE_TYPE, String.valueOf(message.directType()))
             .build();
     }
 

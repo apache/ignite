@@ -20,6 +20,9 @@ package org.apache.ignite.network.message;
  * Message for exchange information in cluster.
  */
 public interface NetworkMessage {
+    /** Size of the direct type. */
+    static final int DIRECT_TYPE_SIZE = 2;
+
     /**
      * @return Message type.
      */

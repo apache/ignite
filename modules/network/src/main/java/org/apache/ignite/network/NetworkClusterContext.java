@@ -19,7 +19,7 @@ package org.apache.ignite.network;
 
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.network.message.MessageMapperProvider;
+import org.apache.ignite.network.message.MessageSerializerProvider;
 
 /**
  * Cluster context.
@@ -29,16 +29,16 @@ public class NetworkClusterContext {
     private final MessageHandlerHolder messageHandlerHolder;
 
     /** Message mappers, messageMapperProviders[message type] -> message mapper provider for message with message type. */
-    private final List<MessageMapperProvider<?>> messageMapperProviders;
+    private final List<MessageSerializerProvider<?>> messageSerializerProviders;
 
     /**
      * Constructor.
      * @param messageHandlerHolder Message handlers.
-     * @param messageMapperProviders Message mappers map.
+     * @param messageSerializerProviders Message mappers map.
      */
-    public NetworkClusterContext(MessageHandlerHolder messageHandlerHolder, List<MessageMapperProvider<?>> messageMapperProviders) {
+    public NetworkClusterContext(MessageHandlerHolder messageHandlerHolder, List<MessageSerializerProvider<?>> messageSerializerProviders) {
         this.messageHandlerHolder = messageHandlerHolder;
-        this.messageMapperProviders = messageMapperProviders;
+        this.messageSerializerProviders = messageSerializerProviders;
     }
 
     /**
@@ -51,7 +51,7 @@ public class NetworkClusterContext {
     /**
      * @return Message mapper providers list.
      */
-    public List<MessageMapperProvider<?>> messageMapperProviders() {
-        return Collections.unmodifiableList(messageMapperProviders);
+    public List<MessageSerializerProvider<?>> messageMapperProviders() {
+        return Collections.unmodifiableList(messageSerializerProviders);
     }
 }

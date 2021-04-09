@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.lang.LogWrapper;
-import org.apache.ignite.network.message.DefaultMessageMapperProvider;
 import org.apache.ignite.network.Network;
 import org.apache.ignite.network.NetworkCluster;
 import org.apache.ignite.network.NetworkHandlersProvider;
@@ -117,11 +116,12 @@ public class RaftServerImpl implements RaftServer {
             new ScaleCubeNetworkClusterFactory(id, localPort, List.of(), new ScaleCubeMemberResolver())
         );
 
-        network.registerMessageMapper((short)1000, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1001, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1005, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1006, new DefaultMessageMapperProvider());
-        network.registerMessageMapper((short)1009, new DefaultMessageMapperProvider());
+        // TODO: IGNITE-14088: Uncomment and use real serializer provider
+//        network.registerMessageMapper((short)1000, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1001, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1005, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1006, new DefaultMessageMapperProvider());
+//        network.registerMessageMapper((short)1009, new DefaultMessageMapperProvider());
 
         server = network.start();
 

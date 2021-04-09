@@ -89,8 +89,7 @@ public class ScaleCubeNetworkClusterFactory implements NetworkClusterFactory {
             .config(opts -> opts
                 .memberAlias(localMemberName)
                 .transport(trans -> {
-                    return trans.port(localPort)
-                        .messageCodec(new ScaleCubeMessageCodec(clusterContext.messageMapperProviders()));
+                    return trans.port(localPort);
                 })
             )
             .membership(opts -> {
