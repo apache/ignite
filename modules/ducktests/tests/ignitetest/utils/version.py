@@ -16,7 +16,7 @@
 """
 Module contains ignite version utility class.
 """
-
+import re
 from distutils.version import LooseVersion
 
 from ignitetest import __version__
@@ -34,18 +34,34 @@ class IgniteVersion(LooseVersion):
         v28 = IgniteVersion("2.8.1")
         assert v28 > v27  # assertion passes!
     """
-    def __init__(self, version_string):
-        self.is_dev = (version_string.lower() == __version__.lower()) or (version_string.lower() == "dev")
-        if self.is_dev:
-            version_string = __version__
 
-        super().__init__(version_string)
+    DEV_VERSION = "dev"
+    DEFAULT_PROJECT = "ignite"
+
+    def __init__(self, version_string):
+        if version_string == self.DEV_VERSION:
+            self.project = self.DEFAULT_PROJECT
+            version = version_string
+        else:
+            match = re.match(r'([a-zA-Z]*)-*([\d(dev)]+.*)', version_string)
+            self.project = self.DEFAULT_PROJECT if not match.group(1) else match.group(1)
+            version = match.group(2)
+
+        self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
+
+        if self.is_dev:
+            version = __version__  # todo what version for fork?
+
+        super().__init__(version)
 
     def __str__(self):
-        if self.is_dev:
-            return "dev"
+        return "%s-%s" % (self.project, "dev" if self.is_dev else super().__str__())
 
-        return super().__str__()
+    def _cmp(self, other):
+        if self.project == other.project:
+            return super()._cmp(other)
+
+        return -1  # todo compare projects
 
     def __repr__(self):
         return "IgniteVersion ('%s')" % str(self)
