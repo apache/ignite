@@ -61,7 +61,6 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -155,17 +154,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.AFFINITY_KEY;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.ATOMICITY;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.BACKUPS;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.CACHE_GROUP;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.CACHE_NAME;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.DATA_REGION;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.ENCRYPTED;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.TEMPLATE;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE;
 
 /**
  *
@@ -654,10 +642,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             SqlIdentifier tblFullName = createTblNode.name();
 
+            if (!tblFullName.isSimple())
+                throw new IgniteSQLException("Unexpected value of tableName [" +
+                    "expected a simple identifier, but was " + tblFullName + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+
             CreateTableCommand createTblCmd = new CreateTableCommand();
 
             createTblCmd.schemaName("PUBLIC"); // TODO: get from the context
-            createTblCmd.tableName(Util.last(tblFullName.names));
+            createTblCmd.tableName(tblFullName.getSimple());
             createTblCmd.ifNotExists(createTblNode.ifNotExists());
             createTblCmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
 
@@ -667,12 +660,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                     switch (opt.key()) {
                         case TEMPLATE:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + TEMPLATE + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.templateName(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.templateName(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case BACKUPS:
@@ -680,20 +670,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                                 || !((SqlNumericLiteral)opt.value()).isInteger()
                                 || ((SqlLiteral)opt.value()).intValue(true) < 0
                             )
-                                throw new IgniteSQLException("Unexpected value for param " + BACKUPS + " [" +
-                                    "expected a non-negative integer, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                                throwOptionParsingException(opt, "a non-negative integer", ctx.query());
 
                             createTblCmd.backups(((SqlLiteral)opt.value()).intValue(true));
                             break;
 
                         case AFFINITY_KEY:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + AFFINITY_KEY + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.affinityKey(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.affinityKey(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case ATOMICITY: {
@@ -707,57 +692,40 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             }
 
                             if (mode == null)
-                                throw new IgniteSQLException("Unexpected value for param " + ATOMICITY
-                                    + " [expected values are " + Arrays.toString(CacheAtomicityMode.values())
-                                    + ", but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                                throwOptionParsingException(opt, "values are "
+                                    + Arrays.toString(CacheAtomicityMode.values()), ctx.query());
 
                             createTblCmd.atomicityMode(mode);
                             break;
                         }
                         case CACHE_GROUP:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + CACHE_GROUP + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.cacheGroup(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.cacheGroup(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case CACHE_NAME:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + CACHE_NAME + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.cacheName(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.cacheName(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case DATA_REGION:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + DATA_REGION + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.dataRegionName(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.dataRegionName(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case KEY_TYPE:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + KEY_TYPE + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.keyTypeName(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.keyTypeName(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case VALUE_TYPE:
-                            if (!(opt.value() instanceof SqlIdentifier))
-                                throw new IgniteSQLException("Unexpected value for param " + VALUE_TYPE + " [" +
-                                    "expected an identifier, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                            checkParamIsSqlIdentifier(opt, ctx);
 
-                            createTblCmd.valueTypeName(((SqlIdentifier)opt.value()).names.get(0));
+                            createTblCmd.valueTypeName(((SqlIdentifier)opt.value()).getSimple());
                             break;
 
                         case WRITE_SYNCHRONIZATION_MODE: {
@@ -771,19 +739,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             }
 
                             if (mode == null)
-                                throw new IgniteSQLException("Unexpected value for param " + WRITE_SYNCHRONIZATION_MODE
-                                    + " [expected values are " + Arrays.toString(CacheWriteSynchronizationMode.values())
-                                    + ", but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                                throwOptionParsingException(opt, "values are "
+                                    + Arrays.toString(CacheWriteSynchronizationMode.values()), ctx.query());
 
                             createTblCmd.writeSynchronizationMode(mode);
                             break;
                         }
                         case ENCRYPTED:
                             if (!(opt.value() instanceof SqlLiteral) && ((SqlLiteral)opt.value()).getTypeName() != BOOLEAN)
-                                throw new IgniteSQLException("Unexpected value for param " + ENCRYPTED + " [" +
-                                    "expected a boolean, but was " + opt.value() + "; " +
-                                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+                                throwOptionParsingException(opt, "a boolean", ctx.query());
 
                             createTblCmd.encrypted(((SqlLiteral)opt.value()).booleanValue());
                             break;
@@ -804,7 +768,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             List<ColumnDefinition> cols = new ArrayList<>();
 
             for (SqlColumnDeclaration col : colDeclarations) {
-                String name = Util.last(col.name.names);
+                if (!col.name.isSimple())
+                    throw new IgniteSQLException("Unexpected value of columnName [" +
+                        "expected a simple identifier, but was " + col.name + "; " +
+                        "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+
+                String name = col.name.getSimple();
                 RelDataType type = planner.conver(col.dataType);
 
                 Object dflt = null;
@@ -834,7 +803,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     .map(SqlNodeList.class::cast)
                     .flatMap(l -> l.getList().stream())
                     .map(SqlIdentifier.class::cast)
-                    .map(id -> Util.last(id.names))
+                    .map(SqlIdentifier::getSimple)
                     .filter(dedupSet::add)
                     .collect(Collectors.toList());
 
@@ -847,6 +816,31 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         throw new IgniteSQLException("Unsupported operation [" +
             "sqlNodeKind=" + sqlNode.getKind() + "; " +
             "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Short cut for validating that option value is a simple identifier.
+     *
+     * @param opt An option to validate.
+     * @param ctx Planning context.
+     * @throws IgniteSQLException In case the validation was failed.
+     */
+    private void checkParamIsSqlIdentifier(IgniteSqlCreateTableOption opt, PlanningContext ctx) {
+        if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
+            throwOptionParsingException(opt, "a simple identifier", ctx.query());
+    }
+
+    /**
+     * Throws exception with message relates to validation of create table option.
+     *
+     * @param opt An option which validation was failed.
+     * @param exp A string representing expected values.
+     * @param qry A query the validation was failed for.
+     */
+    private void throwOptionParsingException(IgniteSqlCreateTableOption opt, String exp, String qry) {
+        throw new IgniteSQLException("Unexpected value for param " + opt.key() + " [" +
+            "expected " + exp + ", but was " + opt.value() + "; " +
+            "querySql=\"" + qry + "\"]", IgniteQueryErrorCode.PARSING);
     }
 
     /** */
