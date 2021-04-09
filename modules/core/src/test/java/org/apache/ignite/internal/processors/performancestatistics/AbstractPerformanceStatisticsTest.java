@@ -82,8 +82,8 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         waitForStatisticsEnabled(true);
     }
 
-    /** Starts collecting performance statistics with no flush size. */
-    protected static void startCollectStatisticsWithNoFlushSize() throws Exception {
+    /** Starts collecting performance statistics with immediately flush. */
+    protected static void startCollectStatisticsWithImmediatelyFlush() throws Exception {
         System.setProperty(IGNITE_PERF_STAT_FLUSH_SIZE, "1");
 
         try {

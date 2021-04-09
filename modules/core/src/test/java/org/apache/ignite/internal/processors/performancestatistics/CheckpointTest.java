@@ -120,7 +120,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         // wait for checkpoint to finish on node start
         assertTrue(waitForCondition(() -> 0 < lastStart.value(), TIMEOUT));
 
-        startCollectStatisticsWithNoFlushSize();
+        startCollectStatisticsWithImmediatelyFlush();
 
         forceCheckpoint();
 
@@ -186,7 +186,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         long start = U.currentTimeMillis();
 
-        startCollectStatisticsWithNoFlushSize();
+        startCollectStatisticsWithImmediatelyFlush();
 
         int keysCnt = 1024;
 
@@ -194,7 +194,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         slowCheckpointEnabled.set(true);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
             while (!stop.get())
                 cache.put(ThreadLocalRandom.current().nextLong(keysCnt), ThreadLocalRandom.current().nextLong());
         });
