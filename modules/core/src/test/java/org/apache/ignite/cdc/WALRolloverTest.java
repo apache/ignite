@@ -58,7 +58,7 @@ public class WALRolloverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testWallRollover() throws Exception {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 200; i++) {
             IgniteEx ign = startGrid(0);
             ign.cluster().state(ClusterState.ACTIVE);
 

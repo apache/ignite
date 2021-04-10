@@ -675,13 +675,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
+        long lastIdx = -1L;
+
         boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
 
         try {
-            if (archiveLast)
-                closeBufAndRollover(currentHandle(), null, RolloverType.NONE);
+            if (archiveLast) {
+                lastIdx = currentSegment();
 
-            fileHandleManager.onDeactivate(false);
+                closeBufAndRollover(currentHandle(), null, RolloverType.NONE);
+            }
+
+            fileHandleManager.onDeactivate();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
@@ -696,9 +701,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (archiveLast) {
                     try {
                         long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
-                        long to = segmentAware.curAbsWalIdx();
 
-                        for (long i = from; i < to; i++)
+                        for (long i = from; i <= lastIdx; i++)
                             archiver.archiveSegment(i);
                     }
                     catch (StorageException e) {
@@ -1402,11 +1406,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
-/*
         if (segmentAware.lastArchivedAbsoluteIndex() >= absIdx)
             absIdx = segmentAware.lastArchivedAbsoluteIndex() + 1;
 
-*/
         @Nullable FileArchiver archiver0 = archiver;
 
         long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();

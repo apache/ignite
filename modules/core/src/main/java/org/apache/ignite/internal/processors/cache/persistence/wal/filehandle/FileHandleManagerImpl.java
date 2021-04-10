@@ -203,7 +203,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeactivate(boolean rollOver) throws IgniteCheckedException {
+    @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
         try {
@@ -213,7 +213,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             }
 
             if (currHnd != null)
-                currHnd.close(rollOver);
+                currHnd.close(false);
         }
         finally {
             if (walSegmentSyncWorker != null)
