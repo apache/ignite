@@ -106,7 +106,9 @@ class NodeJoinLeftScenario(IgniteTest):
 
     def _do_rebalance_trigger_event(self, trigger_event, ignites, node_config):
         if trigger_event:  # TriggerEvent.NODE_LEFT
-            ignites.stop_node(ignites.nodes[len(ignites.nodes) - 1])
+            left = ignites.nodes[len(ignites.nodes) - 1]
+            self.logger.info("Stopping node %s.." % left.name)
+            ignites.stop_node(left)
             return ignites.nodes[:-1]
         else:  # TriggerEvent.NODE_JOIN
             ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),

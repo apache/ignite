@@ -19,6 +19,9 @@ Module contains persistence rebalance tests.
 from ducktape.mark import defaults
 from ducktape.utils.util import wait_until
 
+# pylint: disable=W0622
+from ducktape.errors import TimeoutError
+
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
@@ -91,10 +94,16 @@ class PersistentTest(NodeJoinLeftScenario):
     def _do_rebalance_trigger_event(self, trigger_event, ignites, node_config):
         rebalance_nodes = super()._do_rebalance_trigger_event(trigger_event, ignites, node_config)
 
+        self.logger.info("trigger_event / not trigger_event: %s / %s" % (str(trigger_event), str(not trigger_event)))
+
         if trigger_event:  # TriggerEvent.NODE_LEFT
             left = ignites.nodes[len(ignites.nodes) - 1]
-            wait_until(lambda: not ignites.alive(left),
-                       timeout_sec=ignites.shutdown_timeout_sec)
+            try:
+                wait_until(lambda: not ignites.alive(left),
+                           timeout_sec=ignites.shutdown_timeout_sec)
+            except TimeoutError:
+                self.logger.warn("Stopped node %s still is alive after timeout %d"
+                                 % (left.name, ignites.shutdown_timeout_sec))
 
         def __bl_changed():
             try:
