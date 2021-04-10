@@ -16,19 +16,16 @@
 """
 Module contains persistence rebalance tests.
 """
-from ducktape.mark import defaults
-from ducktape.utils.util import wait_until
-
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
+from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.tests.rebalance import TriggerEvent, NodeJoinLeftScenario
-from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
+from ignitetest.tests.rebalance import NodeJoinLeftScenario
+from ignitetest.utils.version import IgniteVersion
 
 
 # pylint: disable=W0223
@@ -36,37 +33,6 @@ class PersistentTest(NodeJoinLeftScenario):
     """
     Tests rebalance scenarios in persistent mode.
     """
-    NUM_NODES = 4
-
-    # pylint: disable=too-many-arguments, too-many-locals
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
-              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
-    def test_node_join(self, ignite_version,
-                       backups, cache_count, entry_count, entry_size, preloaders,
-                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
-        """
-        Tests rebalance on node join.
-        """
-        return self._run_scenario(ignite_version, TriggerEvent.NODE_JOIN,
-                                  backups, cache_count, entry_count, entry_size, preloaders,
-                                  thread_pool_size, batch_size, batches_prefetch_count, throttle)
-
-    # pylint: disable=too-many-arguments, too-many-locals
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
-              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
-    def test_node_left(self, ignite_version,
-                       backups, cache_count, entry_count, entry_size, preloaders,
-                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
-        """
-        Tests rebalance on node left.
-        """
-        return self._run_scenario(ignite_version, TriggerEvent.NODE_LEFT,
-                                  backups, cache_count, entry_count, entry_size, preloaders,
-                                  thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     def _build_config(self, ignite_version, backups, cache_count, entry_count, entry_size,
