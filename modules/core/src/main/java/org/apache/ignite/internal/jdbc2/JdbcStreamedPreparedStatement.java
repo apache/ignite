@@ -53,7 +53,7 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
         assert isQuery == null || !isQuery;
 
         long updCnt = conn.ignite().context().query().streamUpdateQuery(conn.cacheName(), conn.schemaName(),
-            streamer, sql, getArgs());
+            streamer, sql, getArgs(), conn.clientDescriptor());
 
         JdbcResultSet rs = new JdbcResultSet(this, updCnt);
 

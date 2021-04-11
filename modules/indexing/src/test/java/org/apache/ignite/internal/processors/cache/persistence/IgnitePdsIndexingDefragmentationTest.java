@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
@@ -30,12 +31,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
@@ -104,7 +107,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /**
@@ -140,22 +143,25 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
-        assertTrue(newIdxFileLen <= oldIdxFileLen);
+        assertTrue(
+            "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,
+            newIdxFileLen <= oldIdxFileLen
+        );
 
         File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(workDir);
-        assertTrue(completionMarkerFile.exists());
+        assertTrue(Arrays.toString(workDir.listFiles()), completionMarkerFile.exists());
 
         stopGrid(0);
 
-        GridQueryProcessor.idxCls = CaptureRebuildGridQueryIndexing.class;
+        IndexProcessor.idxRebuildCls = CaptureRebuildGridQueryIndexing.class;
 
         IgniteEx node = startGrid(0);
 
         awaitPartitionMapExchange();
 
-        CaptureRebuildGridQueryIndexing indexing = (CaptureRebuildGridQueryIndexing) node.context().query().getIndexing();
+        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexProcessor().idxRebuild();
 
-        assertFalse(indexing.didRebuildIndexes());
+        assertFalse(idxRebuild.didRebuildIndexes());
 
         IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
@@ -175,6 +181,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     private static void validateIndexes(IgniteEx node) throws Exception {
         ValidateIndexesClosure clo = new ValidateIndexesClosure(
+            () -> false,
             Collections.singleton(DEFAULT_CACHE_NAME),
             0,
             0,
@@ -242,6 +249,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL_INT INT, VAL_OBJ LONG)"));
 
+        final String cacheName = "SQL_default_TEST";
+
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_INT ON TEST(VAL_INT)"));
 
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_OBJ ON TEST(VAL_OBJ)"));
@@ -251,15 +260,14 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
 
-        createMaintenanceRecord();
+        createMaintenanceRecord(cacheName);
+
+        CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
 
         // Restart first time.
         stopGrid(0);
 
-        startGrid(0);
-
-        // Restart second time.
-        stopGrid(0);
+        defragmentAndValidateSizesDecreasedAfterDefragmentation(0, grp);
 
         startGrid(0);
 
@@ -293,16 +301,17 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     /**
      * IgniteH2Indexing that captures index rebuild operations.
      */
-    public static class CaptureRebuildGridQueryIndexing extends IgniteH2Indexing {
+    public static class CaptureRebuildGridQueryIndexing extends IndexesRebuildTask {
         /**
          * Whether index rebuild happened.
          */
         private boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-            IgniteInternalFuture<?> future = super.rebuildIndexesFromHash(cctx);
+        @Override public IgniteInternalFuture<?> rebuild(GridCacheContext cctx) {
+            IgniteInternalFuture<?> future = super.rebuild(cctx);
             rebuiltIndexes = future != null;
+
             return future;
         }
 

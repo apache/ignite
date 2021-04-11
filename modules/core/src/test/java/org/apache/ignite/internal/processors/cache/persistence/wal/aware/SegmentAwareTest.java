@@ -680,6 +680,101 @@ public class SegmentAwareTest {
     }
 
     /**
+     * Checking the correctness of WAL archive size.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalArchiveSize() throws Exception {
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
+
+        IgniteInternalFuture<?> fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
+
+        aware.addCurrentWalArchiveSize(4);
+        assertFutureIsNotFinish(fut);
+
+        aware.addReservedWalArchiveSize(4);
+        assertFutureIsNotFinish(fut);
+
+        aware.addCurrentWalArchiveSize(4);
+        fut.get(20);
+
+        aware.resetWalArchiveSizes();
+
+        fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
+
+        aware.addCurrentWalArchiveSize(4);
+        assertFutureIsNotFinish(fut);
+
+        aware.addReservedWalArchiveSize(4);
+        assertFutureIsNotFinish(fut);
+
+        aware.addReservedWalArchiveSize(4);
+        fut.get(20);
+
+        aware.resetWalArchiveSizes();
+
+        fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
+
+        aware.interrupt();
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
+
+        aware.reset();
+
+        fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
+
+        aware.forceInterrupt();
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
+    }
+
+    /**
+     * Checking the correctness of truncate logic.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTruncate() throws Exception {
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
+
+        IgniteInternalFuture<?> fut = awaitThread(aware::awaitAvailableTruncateArchive);
+
+        aware.lastCheckpointIdx(5);
+
+        fut.get(20);
+        assertEquals(5, aware.awaitAvailableTruncateArchive());
+
+        aware.reserve(4);
+        assertEquals(4, aware.awaitAvailableTruncateArchive());
+
+        aware.setLastArchivedAbsoluteIndex(3);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.lastTruncatedArchiveIdx(0);
+        assertEquals(2, aware.awaitAvailableTruncateArchive());
+        assertEquals(0, aware.lastTruncatedArchiveIdx());
+
+        aware.reserve(0);
+        fut = awaitThread(aware::awaitAvailableTruncateArchive);
+
+        aware.release(0);
+
+        fut.get(20);
+        assertEquals(2, aware.awaitAvailableTruncateArchive());
+
+        aware.setLastArchivedAbsoluteIndex(4);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.release(4);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.lastCheckpointIdx(6);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.setLastArchivedAbsoluteIndex(6);
+        assertEquals(5, aware.awaitAvailableTruncateArchive());
+    }
+
+    /**
      * Assert that future is still not finished.
      *
      * @param future Future to check.

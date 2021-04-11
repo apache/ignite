@@ -469,7 +469,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     private int generateKey(Ignite ignite, boolean backup) {
         Affinity<Object> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
-        for (int key = 0;;key++) {
+        for (int key = 0;; key++) {
             if (backup) {
                 if (!aff.isBackup(ignite(0).cluster().localNode(), key))
                     continue;

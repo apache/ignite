@@ -35,7 +35,7 @@ public class IgniteCacheGroupsCompareQueryTest extends BaseH2CompareQueryTest {
      * @return Cache configuration.
      */
     @Override protected CacheConfiguration cacheConfiguration(String name, CacheMode mode, Class<?> clsK, Class<?> clsV) {
-        CacheConfiguration<?,?> cc = super.cacheConfiguration(name, mode, clsK, clsV);
+        CacheConfiguration<?, ?> cc = super.cacheConfiguration(name, mode, clsK, clsV);
 
         if (ORG.equals(name) || PERS.equals(name) || PURCH.equals(name))
             cc.setGroupName("group");

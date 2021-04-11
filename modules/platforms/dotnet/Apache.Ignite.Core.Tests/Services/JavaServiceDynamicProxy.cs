@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using org.apache.ignite.platform;
+    using Apache.Ignite.Platform.Model;
 
     /// <summary>
     /// Explicit service proxy over dynamic variable.
@@ -314,9 +314,37 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public int testOverload(int count, Employee[] emps)
+        {
+            return _svc.testOverload(count, emps);
+        }
+
+        /** <inheritDoc /> */
+        public int testOverload(int first, int second)
+        {
+            return _svc.testOverload(first, second);
+        }
+
+        /** <inheritDoc /> */
+        public int testOverload(int count, Parameter[] param)
+        {
+            return _svc.testOverload(count, param);
+        }
+
+        /** <inheritDoc /> */
         public Employee[] testEmployees(Employee[] emps)
         {
             return _svc.testEmployees(emps);
+        }
+
+        public Account[] testAccounts()
+        {
+            return _svc.testAccounts();
+        }
+
+        public User[] testUsers()
+        {
+            return _svc.testUsers();
         }
 
         /** <inheritDoc /> */
@@ -346,7 +374,19 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void testUTCDateFromCache()
         {
-            _svc.testDateFromCache();
+            _svc.testUTCDateFromCache();
+        }
+
+        /** <inheritDoc /> */
+        public void testLocalDateFromCache()
+        {
+            _svc.testLocalDateFromCache();
+        }
+
+        /** <inheritDoc /> */
+        public void testException(string exceptionClass)
+        {
+            _svc.testException(exceptionClass);
         }
 
         /** <inheritDoc /> */

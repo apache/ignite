@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchangeTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteClientReconnectEventHandlingTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
@@ -74,6 +75,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithWrongServerTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderDnsResolveTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.BeforeClass;
@@ -87,6 +89,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    TcpDiscoveryVmIpFinderDnsResolveTest.class,
     TcpDiscoveryVmIpFinderSelfTest.class,
     TcpDiscoverySharedFsIpFinderSelfTest.class,
     TcpDiscoveryJdbcIpFinderSelfTest.class,
@@ -169,7 +172,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     IgniteMetricsOverflowTest.class,
 
-    DiscoveryClientSocketTest.class
+    DiscoveryClientSocketTest.class,
+
+    DiscoverySpiDataExchangeTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */

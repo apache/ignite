@@ -17,11 +17,12 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
  * Persistence metrics used to obtain statistics on persistence.
  *
- * @deprecated Use {@link DataStorageMetrics} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
  */
 @Deprecated
 public interface PersistenceMetrics {

@@ -527,6 +527,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
      * <p>
      * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
      *
      * @param cacheName Cache name.
      * @return Whether WAL disabled by this call.
@@ -545,6 +551,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * when all data is persisted to disk.
      * <p>
      * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
      *
      * @param cacheName Cache name.
      * @return Whether WAL enabled by this call.

@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateT
 import org.apache.ignite.internal.processors.query.LazyOnDmlTest;
 import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
 import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
+import org.apache.ignite.internal.processors.query.ReducerRowsBufferTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptTxCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
@@ -93,6 +94,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    ReducerRowsBufferTest.class,
+
     LazyOnDmlTest.class,
 
     DefaultQueryTimeoutTestSuite.class,

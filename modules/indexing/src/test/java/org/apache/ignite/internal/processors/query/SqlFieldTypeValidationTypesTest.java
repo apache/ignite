@@ -106,14 +106,14 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
         res.add(new Object[] {TestEnum.class, TestEnum.A, "C", false});
         res.add(new Object[] {TestEnum.class, TestEnum.A, "C", true});
 
-        res.add(new Object[] {Integer[].class, new Integer[] {0,1}, new String[] {"0", "1"}, false});
-        res.add(new Object[] {Integer[].class, new Integer[] {0,1}, new String[] {"0", "1"}, true});
+        res.add(new Object[] {Integer[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, false});
+        res.add(new Object[] {Integer[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, true});
 
-        res.add(new Object[] {int[].class, new Integer[] {0,1}, new String[] {"0", "1"}, false});
-        res.add(new Object[] {int[].class, new Integer[] {0,1}, new String[] {"0", "1"}, true});
+        res.add(new Object[] {int[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, false});
+        res.add(new Object[] {int[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, true});
 
-        res.add(new Object[] {int[].class, new Object[] {0,1}, new Object[] {"0", "1"}, false});
-        res.add(new Object[] {int[].class, new Object[] {0,1}, new Object[] {"0", "1"}, true});
+        res.add(new Object[] {int[].class, new Object[] {0, 1}, new Object[] {"0", "1"}, false});
+        res.add(new Object[] {int[].class, new Object[] {0, 1}, new Object[] {"0", "1"}, true});
 
         return res;
     }

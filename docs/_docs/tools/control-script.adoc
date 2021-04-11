@@ -22,7 +22,7 @@ The control script syntax is as follows:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source, shell]
 ----
 control.sh <connection parameters> <command> <arguments>
@@ -76,7 +76,7 @@ To get the state of the cluster, run the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --state
@@ -97,7 +97,7 @@ To activate the cluster, run the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --set-state ACTIVE
@@ -117,7 +117,7 @@ To deactivate the cluster, run the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --set-state INACTIVE [--yes]
@@ -137,7 +137,7 @@ To get the list of nodes registered in the baseline topology, run the following 
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline
@@ -183,7 +183,7 @@ After the node is added, the link:data-rebalancing[rebalancing process] starts.
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline add _consistentId1,consistentId2,..._ [--yes]
@@ -203,7 +203,7 @@ This operation starts the rebalancing process, which re-distributes the data acr
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline remove _consistentId1,consistentId2,..._ [--yes]
@@ -223,7 +223,7 @@ To set a list of node as the baseline topology, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 
 [source,shell,subs="verbatim,quotes"]
 ----
@@ -241,7 +241,7 @@ To restore a specific version of the baseline topology, use the following comman
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline version _topologyVersion_ [--yes]
@@ -263,7 +263,7 @@ To enable it, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 
 [source, shell]
 ----
@@ -283,7 +283,7 @@ To disable baseline autoadjustment, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 
 [source, shell]
 ----
@@ -305,7 +305,7 @@ You can also cancel specific transactions.
 The following command returns a list of transactions that satisfy a given filter (or all transactions if no filter is provided):
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --tx _<transaction filter>_ --info
@@ -337,7 +337,7 @@ To cancel transactions, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --tx _<transaction filter>_ --kill
@@ -521,6 +521,70 @@ validate_indexes has finished with errors (listed above).
 Like `idle_verify`, index validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
 ====
 
+=== Checking Snapshot Consistency
+
+The checking snapshot consistency command works the same way as the `idle_verify` command does. It compares hashes between
+a primary partition and a corresponding backup partitions and prints a report if any differences are found.
+Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
+recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
+
+This procedure does not require the cluster to be in the `idle` state.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
+control.(sh|bat) --snapshot check snapshot_name
+----
+--
+
+=== Check SQL Index Inline Size
+
+A running Ignite cluster could have different SQL index inline sizes on its cluster nodes.
+For example, it could happen due to the `IGNITE_MAX_INDEX_PAYLOAD_SIZE` property value is different on the cluster nodes. The difference
+between index inline sizes may lead to a performance drop.
+
+The `check_index_inline_sizes` command validates the indexes inline size of given caches on all cluster nodes. The inline
+size of secondary indexes is always checked on a node join and a WARN message is printed to the log if they differ.
+
+Use the command below to check if the secondary indexes inline sizes are the same on all cluster nodes.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+control.sh|bat --cache check_index_inline_sizes
+----
+--
+
+If the index inline sizes are different, the console output is similar to the data below:
+
+[source,text]
+----
+Control utility [ver. 2.10.0]
+2021 Copyright(C) Apache Software Foundation
+User: test
+Time: 2021-04-27T16:13:21.213
+Command [CACHE] started
+Arguments: --cache check_index_inline_sizes --yes
+
+Found 4 secondary indexes.
+3 index(es) have different effective inline size on nodes. It can lead to
+performance degradation in SQL queries.
+Index(es):
+  Full index name: PUBLIC#TEST_TABLE#L_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+  Full index name: PUBLIC#TEST_TABLE#S1_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+  Full index name: PUBLIC#TEST_TABLE#I_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+----
 
 == Tracing Configuration
 
@@ -603,7 +667,7 @@ To view the cluster ID, run the `--state` command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --state
@@ -634,7 +698,7 @@ To change the tag, use the following command (the tag must contain no more than 
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --change-tag _<new-tag>_
@@ -646,4 +710,206 @@ control.bat --change-tag _<new-tag>_
 ----
 --
 
+== Metric Command
 
+The metrics command prints out the value of a metric or metric registry provided in the parameters list. Use the `--node-id` parameter, If you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --metric sys
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --metric sys
+----
+--
+
+Example of the metric output:
+[source, text]
+control.sh --metric sysCurrentThreadCpuTime
+Command [METRIC] started
+Arguments: --metric sys
+--------------------------------------------------------------------------------
+metric                          value
+sys.CurrentThreadCpuTime        17270000
+Command [METRIC] finished with code: 0
+
+
+Example of the metric registry output:
+[source, text]
+control.sh --metric io.dataregion.default
+Command [METRIC] started
+Arguments: --metric sys
+--------------------------------------------------------------------------------
+metric                          value
+io.dataregion.default.TotalAllocatedSize          0
+io.dataregion.default.LargeEntriesPagesCount      0
+io.dataregion.default.PagesReplaced               0
+io.dataregion.default.PhysicalMemorySize          0
+io.dataregion.default.CheckpointBufferSize        0
+io.dataregion.default.PagesReplaceRate            0
+io.dataregion.default.InitialSize                 268435456
+io.dataregion.default.PagesRead                   0
+io.dataregion.default.AllocationRate              0
+io.dataregion.default.OffHeapSize                 0
+io.dataregion.default.UsedCheckpointBufferSize    0
+io.dataregion.default.MaxSize                     6871947673
+io.dataregion.default.OffheapUsedSize             0
+io.dataregion.default.EmptyDataPages              0
+io.dataregion.default.PagesFillFactor             0.0
+io.dataregion.default.DirtyPages                  0
+io.dataregion.default.TotalThrottlingTime         0
+io.dataregion.default.EvictionRate                0
+io.dataregion.default.PagesWritten                0
+io.dataregion.default.TotalAllocatedPages         0
+io.dataregion.default.PagesReplaceAge             0
+io.dataregion.default.PhysicalMemoryPages         0
+Command [METRIC] finished with code: 0
+
+== Indexes Management
+
+The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
+
+To get the list of all indexes that match specified filters, use the command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--node-id nodeId`| Node ID for the job execution. If the ID is not specified, a node is chosen by the grid.
+| `--group-name regExp`| Regular expression enabling filtering by cache group name.
+| `--cache-name regExp`| Regular expression enabling filtering by cache name.
+| `--index-name regExp`| Regular expression enabling filtering by index name.
+|===
+
+To get the list of all caches that have index rebuild in progress, use the command below:
+
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --cache indexes_rebuild_status [--node-id nodeId]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_rebuild_status [--node-id nodeId]
+----
+--
+
+
+To trigger the rebuild process of all indexes for the specified caches or the cache groups, use the command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--node-id`| Node ID for the indexes rebuild.
+| `--cache-names`| Comma-separated list of cache names for which indexes should be rebuilt.
+| `--group-names`| Comma-separated list of cache group names for which indexes should be rebuilt.
+|===
+
+
+== System View Command
+
+The system view command prints out the content of a system view provided in the parameters list. Use the `--node-id` parameter, if you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --system-view views
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --system-view views
+----
+
+Examples of the output:
+
+[source, text]
+control.sh --system-view nodes
+Command [SYSTEM-VIEW] started
+Arguments: --system-view nodes
+--------------------------------------------------------------------------------
+nodeId                                  consistentId                                         version                          isClient    isDaemon    nodeOrder    addresses                                          hostnames          isLocal
+a8a28869-cac6-4b17-946a-6f7f547b9f62    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47500    2.10.0#20201230-sha1:00000000    false       false               1    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    true
+d580433d-c621-45ff-a558-b4df82d09613    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47501    2.10.0#20201230-sha1:00000000    false       false               2    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    false
+Command [SYSTEM-VIEW] finished with code: 0
+
+
+[source, text]
+control.sh --system-view views
+Command [SYSTEM-VIEW] started
+Arguments: --system-view views
+--------------------------------------------------------------------------------
+name                           schema    description
+NODES                          SYS       Cluster nodes
+SQL_QUERIES_HISTORY            SYS       SQL queries history.
+INDEXES                        SYS       SQL indexes
+BASELINE_NODES                 SYS       Baseline topology nodes
+STRIPED_THREADPOOL_QUEUE       SYS       Striped thread pool task queue
+LOCAL_CACHE_GROUPS_IO          SYS       Local node IO statistics for cache groups
+SCAN_QUERIES                   SYS       Scan queries
+CLIENT_CONNECTIONS             SYS       Client connections
+PARTITION_STATES               SYS       Distribution of cache group partitions across cluster nodes
+VIEW_COLUMNS                   SYS       SQL view columns
+SQL_QUERIES                    SYS       Running SQL queries.
+CACHE_GROUP_PAGE_LISTS         SYS       Cache group page lists
+METRICS                        SYS       Ignite metrics
+CONTINUOUS_QUERIES             SYS       Continuous queries
+TABLE_COLUMNS                  SYS       SQL table columns
+TABLES                         SYS       SQL tables
+DISTRIBUTED_METASTORAGE        SYS       Distributed metastorage data
+SERVICES                       SYS       Services
+DATASTREAM_THREADPOOL_QUEUE    SYS       Datastream thread pool task queue
+NODE_METRICS                   SYS       Node metrics
+BINARY_METADATA                SYS       Binary metadata
+JOBS                           SYS       Running compute jobs, part of compute task started on remote host.
+SCHEMAS                        SYS       SQL schemas
+CACHE_GROUPS                   SYS       Cache groups
+VIEWS                          SYS       SQL views
+DATA_REGION_PAGE_LISTS         SYS       Data region page lists
+NODE_ATTRIBUTES                SYS       Node attributes
+TRANSACTIONS                   SYS       Running transactions
+CACHES                         SYS       Caches
+TASKS                          SYS       Running compute tasks
+Command [SYSTEM-VIEW] finished with code: 0

@@ -101,6 +101,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -111,7 +112,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -917,12 +917,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param topVer Topology version.
      * @param node Failed node.
-     * @param filter Recovery filter.
      * @return Future that will be completed when all affected transactions are recovered.
      */
-    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node,
-        IgnitePredicate<IgniteInternalTx> filter) {
-
+    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "TxRecovery",
@@ -938,11 +935,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
+            if (tx.transactionNodes() != null && tx.transactionNodes().containsKey(node.id()) // One of tx primaries failed.
+                && (tx.dht() // Local node is a primary (not on originating) or backup.
+                || (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped()))) { // Local node is a primary (on originating).
                 assert needWaitTransaction(tx, topVer);
 
-                if (filter == null || filter.apply(tx))
-                    res.add(tx.finishFuture());
+                res.add(tx.finishFuture());
             }
         }
 
@@ -2184,7 +2182,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         scheduleDumpTask(
             IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
             () -> cctx.kernalContext().closure().runLocalSafe(
-                () -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
+                (GridPlainRunnable)() -> cctx.kernalContext().cache().context().exchange().dumpLongRunningOperations(longOpsDumpTimeout)),
             longOpsDumpTimeout);
     }
 
@@ -2469,26 +2467,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else if (!tx.local())
-            // remote (backup) transaction sends partition counters to other backup transaction on recovery rollback
-            // in order to keep counters consistent
-            neighborcastPartitionCountersAndRollback(tx);
-        else
-            tx.rollbackAsync();
-    }
+        else if (!tx.local()) {
+            // This tx was rolled back on recovery because of primary node fail, other backups may be not aware of it.
+            TxCounters cnts = tx.txCounters(false);
 
-    /** */
-    private void neighborcastPartitionCountersAndRollback(IgniteInternalTx tx) {
-        TxCounters txCounters = tx.txCounters(false);
+            if (cnts != null)
+                // Skipping counters update to keep them the same everywhere without any sync.
+                // Tx counters will be finalized (gaps removed) on local txs recovery finish.
+                // Each node will have counters equals to latest successful transactions counters.
+                cnts.updateCounters().clear();
+        }
 
-        if (txCounters == null || txCounters.updateCounters() == null)
-            tx.rollbackAsync();
-
-        PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(tx, cctx);
-
-        fut.listen(fut0 -> tx.rollbackAsync());
-
-        fut.init();
+        tx.rollbackAsync();
     }
 
     /**
@@ -3201,7 +3191,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     for (Map.Entry<GridCacheMapEntry, Integer> info : store.entrySet()) {
                         GridCacheAdapter<Object, Object> cacheCtx = info.getKey().context().cache();
 
-                        metricPerCacheStore.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(info);
+                        if (cacheCtx != null)
+                            metricPerCacheStore.computeIfAbsent(cacheCtx, k -> new ArrayList<>()).add(info);
                     }
 
                     store.clear();
@@ -3240,7 +3231,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * Transactions recovery initialization runnable.
      */
-    private final class TxRecoveryInitRunnable implements Runnable {
+    private final class TxRecoveryInitRunnable implements GridPlainRunnable {
         /** */
         private final ClusterNode node;
 
@@ -3313,8 +3304,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                             tx.rollbackAsync();
                                     });
                                 }
-                                // If we could not mark tx as rollback, it means that transaction is being committed.
-                                else if (tx.setRollbackOnly())
+                                // If we could not mark tx as rollback, it means that transaction
+                                // is either being committed or already marked as rollback.
+                                else if (tx.setRollbackOnly() || tx.state() == MARKED_ROLLBACK)
                                     tx.rollbackAsync();
                             }
                         }
@@ -3375,9 +3367,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @return True if message required, false otherwise.
          */
         private boolean isMvccRecoveryMessageRequired() {
-            return node.isClient() && mvccCrd != null && mvccCrd.nodeId() != null &&
-                (cctx.kernalContext().coordinators().mvccEnabled() ||
-                    !IgniteFeatures.nodeSupports(cctx.node(mvccCrd.nodeId()), IgniteFeatures.MVCC_TX_RECOVERY_PROTOCOL_V2));
+            ClusterNode mvccCrdNode = null;
+
+            if (mvccCrd != null && mvccCrd.nodeId() != null)
+                mvccCrdNode = cctx.node(mvccCrd.nodeId());
+
+            return node.isClient() && mvccCrdNode != null && cctx.kernalContext().coordinators().mvccEnabled();
         }
 
         /**

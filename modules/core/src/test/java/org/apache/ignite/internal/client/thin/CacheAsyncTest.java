@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
@@ -403,6 +404,11 @@ public class CacheAsyncTest extends AbstractThinClientTest {
         assertEquals("4", strCache.get(4));
         assertEquals("5", strCache.get(5));
 
+        // ContainsKeys.
+        assertTrue(strCache.containsKeysAsync(ImmutableSet.of(4, 5)).get());
+        assertFalse(strCache.containsKeysAsync(ImmutableSet.of(4, 5, 6)).get());
+        assertTrue(strCache.containsKeysAsync(Collections.emptySet()).get());
+
         // Replace(k, v).
         assertTrue(strCache.replaceAsync(4, "6").get());
         assertEquals("6", strCache.get(4));
@@ -457,6 +463,23 @@ public class CacheAsyncTest extends AbstractThinClientTest {
 
         // Clear.
         strCache.clearAsync().get();
+        assertEquals(0, strCache.size());
+
+        // GetAnfPutIfAbsent.
+        strCache.putAll(ImmutableMap.of(1, "1", 2, "2", 3, "3"));
+        assertEquals("1", strCache.getAndPutIfAbsentAsync(1, "2").get());
+        assertEquals("1", strCache.get(1));
+        assertNull(strCache.getAndPutIfAbsentAsync(4, "4").get());
+        assertEquals("4", strCache.get(4));
+
+        // Clear(k).
+        assertEquals("1", strCache.get(1));
+        strCache.clearAsync(1).get();
+        assertNull(strCache.get(1));
+
+        // ClearAll(k).
+        assertEquals(3, strCache.size());
+        strCache.clearAllAsync(ImmutableSet.of(2, 3, 4)).get();
         assertEquals(0, strCache.size());
     }
 }

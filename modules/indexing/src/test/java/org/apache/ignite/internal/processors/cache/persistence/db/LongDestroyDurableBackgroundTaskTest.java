@@ -32,14 +32,12 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteJdbcThinDriver;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
@@ -51,12 +49,21 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -64,13 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendi
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnFactory;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
@@ -86,8 +87,6 @@ import org.apache.ignite.testframework.MessageOrderLogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
-import org.h2.table.IndexColumn;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
@@ -157,7 +156,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     );
 
     /** */
-    private H2TreeIndex.H2TreeFactory regularH2TreeFactory;
+    private InlineIndexFactory regularIdxFactory;
 
     /** */
     private DurableBackgroundTaskTestListener durableBackgroundTaskTestLsnr;
@@ -199,9 +198,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        regularH2TreeFactory = H2TreeIndex.h2TreeFactory;
+        regularIdxFactory = IgniteH2Indexing.idxFactory;
 
-        H2TreeIndex.h2TreeFactory = H2TreeTest::new;
+        IgniteH2Indexing.idxFactory = new InlineIndexFactoryTest();
 
         blockedSysCriticalThreadLsnr.reset();
 
@@ -213,7 +212,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         blockedSysCriticalThreadLsnr.reset();
 
-        H2TreeIndex.h2TreeFactory = regularH2TreeFactory;
+        IgniteH2Indexing.idxFactory = regularIdxFactory;
 
         stopAllGrids();
 
@@ -756,96 +755,66 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         assertTrue(durableBackgroundTaskTestLsnr.check());
     }
 
-    /**
-     *
-     */
-    private class H2TreeTest extends H2Tree {
-        /**
-         * Constructor.
-         *
-         * @param cctx Cache context.
-         * @param table Owning table.
-         * @param name Tree name.
-         * @param idxName Name of index.
-         * @param cacheName Cache name.
-         * @param tblName Table name.
-         * @param reuseList Reuse list.
-         * @param grpId Cache group ID.
-         * @param grpName
-         * @param pageMem Page memory.
-         * @param wal Write ahead log manager.
-         * @param globalRmvId
-         * @param metaPageId Meta page ID.
-         * @param initNew Initialize new index.
-         * @param unwrappedCols Unwrapped columns.
-         * @param wrappedCols Wrapped columns.
-         * @param maxCalculatedInlineSize
-         * @param pk {@code true} for primary key.
-         * @param affinityKey {@code true} for affinity key.
-         * @param mvccEnabled Mvcc flag.
-         * @param rowCache Row cache.
-         * @param failureProcessor if the tree is corrupted.
-         * @param log Logger.
-         * @param stats Statistics holder.
-         * @throws IgniteCheckedException If failed.
-         */
-        public H2TreeTest(
-            GridCacheContext cctx,
-            GridH2Table table,
-            String name,
-            String idxName,
-            String cacheName,
-            String tblName,
+    /** */
+    private class InlineIndexFactoryTest extends InlineIndexFactory {
+        /** */
+        @Override protected InlineIndexTree createIndexSegment(GridCacheContext<?, ?> cctx, SortedIndexDefinition def,
+            RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender, int segmentNum) throws Exception {
+            return new InlineIndexTreeTest(
+                def,
+                cctx,
+                def.treeName(),
+                cctx.offheap(),
+                cctx.offheap().reuseListForIndex(def.treeName()),
+                cctx.dataRegion().pageMemory(),
+                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+                rootPage.pageId().pageId(),
+                rootPage.isAllocated(),
+                def.inlineSize(),
+                def.keyTypeSettings(),
+                def.idxRowCache(),
+                stats,
+                def.rowHandlerFactory(),
+                recommender);
+        }
+    }
+
+    /** */
+    private class InlineIndexTreeTest extends InlineIndexTree {
+        /** */
+        public InlineIndexTreeTest(
+            SortedIndexDefinition def,
+            GridCacheContext<?, ?> cctx,
+            String treeName,
+            IgniteCacheOffheapManager offheap,
             ReuseList reuseList,
-            int grpId,
-            String grpName,
-            PageMemory pageMem,
-            IgniteWriteAheadLogManager wal,
-            AtomicLong globalRmvId,
+            PageMemory pageMemory,
+            PageIoResolver pageIoResolver,
             long metaPageId,
             boolean initNew,
-            List<IndexColumn> unwrappedCols,
-            List<IndexColumn> wrappedCols,
-            AtomicInteger maxCalculatedInlineSize,
-            boolean pk,
-            boolean affinityKey,
-            boolean mvccEnabled,
-            @Nullable H2RowCache rowCache,
-            @Nullable FailureProcessor failureProcessor,
-            IgniteLogger log,
-            IoStatisticsHolder stats,
-            InlineIndexColumnFactory factory,
             int configuredInlineSize,
-            PageIoResolver pageIoRslvr
+            IndexKeyTypeSettings keyTypeSettings,
+            IndexRowCache rowCache,
+            IoStatisticsHolder stats,
+            InlineIndexRowHandlerFactory rowHndFactory,
+            InlineRecommender recommender
         ) throws IgniteCheckedException {
             super(
+                def,
                 cctx,
-                table,
-                name,
-                idxName,
-                cacheName,
-                tblName,
+                treeName,
+                offheap,
                 reuseList,
-                grpId,
-                grpName,
-                pageMem,
-                wal,
-                globalRmvId,
+                pageMemory,
+                pageIoResolver,
                 metaPageId,
                 initNew,
-                unwrappedCols,
-                wrappedCols,
-                maxCalculatedInlineSize,
-                pk,
-                affinityKey,
-                mvccEnabled,
-                rowCache,
-                failureProcessor,
-                log,
-                stats,
-                factory,
                 configuredInlineSize,
-                pageIoRslvr
+                keyTypeSettings,
+                rowCache,
+                stats,
+                rowHndFactory,
+                recommender
             );
         }
 
@@ -854,7 +823,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             LongListReuseBag bag,
             long pageId,
             int lvl,
-            IgniteInClosure<H2Row> c,
+            IgniteInClosure<IndexRow> c,
             AtomicLong lockHoldStartTime,
             long lockMaxTime,
             Deque<GridTuple3<Long, Long, Long>> lockedPages

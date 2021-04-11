@@ -688,7 +688,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         for (GridNioSession ses0 : nioSrvWrapper.nio().sessions()) {
             ConnectionKey key0 = ses0.meta(CONN_IDX_META);
 
-            if (ses0.accepted() && key0 != null &&
+            if (key0 != null &&
                 key0.nodeId().equals(connKey.nodeId()) &&
                 key0.connectionIndex() == connKey.connectionIndex() &&
                 key0.connectCount() < connKey.connectCount())

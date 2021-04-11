@@ -27,7 +27,7 @@ Creates a project with .NET Core CLI, installs all packages, runs simple code to
 
 Requirements:
 * .NET Core 2.0+
-* JDK 8+
+* JDK 8 or JDK 11
 
 .PARAMETER packageDir
 Directory with nupkg files to verify, defaults to ..\nupkg.
