@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -41,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.util.IgniteUtils.awaitForWorkersStop;
 
 /**
@@ -76,7 +74,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      *
      *  @see #onStateChangeFinish(ChangeGlobalStateFinishMessage)
      */
-    private volatile boolean banStartingNewTasks = false;
+    private volatile boolean forbidStartingNewTasks;
 
     /**
      * @param ctx Kernal context.
@@ -114,7 +112,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
             @Override protected void body() {
                 try {
-                    if (banStartingNewTasks)
+                    if (forbidStartingNewTasks)
                         return;
 
                     log.info("Executing durable background task: " + task.shortName());
@@ -127,9 +125,6 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 }
                 catch (Throwable e) {
                     log.error("Could not execute durable background task: " + task.shortName(), e);
-
-                    if (e instanceof Error)
-                        ctx.failure().process(new FailureContext(CRITICAL_ERROR, e));
                 }
                 finally {
                     startedTasks.remove(task.shortName());
@@ -153,7 +148,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        banStartingNewTasks = true;
+        forbidStartingNewTasks = true;
 
         awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, true, log);
     }
@@ -168,7 +163,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      */
     public void onStateChange(ChangeGlobalStateMessage msg) {
         if (msg.state() == ClusterState.INACTIVE) {
-            banStartingNewTasks = true;
+            forbidStartingNewTasks = true;
 
             awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, true, log);
         }
@@ -179,7 +174,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      */
     public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
         if (msg.state() != ClusterState.INACTIVE) {
-            banStartingNewTasks = false;
+            forbidStartingNewTasks = false;
 
             asyncDurableBackgroundTasksExecution();
         }
