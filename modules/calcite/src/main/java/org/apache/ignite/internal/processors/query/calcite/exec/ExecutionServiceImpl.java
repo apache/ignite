@@ -143,6 +143,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1025,7 +1026,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
 
         String keyTypeName;
-        if (F.isEmpty(cmd.primaryKeyColumns()) || cmd.primaryKeyColumns().size() > 1 || !F.isEmpty(cmd.keyTypeName())) {
+        if ((!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() > 1) || !F.isEmpty(cmd.keyTypeName())) {
             keyTypeName = cmd.keyTypeName();
 
             if (F.isEmpty(keyTypeName))
@@ -1034,13 +1035,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             if (!F.isEmpty(cmd.primaryKeyColumns()))
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
         }
-        else {
+        else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
             String pkFieldName = cmd.primaryKeyColumns().get(0);
 
             keyTypeName = res.getFields().get(pkFieldName);
 
             res.setKeyFieldName(pkFieldName);
         }
+        else
+            keyTypeName = IgniteUuid.class.getName();
 
         res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());
         res.setKeyType(keyTypeName);

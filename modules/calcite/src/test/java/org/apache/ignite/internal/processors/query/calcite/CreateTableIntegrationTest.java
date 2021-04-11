@@ -215,6 +215,17 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
         executeSql("create table if not exists my_table (id int, val varchar)");
     }
 
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void test() {
+        executeSql("create table my_table (id int, val varchar)");
+
+        executeSql("insert into my_table(id, val) values (1, '1'),(2, '2')");
+
+        for (List<?> row : executeSql("select _key, * from my_table"))
+            System.out.println(row);
+    }
+
     /** */
     private List<List<?>> executeSql(String sql) {
         List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql);
