@@ -89,7 +89,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATIO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
-import static org.apache.ignite.internal.processors.authentication.User.toSubjectId;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
@@ -313,7 +312,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             subjId = toSubjectId(login);
         }
         else
-            subjId = authenticateOnServer(login, passwd).id();
+            subjId = authenticateOnServer(login, passwd);
 
         return new SecurityContextImpl(subjId, login, authCtx.subjectType(), authCtx.address());
     }
@@ -368,7 +367,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             metastorage.iterate(STORE_USER_PREFIX, (key, val) -> {
                 User u = (User)val;
 
-                users.put(u.id(), u);
+                users.put(toSubjectId(u.name()), u);
             }, true);
         }
         else
@@ -451,7 +450,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         User dfltUser = User.defaultUser();
 
         // Put to local map to be ready for authentication.
-        users.put(dfltUser.id(), dfltUser);
+        users.put(toSubjectId(dfltUser.name()), dfltUser);
 
         // Put to MetaStore when it will be ready.
         exec.execute(new RefreshUsersStorageWorker(new ArrayList<>(Collections.singleton(dfltUser))));
@@ -462,20 +461,22 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      *
      * @param login User's login.
      * @param passwd Plain text password.
-     * @return User object on successful authenticate.
+     * @return Authenticated user security ID.
      * @throws IgniteCheckedException On authentication error.
      */
-    private User authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
+    private UUID authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
         assert !ctx.clientNode() : "Must be used on server node";
 
         readyForAuthFut.get();
 
-        User usr = findUser(toSubjectId(login), login);
+        UUID subjId = toSubjectId(login);
+
+        User usr = findUser(subjId, login);
 
         if (usr == null || !usr.authorize(passwd))
             throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
 
-        return usr;
+        return subjId;
     }
 
     /**
@@ -542,7 +543,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         String userName = usr.name();
 
-        if (users.get(usr.id()) != null)
+        UUID subjId = toSubjectId(userName);
+
+        if (users.get(subjId) != null)
             throw new UserManagementException("User already exists [login=" + userName + ']');
 
         metastorage.write(STORE_USER_PREFIX + userName, usr);
@@ -550,7 +553,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         synchronized (mux) {
             activeOps.remove(op.id());
 
-            users.put(usr.id(), usr);
+            users.put(subjId, usr);
         }
     }
 
@@ -563,15 +566,19 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void removeUserLocal(UserManagementOperation op) throws IgniteCheckedException {
         User usr = op.user();
 
-        if (findUser(usr.id(), usr.name()) == null)
-            throw new UserManagementException("User doesn't exist [userName=" + usr.name() + ']');
+        String login = usr.name();
 
-        metastorage.remove(STORE_USER_PREFIX + usr.name());
+        UUID subjId = toSubjectId(login);
+
+        if (findUser(subjId, login) == null)
+            throw new UserManagementException("User doesn't exist [userName=" + login + ']');
+
+        metastorage.remove(STORE_USER_PREFIX + login);
 
         synchronized (mux) {
             activeOps.remove(op.id());
 
-            users.remove(usr.id());
+            users.remove(subjId);
         }
     }
 
@@ -584,15 +591,19 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void updateUserLocal(UserManagementOperation op) throws IgniteCheckedException {
         User usr = op.user();
 
-        if (findUser(usr.id(), usr.name()) == null)
-            throw new UserManagementException("User doesn't exist [userName=" + usr.name() + ']');
+        String login = usr.name();
 
-        metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
+        UUID subjId = toSubjectId(login);
+
+        if (findUser(subjId, login) == null)
+            throw new UserManagementException("User doesn't exist [userName=" + login + ']');
+
+        metastorage.write(STORE_USER_PREFIX + login, usr);
 
         synchronized (mux) {
             activeOps.remove(op.id());
 
-            users.put(usr.id(), usr);
+            users.put(subjId, usr);
         }
     }
 
@@ -802,7 +813,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     users.clear();
 
                 for (User u : initUsrs.usrs)
-                    users.put(u.id(), u);
+                    users.put(toSubjectId(u.name()), u);
 
                 exec.execute(new RefreshUsersStorageWorker(initUsrs.usrs));
             }
@@ -913,9 +924,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(UUID subjId) {
-        assert !ctx.clientNode();
+        User user = users.get(subjId);
 
-        return new SecurityContextImpl(subjId, users.get(subjId).name(), REMOTE_CLIENT, null);
+        return user == null ? null : new SecurityContextImpl(subjId, user.name(), REMOTE_CLIENT, null);
     }
 
     /**
@@ -955,6 +966,11 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             return null;
 
         return user;
+    }
+
+    /** Calculates user id based on specified login. */
+    private UUID toSubjectId(String login) {
+        return UUID.nameUUIDFromBytes(login.getBytes());
     }
 
     /**
