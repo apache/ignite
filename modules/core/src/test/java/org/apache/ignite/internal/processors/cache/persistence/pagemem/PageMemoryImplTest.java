@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -80,6 +81,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.CHECKPOINT_POOL_OVERFLOW_ERROR_MSG;
 import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
+import static org.mockito.Mockito.mock;
 
 /**
  *
@@ -462,7 +464,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         memory.beginCheckpoint(new GridFinishedFuture());
 
-        CheckpointMetricsTracker mockTracker = Mockito.mock(CheckpointMetricsTracker.class);
+        CheckpointMetricsTracker mockTracker = mock(CheckpointMetricsTracker.class);
 
         for (FullPageId checkpointPage : pages)
             memory.checkpointWritePage(checkpointPage, ByteBuffer.allocate(PAGE_SIZE),
@@ -599,6 +601,10 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         kernalCtx.add(new GridSystemViewManager(kernalCtx));
         kernalCtx.add(new GridEventStorageManager(kernalCtx));
 
+        PerformanceStatisticsProcessor perfStatProc = mock(PerformanceStatisticsProcessor.class);
+
+        kernalCtx.add(perfStatProc);
+
         FailureProcessor failureProc = new FailureProcessor(kernalCtx);
 
         failureProc.start();
@@ -629,9 +635,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
+        CheckpointProgressImpl cl0 = mock(CheckpointProgressImpl.class);
 
-        IgniteOutClosure<CheckpointProgress> noThrottle = Mockito.mock(IgniteOutClosure.class);
+        IgniteOutClosure<CheckpointProgress> noThrottle = mock(IgniteOutClosure.class);
         Mockito.when(noThrottle.apply()).thenReturn(cl0);
 
         Mockito.when(cl0.currentCheckpointPagesCount()).thenReturn(1_000_000);

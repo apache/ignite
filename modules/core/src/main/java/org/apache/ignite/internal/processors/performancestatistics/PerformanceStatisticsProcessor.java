@@ -76,35 +76,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
-            new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
-                    // Skip history on local join.
-                    if (!ctx.discovery().localJoinFuture().isDone())
-                        return;
-
-                    onMetastorageUpdate((boolean)newVal);
-                });
-            }
-
-            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                PerformanceStatisticsProcessor.this.metastorage = metastorage;
-
-                try {
-                    Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
-
-                    if (performanceStatsEnabled == null)
-                        return;
-
-                    onMetastorageUpdate(performanceStatsEnabled);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        });
-
         registerStateListener(() -> {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
@@ -117,6 +88,40 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return null;
             }),
             (id, res, err) -> {});
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
+            new DistributedMetastorageLifecycleListener() {
+                @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                    metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
+                        // Skip history on local join.
+                        if (!ctx.discovery().localJoinFuture().isDone())
+                            return;
+
+                        onMetastorageUpdate((boolean)newVal);
+                    });
+                }
+
+                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                    PerformanceStatisticsProcessor.this.metastorage = metastorage;
+
+                    try {
+                        Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
+
+                        if (performanceStatsEnabled == null)
+                            return;
+
+                        onMetastorageUpdate(performanceStatsEnabled);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            });
     }
 
     /** Registers state listener. */

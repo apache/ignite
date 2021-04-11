@@ -589,7 +589,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (metricsEnabled)
             totalThrottlingTime.add(time);
 
-        if (ctx.performanceStatistics() != null && ctx.performanceStatistics().enabled())
+        if (ctx.performanceStatistics().enabled())
             ctx.performanceStatistics().pagesWriteThrottle(U.currentTimeMillis(), time);
     }
 
