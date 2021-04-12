@@ -94,7 +94,7 @@ class IgniteVersionParametrize(Mark):
         if isinstance(version, (list, tuple)):
             return list(map(lambda v: IgniteVersionParametrize._inject_global_project(v, project), version))
 
-        if (version.lower() == "dev" or version[0].isdigit()) and project is not None:
+        if (version.lower() == "dev" or version[0].isdigit()) and project:
             version = "%s-%s" % (project, version)
 
         return version

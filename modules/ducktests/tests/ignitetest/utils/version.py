@@ -50,7 +50,7 @@ class IgniteVersion(LooseVersion):
         self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
 
         if self.is_dev:
-            version = __version__  # we may also parse pom file to gain correct version
+            version = __version__  # we may also parse pom file to gain correct version (in future)
 
         super().__init__(version)
 
