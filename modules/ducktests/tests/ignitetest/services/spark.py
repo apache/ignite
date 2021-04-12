@@ -46,7 +46,7 @@ class SparkService(DucktestsService, PathAware):
 
     @property
     def version(self):
-        return self._version
+        return "%s_%s" % ("spark", self._version)
 
     @property
     def globals(self):
