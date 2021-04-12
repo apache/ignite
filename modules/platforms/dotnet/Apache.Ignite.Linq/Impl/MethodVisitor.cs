@@ -77,6 +77,7 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
             GetStringMethod("PadRight", "rpad", typeof (int)),
             GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
+            GetStringMethod("Compare", new[] { typeof (string), typeof(string) }, (e, v) => VisitStringCompare(e, v)),
 
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string)),
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string),
@@ -327,6 +328,24 @@ namespace Apache.Ignite.Linq.Impl
                 : ExpressionWalker.EvaluateExpression<object>(expression.Arguments[0]);
 
             visitor.Parameters.Add(paramValue);
+        }
+
+        /// <summary>
+        /// Visits string.Compare method
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="visitor"></param>
+        private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor)
+        {
+            visitor.ResultBuilder.Append("casewhen(");
+            visitor.Visit(expression.Arguments[0]);
+            visitor.ResultBuilder.Append(" = ");
+            visitor.Visit(expression.Arguments[1]);
+            visitor.ResultBuilder.Append(", 0, casewhen(");
+            visitor.Visit(expression.Arguments[0]);
+            visitor.ResultBuilder.Append(" > ");
+            visitor.Visit(expression.Arguments[1]);
+            visitor.ResultBuilder.Append(", 1, -1))");
         }
 
         /// <summary>
