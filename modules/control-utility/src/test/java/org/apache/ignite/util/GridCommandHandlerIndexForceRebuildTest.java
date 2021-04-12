@@ -406,15 +406,15 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             waitForIndexesRebuild(n);
 
+            intlRebIdxFut.get(getTestTimeout());
+            destroyCacheFut.get(getTestTimeout());
+            putCacheFut.get(getTestTimeout());
+
             injectTestSystemOut();
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", cacheName1));
 
             assertContains(log, testOut.toString(), "no issues found.");
-
-            intlRebIdxFut.get(getTestTimeout());
-            destroyCacheFut.get(getTestTimeout());
-            putCacheFut.get(getTestTimeout());
         }
         finally {
             stopLoad.set(true);
