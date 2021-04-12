@@ -116,14 +116,14 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cc Cache.
+     * @param c Cache.
      * @param rows Rows count.
      */
-    private void fillCache(IgniteCache cc, int rows) throws InterruptedException {
-        cc.clear();
+    private void fillCache(IgniteCache c, int rows) throws InterruptedException {
+        c.clear();
 
         for (int i = 0; i < rows; ++i)
-            cc.put(i, new TestVal(i));
+            c.put(i, new TestVal(i));
 
         awaitPartitionMapExchange();
     }

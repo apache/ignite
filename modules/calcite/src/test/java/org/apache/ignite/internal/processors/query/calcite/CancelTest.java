@@ -57,9 +57,9 @@ public class CancelTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         startGrids(2);
 
-        IgniteCache<Integer, String> cc = grid(0).cache("TEST");
+        IgniteCache<Integer, String> c = grid(0).cache("TEST");
 
-        fillCache(cc, 5000);
+        fillCache(c, 5000);
     }
 
     /** {@inheritDoc} */
@@ -224,14 +224,14 @@ public class CancelTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cc Cache.
+     * @param c Cache.
      * @param rows Rows count.
      */
-    private void fillCache(IgniteCache cc, int rows) throws InterruptedException {
-        cc.clear();
+    private void fillCache(IgniteCache c, int rows) throws InterruptedException {
+        c.clear();
 
         for (int i = 0; i < rows; ++i)
-            cc.put(i, "val_" + i);
+            c.put(i, "val_" + i);
 
         awaitPartitionMapExchange();
     }
@@ -259,9 +259,9 @@ public class CancelTest extends GridCommonAbstractTest {
      * @param cacheName Cache to check reservations.
      */
     void awaitReservationsRelease(IgniteEx node, String cacheName) throws IgniteInterruptedCheckedException {
-        GridDhtAtomicCache cc = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
+        GridDhtAtomicCache c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
 
-        List<GridDhtLocalPartition> parts = cc.topology().localPartitions();
+        List<GridDhtLocalPartition> parts = c.topology().localPartitions();
 
         GridTestUtils.waitForCondition(() -> {
             for (GridDhtLocalPartition p : parts) {

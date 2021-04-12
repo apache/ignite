@@ -73,9 +73,9 @@ public class IgniteSqlCreateTable extends SqlCreate {
         name.unparse(writer, leftPrec, rightPrec);
         if (columnList != null) {
             SqlWriter.Frame frame = writer.startList("(", ")");
-            for (SqlNode cc : columnList) {
+            for (SqlNode c : columnList) {
                 writer.sep(",");
-                cc.unparse(writer, 0, 0);
+                c.unparse(writer, 0, 0);
             }
             writer.endList(frame);
         }

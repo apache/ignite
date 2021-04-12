@@ -84,9 +84,9 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** */
     public static IgniteRel clone(IgniteRel r) {
-        Cloner cc = new Cloner(r.getCluster());
+        Cloner c = new Cloner(r.getCluster());
 
-        return cc.visit(r);
+        return c.visit(r);
     }
 
     /** */

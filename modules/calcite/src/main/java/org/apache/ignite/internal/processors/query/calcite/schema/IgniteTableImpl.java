@@ -169,7 +169,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public <cc> cc unwrap(Class<cc> aCls) {
+    @Override public <C> C unwrap(Class<C> aCls) {
         if (aCls.isInstance(desc))
             return aCls.cast(desc);
 

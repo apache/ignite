@@ -78,10 +78,10 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
     }
 
     /** {@inheritDoc} */
-    @Override public void getAll(Consumer<List<?>> cc) throws IgniteCheckedException {
+    @Override public void getAll(Consumer<List<?>> c) throws IgniteCheckedException {
         try {
             while (it.hasNext())
-                cc.consume(it.next());
+                c.consume(it.next());
         }
         finally {
             close();

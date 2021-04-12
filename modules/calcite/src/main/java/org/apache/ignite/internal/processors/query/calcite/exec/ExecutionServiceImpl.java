@@ -196,7 +196,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         super(ctx);
         this.handler = handler;
 
-        discoLsnr = (e, cc) -> onNodeLeft(e.eventNode().id());
+        discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
         running = new ConcurrentHashMap<>();
         ddlConverter = new DdlSqlToCommandConverter();
 

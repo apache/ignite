@@ -260,8 +260,8 @@ public class ScriptTestRunner {
             for (int i = begin; i < end; ++i) {
                 loopVars.put(var, i);
 
-                for (Command cc : cmds)
-                    cc.execute();
+                for (Command c : cmds)
+                    c.execute();
             }
         }
     }
