@@ -277,7 +277,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                         if (left == null)
                             left = leftInBuf.remove();
 
-                        while (requested > 0 && rightIdx < rightMaterialized.size() && !isClosed()) {
+                        while (requested > 0 && rightIdx < rightMaterialized.size()) {
                             checkState();
 
                             Row row = handler.concat(left, rightMaterialized.get(rightIdx++));

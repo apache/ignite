@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -90,7 +91,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     }
 
     /**
-     * Submits a {@link Runnable} task for execution and returns a {@link Future} representing that task.
+     * Submits a {@link Runnable} task for execution and returns a {@link CompletableFuture} representing that task.
      * The command with the same {@code index} will be executed in the same thread.
      *
      * @param task The task to submit.
@@ -99,8 +100,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      *         scheduled for execution.
      * @throws NullPointerException if the task is {@code null}.
      */
-    public Future<?> submit(Runnable task, int idx) {
-        return execs[threadId(idx)].submit(task);
+    public CompletableFuture<?> submit(Runnable task, int idx) {
+        return CompletableFuture.runAsync(task, execs[threadId(idx)]);
     }
 
     /**

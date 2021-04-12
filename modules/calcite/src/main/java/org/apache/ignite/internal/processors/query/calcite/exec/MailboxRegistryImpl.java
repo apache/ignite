@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Mailbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,9 +51,11 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     private final Map<MailboxKey, Inbox<?>> remotes;
 
     /** */
+    @GridToStringExclude
     private final DiscoveryEventListener discoLsnr;
 
     /** */
+    @GridToStringExclude
     private GridEventStorageManager evtMgr;
 
     /**
@@ -163,6 +166,11 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
             filter = filter.and(mailbox -> mailbox.exchangeId() == exchangeId);
 
         return filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MailboxRegistryImpl.class, this);
     }
 
     /** */

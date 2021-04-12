@@ -71,13 +71,16 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     /** */
     private static IgniteEx client;
 
+    /** Log listener. */
     private ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-    static LogListener lsnr = LogListener.matches(s ->
+    /** */
+    private static LogListener lsnr = LogListener.matches(s ->
         s.contains("Execution is cancelled") ||
         s.contains("NullPointer") ||
         s.contains("AssertionError")).build();
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         listeningLog.registerListener(lsnr);
 

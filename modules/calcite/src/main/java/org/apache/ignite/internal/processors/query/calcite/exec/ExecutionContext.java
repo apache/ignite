@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -253,11 +252,10 @@ public class ExecutionContext<Row> implements DataContext {
      * return {@code null} upon <em>successful</em> completion.
      *
      * @param task the task to submit.
-     * @return a Future representing pending task
+     * @return a {@link CompletableFuture} representing pending task
      */
-    public Future<?> submit(RunnableX task, Consumer<Throwable> onError) {
-        if (isCancelled())
-            return CompletableFuture.completedFuture(null);
+    public CompletableFuture<?> submit(RunnableX task, Consumer<Throwable> onError) {
+        assert !isCancelled() : "Call submit after execution was cancelled.";
 
         return executor.submit(qryId, fragmentId(), () -> {
             try {

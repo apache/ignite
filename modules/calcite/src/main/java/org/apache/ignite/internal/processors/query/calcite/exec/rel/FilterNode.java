@@ -120,7 +120,7 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     private void filter() throws Exception {
         inLoop = true;
         try {
-            while (requested > 0 && !inBuf.isEmpty() && !isClosed()) {
+            while (requested > 0 && !inBuf.isEmpty()) {
                 checkState();
 
                 requested--;

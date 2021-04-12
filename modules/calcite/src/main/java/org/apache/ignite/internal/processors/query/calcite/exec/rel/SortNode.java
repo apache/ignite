@@ -109,13 +109,16 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** */
     private void flush() throws Exception {
+        if (isClosed())
+            return;
+
         assert waiting == -1;
 
         int processed = 0;
 
         inLoop = true;
         try {
-            while (requested > 0 && !rows.isEmpty() && !isClosed()) {
+            while (requested > 0 && !rows.isEmpty()) {
                 checkState();
 
                 requested--;
