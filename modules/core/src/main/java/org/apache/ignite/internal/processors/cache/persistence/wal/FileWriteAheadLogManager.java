@@ -45,6 +45,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -216,6 +217,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Use mapped byte buffer. */
     private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, DFLT_WAL_MMAP);
+
+    /** */
+    public static volatile boolean checkpointerStoped;
+
+    /** */
+    public static final CountDownLatch BUG_LATCH = new CountDownLatch(1);
 
     /**
      * Number of WAL compressor worker threads.
@@ -2016,6 +2023,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 log.info("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
             }
+
+            if (checkpointerStoped)
+                BUG_LATCH.countDown();
 
             return new SegmentArchiveResult(absIdx, origFile, dstFile);
         }

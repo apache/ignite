@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
@@ -496,6 +497,18 @@ public class Checkpointer extends GridWorker {
             }
 
             updateMetrics(chp, tracker);
+
+            if (isCancelled) {
+                FileWriteAheadLogManager.checkpointerStoped = true;
+
+                try {
+                    FileWriteAheadLogManager.BUG_LATCH.await(1, TimeUnit.MINUTES);
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
         }
         catch (IgniteCheckedException e) {
             chp.progress.fail(e);
