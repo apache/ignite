@@ -160,7 +160,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
                         // Should block.
                         grid.cache(CACHE_NAME).get(keys.get((key + 1) % keysCnt));
 
-                        log.error("Deadlock expected");
+                        fail("Deadlock expected");
                     }
                     catch (Throwable ignore) {
                         // Expected.

@@ -35,6 +35,8 @@
     <module name="TreeWalker">
         <!-- Coding Checks. See: https://checkstyle.sourceforge.io/config_coding.html -->
         <module name="SimplifyBooleanExpression"/>
+
+        <!-- Config Blocks. See: https://checkstyle.sourceforge.io/config_blocks.html -->
         <module name="EmptyCatchBlock">
             <property name="exceptionVariableName" value="ignore|expected"/>
         </module>
