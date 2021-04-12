@@ -18,18 +18,13 @@
 package org.apache.ignite.network;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.network.internal.MessageSerializerFactory;
 import org.apache.ignite.network.internal.direct.DirectMessageReader;
 import org.apache.ignite.network.internal.direct.DirectMessageWriter;
 import org.apache.ignite.network.message.MessageDeserializer;
+import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.message.MessageSerializer;
-import org.apache.ignite.network.message.MessageSerializerProvider;
-import org.apache.ignite.network.message.NetworkMessage;
-import org.apache.ignite.network.scalecube.TestMessage;
-import org.apache.ignite.network.scalecube.TestMessageSerializerProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,13 +39,8 @@ public class DirectSerializationTest {
     /** */
     @Test
     public void test() {
-        MessageSerializerProvider[] messageMapperProviders = new MessageSerializerProvider[Short.MAX_VALUE << 1];
-
-        TestMessageSerializerProvider tProv = new TestMessageSerializerProvider();
-
-        messageMapperProviders[TestMessage.TYPE] = tProv;
-
-        MessageSerializerFactory factory = new MessageSerializerFactory(Arrays.asList(messageMapperProviders));
+        var registry = new MessageSerializationRegistry()
+            .registerFactory(TestMessage.TYPE, new TestMessageSerializationFactory());
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10_000; i++) {
@@ -68,7 +58,7 @@ public class DirectSerializationTest {
         short directType = message.directType();
 
         DirectMessageWriter writer = new DirectMessageWriter((byte) 1);
-        MessageSerializer<NetworkMessage> serializer = factory.createSerializer(directType);
+        MessageSerializer<TestMessage> serializer = registry.createSerializer(directType);
 
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 
@@ -89,7 +79,7 @@ public class DirectSerializationTest {
 
         byteBuffer.flip();
 
-        DirectMessageReader reader = new DirectMessageReader(factory, (byte) 1);
+        DirectMessageReader reader = new DirectMessageReader(registry, (byte) 1);
         reader.setBuffer(byteBuffer);
 
         byte type1 = byteBuffer.get();
@@ -97,15 +87,15 @@ public class DirectSerializationTest {
 
         short messageType = makeMessageType(type1, type2);
 
-        MessageDeserializer<NetworkMessage> deserializer = factory.createDeserializer(messageType);
+        MessageDeserializer<TestMessage> deserializer = registry.createDeserializer(messageType);
         boolean read = deserializer.readMessage(reader);
 
         assertTrue(read);
 
-        TestMessage readMessage = (TestMessage) deserializer.getMessage();
+        TestMessage readMessage = deserializer.getMessage();
 
         assertEquals(message.msg(), readMessage.msg());
-        assertTrue(message.getMap().equals(readMessage.getMap()));
+        assertEquals(message.getMap(), readMessage.getMap());
     }
 
     /**

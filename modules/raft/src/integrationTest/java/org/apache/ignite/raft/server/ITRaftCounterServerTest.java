@@ -20,10 +20,11 @@ package org.apache.ignite.raft.server;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.Network;
-import org.apache.ignite.network.NetworkCluster;
-import org.apache.ignite.network.scalecube.ScaleCubeMemberResolver;
-import org.apache.ignite.network.scalecube.ScaleCubeNetworkClusterFactory;
+import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.ClusterLocalConfiguration;
+import org.apache.ignite.network.ClusterServiceFactory;
+import org.apache.ignite.network.message.MessageSerializationRegistry;
+import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
 import org.apache.ignite.raft.client.message.impl.RaftClientMessageFactoryImpl;
@@ -47,8 +48,23 @@ class ITRaftCounterServerTest {
     /** */
     private static final RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
 
+    /** Network factory. */
+    private static final ClusterServiceFactory NETWORK_FACTORY = new ScaleCubeClusterServiceFactory();
+
+    /** */
+    // TODO: IGNITE-14088: Uncomment and use real serializer provider
+    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry();
+//            .registerFactory((short)1000, ???)
+//            .registerFactory((short)1001, ???)
+//            .registerFactory((short)1005, ???)
+//            .registerFactory((short)1006, ???)
+//            .registerFactory((short)1009, ???);
+
     /** */
     private RaftServer server;
+
+    /** */
+    private ClusterService client;
 
     /** */
     private static final String SERVER_ID = "testServer";
@@ -66,7 +82,7 @@ class ITRaftCounterServerTest {
      * @param testInfo Test info.
      */
     @BeforeEach
-    void before(TestInfo testInfo) throws Exception {
+    void before(TestInfo testInfo) {
         LOG.info(">>>> Starting test " + testInfo.getTestMethod().orElseThrow().getName());
 
         server = new RaftServerImpl(SERVER_ID,
@@ -74,6 +90,10 @@ class ITRaftCounterServerTest {
             FACTORY,
             1000,
             Map.of(COUNTER_GROUP_ID_0, new CounterCommandListener(), COUNTER_GROUP_ID_1, new CounterCommandListener()));
+
+        client = startClient(CLIENT_ID, 20101, List.of("localhost:20100"));
+
+        assertTrue(waitForTopology(client, 2, 1000));
     }
 
     /**
@@ -82,18 +102,14 @@ class ITRaftCounterServerTest {
     @AfterEach
     void after() throws Exception {
         server.shutdown();
+        client.shutdown();
     }
 
     /**
-     * @throws Exception
      */
     @Test
-    public void testRefreshLeader() throws Exception {
-        NetworkCluster client = startClient(CLIENT_ID, 20101, List.of("localhost:20100"));
-
-        assertTrue(waitForTopology(client, 2, 1000));
-
-        Peer server = new Peer(client.allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
+    public void testRefreshLeader() {
+        Peer server = new Peer(client.topologyService().allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
 
         RaftGroupService service = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, client, FACTORY, 1000,
             List.of(server), true, 200);
@@ -102,8 +118,6 @@ class ITRaftCounterServerTest {
 
         assertNotNull(leader);
         assertEquals(server.getNode().name(), leader.getNode().name());
-
-        client.shutdown();
     }
 
     /**
@@ -111,11 +125,7 @@ class ITRaftCounterServerTest {
      */
     @Test
     public void testCounterCommandListener() throws Exception {
-        NetworkCluster client = startClient(CLIENT_ID, 20101, List.of("localhost:20100"));
-
-        assertTrue(waitForTopology(client, 2, 1000));
-
-        Peer server = new Peer(client.allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
+        Peer server = new Peer(client.topologyService().allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
 
         RaftGroupService service0 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, client, FACTORY, 1000,
             List.of(server), true, 200);
@@ -135,8 +145,6 @@ class ITRaftCounterServerTest {
         assertEquals(4, service1.<Integer>run(new GetValueCommand()).get());
         assertEquals(7, service1.<Integer>run(new IncrementAndGetCommand(3)).get());
         assertEquals(7, service1.<Integer>run(new GetValueCommand()).get());
-
-        client.shutdown();
     }
 
     /**
@@ -145,19 +153,11 @@ class ITRaftCounterServerTest {
      * @param servers Server nodes of the cluster.
      * @return The client cluster view.
      */
-    private NetworkCluster startClient(String name, int port, List<String> servers) {
-        Network network = new Network(
-            new ScaleCubeNetworkClusterFactory(name, port, servers, new ScaleCubeMemberResolver())
-        );
-
-        // TODO: IGNITE-14088: Uncomment and use real serializer provider
-//        network.registerMessageMapper((short)1000, new DefaultMessageMapperProvider());
-//        network.registerMessageMapper((short)1001, new DefaultMessageMapperProvider());
-//        network.registerMessageMapper((short)1005, new DefaultMessageMapperProvider());
-//        network.registerMessageMapper((short)1006, new DefaultMessageMapperProvider());
-//        network.registerMessageMapper((short)1009, new DefaultMessageMapperProvider());
-
-        return network.start();
+    private ClusterService startClient(String name, int port, List<String> servers) {
+        var context = new ClusterLocalConfiguration(name, port, servers, SERIALIZATION_REGISTRY);
+        var network = NETWORK_FACTORY.createClusterService(context);
+        network.start();
+        return network;
     }
 
     /**
@@ -166,11 +166,11 @@ class ITRaftCounterServerTest {
      * @param timeout The timeout in millis.
      * @return {@code True} if topology size is equal to expected.
      */
-    private boolean waitForTopology(NetworkCluster cluster, int expected, int timeout) {
+    private boolean waitForTopology(ClusterService cluster, int expected, int timeout) {
         long stop = System.currentTimeMillis() + timeout;
 
         while(System.currentTimeMillis() < stop) {
-            if (cluster.allMembers().size() >= expected)
+            if (cluster.topologyService().allMembers().size() >= expected)
                 return true;
 
             try {

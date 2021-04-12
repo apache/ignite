@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.scalecube;
+package org.apache.ignite.network;
 
 import java.util.Map;
 import org.apache.ignite.network.internal.MessageReader;
 import org.apache.ignite.network.message.MessageDeserializer;
 import org.apache.ignite.network.message.MessageMappingException;
 import org.apache.ignite.network.message.MessageSerializer;
-import org.apache.ignite.network.message.MessageSerializerProvider;
+import org.apache.ignite.network.message.MessageSerializationFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
 /**
  * Mapper for {@link TestMessage}.
  */
-public class TestMessageSerializerProvider implements MessageSerializerProvider<TestMessage> {
+public class TestMessageSerializationFactory implements MessageSerializationFactory<TestMessage> {
     /** {@inheritDoc} */
     @Override public MessageDeserializer<TestMessage> createDeserializer() {
-        return new MessageDeserializer<TestMessage>() {
+        return new MessageDeserializer<>() {
 
             private TestMessage obj;
 
@@ -52,7 +52,7 @@ public class TestMessageSerializerProvider implements MessageSerializerProvider<
 
                         reader.incrementState();
 
-                    //noinspection fallthrough
+                        //noinspection fallthrough
                     case 1:
                         msg = reader.readString("msg");
 
@@ -84,7 +84,7 @@ public class TestMessageSerializerProvider implements MessageSerializerProvider<
     @Override public MessageSerializer<TestMessage> createSerializer() {
         return (message, writer) -> {
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(message.directType(), fieldsCount()))
+                if (!writer.writeHeader(message.directType(), (byte) 1))
                     return false;
 
                 writer.onHeaderWritten();
@@ -108,10 +108,5 @@ public class TestMessageSerializerProvider implements MessageSerializerProvider<
 
             return true;
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 }

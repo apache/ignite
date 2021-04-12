@@ -22,14 +22,13 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.internal.MessageReader;
-import org.apache.ignite.network.internal.MessageSerializerFactory;
 import org.apache.ignite.network.internal.direct.state.DirectMessageState;
 import org.apache.ignite.network.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.network.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.network.internal.direct.stream.DirectByteBufferStreamImplV1;
+import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.jetbrains.annotations.Nullable;
@@ -45,15 +44,11 @@ public class DirectMessageReader implements MessageReader {
     private boolean lastRead;
 
     /**
-     * @param msgFactory Message factory.
+     * @param serializationRegistry Message serializers.
      * @param protoVer Protocol version.
      */
-    public DirectMessageReader(final MessageSerializerFactory msgFactory, final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new Supplier<StateItem>() {
-            @Override public StateItem get() {
-                return new StateItem(msgFactory, protoVer);
-            }
-        });
+    public DirectMessageReader(MessageSerializationRegistry serializationRegistry, byte protoVer) {
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(serializationRegistry, protoVer));
     }
 
     /** {@inheritDoc} */
@@ -387,13 +382,13 @@ public class DirectMessageReader implements MessageReader {
         private int state;
 
         /**
-         * @param msgFactory Message factory.
+         * @param serializationRegistry Message serializers.
          * @param protoVer Protocol version.
          */
-        StateItem(MessageSerializerFactory msgFactory, byte protoVer) {
+        StateItem(MessageSerializationRegistry serializationRegistry, byte protoVer) {
             switch (protoVer) {
                 case 1:
-                    stream = new DirectByteBufferStreamImplV1(msgFactory);
+                    stream = new DirectByteBufferStreamImplV1(serializationRegistry);
 
                     break;
 

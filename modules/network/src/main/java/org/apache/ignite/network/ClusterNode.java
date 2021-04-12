@@ -20,17 +20,25 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Representation of the network member.
+ * Representation of a node in a cluster.
  */
-public class NetworkMember implements Serializable {
+public class ClusterNode implements Serializable {
     /** Unique name of member in cluster. */
     private final String name;
+
+    /** Node host. */
+    private final String host;
+
+    /** Node port. */
+    private final int port;
 
     /**
      * @param name Unique name of member in cluster.
      */
-    public NetworkMember(String name) {
+    public ClusterNode(String name, String host, int port) {
         this.name = name;
+        this.host = host;
+        this.port = port;
     }
 
     /**
@@ -40,25 +48,41 @@ public class NetworkMember implements Serializable {
         return name;
     }
 
+    /**
+     * @return node host name.
+     */
+    public String host() {
+        return host;
+    }
+
+    /**
+     * @return node port.
+     */
+    public int port() {
+        return port;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        NetworkMember member = (NetworkMember)o;
-        return Objects.equals(name, member.name);
+        ClusterNode that = (ClusterNode)o;
+        return port == that.port && name.equals(that.name) && host.equals(that.host);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(name);
+        return Objects.hash(name, host, port);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "NetworkMember{" +
+        return "ClusterNode{" +
             "name='" + name + '\'' +
+            ", host='" + host + '\'' +
+            ", port=" + port +
             '}';
     }
 }

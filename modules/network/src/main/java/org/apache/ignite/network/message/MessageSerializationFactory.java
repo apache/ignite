@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.scalecube;
-
-import org.apache.ignite.network.message.MessageDeserializer;
-import org.apache.ignite.network.message.MessageSerializer;
-import org.apache.ignite.network.message.MessageSerializerProvider;
+package org.apache.ignite.network.message;
 
 /**
- * Mapper for {@link TestRequest}.
+ * Creates {@link MessageDeserializer} and {@link MessageSerializer} instances for working with
+ * {@link NetworkMessage} objects.
+ *
+ * @param <M> Message type.
  */
-public class TestRequestSerializerProvider implements MessageSerializerProvider<TestRequest> {
-    /** {@inheritDoc} */
-    @Override public MessageDeserializer<TestRequest> createDeserializer() {
-        return null;
-    }
+public interface MessageSerializationFactory<M extends NetworkMessage> {
+    /**
+     * Creates a deserializer.
+     * @return Message deserializer.
+     */
+    MessageDeserializer<M> createDeserializer();
 
-    /** {@inheritDoc} */
-    @Override public MessageSerializer<TestRequest> createSerializer() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
-    }
+    /**
+     * Creates a serializer.
+     * @return Message serializer.
+     */
+    MessageSerializer<M> createSerializer();
 }

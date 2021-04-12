@@ -14,37 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.network;
 
-package org.apache.ignite.network.scalecube;
-
-import org.apache.ignite.network.message.NetworkMessage;
+import java.util.Collection;
 
 /**
- * Test response.
+ * Entry point for obtaining information about a cluster's topology.
+ *
+ * TODO: allow removing event handlers, see https://issues.apache.org/jira/browse/IGNITE-14519
  */
-public class TestResponse implements NetworkMessage {
-    /** Public type for tests. */
-    public static final short TYPE = 2;
+public interface TopologyService {
+    /**
+     * @return Information about the local network member.
+     */
+    ClusterNode localMember();
 
     /**
-     * Some response test value.
+     * @return Information about all members which have discovered by the local member (including the local member
+     * itself).
      */
-    private final int responseNumber;
-
-    /** Constructor. */
-    public TestResponse(int responseNumber) {
-        this.responseNumber = responseNumber;
-    }
+    Collection<ClusterNode> allMembers();
 
     /**
-     * @return Response test value.
+     * Registers a handler for topology change events.
      */
-    public int responseNumber() {
-        return responseNumber;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE;
-    }
+    void addEventHandler(TopologyEventHandler handler);
 }

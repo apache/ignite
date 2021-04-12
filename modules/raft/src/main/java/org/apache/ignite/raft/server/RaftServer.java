@@ -17,7 +17,7 @@
 
 package org.apache.ignite.raft.server;
 
-import org.apache.ignite.network.NetworkMember;
+import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.raft.client.service.RaftGroupCommandListener;
 
 /**
@@ -32,7 +32,7 @@ public interface RaftServer {
     /**
      * @return Local member.
      */
-    NetworkMember localMember();
+    ClusterNode localMember();
 
     /**
      * Set a listener for group commands.

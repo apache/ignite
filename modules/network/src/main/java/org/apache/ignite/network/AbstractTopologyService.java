@@ -15,28 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.scalecube;
+package org.apache.ignite.network;
 
-import org.apache.ignite.network.message.MessageDeserializer;
-import org.apache.ignite.network.message.MessageSerializer;
-import org.apache.ignite.network.message.MessageSerializerProvider;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Mapper provider for {@link TestResponse}.
+ * Base class for {@link TopologyService} implementations.
  */
-public class TestResponseSerializerProvider implements MessageSerializerProvider<TestResponse> {
-    /** {@inheritDoc} */
-    @Override public MessageDeserializer<TestResponse> createDeserializer() {
-        return null;
-    }
+public abstract class AbstractTopologyService implements TopologyService {
+    /** */
+    private final Collection<TopologyEventHandler> eventHandlers = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
-    @Override public MessageSerializer<TestResponse> createSerializer() {
-        return null;
+    @Override public void addEventHandler(TopologyEventHandler handler) {
+        eventHandlers.add(handler);
     }
 
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
+    /**
+     * @return registered event handlers.
+     */
+    public Collection<TopologyEventHandler> getEventHandlers() {
+        return Collections.unmodifiableCollection(eventHandlers);
     }
 }

@@ -16,7 +16,7 @@
  */
 
 
-package org.apache.ignite.network.scalecube;
+package org.apache.ignite.network;
 
 import java.io.Serializable;
 import java.util.Map;

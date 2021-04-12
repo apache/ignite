@@ -14,16 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network;
 
 /**
- * Factory for creating {@link NetworkCluster}.
+ * Class that represents the network-related resources of a node and provides entry points for working with the
+ * network members of a cluster.
  */
-public interface NetworkClusterFactory {
+public interface ClusterService {
     /**
-     *
-     * @param clusterContext
-     * @return
+     * Returns the {@link TopologyService} for working with the cluster topology.
      */
-    NetworkCluster startCluster(NetworkClusterContext clusterContext);
+    TopologyService topologyService();
+
+    /**
+     * Returns the {@link TopologyService} for sending messages to the cluster members.
+     */
+    MessagingService messagingService();
+
+    /**
+     * Returns the context associated with the current node.
+     */
+    ClusterLocalConfiguration localConfiguration();
+
+    /**
+     * Starts the current node, allowing it to join the cluster and start receiving messages.
+     */
+    void start();
+
+    /**
+     * Stops the current node, gracefully freeing the encapsulated resources.
+     */
+    void shutdown();
 }

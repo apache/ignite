@@ -14,29 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.network;
 
-package org.apache.ignite.network.message;
-
-/**
- * MessageMapperProvider creates {@link MessageDeserializer} and {@link MessageSerializer} instances
- * for working with {@link NetworkMessage} objects.
- * @param <M> Message type.
- */
-public interface MessageSerializerProvider<M extends NetworkMessage> {
+/** */
+public interface ClusterServiceFactory {
     /**
-     * Create deserializer.
-     * @return Message deserializer.
+     * Creates a new {@link ClusterService} using the provided context. The created network will not be in the "started" state.
      */
-    MessageDeserializer<M> createDeserializer();
-
-    /**
-     * Create serializer.
-     * @return Message serializer.
-     */
-    MessageSerializer<M> createSerializer();
-
-    /**
-     * @return Message's field count.
-     */
-    byte fieldsCount();
+    ClusterService createClusterService(ClusterLocalConfiguration context);
 }

@@ -22,7 +22,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.internal.MessageWriter;
 import org.apache.ignite.network.internal.direct.state.DirectMessageState;
@@ -40,12 +39,8 @@ public class DirectMessageWriter implements MessageWriter {
     /**
      * @param protoVer Protocol version.
      */
-    public DirectMessageWriter(final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new Supplier<StateItem>() {
-            @Override public StateItem get() {
-                return new StateItem(protoVer);
-            }
-        });
+    public DirectMessageWriter(byte protoVer) {
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(protoVer));
     }
 
     /** {@inheritDoc} */

@@ -17,21 +17,17 @@
 package org.apache.ignite.network;
 
 /**
- * Interface for handling events related to cluster changes.
+ * Interface for handling events related to topology changes.
  */
-public interface NetworkClusterEventHandler {
+public interface TopologyEventHandler {
     /**
-     * Event which happened when one new member was detected in cluster.
-     *
-     * @param member New network member.
+     * Called when a new member has been detected joining a cluster.
      */
-    void onAppeared(NetworkMember member);
+    void onAppeared(ClusterNode member);
 
     /**
-     * Event which happened when one member leave the cluster. It means the member leaves the cluster permanently. If
-     * the connection lost but it is possible to reestablish it, nothing happens here.
-     *
-     * @param member The network member which leaves the cluster.
+     * Indicates that a member has left a cluster. This method is only called when a member leaves permanently (i.e.
+     * it is not possible to re-establish a connection to it).
      */
-    void onDisappeared(NetworkMember member);
+    void onDisappeared(ClusterNode member);
 }

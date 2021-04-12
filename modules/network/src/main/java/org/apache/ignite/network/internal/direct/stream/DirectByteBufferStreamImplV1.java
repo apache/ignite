@@ -32,9 +32,9 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.internal.MessageReader;
-import org.apache.ignite.network.internal.MessageSerializerFactory;
 import org.apache.ignite.network.internal.MessageWriter;
 import org.apache.ignite.network.message.MessageDeserializer;
+import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.message.MessageSerializer;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -205,7 +205,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     private static final Object NULL = new Object();
 
     /** */
-    private final MessageSerializerFactory msgSerFactory;
+    private final MessageSerializationRegistry serializationRegistry;
 
     /** */
     private ByteBuffer buf;
@@ -298,10 +298,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     private byte[] curStrBackingArr;
 
     /**
-     * @param msgSerFactory Message factory.
+     * @param serializationRegistry Message mappers.
      */
-    public DirectByteBufferStreamImplV1(MessageSerializerFactory msgSerFactory) {
-        this.msgSerFactory = msgSerFactory;
+    public DirectByteBufferStreamImplV1(MessageSerializationRegistry serializationRegistry) {
+        this.serializationRegistry = serializationRegistry;
     }
 
     /** {@inheritDoc} */
@@ -678,7 +678,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                     writer.setCurrentWriteClass(msg.getClass());
 
-                    MessageSerializer<NetworkMessage> serializer = msgSerFactory.createSerializer(msg.directType());
+                    MessageSerializer<NetworkMessage> serializer = serializationRegistry.createSerializer(msg.directType());
 
                     writer.setBuffer(buf);
 
@@ -1181,7 +1181,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             short type = readShort();
 
-            msgDeserializer = type == Short.MIN_VALUE ? null : msgSerFactory.createDeserializer(type);
+            msgDeserializer = type == Short.MIN_VALUE ? null : serializationRegistry.createDeserializer(type);
 
             msgTypeDone = true;
         }
@@ -1802,4 +1802,3 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         public T create(int len);
     }
 }
-

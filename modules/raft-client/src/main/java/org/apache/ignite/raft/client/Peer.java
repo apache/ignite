@@ -18,7 +18,7 @@
 package org.apache.ignite.raft.client;
 
 import java.io.Serializable;
-import org.apache.ignite.network.NetworkMember;
+import org.apache.ignite.network.ClusterNode;
 
 /**
  * A participant of a replication group.
@@ -27,7 +27,7 @@ public final class Peer implements Serializable {
     /**
      * Network node.
      */
-    private final NetworkMember node;
+    private final ClusterNode node;
 
     /**
      * Peer's local priority value, if node don't support priority election,
@@ -46,7 +46,7 @@ public final class Peer implements Serializable {
     /**
      * @param node Node.
      */
-    public Peer(NetworkMember node) {
+    public Peer(ClusterNode node) {
         this(node, ElectionPriority.DISABLED);
     }
 
@@ -54,7 +54,7 @@ public final class Peer implements Serializable {
      * @param node Node.
      * @param priority Election priority.
      */
-    public Peer(NetworkMember node, int priority) {
+    public Peer(ClusterNode node, int priority) {
         this.node = node;
         this.priority = priority;
     }
@@ -62,7 +62,7 @@ public final class Peer implements Serializable {
     /**
      * @return Node.
      */
-    public NetworkMember getNode() {
+    public ClusterNode getNode() {
         return this.node;
     }
 
