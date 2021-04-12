@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
@@ -82,17 +82,20 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache = ign.getOrCreateCache("my-cache");
 
             CountDownLatch waitAfterCp = new CountDownLatch(1);
+            AtomicLong cntr = new AtomicLong(0);
 
-            db.addCheckpointListener(
-                new WaitOnLastCheckpoint(ign, waitAfterCp, getTestTimeout()));
+            db.addCheckpointListener(new WaitOnLastCheckpoint(ign, waitAfterCp, cntr, getTestTimeout()));
 
-            AtomicBoolean succeed = new AtomicBoolean(false);
+            for (int j = i * 3; j < (i + 1) * 3; j++)
+                cache.put(j, j);
+
+            long cutIdx = aware.curAbsWalIdx();
 
             runAsync(() -> {
                 try {
-                    aware.awaitSegmentArchived(aware.curAbsWalIdx());
+                    aware.awaitSegmentArchived(cutIdx);
 
-                    succeed.set(true);
+                    cntr.incrementAndGet();
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteException(e);
@@ -102,12 +105,10 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
                 }
             });
 
-            for (int j = i * 3; j < (i + 1) * 3; j++)
-                cache.put(j, j);
-
             G.stop(ign.name(), false);
 
-            assertTrue("Should successfully wait for current segment archivation", succeed.get());
+            // Checkpoint will happens two time because of segment archivation.
+            assertEquals("Should successfully wait for current segment archivation", 3, cntr.get());
         }
     }
 
@@ -123,10 +124,15 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
         private final long timeout;
 
         /** */
-        public WaitOnLastCheckpoint(IgniteEx ign, CountDownLatch waitAfterCp, long timeout) {
+        private final AtomicLong cntr;
+
+        /** */
+        public WaitOnLastCheckpoint(IgniteEx ign, CountDownLatch waitAfterCp, AtomicLong cntr, long timeout) {
             this.ign = ign;
             this.waitAfterCp = waitAfterCp;
+            this.cntr = cntr;
             this.timeout = timeout;
+
         }
 
         /** {@inheritDoc} */
@@ -136,6 +142,8 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
 
             try {
                 waitAfterCp.await(timeout, TimeUnit.MILLISECONDS);
+
+                cntr.incrementAndGet();
             }
             catch (InterruptedException e) {
                 throw new IgniteException(e);
