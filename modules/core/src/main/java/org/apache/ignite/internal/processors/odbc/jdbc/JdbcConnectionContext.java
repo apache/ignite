@@ -110,13 +110,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses Client's NIO session.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId,
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
-        super(ctx, connId);
+        super(ctx, ses, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -207,6 +208,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         }
 
         protoCtx = new JdbcProtocolContext(ver, features, true);
+
+        initClientDescriptor("jdbc-thin");
 
         parser = new JdbcMessageParser(ctx, protoCtx);
 

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -59,7 +58,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
     /** */
     private final LogListener logListener = new MessageOrderLogListener(
         format(
-                ".*?Tree is corrupted.*?cacheId=65, cacheName=A, indexName=%s, groupName=%s" +
+                ".*?Tree is corrupted.*?cacheId=-1578586276, cacheName=SQL_PUBLIC_A, indexName=%s, groupName=%s" +
                     ", msg=Runtime failure on row: Row@.*?key: 1, val: .*?%s.*",
                 IDX_NAME,
                 GRP_NAME,
@@ -120,7 +119,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
                         BPlusTree.Result res =
                             delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
 
-                        if (failWithCorruptTree.get() && tree instanceof H2Tree && tree.getName().contains(IDX_NAME))
+                        if (failWithCorruptTree.get() && tree.getName().contains(IDX_NAME))
                             throw new RuntimeException("test exception");
 
                         return res;
