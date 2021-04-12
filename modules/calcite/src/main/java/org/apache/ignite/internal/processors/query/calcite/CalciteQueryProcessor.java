@@ -24,7 +24,6 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
@@ -78,7 +78,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withDecorrelationEnabled(true))
         .parserConfig(
             SqlParser.config()
-                .withParserFactory(SqlBabelParserImpl.FACTORY)
+                .withParserFactory(IgniteSqlParserImpl.FACTORY)
                 .withLex(Lex.ORACLE)
                 .withConformance(SqlConformanceEnum.DEFAULT))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT

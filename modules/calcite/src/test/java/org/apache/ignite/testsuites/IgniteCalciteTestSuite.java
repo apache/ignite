@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondary
 import org.apache.ignite.internal.processors.query.calcite.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
+import org.apache.ignite.internal.processors.query.calcite.CreateTableIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.MetadataIntegrationTest;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousEx
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
+import org.apache.ignite.internal.processors.query.calcite.sql.SqlDdlParserTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,6 +61,9 @@ import org.junit.runners.Suite;
     AggregatesIntegrationTest.class,
     MetadataIntegrationTest.class,
     SortAggregateIntegrationTest.class,
+
+    SqlDdlParserTest.class,
+    CreateTableIntegrationTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
