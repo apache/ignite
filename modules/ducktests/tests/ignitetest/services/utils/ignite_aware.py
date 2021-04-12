@@ -81,8 +81,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.start_ignite = kwargs.get("start_ignite", True)
 
     @property
-    def version(self):
-        return self.config.version
+    def identity(self):
+        return str(self.config.version)
 
     @property
     def globals(self):

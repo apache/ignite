@@ -87,19 +87,19 @@ class IgniteSpec(metaclass=ABCMeta):
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
-    def __home(self, version=None):
+    def __home(self, identity=None):
         """
         Get home directory for current spec.
         """
-        version = version if version else self.config.version
-        return get_home_dir(self.path_aware.install_root, version)
+        identity = identity if identity else str(self.config.version)
+        return get_home_dir(self.path_aware.install_root, identity)
 
     def _module(self, name):
         """
         Get module path for current spec.
         """
         if name == "ducktests":
-            return get_module_path(self.__home(DEV_BRANCH), name, DEV_BRANCH.is_dev)
+            return get_module_path(self.__home(str(DEV_BRANCH)), name, DEV_BRANCH.is_dev)
 
         return get_module_path(self.__home(), name, self.config.version.is_dev)
 

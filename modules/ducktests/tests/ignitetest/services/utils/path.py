@@ -24,11 +24,11 @@ from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
 from ignitetest.utils.version import DEV_BRANCH
 
 
-def get_home_dir(install_root, version):
+def get_home_dir(install_root, identity):
     """
-    Get path to binary release (home) directory depending on version.
+    Get path to binary release (home) directory.
     """
-    return os.path.join(install_root, str(version))
+    return os.path.join(install_root, identity)
 
 
 def get_module_path(project_dir, module_name, is_dev):
@@ -107,9 +107,9 @@ class PathAware:
 
     @property
     @abstractmethod
-    def version(self):
+    def identity(self):
         """
-        :return: version of project.
+        :return: Represents deployment identity (folder name), typically project/fork name with version.
         """
 
     @property
@@ -124,7 +124,7 @@ class PathAware:
         """
         :return: path to binary release (home) directory
         """
-        return get_home_dir(self.install_root, self.version)
+        return get_home_dir(self.install_root, self.identity)
 
     @property
     def temp_dir(self):
@@ -189,7 +189,7 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         :return: path to the certificate directory.
         """
-        return os.path.join(get_home_dir(self.install_root, DEV_BRANCH), "modules", "ducktests", "tests", "certs")
+        return os.path.join(get_home_dir(self.install_root, str(DEV_BRANCH)), "modules", "ducktests", "tests", "certs")
 
     def script(self, script_name):
         """

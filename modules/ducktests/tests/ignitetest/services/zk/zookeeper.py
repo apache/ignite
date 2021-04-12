@@ -63,8 +63,8 @@ class ZookeeperService(DucktestsService, PathAware):
         self.init_logs_attribute()
 
     @property
-    def version(self):
-        return "%s-%s" % ("zookeper", self.settings.version)
+    def identity(self):
+        return "%s-%s" % ("zookeeper", self.settings.version)
 
     @property
     def globals(self):
