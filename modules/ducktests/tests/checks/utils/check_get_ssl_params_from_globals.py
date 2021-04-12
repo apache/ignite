@@ -100,15 +100,21 @@ class TestParams:
     expected_ssl_params_jks = {'key_store_path': CERTIFICATE_DIR + TEST_KEYSTORE_JKS,
                                'key_store_password': TEST_PASSWORD,
                                'trust_store_path': CERTIFICATE_DIR + TEST_TRUSTSTORE_JKS,
-                               'trust_store_password': TEST_PASSWORD}
+                               'trust_store_password': TEST_PASSWORD,
+                               'cipher_suites': None,
+                               'trust_managers': None}
     expected_ssl_params_path = {'key_store_path': TEST_CERTIFICATE_DIR + TEST_KEYSTORE_JKS,
                                 'key_store_password': TEST_PASSWORD,
                                 'trust_store_path': TEST_CERTIFICATE_DIR + TEST_TRUSTSTORE_JKS,
-                                'trust_store_password': TEST_PASSWORD}
+                                'trust_store_password': TEST_PASSWORD,
+                                'cipher_suites': None,
+                                'trust_managers': None}
     expected_ssl_params_default = {'key_store_path': CERTIFICATE_DIR + DEFAULT_CLIENT_KEYSTORE,
                                    'key_store_password': DEFAULT_PASSWORD,
                                    'trust_store_path': CERTIFICATE_DIR + DEFAULT_TRUSTSTORE,
-                                   'trust_store_password': DEFAULT_PASSWORD}
+                                   'trust_store_password': DEFAULT_PASSWORD,
+                                   'cipher_suites': None,
+                                   'trust_managers': None}
 
 
 class CheckCaseJks:

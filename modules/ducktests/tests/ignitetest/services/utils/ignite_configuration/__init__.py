@@ -24,6 +24,7 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
+from ignitetest.services.utils.ignite_configuration.binary_configuration import BinaryConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
