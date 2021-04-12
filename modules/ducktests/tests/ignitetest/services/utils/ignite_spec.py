@@ -23,7 +23,8 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 
-from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
+from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
+    IgniteThinClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
@@ -86,6 +87,8 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         if self.config.client_mode:
             return IgniteClientConfigTemplate()
+        if self.config.addresses:
+            return IgniteThinClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
     def __home(self, version=None, project=None):

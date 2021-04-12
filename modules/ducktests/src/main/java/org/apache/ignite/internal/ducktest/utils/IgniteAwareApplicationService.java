@@ -40,7 +40,7 @@ public class IgniteAwareApplicationService {
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
 
     /** Thin client connection string variable. */
-    public static final String THIN_CLIENT_CONNECTION = "thin_client_connection";
+    public static final String THIN_CLIENT_FLAG = "thin_client";
 
     /**
      * @param args Args.
@@ -61,9 +61,9 @@ public class IgniteAwareApplicationService {
         JsonNode jsonNode = params.length > 3 ?
             mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
 
-        String tcConnStr = Optional.ofNullable(jsonNode.get(THIN_CLIENT_CONNECTION))
-            .map(JsonNode::asText)
-            .orElse(null);
+        Boolean thinClientFlag = Optional.ofNullable(jsonNode.get(THIN_CLIENT_FLAG))
+            .map(JsonNode::asBoolean)
+            .orElse(false);
 
         IgniteAwareApplication app =
             (IgniteAwareApplication)clazz.getConstructor().newInstance();
@@ -86,8 +86,13 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else if (tcConnStr != null && !tcConnStr.isEmpty()) {
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(tcConnStr))) {
+        else if (thinClientFlag) {
+            log.info("Starting thin client...");
+
+            ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath,"thin.client.cfg");
+
+
+            try (IgniteClient client = Ignition.startClient(cfg)) {
                 app.client = client;
 
                 app.start(jsonNode);
