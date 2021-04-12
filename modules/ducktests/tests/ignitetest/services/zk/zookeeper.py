@@ -64,7 +64,7 @@ class ZookeeperService(DucktestsService, PathAware):
 
     @property
     def version(self):
-        return "%s_%s" % ("zookeper", self.settings.version)
+        return "%s-%s" % ("zookeper", self.settings.version)
 
     @property
     def globals(self):
