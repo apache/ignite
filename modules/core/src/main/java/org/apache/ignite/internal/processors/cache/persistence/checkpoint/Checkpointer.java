@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -174,6 +175,9 @@ public class Checkpointer extends GridWorker {
     /** Last checkpoint timestamp. */
     private long lastCpTs;
 
+    /** Performance statistics processor. */
+    private final PerformanceStatisticsProcessor perfStatProc;
+
     /** For testing only. */
     private GridFutureAdapter<Void> enableChangeApplied;
 
@@ -224,6 +228,7 @@ public class Checkpointer extends GridWorker {
         this.checkpointWritePageThreads = Math.max(checkpointWritePageThreads, 1);
         this.checkpointWritePagesPool = initializeCheckpointPool();
         this.cpFreqDeviation = cpFreqDeviation;
+        this.perfStatProc = cacheProcessor.context().kernalContext().performanceStatistics();
 
         scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
     }
@@ -617,8 +622,8 @@ public class Checkpointer extends GridWorker {
             );
         }
 
-        if (cacheProcessor.context().kernalContext().performanceStatistics().enabled()) {
-            cacheProcessor.context().kernalContext().performanceStatistics().checkpoint(
+        if (perfStatProc.enabled()) {
+            perfStatProc.checkpoint(
                 tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
                 tracker.listenersExecuteDuration(),
