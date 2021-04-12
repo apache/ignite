@@ -34,7 +34,7 @@ class PersistentTest(NodeJoinLeftScenario):
     Tests rebalance scenarios in persistent mode.
     """
 
-    # pylint: disable=too-many-arguments, too-many-locals
+    # pylint: disable=too-many-arguments
     def _build_config(self, ignite_version, backups, cache_count, entry_count, entry_size,
                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
         return IgniteConfiguration(
@@ -43,11 +43,12 @@ class PersistentTest(NodeJoinLeftScenario):
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(persistent=True)),
             metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
-            rebalance_thread_pool_size=thread_pool_size,
             rebalance_batch_size=batch_size,
             rebalance_batches_prefetch_count=batches_prefetch_count,
+            rebalance_thread_pool_size=thread_pool_size,
             rebalance_throttle=throttle)
 
+    # pylint: disable=no-member
     def _start_cluster(self, node_config, num_nodes):
         ignites = super()._start_cluster(node_config, num_nodes)
 

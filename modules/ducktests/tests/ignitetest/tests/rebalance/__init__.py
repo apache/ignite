@@ -128,7 +128,7 @@ class NodeJoinLeftScenario(IgniteTest):
             "preloaded_bytes": cache_count * entry_count * entry_size
         }
 
-    # pylint: disable=too-many-arguments, too-many-locals
+    # pylint: disable=too-many-arguments
     def _build_config(self, ignite_version, backups, cache_count, entry_count, entry_size,
                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
         raise NotImplementedError()
@@ -144,11 +144,12 @@ class NodeJoinLeftScenario(IgniteTest):
             self.logger.info("Stopping node %s.." % left.name)
             ignites.stop_node(left)
             return ignites.nodes[:-1]
-        else:  # TriggerEvent.NODE_JOIN
-            ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
-                                   num_nodes=1)
-            ignite.start()
-            return ignite.nodes
+
+        # TriggerEvent.NODE_JOIN
+        ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
+                               num_nodes=1)
+        ignite.start()
+        return ignite.nodes
 
 
 # pylint: disable=too-many-arguments

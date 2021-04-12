@@ -30,7 +30,7 @@ class InMemoryTest(NodeJoinLeftScenario):
     """
     DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
 
-    # pylint: disable=too-many-arguments, too-many-locals
+    # pylint: disable=too-many-arguments
     def _build_config(self, ignite_version, backups, cache_count, entry_count, entry_size,
                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
         return IgniteConfiguration(
