@@ -219,13 +219,37 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
      */
-    public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
-        long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
-        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
-        write(writer -> writer.checkpoint(beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
-            lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration, writeCpEntryDuration,
-            splitAndSortCpPagesDuration, totalDuration, cpStartTime, pagesSize, dataPagesWritten, cowPagesWritten));
+    public void checkpoint(
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
+        write(writer -> writer.checkpoint(beforeLockDuration,
+            lockWaitDuration,
+            listenersExecDuration,
+            markDuration,
+            lockHoldDuration,
+            pagesWriteDuration, fsyncDuration,
+            walCpRecordFsyncDuration,
+            writeCpEntryDuration,
+            splitAndSortCpPagesDuration,
+            totalDuration,
+            cpStartTime,
+            pagesSize,
+            dataPagesWritten,
+            cowPagesWritten));
     }
 
     /**
