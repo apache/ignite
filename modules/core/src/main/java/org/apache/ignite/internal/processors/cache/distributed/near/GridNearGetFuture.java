@@ -415,7 +415,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal() && !isNear)
                         cache().metrics0().onRead(false);
 
-                    if (!checkRetryPermits(key,affNode,mapped))
+                    if (!checkRetryPermits(key, affNode, mapped))
                         return saved;
 
                     if (!affNodes.contains(cctx.localNode())) {

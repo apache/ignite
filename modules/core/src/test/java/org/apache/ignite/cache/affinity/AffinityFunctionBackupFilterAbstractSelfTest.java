@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -42,7 +43,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  */
 public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridCommonAbstractTest {
     /** Split attribute name. */
-    private static final String SPLIT_ATTRIBUTE_NAME = "split-attribute";
+    protected static final String SPLIT_ATTRIBUTE_NAME = "split-attribute";
 
     /** Split attribute value. */
     private String splitAttrVal;
@@ -51,7 +52,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     public static final String FIRST_NODE_GROUP = "A";
 
     /** Backup count. */
-    private int backups = 1;
+    protected int backups = 1;
 
     /** Test backup filter. */
     protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
@@ -87,7 +88,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      * @param nodes List of cluster nodes.
      * @return Statistic.
      */
-    @NotNull private static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
+    @NotNull protected static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
         Map<String, Integer> backupAssignedAttribute = new HashMap<>();
 
         backupAssignedAttribute.put(FIRST_NODE_GROUP, 0);
@@ -130,6 +131,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setUserAttributes(F.asMap(SPLIT_ATTRIBUTE_NAME, splitAttrVal));
+        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }
@@ -175,7 +177,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private void checkPartitions() throws Exception {
+    protected void checkPartitions() throws Exception {
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();
@@ -227,6 +229,18 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         }
     }
 
+    /**
+     * Start grid with split attribute value.
+     *
+     * @param gridIdx Grid index.
+     * @param splitAttrVal Split attribute value.
+     */
+    protected IgniteEx startGrid(int gridIdx, String splitAttrVal) throws Exception {
+        this.splitAttrVal = splitAttrVal;
+
+        return startGrid(gridIdx);
+    }
+
     /* Different affinityBackupFilters have different goals */
     protected int expectedNodesForEachPartition() {
        return backups + 1;
@@ -235,7 +249,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
-    private void checkPartitionsWithAffinityBackupFilter() throws Exception {
+    protected void checkPartitionsWithAffinityBackupFilter() throws Exception {
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();

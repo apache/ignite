@@ -165,7 +165,7 @@ Run HelloWorld.java. You will see 'Hello World!' and other environment details p
 
 include::includes/exampleprojects.adoc[]
 
-== Running Ignite with Java 11 or later
+== Running Ignite with Java 11
 
 include::includes/java9.adoc[]
 

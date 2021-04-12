@@ -33,6 +33,9 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -41,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,6 +103,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
+
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
 
     /**
      * Helper method to calculates mask.
@@ -386,20 +394,23 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             while (it.hasNext() && res.size() < primaryAndBackups) {
                 ClusterNode node = it.next();
 
-                if (exclNeighbors) {
-                    if (!allNeighbors.contains(node)) {
-                        res.add(node);
+                try {
+                    if ((backupFilter != null && backupFilter.apply(primary, node))
+                            || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                            || (affinityBackupFilter == null && backupFilter == null)) {
+                        if (exclNeighbors) {
+                            if (!allNeighbors.contains(node)) {
+                                res.add(node);
 
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                                allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                            }
+                        }
+                        else
+                            res.add(node);
                     }
                 }
-                else if ((backupFilter != null && backupFilter.apply(primary, node))
-                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-                    || (affinityBackupFilter == null && backupFilter == null) ) {
-                    res.add(node);
-
-                    if (exclNeighbors)
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                catch (Exception ex) {
+                    ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
                 }
             }
         }

@@ -431,7 +431,7 @@ public class CommandHandlerParsingTest {
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
@@ -1034,6 +1034,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.PROPERTY ||
             cmd == CommandList.SYSTEM_VIEW ||
             cmd == CommandList.METRIC ||
-            cmd == CommandList.DEFRAGMENTATION;
+            cmd == CommandList.DEFRAGMENTATION ||
+            cmd == CommandList.PERFORMANCE_STATISTICS;
     }
 }

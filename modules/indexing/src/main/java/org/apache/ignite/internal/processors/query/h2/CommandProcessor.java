@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -1059,7 +1060,7 @@ public class CommandProcessor {
      * @return Query entity mimicking this SQL statement.
      */
     private static QueryEntity toQueryEntity(GridSqlCreateTable createTbl) {
-        QueryEntity res = new QueryEntity();
+        QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(createTbl.tableName());
 
@@ -1132,8 +1133,11 @@ public class CommandProcessor {
 
             res.setKeyFieldName(pkCol.columnName());
         }
-        else
+        else {
             res.setKeyFields(createTbl.primaryKeyColumns());
+
+            res.setPreserveKeysOrder(true);
+        }
 
         if (!createTbl.wrapValue()) {
             GridSqlColumn valCol = null;
@@ -1156,13 +1160,8 @@ public class CommandProcessor {
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
 
-        if (!F.isEmpty(notNullFields)) {
-            QueryEntityEx res0 = new QueryEntityEx(res);
-
-            res0.setNotNullFields(notNullFields);
-
-            res = res0;
-        }
+        if (!F.isEmpty(notNullFields))
+            res.setNotNullFields(notNullFields);
 
         return res;
     }

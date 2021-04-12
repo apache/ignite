@@ -82,7 +82,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
                 ? new SqlFieldsQuery(sql)
-                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
+                : new SqlFieldsQueryEx(sql, stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
 
         qry.setSchema(schema)
                 .setPageSize(pageSize)
@@ -131,6 +131,8 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         ctx.incrementCursors();
 
         try {
+            qry.setQueryInitiatorId(ctx.clientDescriptor());
+
             // If cacheId is provided, we must check the cache for existence.
             if (cacheId() != 0) {
                 DynamicCacheDescriptor desc = cacheDescriptor(ctx);

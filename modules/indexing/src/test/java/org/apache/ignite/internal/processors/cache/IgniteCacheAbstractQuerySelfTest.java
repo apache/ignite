@@ -81,6 +81,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -492,7 +493,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(1, 1);
         cache.put(2, 2);
 
-        QueryCursor<Cache.Entry<Integer,Integer>> qry =
+        QueryCursor<Cache.Entry<Integer, Integer>> qry =
             cache.query(new SqlQuery<Integer, Integer>(Integer.class, "_key between 2 and 1"));
 
         assertTrue(qry.getAll().isEmpty());
@@ -1323,7 +1324,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
 
-        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer,Integer>() {
+        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 assertNotNull(k);
                 assertNotNull(v);
@@ -1550,6 +1551,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testClientQueryExecutedEvents() throws Exception {
+        ((Map<?, ?>)GridTestUtils.getFieldValue(new GridToStringBuilder(), S.class, "classCache")).clear();
+
         doTestClientQueryExecutedEvents(false);
     }
 
@@ -1557,6 +1560,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
     public void testClientQueryExecutedEventsIncludeSensitive() throws Exception {
+        ((Map<?, ?>)GridTestUtils.getFieldValue(new GridToStringBuilder(), S.class, "classCache")).clear();
+
         doTestClientQueryExecutedEvents(true);
     }
 

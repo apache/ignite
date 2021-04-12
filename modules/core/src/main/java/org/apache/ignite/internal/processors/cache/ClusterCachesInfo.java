@@ -127,6 +127,9 @@ public class ClusterCachesInfo {
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
+    /** Mapping of caches by cache ID */
+    private final ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById = new ConcurrentHashMap<>();
+
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
 
@@ -229,6 +232,8 @@ public class ClusterCachesInfo {
 
             if (!locCaches.contains(e.getKey())) {
                 cachesIter.remove();
+
+                registeredCachesById.remove(e.getValue());
 
                 ctx.discovery().removeCacheFilter(e.getKey());
             }
@@ -813,7 +818,8 @@ public class ClusterCachesInfo {
 
         markedForDeletionCaches.put(cacheName, old);
 
-        registeredCaches.remove(cacheName);
+        DynamicCacheDescriptor removedCacheDescriptor = registeredCaches.remove(cacheName);
+        registeredCachesById.remove(removedCacheDescriptor.cacheId());
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
@@ -1039,6 +1045,8 @@ public class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
+
+        registeredCachesById.put(startDesc.cacheId(), startDesc);
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1473,6 +1481,7 @@ public class ClusterCachesInfo {
             desc.receivedOnDiscovery(true);
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
+            registeredCachesById.put(desc.cacheId(), desc);
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1568,11 +1577,6 @@ public class ClusterCachesInfo {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
 
                 grpDesc.mergeWith(locGrpCfg);
-
-                CacheGroupContext cctx = ctx.cache().cacheGroup(grpDesc.groupId());
-
-                if (cctx != null)
-                    cctx.globalWalEnabled(grpData.walEnabled());
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
@@ -1590,6 +1594,7 @@ public class ClusterCachesInfo {
      */
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
+        registeredCachesById.clear();
         registeredCacheGrps.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
@@ -2118,6 +2123,7 @@ public class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
+        registeredCachesById.put(desc.cacheId(), desc);
 
         assert old == null : old;
     }
@@ -2266,7 +2272,7 @@ public class ClusterCachesInfo {
         );
 
         if (startedCacheCfg.isEncryptionEnabled())
-            ctx.encryption().beforeCacheGroupStart(grpId, encKey);
+            ctx.encryption().setInitialGroupKey(grpId, encKey);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 
@@ -2419,6 +2425,13 @@ public class ClusterCachesInfo {
     }
 
     /**
+     * @return Registered caches by Id
+     */
+    ConcurrentMap<Integer, DynamicCacheDescriptor> registeredCachesById() {
+        return registeredCachesById;
+    }
+
+    /**
      * @return Registered cache templates.
      */
     ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates() {
@@ -2457,6 +2470,7 @@ public class ClusterCachesInfo {
 
         registeredCacheGrps.clear();
         registeredCaches.clear();
+        registeredCachesById.clear();
         registeredTemplates.clear();
 
         clientReconnectReqs = null;

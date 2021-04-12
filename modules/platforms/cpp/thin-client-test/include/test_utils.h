@@ -75,6 +75,14 @@ namespace ignite_test
      * Remove all the LFS artifacts.
      */
     void ClearLfs();
+
+    /**
+     * Get a number of occurrences of a given string in the specified file.
+     * @param filePath File path.
+     * @param line Line to find.
+     * @return Number of occurrences.
+     */
+    size_t GetLineOccurrencesInFile(const std::string& filePath, const std::string& line);
 }
 
 #endif // _IGNITE_THIN_CLIENT_TEST_TEST_UTILS

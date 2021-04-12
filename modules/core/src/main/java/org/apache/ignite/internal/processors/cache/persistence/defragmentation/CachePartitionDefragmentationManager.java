@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -56,8 +57,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -69,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -330,7 +330,7 @@ public class CachePartitionDefragmentationManager {
 
                     boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
 
-                    FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
+                    FileVersionCheckingFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
 
                     AtomicLong idxAllocationTracker = new GridAtomicLong();
 
@@ -496,7 +496,7 @@ public class CachePartitionDefragmentationManager {
         int grpId,
         File workDir,
         GridCacheOffheapManager offheap,
-        FilePageStoreFactory pageStoreFactory,
+        FileVersionCheckingFactory pageStoreFactory,
         GridCompoundFuture<Object, Object> cmpFut,
         PageMemoryEx oldPageMem,
         CacheGroupContext newGrpCtx,
@@ -610,7 +610,7 @@ public class CachePartitionDefragmentationManager {
     public void createIndexPageStore(
         int grpId,
         File workDir,
-        FilePageStoreFactory pageStoreFactory,
+        FileVersionCheckingFactory pageStoreFactory,
         DataRegion partRegion,
         LongConsumer allocatedTracker
     ) throws IgniteCheckedException {
@@ -877,7 +877,7 @@ public class CachePartitionDefragmentationManager {
         if (!query.moduleEnabled())
             return;
 
-        final GridQueryIndexing idx = query.getIndexing();
+        final IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 
@@ -931,7 +931,7 @@ public class CachePartitionDefragmentationManager {
         private GridCacheDataStore newCacheDataStore;
 
         /** */
-        public final FilePageStoreFactory pageStoreFactory;
+        public final FileVersionCheckingFactory pageStoreFactory;
 
         /** */
         public final AtomicLong partPagesAllocated = new AtomicLong();
@@ -952,7 +952,7 @@ public class CachePartitionDefragmentationManager {
             CacheGroupContext oldGrpCtx,
             CacheGroupContext newGrpCtx,
             CacheDataStore oldCacheDataStore,
-            FilePageStoreFactory pageStoreFactory
+            FileVersionCheckingFactory pageStoreFactory
         ) {
             this.workDir = workDir;
             this.grpId = grpId;

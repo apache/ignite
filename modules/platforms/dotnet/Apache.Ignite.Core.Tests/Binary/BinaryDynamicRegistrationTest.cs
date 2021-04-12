@@ -19,9 +19,9 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
 #if !NETCOREAPP
-    extern alias ExamplesDll;
-    using Apache.Ignite.ExamplesDll.Binary;
-    using ExamplesAccount = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Account;
+    extern alias TestDll2;
+    using Apache.Ignite.Core.Tests.TestDll2;
+    using ExamplesAccount = TestDll2.Apache.Ignite.Core.Tests.TestDll2.Account;
 #endif
 
     using System;
@@ -225,9 +225,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the single grid scenario.
         /// </summary>
         [Test]
-        public void TestSingleGrid()
+        public void TestSingleGrid([Values(false, true)] bool customMapper)
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(GetConfig(false, customMapper)))
             {
                 Test(ignite, ignite);
             }
@@ -237,23 +237,20 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the two grid scenario.
         /// </summary>
         [Test]
-        public void TestTwoGrids([Values(false, true)] bool clientMode)
+        public void TestTwoGrids([Values(false, true)] bool clientMode, [Values(false, true)] bool customMapper)
         {
-            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    IgniteInstanceName = "grid2",
-                    ClientMode = clientMode
-                };
+            var cfg1 = GetConfig(false, customMapper);
+            var cfg2 = GetConfig(clientMode, customMapper, "grid2");
 
-                using (var ignite2 = Ignition.Start(cfg))
+            using (var ignite1 = Ignition.Start(cfg1))
+            {
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
 
                 // Test twice to verify double registration.
-                using (var ignite2 = Ignition.Start(cfg))
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
@@ -473,6 +470,32 @@ namespace Apache.Ignite.Core.Tests.Binary
             files.ToList().ForEach(File.Delete);
         }
 
+        /// <summary>
+        /// Gets the config.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(bool client, bool customMapper, string name = null)
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = client,
+                IgniteInstanceName = name
+            };
+
+            if (customMapper)
+            {
+                cfg.BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper
+                    {
+                        NamespaceToLower = true,
+                        NamespacePrefix = "foo.bar."
+                    }
+                };
+            }
+
+            return cfg;
+        }
+
         private interface ITest
         {
             int Int { get; set; }
@@ -596,10 +619,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 }
 
 #if !NETCOREAPP
-namespace Apache.Ignite.ExamplesDll.Binary
+namespace Apache.Ignite.Core.Tests.TestDll2
 {
     /// <summary>
-    /// Copy of Account class in ExamplesDll. Same name and namespace, different assembly.
+    /// Copy of Account class in TestDll2. Same name and namespace, different assembly.
     /// </summary>
     public class Account
     {

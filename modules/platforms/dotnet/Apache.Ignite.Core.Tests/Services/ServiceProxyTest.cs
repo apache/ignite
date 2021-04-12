@@ -283,41 +283,32 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
-                Marshaller.RegisterSameJavaType.Value = true;
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
+                    method, args, PlatformType.DotNet);
 
-                try
-                {
-                    ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
-                        method, args, PlatformType.DotNet);
+                inStream.SynchronizeOutput();
 
-                    inStream.SynchronizeOutput();
+                inStream.Seek(0, SeekOrigin.Begin);
 
-                    inStream.Seek(0, SeekOrigin.Begin);
+                // 2) call InvokeServiceMethod
+                string mthdName;
+                object[] mthdArgs;
 
-                    // 2) call InvokeServiceMethod
-                    string mthdName;
-                    object[] mthdArgs;
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
 
-                    ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
+                var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
-                    var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
+                ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
 
-                    ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
+                var writer = _marsh.StartMarshal(outStream);
+                writer.WriteString("unused"); // fake Java exception details
+                writer.WriteString("unused"); // fake Java exception details
 
-                    var writer = _marsh.StartMarshal(outStream);
-                    writer.WriteString("unused"); // fake Java exception details
-                    writer.WriteString("unused"); // fake Java exception details
+                outStream.SynchronizeOutput();
 
-                    outStream.SynchronizeOutput();
+                outStream.Seek(0, SeekOrigin.Begin);
 
-                    outStream.Seek(0, SeekOrigin.Begin);
-
-                    return ServiceProxySerializer.ReadInvocationResult(outStream, _marsh, KeepBinary);
-                }
-                finally 
-                {
-                    Marshaller.RegisterSameJavaType.Value = true;
-                }
+                return ServiceProxySerializer.ReadInvocationResult(outStream, _marsh, KeepBinary);
             }
         }
 
