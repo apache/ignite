@@ -680,13 +680,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
 
         try {
-            if (archiveLast) {
-                lastIdx = currentSegment();
+            lastIdx = currentSegment();
 
-                closeBufAndRollover(currentHandle(), null, RolloverType.NONE);
-            }
-
-            fileHandleManager.onDeactivate();
+            fileHandleManager.onDeactivate(archiveLast);
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
