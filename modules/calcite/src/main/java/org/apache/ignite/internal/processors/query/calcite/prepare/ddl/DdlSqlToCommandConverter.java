@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTa
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
 import org.apache.ignite.internal.util.typedef.F;
-import sun.jvm.hotspot.utilities.AssertionFailure;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BOOLEAN;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.AFFINITY_KEY;
@@ -78,7 +77,7 @@ public class DdlSqlToCommandConverter {
     private static final TableOptionProcessor<Void> UNSUPPORTED_OPTION_PROCESSOR = new TableOptionProcessor<>(
         null,
         (opt, ctx) -> {
-            throw new AssertionFailure("Unsupported option " + opt.key());
+            throw new AssertionError("Unsupported option " + opt.key());
         },
         null);
 
