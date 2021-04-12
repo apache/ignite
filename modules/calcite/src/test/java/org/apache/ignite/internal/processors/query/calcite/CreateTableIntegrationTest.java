@@ -219,7 +219,7 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
      * Creates a table without a primary key and then insert a few rows.
      */
     @Test
-    public void createTableWithouPk() {
+    public void createTableWithoutPk() {
         executeSql("create table my_table (f1 int, f2 varchar)");
 
         executeSql("insert into my_table(f1, f2) values (1, '1'),(2, '2')");

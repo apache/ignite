@@ -186,6 +186,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private final DdlCommandHandler ddlCmdHnd;
 
+    /** */
     private final DdlSqlToCommandConverter ddlConverter;
 
     /**
@@ -197,7 +198,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
         running = new ConcurrentHashMap<>();
-
         ddlConverter = new DdlSqlToCommandConverter();
 
         ddlCmdHnd = new DdlCommandHandler(
