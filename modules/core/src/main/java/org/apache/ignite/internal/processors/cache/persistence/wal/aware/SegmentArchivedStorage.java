@@ -54,7 +54,7 @@ class SegmentArchivedStorage extends SegmentObservable {
     /**
      * @param lastAbsArchivedIdx New value of last archived segment index.
      */
-    void lastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
+    void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
         synchronized (this) {
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
 
@@ -101,7 +101,7 @@ class SegmentArchivedStorage extends SegmentObservable {
         //Ignore interrupted flag and force set new value. - legacy logic.
         //checkInterrupted();
 
-        lastArchivedAbsoluteIndex(toArchive);
+        setLastArchivedAbsoluteIndex(toArchive);
     }
 
     /**

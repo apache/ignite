@@ -187,7 +187,7 @@ public class SegmentAware {
     public void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
         assert lastAbsArchivedIdx < curAbsWalIdx() || curAbsWalIdx() == -1 : lastAbsArchivedIdx + " < " + curAbsWalIdx();
 
-        segmentArchivedStorage.lastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+        segmentArchivedStorage.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
     }
 
     /**
