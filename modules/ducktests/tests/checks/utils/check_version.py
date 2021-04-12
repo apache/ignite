@@ -16,6 +16,7 @@
 """
 Checks Version.
 """
+import pytest
 
 from ignitetest import __version__
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
@@ -35,7 +36,10 @@ def check_dev_version():
     assert fork_dev.is_dev
 
     assert DEV_BRANCH == dev == ignite_dev
-    assert DEV_BRANCH != fork_dev
+
+    with pytest.raises(Exception):
+        assert DEV_BRANCH != fork_dev  # incomparable
+
     assert DEV_BRANCH.version == dev.version == ignite_dev.version == fork_dev.version
     assert DEV_BRANCH.project == dev.project == ignite_dev.project == "ignite"
     assert fork_dev.project == "fork"
@@ -56,8 +60,11 @@ def check_dev_version():
     assert ignite_dev.version > LATEST.version
     assert DEV_BRANCH > LATEST
     assert DEV_BRANCH.version > LATEST.version
-    # assert fork_dev <!=> LATEST #todo
-    # assert fork_dev.version <!=> LATEST.version #todo
+
+    with pytest.raises(Exception):
+        assert fork_dev != LATEST  # incomparable
+
+    assert fork_dev.version != LATEST.version
 
     assert str(dev) == str(ignite_dev) == str(DEV_BRANCH) == 'ignite-dev'
     assert str(fork_dev) == 'fork-dev'
@@ -77,7 +84,10 @@ def check_numeric_version():
     assert not LATEST.is_dev
 
     assert v_2_99_1 == ignite_v_2_99_1
-    assert v_2_99_1 != fork_v_2_99_1
+
+    with pytest.raises(Exception):
+        assert v_2_99_1 != fork_v_2_99_1  # incomparable
+
     assert v_2_99_1.version == ignite_v_2_99_1.version == fork_v_2_99_1.version == [2, 99, 1]
     assert v_2_99_1.project == ignite_v_2_99_1.project == LATEST.project == "ignite"
     assert fork_v_2_99_1.project == "fork"

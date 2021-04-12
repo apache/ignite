@@ -50,7 +50,7 @@ class IgniteVersion(LooseVersion):
         self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
 
         if self.is_dev:
-            version = __version__  # todo parce pom for fork version
+            version = __version__  # we may also parse pom file to gain correct version
 
         super().__init__(version)
 
@@ -62,7 +62,7 @@ class IgniteVersion(LooseVersion):
             other = IgniteVersion(other)
 
         if self.project != other.project:
-            return -1
+            raise Exception("Incomperable versons v1=%s, v2=%s because of different projects" % (self, other))
 
         return super()._cmp(other)
 
