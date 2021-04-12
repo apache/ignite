@@ -113,9 +113,9 @@ public interface PerformanceStatisticsHandler {
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
      */
-    void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration, long markDuration,
-        long lockHoldDuration, long pagesWriteDuration, long fsyncDuration, long walCpRecordFsyncDuration,
-        long writeCpEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
+    void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
+        long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
+        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
         long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten);
 
     /**

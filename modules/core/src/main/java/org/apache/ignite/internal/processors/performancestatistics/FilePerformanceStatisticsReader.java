@@ -419,7 +419,7 @@ public class FilePerformanceStatisticsReader {
             long writeCheckpointEntryDuration = buf.getLong();
             long splitAndSortCpPagesDuration = buf.getLong();
             long totalDuration = buf.getLong();
-            long checkpointStartTime = buf.getLong();
+            long cpStartTime = buf.getLong();
             int pagesSize = buf.getInt();
             int dataPagesWritten = buf.getInt();
             int cowPagesWritten = buf.getInt();
@@ -427,7 +427,7 @@ public class FilePerformanceStatisticsReader {
             for (PerformanceStatisticsHandler handler : curHnd) {
                 handler.checkpoint(nodeId, beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
                     lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration,
-                    writeCheckpointEntryDuration, splitAndSortCpPagesDuration, totalDuration, checkpointStartTime,
+                    writeCheckpointEntryDuration, splitAndSortCpPagesDuration, totalDuration, cpStartTime,
                     pagesSize, dataPagesWritten, cowPagesWritten);
             }
 

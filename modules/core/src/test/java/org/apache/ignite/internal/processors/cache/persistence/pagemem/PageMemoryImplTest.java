@@ -657,7 +657,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 }
             },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
-                kernalCtx.metric(), kernalCtx.performanceStatistics(), NO_OP_METRICS),
+                kernalCtx.metric(),
+                kernalCtx.performanceStatistics(),
+                NO_OP_METRICS),
             throttlingPlc,
             noThrottle
         ) : new PageMemoryImpl(
@@ -676,7 +678,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             }
         },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
-                kernalCtx.metric(), kernalCtx.performanceStatistics(), NO_OP_METRICS),
+                kernalCtx.metric(),
+                kernalCtx.performanceStatistics(),
+                NO_OP_METRICS),
             throttlingPlc,
             noThrottle
         ) {

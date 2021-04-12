@@ -82,8 +82,10 @@ public class IgniteThrottlingUnitTest {
         ctx.add(new GridMetricManager(ctx));
         ctx.add(new PerformanceStatisticsProcessor(ctx));
 
-        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(
-            new DataRegionConfiguration(), ctx.metric(), ctx.performanceStatistics(), NO_OP_METRICS);
+        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(),
+            ctx.metric(),
+            ctx.performanceStatistics(),
+            NO_OP_METRICS);
 
         when(pageMemory2g.metrics()).thenReturn(metrics);
     }
