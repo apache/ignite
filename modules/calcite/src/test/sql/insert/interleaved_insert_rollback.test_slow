@@ -3,7 +3,7 @@
 # group: [insert]
 
 statement ok
-CREATE TABLE integers(i INTEGER)
+CREATE TABLE integers(ii INTEGER)
 
 statement ok con1
 BEGIN TRANSACTION

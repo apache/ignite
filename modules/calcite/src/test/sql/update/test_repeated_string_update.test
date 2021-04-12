@@ -2,9 +2,9 @@
 # description: Test repeated update of string in same segment
 # group: [update]
 
-# create a table
+# create aa table
 statement ok con1
-CREATE TABLE test (a VARCHAR);
+CREATE TABLE test (aa VARCHAR);
 
 statement ok con1
 INSERT INTO test VALUES ('hello'), ('world')
@@ -14,38 +14,38 @@ BEGIN TRANSACTION;
 
 # scan the table
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
 
-# test a number of repeated updates
+# test aa number of repeated updates
 statement ok con1
-UPDATE test SET a='test' WHERE a='hello';
+UPDATE test SET aa='test' WHERE aa='hello';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 world
 
 statement ok con1
-UPDATE test SET a='test2' WHERE a='world';
+UPDATE test SET aa='test2' WHERE aa='world';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 test2
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
@@ -54,7 +54,7 @@ statement ok con2
 COMMIT;
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 test2

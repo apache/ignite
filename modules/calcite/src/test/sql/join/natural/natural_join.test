@@ -7,13 +7,13 @@ PRAGMA enable_verification
 
 # create tables
 statement ok
-CREATE TABLE t1 (a INTEGER, b INTEGER)
+CREATE TABLE t1 (aa INTEGER, bb INTEGER)
 
 statement ok
 INSERT INTO t1 VALUES (1, 2)
 
 statement ok
-CREATE TABLE t2 (a INTEGER, c INTEGER)
+CREATE TABLE t2 (aa INTEGER, cc INTEGER)
 
 statement ok
 INSERT INTO t2 VALUES (1, 3), (2, 4)
@@ -25,18 +25,18 @@ SELECT * FROM t1 NATURAL JOIN t2
 1	2	3
 
 query III
-SELECT t1.a, t1.b, t2.c FROM t1 NATURAL JOIN t2
+SELECT t1.aa, t1.bb, t2.cc FROM t1 NATURAL JOIN t2
 ----
 1	2	3
 
 query III
-SELECT t1.a, t1.b, t2.c FROM t1 NATURAL JOIN t2 ORDER BY t2.a
+SELECT t1.aa, t1.bb, t2.cc FROM t1 NATURAL JOIN t2 ORDER BY t2.aa
 ----
 1	2	3
 
 # natural join with multiple matching columns
 statement ok
-CREATE TABLE t3 (a INTEGER, b INTEGER, c INTEGER)
+CREATE TABLE t3 (aa INTEGER, bb INTEGER, cc INTEGER)
 
 statement ok
 INSERT INTO t3 VALUES (1, 2, 3)
@@ -59,30 +59,30 @@ SELECT * FROM t1 NATURAL JOIN t2 NATURAL JOIN t3
 
 # no matching columns
 statement error
-select * from (values (1)) tbl(a) natural join (values (1), (2)) tbl2(b) order by 1, 2
+select * from (values (1)) tbl(aa) natural join (values (1), (2)) tbl2(bb) order by 1, 2
 
 # long join chain
 query I
-select * from (values (1)) tbl(a) natural join (values (1)) tbl2(a) natural join (values (1)) tbl3(a)
-              natural join (values (1)) tbl4(a) natural join (values (1)) tbl5(a)
+select * from (values (1)) tbl(aa) natural join (values (1)) tbl2(aa) natural join (values (1)) tbl3(aa)
+              natural join (values (1)) tbl4(aa) natural join (values (1)) tbl5(aa)
 ----
 1
 
 # natural join with subqueries
 query I
-select * from (select 42) tbl(a) natural join (select 42) tbl2(a)
+select * from (select 42) tbl(aa) natural join (select 42) tbl2(aa)
 ----
 42
 
 # uncorrelated scalar subquery
 query I
-select (select * from (select 42) tbl(a) natural join (select 42) tbl2(a))
+select (select * from (select 42) tbl(aa) natural join (select 42) tbl2(aa))
 ----
 42
 
 # error: duplicate table alias on both sides
 statement error
-select (select * from (select 42) tbl(a) natural join (select 42) tbl(a))
+select (select * from (select 42) tbl(aa) natural join (select 42) tbl(aa))
 
 statement ok
 DROP TABLE t1
@@ -107,8 +107,8 @@ SELECT COUNT(t1.rowid) FROM t1, v0 RIGHT JOIN t0 ON t1.c1=t0.c1 AND v0.c0=t0.c0;
 
 # column name appears more than once on left side of the natural join
 statement error
-select * from (values (1)) t1(i) join (values (1)) t2(i) on (t1.i=t2.i) natural join (values (1)) t3(i);
+select * from (values (1)) t1(ii) join (values (1)) t2(ii) on (t1.ii=t2.ii) natural join (values (1)) t3(ii);
 
 # column name appears more than once on right side of the natural join
 statement error
-select * from (values (1)) t1(i) natural join ((values (1)) t2(i)  join (values (1)) t3(i) on (t2.i=t3.i))
+select * from (values (1)) t1(ii) natural join ((values (1)) t2(ii)  join (values (1)) t3(ii) on (t2.ii=t3.ii))

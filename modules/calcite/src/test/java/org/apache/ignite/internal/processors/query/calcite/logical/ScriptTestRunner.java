@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -51,6 +52,9 @@ public class ScriptTestRunner {
 
     /** NULL label. */
     private static final String NULL = "NULL";
+
+    /** NULL label. */
+    private static final String schemaPublic = "PUBLIC";
 
     /** Test script path. */
     private final Path test;
@@ -256,8 +260,8 @@ public class ScriptTestRunner {
             for (int i = begin; i < end; ++i) {
                 loopVars.put(var, i);
 
-                for (Command c : cmds)
-                    c.execute();
+                for (Command cc : cmds)
+                    cc.execute();
             }
         }
     }
@@ -326,7 +330,13 @@ public class ScriptTestRunner {
                 log.info("Execute: " + qry);
 
                 try {
-                    engine.query(null, null, qry);
+                    List<FieldsQueryCursor<List<?>>> curs = engine.query(null, schemaPublic, qry);
+
+                    assert curs.size() == 1 : "Unexpected results [cursorsCount=" + curs.size() + ']';
+
+                    try (QueryCursor<List<?>> cur = curs.get(0)) {
+                        cur.getAll();
+                    }
 
                     if (expected != ExpectedStatementStatus.OK)
                         throw new IgniteException("Error expected at: " + posDesc + ". Statement: " + toString());
@@ -466,13 +476,15 @@ public class ScriptTestRunner {
             log.info("Execute: " + sql);
 
             try {
-                List<FieldsQueryCursor<List<?>>> curs = engine.query(null, null, sql.toString());
+                List<FieldsQueryCursor<List<?>>> curs = engine.query(null, schemaPublic, sql.toString());
 
-                assert curs.size() == 1;
+                assert curs.size() == 1 : "Unexpected results [cursorsCount=" + curs.size() + ']';
 
-                List<List<?>> res = curs.get(0).getAll();
+                try (QueryCursor<List<?>> cur = curs.get(0)) {
+                    List<List<?>> res = cur.getAll();
 
-                checkResult(res);
+                    checkResult(res);
+                }
             }
             catch (IgniteSQLException e) {
                 throw new IgniteException("Error at: " + posDesc + ". sql: " + sql, e);
@@ -490,8 +502,8 @@ public class ScriptTestRunner {
         /** */
         private void checkResultTuples(List<List<?>> res) {
             if (expectedRes.size() != res.size()) {
-                throw new AssertionError("Invalid results rows count " +
-                    "[expected=" + expectedRes + ", actual=" + res + ']');
+                throw new AssertionError("Invalid results rows count at " + posDesc +
+                    ". [expected=" + expectedRes + ", actual=" + res + ']');
             }
 
             for (int i = 0; i < expectedRes.size(); ++i) {
@@ -499,8 +511,8 @@ public class ScriptTestRunner {
                 List<?> row = res.get(i);
 
                 if (row.size() != expectedRow.size()) {
-                    throw new AssertionError("Invalid columns count " +
-                        "[expected=" + expectedRes + ", actual=" + res+ ']');
+                    throw new AssertionError("Invalid columns count at " + posDesc +
+                        ". [expected=" + expectedRes + ", actual=" + res+ ']');
                 }
 
                 for (int j = 0; j < expectedRow.size(); ++j) {
@@ -508,7 +520,8 @@ public class ScriptTestRunner {
                     String val = String.valueOf(row.get(j));
 
                     if (!exp.equals(val)) {
-                        throw new AssertionError("Not expected result [row=" + i + ", col=" + j +
+                        throw new AssertionError("Not expected result at " + posDesc +
+                            ". [row=" + i + ", col=" + j +
                             ", expected=" + exp + ", actual=" + val + ']');
                     }
                 }
@@ -534,6 +547,8 @@ public class ScriptTestRunner {
 
         return s;
     }
+
+
 
     /** */
     private enum ExpectedStatementStatus {

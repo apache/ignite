@@ -3,13 +3,13 @@
 # group: [update]
 
 statement ok con1
-CREATE TABLE test (a INTEGER);
+CREATE TABLE test (aa INTEGER);
 
 statement ok con1
 INSERT INTO test VALUES (1), (2), (3);
 
 query R con1
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 
@@ -21,40 +21,40 @@ statement ok con2
 INSERT INTO test VALUES (4), (5), (6);
 
 query R con1
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 
 query R con2
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 21.000000
 
 # delete from con2
 statement ok con2
-DELETE FROM test WHERE a < 4
+DELETE FROM test WHERE aa < 4
 
 query R con1
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 
 query R con2
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 15.000000
 
 # update from con2
 statement ok con2
-UPDATE test SET a=a-3
+UPDATE test SET aa=aa-3
 
 query R con1
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 
 query R con2
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 
@@ -63,12 +63,12 @@ statement ok con1
 COMMIT
 
 query R con1
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 
 query R con2
-SELECT SUM(a) FROM test
+SELECT SUM(aa) FROM test
 ----
 6.000000
 

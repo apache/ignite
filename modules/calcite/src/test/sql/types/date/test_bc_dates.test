@@ -11,7 +11,7 @@ PRAGMA enable_verification
 
 # create and insert into table
 statement ok
-CREATE TABLE dates(i DATE)
+CREATE TABLE dates(ii DATE)
 
 # insert an ISO-8601 formatted negative date
 statement ok
@@ -26,13 +26,13 @@ NULL
 
 # YEAR function returns the ISO 8601 year
 query I
-SELECT year(i) FROM dates
+SELECT year(ii) FROM dates
 ----
 -1993
 NULL
 
 query T
-SELECT cast(i AS VARCHAR) FROM dates
+SELECT cast(ii AS VARCHAR) FROM dates
 ----
 1994-08-14 (BC)
 NULL
@@ -63,7 +63,7 @@ SELECT DATE '-1992-01-01'
 
 # check intervals on negative dates
 statement ok
-CREATE TABLE bc_dates AS SELECT date '0020-01-01' - interval (i) years AS d from range(0, 40) tbl(i);
+CREATE TABLE bc_dates AS SELECT date '0020-01-01' - interval (ii) years AS d from range(0, 40) tbl(ii);
 
 query II
 SELECT d, d::VARCHAR FROM bc_dates ORDER BY 1

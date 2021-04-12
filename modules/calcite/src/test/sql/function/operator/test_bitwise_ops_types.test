@@ -10,13 +10,13 @@ statement ok
 BEGIN TRANSACTION
 
 statement ok
-CREATE TABLE bitwise_test(i TINYINT, j TINYINT)
+CREATE TABLE bitwise_test(ii TINYINT, jj TINYINT)
 
 statement ok
 INSERT INTO bitwise_test VALUES (1, 1), (1, 0), (0, 1), (0, 0), (1, NULL), (NULL, 1), (NULL, NULL)
 
 query IIIII
-SELECT i << j, i >> j, i & j, i | j, xor(i, j) FROM bitwise_test
+SELECT ii << jj, ii >> jj, ii & jj, ii | jj, xor(ii, jj) FROM bitwise_test
 ----
 2	0	1	1	0
 1	1	0	1	1
@@ -34,13 +34,13 @@ statement ok
 BEGIN TRANSACTION
 
 statement ok
-CREATE TABLE bitwise_test(i SMALLINT, j SMALLINT)
+CREATE TABLE bitwise_test(ii SMALLINT, jj SMALLINT)
 
 statement ok
 INSERT INTO bitwise_test VALUES (1, 1), (1, 0), (0, 1), (0, 0), (1, NULL), (NULL, 1), (NULL, NULL)
 
 query IIIII
-SELECT i << j, i >> j, i & j, i | j, xor(i, j) FROM bitwise_test
+SELECT ii << jj, ii >> jj, ii & jj, ii | jj, xor(ii, jj) FROM bitwise_test
 ----
 2	0	1	1	0
 1	1	0	1	1
@@ -58,13 +58,13 @@ statement ok
 BEGIN TRANSACTION
 
 statement ok
-CREATE TABLE bitwise_test(i INTEGER, j INTEGER)
+CREATE TABLE bitwise_test(ii INTEGER, jj INTEGER)
 
 statement ok
 INSERT INTO bitwise_test VALUES (1, 1), (1, 0), (0, 1), (0, 0), (1, NULL), (NULL, 1), (NULL, NULL)
 
 query IIIII
-SELECT i << j, i >> j, i & j, i | j, xor(i, j) FROM bitwise_test
+SELECT ii << jj, ii >> jj, ii & jj, ii | jj, xor(ii, jj) FROM bitwise_test
 ----
 2	0	1	1	0
 1	1	0	1	1
@@ -82,13 +82,13 @@ statement ok
 BEGIN TRANSACTION
 
 statement ok
-CREATE TABLE bitwise_test(i BIGINT, j BIGINT)
+CREATE TABLE bitwise_test(ii BIGINT, jj BIGINT)
 
 statement ok
 INSERT INTO bitwise_test VALUES (1, 1), (1, 0), (0, 1), (0, 0), (1, NULL), (NULL, 1), (NULL, NULL)
 
 query IIIII
-SELECT i << j, i >> j, i & j, i | j, xor(i, j) FROM bitwise_test
+SELECT ii << jj, ii >> jj, ii & jj, ii | jj, xor(ii, jj) FROM bitwise_test
 ----
 2	0	1	1	0
 1	1	0	1	1

@@ -19,13 +19,13 @@ select REPEAT('', 3), REPEAT('MySQL', 3), REPEAT('MotörHead', 2), REPEAT('Hello
 
 # test repeat on tables
 statement ok
-CREATE TABLE strings(a STRING, b STRING)
+CREATE TABLE strings(aa STRING, bb STRING)
 
 statement ok
 INSERT INTO strings VALUES ('Hello', 'World'), ('HuLlD', NULL), ('MotörHead','RÄcks'), ('', NULL)
 
 query T
-select REPEAT(a, 3) FROM strings
+select REPEAT(aa, 3) FROM strings
 ----
 HelloHelloHello
 HuLlDHuLlDHuLlD
@@ -33,7 +33,7 @@ MotörHeadMotörHeadMotörHead
 (empty)
 
 query T
-select REPEAT(b, 2) FROM strings
+select REPEAT(bb, 2) FROM strings
 ----
 WorldWorld
 NULL
@@ -41,7 +41,7 @@ RÄcksRÄcks
 NULL
 
 query T
-select REPEAT(a, 4) FROM strings WHERE b IS NOT NULL
+select REPEAT(aa, 4) FROM strings WHERE bb IS NOT NULL
 ----
 HelloHelloHelloHello
 MotörHeadMotörHeadMotörHeadMotörHead

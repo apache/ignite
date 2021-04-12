@@ -6,38 +6,38 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (b INTEGER);
+CREATE TABLE test (bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (22), (2), (7);
 
 # Top N optimization
 query I
-SELECT b FROM test ORDER BY b DESC LIMIT 2;
+SELECT bb FROM test ORDER BY bb DESC LIMIT 2;
 ----
 22
 7
 
 # Top N optimization: works with OFFSET
 query I
-SELECT b FROM test ORDER BY b LIMIT 1 OFFSET 1;
+SELECT bb FROM test ORDER BY bb LIMIT 1 OFFSET 1;
 ----
 7
 
 # Top N optimization: Limit greater than number of rows
 query I
-SELECT b FROM test ORDER BY b LIMIT 10 OFFSET 1;
+SELECT bb FROM test ORDER BY bb LIMIT 10 OFFSET 1;
 ----
 7
 22
 
 # Top N optimization: Offset greater than total number of rows
 query I
-SELECT b FROM test ORDER BY b LIMIT 10 OFFSET 10;
+SELECT bb FROM test ORDER BY bb LIMIT 10 OFFSET 10;
 ----
 
 # Top N optimization: doesn't apply for Offset without Limit
 query I
-SELECT b FROM test ORDER BY b OFFSET 10;
+SELECT bb FROM test ORDER BY bb OFFSET 10;
 ----
 

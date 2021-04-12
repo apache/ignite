@@ -6,13 +6,13 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (b INTEGER);
+CREATE TABLE test (bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (1), (2)
 
 statement ok
-CREATE TABLE test2 AS SELECT * FROM repeat(1, 10*1024) t1(b);
+CREATE TABLE test2 AS SELECT * FROM repeat(1, 10*1024) t1(bb);
 
 query I
 SELECT COUNT(*) FROM test2;
@@ -20,7 +20,7 @@ SELECT COUNT(*) FROM test2;
 10240
 
 query I
-SELECT COUNT(*) FROM test INNER JOIN test2 ON test.b<>test2.b
+SELECT COUNT(*) FROM test INNER JOIN test2 ON test.bb<>test2.bb
 ----
 10240
 

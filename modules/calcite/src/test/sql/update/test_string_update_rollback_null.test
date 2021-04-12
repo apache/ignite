@@ -2,9 +2,9 @@
 # description: Test rollback of string update with NULL
 # group: [update]
 
-# create a table
+# create aa table
 statement ok con1
-CREATE TABLE test (a VARCHAR);
+CREATE TABLE test (aa VARCHAR);
 
 statement ok con1
 INSERT INTO test VALUES ('test'), ('world')
@@ -14,16 +14,16 @@ statement ok con1
 BEGIN TRANSACTION;
 
 statement ok con1
-UPDATE test SET a=NULL WHERE a='world';
+UPDATE test SET aa=NULL WHERE aa='world';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 test
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 world
@@ -32,23 +32,23 @@ statement ok con1
 ROLLBACK;
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 world
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 world
 
 # test rollback of NULL -> value update
 statement ok con1
-UPDATE test SET a=NULL WHERE a='world';
+UPDATE test SET aa=NULL WHERE aa='world';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 test
@@ -57,16 +57,16 @@ statement ok con1
 BEGIN TRANSACTION;
 
 statement ok con1
-UPDATE test SET a='world' WHERE a IS NULL;
+UPDATE test SET aa='world' WHERE aa IS NULL;
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 world
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 test
@@ -75,13 +75,13 @@ statement ok con1
 ROLLBACK;
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 test
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 test

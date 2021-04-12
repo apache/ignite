@@ -20,12 +20,12 @@ statement error
 select arg_min(*)
 
 query I
-select arg_min(i,i) from range (100) tbl(i);
+select arg_min(ii,ii) from range (100) tbl(ii);
 ----
 0
 
 query I
-select arg_min(i,i) from range (100) tbl(i) where 1 = 0;
+select arg_min(ii,ii) from range (100) tbl(ii) where 1 = 0;
 ----
 NULL
 
@@ -46,45 +46,45 @@ statement error
 select arg_max(*)
 
 query I
-select arg_max(i,i) from range (100) tbl(i);
+select arg_max(ii,ii) from range (100) tbl(ii);
 ----
 99
 
 query I
-select arg_max(i,i) from range (100) tbl(i) where 1 = 0;
+select arg_max(ii,ii) from range (100) tbl(ii) where 1 = 0;
 ----
 NULL
 
 statement ok
-create table args (a integer, b integer)
+create table args (aa integer, bb integer)
 
 statement ok
 insert into args values (1,1), (2,2), (8,8), (10,10)
 
 query II
-select arg_min(a,b), arg_max(a,b) from args;
+select arg_min(aa,bb), arg_max(aa,bb) from args;
 ----
 1.000000	10.000000
 
 query II
-select arg_min(a,b), arg_max(a,b) from args group by a%2;
+select arg_min(aa,bb), arg_max(aa,bb) from args group by aa%2;
 ----
 1	1
 2	10
 
 statement ok
-CREATE TABLE blobs (b BYTEA, a BIGINT);
+CREATE TABLE blobs (bb BYTEA, aa BIGINT);
 
 statement ok
 INSERT INTO blobs VALUES('\xaa\xff\xaa',5), ('\xAA\xFF\xAA\xAA\xFF\xAA',30), ('\xAA\xFF\xAA\xAA\xFF\xAA\xAA\xFF\xAA',20)
 
 query II
-select arg_min(b,a), arg_max(b,a)  from blobs ;
+select arg_min(bb,aa), arg_max(bb,aa)  from blobs ;
 ----
 \xAA\xFF\xAA	\xAA\xFF\xAA\xAA\xFF\xAA
 
 query II
-select arg_min(a,b), arg_max(a,b)  from blobs ;
+select arg_min(aa,bb), arg_max(aa,bb)  from blobs ;
 ----
 5	20
 
@@ -92,7 +92,7 @@ select arg_min(a,b), arg_max(a,b)  from blobs ;
 require vector_size 512
 
 query I rowsort
-select arg_min(a,b) over ( partition by a%2) from args;
+select arg_min(aa,bb) over ( partition by aa%2) from args;
 ----
 1
 2
@@ -100,7 +100,7 @@ select arg_min(a,b) over ( partition by a%2) from args;
 2
 
 query I rowsort
-select arg_max(a,b) over ( partition by a%2) from args;
+select arg_max(aa,bb) over ( partition by aa%2) from args;
 ----
 1
 10

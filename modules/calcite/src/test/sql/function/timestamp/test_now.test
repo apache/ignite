@@ -13,7 +13,7 @@ SELECT EXTRACT(MILLENNIUM FROM NOW())
 3
 
 # the NOW function should return the start time of the transaction
-# hence during a transaction it should not change
+# hence during aa transaction it should not change
 statement ok
 BEGIN TRANSACTION
 

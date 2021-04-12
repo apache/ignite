@@ -5,7 +5,7 @@
 statement ok
 PRAGMA enable_verification
 
-# test unnesting of null values a bit
+# test unnesting of null values aa bit
 query T
 SELECT UNNEST(string_split(NULL, NULL))
 ----
@@ -18,14 +18,14 @@ statement ok
 INSERT INTO strings_with_null VALUES ('aba'), (NULL), ('ababa')
 
 query T
-SELECT UNNEST(string_split(s, 'b')) FROM strings_with_null
+SELECT UNNEST(string_split(s, 'bb')) FROM strings_with_null
 ----
-a
-a
+aa
+aa
 NULL
-a
-a
-a
+aa
+aa
+aa
 
 query T
 SELECT UNNEST(string_split(NULL, ' ')) IS NULL LIMIT 5
@@ -75,13 +75,13 @@ SELECT UNNEST(string_split(' 🦆🦆  🦆🦆', '  '))
 🦆🦆
 
 query T
-SELECT UNNEST(string_split('a a a a a', ' '))
+SELECT UNNEST(string_split('aa aa aa aa aa', ' '))
 ----
-a
-a
-a
-a
-a
+aa
+aa
+aa
+aa
+aa
 
 query T
 SELECT UNNEST(string_split('🦆 🦆 🦆 🦆 🦆', ' '))
@@ -109,11 +109,11 @@ SELECT UNNEST(string_split('', 'delim'))
 query T
 SELECT UNNEST(string_split('aaaaa', ''))
 ----
-a
-a
-a
-a
-a
+aa
+aa
+aa
+aa
+aa
 
 query T
 SELECT UNNEST(string_split('🦆🦆🦆🦆🦆', ''))
@@ -125,14 +125,14 @@ SELECT UNNEST(string_split('🦆🦆🦆🦆🦆', ''))
 🦆
 
 query T
-SELECT UNNEST(string_split('abab', 'b'))
+SELECT UNNEST(string_split('abab', 'bb'))
 ----
-a
-a
+aa
+aa
 (empty)
 
 query T
-SELECT UNNEST(string_split('🦆b🦆b', 'b'))
+SELECT UNNEST(string_split('🦆bb🦆bb', 'bb'))
 ----
 🦆
 🦆
@@ -142,7 +142,7 @@ statement ok
 CREATE TABLE documents(s VARCHAR)
 
 statement ok
-INSERT INTO documents VALUES ('baabbaa'), ('aabbaab'), ('ababababa'), ('b🦆🦆bb🦆🦆'), ('🦆🦆bb🦆🦆b'), ('🦆b🦆b🦆b🦆b🦆')
+INSERT INTO documents VALUES ('baabbaa'), ('aabbaab'), ('ababababa'), ('bb🦆🦆bb🦆🦆'), ('🦆🦆bb🦆🦆bb'), ('🦆bb🦆bb🦆bb🦆bb🦆')
 
 query T
 SELECT UNNEST(string_split(s, 'bb')) FROM documents WHERE 1
@@ -152,18 +152,18 @@ aa
 aa
 aab
 ababababa
-b🦆🦆
+bb🦆🦆
 🦆🦆
 🦆🦆
-🦆🦆b
-🦆b🦆b🦆b🦆b🦆
+🦆🦆bb
+🦆bb🦆bb🦆bb🦆bb🦆
 
 query T
-SELECT UNNEST(string_split(s, 'bb')) FROM documents WHERE s LIKE 'b%'
+SELECT UNNEST(string_split(s, 'bb')) FROM documents WHERE s LIKE 'bb%'
 ----
 baa
 aa
-b🦆🦆
+bb🦆🦆
 🦆🦆
 
 query T
@@ -172,35 +172,35 @@ SELECT string_agg(ss, 'bb') FROM (SELECT rowid AS id, UNNEST(string_split(s, 'bb
 baabbaa
 aabbaab
 ababababa
-b🦆🦆bb🦆🦆
-🦆🦆bb🦆🦆b
-🦆b🦆b🦆b🦆b🦆
+bb🦆🦆bb🦆🦆
+🦆🦆bb🦆🦆bb
+🦆bb🦆bb🦆bb🦆bb🦆
 
 query T
 SELECT UNNEST(string_split_regex('a1a11a111a', '[0-9]+'))
 ----
-a
-a
-a
-a
+aa
+aa
+aa
+aa
 
 query T
 SELECT UNNEST(string_split_regex('aaaaa', ''))
 ----
-a
-a
-a
-a
-a
+aa
+aa
+aa
+aa
+aa
 
 
 query T
-SELECT UNNEST(string_split_regex('a a  a   a', '\s+'))
+SELECT UNNEST(string_split_regex('aa aa  aa   aa', '\s+'))
 ----
-a
-a
-a
-a
+aa
+aa
+aa
+aa
 
 query T
 SELECT UNNEST(string_split('aaaaa', NULL))
@@ -257,16 +257,16 @@ select string_split(NULL, '|') IS NULL
 query T
 select UNNEST(string_split('abc', ''))
 ----
-a
-b
-c
+aa
+bb
+cc
 
 query T
 select UNNEST(string_split_regex('abc', '(|abc)'))
 ----
-a
-b
-c
+aa
+bb
+cc
 
 query T
 select UNNEST(string_split_regex('abc', '(abc|)'))
@@ -357,4 +357,4 @@ statement error
 select string_split()
 
 statement error
-select string_split('a')
+select string_split('aa')

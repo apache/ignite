@@ -6,41 +6,41 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE strings(a STRING, b STRING)
+CREATE TABLE strings(aa STRING, bb STRING)
 
 statement ok
 INSERT INTO strings VALUES ('Hello', 'World'), ('HuLlD', NULL), ('MotörHead','RÄcks')
 
 query T
-select CONCAT_WS(',',a, 'SUFFIX') FROM strings
+select CONCAT_WS(',',aa, 'SUFFIX') FROM strings
 ----
 Hello,SUFFIX
 HuLlD,SUFFIX
 MotörHead,SUFFIX
 
 query T
-select CONCAT_WS('@','PREFIX', b) FROM strings
+select CONCAT_WS('@','PREFIX', bb) FROM strings
 ----
 PREFIX@World
 PREFIX
 PREFIX@RÄcks
 
 query T
-select CONCAT_WS('$',a, b) FROM strings
+select CONCAT_WS('$',aa, bb) FROM strings
 ----
 Hello$World
 HuLlD
 MotörHead$RÄcks
 
 query T
-select CONCAT_WS(a, b, 'SUFFIX') FROM strings
+select CONCAT_WS(aa, bb, 'SUFFIX') FROM strings
 ----
 WorldHelloSUFFIX
 SUFFIX
 RÄcksMotörHeadSUFFIX
 
 query T
-select CONCAT_WS(a, b, b) FROM strings
+select CONCAT_WS(aa, bb, bb) FROM strings
 ----
 WorldHelloWorld
 (empty)
@@ -52,7 +52,7 @@ select CONCAT_WS('@','1', '2', '3', '4', '5', '6', '7', '8', '9')
 1@2@3@4@5@6@7@8@9
 
 query T
-select CONCAT_WS(b, '[', ']') FROM strings ORDER BY a
+select CONCAT_WS(bb, '[', ']') FROM strings ORDER BY aa
 ----
 [World]
 NULL
@@ -60,7 +60,7 @@ NULL
 
 # filters
 query T
-select CONCAT_WS(',', a, 'SUFFIX') FROM strings WHERE a != 'Hello'
+select CONCAT_WS(',', aa, 'SUFFIX') FROM strings WHERE aa != 'Hello'
 ----
 HuLlD,SUFFIX
 MotörHead,SUFFIX
@@ -92,7 +92,7 @@ select CONCAT_WS(',', NULL)
 
 # NULL separator returns in entire column being NULL
 query T
-select CONCAT_WS(NULL, b, 'SUFFIX') FROM strings
+select CONCAT_WS(NULL, bb, 'SUFFIX') FROM strings
 ----
 NULL
 NULL
@@ -135,22 +135,22 @@ hello
 
 # now test for non-constant separators
 query T
-select CONCAT_WS(a, '', NULL, '') FROM strings ORDER BY a
+select CONCAT_WS(aa, '', NULL, '') FROM strings ORDER BY aa
 ----
 Hello
 HuLlD
 MotörHead
 
 query T
-select CONCAT_WS(a, NULL, '', '') FROM strings ORDER BY a;
+select CONCAT_WS(aa, NULL, '', '') FROM strings ORDER BY aa;
 ----
 Hello
 HuLlD
 MotörHead
 
-# now non-constant separator with a mix of constant and non-constant strings to concatenate
+# now non-constant separator with aa mix of constant and non-constant strings to concatenate
 query T
-select CONCAT_WS(a, NULL, b, '') FROM strings ORDER BY a
+select CONCAT_WS(aa, NULL, bb, '') FROM strings ORDER BY aa
 ----
 WorldHello
 (empty)

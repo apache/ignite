@@ -29,7 +29,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 })
 @TestEnvironment(scriptsRoot = "src/test/sql"
-//    , script = "src/test/sql/types/decimal/decimal_arithmetic.test"
+    , restart = true
+//    , script = "src/test/sql/filter/test_constant_comparisons.test"
 )
 public class LogicalTestSuite {
 }

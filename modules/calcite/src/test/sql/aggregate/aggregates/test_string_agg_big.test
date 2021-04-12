@@ -3,7 +3,7 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE strings AS SELECT c::VARCHAR g, (c*10+e)::VARCHAR x FROM range(0, 100, 1) t1(c), range(0, 100, 1) t2(e);
+CREATE TABLE strings AS SELECT cc::VARCHAR g, (cc*10+e)::VARCHAR x FROM range(0, 100, 1) t1(cc), range(0, 100, 1) t2(e);
 
 query I
 SELECT COUNT(*) FROM (SELECT g, STRING_AGG(x,',') FROM strings GROUP BY g) t1

@@ -3,10 +3,10 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE integers(i INTEGER);
+CREATE TABLE integers(ii INTEGER);
 
 query IIRRRIII
-SELECT COUNT(*), COUNT(i), STDDEV_SAMP(i), SUM(i), SUM(DISTINCT i), FIRST(i), MAX(i), MIN(i) FROM integers WHERE i > 100
+SELECT COUNT(*), COUNT(ii), STDDEV_SAMP(ii), SUM(ii), SUM(DISTINCT ii), FIRST(ii), MAX(ii), MIN(ii) FROM integers WHERE ii > 100
 ----
 0
 0
@@ -18,7 +18,7 @@ NULL
 NULL
 
 statement ok
-CREATE TABLE emptyaggr(i INTEGER);
+CREATE TABLE emptyaggr(ii INTEGER);
 
 query I
 SELECT COUNT(*) FROM emptyaggr
@@ -26,6 +26,6 @@ SELECT COUNT(*) FROM emptyaggr
 0
 
 query RIIIRIIIII
-SELECT SUM(i), COUNT(i), COUNT(DISTINCT i), COUNT(*), AVG(i), COUNT(*)+1, COUNT(i)+1, MIN(i), MIN(i+1), MIN(i)+1 FROM emptyaggr
+SELECT SUM(ii), COUNT(ii), COUNT(DISTINCT ii), COUNT(*), AVG(ii), COUNT(*)+1, COUNT(ii)+1, MIN(ii), MIN(ii+1), MIN(ii)+1 FROM emptyaggr
 ----
 NULL	0	0	0	NULL	1	1	NULL	NULL	NULL

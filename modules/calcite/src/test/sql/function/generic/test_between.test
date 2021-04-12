@@ -60,13 +60,13 @@ NULL
 
 # between with table
 statement ok
-CREATE TABLE integers(i INTEGER);
+CREATE TABLE integers(ii INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1), (2), (3), (NULL)
 
 query T
-SELECT i BETWEEN 1 AND 2 FROM integers ORDER BY i
+SELECT ii BETWEEN 1 AND 2 FROM integers ORDER BY ii
 ----
 NULL
 1
@@ -74,7 +74,7 @@ NULL
 0
 
 query T
-SELECT i BETWEEN NULL AND 2 FROM integers ORDER BY i
+SELECT ii BETWEEN NULL AND 2 FROM integers ORDER BY ii
 ----
 NULL
 NULL
@@ -82,7 +82,7 @@ NULL
 0
 
 query T
-SELECT i BETWEEN 2 AND NULL FROM integers ORDER BY i
+SELECT ii BETWEEN 2 AND NULL FROM integers ORDER BY ii
 ----
 NULL
 0
@@ -141,17 +141,17 @@ SELECT COUNT(*) FROM integers WHERE NULL BETWEEN NULL AND NULL
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN 1 AND 2
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN 1 AND 2
 ----
 2
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN NULL AND 2
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN NULL AND 2
 ----
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN 2 AND NULL
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN 2 AND NULL
 ----
 0
 
@@ -166,57 +166,57 @@ SELECT COUNT(*) FROM integers WHERE 0 BETWEEN -1 AND +1
 4
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN i-1 AND i+1
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN ii-1 AND ii+1
 ----
 3
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN i-1 AND 10
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN ii-1 AND 10
 ----
 3
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN NULL AND NULL
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN NULL AND NULL
 ----
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN i-1 AND NULL
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN ii-1 AND NULL
 ----
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN 0 AND i+1
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN 0 AND ii+1
 ----
 3
 
 query I
-SELECT COUNT(*) FROM integers WHERE i BETWEEN NULL AND i+1
+SELECT COUNT(*) FROM integers WHERE ii BETWEEN NULL AND ii+1
 ----
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE 1 BETWEEN i-1 AND i+1
+SELECT COUNT(*) FROM integers WHERE 1 BETWEEN ii-1 AND ii+1
 ----
 2
 
 query I
-SELECT COUNT(*) FROM integers WHERE NULL BETWEEN i-1 AND i+1
+SELECT COUNT(*) FROM integers WHERE NULL BETWEEN ii-1 AND ii+1
 ----
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE NULL BETWEEN i-1 AND NULL
+SELECT COUNT(*) FROM integers WHERE NULL BETWEEN ii-1 AND NULL
 ----
 0
 
 query I
-SELECT COUNT(*) FROM integers WHERE 1 BETWEEN i-1 AND 100
+SELECT COUNT(*) FROM integers WHERE 1 BETWEEN ii-1 AND 100
 ----
 2
 
 query I
-SELECT COUNT(*) FROM integers WHERE 1 BETWEEN 0 AND i-1
+SELECT COUNT(*) FROM integers WHERE 1 BETWEEN 0 AND ii-1
 ----
 2
 

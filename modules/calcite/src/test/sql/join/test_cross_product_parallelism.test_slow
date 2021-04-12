@@ -12,7 +12,7 @@ statement ok
 PRAGMA force_parallelism
 
 statement ok
-CREATE TABLE integers AS SELECT * FROM range(0, 5000) tbl(i)
+CREATE TABLE integers AS SELECT * FROM range(0, 5000) tbl(ii)
 
 # test if order remains the same
 query I
@@ -21,11 +21,11 @@ SELECT count(*) FROM integers i1, integers i2
 25000000
 
 query II
-SELECT MIN(i1.i), MAX(i2.i) FROM integers i1, integers i2
+SELECT MIN(i1.ii), MAX(i2.ii) FROM integers i1, integers i2
 ----
 0	4999
 
 query II
-SELECT MAX(i1.i), MIN(i2.i) FROM integers i1, integers i2
+SELECT MAX(i1.ii), MIN(i2.ii) FROM integers i1, integers i2
 ----
 4999	0

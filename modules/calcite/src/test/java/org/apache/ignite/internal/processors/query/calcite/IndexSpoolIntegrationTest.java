@@ -150,14 +150,14 @@ public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param c Cache.
+     * @param cc Cache.
      * @param rows Rows count.
      */
-    private void fillCache(IgniteCache c, int rows) throws InterruptedException {
-        c.clear();
+    private void fillCache(IgniteCache cc, int rows) throws InterruptedException {
+        cc.clear();
 
         for (int i = 0; i < rows; ++i)
-            c.put(i, new TestVal(i));
+            cc.put(i, new TestVal(i));
 
         awaitPartitionMapExchange();
     }

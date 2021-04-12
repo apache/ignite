@@ -3,7 +3,7 @@
 # group: [insert]
 
 statement ok
-CREATE TABLE integers(i INTEGER)
+CREATE TABLE integers(ii INTEGER)
 
 statement ok
 INSERT INTO integers SELECT 42

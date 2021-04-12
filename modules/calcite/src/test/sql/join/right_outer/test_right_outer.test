@@ -6,42 +6,42 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE integers(i INTEGER, j INTEGER)
+CREATE TABLE integers(ii INTEGER, jj INTEGER)
 
 statement ok
 INSERT INTO integers VALUES (1, 2), (2, 3), (3, 4)
 
 statement ok
-CREATE TABLE integers2(k INTEGER, l INTEGER)
+CREATE TABLE integers2(kk INTEGER, l INTEGER)
 
 statement ok
 INSERT INTO integers2 VALUES (1, 10), (2, 20)
 
 # all these tests are equivalent to the tests in test_left_outer.test
-# but with the tables reversed and using a right outer join instead
+# but with the tables reversed and using aa right outer join instead
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.i=integers2.k ORDER BY i
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.ii=integers2.kk ORDER BY ii
 ----
 1	2	1	10
 2	3	2	20
 3	4	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.i=integers2.k  WHERE k IS NOT NULL ORDER BY i
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.ii=integers2.kk  WHERE kk IS NOT NULL ORDER BY ii
 ----
 1	2	1	10
 2	3	2	20
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.i=integers2.k AND integers2.k IS NOT NULL ORDER BY i
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.ii=integers2.kk AND integers2.kk IS NOT NULL ORDER BY ii
 ----
 1	2	1	10
 2	3	2	20
 3	4	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i=1 ORDER BY i, k;
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON ii=1 ORDER BY ii, kk;
 ----
 1	2	1	10
 1	2	2	20
@@ -49,46 +49,7 @@ SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i=1 O
 3	4	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON 1=1 ORDER BY i, k;
-----
-1	2	1	10
-1	2	2	20
-2	3	1	10
-2	3	2	20
-3	4	1	10
-3	4	2	20
-
-query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON 1=2 ORDER BY i;
-----
-1	2	NULL	NULL
-2	3	NULL	NULL
-3	4	NULL	NULL
-
-query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON NULL<>NULL ORDER BY i;
-----
-1	2	NULL	NULL
-2	3	NULL	NULL
-3	4	NULL	NULL
-
-query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i=1 ORDER BY i, k;
-----
-1	2	1	10
-1	2	2	20
-2	3	NULL	NULL
-3	4	NULL	NULL
-
-query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON l=20 ORDER BY i, k;
-----
-1	2	2	20
-2	3	2	20
-3	4	2	20
-
-query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON l>0 ORDER BY i, k;
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON 1=1 ORDER BY ii, kk;
 ----
 1	2	1	10
 1	2	2	20
@@ -98,7 +59,46 @@ SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON l>0 O
 3	4	2	20
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i=1 OR l=20 ORDER BY i, k;
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON 1=2 ORDER BY ii;
+----
+1	2	NULL	NULL
+2	3	NULL	NULL
+3	4	NULL	NULL
+
+query IIII
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON NULL<>NULL ORDER BY ii;
+----
+1	2	NULL	NULL
+2	3	NULL	NULL
+3	4	NULL	NULL
+
+query IIII
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON ii=1 ORDER BY ii, kk;
+----
+1	2	1	10
+1	2	2	20
+2	3	NULL	NULL
+3	4	NULL	NULL
+
+query IIII
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON l=20 ORDER BY ii, kk;
+----
+1	2	2	20
+2	3	2	20
+3	4	2	20
+
+query IIII
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON l>0 ORDER BY ii, kk;
+----
+1	2	1	10
+1	2	2	20
+2	3	1	10
+2	3	2	20
+3	4	1	10
+3	4	2	20
+
+query IIII
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON ii=1 OR l=20 ORDER BY ii, kk;
 ----
 1	2	1	10
 1	2	2	20
@@ -106,21 +106,21 @@ SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i=1 O
 3	4	2	20
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i=4 OR l=17 ORDER BY i;
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON ii=4 OR l=17 ORDER BY ii;
 ----
 1	2	NULL	NULL
 2	3	NULL	NULL
 3	4	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i+l=21 ORDER BY i;
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON ii+l=21 ORDER BY ii;
 ----
 1	2	2	20
 2	3	NULL	NULL
 3	4	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i+l>12 ORDER BY i, k;
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON ii+l>12 ORDER BY ii, kk;
 ----
 1	2	2	20
 2	3	2	20
@@ -128,26 +128,26 @@ SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON i+l>1
 3	4	2	20
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.i<integers2.k WHERE integers.i <= 2 ORDER BY i
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.ii<integers2.kk WHERE integers.ii <= 2 ORDER BY ii
 ----
 1	2	2	20
 2	3	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.i<integers2.k AND integers.i<integers2.l WHERE integers.i <= 2 ORDER BY i
+SELECT integers.*, integers2.* FROM integers2 RIGHT OUTER JOIN integers ON integers.ii<integers2.kk AND integers.ii<integers2.l WHERE integers.ii <= 2 ORDER BY ii
 ----
 1	2	2	20
 2	3	NULL	NULL
 
 query IIII
-SELECT integers.*, integers2.* FROM (SELECT * FROM integers2 WHERE k=100) integers2 RIGHT OUTER JOIN integers ON integers.i<integers2.k ORDER BY i
+SELECT integers.*, integers2.* FROM (SELECT * FROM integers2 WHERE kk=100) integers2 RIGHT OUTER JOIN integers ON integers.ii<integers2.kk ORDER BY ii
 ----
 1	2	NULL	NULL
 2	3	NULL	NULL
 3	4	NULL	NULL
 
 query II
-select t1.*, t2.* from (values (2), (3)) t2(i) right join (values(1), (2)) t1(i) on t1.i=t2.i AND t1.i+t2.i=4 ORDER BY 1, 2;
+select t1.*, t2.* from (values (2), (3)) t2(ii) right join (values(1), (2)) t1(ii) on t1.ii=t2.ii AND t1.ii+t2.ii=4 ORDER BY 1, 2;
 ----
 1	NULL
 2	2

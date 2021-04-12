@@ -3,24 +3,24 @@
 # group: [string]
 
 statement ok
-CREATE TABLE test (a VARCHAR);
+CREATE TABLE test (aa VARCHAR);
 
-# insert a big varchar
+# insert aa big varchar
 statement ok
 INSERT INTO test VALUES ('aaaaaaaaaa')
 
 # sizes: 10, 100, 1000, 10000
 statement ok
-INSERT INTO test SELECT a||a||a||a||a||a||a||a||a||a FROM test WHERE LENGTH(a)=(SELECT MAX(LENGTH(a)) FROM test)
+INSERT INTO test SELECT aa||aa||aa||aa||aa||aa||aa||aa||aa||aa FROM test WHERE LENGTH(aa)=(SELECT MAX(LENGTH(aa)) FROM test)
 
 statement ok
-INSERT INTO test SELECT a||a||a||a||a||a||a||a||a||a FROM test WHERE LENGTH(a)=(SELECT MAX(LENGTH(a)) FROM test)
+INSERT INTO test SELECT aa||aa||aa||aa||aa||aa||aa||aa||aa||aa FROM test WHERE LENGTH(aa)=(SELECT MAX(LENGTH(aa)) FROM test)
 
 statement ok
-INSERT INTO test SELECT a||a||a||a||a||a||a||a||a||a FROM test WHERE LENGTH(a)=(SELECT MAX(LENGTH(a)) FROM test)
+INSERT INTO test SELECT aa||aa||aa||aa||aa||aa||aa||aa||aa||aa FROM test WHERE LENGTH(aa)=(SELECT MAX(LENGTH(aa)) FROM test)
 
 query I
-SELECT LENGTH(a) FROM test ORDER BY 1
+SELECT LENGTH(aa) FROM test ORDER BY 1
 ----
 10
 100

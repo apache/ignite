@@ -7,24 +7,24 @@ PRAGMA enable_verification
 
 # create tables
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 1), (12, 2), (13, 3)
 
 statement ok
-CREATE TABLE test2 (b INTEGER, c INTEGER);
+CREATE TABLE test2 (bb INTEGER, cc INTEGER);
 
 statement ok
 INSERT INTO test2 VALUES (1, 10), (1, 20), (2, 30)
 
 query II
-SELECT test.b, test2.b FROM test, test2 WHERE test.b<test2.b
+SELECT test.bb, test2.bb FROM test, test2 WHERE test.bb<test2.bb
 ----
 1	2
 
 query II
-SELECT test.b, test2.b FROM test, test2 WHERE test.b <= test2.b ORDER BY 1,2
+SELECT test.bb, test2.bb FROM test, test2 WHERE test.bb <= test2.bb ORDER BY 1,2
 ----
 1	1
 1	1
@@ -33,7 +33,7 @@ SELECT test.b, test2.b FROM test, test2 WHERE test.b <= test2.b ORDER BY 1,2
 
 # range join on multiple predicates
 query IIII
-SELECT test.a, test.b, test2.b, test2.c FROM test, test2 WHERE test.a>test2.c AND test.b <= test2.b
+SELECT test.aa, test.bb, test2.bb, test2.cc FROM test, test2 WHERE test.aa>test2.cc AND test.bb <= test2.bb
 ----
 11	1	1	10
 
@@ -43,7 +43,7 @@ INSERT INTO test VALUES (11, NULL), (NULL, 1)
 
 # join result should be unchanged
 query IIII
-SELECT test.a, test.b, test2.b, test2.c FROM test, test2 WHERE test.a>test2.c AND test.b <= test2.b
+SELECT test.aa, test.bb, test2.bb, test2.cc FROM test, test2 WHERE test.aa>test2.cc AND test.bb <= test2.bb
 ----
 11	1	1	10
 
@@ -53,7 +53,7 @@ INSERT INTO test2 VALUES (1, NULL), (NULL, 10)
 
 # join result should be unchanged
 query IIII
-SELECT test.a, test.b, test2.b, test2.c FROM test, test2 WHERE test.a>test2.c AND test.b <= test2.b
+SELECT test.aa, test.bb, test2.bb, test2.cc FROM test, test2 WHERE test.aa>test2.cc AND test.bb <= test2.bb
 ----
 11	1	1	10
 

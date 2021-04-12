@@ -12,23 +12,23 @@ statement ok
 INSERT INTO regex VALUES ('asdf'), ('xxxx'), ('aaaa')
 
 query T
-SELECT s FROM regex WHERE REGEXP_MATCHES(s, 'as(c|d|e)f')
+SELECT s FROM regex WHERE REGEXP_MATCHES(s, 'as(cc|d|e)f')
 ----
 asdf
 
 query T
-SELECT s FROM regex WHERE NOT REGEXP_MATCHES(s, 'as(c|d|e)f')
+SELECT s FROM regex WHERE NOT REGEXP_MATCHES(s, 'as(cc|d|e)f')
 ----
 xxxx
 aaaa
 
 query T
-SELECT s FROM regex WHERE REGEXP_MATCHES(s, 'as(c|d|e)f') AND s = 'asdf'
+SELECT s FROM regex WHERE REGEXP_MATCHES(s, 'as(cc|d|e)f') AND s = 'asdf'
 ----
 asdf
 
 query T
-SELECT s FROM regex WHERE REGEXP_MATCHES(s, 'as(c|d|e)f') AND REGEXP_MATCHES(s, 'as[a-z]f')
+SELECT s FROM regex WHERE REGEXP_MATCHES(s, 'as(cc|d|e)f') AND REGEXP_MATCHES(s, 'as[aa-z]f')
 ----
 asdf
 

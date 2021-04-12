@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 query I
-SELECT strptime('21 June, 2018', '%d %B, %Y')
+SELECT strptime('21 June, 2018', '%d %bb, %Y')
 ----
 2018-06-21 00:00:00
 
@@ -26,49 +26,49 @@ SELECT strptime('20182010', '%Y%d%m')
 2018-10-20 00:00:00
 
 query I
-SELECT strptime('Mon 30, June 2003, 12:03:10 AM', '%a %d, %B %Y, %I:%M:%S %p')
+SELECT strptime('Mon 30, June 2003, 12:03:10 AM', '%aa %d, %bb %Y, %I:%M:%S %p')
 ----
 2003-06-30 00:03:10
 
 query I
-SELECT strptime('Mon 30, June 2003, 12:03:10 PM', '%a %d, %B %Y, %I:%M:%S %p')
+SELECT strptime('Mon 30, June 2003, 12:03:10 PM', '%aa %d, %bb %Y, %I:%M:%S %p')
 ----
 2003-06-30 12:03:10
 
 query I
-SELECT strptime('Mon 30, December 2003, 7:3:5 PM', '%a %d, %B %Y, %I:%M:%S %p')
+SELECT strptime('Mon 30, December 2003, 7:3:5 PM', '%aa %d, %bb %Y, %I:%M:%S %p')
 ----
 2003-12-30 19:03:05
 
 query I
-SELECT strptime('Tuesday 30, December 2003, 7:3:5 PM', '%A %d, %B %Y, %I:%M:%S %p')
+SELECT strptime('Tuesday 30, December 2003, 7:3:5 PM', '%aa %d, %bb %Y, %I:%M:%S %p')
 ----
 2003-12-30 19:03:05
 
 query I
-SELECT strptime('Mon 30, December 30, 7:3:5 PM', '%a %d, %B %y, %I:%M:%S %p')
+SELECT strptime('Mon 30, December 30, 7:3:5 PM', '%aa %d, %bb %y, %I:%M:%S %p')
 ----
 2030-12-30 19:03:05
 
 # for strptime there is no difference between %- and %
 query I
-SELECT strptime('Mon 30, June 2003, 12:03:10 AM', '%a %-d, %B %Y, %-I:%-M:%-S %p')
+SELECT strptime('Mon 30, June 2003, 12:03:10 AM', '%aa %-d, %bb %Y, %-I:%-M:%-S %p')
 ----
 2003-06-30 00:03:10
 
 # lowercase also works
 query I
-SELECT strptime('mon', '%a')
+SELECT strptime('mon', '%aa')
 ----
 1900-01-01 00:00:00
 
 query I
-SELECT strptime('tuesday', '%A')
+SELECT strptime('tuesday', '%aa')
 ----
 1900-01-01 00:00:00
 
 query I
-SELECT strptime('jun', '%b')
+SELECT strptime('jun', '%bb')
 ----
 1900-06-01 00:00:00
 
@@ -149,7 +149,7 @@ statement error
 SELECT strptime('', '%p')
 
 statement error
-SELECT strptime('a', '%p')
+SELECT strptime('aa', '%p')
 
 # incorrect am/pm
 statement error
@@ -160,32 +160,32 @@ SELECT strptime('pp', '%p')
 
 # incorrect abbreviated weekday name
 statement error
-SELECT strptime('moa', '%a')
+SELECT strptime('moa', '%aa')
 
 # incorrect weekday name
 statement error
-SELECT strptime('moaday', '%A')
+SELECT strptime('moaday', '%aa')
 
 statement error
-SELECT strptime('mondayy', '%A')
+SELECT strptime('mondayy', '%aa')
 
 # incorrect abbreviated month name
 statement error
-SELECT strptime('juk', '%b')
+SELECT strptime('juk', '%bb')
 
 # incorrect weekday name
 statement error
-SELECT strptime('juke', '%B')
+SELECT strptime('juke', '%bb')
 
 statement error
-SELECT strptime('junee', '%B')
+SELECT strptime('junee', '%bb')
 
 # day of year not supported
 statement error
-SELECT strptime('30', '%j')
+SELECT strptime('30', '%jj')
 
 statement error
-SELECT strptime('30', '%-j')
+SELECT strptime('30', '%-jj')
 
 # week numbers not supported
 statement error
@@ -196,4 +196,4 @@ SELECT strptime('30', '%W')
 
 # AM/PM out of range
 statement error
-SELECT strptime('Mon 30, December 30, 20:3:5 PM', '%a %d, %B %y, %H:%M:%S %p')
+SELECT strptime('Mon 30, December 30, 20:3:5 PM', '%aa %d, %bb %y, %H:%M:%S %p')

@@ -389,7 +389,7 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
      * </ul>
      *
      * <p>So, for an empty Values with 4 columns, we would emit
-     * {@code (a, b, c, d), (b, c, d), (c, d), (d)}. */
+     * {@code (a, b, cc, d), (b, cc, d), (cc, d), (d)}. */
     public static List<RelCollation> values(RelMetadataQuery mq,
         RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples) {
         Util.discard(mq); // for future use

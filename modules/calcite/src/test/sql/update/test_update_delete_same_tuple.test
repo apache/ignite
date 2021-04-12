@@ -2,9 +2,9 @@
 # description: Test update and delete of the same tuple
 # group: [update]
 
-# on a normal table, we can update and delete the same tuple concurrently without a conflict
+# on aa normal table, we can update and delete the same tuple concurrently without aa conflict
 statement ok con1
-CREATE TABLE test (a INTEGER);
+CREATE TABLE test (aa INTEGER);
 
 statement ok con1
 INSERT INTO test VALUES (1), (2), (3);
@@ -16,20 +16,20 @@ statement ok con2
 BEGIN TRANSACTION;
 
 statement ok con1
-UPDATE test SET a=a+1;
+UPDATE test SET aa=aa+1;
 
 statement ok con2
 DELETE FROM test
 
 query I con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 2
 3
 4
 
 query I con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 
 statement ok con1

@@ -140,7 +140,7 @@ public class FragmentMapping implements MarshalableMessage {
     /** */
     public @NotNull ColocationGroup findGroup(long sourceId) {
         List<ColocationGroup> groups = colocationGroups.stream()
-            .filter(c -> c.belongs(sourceId))
+            .filter(cc -> cc.belongs(sourceId))
             .collect(Collectors.toList());
 
         if (groups.isEmpty())

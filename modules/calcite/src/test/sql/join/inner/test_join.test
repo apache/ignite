@@ -6,20 +6,20 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 1), (12, 2), (13, 3)
 
 statement ok
-CREATE TABLE test2 (b INTEGER, c INTEGER);
+CREATE TABLE test2 (bb INTEGER, cc INTEGER);
 
 statement ok
 INSERT INTO test2 VALUES (1, 10), (1, 20), (2, 30)
 
 # simple cross product + join condition
 query III
-SELECT a, test.b, c FROM test, test2 WHERE test.b = test2.b ORDER BY c;
+SELECT aa, test.bb, cc FROM test, test2 WHERE test.bb = test2.bb ORDER BY cc;
 ----
 11	1	10
 11	1	20
@@ -27,17 +27,17 @@ SELECT a, test.b, c FROM test, test2 WHERE test.b = test2.b ORDER BY c;
 
 # ambiguous reference to column
 statement error
-SELECT b FROM test, test2 WHERE test.b > test2.b;
+SELECT bb FROM test, test2 WHERE test.bb > test2.bb;
 
 # simple cross product + multiple join conditions
 query III
-SELECT a, test.b, c FROM test, test2 WHERE test.b=test2.b AND test.a-1=test2.c
+SELECT aa, test.bb, cc FROM test, test2 WHERE test.bb=test2.bb AND test.aa-1=test2.cc
 ----
 11	1	10
 
 # use join columns in subquery
 query III
-SELECT a, (SELECT test.a), c FROM test, test2 WHERE test.b = test2.b ORDER BY c;
+SELECT aa, (SELECT test.aa), cc FROM test, test2 WHERE test.bb = test2.bb ORDER BY cc;
 ----
 11	11	10
 11	11	20
@@ -45,7 +45,7 @@ SELECT a, (SELECT test.a), c FROM test, test2 WHERE test.b = test2.b ORDER BY c;
 
 # explicit join
 query III
-SELECT a, test.b, c FROM test INNER JOIN test2 ON test.b = test2.b ORDER BY c;
+SELECT aa, test.bb, cc FROM test INNER JOIN test2 ON test.bb = test2.bb ORDER BY cc;
 ----
 11	1	10
 11	1	20
@@ -53,7 +53,7 @@ SELECT a, test.b, c FROM test INNER JOIN test2 ON test.b = test2.b ORDER BY c;
 
 # explicit join with condition the wrong way around
 query III
-SELECT a, test.b, c FROM test INNER JOIN test2 ON test2.b = test.b ORDER BY c;
+SELECT aa, test.bb, cc FROM test INNER JOIN test2 ON test2.bb = test.bb ORDER BY cc;
 ----
 11	1	10
 11	1	20
@@ -61,13 +61,13 @@ SELECT a, test.b, c FROM test INNER JOIN test2 ON test2.b = test.b ORDER BY c;
 
 # explicit join with additional condition that is no left-right comparision
 query III
-SELECT a, test.b, c FROM test INNER JOIN test2 ON test2.b = test.b and test.b = 2;
+SELECT aa, test.bb, cc FROM test INNER JOIN test2 ON test2.bb = test.bb and test.bb = 2;
 ----
 12	2	30
 
 # explicit join with additional condition that is constant
 query III
-SELECT a, test.b, c FROM test INNER JOIN test2 ON test2.b = test.b and 2 = 2 ORDER BY c;
+SELECT aa, test.bb, cc FROM test INNER JOIN test2 ON test2.bb = test.bb and 2 = 2 ORDER BY cc;
 ----
 11	1	10
 11	1	20
@@ -75,7 +75,7 @@ SELECT a, test.b, c FROM test INNER JOIN test2 ON test2.b = test.b and 2 = 2 ORD
 
 # explicit join with only condition that is no left-right comparision
 query III
-SELECT a, test.b, c FROM test INNER JOIN test2 ON test.b = 2 ORDER BY c;
+SELECT aa, test.bb, cc FROM test INNER JOIN test2 ON test.bb = 2 ORDER BY cc;
 ----
 12	2	10
 12	2	20
@@ -83,18 +83,18 @@ SELECT a, test.b, c FROM test INNER JOIN test2 ON test.b = 2 ORDER BY c;
 
 # explicit join with only condition that is constant
 query III
-SELECT a, test.b, c FROM test INNER JOIN test2 ON NULL = 2;
+SELECT aa, test.bb, cc FROM test INNER JOIN test2 ON NULL = 2;
 ----
 
 # equality join where both lhs and rhs keys are projected
 query II
-SELECT * FROM (VALUES (1)) tbl(i) JOIN (VALUES (1)) tbl2(j) ON (i=j);
+SELECT * FROM (VALUES (1)) tbl(ii) JOIN (VALUES (1)) tbl2(jj) ON (ii=jj);
 ----
 1	1
 
 # equality join where both lhs and rhs keys are projected with filter
 query II
-SELECT * FROM (VALUES (1), (2)) tbl(i) JOIN (VALUES (1), (2)) tbl2(j) ON (i=j) WHERE i+j=2;
+SELECT * FROM (VALUES (1), (2)) tbl(ii) JOIN (VALUES (1), (2)) tbl2(jj) ON (ii=jj) WHERE ii+jj=2;
 ----
 1	1
 

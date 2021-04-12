@@ -3,7 +3,7 @@
 # group: [date]
 
 statement ok
-CREATE TABLE dates(i DATE)
+CREATE TABLE dates(ii DATE)
 
 statement error
 INSERT INTO dates VALUES ('blabla')
@@ -16,11 +16,11 @@ INSERT INTO dates VALUES ('1993-20-14')
 statement error
 INSERT INTO dates VALUES ('1993-08-99')
 
-# day out of range because not a leapyear
+# day out of range because not aa leapyear
 statement error
 INSERT INTO dates VALUES ('1993-02-29')
 
-# day out of range because not a leapyear
+# day out of range because not aa leapyear
 statement error
 INSERT INTO dates VALUES ('1900-02-29')
 

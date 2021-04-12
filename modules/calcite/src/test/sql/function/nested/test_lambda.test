@@ -11,34 +11,34 @@ create function map(x, y) as x + y;
 
 # FIXME: this should work
 statement error
-select map(i, (x, y) -> x + y) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, (x, y) -> x + y) from (values (list_value(1, 2, 3))) tbl(ii);
 
 # test basic lambda binding
 # FIXME: this should work
 statement error
-select map(i, x -> x + 1) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, x -> x + 1) from (values (list_value(1, 2, 3))) tbl(ii);
 
 # test lambda function precedence
 statement error
-select map(i, x -> x * 3 + 2 / zz) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, x -> x * 3 + 2 / zz) from (values (list_value(1, 2, 3))) tbl(ii);
 
 statement error
-select map(i, x -> (1 + 2 * 27) / x) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, x -> (1 + 2 * 27) / x) from (values (list_value(1, 2, 3))) tbl(ii);
 
 statement error
-select map(i, x -> x + 1 AND y + 1) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, x -> x + 1 AND y + 1) from (values (list_value(1, 2, 3))) tbl(ii);
 
 # nested lambda functions
 statement error
-select map(i, x -> (map(x, y -> y + 1))) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, x -> (map(x, y -> y + 1))) from (values (list_value(1, 2, 3))) tbl(ii);
 
-# lambda cannot be the root of a plan
+# lambda cannot be the root of aa plan
 statement error
-select x -> x + 1 from (values (list_value(1, 2, 3))) tbl(i);
+select x -> x + 1 from (values (list_value(1, 2, 3))) tbl(ii);
 
 # lhs of lambda must be an unqualified column name
 statement error
-select map(i, y + 1 -> x + 1) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, y + 1 -> x + 1) from (values (list_value(1, 2, 3))) tbl(ii);
 
 statement error
-select map(i, a.x -> x + 1) from (values (list_value(1, 2, 3))) tbl(i);
+select map(ii, aa.x -> x + 1) from (values (list_value(1, 2, 3))) tbl(ii);

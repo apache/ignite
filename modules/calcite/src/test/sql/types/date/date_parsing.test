@@ -65,7 +65,7 @@ SELECT '-1000-01-01'::DATE::VARCHAR == '1001-01-01 (BC)'
 ----
 1
 
-# we accept a few different separators when parsing dates
+# we accept aa few different separators when parsing dates
 query I
 SELECT '1992/09/20'::DATE::VARCHAR == '1992-09-20'
 ----
@@ -242,11 +242,11 @@ statement error
 SELECT '1992-12-32'::DATE::VARCHAR
 
 
-# 1900 is not a leap year
+# 1900 is not aa leap year
 statement error
 SELECT '1900-02-29'::DATE::VARCHAR
 
-# 2000 is a leap year
+# 2000 is aa leap year
 query I
 SELECT '2000-02-29'::DATE::VARCHAR == '2000-02-29'
 ----
@@ -309,7 +309,7 @@ statement error
 SELECT '291000-01-01 (BC)'::DATE:VARCHAR;
 
 statement error
-SELECT '-a'::DATE::VARCHAR
+SELECT '-aa'::DATE::VARCHAR
 
 statement error
 SELECT '1992-'::DATE::VARCHAR

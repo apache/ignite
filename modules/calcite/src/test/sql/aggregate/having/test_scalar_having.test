@@ -35,7 +35,7 @@ SELECT SUM(42) HAVING (SELECT SUM(42)) > SUM(80)
 ----
 
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 22), (13, 22), (12, 21)
@@ -43,39 +43,39 @@ INSERT INTO test VALUES (11, 22), (13, 22), (12, 21)
 # HAVING with column references does not work
 # HAVING clause can only contain aggregates
 statement error
-SELECT a FROM test WHERE a=13 HAVING a > 11
+SELECT aa FROM test WHERE aa=13 HAVING aa > 11
 
 # HAVING clause also turns the rest of the query into an aggregate
 # thus column references in SELECT clause also produce errors
 statement error
-SELECT a FROM test WHERE a=13 HAVING SUM(a) > 11
+SELECT aa FROM test WHERE aa=13 HAVING SUM(aa) > 11
 
-# once we produce a sum this works though
+# once we produce aa sum this works though
 query R
-SELECT SUM(a) FROM test WHERE a=13 HAVING SUM(a) > 11
+SELECT SUM(aa) FROM test WHERE aa=13 HAVING SUM(aa) > 11
 ----
 13.000000
 
 query R
-SELECT SUM(a) FROM test WHERE a=13 HAVING SUM(a) > 20
+SELECT SUM(aa) FROM test WHERE aa=13 HAVING SUM(aa) > 20
 ----
 
 # HAVING with single-node aggregation does work, even without GROUP BY
 query R
-SELECT SUM(a) FROM test HAVING SUM(a)>10;
+SELECT SUM(aa) FROM test HAVING SUM(aa)>10;
 ----
 36.000000
 
 query R
-SELECT SUM(a) FROM test HAVING SUM(a)<10;
+SELECT SUM(aa) FROM test HAVING SUM(aa)<10;
 ----
 
 query R
-SELECT SUM(a) FROM test HAVING COUNT(*)>1;
+SELECT SUM(aa) FROM test HAVING COUNT(*)>1;
 ----
 36.000000
 
 query R
-SELECT SUM(a) FROM test HAVING COUNT(*)>10;
+SELECT SUM(aa) FROM test HAVING COUNT(*)>10;
 ----
 

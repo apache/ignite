@@ -2,11 +2,11 @@
 # description: Test ORDER BY with large table
 # group: [order]
 
-# order of a large table, with burgers and fries
+# order of aa large table, with burgers and fries
 statement ok
-CREATE TABLE test AS SELECT a FROM range(10000, 0, -1) t1(a)
+CREATE TABLE test AS SELECT aa FROM range(10000, 0, -1) t1(aa)
 
 query I
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 10000 values hashing to 72d4ff27a28afbc066d5804999d5a504

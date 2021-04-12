@@ -6,28 +6,28 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 22), (12, 21), (13, 22);
 
 # simple ORDER BY
 query I
-SELECT b FROM test ORDER BY a DESC;
+SELECT bb FROM test ORDER BY aa DESC;
 ----
 22
 21
 22
 
 query II
-SELECT a, b FROM test ORDER BY a;
+SELECT aa, bb FROM test ORDER BY aa;
 ----
 11	22
 12	21
 13	22
 
 query II
-SELECT a, b FROM test ORDER BY a DESC;
+SELECT aa, bb FROM test ORDER BY aa DESC;
 ----
 13	22
 12	21
@@ -35,7 +35,7 @@ SELECT a, b FROM test ORDER BY a DESC;
 
 # ORDER BY on multiple columns
 query II
-SELECT a, b FROM test ORDER BY b, a;
+SELECT aa, bb FROM test ORDER BY bb, aa;
 ----
 12	21
 11	22
@@ -43,21 +43,21 @@ SELECT a, b FROM test ORDER BY b, a;
 
 # ORDER BY using select indices
 query II
-SELECT a, b FROM test ORDER BY 2, 1;
+SELECT aa, bb FROM test ORDER BY 2, 1;
 ----
 12	21
 11	22
 13	22
 
 query II
-SELECT a, b FROM test ORDER BY b DESC, a;
+SELECT aa, bb FROM test ORDER BY bb DESC, aa;
 ----
 11	22
 13	22
 12	21
 
 query II
-SELECT a, b FROM test ORDER BY b, a DESC;
+SELECT aa, bb FROM test ORDER BY bb, aa DESC;
 ----
 12	21
 13	22
@@ -65,57 +65,57 @@ SELECT a, b FROM test ORDER BY b, a DESC;
 
 # TOP N queries
 query II
-SELECT a, b FROM test ORDER BY b, a DESC LIMIT 1;
+SELECT aa, bb FROM test ORDER BY bb, aa DESC LIMIT 1;
 ----
 12	21
 
 # Offset
 query II
-SELECT a, b FROM test ORDER BY b, a DESC LIMIT 1 OFFSET 1;
+SELECT aa, bb FROM test ORDER BY bb, aa DESC LIMIT 1 OFFSET 1;
 ----
 13	22
 
 # Offset without limit
 query II
-SELECT a, b FROM test ORDER BY b, a DESC OFFSET 1;
+SELECT aa, bb FROM test ORDER BY bb, aa DESC OFFSET 1;
 ----
 13	22
 11	22
 
 query II
-SELECT a, b FROM test WHERE a < 13 ORDER BY b;
+SELECT aa, bb FROM test WHERE aa < 13 ORDER BY bb;
 ----
 12	21
 11	22
 
 query II
-SELECT a, b FROM test WHERE a < 13 ORDER BY 2;
+SELECT aa, bb FROM test WHERE aa < 13 ORDER BY 2;
 ----
 12	21
 11	22
 
 query II
-SELECT a, b FROM test WHERE a < 13 ORDER BY b DESC;
+SELECT aa, bb FROM test WHERE aa < 13 ORDER BY bb DESC;
 ----
 11	22
 12	21
 
 query II
-SELECT b, a FROM test WHERE a < 13 ORDER BY b DESC;
+SELECT bb, aa FROM test WHERE aa < 13 ORDER BY bb DESC;
 ----
 22	11
 21	12
 
 # order by expression
 query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER BY b % 2;
+SELECT bb % 2 AS f, SUM(aa) FROM test GROUP BY f ORDER BY bb % 2;
 ----
 0	24.000000
 1	12.000000
 
 # order by expression that is not in SELECT
 query II
-SELECT b % 2 AS f, a FROM test ORDER BY b % 4;
+SELECT bb % 2 AS f, aa FROM test ORDER BY bb % 4;
 ----
 1	12
 0	11
@@ -123,29 +123,29 @@ SELECT b % 2 AS f, a FROM test ORDER BY b % 4;
 
 # ORDER BY alias
 query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER BY f;
+SELECT bb % 2 AS f, SUM(aa) FROM test GROUP BY f ORDER BY f;
 ----
 0	24.000000
 1	12.000000
 
 query IR
-SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER BY 1;
+SELECT bb % 2 AS f, SUM(aa) FROM test GROUP BY f ORDER BY 1;
 ----
 0	24.000000
 1	12.000000
 
 # ORDER BY after union
 query I
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY k;
+SELECT aa-10 AS kk FROM test UNION SELECT aa-10 AS l FROM test ORDER BY kk;
 ----
 1
 2
 3
 
 # ORDER BY on alias in right-most query
-# CONTROVERSIAL: SQLite allows both "k" and "l" to be referenced here, Postgres and MonetDB give an error.
+# CONTROVERSIAL: SQLite allows both "kk" and "l" to be referenced here, Postgres and MonetDB give an error.
 query I
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY l;
+SELECT aa-10 AS kk FROM test UNION SELECT aa-10 AS l FROM test ORDER BY l;
 ----
 1
 2
@@ -153,18 +153,18 @@ SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY l;
 
 # computations with aliases are not allowed though
 statement error
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY 1-k;
+SELECT aa-10 AS kk FROM test UNION SELECT aa-10 AS l FROM test ORDER BY 1-kk;
 
 # but ordering on computation elements should work
 query I
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY a-10;
+SELECT aa-10 AS kk FROM test UNION SELECT aa-10 AS l FROM test ORDER BY aa-10;
 ----
 1
 2
 3
 
 query I
-SELECT a-10 AS k FROM test UNION SELECT a-11 AS l FROM test ORDER BY a-11;
+SELECT aa-10 AS kk FROM test UNION SELECT aa-11 AS l FROM test ORDER BY aa-11;
 ----
 0
 1

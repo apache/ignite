@@ -1,0 +1,295 @@
+# name: test/sql/filter/test_transitive_filters.test
+# description: Test expressions with transitive filters
+# group: [filter]
+
+statement ok
+PRAGMA enable_verification
+
+# Test various transitive filters with simple constant comparisons followed by non-scalar comparisons
+# The main point here is to check that the optimizer handles all these cases correctly
+
+# Inserting ii, jj = ii
+statement ok
+CREATE TABLE vals1 AS SELECT ii AS ii, ii AS jj FROM range(0, 11, 1) t1(ii)
+
+# Inserting ii, jj = ii+1
+statement ok
+INSERT INTO vals1 SELECT ii, ii+1 FROM vals1
+
+# Inserting ii, jj = ii-1
+statement ok
+INSERT INTO vals1 SELECT DISTINCT(ii), ii-1 FROM vals1 ORDER by ii
+
+### constant comparison [=, >, >=, <, <=] followed by jj >= ii #########################
+
+query II
+SELECT * FROM vals1 WHERE ii=5 AND jj>=ii
+----
+5	5
+5	6
+
+query II
+SELECT * FROM vals1 WHERE ii>9 AND jj>=ii
+----
+10	10
+10	11
+
+query II
+SELECT * FROM vals1 WHERE ii>=10 AND jj>=ii
+----
+10	10
+10	11
+
+query II
+SELECT * FROM vals1 WHERE ii<1 AND jj>=ii
+----
+0	0
+0	1
+
+query II
+SELECT * FROM vals1 WHERE ii<=0 AND jj>=ii
+----
+0	0
+0	1
+
+### constant comparison [=, >, >=, <, <=] followed by jj <= ii #########################
+
+query II
+SELECT * FROM vals1 WHERE ii=5 AND jj<=ii
+----
+5	5
+5	4
+
+query II
+SELECT * FROM vals1 WHERE ii>9 AND jj<=ii
+----
+10	10
+10	9
+
+query II
+SELECT * FROM vals1 WHERE ii>=10 AND jj<=ii
+----
+10	10
+10	9
+
+query II
+SELECT * FROM vals1 WHERE ii<1 AND jj<=ii
+----
+0	0
+0	-1
+
+query II
+SELECT * FROM vals1 WHERE ii<=0 AND jj<=ii
+----
+0	0
+0	-1
+
+### constant comparison [=, >, >=, <, <=] followed by jj > ii #########################
+
+query II
+SELECT * FROM vals1 WHERE ii=5 AND jj>ii
+----
+5	6
+
+query II
+SELECT * FROM vals1 WHERE ii>9 AND jj>ii
+----
+10	11
+
+query II
+SELECT * FROM vals1 WHERE ii>=10 AND jj>ii
+----
+10	11
+
+query II
+SELECT * FROM vals1 WHERE ii<1 AND jj>ii
+----
+0	1
+
+query II
+SELECT * FROM vals1 WHERE ii<=0 AND jj>ii
+----
+0	1
+
+### constant comparison [=, >, >=, <, <=] followed by jj < ii #########################
+
+query II
+SELECT * FROM vals1 WHERE ii=5 AND jj<ii
+----
+5	4
+
+query II
+SELECT * FROM vals1 WHERE ii>9 AND jj<ii
+----
+10	9
+
+query II
+SELECT * FROM vals1 WHERE ii>=10 AND jj<ii
+----
+10	9
+
+query II
+SELECT * FROM vals1 WHERE ii<1 AND jj<ii
+----
+0	-1
+
+query II
+SELECT * FROM vals1 WHERE ii<=0 AND jj<ii
+----
+0	-1
+
+
+#################################################################################################
+# Non-scalar comparisons followed by simple constant comparisons
+# e.g., jj >= ii AND ii>10
+
+### jj >= ii followed by constant comparison [=, >, >=, <, <=]  #########################
+
+query II
+SELECT * FROM vals1 WHERE jj>=ii AND ii=5
+----
+5	5
+5	6
+
+query II
+SELECT * FROM vals1 WHERE jj>=ii AND ii>9
+----
+10	10
+10	11
+
+query II
+SELECT * FROM vals1 WHERE jj>=ii AND ii>=10
+----
+10	10
+10	11
+
+query II
+SELECT * FROM vals1 WHERE jj>=ii AND ii<1
+----
+0	0
+0	1
+
+query II
+SELECT * FROM vals1 WHERE jj>=ii AND ii<=0
+----
+0	0
+0	1
+
+### jj <= ii followed by constant comparison [=, >, >=, <, <=] #########################
+
+query II
+SELECT * FROM vals1 WHERE jj<=ii AND ii=5
+----
+5	5
+5	4
+
+query II
+SELECT * FROM vals1 WHERE jj<=ii AND ii>9
+----
+10	10
+10	9
+
+query II
+SELECT * FROM vals1 WHERE jj<=ii AND ii>=10
+----
+10	10
+10	9
+
+query II
+SELECT * FROM vals1 WHERE jj<=ii AND ii<1
+----
+0	0
+0	-1
+
+query II
+SELECT * FROM vals1 WHERE jj<=ii AND ii<=0
+----
+0	0
+0	-1
+
+### jj > ii followed by constant comparison [=, >, >=, <, <=] #########################
+
+query II
+SELECT * FROM vals1 WHERE jj>ii AND ii=5
+----
+5	6
+
+query II
+SELECT * FROM vals1 WHERE jj>ii AND ii>9
+----
+10	11
+
+query II
+SELECT * FROM vals1 WHERE jj>ii AND ii>=10
+----
+10	11
+
+query II
+SELECT * FROM vals1 WHERE jj>ii AND ii<1
+----
+0	1
+
+query II
+SELECT * FROM vals1 WHERE jj>ii AND ii<=0
+----
+0	1
+
+### jj < ii followed by constant comparison [=, >, >=, <, <=] #########################
+
+query II
+SELECT * FROM vals1 WHERE jj<ii AND ii=5
+----
+5	4
+
+query II
+SELECT * FROM vals1 WHERE jj<ii AND ii>9
+----
+10	9
+
+query II
+SELECT * FROM vals1 WHERE jj<ii AND ii>=10
+----
+10	9
+
+query II
+SELECT * FROM vals1 WHERE jj<ii AND ii<1
+----
+0	-1
+
+query II
+SELECT * FROM vals1 WHERE jj<ii AND ii<=0
+----
+0	-1
+
+### Complex transitive filters #################################################
+statement ok
+CREATE TABLE vals2(kk BIGINT, l BIGINT)
+
+statement ok
+INSERT INTO vals2 SELECT * FROM vals1
+
+query IIII
+SELECT * FROM vals1, vals2 WHERE ii>9 AND jj<=l AND kk>=ii AND l<11
+----
+10	10	10	10
+10	9	10	10
+10	9	10	9
+
+query IIII
+SELECT * FROM vals1, vals2 WHERE ii>9 AND jj>=ii AND kk>=jj ORDER by l
+----
+10	10	10	9
+10	10	10	10
+10	10	10	11
+
+query IIII
+SELECT * FROM vals1, vals2 WHERE ii>9 AND kk>=jj AND jj>=ii AND l>=kk
+----
+10	10	10	10
+10	10	10	11
+
+query IIII
+SELECT * FROM vals1, vals2 WHERE ii<1 AND kk<=jj AND jj<=ii AND l<=kk
+----
+0	0	0	0
+0	0	0	-1

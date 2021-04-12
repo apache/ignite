@@ -22,22 +22,22 @@ SELECT 'aaa' ILIKE '%'
 1
 
 query T
-SELECT 'aaa' ILIKE '%A'
+SELECT 'aaa' ILIKE '%aa'
 ----
 1
 
 query T
-SELECT 'aaa' ILIKE '%b'
+SELECT 'aaa' ILIKE '%bb'
 ----
 0
 
 query T
-SELECT 'aaa' ILIKE 'A%'
+SELECT 'aaa' ILIKE 'aa%'
 ----
 1
 
 query T
-SELECT 'aaa' ILIKE 'b%'
+SELECT 'aaa' ILIKE 'bb%'
 ----
 0
 
@@ -77,12 +77,12 @@ SELECT 'ababac' ILIKE 'abab%%%%%'
 1
 
 query T
-SELECT 'ababac' ILIKE '%%%a%%%b%%a%b%%%%%a%c%%'
+SELECT 'ababac' ILIKE '%%%aa%%%bb%%aa%bb%%%%%aa%cc%%'
 ----
 1
 
 query T
-SELECT 'ababac' ILIKE '%%%a%%%b%%a%b%%%%%a%d%%'
+SELECT 'ababac' ILIKE '%%%aa%%%bb%%aa%bb%%%%%aa%d%%'
 ----
 0
 
@@ -96,7 +96,7 @@ statement ok
 CREATE TABLE strings(s STRING, pat STRING);
 
 statement ok
-INSERT INTO strings VALUES ('abab', 'Ab%'), ('aaa', 'A_a'), ('aaa', '%b%')
+INSERT INTO strings VALUES ('abab', 'Ab%'), ('aaa', 'A_a'), ('aaa', '%bb%')
 
 query T
 SELECT s FROM strings WHERE s LIKE 'ab%'
@@ -127,7 +127,7 @@ statement ok
 CREATE TABLE unicode_strings(s STRING, pat STRING);
 
 statement ok
-INSERT INTO unicode_strings VALUES ('öäb', 'Ö%B'), ('aaÄ', 'A_ä'), ('aaa', '%b%')
+INSERT INTO unicode_strings VALUES ('öäb', 'Ö%bb'), ('aaÄ', 'A_ä'), ('aaa', '%bb%')
 
 query T
 SELECT s FROM unicode_strings WHERE s ILIKE pat

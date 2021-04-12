@@ -13,13 +13,13 @@ NULL	0	8	16	24	32
 
 # test on tables
 statement ok
-CREATE TABLE strings(a STRING, b STRING)
+CREATE TABLE strings(aa STRING, bb STRING)
 
 statement ok
 INSERT INTO strings VALUES ('', 'Zero'), ('$', NULL), ('¢','Two'), ('€', NULL), ('𐍈','Four')
 
 query I
-select BIT_LENGTH(a) FROM strings
+select BIT_LENGTH(aa) FROM strings
 ----
 0
 8
@@ -28,7 +28,7 @@ select BIT_LENGTH(a) FROM strings
 32
 
 query I
-select BIT_LENGTH(b) FROM strings
+select BIT_LENGTH(bb) FROM strings
 ----
 32
 NULL
@@ -37,7 +37,7 @@ NULL
 32
 
 query I
-select BIT_LENGTH(a) FROM strings WHERE b IS NOT NULL
+select BIT_LENGTH(aa) FROM strings WHERE bb IS NOT NULL
 ----
 0
 16

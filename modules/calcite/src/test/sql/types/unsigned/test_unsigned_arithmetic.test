@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE unsigned(a UTINYINT,b USMALLINT, c UINTEGER, d UBIGINT);
+CREATE TABLE unsigned(aa UTINYINT,bb USMALLINT, cc UINTEGER, d UBIGINT);
 
 statement ok
 INSERT INTO unsigned VALUES (1,1,1,1), (2,2,2,2);

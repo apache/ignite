@@ -20,13 +20,13 @@ statement error
 select entropy(*)
 
 statement ok
-create table aggr(k int);
+create table aggr(kk int);
 
 statement ok
 insert into aggr values (0),(1),(1),(1),(4),(0),(3),(3),(2),(2),(4),(4),(2),(4),(0),(0),(0),(1),(2),(3),(4),(2),(3),(3),(1);
 
 query I
-select entropy(k) from aggr ;
+select entropy(kk) from aggr ;
 ----
 2.321928
 
@@ -38,7 +38,7 @@ SELECT entropy(2) FROM range(100);
 
 
 query I
-select entropy(k) from aggr group by k%2
+select entropy(kk) from aggr group by kk%2
 ----
 1.584963
 1.000000
@@ -57,7 +57,7 @@ select entropy(name) from names;
 require vector_size 512
 
 query I rowsort
-select entropy(k) over (partition by k%2)
+select entropy(kk) over (partition by kk%2)
     from aggr;
 ----
 1.000000
@@ -88,7 +88,7 @@ select entropy(k) over (partition by k%2)
 
 # Empty Table
 query I
-SELECT entropy(i) FROM range(100) tbl(i) WHERE 1=0;
+SELECT entropy(ii) FROM range(100) tbl(ii) WHERE 1=0;
 ----
 0
 

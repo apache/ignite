@@ -3,18 +3,18 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE distinctagg(i INTEGER, j INTEGER);
+CREATE TABLE distinctagg(ii INTEGER, jj INTEGER);
 
 statement ok
 INSERT INTO distinctagg VALUES (1,1),(1,1),(2,2), (1,2)
 
 query IIRR
-SELECT COUNT(i), COUNT(DISTINCT i), SUM(i), SUM(DISTINCT i) FROM distinctagg
+SELECT COUNT(ii), COUNT(DISTINCT ii), SUM(ii), SUM(DISTINCT ii) FROM distinctagg
 ----
 4	2	5.000000	3.000000
 
 query IIRR
-SELECT COUNT(i), COUNT(DISTINCT i), SUM(i), SUM(DISTINCT i) FROM distinctagg GROUP BY j ORDER BY j
+SELECT COUNT(ii), COUNT(DISTINCT ii), SUM(ii), SUM(DISTINCT ii) FROM distinctagg GROUP BY jj ORDER BY jj
 ----
 2	1	2.000000	1.000000
 2	2	3.000000	3.000000

@@ -3,13 +3,13 @@
 # group: [group]
 
 statement ok
-CREATE TABLE integers(i INTEGER, j INTEGER);
+CREATE TABLE integers(ii INTEGER, jj INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (3, 4), (NULL, 4), (2, 4);
 
 query IR
-SELECT i, SUM(j) FROM integers GROUP BY i ORDER BY i
+SELECT ii, SUM(jj) FROM integers GROUP BY ii ORDER BY ii
 ----
 NULL	4.000000
 2	4.000000

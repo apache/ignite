@@ -398,10 +398,10 @@ public abstract class QueryChecker {
                 Comparable c1 = (Comparable)item1;
                 Comparable c2 = (Comparable)item2;
 
-                int c = c1.compareTo(c2);
+                int cc = c1.compareTo(c2);
 
-                if (c != 0)
-                    return c;
+                if (cc != 0)
+                    return cc;
             }
 
             return 0;

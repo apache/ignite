@@ -231,7 +231,7 @@ SELECT INTERVAL '9223372036854775810msecs';
 statement error
 SELECT INTERVAL '-9223372036854775810msecs';
 
-# need a number here
+# need aa number here
 statement error
 SELECT INTERVAL 'aa' DAY;
 

@@ -109,7 +109,7 @@ SELECT '0.5'::DECIMAL(1,1) - -1::TINYINT,
 1.5
 1.5
 
-# now with a table
+# now with aa table
 statement ok
 CREATE TABLE decimals(d DECIMAL(3, 2));
 

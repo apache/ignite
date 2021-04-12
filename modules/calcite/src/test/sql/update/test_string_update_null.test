@@ -2,9 +2,9 @@
 # description: Test update of string columns with NULLs
 # group: [update]
 
-# create a table
+# create aa table
 statement ok con1
-CREATE TABLE test (a VARCHAR);
+CREATE TABLE test (aa VARCHAR);
 
 statement ok con1
 INSERT INTO test VALUES ('hello'), ('world')
@@ -12,18 +12,18 @@ INSERT INTO test VALUES ('hello'), ('world')
 statement ok con2
 BEGIN TRANSACTION;
 
-# update a string to NULL
+# update aa string to NULL
 statement ok con1
-UPDATE test SET a=NULL where a='world';
+UPDATE test SET aa=NULL where aa='world';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 hello
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
@@ -32,7 +32,7 @@ statement ok con2
 COMMIT;
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 NULL
 hello

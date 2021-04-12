@@ -3,13 +3,13 @@
 # group: [group]
 
 statement ok
-CREATE TABLE test (a VARCHAR, b INTEGER);
+CREATE TABLE test (aa VARCHAR, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES ('helloworld', 22), ('thisisalongstring', 22), ('helloworld', 21)
 
 query TR
-SELECT a, SUM(b) FROM test GROUP BY a ORDER BY a
+SELECT aa, SUM(bb) FROM test GROUP BY aa ORDER BY aa
 ----
 helloworld	43.000000
 thisisalongstring	22.000000

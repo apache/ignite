@@ -6,48 +6,48 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 22), (12, 21), (13, 22)
 
 # constant limit
 query I
-SELECT a FROM test LIMIT 1
+SELECT aa FROM test LIMIT 1
 ----
 11
 
 # decimal limit
 query I
-SELECT a FROM test LIMIT 1.5
+SELECT aa FROM test LIMIT 1.5
 ----
 11
 
 # LIMIT with operation
 query I
-SELECT a FROM test LIMIT 2-1
+SELECT aa FROM test LIMIT 2-1
 ----
 11
 
 # LIMIT with non-scalar should fail
 statement error
-SELECT a FROM test LIMIT a
+SELECT aa FROM test LIMIT aa
 
 # LIMIT with non-scalar operation should also fail
 statement error
-SELECT a FROM test LIMIT a+1
+SELECT aa FROM test LIMIT aa+1
 
 # aggregate in limit
 statement error
-SELECT a FROM test LIMIT SUM(42)
+SELECT aa FROM test LIMIT SUM(42)
 
 # window function in limit
 statement error
-SELECT a FROM test LIMIT row_number() OVER ()
+SELECT aa FROM test LIMIT row_number() OVER ()
 
 # LIMIT Bug #321 Crazy Result
 statement ok
-CREATE TABLE test2 (a STRING);
+CREATE TABLE test2 (aa STRING);
 
 statement ok
 INSERT INTO test2 VALUES ('Hello World')
@@ -67,7 +67,7 @@ select 1 limit date '1992-01-01';
 
 # Test limits with no constants
 statement ok
-CREATE TABLE integers(i INTEGER);
+CREATE TABLE integers(ii INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1), (2), (3), (4), (5);
@@ -100,7 +100,7 @@ SELECT * FROM integers LIMIT RANDOM();
 
 # subquery in limit
 query I
-SELECT * FROM integers as int LIMIT (SELECT MIN(integers.i) FROM integers);
+SELECT * FROM integers as int LIMIT (SELECT MIN(integers.ii) FROM integers);
 ----
 1
 
@@ -128,7 +128,7 @@ SELECT * FROM integers OFFSET RANDOM();
 
 # subquery in limit
 query I
-SELECT * FROM integers as int OFFSET (SELECT MIN(integers.i) FROM integers);
+SELECT * FROM integers as int OFFSET (SELECT MIN(integers.ii) FROM integers);
 ----
 2
 3
@@ -137,7 +137,7 @@ SELECT * FROM integers as int OFFSET (SELECT MIN(integers.i) FROM integers);
 
 #Both LIMIT and OFFSET together with subqueries
 query I
-SELECT * FROM integers as int LIMIT (SELECT MAX(integers.i) FROM integers) OFFSET (SELECT MIN(integers.i) FROM integers);
+SELECT * FROM integers as int LIMIT (SELECT MAX(integers.ii) FROM integers) OFFSET (SELECT MIN(integers.ii) FROM integers);
 ----
 2
 3
@@ -146,7 +146,7 @@ SELECT * FROM integers as int LIMIT (SELECT MAX(integers.i) FROM integers) OFFSE
 
 #Subqueries that return zero rows = Same as ommiting limit clause
 query I
-SELECT * FROM integers as int LIMIT (SELECT max(integers.i) FROM integers where i > 5)
+SELECT * FROM integers as int LIMIT (SELECT max(integers.ii) FROM integers where ii > 5)
 ----
 1
 2
@@ -156,7 +156,7 @@ SELECT * FROM integers as int LIMIT (SELECT max(integers.i) FROM integers where 
 
 #Limit of NULL, offset of NULL
 query I
-SELECT * FROM integers as int LIMIT (SELECT max(integers.i) FROM integers where i > 5)
+SELECT * FROM integers as int LIMIT (SELECT max(integers.ii) FROM integers where ii > 5)
 ----
 1
 2

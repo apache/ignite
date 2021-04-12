@@ -2,9 +2,9 @@
 # description: Test repeated update of string in same transaction
 # group: [update]
 
-# create a table
+# create aa table
 statement ok
-CREATE TABLE test (a VARCHAR);
+CREATE TABLE test (aa VARCHAR);
 
 statement ok
 INSERT INTO test VALUES ('hello'), ('world')
@@ -13,19 +13,19 @@ statement ok
 BEGIN TRANSACTION;
 
 statement ok
-UPDATE test SET a='test' WHERE a='hello';
+UPDATE test SET aa='test' WHERE aa='hello';
 
 query T
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 world
 
 statement ok
-UPDATE test SET a='test2' WHERE a='world';
+UPDATE test SET aa='test2' WHERE aa='world';
 
 query T
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 test2
@@ -34,7 +34,7 @@ statement ok
 COMMIT;
 
 query T
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 test
 test2

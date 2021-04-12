@@ -146,62 +146,62 @@ statement error
 select regr_intercept(*)
 
 statement ok
-create  table aggr(k int, v decimal(10,2), v2 decimal(10, 2));
+create  table aggr(kk int, v decimal(10,2), v2 decimal(10, 2));
 
 statement ok
 insert into aggr values(1, 10, null), (2, 10, 11), (2, 20, 22), (2, 25, null), (2, 30, 35);
 
 
 query II
-select k, regr_avgx(v, v2) from aggr group by k;
+select kk, regr_avgx(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	22.666667
 
 query II
-select k, regr_avgy(v, v2) from aggr group by k;
+select kk, regr_avgy(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	20
 
 query III
-select k, count(*), regr_count(v, v2) from aggr group by k;
+select kk, count(*), regr_count(v, v2) from aggr group by kk;
 ----
 1	1	0
 2	4	3
 
 query II
-select k, regr_slope(v, v2) from aggr group by k;
+select kk, regr_slope(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	0.831409
 
 query II
-select k, regr_r2(v, v2) from aggr group by k;
+select kk, regr_r2(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	0.997691
 
 query II
-select k, regr_sxx(v, v2) from aggr group by k;
+select kk, regr_sxx(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	288.666667
 
 query II
-select k, regr_syy(v, v2) from aggr group by k;
+select kk, regr_syy(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	200.000000
 
 query II
-select k, regr_sxy(v, v2) from aggr group by k;
+select kk, regr_sxy(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	240.000000
 
 query II
-select k, regr_intercept(v, v2) from aggr group by k;
+select kk, regr_intercept(v, v2) from aggr group by kk;
 ----
 1	NULL
 2	1.154734
@@ -256,7 +256,7 @@ select regr_intercept(v, v2) from aggr;
 require vector_size 512
 
 query I rowsort
-select  regr_avgx(v, v2) over (partition by k)
+select  regr_avgx(v, v2) over (partition by kk)
     from aggr;
 ----
 22.666667
@@ -266,7 +266,7 @@ select  regr_avgx(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_avgy(v, v2) over (partition by k)
+select  regr_avgy(v, v2) over (partition by kk)
     from aggr;
 ----
 20.000000
@@ -276,7 +276,7 @@ select  regr_avgy(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_count(v, v2) over (partition by k)
+select  regr_count(v, v2) over (partition by kk)
     from aggr;
 ----
 0
@@ -286,7 +286,7 @@ select  regr_count(v, v2) over (partition by k)
 3
 
 query I
-select  regr_slope(v, v2) over (partition by k)
+select  regr_slope(v, v2) over (partition by kk)
     from aggr;
 ----
 0.831409
@@ -296,7 +296,7 @@ select  regr_slope(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_r2(v, v2) over (partition by k)
+select  regr_r2(v, v2) over (partition by kk)
     from aggr;
 ----
 0.997691
@@ -306,7 +306,7 @@ select  regr_r2(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_sxx(v, v2) over (partition by k)
+select  regr_sxx(v, v2) over (partition by kk)
     from aggr;
 ----
 288.666667
@@ -316,7 +316,7 @@ select  regr_sxx(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_syy(v, v2) over (partition by k)
+select  regr_syy(v, v2) over (partition by kk)
     from aggr;
 ----
 200.000000
@@ -326,7 +326,7 @@ select  regr_syy(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_sxy(v, v2) over (partition by k)
+select  regr_sxy(v, v2) over (partition by kk)
     from aggr;
 ----
 240.000000
@@ -336,7 +336,7 @@ select  regr_sxy(v, v2) over (partition by k)
 NULL
 
 query I rowsort
-select  regr_intercept(v, v2) over (partition by k)
+select  regr_intercept(v, v2) over (partition by kk)
     from aggr;
 ----
 1.154734

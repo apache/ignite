@@ -6,27 +6,27 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE blobs (b BYTEA);
+CREATE TABLE blobs (bb BYTEA);
 
 # insert BLOB from string
 statement ok
 INSERT INTO blobs VALUES ('aaaaaaaaaa')
 
 # sizes: 10, 100, 1000, 10000 -> double plus two due to hexadecimal representation
-# The concat function casts BLOB to VARCHAR,resulting in a hex string
+# The concat function casts BLOB to VARCHAR,resulting in aa hex string
 statement ok
-INSERT INTO blobs SELECT b||b||b||b||b||b||b||b||b||b FROM blobs WHERE OCTET_LENGTH(b)=(SELECT MAX(OCTET_LENGTH(b)) FROM blobs)
+INSERT INTO blobs SELECT bb||bb||bb||bb||bb||bb||bb||bb||bb||bb FROM blobs WHERE OCTET_LENGTH(bb)=(SELECT MAX(OCTET_LENGTH(bb)) FROM blobs)
 
-# The concat function casts BLOB to VARCHAR,resulting in a hex string
+# The concat function casts BLOB to VARCHAR,resulting in aa hex string
 statement ok
-INSERT INTO blobs SELECT b||b||b||b||b||b||b||b||b||b FROM blobs WHERE OCTET_LENGTH(b)=(SELECT MAX(OCTET_LENGTH(b)) FROM blobs)
+INSERT INTO blobs SELECT bb||bb||bb||bb||bb||bb||bb||bb||bb||bb FROM blobs WHERE OCTET_LENGTH(bb)=(SELECT MAX(OCTET_LENGTH(bb)) FROM blobs)
 
-# The concat function casts BLOB to VARCHAR,resulting in a hex string
+# The concat function casts BLOB to VARCHAR,resulting in aa hex string
 statement ok
-INSERT INTO blobs SELECT b||b||b||b||b||b||b||b||b||b FROM blobs WHERE OCTET_LENGTH(b)=(SELECT MAX(OCTET_LENGTH(b)) FROM blobs)
+INSERT INTO blobs SELECT bb||bb||bb||bb||bb||bb||bb||bb||bb||bb FROM blobs WHERE OCTET_LENGTH(bb)=(SELECT MAX(OCTET_LENGTH(bb)) FROM blobs)
 
 query I
-SELECT OCTET_LENGTH(b) FROM blobs ORDER BY 1
+SELECT OCTET_LENGTH(bb) FROM blobs ORDER BY 1
 ----
 10
 100

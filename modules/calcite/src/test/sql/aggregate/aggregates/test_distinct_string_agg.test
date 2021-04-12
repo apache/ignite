@@ -6,11 +6,11 @@ statement ok
 CREATE TABLE strings(s VARCHAR);
 
 statement ok
-INSERT INTO strings VALUES ('a'), ('b'), ('a');
+INSERT INTO strings VALUES ('aa'), ('bb'), ('aa');
 
 query TT
 SELECT STRING_AGG(s,','), STRING_AGG(DISTINCT s, ',') FROM strings
 ----
-a,b,a
-a,b
+aa,bb,aa
+aa,bb
 

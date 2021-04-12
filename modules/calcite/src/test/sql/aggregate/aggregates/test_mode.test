@@ -20,10 +20,10 @@ statement error
 select mode(*)
 
 statement ok
-create table aggr(k int, v decimal(10,2));
+create table aggr(kk int, v decimal(10,2));
 
 statement ok
-insert into aggr (k, v) values (1, 10), (1, 10), (1, 20), (1, 21);
+insert into aggr (kk, v) values (1, 10), (1, 10), (1, 20), (1, 21);
 
 query I
 select mode(v) from aggr;
@@ -36,7 +36,7 @@ SELECT mode(2) FROM range(100);
 2
 
 statement ok
-insert into aggr (k, v) values (2, 20),(2, 20), (2, 25), (2, 30);
+insert into aggr (kk, v) values (2, 20),(2, 20), (2, 25), (2, 30);
 
 query I
 SELECT CASE
@@ -49,13 +49,13 @@ SELECT CASE
 1
 
 statement ok
-insert into aggr (k, v) values (3, null);
+insert into aggr (kk, v) values (3, null);
 
 query II
-select k, mode(v)
+select kk, mode(v)
     from aggr
-    group by k
-    order by k;
+    group by kk
+    order by kk;
 ----
 1	10.000000
 2	20.000000
@@ -74,9 +74,9 @@ pedro
 
 require vector_size 512
 query III
-select k, v, mode(v) over (partition by k)
+select kk, v, mode(v) over (partition by kk)
     from aggr
-    order by k, v;
+    order by kk, v;
 ----
 1	10.00	10.000000
 1	10.00	10.000000
@@ -90,7 +90,7 @@ select k, v, mode(v) over (partition by k)
 
 # Empty Table
 query I
-SELECT mode(i) FROM range(100) tbl(i) WHERE 1=0;
+SELECT mode(ii) FROM range(100) tbl(ii) WHERE 1=0;
 ----
 NULL
 

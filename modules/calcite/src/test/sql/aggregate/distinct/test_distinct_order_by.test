@@ -6,13 +6,13 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE integers(i INTEGER);
+CREATE TABLE integers(ii INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1), (2), (3)
 
 query I
-SELECT DISTINCT i%2 FROM integers ORDER BY 1
+SELECT DISTINCT ii%2 FROM integers ORDER BY 1
 ----
 0
 1
@@ -20,36 +20,36 @@ SELECT DISTINCT i%2 FROM integers ORDER BY 1
 # controversial: Postgres fails here with the error "with SELECT DISTINCT columns from ORDER BY must appear in the
 # SELECT clause" but SQLite succeeds
 # we also succeed here, even though it can give unintuitive results
-# this is transformed into SELECT DISTINCT(1) i % 2, i
+# this is transformed into SELECT DISTINCT(1) ii % 2, ii
 query I
-SELECT DISTINCT i % 2 FROM integers WHERE i<3 ORDER BY i
+SELECT DISTINCT ii % 2 FROM integers WHERE ii<3 ORDER BY ii
 ----
 1
 0
 
 query II
-SELECT DISTINCT ON (1) i % 2, i FROM integers WHERE i<3 ORDER BY i
+SELECT DISTINCT ON (1) ii % 2, ii FROM integers WHERE ii<3 ORDER BY ii
 ----
 1	1
 0	2
 
 # binding of DISTINCT with column names
 query I
-SELECT DISTINCT integers.i FROM integers ORDER BY i DESC
+SELECT DISTINCT integers.ii FROM integers ORDER BY ii DESC
 ----
 3
 2
 1
 
 query I
-SELECT DISTINCT i FROM integers ORDER BY integers.i DESC
+SELECT DISTINCT ii FROM integers ORDER BY integers.ii DESC
 ----
 3
 2
 1
 
 query I
-SELECT DISTINCT integers.i FROM integers ORDER BY integers.i DESC
+SELECT DISTINCT integers.ii FROM integers ORDER BY integers.ii DESC
 ----
 3
 2

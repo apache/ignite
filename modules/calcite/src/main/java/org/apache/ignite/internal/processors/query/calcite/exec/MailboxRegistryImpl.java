@@ -63,7 +63,7 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
         locals = new ConcurrentHashMap<>();
         remotes = new ConcurrentHashMap<>();
 
-        discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
+        discoLsnr = (e, cc) -> onNodeLeft(e.eventNode().id());
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -123,13 +124,18 @@ public class LogicalTestRunner extends Runner {
                     if (!fileName.endsWith("test") && !fileName.endsWith("test_slow"))
                         return;
 
+                    Ignite ign = F.first(Ignition.allGrids());
+
+                    for (String cacheName : ign.cacheNames())
+                        ign.destroyCache(cacheName);
+
                     Description desc = Description.createTestDescription(dirName, fileName);
 
                     notifier.fireTestStarted(desc);
 
                     try {
                         QueryEngine engine = Commons.lookupComponent(
-                            ((IgniteEx)F.first(Ignition.allGrids())).context(),
+                            ((IgniteEx)ign).context(),
                             QueryEngine.class
                         );
 

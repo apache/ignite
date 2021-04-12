@@ -277,7 +277,7 @@ public final class PlanningContext implements Context {
     }
 
     /** {@inheritDoc} */
-    @Override public <C> C unwrap(Class<C> aCls) {
+    @Override public <cc> cc unwrap(Class<cc> aCls) {
         if (aCls == getClass())
             return aCls.cast(this);
 

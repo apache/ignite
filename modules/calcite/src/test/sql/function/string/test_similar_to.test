@@ -18,52 +18,52 @@ SELECT 'aaa' SIMILAR TO '.*'
 1
 
 query T
-SELECT 'aaa' SIMILAR TO 'a.*'
+SELECT 'aaa' SIMILAR TO 'aa.*'
 ----
 1
 
 query T
-SELECT 'aaa' SIMILAR TO '.*a'
+SELECT 'aaa' SIMILAR TO '.*aa'
 ----
 1
 
 query T
-SELECT 'aaa' SIMILAR TO '.*b'
+SELECT 'aaa' SIMILAR TO '.*bb'
 ----
 0
 
 query T
-SELECT 'aaa' SIMILAR TO 'b.*'
+SELECT 'aaa' SIMILAR TO 'bb.*'
 ----
 0
 
 query T
-SELECT 'aaa' SIMILAR TO 'a[a-z]a'
+SELECT 'aaa' SIMILAR TO 'aa[aa-z]aa'
 ----
 1
 
 query T
-SELECT 'aaa' SIMILAR TO 'a[a-z]{2}'
+SELECT 'aaa' SIMILAR TO 'aa[aa-z]{2}'
 ----
 1
 
 query T
-SELECT 'aaa' SIMILAR TO 'a[a-z].*'
+SELECT 'aaa' SIMILAR TO 'aa[aa-z].*'
 ----
 1
 
 query T
-SELECT 'aaa' SIMILAR TO '[a-z][a-z].*'
+SELECT 'aaa' SIMILAR TO '[aa-z][aa-z].*'
 ----
 1
 
 query T
-SELECT 'aaa' SIMILAR TO '[a-z]{3}'
+SELECT 'aaa' SIMILAR TO '[aa-z]{3}'
 ----
 1
 
 query T
-SELECT 'aaa' NOT SIMILAR TO '[b-z]{3}'
+SELECT 'aaa' NOT SIMILAR TO '[bb-z]{3}'
 ----
 1
 
@@ -79,22 +79,22 @@ SELECT 'aaa' !~ 'bbb'
 
 # similar to must match entire expression
 query T
-SELECT 'aaa' ~ '^a'
+SELECT 'aaa' ~ '^aa'
 ----
 0
 
 query T
-SELECT 'aaa' ~ '^a+'
+SELECT 'aaa' ~ '^aa+'
 ----
 1
 
 query T
-SELECT 'aaa' ~ '(a|b)*'
+SELECT 'aaa' ~ '(aa|bb)*'
 ----
 1
 
 query T
-SELECT 'abc' ~ '^(b|c)'
+SELECT 'abc' ~ '^(bb|cc)'
 ----
 0
 
@@ -103,7 +103,7 @@ statement ok
 CREATE TABLE strings (s STRING, p STRING);
 
 statement ok
-INSERT INTO strings VALUES('aaa', 'a[a-z]a'), ('abab', 'ab.*'), ('aaa', 'a[a-z]a'), ('aaa', '.*b.*');
+INSERT INTO strings VALUES('aaa', 'aa[aa-z]aa'), ('abab', 'ab.*'), ('aaa', 'aa[aa-z]aa'), ('aaa', '.*bb.*');
 
 statement ok
 

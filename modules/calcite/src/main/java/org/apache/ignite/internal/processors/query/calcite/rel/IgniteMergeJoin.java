@@ -175,9 +175,9 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         List<Integer> collationLeftPrj = new ArrayList<>();
 
-        for (Integer c : collation.getKeys()) {
+        for (Integer cc : collation.getKeys()) {
             collationLeftPrj.add(
-                c >= rightOff ? rightToLeft.get(c - rightOff) : c
+                cc >= rightOff ? rightToLeft.get(cc - rightOff) : cc
             );
         }
 
@@ -193,19 +193,19 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             newRightCollation = new ArrayList<>();
 
             int ind = 0;
-            for (Integer c : collation.getKeys()) {
-                if (c < rightOff) {
-                    newLeftCollation.add(c);
+            for (Integer cc : collation.getKeys()) {
+                if (cc < rightOff) {
+                    newLeftCollation.add(cc);
 
                     if (ind < joinInfo.leftKeys.size())
-                        newRightCollation.add(leftToRight.get(c));
+                        newRightCollation.add(leftToRight.get(cc));
                 }
                 else {
-                    c -= rightOff;
-                    newRightCollation.add(c);
+                    cc -= rightOff;
+                    newRightCollation.add(cc);
 
                     if (ind < joinInfo.leftKeys.size())
-                        newLeftCollation.add(rightToLeft.get(c));
+                        newLeftCollation.add(rightToLeft.get(cc));
                 }
 
                 ind++;

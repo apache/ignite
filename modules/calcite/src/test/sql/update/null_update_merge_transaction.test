@@ -2,9 +2,9 @@
 # description: Test repeated updates that change the nullness of values
 # group: [update]
 
-# create a table
+# create aa table
 statement ok
-CREATE TABLE test (id INTEGER, a INTEGER);
+CREATE TABLE test (id INTEGER, aa INTEGER);
 
 statement ok
 INSERT INTO test VALUES (1, 1), (2, 2), (3, 3), (4, NULL);
@@ -21,7 +21,7 @@ statement ok
 BEGIN TRANSACTION
 
 statement ok
-UPDATE test SET a=CASE WHEN a IS NULL THEN 1 ELSE NULL END
+UPDATE test SET aa=CASE WHEN aa IS NULL THEN 1 ELSE NULL END
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -32,7 +32,7 @@ SELECT * FROM test ORDER BY id;
 4	1
 
 statement ok
-UPDATE test SET a=2 WHERE id >= 2 AND id <= 3
+UPDATE test SET aa=2 WHERE id >= 2 AND id <= 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -43,7 +43,7 @@ SELECT * FROM test ORDER BY id;
 4	1
 
 statement ok
-UPDATE test SET a=NULL WHERE id >= 3
+UPDATE test SET aa=NULL WHERE id >= 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -54,7 +54,7 @@ SELECT * FROM test ORDER BY id;
 4	NULL
 
 statement ok
-UPDATE test SET a=id WHERE id != 3
+UPDATE test SET aa=id WHERE id != 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -65,7 +65,7 @@ SELECT * FROM test ORDER BY id;
 4	4
 
 statement ok
-UPDATE test SET a=NULL WHERE id != 3
+UPDATE test SET aa=NULL WHERE id != 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -76,7 +76,7 @@ SELECT * FROM test ORDER BY id;
 4	NULL
 
 statement ok
-UPDATE test SET a=3 WHERE id != 2
+UPDATE test SET aa=3 WHERE id != 2
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -87,7 +87,7 @@ SELECT * FROM test ORDER BY id;
 4	3
 
 statement ok
-UPDATE test SET a=7 WHERE id != 3
+UPDATE test SET aa=7 WHERE id != 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -98,7 +98,7 @@ SELECT * FROM test ORDER BY id;
 4	7
 
 statement ok
-UPDATE test SET a=NULL
+UPDATE test SET aa=NULL
 
 query II
 SELECT * FROM test ORDER BY id;

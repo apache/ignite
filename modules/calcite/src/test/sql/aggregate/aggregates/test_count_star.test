@@ -3,20 +3,20 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE integers(i INTEGER, j INTEGER);
+CREATE TABLE integers(ii INTEGER, jj INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (3, 4), (3, 4), (2, 4);
 
 query II
-SELECT i, COUNT(*) FROM integers GROUP BY i ORDER BY i
+SELECT ii, COUNT(*) FROM integers GROUP BY ii ORDER BY ii
 ----
 2	1
 3	2
 
 # test COUNT without the *
 query II
-SELECT i, COUNT() FROM integers GROUP BY i ORDER BY i
+SELECT ii, COUNT() FROM integers GROUP BY ii ORDER BY ii
 ----
 2	1
 3	2

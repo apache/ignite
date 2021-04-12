@@ -3,26 +3,26 @@
 # group: [insert]
 
 statement ok
-CREATE TABLE integers(i INTEGER)
+CREATE TABLE integers(ii INTEGER)
 
 statement ok
-INSERT INTO integers SELECT i FROM range(100) tbl(i);
+INSERT INTO integers SELECT ii FROM range(100) tbl(ii);
 
 statement ok
 BEGIN TRANSACTION
 
-loop i 0 5
+loop ii 0 5
 
 statement ok
-INSERT INTO integers SELECT i FROM range(100) tbl(i);
+INSERT INTO integers SELECT ii FROM range(100) tbl(ii);
 
 statement ok
-INSERT INTO integers SELECT NULL FROM range(100) tbl(i);
+INSERT INTO integers SELECT NULL FROM range(100) tbl(ii);
 
 endloop
 
 query IIIII
-SELECT COUNT(i), SUM(i), MIN(i), MAX(i), COUNT(*) FROM integers
+SELECT COUNT(ii), SUM(ii), MIN(ii), MAX(ii), COUNT(*) FROM integers
 ----
 600	29700	0	99	1100
 
@@ -30,11 +30,11 @@ statement ok
 COMMIT
 
 query IIIII
-SELECT COUNT(i), SUM(i), MIN(i), MAX(i), COUNT(*) FROM integers
+SELECT COUNT(ii), SUM(ii), MIN(ii), MAX(ii), COUNT(*) FROM integers
 ----
 600	29700	0	99	1100
 
 query I
-SELECT SUM(CASE WHEN i IS NULL THEN 1 ELSE 0 END) FROM integers
+SELECT SUM(CASE WHEN ii IS NULL THEN 1 ELSE 0 END) FROM integers
 ----
 500

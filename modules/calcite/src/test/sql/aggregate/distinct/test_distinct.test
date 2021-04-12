@@ -6,50 +6,50 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 22), (13, 22), (11, 21), (11, 22)
 
 query II
-SELECT DISTINCT a, b FROM test ORDER BY a, b
+SELECT DISTINCT aa, bb FROM test ORDER BY aa, bb
 ----
 11	21
 11	22
 13	22
 
 query II
-SELECT DISTINCT test.a, b FROM test ORDER BY a, b
+SELECT DISTINCT test.aa, bb FROM test ORDER BY aa, bb
 ----
 11	21
 11	22
 13	22
 
 query I
-SELECT DISTINCT a FROM test ORDER BY a
+SELECT DISTINCT aa FROM test ORDER BY aa
 ----
 11
 13
 
 query I
-SELECT DISTINCT b FROM test ORDER BY b
+SELECT DISTINCT bb FROM test ORDER BY bb
 ----
 21
 22
 
 query IR
-SELECT DISTINCT a, SUM(B) FROM test GROUP BY a ORDER BY a
+SELECT DISTINCT aa, SUM(bb) FROM test GROUP BY aa ORDER BY aa
 ----
 11	65.000000
 13	22.000000
 
 query I
-SELECT DISTINCT MAX(b) FROM test GROUP BY a
+SELECT DISTINCT MAX(bb) FROM test GROUP BY aa
 ----
 22
 
 query I
-SELECT DISTINCT CASE WHEN a > 11 THEN 11 ELSE a END FROM test
+SELECT DISTINCT CASE WHEN aa > 11 THEN 11 ELSE aa END FROM test
 ----
 11
 

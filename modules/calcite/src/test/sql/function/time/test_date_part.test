@@ -64,37 +64,37 @@ SELECT date_part(s, d) FROM times;
 
 # time gives errors for date-only parts
 statement error
-SELECT year(i) FROM times
+SELECT year(ii) FROM times
 
 statement error
-SELECT month(i) FROM times
+SELECT month(ii) FROM times
 
 statement error
-SELECT day(i) FROM times
+SELECT day(ii) FROM times
 
 statement error
-SELECT decade(i) FROM times
+SELECT decade(ii) FROM times
 
 statement error
-SELECT century(i) FROM times
+SELECT century(ii) FROM times
 
 statement error
-SELECT millenium(i) FROM times
+SELECT millenium(ii) FROM times
 
 statement error
-SELECT quarter(i) FROM times
+SELECT quarter(ii) FROM times
 
 statement error
-SELECT dayofweek(i) FROM times
+SELECT dayofweek(ii) FROM times
 
 statement error
-SELECT isodow(i) FROM times
+SELECT isodow(ii) FROM times
 
 statement error
-SELECT dayofyear(i) FROM times
+SELECT dayofyear(ii) FROM times
 
 statement error
-SELECT week(i) FROM times
+SELECT week(ii) FROM times
 
 statement error
-SELECT yearweek(i) FROM times
+SELECT yearweek(ii) FROM times

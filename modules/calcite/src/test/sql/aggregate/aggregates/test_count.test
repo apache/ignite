@@ -12,15 +12,15 @@ SELECT COUNT(*), COUNT(1), COUNT(100), COUNT(NULL), COUNT(DISTINCT 1)
 0
 1
 
-# test counts on a set of values
+# test counts on aa set of values
 statement ok
-CREATE TABLE integers(i INTEGER);
+CREATE TABLE integers(ii INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1), (2), (NULL)
 
 query IIIIII
-SELECT COUNT(*), COUNT(1), COUNT(i), COUNT(COALESCE(i, 1)), COUNT(DISTINCT i), COUNT(DISTINCT 1) FROM integers
+SELECT COUNT(*), COUNT(1), COUNT(ii), COUNT(COALESCE(ii, 1)), COUNT(DISTINCT ii), COUNT(DISTINCT 1) FROM integers
 ----
 3
 3

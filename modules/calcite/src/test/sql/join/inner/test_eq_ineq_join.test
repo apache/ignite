@@ -6,41 +6,41 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER);
+CREATE TABLE test (aa INTEGER, bb INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 1), (12, 2), (13, 3)
 
 statement ok
-CREATE TABLE test2 (a INTEGER, c INTEGER);
+CREATE TABLE test2 (aa INTEGER, cc INTEGER);
 
 statement ok
 INSERT INTO test2 VALUES (11, 1), (12, 1), (13, 4)
 
 query III
-SELECT test.a, b, c FROM test, test2 WHERE test.a = test2.a AND test.b <> test2.c ORDER BY test.a;
+SELECT test.aa, bb, cc FROM test, test2 WHERE test.aa = test2.aa AND test.bb <> test2.cc ORDER BY test.aa;
 ----
 12	2	1
 13	3	4
 
 query III
-SELECT test.a, b, c FROM test, test2 WHERE test.a = test2.a AND test.b < test2.c ORDER BY test.a;
+SELECT test.aa, bb, cc FROM test, test2 WHERE test.aa = test2.aa AND test.bb < test2.cc ORDER BY test.aa;
 ----
 13	3	4
 
 query III
-SELECT test.a, b, c FROM test, test2 WHERE test.a = test2.a AND test.b <= test2.c ORDER BY test.a;
+SELECT test.aa, bb, cc FROM test, test2 WHERE test.aa = test2.aa AND test.bb <= test2.cc ORDER BY test.aa;
 ----
 11	1	1
 13	3	4
 
 query III
-SELECT test.a, b, c FROM test, test2 WHERE test.a = test2.a AND test.b > test2.c ORDER BY test.a;
+SELECT test.aa, bb, cc FROM test, test2 WHERE test.aa = test2.aa AND test.bb > test2.cc ORDER BY test.aa;
 ----
 12	2	1
 
 query III
-SELECT test.a, b, c FROM test, test2 WHERE test.a = test2.a AND test.b >= test2.c ORDER BY test.a;
+SELECT test.aa, bb, cc FROM test, test2 WHERE test.aa = test2.aa AND test.bb >= test2.cc ORDER BY test.aa;
 ----
 11	1	1
 12	2	1
@@ -53,44 +53,44 @@ DROP TABLE test2;
 
 # Equality + inequality anti and semi joins
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER, str VARCHAR);
+CREATE TABLE test (aa INTEGER, bb INTEGER, str VARCHAR);
 
 statement ok
-INSERT INTO test VALUES (11, 1, 'a'), (12, 2, 'b'), (13, 3, 'c')
+INSERT INTO test VALUES (11, 1, 'aa'), (12, 2, 'bb'), (13, 3, 'cc')
 
 statement ok
-CREATE TABLE test2 (a INTEGER, c INTEGER, str2 VARCHAR);
+CREATE TABLE test2 (aa INTEGER, cc INTEGER, str2 VARCHAR);
 
 statement ok
 INSERT INTO test2 VALUES (11, 1, 'd'), (12, 1, 'e'), (13, 4, 'f')
 
 query IIT
-SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<>test2.c);
+SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<>test2.cc);
 ----
-12	2	b
-13	3	c
+12	2	bb
+13	3	cc
 
 query IIT
-SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<>test2.c) AND NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<test2.c);
+SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<>test2.cc) AND NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<test2.cc);
 ----
-12	2	b
+12	2	bb
 
 query IIT
-SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<test2.c);
+SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<test2.cc);
 ----
-11	1	a
-12	2	b
+11	1	aa
+12	2	bb
 
 query IIT
-SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<test2.c) AND NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b>test2.c);
+SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<test2.cc) AND NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb>test2.cc);
 ----
-11	1	a
+11	1	aa
 
 query IIT
-SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<>test2.c) AND test.a > 11;
+SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<>test2.cc) AND test.aa > 11;
 ----
-12	2	b
-13	3	c
+12	2	bb
+13	3	cc
 
 statement ok
 DROP TABLE test;
@@ -100,32 +100,32 @@ DROP TABLE test2;
 
 # Equality + inequality anti and semi joins with selection vector
 statement ok
-CREATE TABLE test (a INTEGER, b INTEGER, str VARCHAR);
+CREATE TABLE test (aa INTEGER, bb INTEGER, str VARCHAR);
 
 statement ok
-INSERT INTO test VALUES (11, 1, 'a'), (12, 2, 'b'), (13, 3, 'c')
+INSERT INTO test VALUES (11, 1, 'aa'), (12, 2, 'bb'), (13, 3, 'cc')
 
 statement ok
-CREATE TABLE test2 (a INTEGER, c INTEGER, str2 VARCHAR);
+CREATE TABLE test2 (aa INTEGER, cc INTEGER, str2 VARCHAR);
 
 statement ok
 INSERT INTO test2 VALUES (11, 1, 'd'), (12, 1, 'e'), (13, 4, 'f')
 
 query IIT
-SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<test2.c AND test2.a>14) AND NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b>test2.c AND test2.a<10);
+SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<test2.cc AND test2.aa>14) AND NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb>test2.cc AND test2.aa<10);
 ----
-11	1	a
-12	2	b
-13	3	c
+11	1	aa
+12	2	bb
+13	3	cc
 
 query IIT
-SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<test2.c AND test2.a=12) AND NOT EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b>test2.c AND test2.a=12);
+SELECT * FROM test WHERE NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<test2.cc AND test2.aa=12) AND NOT EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb>test2.cc AND test2.aa=12);
 ----
-11	1	a
-13	3	c
+11	1	aa
+13	3	cc
 
 query IIT
-SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.a=test2.a AND test.b<>test2.c) AND test.a < 13;
+SELECT * FROM test WHERE EXISTS(SELECT * FROM test2 WHERE test.aa=test2.aa AND test.bb<>test2.cc) AND test.aa < 13;
 ----
-12	2	b
+12	2	bb
 

@@ -66,9 +66,9 @@ NULL
 45672564564938245.1
 4567645908450368043562342564564938245.1
 
-# decimal aggregates over a table
+# decimal aggregates over aa table
 statement ok
-CREATE TABLE decimals AS SELECT i::DECIMAL(4,1) AS d1, (i * i)::DECIMAL(9,1) AS d2, (i * i * i)::DECIMAL(18,1) AS d3, (i * i * i * i)::DECIMAL(38,1) AS d4 FROM range(1000) tbl(i);
+CREATE TABLE decimals AS SELECT ii::DECIMAL(4,1) AS d1, (ii * ii)::DECIMAL(9,1) AS d2, (ii * ii * ii)::DECIMAL(18,1) AS d3, (ii * ii * ii * ii)::DECIMAL(38,1) AS d4 FROM range(1000) tbl(ii);
 
 query IIII
 SELECT SUM(d1)::VARCHAR, SUM(d2)::VARCHAR, SUM(d3)::VARCHAR, SUM(d4)::VARCHAR FROM decimals;

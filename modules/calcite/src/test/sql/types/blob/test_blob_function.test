@@ -6,14 +6,14 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE blobs (b BYTEA);
+CREATE TABLE blobs (bb BYTEA);
 
 statement ok
-INSERT INTO blobs VALUES ('a'::BYTEA)
+INSERT INTO blobs VALUES ('aa'::BYTEA)
 
 # conventional concat
 query T
-SELECT b || 'ZZ'::BYTEA FROM blobs
+SELECT bb || 'ZZ'::BYTEA FROM blobs
 ----
 aZZ
 
@@ -32,7 +32,7 @@ SELECT COUNT(*) FROM blobs
 
 # octet_length
 query I
-SELECT OCTET_LENGTH(b) FROM blobs
+SELECT OCTET_LENGTH(bb) FROM blobs
 ----
 1
 13
@@ -45,18 +45,18 @@ statement ok
 INSERT INTO blobs VALUES ('\xFF'::BYTEA)
 
 query T
-SELECT b || 'ZZ'::BYTEA FROM blobs
+SELECT bb || 'ZZ'::BYTEA FROM blobs
 ----
 \xFFZZ
 
 query T
-SELECT b || '\x5A\x5A'::BYTEA FROM blobs
+SELECT bb || '\x5A\x5A'::BYTEA FROM blobs
 ----
 \xFFZZ
 
 # BLOB || VARCHAR is not allowed, should fail
 statement error
-SELECT b || '5A5A'::VARCHAR FROM blobs
+SELECT bb || '5A5A'::VARCHAR FROM blobs
 
 # Octet Length tests
 statement ok
@@ -75,7 +75,7 @@ statement ok
 INSERT INTO blobs VALUES ('55AAFF55AAFF55AAFF01'::BYTEA)
 
 query I
-SELECT OCTET_LENGTH(b) FROM blobs
+SELECT OCTET_LENGTH(bb) FROM blobs
 ----
 1
 2

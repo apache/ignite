@@ -978,7 +978,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
+            exec = new LogicalRelImplementor<>(ectx, cc -> r -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
             //// Start execution
@@ -1239,7 +1239,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
+            exec = new LogicalRelImplementor<>(ectx, cc -> r -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
             //// Start execution

@@ -2,9 +2,9 @@
 # description: Test update of string columns
 # group: [update]
 
-# create a table
+# create aa table
 statement ok con1
-CREATE TABLE test (a VARCHAR);
+CREATE TABLE test (aa VARCHAR);
 
 statement ok con1
 INSERT INTO test VALUES ('hello'), ('world')
@@ -14,43 +14,43 @@ BEGIN TRANSACTION;
 
 # scan the table
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
 
-# test a delete from the table
+# test aa delete from the table
 statement ok con1
-DELETE FROM test WHERE a='hello';
+DELETE FROM test WHERE aa='hello';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 world
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
 
 # now test an update of the table
 statement ok con1
-UPDATE test SET a='hello';
+UPDATE test SET aa='hello';
 
 query T con1
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 world
@@ -59,7 +59,7 @@ statement ok con2
 COMMIT;
 
 query T con2
-SELECT * FROM test ORDER BY a
+SELECT * FROM test ORDER BY aa
 ----
 hello
 

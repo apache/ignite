@@ -1,0 +1,76 @@
+# name: test/sql/filter/test_zonemap.test_slow
+# description: Test expressions with transitive filters
+# group: [filter]
+
+# FIXME: temporarily removed because of too much memory usage on 32-bit
+# should be re-enabled when validity segments are no longer limited to 80 vectors
+mode skip
+
+statement ok
+PRAGMA explain_output = PHYSICAL_ONLY;
+
+statement ok
+create temporary table t as select range aa, length(range) bb, mod(range,10000) cc, 5 d, 10000 e from range(100000000);
+
+query I
+select count(*) from t where aa > 500 or aa <= 700
+----
+100000000
+
+query II
+explain select count(*) from t where (aa > 500 and bb = 3) or (aa > 7000 and bb = 2)
+----
+physical_plan	<REGEX>:.* Filters: .*bb>=2.*bb<=3.*
+
+query I
+select count(*) from t where (aa > 500 and bb = 3) or (aa > 7000 and bb = 2)
+----
+499
+
+query II
+explain select count(*) from t where (aa > 500 AND bb = 3) OR (aa > 400) OR (aa > 300 AND bb=4) OR (aa > 600 AND aa > 300)
+----
+physical_plan	<REGEX>:.* Filters: .*aa>=300.*
+
+
+query I
+select count(*) from t where (aa > 500 AND bb = 3) OR (aa > 400) OR (aa > 300 AND bb=4) OR (aa > 600 AND aa > 300)
+----
+99999599
+
+query II
+explain select count(*) from t where (aa > 500 AND bb = 3) OR (aa > 400) OR (aa > 300 AND bb=4) OR (aa > 600 AND aa > 300)
+----
+physical_plan	<REGEX>:.* Filters: .*aa>=300.*
+
+
+query I
+select count(*) from t where (aa > 500 AND bb = 3) OR (aa > 400) OR (aa > 300 AND bb=4) OR (aa > 600 AND aa > 300)
+----
+99999599
+
+
+query II
+explain select count(*) from t where (aa > 500 AND bb = 3) OR (cc = 400) OR (aa > 300 AND bb=4) OR (aa > 600 AND aa > 300) or (d < 10)
+----
+physical_plan	<!REGEX>:.* Filters: .*aa>=300.*
+
+
+query I
+select count(*) from t where (aa > 500 AND bb = 3) OR (aa > 400) OR (aa > 300 AND bb=4) OR (aa > 600 AND aa > 300)
+----
+99999599
+
+
+query II
+explain select count(*) from t where (aa > 500 AND bb = 1) OR bb < 2
+----
+physical_plan	<REGEX>:.* Filters: .*bb<=2.*
+
+
+query I
+select count(*) from t where (aa > 500 AND bb = 1) OR bb < 2
+----
+10
+
+
