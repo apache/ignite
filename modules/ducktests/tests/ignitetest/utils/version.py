@@ -38,19 +38,19 @@ class IgniteVersion(LooseVersion):
     DEV_VERSION = "dev"
     DEFAULT_PROJECT = "ignite"
 
-    def __init__(self, version_string):
-        if version_string == self.DEV_VERSION:
+    def __init__(self, vstring=None):
+        if vstring == self.DEV_VERSION:
             self.project = self.DEFAULT_PROJECT
-            version = version_string
+            version = vstring
         else:
-            match = re.match(r'([a-zA-Z]*)-*([\d(dev)]+.*)', version_string)
+            match = re.match(r'([a-zA-Z]*)-*([\d(dev)]+.*)', vstring)
             self.project = self.DEFAULT_PROJECT if not match.group(1) else match.group(1)
             version = match.group(2)
 
         self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
 
         if self.is_dev:
-            version = __version__  # todo what version for fork?
+            version = __version__  # todo parce pom for fork version
 
         super().__init__(version)
 
@@ -58,10 +58,13 @@ class IgniteVersion(LooseVersion):
         return "%s-%s" % (self.project, "dev" if self.is_dev else super().__str__())
 
     def _cmp(self, other):
-        if self.project == other.project:
-            return super()._cmp(other)
+        if isinstance(other, str):
+            other = IgniteVersion(other)
 
-        return -1  # todo compare projects
+        if self.project != other.project:
+            return -1
+
+        return super()._cmp(other)
 
     def __repr__(self):
         return "IgniteVersion ('%s')" % str(self)

@@ -85,10 +85,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         return self.config.version
 
     @property
-    def project(self):
-        return self.spec.project
-
-    @property
     def globals(self):
         return self.context.globals
 

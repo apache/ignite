@@ -78,10 +78,6 @@ class ZookeeperService(DucktestsService, PathAware):
     def config_file(self):
         return os.path.join(self.persistent_root, "zookeeper.properties")
 
-    @property
-    def project(self):
-        return "zookeeper"
-
     def start(self, **kwargs):
         super().start(**kwargs)
         self.logger.info("Waiting for Zookeeper quorum...")

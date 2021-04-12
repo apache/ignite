@@ -24,18 +24,18 @@ from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
 from ignitetest.utils.version import DEV_BRANCH
 
 
-def get_home_dir(install_root, project, version):
+def get_home_dir(install_root, version):
     """
     Get path to binary release (home) directory depending on version.
     """
-    return os.path.join(install_root, f"{project}-{version}")
+    return os.path.join(install_root, str(version))
 
 
-def get_module_path(project_dir, module_name, version):
+def get_module_path(project_dir, module_name, is_dev):
     """
     Get absolute path to the specified module.
     """
-    if version.is_dev:
+    if is_dev:
         module_path = os.path.join("modules", module_name, "target")
     else:
         module_path = os.path.join("libs", "optional", "ignite-%s" % module_name)
@@ -107,13 +107,6 @@ class PathAware:
 
     @property
     @abstractmethod
-    def project(self):
-        """
-        :return: project name, for example 'zookeeper' for Apache Zookeeper.
-        """
-
-    @property
-    @abstractmethod
     def version(self):
         """
         :return: version of project.
@@ -131,7 +124,7 @@ class PathAware:
         """
         :return: path to binary release (home) directory
         """
-        return get_home_dir(self.install_root, self.project, self.version)
+        return get_home_dir(self.install_root, self.version)
 
     @property
     def temp_dir(self):
@@ -196,8 +189,7 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         :return: path to the certificate directory.
         """
-        return os.path.join(get_home_dir(self.install_root, self.project, DEV_BRANCH),
-                            "modules", "ducktests", "tests", "certs")
+        return os.path.join(get_home_dir(self.install_root, DEV_BRANCH), "modules", "ducktests", "tests", "certs")
 
     def script(self, script_name):
         """

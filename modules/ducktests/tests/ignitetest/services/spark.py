@@ -45,10 +45,6 @@ class SparkService(DucktestsService, PathAware):
         self.init_logs_attribute()
 
     @property
-    def project(self):
-        return "spark"
-
-    @property
     def version(self):
         return self._version
 
