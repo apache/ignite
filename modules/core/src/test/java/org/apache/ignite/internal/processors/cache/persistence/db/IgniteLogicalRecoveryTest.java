@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -38,7 +37,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -53,27 +51,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
@@ -180,6 +168,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.setProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
     }
 
     /** {@inheritDoc} */
@@ -187,13 +177,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
     }
 
     /**
      *
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -222,144 +213,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         checkCacheContextsConsistencyAfterRecovery();
     }
 
-    /**Tests partially commited transactions with further recovery. */
-    @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop_MultiNodeTx() throws Exception {
-        testPartiallyCommitedTx(2, false);
-    }
-
-    /**Tests partially commited transactions with further recovery. */
-    @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop_SingleNodeTx() throws Exception {
-        testPartiallyCommitedTx(2, true);
-    }
-
-    /**Tests partially commited transactions with further recovery. */
-    @Test
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithoutCpOnNodeStop_SingleNodeTx() throws Exception {
-        testPartiallyCommitedTx(2, true);
-    }
-
-    /**Tests partially commited transactions with further recovery. */
-    @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_OneNode_WithCpOnNodeStop_SingleNodeTx() throws Exception {
-        testPartiallyCommitedTx(1, true);
-    }
-
-    /**Tests partially commited transactions with further recovery. */
-    @Test
-    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
-    public void testPartiallyCommitedTx_OneNode_WithoutCpOnNodeStop_SingleNodeTx() throws Exception {
-        testPartiallyCommitedTx(1, true);
-    }
-
-    /** */
-    private void testPartiallyCommitedTx(int numSrvNodes, boolean singleNodeTx) throws Exception {
-        final String cacheName = "recovery";
-
-        int itmsCount = 15_000;
-
-        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(cacheName)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setBackups(0)
-            .setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        try {
-            final IgniteEx srv = (IgniteEx)startGridsMultiThreaded(numSrvNodes);
-
-            IgniteEx clnt = startClientGrid("client");
-
-            TestRecordingCommunicationSpi nearComm = TestRecordingCommunicationSpi.spi(clnt);
-
-            srv.cluster().state(ClusterState.ACTIVE);
-
-            final IgniteCache cache = clnt.getOrCreateCache(cfg);
-
-            final CountDownLatch commitStart = new CountDownLatch(1);
-
-            forceCheckpoint();
-
-            nearComm.blockMessages((node, msg) -> msg instanceof GridNearTxPrepareRequest);
-
-            Thread t = new Thread(() -> {
-                try (Transaction tx = clnt.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                    if (singleNodeTx) {
-                        List<Integer> keys = primaryKeys(srv.cache(cacheName), itmsCount, 0);
-
-                        keys.forEach(k -> cache.put(k, k));
-                    }
-                    else {
-                        for (int i = 0; i < itmsCount; i++)
-                            cache.put(i, i);
-                    }
-
-                    commitStart.countDown();
-
-                    tx.commit();
-                }
-            });
-
-            FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)srv.context().cache().context().wal();
-
-            FileWriteHandle fhAfter = U.field(walMgr, "currHnd");
-
-            fhAfter.flushAll();
-
-            WALPointer curPos = fhAfter.position();
-
-            t.start();
-
-            commitStart.await();
-
-            nearComm.waitForBlocked();
-
-            nearComm.stopBlock();
-
-            GridTestUtils.waitForCondition(() -> fhAfter.position().fileOffset() - curPos.fileOffset() > 10_000, 10_000);
-        }
-        finally {
-            stopAllGrids(true);
-
-            assertTrue(G.allGrids().isEmpty());
-        }
-
-        final IgniteEx srv = (IgniteEx)startGridsMultiThreaded(numSrvNodes);
-
-        srv.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Object, Object> cache = srv.cache(cacheName);
-
-        int cSize = srv.cache(cacheName).size();
-
-        System.err.println("cache size=" + cSize);
-
-        Boolean pr = null;
-
-        for (int i = 0; i < itmsCount; i++) {
-            Object res = cache.get(i);
-            if (i == 0)
-                pr = res == null;
-            else
-                assertEquals((boolean)pr, res == null);
-        }
-
-        assert (cSize == itmsCount || cSize == 0) : "unexpected cache size: " + cSize;
-    }
-
     /**
      *
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -396,7 +253,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
@@ -412,7 +268,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testRecoveryWithMvccCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
@@ -460,7 +315,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -497,7 +351,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 
@@ -627,7 +480,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                 .collect(Collectors.toList());
 
             Assert.assertTrue("There was unexpected rebalance for some groups" +
-                    " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
+                " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
         }
     }
 
