@@ -1471,7 +1471,7 @@ public class IgniteTxHandler {
                 tx.rollbackRemoteTx();
             }
         }
-        catch (IgniteTxHeuristicCheckedException e) {
+        catch (IgniteTxHeuristicCheckedException ignore) {
             // Already uncommitted.
         }
         catch (Throwable e) {
