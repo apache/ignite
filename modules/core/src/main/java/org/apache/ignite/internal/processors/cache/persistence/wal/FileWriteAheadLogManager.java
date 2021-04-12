@@ -1042,7 +1042,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         int deleted = 0;
 
         for (FileDescriptor desc : descs) {
-            long archivedAbsIdx = segmentAware.lastArchivedAbsoluteIndex();
+            long archivedAbsIdx = segmentAware.setLastArchivedAbsoluteIndex();
 
             long lastArchived = archivedAbsIdx >= 0 ? archivedAbsIdx : lastArchivedIndex();
 
@@ -1104,7 +1104,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public int walArchiveSegments() {
         long lastTruncated = segmentAware.lastTruncatedArchiveIdx();
 
-        long lastArchived = segmentAware.lastArchivedAbsoluteIndex();
+        long lastArchived = segmentAware.setLastArchivedAbsoluteIndex();
 
         if (lastArchived == -1)
             return 0;
@@ -1114,7 +1114,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
-        return segmentAware.lastArchivedAbsoluteIndex();
+        return segmentAware.setLastArchivedAbsoluteIndex();
     }
 
     /** {@inheritDoc} */
@@ -1375,7 +1375,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
 
                 if (archiver0 == null)
-                    segmentAware.lastArchivedAbsoluteIndex(absIdx - 1);
+                    segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
 
                 // Getting segment sizes.
                 F.asList(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)).stream()
@@ -1606,7 +1606,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         if (archiver0 == null) {
             segmentAware.curAbsWalIdx(curIdx + 1);
-            segmentAware.lastArchivedAbsoluteIndex(curIdx);
+            segmentAware.setLastArchivedAbsoluteIndex(curIdx);
 
             return new File(walWorkDir, fileName(curIdx + 1));
         }
@@ -1732,7 +1732,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
 
             if (lastAbsArchivedIdx >= 0)
-                segmentAware.lastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+                segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
         }
 
         /**
@@ -2665,7 +2665,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public boolean workDir() {
-            return segmentAware != null && segmentAware.lastArchivedAbsoluteIndex() < getSegmentId();
+            return segmentAware != null && segmentAware.setLastArchivedAbsoluteIndex() < getSegmentId();
         }
     }
 
