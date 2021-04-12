@@ -26,3 +26,7 @@ class ClientConnectorConfiguration(NamedTuple):
     Used to configure thin client properties.
     """
     port: int = 10800
+    ssl_enabled: bool = False
+    use_ignite_ssl_context_factory: bool = True
+    ssl_client_auth: bool = True
+    ssl_params: SslParams = None

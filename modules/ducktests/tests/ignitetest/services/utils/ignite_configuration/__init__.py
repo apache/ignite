@@ -42,6 +42,7 @@ class IgniteConfiguration(NamedTuple):
     sys_worker_blocked_timeout: int = 10000
     properties: str = None
     data_storage: DataStorageConfiguration = None
+    binary_configuration: BinaryConfiguration = None
     caches: list = []
     local_host: str = None
     ssl_params: SslParams = None
@@ -49,6 +50,8 @@ class IgniteConfiguration(NamedTuple):
     client_connector_configuration: ClientConnectorConfiguration = None
     auth_enabled: bool = False
     plugins: list = []
+    ext_beans: list = []
+    peer_class_loading_enabled: bool = True
     metric_exporter: str = None
     rebalance_thread_pool_size: int = None
     rebalance_batch_size: int = None

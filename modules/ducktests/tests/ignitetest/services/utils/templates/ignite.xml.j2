@@ -24,6 +24,7 @@
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_params_macro.j2' as ssl_params_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
+{% import 'client_connector_configuration.j2' as client_connector_configuration_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -41,6 +42,7 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
+        <property name="peerClassLoadingEnabled" value="{{ config.peer_class_loading_enabled }}"/>
         <property name="authenticationEnabled" value="{{ config.auth_enabled | lower }}"/>
         {% if config.rebalance_thread_pool_size %}
             <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
@@ -92,10 +94,22 @@
 
         {% if config.client_connector_configuration %}
             <property name="clientConnectorConfiguration">
-                <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
-                        <property name="port" value="{{ config.client_connector_configuration.port }}"/>
-                </bean>
+                {{ client_connector_configuration_util.client_connector_configuration(config.client_connector_configuration) }}
             </property>
         {% endif %}
+
+        {% if config.binary_configuration %}
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="{{ config.binary_configuration.compact_footer }}"/>
+            </bean>
+        </property>
+        {% endif %}
+
+        {{ misc_utils.plugins(config) }}
+
     </bean>
+
+    {{ misc_utils.ext_beans(config) }}
+
 </beans>

@@ -15,20 +15,18 @@
  limitations under the License.
 #}
 
-{% macro ssl_params(ctx) %}
-<bean class="org.apache.ignite.ssl.SslContextFactory">
-    <property name="keyStoreFilePath" value="{{ ctx.key_store_path }}"/>
-    <property name="keyStorePassword" value="{{ ctx.key_store_password }}"/>
-    <property name="trustStoreFilePath" value="{{ ctx.trust_store_path }}"/>
-    <property name="trustStorePassword" value="{{ ctx.trust_store_password }}"/>
+{% import 'ssl_params_macro.j2' as ssl_params_util %}
 
-    {% if ctx.cipher_suites %}
-        <property name="cipherSuites" value="{{ ctx.cipher_suites }}"/>
-    {% endif %}
-
-    {% if ctx.trust_managers %}
-        <property name="trustManagers" ref="{{ ctx.trust_managers }}"/>
-    {% endif %}
-
-</bean>
+{% macro client_connector_configuration(config) %}
+        <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+                <property name="port" value="{{ config.port }}"/>
+                <property name="sslEnabled" value="{{ config.ssl_enabled }}"/>
+                {% if config.ssl_enabled %}
+                <property name="sslContextFactory">
+                    {{ ssl_params_util.ssl_params(config.ssl_params) }}
+                </property>
+                <property name="useIgniteSslContextFactory" value="{{ config.use_ignite_ssl_context_factory }}"/>
+                <property name="sslClientAuth" value="{{ config.ssl_client_auth }}"/>
+                {% endif %}
+        </bean>
 {% endmacro %}

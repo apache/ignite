@@ -24,6 +24,7 @@
                 <property name="sslFactory">
                     {{ ssl_params_util.ssl_params(config.ssl_params) }}
                 </property>
+                <property name="sslClientAuth" value="{{ config.ssl_client_auth }}"/>
                 {% endif %}
         </bean>
 {% endmacro %}
