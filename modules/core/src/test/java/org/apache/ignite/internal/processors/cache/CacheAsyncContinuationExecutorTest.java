@@ -99,6 +99,34 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
     }
 
     /**
+     * Tests that an operation on a remote key executes on striped pool directly when a syncronous executor is provided.
+     * This demonstrates that default safe behavior can be overridden with a faster, but unsafe old behavior
+     * for an individual operation.
+     */
+    @Test
+    public void testRemoteOperationListenerExecutesOnStripedPoolWhenCustomExecutorIsProvided() throws Exception {
+        final String key = getPrimaryKey(1);
+
+        IgniteCache<String, Integer> cache = jcache(0);
+        AtomicReference<String> listenThreadName = new AtomicReference<>("");
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        cache.putAsync(key, 1).listenAsync(f -> {
+            listenThreadName.set(Thread.currentThread().getName());
+
+            try {
+                barrier.await(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, Runnable::run);
+
+        barrier.await(10, TimeUnit.SECONDS);
+
+        assertTrue(listenThreadName.get(), listenThreadName.get().startsWith("sys-stripe-"));
+    }
+
+    /**
      * Tests that an operation on a local key executes synchronously, and chain is called immediately on the current
      * thread.
      */
