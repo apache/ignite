@@ -117,7 +117,7 @@ class SegmentCurrentStateStorage extends SegmentObservable {
      * @param curAbsWalIdx New current WAL index.
      */
     void curAbsWalIdx(long curAbsWalIdx) {
-        assert curAbsWalIdx > lastAbsArchivedIdx;
+        assert curAbsWalIdx > lastAbsArchivedIdx : curAbsWalIdx + " > " + lastAbsArchivedIdx;
 
         synchronized (this) {
             this.curAbsWalIdx = curAbsWalIdx;

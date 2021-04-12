@@ -45,7 +45,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -217,12 +216,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Use mapped byte buffer. */
     private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, DFLT_WAL_MMAP);
-
-    /** */
-    public static volatile boolean checkpointerStoped;
-
-    /** */
-    public static final CountDownLatch BUG_LATCH = new CountDownLatch(1);
 
     /**
      * Number of WAL compressor worker threads.
@@ -1332,6 +1325,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
+        FileDescriptor[] walArchiveFiles = walArchiveFiles();
+
+        if (!F.isEmpty(walArchiveFiles) && absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx)
+            absIdx = walArchiveFiles[walArchiveFiles.length - 1].idx + 1;
+
         @Nullable FileArchiver archiver0 = archiver;
 
         long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();
@@ -1373,13 +1371,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 segmentAware.curAbsWalIdx(absIdx);
 
-                FileDescriptor[] walArchiveFiles = walArchiveFiles();
-
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
 
                 if (archiver0 == null)
-                    segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
+                    segmentAware.lastArchivedAbsoluteIndex(absIdx - 1);
 
                 // Getting segment sizes.
                 F.asList(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)).stream()
@@ -1610,7 +1606,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         if (archiver0 == null) {
             segmentAware.curAbsWalIdx(curIdx + 1);
-            segmentAware.setLastArchivedAbsoluteIndex(curIdx);
+            segmentAware.lastArchivedAbsoluteIndex(curIdx);
 
             return new File(walWorkDir, fileName(curIdx + 1));
         }
@@ -1736,7 +1732,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
 
             if (lastAbsArchivedIdx >= 0)
-                segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+                segmentAware.lastArchivedAbsoluteIndex(lastAbsArchivedIdx);
         }
 
         /**
@@ -2023,9 +2019,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 log.info("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
             }
-
-            if (checkpointerStoped)
-                BUG_LATCH.countDown();
 
             return new SegmentArchiveResult(absIdx, origFile, dstFile);
         }

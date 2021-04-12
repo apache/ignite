@@ -158,7 +158,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
-        aware.setLastArchivedAbsoluteIndex(4);
+        aware.lastArchivedAbsoluteIndex(4);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentForArchivation);
 
@@ -178,7 +178,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
-        aware.setLastArchivedAbsoluteIndex(4);
+        aware.lastArchivedAbsoluteIndex(4);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentForArchivation);
 
@@ -198,7 +198,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
-        aware.setLastArchivedAbsoluteIndex(4);
+        aware.lastArchivedAbsoluteIndex(4);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentForArchivation);
 
@@ -235,7 +235,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(2, false, new NullLogger());
 
         aware.curAbsWalIdx(1);
-        aware.setLastArchivedAbsoluteIndex(-1);
+        aware.lastArchivedAbsoluteIndex(-1);
 
         IgniteInternalFuture future = awaitThread(aware::nextAbsoluteSegmentIndex);
 
@@ -255,12 +255,12 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(2, false, new NullLogger());
 
         aware.curAbsWalIdx(1);
-        aware.setLastArchivedAbsoluteIndex(-1);
+        aware.lastArchivedAbsoluteIndex(-1);
 
         IgniteInternalFuture future = awaitThread(aware::nextAbsoluteSegmentIndex);
 
         //when: mark first segment as moved.
-        aware.setLastArchivedAbsoluteIndex(0);
+        aware.lastArchivedAbsoluteIndex(0);
 
         //then: waiting should finish immediately.
         future.get(20);
@@ -275,7 +275,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(2, false, new NullLogger());
 
         aware.curAbsWalIdx(2);
-        aware.setLastArchivedAbsoluteIndex(-1);
+        aware.lastArchivedAbsoluteIndex(-1);
 
         IgniteInternalFuture future = awaitThread(aware::nextAbsoluteSegmentIndex);
 
@@ -303,7 +303,7 @@ public class SegmentAwareTest {
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: archived exact expected segment.
-        aware.setLastArchivedAbsoluteIndex(5);
+        aware.lastArchivedAbsoluteIndex(5);
 
         //then: waiting should finish immediately.
         future.get(20);
@@ -337,7 +337,7 @@ public class SegmentAwareTest {
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: archived greater than expected segment.
-        aware.setLastArchivedAbsoluteIndex(7);
+        aware.lastArchivedAbsoluteIndex(7);
 
         //then: waiting should finish immediately.
         future.get(20);
@@ -369,7 +369,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
-        aware.setLastArchivedAbsoluteIndex(4);
+        aware.lastArchivedAbsoluteIndex(4);
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
@@ -434,7 +434,7 @@ public class SegmentAwareTest {
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
 
         //when: archived expected segment.
-        aware.setLastArchivedAbsoluteIndex(6);
+        aware.lastArchivedAbsoluteIndex(6);
 
         //then: waiting should finish immediately.
         future.get(20);
@@ -466,7 +466,7 @@ public class SegmentAwareTest {
     public void testCorrectCalculateNextCompressSegment() throws IgniteCheckedException, InterruptedException {
         SegmentAware aware = new SegmentAware(10, true, new NullLogger());
 
-        aware.setLastArchivedAbsoluteIndex(6);
+        aware.lastArchivedAbsoluteIndex(6);
 
         for (int exp = 0; exp <= 6; exp++)
             assertEquals(exp, aware.waitNextSegmentToCompress());
@@ -498,7 +498,7 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, true, new NullLogger());
 
         for (int i = 0; i < 5; i++) {
-            aware.setLastArchivedAbsoluteIndex(i);
+            aware.lastArchivedAbsoluteIndex(i);
             aware.waitNextSegmentToCompress();
         }
 
@@ -746,7 +746,7 @@ public class SegmentAwareTest {
         aware.reserve(4);
         assertEquals(4, aware.awaitAvailableTruncateArchive());
 
-        aware.setLastArchivedAbsoluteIndex(3);
+        aware.lastArchivedAbsoluteIndex(3);
         assertEquals(3, aware.awaitAvailableTruncateArchive());
 
         aware.lastTruncatedArchiveIdx(0);
@@ -761,7 +761,7 @@ public class SegmentAwareTest {
         fut.get(20);
         assertEquals(2, aware.awaitAvailableTruncateArchive());
 
-        aware.setLastArchivedAbsoluteIndex(4);
+        aware.lastArchivedAbsoluteIndex(4);
         assertEquals(3, aware.awaitAvailableTruncateArchive());
 
         aware.release(4);
@@ -770,7 +770,7 @@ public class SegmentAwareTest {
         aware.lastCheckpointIdx(6);
         assertEquals(3, aware.awaitAvailableTruncateArchive());
 
-        aware.setLastArchivedAbsoluteIndex(6);
+        aware.lastArchivedAbsoluteIndex(6);
         assertEquals(5, aware.awaitAvailableTruncateArchive());
     }
 
