@@ -444,7 +444,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(
             dataRegionCfg,
-            cctx.kernalContext(),
+            cctx.kernalContext().metric(),
+            cctx.kernalContext().performanceStatistics(),
             dataRegionMetricsProvider(dataRegionCfg));
 
         DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, pmPageMgr);

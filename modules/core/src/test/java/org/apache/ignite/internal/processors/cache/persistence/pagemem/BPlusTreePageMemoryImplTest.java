@@ -120,7 +120,8 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
                 }
             },
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx, NO_OP_METRICS),
+            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), cctx.performanceStatistics(),
+                NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

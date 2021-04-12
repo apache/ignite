@@ -21,13 +21,13 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.Metric;
@@ -111,24 +111,26 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** */
     private final GridMetricManager mmgr;
 
+    /** Performance statistics processor. */
+    private final PerformanceStatisticsProcessor perfStatProc;
+
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
-    /** Grid kernal context. */
-    private final GridKernalContext ctx;
-
     /**
      * @param memPlcCfg DataRegionConfiguration.
-     * @param ctx Grid kernal context.
+     * @param mmgr Metrics manager.
+     * @param perfStatProc Performance statistics processor.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
-        GridKernalContext ctx,
+        GridMetricManager mmgr,
+        PerformanceStatisticsProcessor perfStatProc,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
-        this.mmgr = ctx.metric();
-        this.ctx = ctx;
+        this.mmgr = mmgr;
+        this.perfStatProc = perfStatProc;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -589,8 +591,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (metricsEnabled)
             totalThrottlingTime.add(time);
 
-        if (ctx.performanceStatistics().enabled())
-            ctx.performanceStatistics().pagesWriteThrottle(U.currentTimeMillis(), time);
+        if (perfStatProc.enabled())
+            perfStatProc.pagesWriteThrottle(U.currentTimeMillis(), time);
     }
 
     /**

@@ -77,14 +77,11 @@ public class IgniteThrottlingUnitTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
-        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
-
         PerformanceStatisticsProcessor perfStatProc = mock(PerformanceStatisticsProcessor.class);
 
-        ctx.add(new GridMetricManager(ctx));
-        ctx.add(perfStatProc);
-
-        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(), ctx, NO_OP_METRICS);
+        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(),
+            new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)), perfStatProc,
+            NO_OP_METRICS);
 
         when(pageMemory2g.metrics()).thenReturn(metrics);
     }

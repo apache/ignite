@@ -81,7 +81,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.CHECKPOINT_POOL_OVERFLOW_ERROR_MSG;
 import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
-import static org.mockito.Mockito.mock;
 
 /**
  *
@@ -464,7 +463,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         memory.beginCheckpoint(new GridFinishedFuture());
 
-        CheckpointMetricsTracker mockTracker = mock(CheckpointMetricsTracker.class);
+        CheckpointMetricsTracker mockTracker = Mockito.mock(CheckpointMetricsTracker.class);
 
         for (FullPageId checkpointPage : pages)
             memory.checkpointWritePage(checkpointPage, ByteBuffer.allocate(PAGE_SIZE),
@@ -601,7 +600,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         kernalCtx.add(new GridSystemViewManager(kernalCtx));
         kernalCtx.add(new GridEventStorageManager(kernalCtx));
 
-        PerformanceStatisticsProcessor perfStatProc = mock(PerformanceStatisticsProcessor.class);
+        PerformanceStatisticsProcessor perfStatProc = Mockito.mock(PerformanceStatisticsProcessor.class);
 
         kernalCtx.add(perfStatProc);
 
@@ -635,9 +634,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        CheckpointProgressImpl cl0 = mock(CheckpointProgressImpl.class);
+        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
-        IgniteOutClosure<CheckpointProgress> noThrottle = mock(IgniteOutClosure.class);
+        IgniteOutClosure<CheckpointProgress> noThrottle = Mockito.mock(IgniteOutClosure.class);
         Mockito.when(noThrottle.apply()).thenReturn(cl0);
 
         Mockito.when(cl0.currentCheckpointPagesCount()).thenReturn(1_000_000);
@@ -661,8 +660,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 }
             },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
-                kernalCtx,
-                NO_OP_METRICS),
+                kernalCtx.metric(), kernalCtx.performanceStatistics(), NO_OP_METRICS),
             throttlingPlc,
             noThrottle
         ) : new PageMemoryImpl(
@@ -681,8 +679,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             }
         },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
-                kernalCtx,
-                NO_OP_METRICS),
+                kernalCtx.metric(), kernalCtx.performanceStatistics(), NO_OP_METRICS),
             throttlingPlc,
             noThrottle
         ) {

@@ -518,7 +518,8 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         ctx.add(new GridMetricManager(ctx));
 
-        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg, ctx, NO_OP_METRICS);
+        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg, ctx.metric(),
+            ctx.performanceStatistics(), NO_OP_METRICS);
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 

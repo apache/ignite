@@ -78,7 +78,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         ctx.add(new GridMetricManager(ctx));
 
-        memMetrics = new DataRegionMetricsImpl(plcCfg, ctx, NO_OP_METRICS);
+        memMetrics = new DataRegionMetricsImpl(plcCfg, ctx.metric(), ctx.performanceStatistics(), NO_OP_METRICS);
 
         memMetrics.enableMetrics();
     }
