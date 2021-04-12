@@ -24,6 +24,7 @@ DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "
 DEFAULT_IGNITE_CONF = os.path.join(DEFAULT_CONFIG_PATH, "ignite.xml.j2")
 DEFAULT_THIN_CLIENT_CONF = os.path.join(DEFAULT_CONFIG_PATH, "thin_client_config.xml.j2")
 
+
 class ConfigTemplate:
     """
     Basic configuration.
