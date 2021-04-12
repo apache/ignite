@@ -215,15 +215,17 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
         executeSql("create table if not exists my_table (id int, val varchar)");
     }
 
+    /**
+     * Creates a table without a primary key and then insert a few rows.
+     */
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
-    public void test() {
-        executeSql("create table my_table (id int, val varchar)");
+    public void createTableWithouPk() {
+        executeSql("create table my_table (f1 int, f2 varchar)");
 
-        executeSql("insert into my_table(id, val) values (1, '1'),(2, '2')");
+        executeSql("insert into my_table(f1, f2) values (1, '1'),(2, '2')");
+        executeSql("insert into my_table values (1, '1'),(2, '2')");
 
-        for (List<?> row : executeSql("select _key, * from my_table"))
-            System.out.println(row);
+        assertThat(executeSql("select * from my_table"), hasSize(4));
     }
 
     /** */

@@ -193,6 +193,7 @@ public class DdlCommandHandler {
             res.setKeyFieldName(pkFieldName);
         }
         else
+            // if pk is not explicitly set, we create it ourselves
             keyTypeName = IgniteUuid.class.getName();
 
         res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());
