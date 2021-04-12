@@ -40,6 +40,11 @@ public class GroupKey {
         return fields[idx];
     }
 
+    /** */
+    public Object[] fields() {
+        return fields;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)

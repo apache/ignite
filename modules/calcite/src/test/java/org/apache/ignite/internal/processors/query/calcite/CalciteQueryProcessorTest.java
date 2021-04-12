@@ -436,13 +436,13 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         +----+-------+-------+
         | ID | NAME  | SALARY|
         +----+-------+-------+
-        |  1 | igor  |   10  |
-        |  2 | igor  |   11  |
-        |  3 | igor  |   12  |
-        |  4 | igor1 |   13  |
-        |  5 | igor1 |   13  |
-        |  6 | igor1 |   13  |
-        |  7 | roman |   14  |
+        |  1 | Igor  |   10  |
+        |  2 | Igor  |   11  |
+        |  3 | Igor  |   12  |
+        |  4 | Igor1 |   13  |
+        |  5 | Igor1 |   13  |
+        |  6 | Igor1 |   13  |
+        |  7 | Roman |   14  |
         +----+-------+-------+
 
         select * from account;
@@ -453,8 +453,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         |  2 | Roman |   11  |
         |  3 | Roman |   12  |
         |  4 | Roman |   13  |
-        |  5 | igor1 |   13  |
-        |  6 | igor1 |   13  |
+        |  5 | Igor1 |   13  |
+        |  6 | Igor1 |   13  |
         +----+-------+-------+
          */
 
@@ -594,6 +594,35 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 "   WHERE o.name = a.name)");
 
         assertEquals(1, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testExcept() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders EXCEPT SELECT name from Account");
+
+        assertEquals(1, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testExcept() throws Exception {
+        populateTables();
+
+        List<List<?>> rows;
+
+        rows = sql(
+            "SELECT name FROM Orders EXCEPT SELECT name from Account");
+
+        assertEquals(1, rows.size());
+
+        rows = sql(
+            "SELECT name FROM Orders EXCEPT ALL SELECT name from Account");
+
+        assertEquals(4, rows.size());
     }
 
     /**

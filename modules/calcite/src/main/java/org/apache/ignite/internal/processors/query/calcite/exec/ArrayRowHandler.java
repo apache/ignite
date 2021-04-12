@@ -52,6 +52,11 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** {@inheritDoc} */
+    @Override public Object[] getColumns(Object[] row) {
+        return row;
+    }
+
+    /** {@inheritDoc} */
     @Override public RowFactory<Object[]> factory(Type... types) {
         int rowLen = types.length;
 
