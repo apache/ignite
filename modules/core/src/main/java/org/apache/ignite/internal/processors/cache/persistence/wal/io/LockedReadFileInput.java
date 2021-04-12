@@ -60,7 +60,7 @@ final class LockedReadFileInput extends SimpleFileInput {
         this.segmentAware = segmentAware;
         this.fileIOFactory = segmentIOFactory;
         this.segmentId = initFileIo.getSegmentId();
-        isLastReadFromArchive = segmentAware.setLastArchivedAbsoluteIndex() >= initFileIo.getSegmentId();
+        isLastReadFromArchive = segmentAware.lastArchivedAbsoluteIndex() >= initFileIo.getSegmentId();
     }
 
     /** {@inheritDoc} */

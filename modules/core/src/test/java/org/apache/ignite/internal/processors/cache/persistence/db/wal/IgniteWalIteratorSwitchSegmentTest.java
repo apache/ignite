@@ -272,7 +272,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         SegmentAware segmentAware = GridTestUtils.getFieldValue(walMgr, "segmentAware");
 
         // Await archiver move segment to WAL archive.
-        waitForCondition(() -> segmentAware.setLastArchivedAbsoluteIndex() == 0, 5_000);
+        waitForCondition(() -> segmentAware.lastArchivedAbsoluteIndex() == 0, 5_000);
 
         // If switchSegmentRecordSize more that 1, it mean that invariant is broke.
         // Filling tail some garbage. Simulate tail garbage on rotate segment in WAL work directory.
@@ -396,7 +396,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         segmentAware.unlock(0);
 
-        waitForCondition(() -> segmentAware.setLastArchivedAbsoluteIndex() == 0, 5000);
+        waitForCondition(() -> segmentAware.lastArchivedAbsoluteIndex() == 0, 5000);
 
         finishedArchivedLatch.countDown();
 

@@ -115,7 +115,7 @@ public class SegmentAware {
     /**
      * Method will wait activation of particular WAL segment index.
      *
-     * @param awaitIdx absolute index  {@link #setLastArchivedAbsoluteIndex()} to become true.
+     * @param awaitIdx absolute index  {@link #lastArchivedAbsoluteIndex()} to become true.
      * @throws IgniteInterruptedCheckedException if interrupted.
      */
     public void awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
@@ -157,8 +157,8 @@ public class SegmentAware {
      * @param curAbsWalIdx New current WAL index.
      */
     public void curAbsWalIdx(long curAbsWalIdx) {
-        assert setLastArchivedAbsoluteIndex() < curAbsWalIdx || setLastArchivedAbsoluteIndex() == -1 :
-            setLastArchivedAbsoluteIndex() + " < " + curAbsWalIdx;
+        assert lastArchivedAbsoluteIndex() < curAbsWalIdx || lastArchivedAbsoluteIndex() == -1 :
+            lastArchivedAbsoluteIndex() + " < " + curAbsWalIdx;
 
         segmentCurrStateStorage.curAbsWalIdx(curAbsWalIdx);
     }
@@ -193,7 +193,7 @@ public class SegmentAware {
     /**
      * @return Last archived segment absolute index.
      */
-    public long setLastArchivedAbsoluteIndex() {
+    public long lastArchivedAbsoluteIndex() {
         return segmentArchivedStorage.lastArchivedAbsoluteIndex();
     }
 
@@ -237,7 +237,7 @@ public class SegmentAware {
 
     /**
      * Segment lock. It will be successful if segment is {@code >} than
-     * the {@link #setLastArchivedAbsoluteIndex last archived}.
+     * the {@link #lastArchivedAbsoluteIndex last archived}.
      *
      * @param absIdx Index to lock.
      * @return {@code True} if the lock was successful.
@@ -372,7 +372,7 @@ public class SegmentAware {
     /**
      * Waiting for segment truncation to be available. To get the number of segments available for truncation, use
      * {@link #lastTruncatedArchiveIdx}, {@link #lastCheckpointIdx}, {@link #reserve} and
-     * {@link #setLastArchivedAbsoluteIndex} (to restart the node correctly) and is calculated as
+     * {@link #lastArchivedAbsoluteIndex} (to restart the node correctly) and is calculated as
      * {@code lastTruncatedArchiveIdx} - {@code min(lastCheckpointIdx, reserve, lastArchivedAbsoluteIndex)}.
      *
      * @return Number of segments available to truncate.

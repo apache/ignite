@@ -138,7 +138,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         SegmentAware beforeSaw = U.field(walMgr, "segmentAware");
 
-        long beforeLastArchivedAbsoluteIdx = beforeSaw.setLastArchivedAbsoluteIndex();
+        long beforeLastArchivedAbsoluteIdx = beforeSaw.lastArchivedAbsoluteIndex();
 
         FileWriteHandle fhBefore = U.field(walMgr, "currHnd");
 
@@ -165,7 +165,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         SegmentAware afterSaw = U.field(walMgr, "segmentAware");
 
-        long afterLastArchivedAbsoluteIndex = afterSaw.setLastArchivedAbsoluteIndex();
+        long afterLastArchivedAbsoluteIndex = afterSaw.lastArchivedAbsoluteIndex();
 
         int segments = ig.configuration().getDataStorageConfiguration().getWalSegments();
 

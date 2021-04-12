@@ -418,7 +418,7 @@ public class SegmentAwareTest {
         assertFalse(future.get(20) instanceof IgniteInterruptedCheckedException);
 
         //and: last archived segment should be changed.
-        assertEquals(5, aware.setLastArchivedAbsoluteIndex());
+        assertEquals(5, aware.lastArchivedAbsoluteIndex());
     }
 
     /**
