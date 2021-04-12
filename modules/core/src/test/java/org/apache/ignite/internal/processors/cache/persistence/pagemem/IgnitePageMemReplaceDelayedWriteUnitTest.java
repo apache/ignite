@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -250,6 +251,12 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         when(kernalCtx.metric()).thenAnswer(new Answer<Object>() {
             @Override public Object answer(InvocationOnMock mock) throws Throwable {
                 return new GridMetricManager(kernalCtx);
+            }
+        });
+
+        when(kernalCtx.performanceStatistics()).thenAnswer(new Answer<Object>() {
+            @Override public Object answer(InvocationOnMock mock) throws Throwable {
+                return new PerformanceStatisticsProcessor(kernalCtx);
             }
         });
 

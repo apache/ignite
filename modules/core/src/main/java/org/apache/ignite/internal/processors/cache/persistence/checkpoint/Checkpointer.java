@@ -176,7 +176,7 @@ public class Checkpointer extends GridWorker {
     private long lastCpTs;
 
     /** Performance statistics processor. */
-    private final PerformanceStatisticsProcessor perfStatProc;
+    private final PerformanceStatisticsProcessor psproc;
 
     /** For testing only. */
     private GridFutureAdapter<Void> enableChangeApplied;
@@ -228,7 +228,7 @@ public class Checkpointer extends GridWorker {
         this.checkpointWritePageThreads = Math.max(checkpointWritePageThreads, 1);
         this.checkpointWritePagesPool = initializeCheckpointPool();
         this.cpFreqDeviation = cpFreqDeviation;
-        this.perfStatProc = cacheProcessor.context().kernalContext().performanceStatistics();
+        this.psproc = cacheProcessor.context().kernalContext().performanceStatistics();
 
         scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
     }
@@ -622,8 +622,8 @@ public class Checkpointer extends GridWorker {
             );
         }
 
-        if (perfStatProc.enabled()) {
-            perfStatProc.checkpoint(
+        if (psproc.enabled()) {
+            psproc.checkpoint(
                 tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
                 tracker.listenersExecuteDuration(),

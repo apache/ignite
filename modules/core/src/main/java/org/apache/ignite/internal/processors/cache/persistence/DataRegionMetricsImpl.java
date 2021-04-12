@@ -112,7 +112,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final GridMetricManager mmgr;
 
     /** Performance statistics processor. */
-    private final PerformanceStatisticsProcessor perfStatProc;
+    private final PerformanceStatisticsProcessor psproc;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
@@ -120,17 +120,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * @param memPlcCfg DataRegionConfiguration.
      * @param mmgr Metrics manager.
-     * @param perfStatProc Performance statistics processor.
+     * @param psproc Performance statistics processor.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
         GridMetricManager mmgr,
-        PerformanceStatisticsProcessor perfStatProc,
+        PerformanceStatisticsProcessor psproc,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
         this.mmgr = mmgr;
-        this.perfStatProc = perfStatProc;
+        this.psproc = psproc;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -591,8 +591,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (metricsEnabled)
             totalThrottlingTime.add(time);
 
-        if (perfStatProc.enabled())
-            perfStatProc.pagesWriteThrottle(U.currentTimeMillis(), time);
+        if (psproc.enabled())
+            psproc.pagesWriteThrottle(U.currentTimeMillis(), time);
     }
 
     /**

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
@@ -78,6 +79,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
 
         cctx.add(new IgnitePluginProcessor(cctx, cfg, Collections.emptyList()));
         cctx.add(new GridInternalSubscriptionProcessor(cctx));
+        cctx.add(new PerformanceStatisticsProcessor(cctx));
         cctx.add(new GridEncryptionManager(cctx));
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));

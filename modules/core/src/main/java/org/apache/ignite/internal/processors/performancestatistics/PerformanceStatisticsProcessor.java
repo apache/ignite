@@ -70,7 +70,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
     /** Rotate performance statistics process. */
-    private final DistributedProcess<Serializable, Serializable> rotateProc;
+    private DistributedProcess<Serializable, Serializable> rotateProc;
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
@@ -80,14 +80,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
         });
-
-        rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
-            req -> ctx.closure().callLocalSafe(() -> {
-                rotateWriter();
-
-                return null;
-            }),
-            (id, res, err) -> {});
     }
 
     /** {@inheritDoc} */
@@ -122,6 +114,14 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     }
                 }
             });
+
+        rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
+            req -> ctx.closure().callLocalSafe(() -> {
+                rotateWriter();
+
+                return null;
+            }),
+            (id, res, err) -> {});
     }
 
     /** Registers state listener. */

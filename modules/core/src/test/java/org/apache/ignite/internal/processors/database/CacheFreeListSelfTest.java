@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVers
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -517,6 +518,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
 
         ctx.add(new GridMetricManager(ctx));
+        ctx.add(new PerformanceStatisticsProcessor(ctx));
 
         DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg, ctx.metric(),
             ctx.performanceStatistics(), NO_OP_METRICS);

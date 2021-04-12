@@ -595,14 +595,11 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(new IgnitePluginProcessor(kernalCtx, igniteCfg, Collections.<PluginProvider>emptyList()));
         kernalCtx.add(new GridInternalSubscriptionProcessor(kernalCtx));
+        kernalCtx.add(new PerformanceStatisticsProcessor(kernalCtx));
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
         kernalCtx.add(new GridMetricManager(kernalCtx));
         kernalCtx.add(new GridSystemViewManager(kernalCtx));
         kernalCtx.add(new GridEventStorageManager(kernalCtx));
-
-        PerformanceStatisticsProcessor perfStatProc = Mockito.mock(PerformanceStatisticsProcessor.class);
-
-        kernalCtx.add(perfStatProc);
 
         FailureProcessor failureProc = new FailureProcessor(kernalCtx);
 
