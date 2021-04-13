@@ -41,7 +41,7 @@ public @interface TestEnvironment {
     /**
      * @return Ignite nodes count.
      */
-    int nodes() default 1;
+    int nodes() default 2;
 
     /**
      * @return {@code true} if the cluster must be restarted for each test group (directory).

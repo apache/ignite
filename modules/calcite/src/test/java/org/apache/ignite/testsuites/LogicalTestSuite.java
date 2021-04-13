@@ -29,7 +29,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 })
 @TestEnvironment(scriptsRoot = "src/test/sql"
-    , restart = true
 //    , script = "src/test/sql/filter/test_constant_comparisons.test"
 )
 public class LogicalTestSuite {
