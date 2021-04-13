@@ -54,7 +54,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -71,6 +70,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -673,37 +674,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
-        long lastIdx = -1L;
-
-        boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
-
         try {
-            lastIdx = currentSegment();
-
-            fileHandleManager.onDeactivate(archiveLast);
+            fileHandleManager.onDeactivate();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
         }
 
+        if (dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping()) {
+            // Archive last segment here.
+        }
+
         segmentAware.interrupt();
 
         try {
-            if (archiver != null) {
+            if (archiver != null)
                 archiver.shutdown();
-
-                if (archiveLast) {
-                    try {
-                        long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
-
-                        for (long i = from; i <= lastIdx; i++)
-                            archiver.archiveSegment(i);
-                    }
-                    catch (StorageException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            }
 
             if (compressor != null)
                 compressor.shutdown();
