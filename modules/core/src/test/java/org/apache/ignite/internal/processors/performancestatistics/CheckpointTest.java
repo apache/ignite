@@ -30,9 +30,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointFileIOFactory;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
@@ -97,7 +97,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         MetricRegistry mreg = srv.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
-        AtomicLongMetric lastStart = mreg.findMetric("LastCheckpointStart");
+        LongMetric lastStart = mreg.findMetric("LastCheckpointStart");
 
         // Wait for checkpoint to finish on node start.
         assertTrue(waitForCondition(() -> 0 < lastStart.value(), TIMEOUT));
@@ -132,34 +132,30 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                 int cowPagesWritten
             ) {
                 assertEquals(srv.localNode().id(), nodeId);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointBeforeLockDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointBeforeLockDuration").value(),
                     beforeLockDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointLockWaitDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointLockWaitDuration").value(),
                     lockWaitDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointListenersExecuteDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointListenersExecuteDuration").value(),
                     listenersExecDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointMarkDuration").value(),
-                    markDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointLockHoldDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointMarkDuration").value(), markDuration);
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointLockHoldDuration").value(),
                     lockHoldDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointPagesWriteDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointPagesWriteDuration").value(),
                     pagesWriteDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointFsyncDuration").value(),
-                    fsyncDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointWalRecordFsyncDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointFsyncDuration").value(), fsyncDuration);
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointWalRecordFsyncDuration").value(),
                     walCpRecordFsyncDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointWriteEntryDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointWriteEntryDuration").value(),
                     writeCpEntryDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointSplitAndSortPagesDuration").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointSplitAndSortPagesDuration").value(),
                     splitAndSortCpPagesDuration);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointDuration").value(),
-                    totalDuration);
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointDuration").value(), totalDuration);
                 assertEquals(lastStart.value(), cpStartTime);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointTotalPagesNumber").value(),
-                    pagesSize);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointDataPagesNumber").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointTotalPagesNumber").value(), pagesSize);
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointDataPagesNumber").value(),
                     dataPagesWritten);
-                assertEquals(mreg.<AtomicLongMetric>findMetric("LastCheckpointCopiedOnWritePagesNumber").value(),
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointCopiedOnWritePagesNumber").value(),
                     cowPagesWritten);
 
                 cnt.incrementAndGet();
