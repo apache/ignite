@@ -338,11 +338,23 @@ public class FilePerformanceStatisticsWriter {
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
      */
-    public void checkpoint(long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
-        long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
-        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten)
-    {
+    public void checkpoint(
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
         doWrite(CHECKPOINT, checkpointRecordSize(), buf -> {
             buf.putLong(beforeLockDuration);
             buf.putLong(lockWaitDuration);
