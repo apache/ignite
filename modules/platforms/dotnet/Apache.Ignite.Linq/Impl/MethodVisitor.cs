@@ -77,7 +77,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
             GetStringMethod("PadRight", "rpad", typeof (int)),
             GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
-            GetStringMethod("Compare", new[] { typeof (string), typeof(string) }, (e, v) => VisitStringCompare(e, v)),
+            GetStringMethod("Compare", new[] { typeof(string), typeof(string) }, (e, v) => VisitStringCompare(e, v, false)),
+            GetStringMethod("Compare", new[] { typeof(string), typeof(string), typeof(bool) }, (e, v) => VisitStringCompare(e, v, GetStringCompareIgnoreCaseParameter(e.Arguments[2]))),
 
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string)),
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string),
@@ -331,20 +332,46 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Get IgnoreCase parameter for string.Compare method
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        private static bool GetStringCompareIgnoreCaseParameter(Expression expression)
+        {
+            if (expression is ConstantExpression constant)
+            {
+                if (constant.Value is bool ignoreCase)
+                {
+                    return ignoreCase;
+                }
+            }
+
+            throw new ArgumentException("ignoreCase");            
+        }
+
+        /// <summary>
         /// Visits string.Compare method
         /// </summary>
         /// <param name="expression"></param>
         /// <param name="visitor"></param>
-        private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor)
+        private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, bool ignoreCase)
         {
             visitor.ResultBuilder.Append("casewhen(");
+            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[0]);
+            if (ignoreCase) visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(" = ");
+            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[1]);
+            if (ignoreCase) visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(", 0, casewhen(");
+            visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[0]);
-            visitor.ResultBuilder.Append(" > ");
+            visitor.ResultBuilder.Append(")");
+            visitor.ResultBuilder.Append(" >= ");
+            visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[1]);
+            visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(", 1, -1))");
         }
 
