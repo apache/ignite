@@ -111,7 +111,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
         else if (!inLoop)
-            context().execute(this::doFlush, this::onError);
+            context().execute(this::flush, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -158,14 +158,12 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     }
 
     /** */
-    private void doFlush() throws Exception {
+    private void flush() throws Exception {
+        if (isClosed())
+            return;
+
         checkState();
 
-        flush();
-    }
-
-    /** */
-    private void flush() throws Exception {
         assert waiting == -1;
 
         int processed = 0;
@@ -189,7 +187,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
                 if (processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::doFlush, this::onError);
+                    context().execute(this::flush, this::onError);
 
                     return;
                 }
