@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -32,10 +28,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointFileIOFactory;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -71,7 +64,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
             .setWriteThrottlingEnabled(true)
-            .setFileIOFactory(new SlowCheckpointFileIOFactory())
+            .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, 500_000))
             .setCheckpointThreads(1));
 
         return cfg;
@@ -235,50 +228,5 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         assertTrue(cnt.get() > 0);
 
         fut.get(TIMEOUT);
-    }
-
-    /**
-     * Create File I/O that emulates poor checkpoint write speed.
-     */
-    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Checkpoint park nanos. */
-        private static final int CHECKPOINT_PARK_NANOS = 500_000;
-
-        /** Delegate factory. */
-        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(java.io.File file, OpenOption... openOption) throws IOException {
-            final FileIO delegate = delegateFactory.create(file, openOption);
-
-            return new FileIODecorator(delegate) {
-                @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(srcBuf);
-                }
-
-                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(srcBuf, position);
-                }
-
-                @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(buf, off, len);
-                }
-
-                /** Parks current checkpoint thread if slow mode is enabled. */
-                private void parkIfNeeded() {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("db-checkpoint-thread"))
-                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
-                }
-            };
-        }
     }
 }
