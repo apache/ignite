@@ -1388,8 +1388,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
-        if (!F.isEmpty(walArchiveFiles) && absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx)
+        if (archiver != null &&
+            !F.isEmpty(walArchiveFiles) &&
+            absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
             absIdx = walArchiveFiles[walArchiveFiles.length - 1].idx + 1;
+        }
 
         @Nullable FileArchiver archiver0 = archiver;
 
