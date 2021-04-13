@@ -38,6 +38,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -131,17 +132,40 @@ public class DdlSqlToCommandConverter {
      * @param ctx Planning context.
      */
     private CreateTableCommand convertCreateTable(IgniteSqlCreateTable createTblNode, PlanningContext ctx) {
-        SqlIdentifier tblFullName = createTblNode.name();
+        String schemaName, tableName;
 
-        if (!tblFullName.isSimple())
-            throw new IgniteSQLException("Unexpected value of tableName [" +
-                "expected a simple identifier, but was " + tblFullName + "; " +
-                "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+        if (createTblNode.name().isSimple()) {
+            schemaName = ctx.schemaName();
+            tableName = createTblNode.name().getSimple();
+        }
+        else {
+            SqlIdentifier schemaId = createTblNode.name().skipLast(1);
+
+            if (!schemaId.isSimple()) {
+                throw new IgniteSQLException("Unexpected value of schemaName [" +
+                    "expected a simple identifier, but was " + schemaId + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+            }
+
+            schemaName = schemaId.getSimple();
+
+            SqlIdentifier tableId = createTblNode.name().getComponent(schemaId.names.size());
+
+            if (!tableId.isSimple()) {
+                throw new IgniteSQLException("Unexpected value of tableName [" +
+                    "expected a simple identifier, but was " + tableId + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+            }
+
+            tableName = tableId.getSimple();
+        }
+
+        ensureSchemaExists(ctx, schemaName);
 
         CreateTableCommand createTblCmd = new CreateTableCommand();
 
-        createTblCmd.schemaName("PUBLIC"); // TODO: get from the context
-        createTblCmd.tableName(tblFullName.getSimple());
+        createTblCmd.schemaName(schemaName);
+        createTblCmd.tableName(tableName);
         createTblCmd.ifNotExists(createTblNode.ifNotExists());
         createTblCmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
 
@@ -206,6 +230,13 @@ public class DdlSqlToCommandConverter {
         }
 
         return createTblCmd;
+    }
+
+    /** */
+    private void ensureSchemaExists(PlanningContext ctx, String schemaName) {
+        if (ctx.catalogReader().getRootSchema().getSubSchema(schemaName, true) == null)
+            throw new IgniteSQLException("Schema with name " + schemaName + " not found",
+                IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
     }
 
     /**

@@ -152,7 +152,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     <TABLE>
     ifNotExists = IfNotExistsOpt()
-    id = SimpleIdentifier()
+    id = CompoundIdentifier()
     columnList = TableElementList()
     (
         <WITH> { s.add(this); } optionList = CreateTableOptionList()
