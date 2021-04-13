@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.util;
 
-import java.nio.ByteBuffer;
-
 /**
- * Cleaner interface for {@code java.nio.ByteBuffer}.
+ * Array creator.
  */
-public interface DirectBufferCleaner {
+@FunctionalInterface
+public interface ArrayFactory<T> {
     /**
-     * Cleans the direct buffer.
-     *
-     * @param buf direct buffer.
+     * @param len Array length.
+     * @return New array.
      */
-    public void clean(ByteBuffer buf);
+    public T of(int len);
 }

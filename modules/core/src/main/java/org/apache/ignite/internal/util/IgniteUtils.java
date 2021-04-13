@@ -27,7 +27,7 @@ public class IgniteUtils {
     /** Version of the JDK. */
     private static String jdkVer;
 
-    /*
+    /**
      * Initializes enterprise check.
      */
     static {

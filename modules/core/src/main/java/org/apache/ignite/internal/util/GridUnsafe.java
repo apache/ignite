@@ -102,12 +102,6 @@ public abstract class GridUnsafe {
     /** {@link java.nio.Buffer#address} field offset. */
     private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
-    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
-    private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
-        majorJavaVersion(jdkVersion()) < 9
-            ? new ReflectiveDirectBufferCleaner()
-            : new UnsafeDirectBufferCleaner();
-
     /** JavaNioAccess object. If {@code null} then {@link #NEW_DIRECT_BUF_CONSTRUCTOR} should be available. */
     @Nullable private static final Object JAVA_NIO_ACCESS_OBJ;
 
@@ -1500,7 +1494,7 @@ public abstract class GridUnsafe {
     public static void cleanDirectBuffer(ByteBuffer buf) {
         assert buf.isDirect();
 
-        DIRECT_BUF_CLEANER.clean(buf);
+        UNSAFE.invokeCleaner(buf);
     }
 
     /**

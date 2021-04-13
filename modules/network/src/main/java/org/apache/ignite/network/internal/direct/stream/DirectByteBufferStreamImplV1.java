@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import org.apache.ignite.internal.util.ArrayFactory;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.internal.MessageReader;
 import org.apache.ignite.network.internal.MessageWriter;
@@ -39,6 +39,14 @@ import org.apache.ignite.network.message.MessageSerializer;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
+import static org.apache.ignite.internal.util.ArrayUtils.BOOLEAN_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.BYTE_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.CHAR_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.DOUBLE_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.FLOAT_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.INT_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.LONG_ARRAY;
+import static org.apache.ignite.internal.util.ArrayUtils.SHORT_ARRAY;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
@@ -49,159 +57,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
-    /** */
-    private static final byte[] BYTE_ARR_EMPTY = new byte[0];
-
-    /** */
-    private static final short[] SHORT_ARR_EMPTY = new short[0];
-
-    /** */
-    private static final int[] INT_ARR_EMPTY = new int[0];
-
-    /** */
-    private static final long[] LONG_ARR_EMPTY = new long[0];
-
-    /** */
-    private static final float[] FLOAT_ARR_EMPTY = new float[0];
-
-    /** */
-    private static final double[] DOUBLE_ARR_EMPTY = new double[0];
-
-    /** */
-    private static final char[] CHAR_ARR_EMPTY = new char[0];
-
-    /** */
-    private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
-
-    /** */
-    private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
-        @Override public byte[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid byte array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return BYTE_ARR_EMPTY;
-
-                default:
-                    return new byte[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<short[]> SHORT_ARR_CREATOR = new ArrayCreator<short[]>() {
-        @Override public short[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid short array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return SHORT_ARR_EMPTY;
-
-                default:
-                    return new short[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<int[]> INT_ARR_CREATOR = new ArrayCreator<int[]>() {
-        @Override public int[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid int array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return INT_ARR_EMPTY;
-
-                default:
-                    return new int[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<long[]> LONG_ARR_CREATOR = new ArrayCreator<long[]>() {
-        @Override public long[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid long array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return LONG_ARR_EMPTY;
-
-                default:
-                    return new long[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<float[]> FLOAT_ARR_CREATOR = new ArrayCreator<float[]>() {
-        @Override public float[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid float array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return FLOAT_ARR_EMPTY;
-
-                default:
-                    return new float[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<double[]> DOUBLE_ARR_CREATOR = new ArrayCreator<double[]>() {
-        @Override public double[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid double array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return DOUBLE_ARR_EMPTY;
-
-                default:
-                    return new double[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<char[]> CHAR_ARR_CREATOR = new ArrayCreator<char[]>() {
-        @Override public char[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid char array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return CHAR_ARR_EMPTY;
-
-                default:
-                    return new char[len];
-            }
-        }
-    };
-
-    /** */
-    private static final ArrayCreator<boolean[]> BOOLEAN_ARR_CREATOR = new ArrayCreator<boolean[]>() {
-        @Override public boolean[] create(int len) {
-            if (len < 0)
-                throw new IgniteInternalException("Read invalid boolean array length: " + len);
-
-            switch (len) {
-                case 0:
-                    return BOOLEAN_ARR_EMPTY;
-
-                default:
-                    return new boolean[len];
-            }
-        }
-    };
-
-    /** */
+    /** Poison object. */
     private static final Object NULL = new Object();
 
     /** */
@@ -1014,60 +870,60 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public byte[] readByteArray() {
-        return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF);
+        return readArray(BYTE_ARRAY, 0, BYTE_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public short[] readShortArray() {
         if (BIG_ENDIAN)
-            return readArrayLE(SHORT_ARR_CREATOR, 2, 1, SHORT_ARR_OFF);
+            return readArrayLE(SHORT_ARRAY, 2, 1, SHORT_ARR_OFF);
         else
-            return readArray(SHORT_ARR_CREATOR, 1, SHORT_ARR_OFF);
+            return readArray(SHORT_ARRAY, 1, SHORT_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public int[] readIntArray() {
         if (BIG_ENDIAN)
-            return readArrayLE(INT_ARR_CREATOR, 4, 2, INT_ARR_OFF);
+            return readArrayLE(INT_ARRAY, 4, 2, INT_ARR_OFF);
         else
-            return readArray(INT_ARR_CREATOR, 2, INT_ARR_OFF);
+            return readArray(INT_ARRAY, 2, INT_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public long[] readLongArray() {
         if (BIG_ENDIAN)
-            return readArrayLE(LONG_ARR_CREATOR, 8, 3, LONG_ARR_OFF);
+            return readArrayLE(LONG_ARRAY, 8, 3, LONG_ARR_OFF);
         else
-            return readArray(LONG_ARR_CREATOR, 3, LONG_ARR_OFF);
+            return readArray(LONG_ARRAY, 3, LONG_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public float[] readFloatArray() {
         if (BIG_ENDIAN)
-            return readArrayLE(FLOAT_ARR_CREATOR, 4, 2, FLOAT_ARR_OFF);
+            return readArrayLE(FLOAT_ARRAY, 4, 2, FLOAT_ARR_OFF);
         else
-            return readArray(FLOAT_ARR_CREATOR, 2, FLOAT_ARR_OFF);
+            return readArray(FLOAT_ARRAY, 2, FLOAT_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public double[] readDoubleArray() {
         if (BIG_ENDIAN)
-            return readArrayLE(DOUBLE_ARR_CREATOR, 8, 3, DOUBLE_ARR_OFF);
+            return readArrayLE(DOUBLE_ARRAY, 8, 3, DOUBLE_ARR_OFF);
         else
-            return readArray(DOUBLE_ARR_CREATOR, 3, DOUBLE_ARR_OFF);
+            return readArray(DOUBLE_ARRAY, 3, DOUBLE_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public char[] readCharArray() {
         if (BIG_ENDIAN)
-            return readArrayLE(CHAR_ARR_CREATOR, 2, 1, CHAR_ARR_OFF);
+            return readArrayLE(CHAR_ARRAY, 2, 1, CHAR_ARR_OFF);
         else
-            return readArray(CHAR_ARR_CREATOR, 1, CHAR_ARR_OFF);
+            return readArray(CHAR_ARRAY, 1, CHAR_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public boolean[] readBooleanArray() {
-        return readArray(BOOLEAN_ARR_CREATOR, 0, GridUnsafe.BOOLEAN_ARR_OFF);
+        return readArray(BOOLEAN_ARRAY, 0, GridUnsafe.BOOLEAN_ARR_OFF);
     }
 
     /** {@inheritDoc} */
@@ -1470,7 +1326,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
+    <T> T readArray(ArrayFactory<T> creator, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1488,10 +1344,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 case 0:
                     lastFinished = true;
 
-                    return creator.create(0);
+                    return creator.of(0);
 
                 default:
-                    tmpArr = creator.create(len);
+                    tmpArr = creator.of(len);
                     tmpArrBytes = len << lenShift;
             }
         }
@@ -1533,7 +1389,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
+    <T> T readArrayLE(ArrayFactory<T> creator, int typeSize, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1551,10 +1407,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 case 0:
                     lastFinished = true;
 
-                    return creator.create(0);
+                    return creator.of(0);
 
                 default:
-                    tmpArr = creator.create(len);
+                    tmpArr = creator.of(len);
                     tmpArrBytes = len << lenShift;
             }
         }
@@ -1789,16 +1645,5 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
         }
-    }
-
-    /**
-     * Array creator.
-     */
-    interface ArrayCreator<T> {
-        /**
-         * @param len Array length or {@code -1} if array was not fully read.
-         * @return New array.
-         */
-        public T create(int len);
     }
 }
