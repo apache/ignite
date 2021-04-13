@@ -104,7 +104,6 @@ class CellularAffinity(IgniteTest):
             cacheName=CellularAffinity.CACHE_NAME)
 
     @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
-    @ignore_if(lambda version, globals: version < DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
         """
