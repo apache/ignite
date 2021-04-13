@@ -61,8 +61,8 @@ class IgniteVersion(LooseVersion):
         if isinstance(other, str):
             other = IgniteVersion(other)
 
-        if self.project != other.project:
-            raise Exception("Incomperable versons v1=%s, v2=%s because of different projects" % (self, other))
+        # if self.project != other.project:
+        #     raise Exception("Incomperable versons v1=%s, v2=%s because of different projects" % (self, other))
 
         return super()._cmp(other)
 
