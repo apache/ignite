@@ -244,8 +244,8 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Default checkpoint park nanos. */
-        private static final int CHECKPOINT_PARK_NANOS = 5_000_000;
+        /** Checkpoint park nanos. */
+        private static final int CHECKPOINT_PARK_NANOS = 500_000;
 
         /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
