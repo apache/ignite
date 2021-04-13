@@ -82,7 +82,7 @@ public class LogicalTestRunner extends Runner {
     /** */
     public LogicalTestRunner(Class<?> testCls) {
         this.testCls = testCls;
-        TestEnvironment env = testCls.getAnnotation(TestEnvironment.class);
+        LogicalTestEnvironment env = testCls.getAnnotation(LogicalTestEnvironment.class);
 
         assert !F.isEmpty(env.scriptsRoot());
 

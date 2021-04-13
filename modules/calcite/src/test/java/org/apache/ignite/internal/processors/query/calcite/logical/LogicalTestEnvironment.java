@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface TestEnvironment {
+public @interface LogicalTestEnvironment {
     /**
      * @return Test scripts root directory.
      */

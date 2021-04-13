@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestRunner;
-import org.apache.ignite.internal.processors.query.calcite.logical.TestEnvironment;
+import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestEnvironment;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -28,7 +28,7 @@ import org.junit.runners.Suite;
 @RunWith(LogicalTestRunner.class)
 @Suite.SuiteClasses({
 })
-@TestEnvironment(scriptsRoot = "src/test/sql"
+@LogicalTestEnvironment(scriptsRoot = "src/test/sql"
 //    , script = "src/test/sql/filter/test_constant_comparisons.test"
 )
 public class LogicalTestSuite {
