@@ -29,7 +29,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_zookeeper_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
-from ignitetest.utils import ignite_versions, cluster, ignore_if
+from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
