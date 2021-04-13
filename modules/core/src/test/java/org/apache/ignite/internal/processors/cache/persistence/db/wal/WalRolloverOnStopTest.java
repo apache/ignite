@@ -166,4 +166,3 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
         }
     }
 }
-
