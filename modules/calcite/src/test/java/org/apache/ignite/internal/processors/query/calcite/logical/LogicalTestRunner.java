@@ -21,18 +21,25 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.ignite.thread.IgniteThread;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
@@ -49,16 +56,16 @@ public class LogicalTestRunner extends Runner {
     private static final TcpDiscoveryVmIpFinder sharedFinder = new TcpDiscoveryVmIpFinder().setShared(true);
 
     /** */
-    private static IgniteLogger rootLog;
+    private static IgniteLogger log;
 
     static {
         try {
-            rootLog = new GridTestLog4jLogger("src/test/config/log4j-test.xml");
+            log = new GridTestLog4jLogger("src/test/config/log4j-test.xml");
         }
         catch (Exception e) {
             e.printStackTrace();
 
-            rootLog = null;
+            log = null;
 
             assert false : "Cannot init logger";
         }
@@ -79,6 +86,9 @@ public class LogicalTestRunner extends Runner {
     /** Restart cluster for each test group. */
     private final boolean restartCluster;
 
+    /** Test script timeout. */
+    private final long timeout;
+
     /** */
     public LogicalTestRunner(Class<?> testCls) {
         this.testCls = testCls;
@@ -90,6 +100,7 @@ public class LogicalTestRunner extends Runner {
         scriptsRoot = FS.getPath(env.scriptsRoot());
         script = F.isEmpty(env.script()) ? null : FS.getPath(env.script());
         restartCluster = env.restart();
+        timeout = env.timeout();
     }
 
     /** {@inheritDoc} */
@@ -107,13 +118,13 @@ public class LogicalTestRunner extends Runner {
 
                     if (Files.isDirectory(p)) {
                         if (!F.isEmpty(Ignition.allGrids()) && restartCluster) {
-                            rootLog.info(">>> Restart cluster");
+                            log.info(">>> Restart cluster");
 
                             Ignition.stopAll(false);
                         }
 
                         if (F.isEmpty(Ignition.allGrids()))
-                            startGrid();
+                            startCluster();
 
                         return;
                     }
@@ -139,23 +150,23 @@ public class LogicalTestRunner extends Runner {
                             QueryEngine.class
                         );
 
-                        ScriptTestRunner scriptTestRunner = new ScriptTestRunner(p, engine, rootLog);
+                        ScriptTestRunner scriptTestRunner = new ScriptTestRunner(p, engine, log);
 
-                        rootLog.info(">>> Start: " + dirName + "/" + fileName);
+                        log.info(">>> Start: " + dirName + "/" + fileName);
 
-                        scriptTestRunner.run();
+                        runScript(scriptTestRunner);
                     }
                     catch (Throwable e) {
                         notifier.fireTestFailure(new Failure(desc, e));
                     }
                     finally {
-                        rootLog.info(">>> Finish: " + dirName + "/" + fileName);
+                        log.info(">>> Finish: " + dirName + "/" + fileName);
                         notifier.fireTestFinished(desc);
                     }
                 });
             }
             else {
-                startGrid();
+                startCluster();
 
                 runTest(script, notifier);
             }
@@ -186,9 +197,9 @@ public class LogicalTestRunner extends Runner {
                 QueryEngine.class
             );
 
-            ScriptTestRunner scriptTestRunner = new ScriptTestRunner(test, engine, rootLog);
+            ScriptTestRunner scriptTestRunner = new ScriptTestRunner(test, engine, log);
 
-            rootLog.info(">>> Start: " + dirName + "/" + fileName);
+            log.info(">>> Start: " + dirName + "/" + fileName);
 
             scriptTestRunner.run();
         }
@@ -196,13 +207,13 @@ public class LogicalTestRunner extends Runner {
             notifier.fireTestFailure(new Failure(desc, e));
         }
         finally {
-            rootLog.info(">>> Finish: " + dirName + "/" + fileName);
+            log.info(">>> Finish: " + dirName + "/" + fileName);
             notifier.fireTestFinished(desc);
         }
     }
 
     /** */
-    private void startGrid() {
+    private void startCluster() {
         for (int i = 0; i < nodes; ++i) {
             Ignition.start(
                 new IgniteConfiguration()
@@ -211,8 +222,63 @@ public class LogicalTestRunner extends Runner {
                         new TcpDiscoverySpi()
                             .setIpFinder(sharedFinder)
                     )
-                    .setGridLogger(rootLog)
+                    .setGridLogger(log)
             );
         }
+    }
+
+    /** */
+    private void runScript(ScriptTestRunner scriptRunner) throws Throwable {
+        final AtomicReference<Throwable> ex = new AtomicReference<>();
+
+        Thread runner = new IgniteThread("srv0", "test-runner", new Runnable() {
+            @Override public void run() {
+                try {
+                    scriptRunner.run();
+                }
+                catch (Throwable e) {
+                    ex.set(e);
+                }
+            }
+        });
+
+        runner.start();
+
+        runner.join(timeout);
+
+        if (runner.isAlive()) {
+            U.error(log,
+                "Test has been timed out and will be interrupted");
+
+            List<Ignite> nodes = IgnitionEx.allGridsx();
+
+            for (Ignite node : nodes)
+                ((IgniteKernal)node).dumpDebugInfo();
+
+            // We dump threads to stdout, because we can loose logs in case
+            // the build is cancelled on TeamCity.
+            U.dumpThreads(null);
+
+            U.dumpThreads(log);
+
+            for (int i = 0; i < 100 && runner.isAlive(); ++i) {
+                U.interrupt(runner);
+
+                U.sleep(10);
+            }
+
+            U.join(runner, log);
+
+            // Restart cluster
+            Ignition.stopAll(true);
+            startCluster();
+
+            throw new TimeoutException("Test has been timed out");
+        }
+
+        Throwable t = ex.get();
+
+        if (t != null)
+            throw t;
     }
 }

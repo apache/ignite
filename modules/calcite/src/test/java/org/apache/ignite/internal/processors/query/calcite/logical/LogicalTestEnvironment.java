@@ -47,4 +47,9 @@ public @interface LogicalTestEnvironment {
      * @return {@code true} if the cluster must be restarted for each test group (directory).
      */
     boolean restart() default false;
+
+    /**
+     * @return default timeout for a test script.
+     */
+    long timeout() default 30_000;
 }

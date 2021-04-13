@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestRunner;
 import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestEnvironment;
+import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestRunner;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
