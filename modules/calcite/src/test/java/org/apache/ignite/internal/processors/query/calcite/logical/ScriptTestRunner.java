@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.logical;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -365,7 +366,7 @@ public class ScriptTestRunner {
 
         /** */
         @GridToStringInclude
-        List<List<Object>> expectedRes;
+        List<List<String>> expectedRes;
 
         /** */
         String expectedHash;
@@ -430,7 +431,7 @@ public class ScriptTestRunner {
 
                 boolean singleValOnLine = false;
 
-                List<Object> row = new ArrayList<>();
+                List<String> row = new ArrayList<>();
 
                 while (!F.isEmpty(s)) {
                     String[] vals = s.split("\\t");
@@ -445,7 +446,7 @@ public class ScriptTestRunner {
 
                     try {
                         if (singleValOnLine) {
-                            row.add(fromString(vals[0], resTypes.get(row.size())));
+                            row.add(NULL.equals(vals[0]) ? null : vals[0]);
 
                             if (row.size() == resTypes.size()) {
                                 expectedRes.add(row);
@@ -455,7 +456,7 @@ public class ScriptTestRunner {
                         }
                         else {
                             for (int i = 0; i < vals.length; ++i)
-                                row.add(fromString(vals[i], resTypes.get(i)));
+                                row.add(NULL.equals(vals[i]) ? null : vals[i]);
 
                             expectedRes.add(row);
                             row = new ArrayList<>();
@@ -507,7 +508,7 @@ public class ScriptTestRunner {
             }
 
             for (int i = 0; i < expectedRes.size(); ++i) {
-                List<Object> expectedRow = expectedRes.get(i);
+                List<String> expectedRow = expectedRes.get(i);
                 List<?> row = res.get(i);
 
                 if (row.size() != expectedRow.size()) {
@@ -516,15 +517,25 @@ public class ScriptTestRunner {
                 }
 
                 for (int j = 0; j < expectedRow.size(); ++j) {
-                    String exp = String.valueOf(expectedRow.get(j));
-                    String val = String.valueOf(row.get(j));
-
-                    if (!exp.equals(val)) {
-                        throw new AssertionError("Not expected result at " + posDesc +
-                            ". [row=" + i + ", col=" + j +
-                            ", expected=" + exp + ", actual=" + val + ']');
-                    }
+                    checkEquals("Not expected result at " + posDesc +
+                        ". [row=" + i + ", col=" + j +
+                        ", expected=" + expectedRow.get(j) + ", actual=" + row.get(j) + ']', expectedRow.get(j), row.get(j));
                 }
+            }
+        }
+
+        /** */
+        private void checkEquals(String msg, String expectedStr, Object actual) {
+            if (actual instanceof Number) {
+                BigDecimal actDec = new BigDecimal(String.valueOf(actual));
+                BigDecimal expDec = new BigDecimal(expectedStr);
+
+                if (actDec.compareTo(expDec) != 0)
+                    throw new AssertionError(msg);
+            }
+            else {
+                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)))
+                    throw new AssertionError(msg);
             }
         }
 
@@ -539,16 +550,6 @@ public class ScriptTestRunner {
             return S.toString(Query.class, this);
         }
     }
-
-    /** */
-    private static Object fromString(String s, ColumnType type) {
-        if (NULL.equals(s))
-            return null;
-
-        return s;
-    }
-
-
 
     /** */
     private enum ExpectedStatementStatus {
