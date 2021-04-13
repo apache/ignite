@@ -71,8 +71,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -1402,8 +1400,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
-        if (segmentAware.lastArchivedAbsoluteIndex() >= absIdx)
-            absIdx = segmentAware.lastArchivedAbsoluteIndex() + 1;
+        FileDescriptor[] walArchiveFiles = walArchiveFiles();
+
+        if (!F.isEmpty(walArchiveFiles) && absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx)
+            absIdx = walArchiveFiles[walArchiveFiles.length - 1].idx + 1;
 
         @Nullable FileArchiver archiver0 = archiver;
 
@@ -1445,8 +1445,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
                 segmentAware.curAbsWalIdx(absIdx);
-
-                FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
