@@ -82,6 +82,7 @@ data: {
       #
       # "inner" could be a table alias for "emp".
       #
+      "A"
       "ABS"
       "ABSOLUTE"
       "ACTION"
@@ -120,6 +121,7 @@ data: {
       "BOTH"
       "BREADTH"
       "BY"
+      "C"
 #     "CALL"
       "CALLED"
       "CARDINALITY"
@@ -244,6 +246,7 @@ data: {
 #     "FULL" # must be reserved
       "FUNCTION"
       "FUSION"
+      "G"
       "GENERAL"
       "GET"
       "GLOBAL"
@@ -289,6 +292,7 @@ data: {
       "JSON_OBJECTAGG"
       "JSON_QUERY"
       "JSON_VALUE"
+      "K"
 #     "KEEP" # not a keyword in Calcite
       "KEY"
       "LAG"
@@ -312,6 +316,7 @@ data: {
       "LOCATOR"
 #     "LOOP" # not a keyword in Calcite
       "LOWER"
+      "M"
       "MAP"
       "MATCH"
       "MATCHES"
@@ -613,7 +618,7 @@ data: {
     # Binary operators initialization.
     # Example: "InfixCast".
     extraBinaryExpressions: [
-#      "InfixCast"
+      "InfixCast"
     ]
 
     # List of files in @includes directory that have parser method

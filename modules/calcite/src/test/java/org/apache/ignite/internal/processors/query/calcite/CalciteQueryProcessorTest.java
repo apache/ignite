@@ -41,6 +41,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
@@ -56,6 +58,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
@@ -754,7 +757,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?)", 0, "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
 
         assertEquals(1, query.size());
 
@@ -994,6 +998,29 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             assertThat(names, equalTo(F.asList("ID", "VAL")));
         }
+    }
+
+    /**
+     * Verifies infix cast operator.
+     */
+    @Test
+    public void testInfixTypeCast() {
+        execute(client, "drop table if exists test_tbl");
+        execute(client, "create table test_tbl(id int primary key, val varchar)");
+
+        QueryEngine engineSrv = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        FieldsQueryCursor<List<?>> cur = engineSrv.query(null, "PUBLIC",
+            "select id, id::tinyint as tid, id::smallint as sid, id::varchar as vid from test_tbl").get(0);
+
+        assertThat(cur, CoreMatchers.instanceOf(QueryCursorEx.class));
+
+        QueryCursorEx<?> qCur = (QueryCursorEx<?>)cur;
+
+        assertThat(qCur.fieldsMeta().get(0).fieldTypeName(), equalTo(Integer.class.getName()));
+        assertThat(qCur.fieldsMeta().get(1).fieldTypeName(), equalTo(Byte.class.getName()));
+        assertThat(qCur.fieldsMeta().get(2).fieldTypeName(), equalTo(Short.class.getName()));
+        assertThat(qCur.fieldsMeta().get(3).fieldTypeName(), equalTo(String.class.getName()));
     }
 
     /** */
