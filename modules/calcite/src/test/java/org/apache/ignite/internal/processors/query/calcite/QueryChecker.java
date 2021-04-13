@@ -28,10 +28,17 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.hamcrest.core.SubstringMatcher;
@@ -45,6 +52,9 @@ import static org.junit.Assert.fail;
  *  Query checker.
  */
 public abstract class QueryChecker {
+    /** Partition release timeout. */
+    private static final long PART_RELEASE_TIMEOUT = 5_000L;
+
     /**
      * Ignite table scan matcher.
      *
@@ -406,5 +416,36 @@ public abstract class QueryChecker {
 
             return 0;
         }
+    }
+
+    /**
+     * @param cacheName Cache to check
+     * @throws IgniteInterruptedCheckedException
+     */
+    public static void awaitReservationsRelease(String cacheName) throws IgniteInterruptedCheckedException {
+        for (Ignite ign : G.allGrids())
+            awaitReservationsRelease((IgniteEx)ign, cacheName);
+    }
+
+    /**
+     * @param node Node to check reservation.
+     * @param cacheName Cache to check reservations.
+     */
+    public static void awaitReservationsRelease(IgniteEx node, String cacheName) throws IgniteInterruptedCheckedException {
+        GridDhtAtomicCache c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
+
+        List<GridDhtLocalPartition> parts = c.topology().localPartitions();
+
+        GridTestUtils.waitForCondition(() -> {
+            for (GridDhtLocalPartition p : parts) {
+                if (p.reservations() > 0)
+                    return false;
+            }
+
+            return true;
+        }, PART_RELEASE_TIMEOUT);
+
+        for (GridDhtLocalPartition p : parts)
+            assertEquals("Partition is reserved: " + p, 0, p.reservations());
     }
 }

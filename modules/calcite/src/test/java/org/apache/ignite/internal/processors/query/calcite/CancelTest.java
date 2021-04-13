@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -29,30 +28,24 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
 
 /**
  * Cancel query test.
  */
 public class CancelTest extends GridCommonAbstractTest {
-    /** Partition release timeout. */
-    private static final long PART_RELEASE_TIMEOUT = 5000L;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(2);
@@ -121,6 +114,7 @@ public class CancelTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-14289")
     @Test
     public void testNotOriginatorNodeStop() throws Exception {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
@@ -243,36 +237,5 @@ public class CancelTest extends GridCommonAbstractTest {
         startGrid(2);
 
         awaitPartitionMapExchange();
-    }
-
-    /**
-     * @param cacheName Cache to check
-     * @throws IgniteInterruptedCheckedException
-     */
-    void awaitReservationsRelease(String cacheName) throws IgniteInterruptedCheckedException {
-        for (Ignite ign : G.allGrids())
-            awaitReservationsRelease((IgniteEx)ign, "TEST");
-    }
-
-    /**
-     * @param node Node to check reservation.
-     * @param cacheName Cache to check reservations.
-     */
-    void awaitReservationsRelease(IgniteEx node, String cacheName) throws IgniteInterruptedCheckedException {
-        GridDhtAtomicCache c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
-
-        List<GridDhtLocalPartition> parts = c.topology().localPartitions();
-
-        GridTestUtils.waitForCondition(() -> {
-            for (GridDhtLocalPartition p : parts) {
-                if (p.reservations() > 0)
-                    return false;
-            }
-
-            return true;
-        }, PART_RELEASE_TIMEOUT);
-
-        for (GridDhtLocalPartition p : parts)
-            assertEquals("Partition is reserved: " + p, 0, p.reservations());
     }
 }
