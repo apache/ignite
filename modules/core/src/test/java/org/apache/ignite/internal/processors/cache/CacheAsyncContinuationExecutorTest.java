@@ -23,8 +23,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteFuture;
@@ -34,6 +41,7 @@ import org.junit.Test;
 /**
  * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)}.
  */
+@SuppressWarnings("rawtypes")
 public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -48,6 +56,19 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
     /** {@inheritDoc} */
     @Override protected int backups() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
+
+        // Use cache store with a write delay to make sure future does not complete before we register a listener.
+        ccfg.setCacheStoreFactory(new DelayedStoreFactory());
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+
+        return ccfg;
     }
 
     /**
@@ -202,5 +223,32 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
                 .filter(x -> belongs(x, nodeIdx))
                 .findFirst()
                 .get();
+    }
+
+    /** */
+    private static class DelayedStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            return new CacheStoreAdapter() {
+                /** {@inheritDoc} */
+                @Override public Object load(Object key) throws CacheLoaderException {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void write(Cache.Entry entry) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                /** {@inheritDoc} */
+                @Override public void delete(Object key) {
+                    // No-op.
+                }
+            };
+        }
     }
 }
