@@ -163,3 +163,19 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
         return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, optionList);
     }
 }
+
+void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
+{
+    final SqlDataTypeSpec dt;
+}
+{
+    <INFIX_CAST> {
+        checkNonQueryExpression(exprContext);
+    }
+    dt = DataType() {
+        list.add(
+            new SqlParserUtil.ToTreeListItem(SqlLibraryOperators.INFIX_CAST,
+                s.pos()));
+        list.add(dt);
+    }
+}
