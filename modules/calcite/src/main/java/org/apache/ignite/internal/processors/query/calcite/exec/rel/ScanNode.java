@@ -59,14 +59,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::doPush, this::onError);
-    }
-
-    /** */
-    private void doPush() throws Exception {
-        checkState();
-
-        push();
+            context().execute(this::push, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -96,6 +89,11 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
     /** */
     private void push() throws Exception {
+        if (isClosed())
+            return;
+
+        checkState();
+
         inLoop = true;
         try {
             if (it == null)
@@ -110,7 +108,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::doPush, this::onError);
+                    context().execute(this::push, this::onError);
 
                     return;
                 }
@@ -125,6 +123,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
             it = null;
 
             requested = 0;
+
             downstream().end();
         }
     }

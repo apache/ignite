@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -230,7 +231,33 @@ public class ExecutionContext<Row> implements DataContext {
      * @param task Query task.
      */
     public void execute(RunnableX task, Consumer<Throwable> onError) {
+        if (isCancelled())
+            return;
+
         executor.execute(qryId, fragmentId(), () -> {
+            try {
+                task.run();
+            }
+            catch (Throwable e) {
+                onError.accept(e);
+
+                throw new IgniteException("Unexpected exception", e);
+            }
+        });
+    }
+
+    /**
+     * Submits a Runnable task for execution and returns a Future
+     * representing that task. The Future's {@code get} method will
+     * return {@code null} upon <em>successful</em> completion.
+     *
+     * @param task the task to submit.
+     * @return a {@link CompletableFuture} representing pending task
+     */
+    public CompletableFuture<?> submit(RunnableX task, Consumer<Throwable> onError) {
+        assert !isCancelled() : "Call submit after execution was cancelled.";
+
+        return executor.submit(qryId, fragmentId(), () -> {
             try {
                 task.run();
             }
@@ -258,6 +285,7 @@ public class ExecutionContext<Row> implements DataContext {
         return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
     }
 
+    /** */
     public boolean isCancelled() {
         return cancelFlag.get();
     }

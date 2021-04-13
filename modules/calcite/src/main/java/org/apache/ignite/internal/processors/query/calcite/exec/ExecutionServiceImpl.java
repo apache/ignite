@@ -951,7 +951,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private final Set<RemoteFragmentKey> waiting;
 
         /** */
-        private QueryState state;
+        private volatile QueryState state;
 
         /** */
         private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
@@ -1001,10 +1001,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 if (state == QueryState.RUNNING)
                     state0 = state = QueryState.CLOSING;
 
-                // 1) Cancel local fragment
-                ctx.cancel();
-
-                // 2) close local fragment
+                // 1) close local fragment
                 root.closeInternal();
 
                 if (state == QueryState.CLOSING && waiting.isEmpty())
@@ -1012,12 +1009,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (state0 == QueryState.CLOSED) {
-                // 3) unregister runing query
+                // 2) unregister runing query
                 running.remove(ctx.queryId());
 
                 // 4) close remote fragments
                 IgniteException wrpEx = null;
 
+                // 3) close remote fragments
                 for (UUID nodeId : remotes) {
                     try {
                         exchangeService().closeOutbox(nodeId, ctx.queryId(), -1, -1);
@@ -1029,6 +1027,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             wrpEx.addSuppressed(e);
                     }
                 }
+
+                // 4) Cancel local fragment
+                ctx.cancel();
 
                 if (wrpEx != null)
                     throw wrpEx;
