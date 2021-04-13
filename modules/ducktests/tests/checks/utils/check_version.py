@@ -36,6 +36,8 @@ def check_dev_version():
 
     assert DEV_BRANCH == dev == ignite_dev
 
+    # pylint: disable=W0511
+    # todo solve comparability issues and uncomment the following
     # with pytest.raises(Exception):
     #     assert DEV_BRANCH != fork_dev  # incomparable
 
@@ -60,6 +62,8 @@ def check_dev_version():
     assert DEV_BRANCH > LATEST
     assert DEV_BRANCH.version > LATEST.version
 
+    # pylint: disable=W0511
+    # todo solve comparability issues and uncomment the following
     # with pytest.raises(Exception):
     #     assert fork_dev != LATEST  # incomparable
 
@@ -84,6 +88,8 @@ def check_numeric_version():
 
     assert v_2_99_1 == ignite_v_2_99_1
 
+    # pylint: disable=W0511
+    # todo solve comparability issues and uncomment the following
     # with pytest.raises(Exception):
     #     assert v_2_99_1 != fork_v_2_99_1  # incomparable
 
