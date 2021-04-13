@@ -106,7 +106,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         AtomicLongMetric lastStart = mreg.findMetric("LastCheckpointStart");
 
-        // wait for checkpoint to finish on node start
+        // Wait for checkpoint to finish on node start.
         assertTrue(waitForCondition(() -> 0 < lastStart.value(), TIMEOUT));
 
         lastStart.reset();
