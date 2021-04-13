@@ -21,12 +21,16 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.common.StorageSharedKeyCredential;
@@ -113,17 +117,28 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         init();
 
         Collection<InetSocketAddress> addrs = new ArrayList<>();
+        Set<String> seenBlobNames = new HashSet<>();
 
-        blobContainerClient.listBlobs()
-                .forEach(blobItem -> {
-                    try {
-                        if (!blobItem.isDeleted())
-                            addrs.add(addrFromString(blobItem.getName()));
-                    }
-                    catch (Exception e) {
-                        throw new IgniteSpiException("Failed to get content from the container: " + containerName, e);
-                    }
-                });
+        Iterator<BlobItem> blobItemIterator = blobContainerClient.listBlobs().iterator();
+
+        while (blobItemIterator.hasNext()) {
+            BlobItem blobItem = blobItemIterator.next();
+
+            // https://github.com/Azure/azure-sdk-for-java/issues/20515
+            if (seenBlobNames.contains(blobItem.getName())) {
+                break;
+            }
+
+            try {
+                if (!blobItem.isDeleted()) {
+                    addrs.add(addrFromString(blobItem.getName()));
+                    seenBlobNames.add(blobItem.getName());
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteSpiException("Failed to get content from the container: " + containerName, e);
+            }
+        }
 
         return addrs;
     }
@@ -170,11 +185,14 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
             String key = keyFromAddr(addr);
 
             try {
-                blobContainerClient.getBlobClient(key).getBlockBlobClient().delete();
-            }
-            catch (Exception e) {
-                throw new IgniteSpiException("Failed to delete entry [containerName=" + containerName +
-                        ", entry=" + key + ']', e);
+                blobContainerClient.getBlobClient(key).delete();
+            } catch (Exception e) {
+                // https://github.com/Azure/azure-sdk-for-java/issues/20551
+                if ((!(e.getMessage().contains("InterruptedException"))) || (e instanceof BlobStorageException
+                && (!((BlobStorageException) e).getErrorCode().equals(404)))) {
+                    throw new IgniteSpiException("Failed to delete entry [containerName=" + containerName +
+                            ", entry=" + key + ']', e);
+                }
             }
         }
     }
@@ -274,8 +292,16 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
-            if (!blobContainerClient.exists())
-                throw new IgniteSpiException("IpFinder has not been initialized properly");
+            try {
+                if (!blobContainerClient.exists())
+                    throw new IgniteSpiException("IpFinder has not been initialized properly");
+            } catch (Exception e) {
+                // Check if this is a nested exception wrapping an InterruptedException
+                // https://github.com/Azure/azure-sdk-for-java/issues/20551
+                if (!(e.getCause() instanceof InterruptedException)) {
+                    throw e;
+                }
+            }
         }
     }
 

@@ -278,6 +278,9 @@ On start-up, each node registers its IP address in the storage and discovers oth
 
 IMPORTANT: To use `TcpDiscoveryAzureBlobStorageIpFinder`, enable the `ignite-azure` link:setup#enabling-modules[module] in your application.
 
+IMPORTANT: This functionality is currently supported only for Ipv4 IP addresses. Please ensure that you are using the
+Ipv4 mode in Ignite startup when using this module.
+
 Here is an example of how to configure Azure Blob Storage based IP finder:
 
 [tabs]
