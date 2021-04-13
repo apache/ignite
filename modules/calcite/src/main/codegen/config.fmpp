@@ -618,7 +618,7 @@ data: {
     # Binary operators initialization.
     # Example: "InfixCast".
     extraBinaryExpressions: [
-#      "InfixCast"
+      "InfixCast"
     ]
 
     # List of files in @includes directory that have parser method

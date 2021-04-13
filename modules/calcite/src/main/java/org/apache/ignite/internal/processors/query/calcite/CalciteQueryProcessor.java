@@ -88,6 +88,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
             .getOperatorTable(
                 SqlLibrary.STANDARD,
+                SqlLibrary.POSTGRESQL,
                 SqlLibrary.ORACLE,
                 SqlLibrary.MYSQL))
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
