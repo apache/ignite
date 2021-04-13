@@ -1085,12 +1085,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Performs indexes rebuild for all cache contexts from {@code contexts}.
+     * Initiate an asynchronous forced index rebuild for caches.
      *
-     * @param contexts List of cache contexts.
+     * @param contexts Cache contexts.
+     * @return Cache contexts for which index rebuilding is not initiated by
+     *      this call because they are already in the process of rebuilding.
      */
-    public void forceRebuildIndexes(Collection<GridCacheContext> contexts) {
-        // No-op.
+    public Collection<GridCacheContext> forceRebuildIndexes(Collection<GridCacheContext> contexts) {
+        return Collections.emptyList();
     }
 
     /**
