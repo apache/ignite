@@ -59,6 +59,9 @@ public class GridRunningQueryInfo {
     /** Span of the running query. */
     private final Span span;
 
+    /** Originator. */
+    private final String qryInitiatorId;
+
     /** Request ID. */
     private long reqId;
 
@@ -84,7 +87,8 @@ public class GridRunningQueryInfo {
         long startTime,
         long startTimeNanos,
         GridQueryCancel cancel,
-        boolean loc
+        boolean loc,
+        String qryInitiatorId
     ) {
         this.id = id;
         this.nodeId = nodeId;
@@ -96,6 +100,7 @@ public class GridRunningQueryInfo {
         this.cancel = cancel;
         this.loc = loc;
         this.span = MTC.span();
+        this.qryInitiatorId = qryInitiatorId;
     }
 
     /**
@@ -202,6 +207,14 @@ public class GridRunningQueryInfo {
     /** @return Request ID. */
     public long requestId() {
         return reqId;
+    }
+
+    /**
+     * @return Query's originator string (client host+port, user name,
+     * job name or any user's information about query initiator).
+     */
+    public String queryInitiatorId() {
+        return qryInitiatorId;
     }
 
     /** @param reqId Request ID. */

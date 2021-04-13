@@ -61,6 +61,8 @@ enum ClientOperation {
     /** Query sql cursor get page. */QUERY_SQL_CURSOR_GET_PAGE(2003),
     /** Query sql fields. */QUERY_SQL_FIELDS(2004),
     /** Query sql fields cursor get page. */QUERY_SQL_FIELDS_CURSOR_GET_PAGE(2005),
+    /** Continuous query. */QUERY_CONTINUOUS(2006),
+    /** Continuous query event. */QUERY_CONTINUOUS_EVENT(2007, ClientNotificationType.CONTINUOUS_QUERY_EVENT),
 
     /** Get binary type. */GET_BINARY_TYPE(3002),
     /** Register binary type name. */REGISTER_BINARY_TYPE_NAME(3001),
@@ -78,25 +80,26 @@ enum ClientOperation {
     /** Get nodes info by IDs. */CLUSTER_GROUP_GET_NODE_INFO(5101),
 
     /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
-    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true),
+    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001,
+        ClientNotificationType.COMPUTE_TASK_FINISHED),
 
     /** Invoke service. */SERVICE_INVOKE(7000);
 
     /** Code. */
     private final int code;
 
-    /** Is notification. */
-    private final boolean notification;
+    /** Type of notification. */
+    private final ClientNotificationType notificationType;
 
     /** Constructor. */
     ClientOperation(int code) {
-        this(code, false);
+        this(code, null);
     }
 
     /** Constructor. */
-    ClientOperation(int code, boolean notification) {
+    ClientOperation(int code, ClientNotificationType notificationType) {
         this.code = code;
-        this.notification = notification;
+        this.notificationType = notificationType;
     }
 
     /**
@@ -107,10 +110,10 @@ enum ClientOperation {
     }
 
     /**
-     * @return {@code True} if operation is notification.
+     * @return Type of notification.
      */
-    public boolean isNotification() {
-        return notification;
+    public ClientNotificationType notificationType() {
+        return notificationType;
     }
 
     /** Enum mapping from code to values. */
